@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, KeyRound, Loader2, Lock, LogOut, Mail, ShieldCheck } from "lucide-react";
 import type { TotpMfaStatus } from "../../lib/totp";
-import { getPasskeyStatus, registerCurrentPasskey } from "../../lib/passkeys";
+import { getPasskeyStatus, registerCurrentPasskey, removePasskey } from "../../lib/passkeys";
 
 interface Props {
   expanded: boolean;
@@ -45,6 +45,7 @@ export default function SettingsSecuritySection({
   onLogoutAllSessions,
 }: Props) {
   const [passkeyEnabled, setPasskeyEnabled] = useState(false);
+  const [passkeyId, setPasskeyId] = useState<string | null>(null);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [passkeyMessage, setPasskeyMessage] = useState<string | null>(null);
   const [passkeyError, setPasskeyError] = useState(false);
@@ -52,11 +53,13 @@ export default function SettingsSecuritySection({
   const loadPasskeyStatus = async () => {
     if (!firebaseUser) {
       setPasskeyEnabled(false);
+      setPasskeyId(null);
       return;
     }
     try {
       const status = await getPasskeyStatus();
       setPasskeyEnabled(Boolean(status.enabled));
+      setPasskeyId(status.credentials?.[0]?.id ?? null);
     } catch {
       // Passkey availability must never block the rest of Security settings.
     }
@@ -74,19 +77,45 @@ export default function SettingsSecuritySection({
     setPasskeyError(false);
 
     try {
-      await registerCurrentPasskey();
+      const result = await registerCurrentPasskey();
       setPasskeyEnabled(true);
+      setPasskeyId(result.credentialId);
       setPasskeyMessage("Passkey added successfully. You can now sign in with your device security.");
     } catch (error: any) {
       setPasskeyError(true);
       if (error?.name === "NotAllowedError") {
         setPasskeyMessage("Passkey setup was cancelled. No changes were made.");
       } else if (error?.status === 409 || /already registered/i.test(String(error?.message || ""))) {
-        setPasskeyEnabled(true);
+        await loadPasskeyStatus();
         setPasskeyMessage("A passkey is already registered for this account.");
       } else {
         setPasskeyMessage(error?.message || "We could not set up a passkey right now. Please try again.");
       }
+    } finally {
+      setPasskeyLoading(false);
+    }
+  };
+
+  const handlePasskeyRemove = async () => {
+    if (!passkeyId || passkeyLoading) return;
+
+    const confirmed = window.confirm(
+      "Remove this BuyMesho passkey? You will no longer be able to use it to sign in to this account until you add a new passkey."
+    );
+    if (!confirmed) return;
+
+    setPasskeyLoading(true);
+    setPasskeyMessage(null);
+    setPasskeyError(false);
+
+    try {
+      await removePasskey(passkeyId);
+      setPasskeyEnabled(false);
+      setPasskeyId(null);
+      setPasskeyMessage("Passkey removed from BuyMesho. If it is still saved in your device password manager, you can remove it there separately.");
+    } catch (error: any) {
+      setPasskeyError(true);
+      setPasskeyMessage(error?.message || "We could not remove the passkey right now. Please try again.");
     } finally {
       setPasskeyLoading(false);
     }
@@ -115,7 +144,9 @@ export default function SettingsSecuritySection({
             <span className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${passkeyEnabled ? "bg-emerald-50 text-emerald-700" : "bg-zinc-100 text-zinc-500"}`}>{passkeyEnabled ? "Active" : "Off"}</span>
           </div>
           {passkeyMessage ? <div className={`mt-3 rounded-2xl border px-4 py-3 text-xs font-semibold ${passkeyError ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{passkeyMessage}</div> : null}
-          <div className="mt-4"><button type="button" onClick={() => void handlePasskeySetup()} disabled={verifiedAccountRequiredDisabled || passkeyLoading || passkeyEnabled} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60">{passkeyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}{passkeyEnabled ? "Passkey enabled" : "Set up passkey"}</button></div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            {!passkeyEnabled ? <button type="button" onClick={() => void handlePasskeySetup()} disabled={verifiedAccountRequiredDisabled || passkeyLoading} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60">{passkeyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}{passkeyLoading ? "Setting up…" : "Set up passkey"}</button> : <button type="button" onClick={() => void handlePasskeyRemove()} disabled={passkeyLoading} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60">{passkeyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}{passkeyLoading ? "Removing…" : "Remove passkey"}</button>}
+          </div>
         </div>
         <button type="button" onClick={() => void onLogoutAllSessions()} disabled={!firebaseUser || securityActionBusy === "logoutAll"} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"><span className="font-bold text-zinc-900 inline-flex items-center gap-2"><LogOut className="w-4 h-4" />Logout all sessions</span>{securityActionBusy === "logoutAll" ? <Loader2 className="w-4 h-4 animate-spin text-zinc-400" /> : <ChevronRight className="w-4 h-4 text-zinc-400" />}</button>
       </div> : null}
