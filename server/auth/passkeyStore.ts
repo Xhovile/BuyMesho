@@ -1,4 +1,4 @@
-import type { PasskeyCeremonyRepository, PasskeyCredential, PasskeyCredentialRepository } from "@xhovile/platform/passkeys";
+import type { CeremonyState, PasskeyCeremonyRepository, PasskeyCredential, PasskeyCredentialRepository } from "@xhovile/platform/passkeys";
 import { getPaymentDb } from "../postgresCompat.js";
 
 function toBase64(value: Uint8Array | ArrayBuffer): string {
@@ -89,7 +89,7 @@ export class BuyMeshoPasskeyCredentialRepository implements PasskeyCredentialRep
 }
 
 export class BuyMeshoPasskeyCeremonyRepository implements PasskeyCeremonyRepository {
-  async save(state: Parameters<PasskeyCeremonyRepository["save"]>[0]): Promise<void> {
+  async save(state: CeremonyState): Promise<void> {
     getPaymentDb()
       .prepare(
         `INSERT INTO passkey_ceremonies (id, kind, user_id, challenge, expires_at)
@@ -98,7 +98,7 @@ export class BuyMeshoPasskeyCeremonyRepository implements PasskeyCeremonyReposit
       .run(state.id, state.kind, state.userId ?? null, state.challenge, state.expiresAt.toISOString());
   }
 
-  async consume(ceremonyId: string): Promise<Parameters<PasskeyCeremonyRepository["consume"]>[0] extends never ? never : any> {
+  async consume(ceremonyId: string): Promise<CeremonyState | null> {
     const db = getPaymentDb();
     const row = db
       .prepare(`SELECT id, kind, user_id, challenge, expires_at FROM passkey_ceremonies WHERE id = ? LIMIT 1`)
@@ -108,7 +108,7 @@ export class BuyMeshoPasskeyCeremonyRepository implements PasskeyCeremonyReposit
     db.prepare(`DELETE FROM passkey_ceremonies WHERE id = ?`).run(ceremonyId);
     return {
       id: String(row.id),
-      kind: String(row.kind) as "registration" | "authentication",
+      kind: String(row.kind) as CeremonyState["kind"],
       userId: row.user_id ? String(row.user_id) : undefined,
       challenge: String(row.challenge),
       expiresAt: new Date(String(row.expires_at)),
