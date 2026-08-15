@@ -1,5 +1,10 @@
 import { type ReactNode } from "react";
 import { Bookmark, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
+import {
+  getListingDetailImageUrl,
+  getListingFullscreenImageUrl,
+  getListingGalleryThumbUrl,
+} from "../../lib/imageUrl";
 
 function FullscreenToggleIcon({ isFullscreen }: { isFullscreen: boolean }) {
   return (
@@ -63,7 +68,13 @@ export default function ListingGallery({
       } ${className}`}
       aria-label={`View image ${idx + 1}`}
     >
-      <img src={url} alt="" className="h-full w-full object-cover" />
+      <img
+        src={getListingGalleryThumbUrl(url)}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        className="h-full w-full object-cover"
+      />
     </button>
   );
 
@@ -101,7 +112,13 @@ export default function ListingGallery({
                 showThumbRail ? "" : "md:max-h-[420px] lg:max-h-[460px]"
               }`}
             >
-              <img src={currentImage} alt={listingName} className="h-full w-full object-contain" />
+              <img
+                src={getListingDetailImageUrl(currentImage)}
+                alt={listingName}
+                loading="eager"
+                decoding="async"
+                className="h-full w-full object-contain"
+              />
 
               <button
                 type="button"
@@ -167,7 +184,13 @@ export default function ListingGallery({
             </button>
 
             <div className="relative h-full overflow-hidden rounded-xl bg-black sm:rounded-2xl">
-              <img src={currentImage} alt={listingName} className="h-full w-full object-contain" />
+              <img
+                src={getListingFullscreenImageUrl(currentImage)}
+                alt={listingName}
+                loading="eager"
+                decoding="async"
+                className="h-full w-full object-contain"
+              />
               {showThumbRail ? (
                 <>
                   <button

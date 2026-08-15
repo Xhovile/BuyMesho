@@ -5,6 +5,7 @@ import {
   getListingCardSpecs,
   getListingConditionLabel,
 } from "../../lib/listingCardHighlights";
+import { getListingCardImageUrl } from "../../lib/imageUrl";
 import type { ListingSpecValues } from "../../types";
 import ListingImage from "../ListingImage";
 
@@ -61,7 +62,7 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
     >
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
         <ListingImage
-          src={item.photos?.[0]}
+          src={getListingCardImageUrl(item.photos?.[0])}
           alt={item.name}
           category={item.category || categoryLabel}
           subcategory={item.subcategory}
