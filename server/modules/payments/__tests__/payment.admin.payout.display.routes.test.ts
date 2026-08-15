@@ -180,3 +180,39 @@ test('admin payouts diagnostics expose verified destination with missing provide
   assert.equal((row.diagnostics as Record<string, unknown>).latestAttemptNo, null);
   assert.notEqual(row.retryBlockedReason, 'Destination pending verification');
 });
+
+test('admin payout display recovers seller and provider labels from order and destination when payout row is incomplete', async () => {
+  const { sellerId, verifiedDestinationId, payoutId } = seedPayoutWithStaleDestination('admin-display-incomplete-card');
+  const db = getPaymentDb();
+  db.prepare(`UPDATE sellers SET business_name = ? WHERE uid = ?`).run('Recovered Seller', sellerId);
+  db.prepare(`UPDATE payouts SET seller_id = '', provider = '', destination_account_id = NULL WHERE id = ?`).run(payoutId);
+
+  const result = await callAdmin('/api/admin/payouts?limit=50&offset=0');
+
+  assert.equal(result.status, 200);
+  const body = result.body as { rows?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>;
+  const rows = Array.isArray(body) ? body : body.rows ?? [];
+  const row = rows.find((entry) => entry.id === payoutId);
+  assert.ok(row);
+  assert.equal(row.sellerId, sellerId);
+  assert.equal(row.sellerBusinessName, 'Recovered Seller');
+  assert.equal(row.provider, 'paychangu');
+  assert.equal(row.destinationAccountId, verifiedDestinationId);
+  assert.equal(row.destinationVerificationStatus, 'verified');
+  assert.equal(row.destinationRecoveredFromFallback, true);
+});
+
+test('admin payout detail recovers destination when payout destination FK is missing', async () => {
+  const { sellerId, verifiedDestinationId, payoutId } = seedPayoutWithStaleDestination('admin-display-detail-missing-fk');
+  const db = getPaymentDb();
+  db.prepare(`UPDATE payouts SET destination_account_id = NULL WHERE id = ?`).run(payoutId);
+
+  const result = await callAdmin(`/api/admin/payouts/detail/${encodeURIComponent(payoutId)}`);
+
+  assert.equal(result.status, 200);
+  const row = result.body as Record<string, unknown>;
+  assert.equal(row.sellerId, sellerId);
+  assert.equal(row.destinationAccountId, verifiedDestinationId);
+  assert.equal(row.destinationVerificationStatus, 'verified');
+  assert.equal(row.destinationRecoveredFromFallback, true);
+});
