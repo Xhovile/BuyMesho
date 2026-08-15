@@ -128,6 +128,21 @@ export default function LoginPage() {
       const message = err?.status >= 500 || /unable to start passkey/i.test(String(err?.message || ""))
         ? "An error occurred. Please reload the page and try again."
         : "An error occurred. Please reload the page and try again.";
+      if (err?.status === 404 && err?.code === "PASSKEY_NOT_FOUND") {
+        showFeedback(
+          "info",
+          "Passkey no longer available",
+          "This passkey was removed from BuyMesho. Reload the page and choose an available passkey.",
+          [
+            {
+              label: "Reload",
+              onClick: () => window.location.reload(),
+            },
+          ],
+        );
+        return;
+      }
+
       showFeedback("error", "Passkey sign-in failed", message, [
         {
           label: "Reload",
