@@ -1,0 +1,6 @@
+@media (max-width: 767px) {
+  [class~="z-[99]"],
+  [class~="z-[110]"] {
+    z-index: 40 !important;
+  }
+}
