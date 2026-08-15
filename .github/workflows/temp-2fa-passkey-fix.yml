@@ -1,0 +1,35 @@
+name: Temporary 2FA Passkey Fix
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: ${{ github.event.head_commit.message != 'Apply 2FA passkey prompt fix' && github.event.head_commit.message != 'Remove temporary 2FA passkey fix workflow' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply fix
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/LoginPage.tsx')
+          text = p.read_text()
+          old = '''      setTotpChallengeOpen(false);\n      setTotpChallengeCode("");\n      await finishAuthentication();'''
+          new = '''      setTotpChallengeOpen(false);\n      setTotpChallengeCode("");\n\n      // 2FA is part of the login flow. Offer passkey setup only after\n      // the user's 2FA challenge has been successfully verified.\n      if (!isValidatorEntry && passkeysAvailable) {\n        markPasskeySetupOffer();\n      }\n\n      await finishAuthentication();'''
+          if old not in text:
+              raise SystemExit('2FA success block not found')
+          p.write_text(text.replace(old, new, 1))
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/LoginPage.tsx
+          git commit -m "Apply 2FA passkey prompt fix"
+          git push
