@@ -10,7 +10,7 @@ import { consumeAuthReturnPath, HOME_PATH, navigateToLogin, navigateToPath, navi
 import { clearTotpVerifiedSessionToken } from "./lib/totpSession";
 import { getTotpStatus, verifyTotpChallenge } from "./lib/security";
 import { apiFetch } from "./lib/api";
-import { beginPasskeyLogin, supportsPasskeys } from "./lib/passkeys";
+import { beginPasskeyLogin, getPasskeyStatus, registerCurrentPasskey, supportsPasskeys } from "./lib/passkeys";
 
 type FeedbackAction = { label: string; onClick: () => void; variant?: "primary" | "secondary" };
 type FeedbackState = { open: boolean; type: "success" | "error" | "info"; title: string; message: string; actions?: FeedbackAction[] } | null;
@@ -74,7 +74,7 @@ export default function LoginPage() {
     window.setTimeout(() => navigateToPath(targetPath, { replace: true }), 700);
   };
 
-  const completeSuccessfulLogin = async (user: { reload: () => Promise<void>; emailVerified: boolean }) => {
+  const finishSuccessfulAuthentication = async (user: { reload: () => Promise<void>; emailVerified: boolean }) => {
     await user.reload();
     const totpStatusResult = await getTotpStatus();
     if (totpStatusResult.ok && totpStatusResult.data?.status === "enabled") {
@@ -82,11 +82,64 @@ export default function LoginPage() {
       setTotpChallengeOpen(true);
       return;
     }
+
     if (!user.emailVerified) {
       navigateToPath("/verify-email", { replace: true });
       return;
     }
+
+    // Offer passkey enrollment after a normal login, but do not interrupt
+    // the Ticket Validator hand-off flow.
+    if (!isValidatorEntry && passkeysAvailable) {
+      try {
+        const passkeyStatus = await getPasskeyStatus();
+        if (!passkeyStatus.enabled) {
+          showFeedback(
+            "info",
+            "Set up a passkey?",
+            "Use your fingerprint, Face ID, device PIN, or security key to make future BuyMesho sign-ins faster and more secure.",
+            [
+              {
+                label: "Not now",
+                variant: "secondary",
+                onClick: () => {
+                  closeFeedback();
+                  void finishAuthentication();
+                },
+              },
+              {
+                label: "Set up passkey",
+                onClick: () => {
+                  closeFeedback();
+                  void handlePasskeySetupAndFinish();
+                },
+              },
+            ],
+          );
+          return;
+        }
+      } catch (error) {
+        // Passkey availability should never prevent a normal login from completing.
+        console.warn("[passkeys] status check failed after login", error);
+      }
+    }
+
     await finishAuthentication();
+  };
+
+  const handlePasskeySetupAndFinish = async () => {
+    try {
+      await registerCurrentPasskey();
+      showFeedback("success", "Passkey added", "This device can now be used to sign in to BuyMesho with your device security.");
+    } catch (err: any) {
+      if (err?.name === "NotAllowedError") {
+        showFeedback("info", "Passkey setup cancelled", "No passkey was added. You can set one up later from Settings → Security.");
+      } else {
+        showFeedback("error", "Passkey setup failed", err?.message || "We could not add a passkey right now. You can try again later from Settings → Security.");
+      }
+    } finally {
+      await finishAuthentication();
+    }
   };
 
   const handlePasskeyLogin = async () => {
@@ -97,12 +150,18 @@ export default function LoginPage() {
     try {
       const result = await beginPasskeyLogin();
       const userCredential = await signInWithCustomToken(auth, result.customToken);
-      await completeSuccessfulLogin(userCredential.user);
+      await finishSuccessfulAuthentication(userCredential.user);
     } catch (err: any) {
       if (err?.name === "NotAllowedError") {
-        showFeedback("info", "Passkey sign-in cancelled", "No passkey sign-in was completed.");
+        showFeedback("info", "No passkey selected", "No BuyMesho passkey sign-in was completed. If you have not created one yet, log in normally and we will offer to set one up.");
         return;
       }
+
+      if (err?.status >= 500 || /unable to start passkey/i.test(String(err?.message || ""))) {
+        showFeedback("error", "Passkey unavailable", "BuyMesho could not start passkey sign-in. The server-side passkey configuration needs to be checked.");
+        return;
+      }
+
       showFeedback("error", "Passkey sign-in failed", err?.message || "Please try another sign-in method.");
     } finally {
       setLoading(false);
@@ -128,7 +187,7 @@ export default function LoginPage() {
       });
 
       const userCredential = await signInWithEmailAndPassword(auth, email, form.password);
-      await completeSuccessfulLogin(userCredential.user);
+      await finishSuccessfulAuthentication(userCredential.user);
     } catch (err: any) {
       if (err?.status === 400 && /valid email address/i.test(String(err?.message || ""))) {
         showFeedback("error", "Invalid email address", "Please enter a valid email address.");
