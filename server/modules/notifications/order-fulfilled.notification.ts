@@ -42,14 +42,13 @@ async function sendOrderFulfilledEmail(order: StoredOrder, role: RecipientRole):
     currency: order.total.currency || order.currency,
     actionUrl,
     counterpartyName,
+    role,
   });
 
   await sendEmail({
     sender: "notifications",
     to: { email, name: recipientName },
-    subject: role === "buyer"
-      ? `BuyMesho order fulfilled — ${sellerBusinessName}`
-      : `BuyMesho — order fulfilled for ${counterpartyName}`,
+    subject: "BuyMesho Order Completion Confirmation",
     text,
     html,
   });
