@@ -174,8 +174,7 @@ export default function Header({
     afterClose?.();
     try {
       await signOut(auth);
-      // Force a real document reload so Firebase/WebAuthn/browser credential
-      // manager state is fully reset before the next passkey attempt.
+      // Force a full document reload so Firebase/WebAuthn/browser credential state is clean before passkey login.
       window.location.replace(LOGIN_PATH);
     } catch {
       // Keep UI usable even if sign-out fails briefly.
@@ -219,3 +218,255 @@ export default function Header({
       }
     };
   }, []);
+
+  useEffect(() => {
+    setSelectedChip(activeChip);
+  }, [activeChip]);
+
+  useEffect(() => {
+    if (!firebaseUser) {
+      setUnreadCount(0);
+      return;
+    }
+
+    let mounted = true;
+
+    const loadUnread = async () => {
+      try {
+        const inbox = await fetchInbox();
+        if (!mounted) return;
+
+        const unread = inbox.filter((c: any) => Number(c.unread_count || 0) > 0).length;
+        setUnreadCount(unread);
+      } catch {
+        if (mounted) setUnreadCount(0);
+      }
+    };
+
+    void loadUnread();
+
+    return () => {
+      mounted = false;
+    };
+  }, [firebaseUser]);
+
+  useEffect(() => {
+    if (!desktopMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (target && desktopMenuRef.current?.contains(target)) return;
+      setDesktopMenuOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setDesktopMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [desktopMenuOpen]);
+
+  return (
+    <>
+      <nav className="sticky top-0 z-50">
+        <div className="bg-zinc-100 border-b border-zinc-200 shadow-sm">
+          <div className="mx-auto max-w-7xl overflow-visible">
+            <div
+              className={`overflow-hidden md:overflow-visible px-3 transition-[max-height,opacity,transform] duration-200 will-change-transform ${
+                topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0 pt-3"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-4">
+                <BrandMark subtitle={headerSubtitle} />
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => handleSellClick()}
+                    className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
+                  >
+                    {isSeller ? <Plus className="w-4 h-4 text-red-500" /> : <Store className="w-4 h-4 text-red-500" />}
+                    <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (!firebaseUser) {
+                        openAuthGuard(PROFILE_PATH);
+                        return;
+                      }
+                      onProfileClick();
+                    }}
+                    className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
+                  >
+                    {firebaseUser ? (
+                      avatarUrl ? (
+                        <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
+                          {fallbackLetter}
+                        </div>
+                      )
+                    ) : (
+                      <User className="w-5 h-5 text-zinc-600" />
+                    )}
+                  </button>
+
+                  <div ref={desktopMenuRef} className="relative hidden md:block">
+                    <button
+                      type="button"
+                      onClick={() => setDesktopMenuOpen((value) => !value)}
+                      className="w-11 h-11 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-zinc-50 hover:border-zinc-300 hover:shadow-md transition-all active:scale-95"
+                      aria-label={desktopMenuOpen ? "Close menu" : "Open menu"}
+                      aria-expanded={desktopMenuOpen}
+                      aria-haspopup="menu"
+                    >
+                      {desktopMenuOpen ? <X className="w-5 h-5 text-zinc-700" /> : <Menu className="w-5 h-5 text-zinc-700" />}
+                    </button>
+
+                    <HeaderDesktopMenu
+                      menuRef={desktopMenuRef}
+                      open={desktopMenuOpen}
+                      isLoggedIn={!!firebaseUser}
+                      isSeller={isSeller}
+                      isAdmin={isAdmin}
+                      unreadCount={unreadCount}
+                      primaryDrawerLabel={primaryDrawerLabel}
+                      onClose={closeMenu}
+                      onPrimaryClick={() => handleSellClick()}
+                      onBecomeSellerClick={() => navigateToPath(BECOME_SELLER_PATH)}
+                      onMyListingsClick={() => navigateToPath(isSeller ? MY_LISTINGS_PATH : BECOME_SELLER_PATH)}
+                      onMessagesClick={() => handleMessagesClick()}
+                      onSavedClick={() => handleSavedClick()}
+                      onHiddenClick={() => handleHiddenClick()}
+                      onPaymentsClick={() => handlePaymentsClick()}
+                      onSellerPayoutsClick={() => handleSellerPayoutsClick()}
+                      onAdminClick={() => navigateToAdminModerationQueue()}
+                      onSettingsClick={() => handleSettingsClick()}
+                      onProfileClick={() => onProfileClick()}
+                      onLogoutClick={() => handleLogout()}
+                      onSignInClick={() => handleSignInClick()}
+                      onCreateAccountClick={() => navigateToPath(SIGNUP_PATH)}
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => setMobileMenuOpen((value) => !value)}
+                    className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
+                    aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                    aria-expanded={mobileMenuOpen}
+                    aria-controls="mobile-header-menu"
+                  >
+                    {mobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className={`px-3 transition-[padding] duration-200 ${topRowHidden ? "pb-2 pt-2" : "pb-3 pt-2"}`}>
+              <form
+                onSubmit={(e: FormEvent<HTMLFormElement>) => {
+                  e.preventDefault();
+                  onSearch(searchValue.trim());
+                }}
+                className="w-full"
+              >
+                <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:max-w-4xl">
+                  <div className={`flex min-w-0 w-full items-center gap-2 rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all ${topRowHidden ? "px-3 py-1.5" : "px-3 py-2"}`}>
+                    <input
+                      type="text"
+                      value={searchValue}
+                      onChange={(e) => onSearch(e.target.value)}
+                      placeholder="Search listings, products, or services..."
+                      className="w-full min-w-0 bg-transparent pl-1 text-sm text-zinc-800 placeholder:text-zinc-500 outline-none"
+                    />
+                    <button type="submit" aria-label="Search listings" className="inline-flex shrink-0 items-center justify-center rounded-xl bg-red-900 px-3 py-1.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4">
+                      Search
+                    </button>
+                  </div>
+
+                  {topRowHidden ? (
+                    <button
+                      type="button"
+                      onClick={() => setMobileMenuOpen((value) => !value)}
+                      className="md:hidden inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-900 bg-slate-900 text-white hover:bg-slate-800 hover:border-slate-800 transition-all"
+                      aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                      aria-expanded={mobileMenuOpen}
+                      aria-controls="mobile-header-menu"
+                    >
+                      {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                    </button>
+                  ) : null}
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <HeaderChips selectedChip={selectedChip} onChipChange={onChipChange} />
+        </div>
+      </nav>
+
+      <HeaderMobileDrawer
+        open={mobileMenuOpen}
+        isLoggedIn={!!firebaseUser}
+        isSeller={isSeller}
+        isAdmin={isAdmin}
+        unreadCount={unreadCount}
+        primaryDrawerLabel={primaryDrawerLabel}
+        onClose={closeMenu}
+        onPrimaryClick={() => handleSellClick()}
+        onBecomeSellerClick={() => navigateToPath(BECOME_SELLER_PATH)}
+        onMyListingsClick={() => navigateToPath(isSeller ? MY_LISTINGS_PATH : BECOME_SELLER_PATH)}
+        onMessagesClick={() => handleMessagesClick()}
+        onSavedClick={() => handleSavedClick()}
+        onHiddenClick={() => handleHiddenClick()}
+        onPaymentsClick={() => handlePaymentsClick()}
+        onSellerPayoutsClick={() => handleSellerPayoutsClick()}
+        onAdminClick={() => navigateToAdminModerationQueue()}
+        onSettingsClick={() => handleSettingsClick()}
+        onProfileClick={() => onProfileClick()}
+        onLogoutClick={() => handleLogout()}
+        onSignInClick={() => handleSignInClick()}
+        onCreateAccountClick={() => navigateToPath(SIGNUP_PATH)}
+      />
+
+      <FeedbackModal
+        open={authGuardOpen}
+        type="error"
+        title="Login required"
+        message="You need to be logged in to access this page. Sign in or create an account to continue."
+        onClose={() => {
+          setAuthGuardOpen(false);
+          setAuthReturnPath(null);
+        }}
+        actions={[
+          {
+            label: "Log in",
+            onClick: () => {
+              setAuthGuardOpen(false);
+              navigateToLoginWithReturnPath(authReturnPath ?? undefined);
+              setAuthReturnPath(null);
+            },
+          },
+          {
+            label: "Cancel",
+            onClick: () => {
+              setAuthGuardOpen(false);
+              setAuthReturnPath(null);
+            },
+            variant: "secondary",
+          },
+        ]}
+      />
+    </>
+  );
+}
