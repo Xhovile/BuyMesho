@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { X, Send, Bot, RefreshCw, ShoppingBag, ArrowRight, HelpCircle, Search } from "lucide-react";
 import { queryShoppingAssistant, type ShoppingAssistantResult, type ShoppingAssistantListing } from "../../lib/ai";
 import { formatMoney } from "../../shared/utils/formatMoney";
-import AiIcon from "./AiIcon";
+import AiIcon, { shouldHideLauncher } from "./AiIcon";
 
 type Props = {
   isOpen: boolean;
@@ -72,7 +72,7 @@ export default function BuyMeshoCopilotDrawer({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || shouldHideLauncher()) return null;
 
   const handleModeChange = (nextMode: AssistantMode) => {
     setMode(nextMode);
