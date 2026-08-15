@@ -2,21 +2,10 @@ import { useMemo, useState } from "react";
 import type { ComponentProps } from "react";
 import { apiFetch } from "./lib/api";
 import PayoutDetailDrawer from "./PayoutDetailDrawer";
+import { classifyPayoutDiagnostic } from "./modules/payouts/diagnostics";
 
 type Props = ComponentProps<typeof PayoutDetailDrawer>;
 type Banner = { type: "success" | "error"; message: string };
-
-const reasonSources = [
-  ["manualReviewReason", "manual review"],
-  ["latestAttemptFailureReason", "latest attempt"],
-  ["lastError", "last error"],
-  ["destinationLastError", "destination error"],
-  ["destinationStatus", "destination status"],
-  ["destinationVerificationStatus", "destination verification"],
-  ["holdReason", "hold reason"],
-  ["retryBlockedReason", "retry blocked"],
-  ["failureReason", "failure reason"],
-] as const;
 
 function pickReason(...values: Array<string | null | undefined>) {
   return values.map((value) => String(value ?? "").trim()).find((value) => value.length > 0) ?? "Admin action";
@@ -27,29 +16,9 @@ export default function AdminPayoutDetailDrawer(props: Props) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Banner | null>(null);
 
-  const exactReasonEntry = reasonSources.find(([key]) => {
-    const value = selected[key as keyof typeof selected];
-    return typeof value === "string" && value.trim().length > 0;
-  });
-
-  const exactReasonKey = exactReasonEntry?.[0] ?? null;
-  const exactReasonLabel = exactReasonEntry?.[1] ?? null;
-  const exactReason =
-    exactReasonKey ? String(selected[exactReasonKey as keyof typeof selected] ?? "") : null;
-
-  const destinationActive = selected.destinationActive !== false;
-  const destinationVerified =
-    String(selected.destinationVerificationStatus ?? selected.destinationStatus ?? "").toLowerCase() ===
-      "verified" && destinationActive;
-  const destinationBannerReason = !destinationVerified
-    ? !destinationActive
-      ? "Destination is inactive"
-      : selected.destinationVerificationStatus || selected.destinationStatus
-        ? String(selected.destinationVerificationStatus ?? selected.destinationStatus ?? "Destination needs verification")
-        : null
-    : null;
-  const bannerReason = exactReason ?? destinationBannerReason;
-  const bannerLabel = exactReasonLabel ?? (!destinationVerified ? "destination verification" : null);
+  const primaryDiagnostic = classifyPayoutDiagnostic(selected);
+  const bannerReason = primaryDiagnostic.message;
+  const bannerLabel = primaryDiagnostic.classification === "none" ? null : primaryDiagnostic.label;
 
   const safeVisibleActions = useMemo(
     () => props.visibleActions.filter((action) => action !== "refund_escrow"),

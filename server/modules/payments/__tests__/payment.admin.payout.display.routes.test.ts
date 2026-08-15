@@ -132,9 +132,9 @@ test('admin payouts list hydrates a fallback verified destination when the payou
   const result = await callAdmin('/api/admin/payouts?limit=50&offset=0');
 
   assert.equal(result.status, 200);
-  assert.ok(Array.isArray(result.body));
-
-  const rows = result.body as Array<Record<string, unknown>>;
+  const body = result.body as { rows?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>;
+  const rows = Array.isArray(body) ? body : body.rows ?? [];
+  assert.ok(Array.isArray(rows));
   const row = rows.find((entry) => entry.id === payoutId);
   assert.ok(row);
   assert.equal(row?.destinationAccountId, verifiedDestinationId);
@@ -142,4 +142,41 @@ test('admin payouts list hydrates a fallback verified destination when the payou
   assert.equal(row?.destinationVerificationStatus, 'verified');
   assert.equal(row?.destinationActive, true);
   assert.equal(row?.destinationMaskedAccount, '****1333');
+});
+test('admin payouts diagnostics prefer provider failure over destination fallback wording', async () => {
+  const { payoutId } = seedPayoutWithStaleDestination('admin-display-provider-failure');
+  const db = getPaymentDb();
+  db.prepare(`UPDATE payouts SET status = 'failed', failure_reason = 'insufficient_provider_balance' WHERE id = ?`).run(payoutId);
+  db.prepare(`UPDATE payout_attempts SET status = 'failed', failure_reason = 'insufficient provider balance', response_payload = ? WHERE payout_id = ?`).run(
+    JSON.stringify({ message: 'insufficient provider balance' }),
+    payoutId,
+  );
+
+  const result = await callAdmin('/api/admin/payouts?limit=50&offset=0');
+  assert.equal(result.status, 200);
+  const body = result.body as { rows?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>;
+  const rows = Array.isArray(body) ? body : body.rows ?? [];
+  const row = rows.find((entry) => entry.id === payoutId);
+  assert.ok(row);
+  assert.equal(row.destinationVerificationStatus, 'verified');
+  assert.notEqual(row.retryBlockedReason, 'Destination pending verification');
+  assert.deepEqual((row.diagnostics as Record<string, unknown>).latestAttemptProviderResponse, { message: 'insufficient provider balance' });
+  assert.equal((row.diagnostics as Record<string, unknown>).latestAttemptFailureReason, 'insufficient provider balance');
+});
+
+test('admin payouts diagnostics expose verified destination with missing provider attempt', async () => {
+  const { payoutId } = seedPayoutWithStaleDestination('admin-display-missing-attempt');
+  const db = getPaymentDb();
+  db.prepare(`DELETE FROM payout_attempts WHERE payout_id = ?`).run(payoutId);
+  db.prepare(`UPDATE payouts SET status = 'processing', failure_reason = NULL WHERE id = ?`).run(payoutId);
+
+  const result = await callAdmin('/api/admin/payouts?limit=50&offset=0');
+  assert.equal(result.status, 200);
+  const body = result.body as { rows?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>;
+  const rows = Array.isArray(body) ? body : body.rows ?? [];
+  const row = rows.find((entry) => entry.id === payoutId);
+  assert.ok(row);
+  assert.equal(row.destinationVerificationStatus, 'verified');
+  assert.equal((row.diagnostics as Record<string, unknown>).latestAttemptNo, null);
+  assert.notEqual(row.retryBlockedReason, 'Destination pending verification');
 });
