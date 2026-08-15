@@ -15,12 +15,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 1
 
       - name: Restore and apply logout fix
         shell: bash
         run: |
-          git checkout HEAD^ -- src/components/Header.tsx
+          git fetch origin 907a283c18a4145c89cdd27d8c3c04a1b169e5ef --depth=1
+          git checkout 907a283c18a4145c89cdd27d8c3c04a1b169e5ef -- src/components/Header.tsx
           python - <<'PY'
           from pathlib import Path
           p = Path('src/components/Header.tsx')
