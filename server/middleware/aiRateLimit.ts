@@ -1,9 +1,9 @@
-import rateLimit, { type Options } from "express-rate-limit";
+import rateLimit, { ipKeyGenerator, type Options } from "express-rate-limit";
 import type { RequestHandler } from "express";
 
 function keyForRequest(req: Parameters<Options["keyGenerator"]>[0]): string {
   const uid = req.user?.uid;
-  return uid ? `user:${uid}` : `ip:${req.ip}`;
+  return uid ? `user:${uid}` : `ip:${ipKeyGenerator(req.ip)}`;
 }
 
 function createLimiter(windowMs: number, limit: number, message: string): RequestHandler {
