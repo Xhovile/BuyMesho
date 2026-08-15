@@ -13,6 +13,8 @@ export interface SendMessageResponse {
   message: MessageThreadItem;
 }
 
+const pendingMessageIdempotencyKeys = new Map<string, string>();
+
 function unwrapData<T>(payload: any, fallback: T): T {
   if (payload && typeof payload === "object" && "data" in payload) {
     return (payload.data as T) ?? fallback;
@@ -80,18 +82,33 @@ export async function startConversationWithSeller(sellerUid: string): Promise<Co
 
 export async function sendMessage(
   conversationId: number,
-  body: string
+  body: string,
+  idempotencyKey?: string,
 ): Promise<SendMessageResponse> {
-  const result = await apiFetch(`/api/messages/${conversationId}/messages`, {
-    method: "POST",
-    body: JSON.stringify({ body }),
-  });
+  const pendingKey = `${conversationId}:${body}`;
+  const key = idempotencyKey ?? pendingMessageIdempotencyKeys.get(pendingKey) ?? crypto.randomUUID();
 
-  return unwrapData<SendMessageResponse>(result, {
-    success: false,
-    conversation: null as unknown as Conversation,
-    message: null as unknown as MessageThreadItem,
-  });
+  if (!idempotencyKey) {
+    pendingMessageIdempotencyKeys.set(pendingKey, key);
+  }
+
+  try {
+    const result = await apiFetch(`/api/messages/${conversationId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ body, idempotencyKey: key }),
+    });
+
+    pendingMessageIdempotencyKeys.delete(pendingKey);
+
+    return unwrapData<SendMessageResponse>(result, {
+      success: false,
+      conversation: null as unknown as Conversation,
+      message: null as unknown as MessageThreadItem,
+    });
+  } catch (error) {
+    // Keep the key so a retry after a lost response does not create a duplicate message.
+    throw error;
+  }
 }
 
 export async function markConversationRead(conversationId: number): Promise<void> {

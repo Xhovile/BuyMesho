@@ -12,6 +12,7 @@ import { registerSellerProfileRoutes } from "./routes/sellerProfile.routes.js";
 import { getConfiguredAdminEmails } from "./auth/adminAccess.js";
 import { requireAuth } from "./middleware/requireAuth.js";
 import { requireFirebaseUser } from "./middleware/requireFirebaseUser.js";
+import { createIdempotencyMiddleware } from "./idempotency/middleware.js";
 import { startPayoutReconciliationScheduler } from "./modules/payouts/payout.reconciliation.scheduler.js";
 
 dotenv.config();
@@ -76,6 +77,12 @@ export async function startServer() {
       "Admin email list is empty. Set ADMIN_EMAILS (or VITE_ADMIN_EMAILS) to enable admin access."
     );
   }
+
+  app.use(
+    "/api/messages/:conversationId/messages",
+    requireAuth,
+    createIdempotencyMiddleware("messages.send"),
+  );
 
   registerRoutes(app, {
     db,
