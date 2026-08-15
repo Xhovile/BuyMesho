@@ -29,7 +29,6 @@ const SIGNUP_JUST_CREATED_KEY = "__buymesho_signup_just_created";
 export default function VerifyEmailPage() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const [busy, setBusy] = useState(false);
-  const [polling, setPolling] = useState(true);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
 
@@ -55,7 +54,6 @@ export default function VerifyEmailPage() {
     if (!firebaseUser || authLoading || emailVerified) return;
 
     let cancelled = false;
-    setPolling(true);
 
     const checkVerification = async () => {
       const verified = await refreshEmailVerificationState();
@@ -73,7 +71,6 @@ export default function VerifyEmailPage() {
     return () => {
       cancelled = true;
       window.clearInterval(interval);
-      setPolling(false);
     };
   }, [firebaseUser?.uid, authLoading, emailVerified]);
 
