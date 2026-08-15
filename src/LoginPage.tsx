@@ -9,6 +9,7 @@ import { auth } from "./firebase";
 import { consumeAuthReturnPath, HOME_PATH, navigateToLogin, navigateToPath, navigateToSignup } from "./lib/appNavigation";
 import { clearTotpVerifiedSessionToken } from "./lib/totpSession";
 import { getTotpStatus, verifyTotpChallenge } from "./lib/security";
+import { apiFetch } from "./lib/api";
 
 type FeedbackAction = { label: string; onClick: () => void; variant?: "primary" | "secondary" };
 type FeedbackState = { open: boolean; type: "success" | "error" | "info"; title: string; message: string; actions?: FeedbackAction[] } | null;
@@ -27,6 +28,10 @@ function getTicketValidatorReturnUrl() {
   } catch {
     return null;
   }
+}
+
+function isValidEmailFormat(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export default function LoginPage() {
@@ -84,23 +89,53 @@ export default function LoginPage() {
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
+    const email = form.email.trim().toLowerCase();
+
+    if (!isValidEmailFormat(email)) {
+      showFeedback("error", "Invalid email address", "Please enter a valid email address.");
+      return;
+    }
+
     setLoading(true);
     clearTotpVerifiedSessionToken();
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, form.email.trim(), form.password);
+      await apiFetch("/api/auth/check-login-email", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+
+      const userCredential = await signInWithEmailAndPassword(auth, email, form.password);
       await completeSuccessfulLogin(userCredential.user);
     } catch (err: any) {
-      if (err?.code === "auth/user-not-found") {
-        showFeedback("error", "Login failed", "You do not have an account.", [
+      if (err?.status === 400 && /valid email address/i.test(String(err?.message || ""))) {
+        showFeedback("error", "Invalid email address", "Please enter a valid email address.");
+        return;
+      }
+
+      if (err?.status === 404 || /not registered with BuyMesho/i.test(String(err?.message || ""))) {
+        showFeedback("error", "Email not registered", "This email address is not registered with BuyMesho.", [
           { label: "Cancel", variant: "secondary", onClick: closeFeedback },
-          { label: "Sign Up", onClick: () => { closeFeedback(); navigateToSignup(); } },
+          { label: "Create Account", onClick: () => { closeFeedback(); navigateToSignup(); } },
+        ]);
+        return;
+      }
+
+      if (err?.status === 429) {
+        showFeedback("error", "Too many attempts", "Please wait a moment and try again.");
+        return;
+      }
+
+      if (err?.code === "auth/user-not-found") {
+        showFeedback("error", "Email not registered", "This email address is not registered with BuyMesho.", [
+          { label: "Cancel", variant: "secondary", onClick: closeFeedback },
+          { label: "Create Account", onClick: () => { closeFeedback(); navigateToSignup(); } },
         ]);
         return;
       }
 
       if (err?.code === "auth/wrong-password" || err?.code === "auth/invalid-credential") {
-        showFeedback("error", "Login failed", err?.code === "auth/wrong-password" ? "Incorrect password. Please try again." : "Incorrect email or password. Please try again.", [
+        showFeedback("error", "Incorrect password", "Incorrect password. Please try again.", [
           { label: "Cancel", variant: "secondary", onClick: closeFeedback },
           { label: "Retry", onClick: () => { setForm((prev) => ({ ...prev, password: "" })); closeFeedback(); } },
         ]);
