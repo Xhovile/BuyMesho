@@ -7,6 +7,7 @@ import {
 } from "../lib/listingCardHighlights";
 import { navigateToListingDetails, navigateToLogin } from "../lib/appNavigation";
 import { saveListingDetailsFallback } from "../lib/listings";
+import { getListingCardImageUrl } from "../lib/imageUrl";
 import type { Listing } from "../types";
 import ListingImage from "./ListingImage";
 import ListingActionsMenu from "./ListingActionsMenu";
@@ -138,7 +139,7 @@ export default function ListingCard({
             }}
           >
             <ListingImage
-              src={listing.photos?.[0]}
+              src={getListingCardImageUrl(listing.photos?.[0])}
               alt={titleLabel}
               category={listing.category}
               subcategory={listing.subcategory}
