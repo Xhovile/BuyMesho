@@ -17,6 +17,7 @@ type FeedbackAction = { label: string; onClick: () => void; variant?: "primary" 
 type FeedbackState = { open: boolean; type: "success" | "error" | "info"; title: string; message: string; actions?: FeedbackAction[] } | null;
 
 const PASSWORD_REQUIREMENTS_MESSAGE = "Use at least 8 characters with lowercase, uppercase, and a symbol (e.g. #, @, /).";
+const SIGNUP_JUST_CREATED_KEY = "__buymesho_signup_just_created";
 type PasswordChecks = { hasMinLength: boolean; hasLowercase: boolean; hasUppercase: boolean; hasSpecial: boolean };
 const getPasswordChecks = (password: string): PasswordChecks => ({ hasMinLength: password.length >= 8, hasLowercase: /[a-z]/.test(password), hasUppercase: /[A-Z]/.test(password), hasSpecial: /[^A-Za-z0-9]/.test(password) });
 const getPasswordStrength = (checks: PasswordChecks) => Number(checks.hasMinLength) + Number(checks.hasLowercase) + Number(checks.hasUppercase) + Number(checks.hasSpecial);
@@ -39,6 +40,11 @@ export default function SignupPage() {
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string, actions?: FeedbackAction[]) => setFeedback({ open: true, type, title, message, actions });
   const closeFeedback = () => setFeedback(null);
 
+  const continueToVerification = () => {
+    setFeedback(null);
+    navigateToPath("/verify-email", { replace: true });
+  };
+
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
     if (!passwordsMatch) { showFeedback("error", "Passwords do not match", "Ensure both passwords are identical."); return; }
@@ -52,7 +58,14 @@ export default function SignupPage() {
       const profile: UserProfile = { uid: user.uid, email, university: form.university, is_verified: false, is_seller: false, join_date: new Date().toISOString() };
       try { await bootstrapProfile(profile); } catch (profileErr) { console.warn("Profile bootstrap failed after account creation.", profileErr); }
       try { await apiFetch("/api/auth/send-verification-email", { method: "POST", body: JSON.stringify({ display_name: user.displayName || undefined }) }); } catch (emailErr) { console.error("Custom verification email failed", emailErr); }
-      navigateToPath("/verify-email", { replace: true });
+
+      sessionStorage.setItem(SIGNUP_JUST_CREATED_KEY, "1");
+      showFeedback(
+        "success",
+        "Success! Account created",
+        "Your BuyMesho account is ready. Next, verify your email address to continue.",
+        [{ label: "Continue to verification", onClick: continueToVerification }],
+      );
     } catch (err: any) {
       if (err?.code === "auth/email-already-in-use") { showFeedback("error", "Signup failed", "This email is already registered. Use Log In to continue.", [{ label: "Cancel", variant: "secondary", onClick: closeFeedback }, { label: "Log In", onClick: () => { closeFeedback(); navigateToLogin(); } }]); return; }
       let message = "We could not create your account. Please try again."; if (err?.code === "auth/invalid-email") message = "Please enter a valid email address."; else if (err?.code === "auth/weak-password") message = PASSWORD_REQUIREMENTS_MESSAGE; else if (isPermissionError(err)) message = "Account creation is temporarily unavailable due to a permissions issue. Please try again in a moment.";
