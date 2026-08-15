@@ -74,6 +74,11 @@ body:has([role="status"][aria-label="Loading BuyMesho"]) [aria-label="BuyMesho A
   display: none;
 }
 
+/* Make only the Login form's primary submit button span the same width as the passkey button. */
+form.w-full.space-y-6 > button.min-w-\[180px\] {
+  width: 100%;
+}
+
 @keyframes buymesho-loader-spin {
   to {
     transform: rotate(360deg);
