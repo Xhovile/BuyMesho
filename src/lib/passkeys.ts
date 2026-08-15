@@ -1,5 +1,6 @@
 import {
   authenticateWithPasskey,
+  cancelPasskeyCeremony,
   isPasskeySupported,
   registerPasskey,
 } from "@xhovile/platform/passkeys/browser";
@@ -30,6 +31,14 @@ export function supportsPasskeys(): boolean {
   }
 }
 
+export function resetPasskeyCeremony(): void {
+  try {
+    cancelPasskeyCeremony();
+  } catch {
+    // Passkey cleanup is best-effort and must never block login.
+  }
+}
+
 export function markPasskeySetupOffer(): void {
   try {
     sessionStorage.setItem(POST_LOGIN_PASSKEY_OFFER_KEY, "1");
@@ -49,6 +58,8 @@ export function consumePasskeySetupOffer(): boolean {
 }
 
 export async function beginPasskeyLogin(): Promise<{ customToken: string; uid: string }> {
+  resetPasskeyCeremony();
+
   const start = await apiFetch("/api/auth/passkey/login/options", { method: "GET" });
   const assertion = await authenticateWithPasskey(start.options);
   const result = await apiFetch("/api/auth/passkey/login/verify", {
