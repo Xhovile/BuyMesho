@@ -22,15 +22,20 @@ export class PostgresOrderRepository {
 
     const stored: StoredOrder = {
       ...order,
+      deliveryStatus:
+        order.status === 'fulfilled' || order.status === 'closed'
+          ? 'delivered'
+          : order.deliveryStatus ?? 'action_required',
       paidAt,
       fulfilledAt,
     };
 
     this.db.prepare(`
-      INSERT INTO orders (id, buyer_id, seller_id, source, status, currency, subtotal_amount, subtotal_currency, total_amount, total_currency, payment_provider, settlement_route, payment_reference, checkout_idempotency_key, checkout_request_hash, escrow_id, items, buyer_details, placed_at, paid_at, fulfilled_at, created_at, updated_at)
-      VALUES (@id, @buyer_id, @seller_id, @source, @status, @currency, @subtotal_amount, @subtotal_currency, @total_amount, @total_currency, @payment_provider, @settlement_route, @payment_reference, @checkout_idempotency_key, @checkout_request_hash, @escrow_id, @items, @buyer_details, @placed_at, @paid_at, @fulfilled_at, @created_at, @updated_at)
+      INSERT INTO orders (id, buyer_id, seller_id, source, status, delivery_status, currency, subtotal_amount, subtotal_currency, total_amount, total_currency, payment_provider, settlement_route, payment_reference, checkout_idempotency_key, checkout_request_hash, escrow_id, items, buyer_details, placed_at, paid_at, fulfilled_at, created_at, updated_at)
+      VALUES (@id, @buyer_id, @seller_id, @source, @status, @delivery_status, @currency, @subtotal_amount, @subtotal_currency, @total_amount, @total_currency, @payment_provider, @settlement_route, @payment_reference, @checkout_idempotency_key, @checkout_request_hash, @escrow_id, @items, @buyer_details, @placed_at, @paid_at, @fulfilled_at, @created_at, @updated_at)
       ON CONFLICT(id) DO UPDATE SET
         status = excluded.status,
+        delivery_status = excluded.delivery_status,
         payment_provider = excluded.payment_provider,
         settlement_route = excluded.settlement_route,
         payment_reference = excluded.payment_reference,
@@ -48,6 +53,7 @@ export class PostgresOrderRepository {
       seller_id: stored.sellerId,
       source: stored.source,
       status: stored.status,
+      delivery_status: stored.deliveryStatus,
       currency: stored.currency,
       subtotal_amount: stored.subtotal.amount,
       subtotal_currency: stored.subtotal.currency,
@@ -124,12 +130,19 @@ export class PostgresOrderRepository {
       buyerDetails = null;
     }
 
+    const status = row.status as StoredOrder['status'];
+    const deliveryStatus =
+      status === 'fulfilled' || status === 'closed'
+        ? 'delivered'
+        : ((row.delivery_status as StoredOrder['deliveryStatus']) ?? 'action_required');
+
     return {
       id: row.id as string,
       buyerId: row.buyer_id as string,
       sellerId: row.seller_id as string,
       source: row.source as StoredOrder['source'],
-      status: row.status as StoredOrder['status'],
+      status,
+      deliveryStatus,
       currency: row.currency as string,
       subtotal: { amount: row.subtotal_amount as number, currency: row.subtotal_currency as string },
       total: { amount: row.total_amount as number, currency: row.total_currency as string },
