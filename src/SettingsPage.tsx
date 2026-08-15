@@ -446,65 +446,48 @@ export default function SettingsPage() {
   if (view === "privacy") return <PrivacyPolicyPage onBack={() => openView("menu")} />;
   if (view === "terms") return <TermsPage onBack={() => openView("menu")} />;
   if (view === "safety") return <SafetyTipsPage onBack={() => openView("menu")} />;
-  if (view === "report") return <ReportProblemPage onBack={() => openView("menu")} />;
+  if (view === "report") return <ReportProblemPage onBack={() => openView("menu")} isLoggedIn={!!firebaseUser} />;
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-950">
-      <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <button
-            type="button"
-            onClick={() => navigateToPath(HOME_PATH)}
-            className="inline-flex items-center gap-2 font-black tracking-tight"
-          >
-            <BrandMark className="h-9 w-9" />
-            <span>BuyMesho</span>
-          </button>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm font-bold hover:bg-zinc-50"
-            >
-              <ShoppingBag className="h-4 w-4" />
-              Explore
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateToPath(HOME_PATH)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm font-bold hover:bg-zinc-50"
-            >
-              <House className="h-4 w-4" />
-              Home
-            </button>
+    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <BrandMark />
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2"><House className="w-4 h-4" />Home</button>
+            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"><ShoppingBag className="w-4 h-4" />Market</button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
-        <section className="mb-6">
-          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Settings</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600">
-            Manage your account, security, privacy, and support preferences.
-          </p>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Settings</p>
+              <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">Your account control center.</h1>
+              <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">Manage your account details, security posture, visibility controls, and legal/help resources from one page.</p>
+            </div>
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-4 min-w-[220px]">
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">Current section</p>
+              <p className="mt-2 text-2xl font-black tracking-tight text-zinc-900 capitalize">{view === "menu" ? "Settings" : view}</p>
+            </div>
+          </div>
         </section>
 
         <section className="space-y-4">
           <SettingsAccountSection
             expanded={expandedSections.account}
             onToggle={() => toggleSection("account")}
-            firebaseUser={firebaseUser}
             profile={profile}
-            profileLoading={profileLoading}
-            onNavigate={navigateToPath}
-            editAccountPath={EDIT_ACCOUNT_PATH}
-            editProfilePath={EDIT_PROFILE_PATH}
-            sellerPayoutsPath={navigateToSellerPayouts}
-            adminSetupPath={ADMIN_SETUP_PATH}
-            moderationQueuePath={ADMIN_MODERATION_QUEUE_PATH}
-            becomeSellerPath={BECOME_SELLER_PATH}
+            firebaseUser={firebaseUser}
             isAdmin={isAdmin}
             verifiedAccountRequiredDisabled={verifiedAccountRequiredDisabled}
+            onNavigate={navigateToPath}
+            onSellerPayouts={navigateToSellerPayouts}
+            onLogout={handleLogout}
+            onDeleteAccount={() => setDeleteConfirmOpen(true)}
+            paths={{ editAccount: EDIT_ACCOUNT_PATH, editProfile: EDIT_PROFILE_PATH, becomeSeller: BECOME_SELLER_PATH, moderationQueue: ADMIN_MODERATION_QUEUE_PATH, adminSetup: ADMIN_SETUP_PATH }}
           />
           <SettingsSecuritySection
             expanded={expandedSections.security}
