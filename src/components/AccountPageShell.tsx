@@ -19,6 +19,7 @@ type AccountPageShellProps = {
   children: ReactNode;
   backLabel?: string;
   onBack?: () => void;
+  backButtonClassName?: string;
   headerActions?: ReactNode;
   childrenSectionClassName?: string;
   hideNavigation?: boolean;
@@ -33,6 +34,7 @@ export default function AccountPageShell({
   children,
   backLabel = "Back",
   onBack,
+  backButtonClassName,
   headerActions,
   childrenSectionClassName,
   hideNavigation = false,
@@ -114,7 +116,7 @@ export default function AccountPageShell({
                 <button
                   type="button"
                   onClick={onBack || (() => navigateBackOrPath(EXPLORE_PATH))}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-black px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+                  className={backButtonClassName || "inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-black px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"}
                 >
                   <ChevronLeft className="h-4 w-4" />
                   {backLabel}
