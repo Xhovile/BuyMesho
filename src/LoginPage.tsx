@@ -156,12 +156,15 @@ export default function LoginPage() {
         return;
       }
 
-      if (err?.status >= 500 || /unable to start passkey/i.test(String(err?.message || ""))) {
-        showFeedback("error", "Passkey unavailable", "BuyMesho could not start passkey sign-in. The server-side passkey configuration needs to be checked.");
-        return;
-      }
-
-      showFeedback("error", "Passkey sign-in failed", err?.message || "Please try another sign-in method.");
+      const message = err?.status >= 500 || /unable to start passkey/i.test(String(err?.message || ""))
+        ? "An error occurred. Please reload the page and try again."
+        : "An error occurred. Please reload the page and try again.";
+      showFeedback("error", "Passkey sign-in failed", message, [
+        {
+          label: "Reload",
+          onClick: () => window.location.reload(),
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -237,7 +240,6 @@ export default function LoginPage() {
       showFeedback("info", "Code required", "Enter the 6-digit authenticator code.");
       return;
     }
-
     setTotpChallengeBusy(true);
     try {
       const result = await verifyTotpChallenge(totpChallengeCode);
