@@ -57,7 +57,7 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
 
     CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      creator_uid INTEGER,
+      creator_uid TEXT,
       event_type TEXT NOT NULL,
       event_title TEXT NOT NULL,
       organizer_name TEXT NOT NULL,
