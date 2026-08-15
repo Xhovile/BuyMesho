@@ -218,6 +218,13 @@ export default function LoginPage() {
       }
       setTotpChallengeOpen(false);
       setTotpChallengeCode("");
+
+      // 2FA is part of the login flow. Offer passkey setup only after
+      // the user's 2FA challenge has been successfully verified.
+      if (!isValidatorEntry && passkeysAvailable) {
+        markPasskeySetupOffer();
+      }
+
       await finishAuthentication();
     } finally {
       setTotpChallengeBusy(false);
