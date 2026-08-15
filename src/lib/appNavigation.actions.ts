@@ -1,5 +1,5 @@
 import {
-  ADMIN_AUDIT_PATH, ADMIN_BALANCE_PATH, ADMIN_EVENTS_PATH, ADMIN_MODERATION_QUEUE_PATH, ADMIN_PATH, ADMIN_PAYOUT_DESTINATIONS_PATH, ADMIN_PAYOUTS_PATH, ADMIN_PAYMENTS_PATH, ADMIN_REPORTS_PATH, ADMIN_SELLER_APPLICATIONS_PATH, ADMIN_SETUP_PATH, ADMIN_TRANSACTION_INSPECTOR_PATH, AUTH_RETURN_PATH_STORAGE_KEY, BECOME_SELLER_PATH, BUYER_PAYMENTS_PATH, CART_PATH, CHANGE_EMAIL_PATH, CHANGE_PASSWORD_PATH, CREATE_PATH, DISPUTES_PATH, EDIT_ACCOUNT_PATH, EDIT_PATH, EDIT_PROFILE_PATH, EMAIL_ACTION_PATH, EXPLORE_PATH, FORGOT_PASSWORD_PATH, HIDDEN_PATH, HOME_PATH, isAppHistoryState, LISTING_PATH, LOGIN_PATH, markAppHistoryState, MESSAGES_PATH, MY_LISTINGS_PATH, ORDER_TRACKING_BASE_PATH, PAYMENT_RETURN_PATH, PAYMENTS_HUB_PATH, PRIVACY_PATH, PROFILE_PATH, REPORT_PATH, SAVED_PATH, SAFETY_PATH, SELLER_DASHBOARD_PATH, SELLER_PATH, SELLER_PAYOUTS_PATH, SETTINGS_PATH, SIGNUP_PATH, TERMS_PATH, TRACK_ORDER_PATH, TICKETS_PATH, VERIFY_EMAIL_PATH, sanitizeInternalReturnPath,
+  ADMIN_AUDIT_PATH, ADMIN_BALANCE_PATH, ADMIN_EVENTS_PATH, ADMIN_MODERATION_QUEUE_PATH, ADMIN_PATH, ADMIN_PAYOUT_DESTINATIONS_PATH, ADMIN_PAYOUTS_PATH, ADMIN_PAYMENTS_PATH, ADMIN_REPORTS_PATH, ADMIN_SELLER_APPLICATIONS_PATH, ADMIN_SETUP_PATH, ADMIN_TRANSACTION_INSPECTOR_PATH, AUTH_RETURN_PATH_STORAGE_KEY, BECOME_SELLER_PATH, BUYER_PAYMENTS_PATH, CART_PATH, CHANGE_EMAIL_PATH, CHANGE_PASSWORD_PATH, CHANGE_EMAIL_PATH, CREATE_PATH, DISPUTES_PATH, EDIT_ACCOUNT_PATH, EDIT_PATH, EDIT_PROFILE_PATH, EMAIL_ACTION_PATH, EXPLORE_PATH, FORGOT_PASSWORD_PATH, HIDDEN_PATH, HOME_PATH, isAppHistoryState, LISTING_PATH, LOGIN_PATH, markAppHistoryState, MESSAGES_PATH, MY_LISTINGS_PATH, ORDER_TRACKING_BASE_PATH, PAYMENT_RETURN_PATH, PAYMENTS_HUB_PATH, PRIVACY_PATH, PROFILE_PATH, REPORT_PATH, SAVED_PATH, SAFETY_PATH, SELLER_DASHBOARD_PATH, SELLER_PATH, SELLER_PAYOUTS_PATH, SETTINGS_PATH, SIGNUP_PATH, TERMS_PATH, TICKETS_PATH, VERIFY_EMAIL_PATH, sanitizeInternalReturnPath,
 } from "./appNavigation.paths";
 import { writeExploreStateToUrl, type ExploreQueryState } from "./appNavigation.query";
 import { resolveTrackingTarget } from "./orderFlow";
@@ -15,7 +15,14 @@ export function navigateToPath(path: string, options?: { replace?: boolean; scro
   if (url.pathname !== EXPLORE_PATH && url.pathname !== LISTING_PATH) { url.searchParams.delete("listing"); url.searchParams.delete("image"); }
   if (url.pathname !== SELLER_PATH) url.searchParams.delete("uid");
   if (url.pathname !== EDIT_PATH) url.searchParams.delete("id");
-  if (options?.replace) window.history.replaceState(markAppHistoryState(), "", url.toString()); else window.history.pushState(markAppHistoryState(), "", url.toString());
+
+  const targetPath = `${url.pathname}${url.search}${url.hash}`;
+  const currentPath = getCurrentAppPath();
+  const shouldReplace = Boolean(options?.replace) || (url.pathname === LOGIN_PATH && window.location.pathname === LOGIN_PATH);
+
+  if (targetPath === currentPath && !shouldReplace) return;
+
+  if (shouldReplace) window.history.replaceState(markAppHistoryState(), "", url.toString()); else window.history.pushState(markAppHistoryState(), "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   if (options?.scroll !== false) window.scrollTo({ top: 0, behavior: "smooth" });
 }
