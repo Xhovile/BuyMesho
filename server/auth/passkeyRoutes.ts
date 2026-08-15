@@ -58,8 +58,15 @@ export function registerPasskeyRoutes(app: Express) {
       const uid = getUserUid(req);
       if (!uid) return res.status(401).json({ error: "Authentication required" });
 
-      const firebaseUser = await getFirebaseAdmin().auth().getUser(uid);
       const credentials = await credentialRepository.listByUser(uid);
+      if (credentials.length > 0) {
+        return res.status(409).json({
+          error: "A BuyMesho passkey is already registered for this account",
+          code: "PASSKEY_ALREADY_REGISTERED",
+        });
+      }
+
+      const firebaseUser = await getFirebaseAdmin().auth().getUser(uid);
       const result = await createRegistrationOptions(
         {
           id: uid,
@@ -82,6 +89,16 @@ export function registerPasskeyRoutes(app: Express) {
     try {
       const uid = getUserUid(req);
       if (!uid) return res.status(401).json({ error: "Authentication required" });
+
+      // Enforce the one-active-passkey rule again at verification time to
+      // prevent duplicate registrations from racing each other.
+      const existingCredentials = await credentialRepository.listByUser(uid);
+      if (existingCredentials.length > 0) {
+        return res.status(409).json({
+          error: "A BuyMesho passkey is already registered for this account",
+          code: "PASSKEY_ALREADY_REGISTERED",
+        });
+      }
 
       const result = await verifyRegistration(
         req.body?.response,
