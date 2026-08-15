@@ -89,10 +89,6 @@ export default function TotpSetupModal({
     handleClose();
   };
 
-  const handleConfirm = () => {
-    onConfirm();
-  };
-
   if (!open) return null;
 
   const progressLabel = step === 1 ? "1 of 2" : "2 of 2";
@@ -136,12 +132,12 @@ export default function TotpSetupModal({
                 Two-factor authentication
               </p>
               <h2 id="totp-setup-title" className="mt-2 text-xl font-black tracking-tight text-zinc-950 sm:text-2xl">
-                {step === 1 ? title : "Verify your authenticator"}
+                {step === 1 ? title : "Finish setup"}
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-zinc-600">
                 {step === 1
                   ? message
-                  : "Enter the 6-digit code from your authenticator app to finish setup."}
+                  : "Use your authenticator app to generate a 6-digit code, then enter it below to finish setup."}
               </p>
             </div>
           </div>
@@ -160,7 +156,7 @@ export default function TotpSetupModal({
             className="flex h-full w-[200%] transition-transform duration-300 ease-out motion-reduce:transition-none"
             style={{ transform: `translateX(-${step === 1 ? 0 : 50}%)` }}
           >
-            <section className="flex w-1/2 shrink-0 flex-col overflow-y-auto px-5 py-6 sm:px-6 sm:py-7" aria-label="Scan QR code">
+            <section className="flex w-1/2 shrink-0 flex-col overflow-y-auto px-5 py-6 sm:px-6 sm:py-7" aria-label="QR code setup">
               <div className="mx-auto w-full max-w-md">
                 <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
                   <div className="flex justify-center">
@@ -183,15 +179,20 @@ export default function TotpSetupModal({
                   </p>
                 </div>
 
-                <div className="mt-5 rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-                  <p className="text-xs leading-relaxed text-zinc-500">
-                    Keep your authenticator app available. You will enter the verification code on the next step.
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="mt-5 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left transition-colors hover:bg-zinc-50"
+                >
+                  <span className="block text-sm font-bold text-zinc-900">Can't scan the QR code?</span>
+                  <span className="mt-1 block text-xs leading-relaxed text-zinc-500">
+                    Enter the setup key manually in your authenticator app instead.
+                  </span>
+                </button>
               </div>
             </section>
 
-            <section className="flex w-1/2 shrink-0 flex-col overflow-y-auto px-5 py-6 sm:px-6 sm:py-7" aria-label="Verify authenticator">
+            <section className="flex w-1/2 shrink-0 flex-col overflow-y-auto px-5 py-6 sm:px-6 sm:py-7" aria-label="Authenticator setup key and verification">
               <div className="mx-auto w-full max-w-md space-y-5">
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
@@ -218,13 +219,13 @@ export default function TotpSetupModal({
                     {secret}
                   </p>
                   <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-                    Use this only when your authenticator app cannot scan the QR code. Keep it private.
+                    If you cannot scan the QR code, copy this setup key into your authenticator app. Keep it private.
                   </p>
                 </div>
 
                 <div>
                   <label htmlFor="totp-verification-code" className="mb-2 block text-sm font-bold text-zinc-800">
-                    Verification code
+                    6-digit code
                   </label>
                   <input
                     ref={codeInputRef}
@@ -238,8 +239,8 @@ export default function TotpSetupModal({
                     placeholder="123456"
                     className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3.5 text-center text-xl font-bold tracking-[0.45em] text-zinc-950 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
                   />
-                  <p className="mt-2 text-xs text-zinc-500">
-                    Enter the current 6-digit code shown in your authenticator app.
+                  <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                    After adding the account to your authenticator app, enter the current 6-digit code shown there.
                   </p>
                 </div>
               </div>
@@ -269,7 +270,7 @@ export default function TotpSetupModal({
               <button
                 type="button"
                 disabled={busy || code.length !== 6}
-                onClick={handleConfirm}
+                onClick={onConfirm}
                 className="ml-auto rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {busy ? "Verifying..." : "Confirm setup"}
