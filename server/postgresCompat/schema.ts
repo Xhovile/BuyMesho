@@ -158,6 +158,35 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
       details TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS passkey_credentials (
+      credential_id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      public_key TEXT NOT NULL,
+      counter INTEGER NOT NULL DEFAULT 0,
+      transports_json TEXT,
+      name TEXT,
+      device_type TEXT,
+      backed_up INTEGER,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      last_used_at TEXT,
+      revoked_at TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_passkey_credentials_user_id
+      ON passkey_credentials(user_id, created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS passkey_ceremonies (
+      id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL,
+      user_id TEXT,
+      challenge TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_passkey_ceremonies_expires_at
+      ON passkey_ceremonies(expires_at);
   `);
 
   ensureColumn(db, "payments", "status", "TEXT NOT NULL DEFAULT 'pending'");
