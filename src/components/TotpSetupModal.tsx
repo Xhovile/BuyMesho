@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Check, ChevronLeft, Copy, ShieldCheck, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, Copy, ChevronLeft, ShieldCheck, X } from "lucide-react";
 
 export type TotpSetupModalProps = {
   open: boolean;
@@ -23,43 +23,28 @@ export default function TotpSetupModal({
   title,
   message,
   qrCodeUrl,
+  otpauthUri,
   secret,
   accountName,
   code,
   busy,
   onCodeChange,
   onConfirm,
+  onDisable,
   onBack,
   onClose,
 }: TotpSetupModalProps) {
-  const [step, setStep] = useState<1 | 2>(1);
   const [secretCopied, setSecretCopied] = useState(false);
-  const codeInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) {
-      setStep(1);
       setSecretCopied(false);
-      return;
     }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
   }, [open]);
 
-  useEffect(() => {
-    if (open && step === 2) {
-      window.setTimeout(() => codeInputRef.current?.focus(), 120);
-    }
-  }, [open, step]);
-
   const handleCopySecret = async () => {
-    if (!secret || !navigator.clipboard?.writeText) return;
-
+    if (!secret) return;
+    if (!navigator.clipboard?.writeText) return;
     await navigator.clipboard
       .writeText(secret)
       .then(() => {
@@ -69,213 +54,141 @@ export default function TotpSetupModal({
       .catch(() => undefined);
   };
 
-  const handleClose = () => {
-    setStep(1);
-    setSecretCopied(false);
-    onClose();
-  };
-
-  const handleTopBack = () => {
-    if (step === 2) {
-      setStep(1);
-      return;
-    }
-
-    if (onBack) {
-      onBack();
-      return;
-    }
-
-    handleClose();
-  };
-
   if (!open) return null;
 
-  const progressLabel = step === 1 ? "1 of 2" : "2 of 2";
+  const handleTopAction = onBack || onClose;
 
   return (
-    <div className="fixed inset-0 z-50 flex min-h-dvh items-center justify-center bg-black/60 p-0 backdrop-blur-sm sm:p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="totp-setup-title"
-        className="flex h-dvh w-full flex-col overflow-hidden bg-white shadow-2xl sm:h-auto sm:max-h-[min(90dvh,760px)] sm:max-w-2xl sm:rounded-3xl sm:border sm:border-zinc-200"
-      >
-        <div className="shrink-0 border-b border-zinc-100 bg-white px-5 pb-4 pt-5 sm:px-6 sm:pt-6">
-          <div className="flex items-center justify-between gap-4">
-            <button
-              type="button"
-              onClick={handleTopBack}
-              className="inline-flex items-center gap-1.5 rounded-xl text-sm font-bold text-zinc-700 transition-colors hover:text-zinc-950"
-              aria-label={step === 2 ? "Go back to QR code" : "Go back"}
-            >
-              {step === 2 ? <ChevronLeft className="h-4 w-4" /> : null}
-              <span>{step === 2 ? "Back" : "Setup"}</span>
-            </button>
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 px-4 py-4 backdrop-blur-sm">
+      <div className="mx-auto my-4 w-full max-w-2xl rounded-3xl border border-zinc-200 bg-white shadow-2xl">
+        <div className="border-b border-zinc-100 bg-white px-5 py-4 sm:px-6 sm:py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-2xl bg-zinc-900 text-white sm:h-10 sm:w-10">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                  Two-factor authentication
+                </p>
+                <h2 className="mt-2 text-xl font-black tracking-tight text-zinc-900 sm:text-2xl">
+                  {title}
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-600">
+                  {message}
+                </p>
+              </div>
+            </div>
 
             <button
               type="button"
-              onClick={handleClose}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
-              aria-label="Close TOTP setup"
+              onClick={handleTopAction}
+              className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+              aria-label={onBack ? "Go back" : "Close TOTP setup"}
             >
-              <X className="h-4 w-4" />
+              {onBack ? <ChevronLeft className="h-4 w-4" /> : <X className="h-4 w-4" />}
+              <span>{onBack ? "Back" : "Close"}</span>
             </button>
-          </div>
-
-          <div className="mt-5 flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-zinc-900 text-white">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                Two-factor authentication
-              </p>
-              <h2 id="totp-setup-title" className="mt-2 text-xl font-black tracking-tight text-zinc-950 sm:text-2xl">
-                {step === 1 ? title : "Finish setup"}
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-                {step === 1
-                  ? message
-                  : "Use your authenticator app to generate a 6-digit code, then enter it below to finish setup."}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-5 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-1.5" aria-label={`Step ${progressLabel}`}>
-              <span className={`h-1.5 w-10 rounded-full ${step === 1 ? "bg-zinc-900" : "bg-zinc-200"}`} />
-              <span className={`h-1.5 w-10 rounded-full ${step === 2 ? "bg-zinc-900" : "bg-zinc-200"}`} />
-            </div>
-            <span className="text-xs font-bold text-zinc-400">{progressLabel}</span>
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-hidden">
-          <div
-            className="flex h-full w-[200%] transition-transform duration-300 ease-out motion-reduce:transition-none"
-            style={{ transform: `translateX(-${step === 1 ? 0 : 50}%)` }}
-          >
-            <section className="flex w-1/2 shrink-0 flex-col overflow-y-auto px-5 py-6 sm:px-6 sm:py-7" aria-label="QR code setup">
-              <div className="mx-auto w-full max-w-md">
-                <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
-                  <div className="flex justify-center">
-                    {qrCodeUrl ? (
-                      <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
-                        <img
-                          src={qrCodeUrl}
-                          alt="Scan this QR code with your authenticator app"
-                          className="h-56 w-56 rounded-xl object-contain sm:h-64 sm:w-64"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex h-56 w-56 items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-white text-center text-sm text-zinc-500 sm:h-64 sm:w-64">
-                        QR code not available
-                      </div>
-                    )}
-                  </div>
-                  <p className="mt-4 text-center text-sm font-semibold leading-relaxed text-zinc-600">
-                    Scan this QR code with Google Authenticator, Microsoft Authenticator, Authy, or another authenticator app.
-                  </p>
+        <div className="px-5 py-5 sm:px-6">
+          <div className="grid gap-5 md:grid-cols-[220px_1fr] md:gap-6">
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              {qrCodeUrl ? (
+                <img
+                  src={qrCodeUrl}
+                  alt="Scan this QR code with your authenticator app"
+                  className="h-48 w-48 rounded-xl bg-white p-2"
+                />
+              ) : (
+                <div className="flex h-48 w-48 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-white text-sm text-zinc-500">
+                  QR code not available
                 </div>
+              )}
+              <p className="mt-3 text-xs font-semibold text-zinc-500">
+                Scan this in Google Authenticator, Microsoft Authenticator, or Authy.
+              </p>
+            </div>
 
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="mt-5 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left transition-colors hover:bg-zinc-50"
-                >
-                  <span className="block text-sm font-bold text-zinc-900">Can't scan the QR code?</span>
-                  <span className="mt-1 block text-xs leading-relaxed text-zinc-500">
-                    Enter the setup key manually in your authenticator app instead.
-                  </span>
-                </button>
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+                  Account
+                </p>
+                <p className="mt-1 text-sm font-semibold text-zinc-900">{accountName}</p>
               </div>
-            </section>
 
-            <section className="flex w-1/2 shrink-0 flex-col overflow-y-auto px-5 py-6 sm:px-6 sm:py-7" aria-label="Authenticator setup key and verification">
-              <div className="mx-auto w-full max-w-md space-y-5">
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+              <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
                   <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-                    Account
+                    Secret
                   </p>
-                  <p className="mt-1 break-words text-sm font-semibold text-zinc-900">{accountName}</p>
+                  <button
+                    type="button"
+                    onClick={() => void handleCopySecret()}
+                    className="inline-flex items-center gap-1 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-100"
+                  >
+                    {secretCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    {secretCopied ? "Copied" : "Copy"}
+                  </button>
                 </div>
-
-                <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-                      Setup key
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => void handleCopySecret()}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs font-bold text-zinc-700 transition-colors hover:bg-zinc-100"
-                    >
-                      {secretCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                      {secretCopied ? "Copied" : "Copy"}
-                    </button>
-                  </div>
-                  <p className="mt-3 break-all font-mono text-sm font-semibold tracking-[0.08em] text-zinc-950">
-                    {secret}
-                  </p>
-                  <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-                    If you cannot scan the QR code, copy this setup key into your authenticator app. Keep it private.
-                  </p>
-                </div>
-
-                <div>
-                  <label htmlFor="totp-verification-code" className="mb-2 block text-sm font-bold text-zinc-800">
-                    6-digit code
-                  </label>
-                  <input
-                    ref={codeInputRef}
-                    id="totp-verification-code"
-                    autoComplete="one-time-code"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={6}
-                    value={code}
-                    onChange={(e) => onCodeChange(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="123456"
-                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3.5 text-center text-xl font-bold tracking-[0.45em] text-zinc-950 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
-                  />
-                  <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-                    After adding the account to your authenticator app, enter the current 6-digit code shown there.
-                  </p>
-                </div>
+                <p className="mt-2 break-all font-mono text-sm text-zinc-900">{secret}</p>
+                <p className="mt-2 text-xs text-zinc-500">
+                  Keep this private. Anyone with it can generate codes.
+                </p>
               </div>
-            </section>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-zinc-700">
+                  6-digit code
+                </label>
+                <input
+                  autoFocus
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => onCodeChange(e.target.value.replace(/\D/g, ""))}
+                  placeholder="123456"
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold tracking-[0.3em] outline-none focus:border-zinc-900"
+                />
+              </div>
+
+              <p className="text-xs text-zinc-500">
+                otpauth URI: <span className="break-all font-mono">{otpauthUri}</span>
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-zinc-100 bg-white px-5 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
+        <div className="sticky bottom-0 border-t border-zinc-100 bg-white px-5 py-4 sm:px-6">
+          <div className="flex flex-wrap items-center gap-3">
+            {onDisable ? (
+              <button
+                type="button"
+                onClick={onDisable}
+                className="hidden rounded-2xl border border-red-200 bg-red-50 px-4 py-3 font-bold text-red-700 hover:bg-red-100 sm:inline-flex"
+              >
+                Disable 2FA
+              </button>
+            ) : null}
+
             <button
               type="button"
-              onClick={handleClose}
-              className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-700 transition-colors hover:bg-zinc-50"
+              onClick={onClose}
+              className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 font-bold text-zinc-700 hover:bg-zinc-50"
             >
-              Cancel
+              Close
             </button>
 
-            {step === 1 ? (
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="ml-auto rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-zinc-800"
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled={busy || code.length !== 6}
-                onClick={onConfirm}
-                className="ml-auto rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {busy ? "Verifying..." : "Confirm setup"}
-              </button>
-            )}
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onConfirm}
+              className="ml-auto rounded-2xl bg-zinc-900 px-4 py-3 font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {busy ? "Verifying..." : "Confirm setup"}
+            </button>
           </div>
         </div>
       </div>
