@@ -153,7 +153,6 @@ export default function LoginPage() {
       await finishSuccessfulAuthentication(userCredential.user);
     } catch (err: any) {
       if (err?.name === "NotAllowedError") {
-        showFeedback("info", "No passkey selected", "No BuyMesho passkey sign-in was completed. If you have not created one yet, log in normally and we will offer to set one up.");
         return;
       }
 
