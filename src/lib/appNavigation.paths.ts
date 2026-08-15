@@ -1,8 +1,7 @@
 import type { HeaderChip } from "../constants";
 
 export type AppRoute =
-  | "home" | "about" | "category" | "explore" | "saved" | "hidden" | "settings" | "privacy" | "terms" | "safety" | "report" | "seller" | "seller_dashboard" | "seller_payouts" | "seller_orders" | "listing_details" | "messages" | "create" | "edit" | "login" | "signup" | "forgot_password" | "profile" | "verify_email" | "edit_profile" | "edit_account" | "become_seller" | "change_password" | "change_email" | "email_action" | "my_listings" | "event_creator_dashboard" | "event_creator_overview" | "tickets" | "admin" | "admin_events" | "admin_payments" | "admin_transaction_inspector" | "admin_payouts" | "admin_payout_destinations" | "admin_reports" | "admin_seller_applications" | "admin_moderation_queue" | "admin_audit" | "admin_balance" | "admin_setup" | "payment_return";
-
+  | "home" | "about" | "category" | "explore" | "saved" | "hidden" | "settings" | "privacy" | "terms" | "safety" | "report" | "seller" | "seller_dashboard" | "seller_payouts" | "listing_details" | "messages" | "create" | "edit" | "login" | "signup" | "forgot_password" | "profile" | "verify_email" | "edit_profile" | "edit_account" | "become_seller" | "change_password" | "change_email" | "email_action" | "my_listings" | "event_creator_dashboard" | "event_creator_overview" | "tickets" | "admin" | "admin_events" | "admin_payments" | "admin_transaction_inspector" | "admin_payouts" | "admin_payout_destinations" | "admin_reports" | "admin_seller_applications" | "admin_moderation_queue" | "admin_audit" | "admin_balance" | "admin_setup" | "payment_return";
 export const ADMIN_PAYOUT_DESTINATIONS_PATH = "/admin/payouts/destinations";
 export const ADMIN_EVENTS_PATH = "/admin/events";
 export const HOME_PATH = "/";
@@ -23,7 +22,7 @@ export const REPORT_PATH = "/report";
 export const SELLER_PATH = "/seller";
 export const SELLER_DASHBOARD_PATH = "/seller-dashboard";
 export const SELLER_PAYOUTS_PATH = "/seller/payouts";
-export const SELLER_ORDERS_PATH = "/seller/orders";
+export const SELLER_ORDERS_PATH = "/seller/payouts?view=orders";
 export const LISTING_PATH = "/listing";
 export const MESSAGES_PATH = "/messages";
 export const CREATE_PATH = "/create";
@@ -57,28 +56,9 @@ export const DISPUTES_PATH = "/payments/disputes";
 export const BUYER_PAYMENTS_PATH = "/buyer-payments";
 export const CART_PATH = "/cart";
 export const ORDER_TRACKING_BASE_PATH = "/orders";
-
-export const MARKET_CHIP_PATHS: Record<HeaderChip, string> = {
-  All: EXPLORE_PATH,
-  Deals: `${EXPLORE_PATH}/deals`,
-  "Lay-by": `${EXPLORE_PATH}/lay-by`,
-  Events: `${EXPLORE_PATH}/events`,
-  Wholesale: `${EXPLORE_PATH}/wholesale`,
-  Sellers: `${EXPLORE_PATH}/sellers`,
-  Innovation: `${EXPLORE_PATH}/innovation`,
-  Accommodation: `${EXPLORE_PATH}/accommodation`,
-};
-
+export const MARKET_CHIP_PATHS: Record<HeaderChip, string> = { All: EXPLORE_PATH, Deals: `${EXPLORE_PATH}/deals`, "Lay-by": `${EXPLORE_PATH}/lay-by`, Events: `${EXPLORE_PATH}/events`, Wholesale: `${EXPLORE_PATH}/wholesale`, Sellers: `${EXPLORE_PATH}/sellers`, Innovation: `${EXPLORE_PATH}/innovation`, Accommodation: `${EXPLORE_PATH}/accommodation` };
 export const APP_HISTORY_STATE_KEY = "__buymesho";
 export const AUTH_RETURN_PATH_STORAGE_KEY = "__buymesho_auth_return_path";
 export const markAppHistoryState = () => ({ [APP_HISTORY_STATE_KEY]: true });
-export const isAppHistoryState = () => {
-  if (typeof window === "undefined") return false;
-  const state = window.history.state;
-  return !!(state && typeof state === "object" && (state as Record<string, unknown>)[APP_HISTORY_STATE_KEY]);
-};
-export const sanitizeInternalReturnPath = (value: string | null | undefined) => {
-  if (!value) return null;
-  if (!value.startsWith("/") || value.startsWith("//")) return null;
-  return value;
-};
+export const isAppHistoryState = () => { if (typeof window === "undefined") return false; const state=window.history.state; return !!(state&&typeof state==="object"&&(state as Record<string,unknown>)[APP_HISTORY_STATE_KEY]); };
+export const sanitizeInternalReturnPath=(value:string|null|undefined)=>{ if(!value)return null; if(!value.startsWith("/")||value.startsWith("//"))return null; return value; };
