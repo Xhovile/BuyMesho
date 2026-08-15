@@ -28,16 +28,19 @@ const loginLimiter = rateLimit({
 
 function getPasskeyConfig() {
   const rpID = String(process.env.PASSKEY_RP_ID ?? "").trim();
-  const origin = String(process.env.PASSKEY_ORIGIN ?? "").trim();
+  const configuredOrigins = String(process.env.PASSKEY_ORIGINS ?? process.env.PASSKEY_ORIGIN ?? "")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/$/, ""))
+    .filter(Boolean);
 
-  if (!rpID || !origin) {
-    throw new Error("PASSKEY_RP_ID and PASSKEY_ORIGIN must be configured before enabling passkeys");
+  if (!rpID || configuredOrigins.length === 0) {
+    throw new Error("PASSKEY_RP_ID and PASSKEY_ORIGIN(S) must be configured before enabling passkeys");
   }
 
   return {
     rpName: String(process.env.PASSKEY_RP_NAME ?? "BuyMesho").trim() || "BuyMesho",
     rpID,
-    origin,
+    origin: configuredOrigins.length === 1 ? configuredOrigins[0] : configuredOrigins,
   };
 }
 
