@@ -23,6 +23,9 @@ export async function reconcilePayoutStatusFlow(
        p.id,
        p.seller_id,
        p.provider_charge_id,
+       p.status,
+       p.requested_at,
+       p.created_at,
        p.last_attempt_id,
        (
          SELECT provider_charge_id
@@ -46,7 +49,16 @@ export async function reconcilePayoutStatusFlow(
       actorId: input.actorId ?? null,
     });
     chargeId = legacyAttempt.providerReference;
-    if (!chargeId) throw new Error('Payout has no provider attempt to reconcile');
+    if (!chargeId) {
+      const payoutStatus = String(row.status ?? '').toLowerCase();
+      if (payoutStatus === 'pending_settlement') {
+        throw new Error('Payout is awaiting the PayChangu T+1 settlement window and has no provider attempt yet');
+      }
+      if (payoutStatus === 'ready_for_payout' || payoutStatus === 'queued') {
+        throw new Error('Payout is queued for provider submission and has no provider attempt yet');
+      }
+      throw new Error('Payout has no provider attempt to reconcile');
+    }
   }
 
   const status = await getPayChanguPayoutStatus(chargeId);
