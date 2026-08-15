@@ -1,34 +1,53 @@
-export const LISTING_IMAGE_WIDTHS = {
-  card: 480,
-  galleryThumb: 160,
-  detail: 1400,
-  fullscreen: 2200,
-} as const;
+export type ListingImageRole = "thumbnail" | "card" | "detail" | "fullscreen";
 
-export function getOptimizedImageUrl(src: string | null | undefined, width = 540) {
+export const LISTING_IMAGE_PRESETS: Record<
+  ListingImageRole,
+  { width: number; quality: string }
+> = {
+  thumbnail: { width: 160, quality: "auto" },
+  card: { width: 480, quality: "auto" },
+  detail: { width: 1400, quality: "auto" },
+  fullscreen: { width: 2200, quality: "auto" },
+};
+
+function transformCloudinaryUrl(
+  src: string | null | undefined,
+  transformation: string,
+) {
   if (!src) return "";
-
-  // Cloudinary can resize/encode on the fly. Leave non-Cloudinary URLs untouched.
   if (!src.includes("res.cloudinary.com") || !src.includes("/upload/")) {
     return src;
   }
-
-  const transformation = `f_auto,q_auto,w_${width},c_limit`;
   return src.replace("/upload/", `/upload/${transformation}/`);
 }
 
-export function getListingCardImageUrl(src: string | null | undefined) {
-  return getOptimizedImageUrl(src, LISTING_IMAGE_WIDTHS.card);
+export function getListingImageUrl(
+  src: string | null | undefined,
+  role: ListingImageRole,
+) {
+  const preset = LISTING_IMAGE_PRESETS[role];
+  return transformCloudinaryUrl(
+    src,
+    `f_auto,q_${preset.quality},w_${preset.width},c_limit`,
+  );
 }
 
-export function getListingGalleryThumbUrl(src: string | null | undefined) {
-  return getOptimizedImageUrl(src, LISTING_IMAGE_WIDTHS.galleryThumb);
+export function getListingImagePlaceholderUrl(src: string | null | undefined) {
+  if (!src) return "";
+  if (!src.includes("res.cloudinary.com") || !src.includes("/upload/")) {
+    return "";
+  }
+  return transformCloudinaryUrl(src, "f_auto,q_25,w_48,c_fill,e_blur:120");
 }
 
-export function getListingDetailImageUrl(src: string | null | undefined) {
-  return getOptimizedImageUrl(src, LISTING_IMAGE_WIDTHS.detail);
-}
-
-export function getListingFullscreenImageUrl(src: string | null | undefined) {
-  return getOptimizedImageUrl(src, LISTING_IMAGE_WIDTHS.fullscreen);
-}
+// Backward-compatible helpers for callers not yet migrated to getListingImageUrl.
+export const getOptimizedImageUrl = (src: string | null | undefined, width = 540) =>
+  transformCloudinaryUrl(src, `f_auto,q_auto,w_${width},c_limit`);
+export const getListingCardImageUrl = (src: string | null | undefined) =>
+  getListingImageUrl(src, "card");
+export const getListingGalleryThumbUrl = (src: string | null | undefined) =>
+  getListingImageUrl(src, "thumbnail");
+export const getListingDetailImageUrl = (src: string | null | undefined) =>
+  getListingImageUrl(src, "detail");
+export const getListingFullscreenImageUrl = (src: string | null | undefined) =>
+  getListingImageUrl(src, "fullscreen");
