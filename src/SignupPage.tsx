@@ -32,13 +32,12 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
-  const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
   const passwordChecks = getPasswordChecks(form.password);
   const strength = getPasswordStrength(passwordChecks);
   const passwordsMatch = form.password.length > 0 && form.confirmPassword.length > 0 && form.password === form.confirmPassword;
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string, actions?: FeedbackAction[]) => setFeedback({ open: true, type, title, message, actions });
-  const closeFeedback = () => { setFeedback(null); if (redirectAfterFeedback) { setRedirectAfterFeedback(false); navigateToPath("/verify-email"); } };
+  const closeFeedback = () => setFeedback(null);
 
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
@@ -52,9 +51,8 @@ export default function SignupPage() {
       const user = userCredential.user;
       const profile: UserProfile = { uid: user.uid, email, university: form.university, is_verified: false, is_seller: false, join_date: new Date().toISOString() };
       try { await bootstrapProfile(profile); } catch (profileErr) { console.warn("Profile bootstrap failed after account creation.", profileErr); }
-      let emailNotice = "A verification email was sent. Check your inbox and verify before you sell.";
-      try { const displayName = email.split("@")[0] || null; await apiFetch("/api/auth/send-verification-email", { method: "POST", body: JSON.stringify({ display_name: displayName }) }); } catch (emailErr: any) { console.error("Custom verification email failed", emailErr); emailNotice = "The account was created, but the verification email could not be sent yet. Open the verification page and resend it after SMTP is configured."; }
-      setRedirectAfterFeedback(true); showFeedback("info", "Account created", emailNotice);
+      try { await apiFetch("/api/auth/send-verification-email", { method: "POST", body: JSON.stringify({ display_name: user.displayName || undefined }) }); } catch (emailErr) { console.error("Custom verification email failed", emailErr); }
+      navigateToPath("/verify-email", { replace: true });
     } catch (err: any) {
       if (err?.code === "auth/email-already-in-use") { showFeedback("error", "Signup failed", "This email is already registered. Use Log In to continue.", [{ label: "Cancel", variant: "secondary", onClick: closeFeedback }, { label: "Log In", onClick: () => { closeFeedback(); navigateToLogin(); } }]); return; }
       let message = "We could not create your account. Please try again."; if (err?.code === "auth/invalid-email") message = "Please enter a valid email address."; else if (err?.code === "auth/weak-password") message = PASSWORD_REQUIREMENTS_MESSAGE; else if (isPermissionError(err)) message = "Account creation is temporarily unavailable due to a permissions issue. Please try again in a moment.";
@@ -75,108 +73,20 @@ export default function SignupPage() {
         showBrandHero
       >
         <form onSubmit={handleSignUp} className="w-full space-y-6 pb-28">
-          <FormDropdown
-            label="University"
-            value={form.university}
-            options={UNIVERSITIES}
-            onChange={(value) => setForm((prev) => ({ ...prev, university: value as University }))}
-          />
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-zinc-600">Email Address</label>
-            <input
-              required
-              type="email"
-              autoComplete="email"
-              value={form.email}
-              onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-              className={fieldClass}
-            />
-          </div>
-
+          <FormDropdown label="University" value={form.university} options={UNIVERSITIES} onChange={(value) => setForm((prev) => ({ ...prev, university: value as University }))} />
+          <div><label className="mb-2 block text-sm font-medium text-zinc-600">Email Address</label><input required type="email" autoComplete="email" value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} className={fieldClass} /></div>
           <div>
             <label className="mb-2 block text-sm font-medium text-zinc-600">Password (8+ chars, lowercase, uppercase, symbol)</label>
-            <div className="relative">
-              <input
-                required
-                type={showPassword ? "text" : "password"}
-                autoComplete="new-password"
-                value={form.password}
-                onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-                className={`${fieldClass} pr-10`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 transition-colors hover:text-zinc-800"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
-            </div>
-
-            <div className="mt-3 space-y-2">
-              <div className="h-1.5 overflow-hidden rounded-full bg-zinc-200">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    strength <= 1
-                      ? "w-1/4 bg-red-500"
-                      : strength === 2
-                        ? "w-2/4 bg-amber-500"
-                        : strength === 3
-                          ? "w-3/4 bg-blue-500"
-                          : "w-full bg-emerald-500"
-                  }`}
-                />
-              </div>
-              <div className="flex items-center justify-between gap-3 text-xs font-medium text-zinc-500">
-                <span>Password strength</span>
-                <span>{getPasswordStrengthLabel(strength)}</span>
-              </div>
-              <p className="text-xs text-zinc-500">{getPasswordTip(passwordChecks)}</p>
-            </div>
+            <div className="relative"><input required type={showPassword ? "text" : "password"} autoComplete="new-password" value={form.password} onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))} className={`${fieldClass} pr-10`} /><button type="button" onClick={() => setShowPassword((prev) => !prev)} className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 transition-colors hover:text-zinc-800" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button></div>
+            <div className="mt-3 space-y-2"><div className="h-1.5 overflow-hidden rounded-full bg-zinc-200"><div className={`h-full rounded-full transition-all ${strength <= 1 ? "w-1/4 bg-red-500" : strength === 2 ? "w-2/4 bg-amber-500" : strength === 3 ? "w-3/4 bg-blue-500" : "w-full bg-emerald-500"}`} /></div><div className="flex items-center justify-between gap-3 text-xs font-medium text-zinc-500"><span>Password strength</span><span>{getPasswordStrengthLabel(strength)}</span></div><p className="text-xs text-zinc-500">{getPasswordTip(passwordChecks)}</p></div>
           </div>
-
           <div>
             <label className="mb-2 block text-sm font-medium text-zinc-600">Confirm Password</label>
-            <div className="relative">
-              <input
-                required
-                type={showConfirmPassword ? "text" : "password"}
-                autoComplete="new-password"
-                value={form.confirmPassword}
-                onChange={(e) => setForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                className={`${fieldClass} pr-10`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword((prev) => !prev)}
-                className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 transition-colors hover:text-zinc-800"
-                aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
-              >
-                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
-            </div>
-            {form.confirmPassword.length > 0 && (
-              <p className={`mt-2 text-sm ${passwordsMatch ? "text-emerald-600" : "text-red-600"}`}>
-                {passwordsMatch ? "Passwords match" : "Passwords do not match"}
-              </p>
-            )}
+            <div className="relative"><input required type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" value={form.confirmPassword} onChange={(e) => setForm((prev) => ({ ...prev, confirmPassword: e.target.value }))} className={`${fieldClass} pr-10`} /><button type="button" onClick={() => setShowConfirmPassword((prev) => !prev)} className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 transition-colors hover:text-zinc-800" aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}>{showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button></div>
+            {form.confirmPassword.length > 0 && <p className={`mt-2 text-sm ${passwordsMatch ? "text-emerald-600" : "text-red-600"}`}>{passwordsMatch ? "Passwords match" : "Passwords do not match"}</p>}
           </div>
-
-          <div className="sticky bottom-4 z-20 pt-2">
-            <div className="rounded-[1.5rem] border border-white/80 bg-white/95 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.14)] backdrop-blur">
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 font-bold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Create Account"}
-              </button>
-            </div>
-          </div>
+          <div className="sticky bottom-4 z-20 pt-2"><div className="rounded-[1.5rem] border border-white/80 bg-white/95 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.14)] backdrop-blur"><button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 font-bold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Create Account"}</button></div></div>
         </form>
-
         {feedback && <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} actions={feedback.actions} onClose={closeFeedback} />}
       </AccountPageShell>
     </AuthSessionCheckpoint>
