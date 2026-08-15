@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccountProfile } from "../../hooks/useAccountProfile";
 import { fetchSellerEscrows } from "../../lib/orderApi";
+import { getSellerCache, setSellerCache } from "../../lib/sellerWorkspaceCache";
 import {
   createConnectAuthorizationLink,
   disconnectConnectAccount,
@@ -46,6 +47,19 @@ import {
 const CONNECT_DEFAULT_MODE: PayChanguConnectMode =
   import.meta.env.VITE_PAYCHANGU_MODE === "live" ? "live" : "test";
 
+type SellerPayoutCache = {
+  permissions: PayoutPermissions | null;
+  destinations: PayoutDestination[];
+  payouts: PayoutRecord[];
+  escrows: EscrowSummaryRecord[];
+  providerMetadata: PayoutProviderMetadata;
+  connectAccount: PayChanguConnectAccount | null;
+};
+
+function payoutCacheKey(sellerId: string) {
+  return `payouts:${sellerId}`;
+}
+
 export function useSellerPayoutsPage() {
   const { firebaseUser, profile, profileLoading } = useAccountProfile();
 
@@ -81,6 +95,21 @@ export function useSellerPayoutsPage() {
 
   const sellerId = firebaseUser?.uid || profile?.uid || "";
   const isSeller = Boolean(profile?.is_seller);
+  const cacheKey = sellerId ? payoutCacheKey(sellerId) : "";
+
+  const hydrateCache = useCallback(() => {
+    if (!cacheKey) return false;
+    const cached = getSellerCache<SellerPayoutCache>(cacheKey);
+    if (!cached) return false;
+    setPermissions(cached.permissions);
+    setDestinations(cached.destinations);
+    setPayouts(cached.payouts);
+    setEscrows(cached.escrows);
+    setProviderMetadata(cached.providerMetadata);
+    setConnectAccount(cached.connectAccount);
+    setLoading(false);
+    return true;
+  }, [cacheKey]);
 
   const loadData = useCallback(
     async (options?: { silent?: boolean }) => {
@@ -104,23 +133,35 @@ export function useSellerPayoutsPage() {
           getConnectAccount(sellerId),
         ]);
 
-        setPermissions(permissionsRes.status === "fulfilled" ? permissionsRes.value : null);
-        setDestinations(destinationsRes.status === "fulfilled" ? destinationsRes.value : []);
-        setPayouts(payoutsRes.status === "fulfilled" ? payoutsRes.value : []);
+        const nextPermissions = permissionsRes.status === "fulfilled" ? permissionsRes.value : null;
+        const nextDestinations = destinationsRes.status === "fulfilled" ? destinationsRes.value : [];
+        const nextPayouts = payoutsRes.status === "fulfilled" ? payoutsRes.value : [];
+        const nextProviderMetadata = providerMetadataRes.status === "fulfilled"
+          ? providerMetadataRes.value
+          : providerMetadata;
+        const nextConnectAccount = connectRes.status === "fulfilled" ? connectRes.value : null;
+        const nextEscrows = escrowsRes.status === "fulfilled"
+          ? escrowsRes.value
+              .map((entry) => toEscrowSummaryRecord(entry))
+              .filter((entry): entry is NonNullable<ReturnType<typeof toEscrowSummaryRecord>> => entry !== null)
+          : [];
 
-        if (providerMetadataRes.status === "fulfilled") {
-          setProviderMetadata(providerMetadataRes.value);
-        }
+        setPermissions(nextPermissions);
+        setDestinations(nextDestinations);
+        setPayouts(nextPayouts);
+        setProviderMetadata(nextProviderMetadata);
+        setConnectAccount(nextConnectAccount);
+        setEscrows(nextEscrows);
 
-        setConnectAccount(connectRes.status === "fulfilled" ? connectRes.value : null);
-
-        if (escrowsRes.status === "fulfilled") {
-          const escrowRecords = escrowsRes.value
-            .map((entry) => toEscrowSummaryRecord(entry))
-            .filter((entry): entry is NonNullable<ReturnType<typeof toEscrowSummaryRecord>> => entry !== null);
-          setEscrows(escrowRecords);
-        } else {
-          setEscrows([]);
+        if (cacheKey) {
+          setSellerCache<SellerPayoutCache>(cacheKey, {
+            permissions: nextPermissions,
+            destinations: nextDestinations,
+            payouts: nextPayouts,
+            escrows: nextEscrows,
+            providerMetadata: nextProviderMetadata,
+            connectAccount: nextConnectAccount,
+          });
         }
       } catch (error) {
         setNotice({
@@ -132,13 +173,14 @@ export function useSellerPayoutsPage() {
         setRefreshing(false);
       }
     },
-    [sellerId],
+    [cacheKey, providerMetadata, sellerId],
   );
 
   useEffect(() => {
     if (!sellerId) return;
-    void loadData();
-  }, [sellerId, loadData]);
+    const hasCache = hydrateCache();
+    void loadData({ silent: hasCache });
+  }, [hydrateCache, loadData, sellerId]);
 
   useEffect(() => {
     if (!sellerId) return;
@@ -273,12 +315,13 @@ export function useSellerPayoutsPage() {
       );
       setConnectAccount(updated);
       setLastSaveDiagnostic(null);
+      await loadData({ silent: true });
     } catch (error) {
       setConnectError(error instanceof Error ? error.message : "Failed to disconnect Connect.");
     } finally {
       setConnectLoading(false);
     }
-  }, [sellerId]);
+  }, [loadData, sellerId]);
 
   const handleSaveDestination = useCallback(async () => {
     if (!sellerId) return;
