@@ -90,8 +90,6 @@ export function registerPasskeyRoutes(app: Express) {
       const uid = getUserUid(req);
       if (!uid) return res.status(401).json({ error: "Authentication required" });
 
-      // Enforce the one-active-passkey rule again at verification time to
-      // prevent duplicate registrations from racing each other.
       const existingCredentials = await credentialRepository.listByUser(uid);
       if (existingCredentials.length > 0) {
         return res.status(409).json({
@@ -131,6 +129,22 @@ export function registerPasskeyRoutes(app: Express) {
 
   app.post("/api/auth/passkey/login/verify", loginLimiter, async (req, res) => {
     try {
+      const credentialId = String(req.body?.response?.id ?? "").trim();
+      if (!credentialId) {
+        return res.status(400).json({ error: "Passkey response is missing a credential ID" });
+      }
+
+      // The browser/password manager may still offer a credential that the
+      // user already removed from BuyMesho. Detect that explicitly so the UI
+      // can provide a useful reload/recovery message instead of a generic auth failure.
+      const registeredCredential = await credentialRepository.findByCredentialId(credentialId);
+      if (!registeredCredential) {
+        return res.status(404).json({
+          error: "This passkey is no longer registered with BuyMesho. Please reload and try again.",
+          code: "PASSKEY_NOT_FOUND",
+        });
+      }
+
       const result = await verifyAuthentication(
         req.body?.response,
         String(req.body?.ceremonyId ?? ""),
