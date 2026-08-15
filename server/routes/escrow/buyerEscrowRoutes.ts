@@ -2,6 +2,7 @@ import express, { type RequestHandler } from 'express';
 import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import { serverOrderService } from '../../modules/orders/order.service.js';
 import { orderRepository } from '../../modules/orders/order.repository.js';
+import { notifyOrderFulfilled } from '../../modules/notifications/order-fulfilled.notification.js';
 import { payoutRepository, payoutService } from '../../modules/payouts/payout.service.js';
 import { calculatePayoutFormula } from '../../modules/payouts/payout.policy.js';
 import { assertEscrowReleaseReadiness } from '../../modules/escrow/escrow.rules.js';
@@ -242,6 +243,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           payout,
           destination,
           requestedDestinationAccountId,
+          orderUpdated,
           payoutEligibility: {
             eligible: true,
             reason: releaseReadiness.reason,
@@ -276,6 +278,10 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           actorId: requesterId,
         });
         finalPayout = executionResult.payout ?? finalPayout;
+      }
+
+      if (result.orderUpdated) {
+        await notifyOrderFulfilled(result.orderUpdated);
       }
 
       payoutRepository.addEvent({
