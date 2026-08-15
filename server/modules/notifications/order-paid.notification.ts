@@ -23,13 +23,14 @@ async function sendOrderPaidEmail(order: StoredOrder, role: RecipientRole): Prom
   const email = userRecord.email?.trim();
   if (!email) return;
 
-  const recipientName = role === "seller"
-    ? order.buyerDetails?.fullName?.trim() || userRecord.displayName?.trim() || email.split("@")[0] || "there"
-    : userRecord.displayName?.trim() || email.split("@")[0] || "there";
-
-  const sellerBusinessName = getSellerBusinessName(order.sellerId) || "the seller";
-  const buyerCheckoutName = order.buyerDetails?.fullName?.trim() || "the buyer";
-  const counterpartyName = role === "buyer" ? sellerBusinessName : buyerCheckoutName;
+  const sellerBusinessName = getSellerBusinessName(order.sellerId) || "BuyMesho seller";
+  const buyerCheckoutName = order.buyerDetails?.fullName?.trim();
+  const recipientName = role === "buyer"
+    ? buyerCheckoutName || userRecord.displayName?.trim() || "there"
+    : sellerBusinessName;
+  const counterpartyName = role === "buyer"
+    ? sellerBusinessName
+    : buyerCheckoutName || userRecord.displayName?.trim() || "BuyMesho customer";
   const actionUrl = role === "seller"
     ? `https://buymesho.app/seller/payouts?view=orders&order=${encodeURIComponent(order.id)}`
     : `https://buymesho.app/orders/${encodeURIComponent(order.id)}`;
@@ -49,7 +50,7 @@ async function sendOrderPaidEmail(order: StoredOrder, role: RecipientRole): Prom
     to: { email, name: recipientName },
     subject: role === "buyer"
       ? `BuyMesho payment confirmed — ${sellerBusinessName}`
-      : `BuyMesho — new paid order from ${buyerCheckoutName}`,
+      : `BuyMesho — new paid order from ${counterpartyName}`,
     text,
     html,
   });
