@@ -57,7 +57,7 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
 
     CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      creator_uid TEXT,
+      creator_uid INTEGER,
       event_type TEXT NOT NULL,
       event_title TEXT NOT NULL,
       organizer_name TEXT NOT NULL,
@@ -177,6 +177,9 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
   ensureColumn(db, "orders", "checkout_idempotency_key", "TEXT");
   ensureColumn(db, "orders", "checkout_request_hash", "TEXT");
   ensureColumn(db, "orders", "buyer_details", "TEXT");
+  ensureColumn(db, "orders", "delivery_status", "TEXT NOT NULL DEFAULT 'action_required'");
+  db.exec(`UPDATE orders SET delivery_status = 'action_required' WHERE delivery_status IS NULL OR btrim(delivery_status) = ''`);
+  db.exec(`UPDATE orders SET delivery_status = 'delivered' WHERE status IN ('fulfilled','closed')`);
 
   ensureColumn(db, "events", "creator_uid", "TEXT");
   ensureColumn(db, "events", "ticket_price", "REAL");
@@ -213,5 +216,8 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
 
     CREATE INDEX IF NOT EXISTS idx_conversations_buyer_updated_at
     ON conversations (buyer_uid, updated_at DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_orders_seller_status_delivery
+    ON orders (seller_id, status, delivery_status, created_at DESC);
   `);
 }
