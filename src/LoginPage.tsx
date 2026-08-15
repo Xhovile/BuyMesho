@@ -88,7 +88,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Let the post-login Home prompt check passkey status after navigation.
     if (!isValidatorEntry && passkeysAvailable) {
       markPasskeySetupOffer();
     }
@@ -131,8 +130,8 @@ export default function LoginPage() {
       if (err?.status === 404 && err?.code === "PASSKEY_NOT_FOUND") {
         showFeedback(
           "info",
-          "Passkey no longer available",
-          "This passkey was removed from BuyMesho. Reload the page and choose an available passkey.",
+          "Passkey not available",
+          "This passkey does not exist. Reload the page and try again.",
           [
             {
               label: "Reload",
@@ -234,8 +233,6 @@ export default function LoginPage() {
       setTotpChallengeOpen(false);
       setTotpChallengeCode("");
 
-      // 2FA is part of the login flow. Offer passkey setup only after
-      // the user's 2FA challenge has been successfully verified.
       if (!isValidatorEntry && passkeysAvailable) {
         markPasskeySetupOffer();
       }
