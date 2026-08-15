@@ -19,7 +19,31 @@ type FeedbackState = {
   actions?: FeedbackAction[];
 } | null;
 
-const RESET_COOLDOWN_SECONDS = 35;
+const RESET_COOLDOWN_SECONDS = 45;
+
+function getFriendlyResetError(error: any): string {
+  const status = Number(error?.status);
+  const raw = String(error?.message || "").toLowerCase();
+
+  if (status === 429 || raw.includes("too many attempts")) {
+    return "Too many reset attempts. Please wait a few minutes before trying again.";
+  }
+
+  if (
+    raw.includes("unrecognised ip") ||
+    raw.includes("unrecognized ip") ||
+    raw.includes("authorised_ips") ||
+    raw.includes("unauthorized")
+  ) {
+    return "Password reset email delivery is temporarily unavailable. Please try again later.";
+  }
+
+  if (status >= 500) {
+    return "We could not send the reset email right now. Please try again later.";
+  }
+
+  return "We could not send the reset email. Please try again.";
+}
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -45,9 +69,7 @@ export default function ForgotPasswordPage() {
   const handleReset = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (sending || cooldownSeconds > 0) {
-      return;
-    }
+    if (sending || cooldownSeconds > 0) return;
 
     if (!email.trim()) {
       showFeedback("info", "Email required", "Please enter your email address first.");
@@ -63,7 +85,7 @@ export default function ForgotPasswordPage() {
       showFeedback(
         "success",
         "Reset email sent",
-        "Check your email inbox for the password reset link."
+        "Check your inbox for the password reset link."
       );
       setCooldownSeconds(RESET_COOLDOWN_SECONDS);
     } catch (err: any) {
@@ -71,10 +93,10 @@ export default function ForgotPasswordPage() {
         showFeedback(
           "error",
           "No account found",
-          "You do not have an account.",
+          "We could not find a BuyMesho account with that email address.",
           [
             {
-              label: "Cancel",
+              label: "Back to login",
               variant: "secondary",
               onClick: () => {
                 setFeedback(null);
@@ -82,7 +104,7 @@ export default function ForgotPasswordPage() {
               },
             },
             {
-              label: "Sign Up",
+              label: "Create account",
               onClick: () => {
                 setFeedback(null);
                 navigateToPath("/signup");
@@ -93,11 +115,7 @@ export default function ForgotPasswordPage() {
         return;
       }
 
-      showFeedback(
-        "error",
-        "Reset failed",
-        err?.message || "We could not send the reset email."
-      );
+      showFeedback("error", "Reset unavailable", getFriendlyResetError(err));
     } finally {
       setSending(false);
     }
@@ -107,7 +125,7 @@ export default function ForgotPasswordPage() {
     <AccountPageShell
       eyebrow="Account"
       title="Reset password"
-      description="Enter your email address and BuyMesho will send you a password reset link."
+      description="Enter your email address and BuyMesho will send you a secure password reset link."
       backLabel="Back to Login"
       onBack={() => navigateToPath("/login")}
     >
@@ -145,16 +163,11 @@ export default function ForgotPasswordPage() {
               Sending...
             </>
           ) : cooldownSeconds > 0 ? (
-            `Send Reset Link (${cooldownSeconds}s)`
+            `Try again in ${cooldownSeconds}s`
           ) : (
             "Send Reset Link"
           )}
         </button>
-        <p className="sr-only" aria-live="polite" aria-atomic="true">
-          {cooldownSeconds > 0
-            ? `Reset link button disabled. ${cooldownSeconds} seconds remaining.`
-            : "Reset link button is active."}
-        </p>
       </form>
 
       {feedback && (
