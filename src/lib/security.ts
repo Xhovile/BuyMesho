@@ -34,6 +34,8 @@ const DEFAULT_ACTION_CODE_SETTINGS = {
 
 function getErrorMessage(error: any, fallback: string) {
   const code = error?.code as string | undefined;
+  const status = Number(error?.status);
+  const rawMessage = String(error?.message || "").toLowerCase();
 
   switch (code) {
     case "auth/requires-recent-login":
@@ -51,8 +53,27 @@ function getErrorMessage(error: any, fallback: string) {
     case "auth/user-disabled":
       return "This account needs to be signed in again.";
     default:
-      return error?.message || fallback;
+      break;
   }
+
+  if (status === 429 || rawMessage.includes("too_many_attempts") || rawMessage.includes("too many attempts")) {
+    return "Too many attempts. Please wait a few minutes before trying again.";
+  }
+
+  if (
+    rawMessage.includes("unrecognised ip") ||
+    rawMessage.includes("unrecognized ip") ||
+    rawMessage.includes("authorised_ips") ||
+    rawMessage.includes("unauthorized")
+  ) {
+    return "Email delivery is temporarily unavailable. Please try again later.";
+  }
+
+  if (status >= 500) {
+    return fallback;
+  }
+
+  return error?.message || fallback;
 }
 
 function requireUser(): User {
