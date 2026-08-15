@@ -1,10 +1,6 @@
 import { type ReactNode } from "react";
 import { Bookmark, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
-import {
-  getListingDetailImageUrl,
-  getListingFullscreenImageUrl,
-  getListingGalleryThumbUrl,
-} from "../../lib/imageUrl";
+import { getListingImageUrl } from "../../lib/imageUrl";
 
 function FullscreenToggleIcon({ isFullscreen }: { isFullscreen: boolean }) {
   return (
@@ -69,7 +65,7 @@ export default function ListingGallery({
       aria-label={`View image ${idx + 1}`}
     >
       <img
-        src={getListingGalleryThumbUrl(url)}
+        src={getListingImageUrl(url, "thumbnail")}
         alt=""
         loading="lazy"
         decoding="async"
@@ -113,7 +109,7 @@ export default function ListingGallery({
               }`}
             >
               <img
-                src={getListingDetailImageUrl(currentImage)}
+                src={getListingImageUrl(currentImage, "detail")}
                 alt={listingName}
                 loading="eager"
                 decoding="async"
@@ -185,7 +181,7 @@ export default function ListingGallery({
 
             <div className="relative h-full overflow-hidden rounded-xl bg-black sm:rounded-2xl">
               <img
-                src={getListingFullscreenImageUrl(currentImage)}
+                src={getListingImageUrl(currentImage, "fullscreen")}
                 alt={listingName}
                 loading="eager"
                 decoding="async"
