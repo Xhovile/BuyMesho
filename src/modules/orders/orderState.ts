@@ -2,6 +2,7 @@ import type { EntityId, ISODateString, MoneyValue, Timestamped } from '../../sha
 import type { CheckoutSettlementRoute, PaymentProviderKey } from '../../shared/types/payment.js';
 
 export type OrderStatus = 'draft' | 'pending_payment' | 'paid' | 'in_escrow' | 'fulfilled' | 'cancelled' | 'refunded' | 'disputed' | 'closed';
+export type OrderDeliveryStatus = 'action_required' | 'pending_delivery' | 'delivered';
 export type OrderSource = 'listing' | 'layby' | 'event' | 'mixed' | 'accommodation' | 'wholesale';
 
 export interface BuyerDeliveryDetails {
@@ -35,6 +36,7 @@ export interface OrderState extends Timestamped {
   sellerId: EntityId;
   source: OrderSource;
   status: OrderStatus;
+  deliveryStatus?: OrderDeliveryStatus;
   currency: string;
   subtotal: MoneyValue;
   fees?: MoneyValue;
