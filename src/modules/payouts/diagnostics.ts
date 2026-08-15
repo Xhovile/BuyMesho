@@ -97,7 +97,8 @@ export function classifyPayoutDiagnostic(row: PayoutRow): { classification: Diag
   const providerStatus = token(d.providerStatus);
   const attemptStatus = token(d.latestAttemptStatus);
   const destinationStatus = token(d.destinationVerificationStatus);
-  const destinationVerified = destinationStatus === "verified" && d.destinationActive !== false;
+  const hasDestination = Boolean(clean(d.destinationAccountId));
+  const destinationVerified = hasDestination && destinationStatus === "verified" && d.destinationActive !== false;
   const latestAttemptFailure = clean(d.latestAttemptFailureReason);
   const failureReason = clean(d.failureReason);
   const failureToken = token(d.failureReason);
@@ -128,8 +129,12 @@ export function classifyPayoutDiagnostic(row: PayoutRow): { classification: Diag
   }
 
   if (!destinationVerified || destinationFailureReasons.has(failureToken)) {
-    const reason = clean(d.destinationLastError) ?? (failureToken && destinationFailureReasons.has(failureToken) ? failureReason : null) ?? (d.destinationActive === false ? "Destination is inactive." : destinationStatus ? `Destination ${destinationStatus}.` : null);
-    return { classification: "destination", label: "Destination problem", message: reason };
+    const reason = clean(d.destinationLastError)
+      ?? (failureToken && destinationFailureReasons.has(failureToken) ? failureReason : null)
+      ?? (!hasDestination ? "No payout destination is attached or available for this seller." : null)
+      ?? (d.destinationActive === false ? "Destination is inactive." : null)
+      ?? (destinationStatus && destinationStatus !== "missing" ? `Destination status is ${destinationStatus}.` : "Destination status is unavailable.");
+    return { classification: "destination", label: "Destination usability", message: reason };
   }
 
   if (lifecycleWaitingStatuses.has(status)) {

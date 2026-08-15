@@ -91,7 +91,12 @@ function findDefaultVerifiedDestination(db: ReturnType<typeof getPaymentDb>, sel
 }
 
 function hydratePayoutRow(db: ReturnType<typeof getPaymentDb>, row: Record<string, unknown>) {
-  const sellerId = normalizeText(row.sellerId ?? row.seller_id) ?? '';
+  const sellerId =
+    normalizeText(row.sellerId ?? row.seller_id) ??
+    normalizeText(row.orderSellerId ?? row.order_seller_id) ??
+    normalizeText(row.firstEventSellerId ?? row.first_event_seller_id) ??
+    normalizeText(row.latestEventSellerId ?? row.latest_event_seller_id) ??
+    '';
   const currentDestinationAccountId = normalizeText(row.destinationAccountId ?? row.destination_account_id) ?? null;
   const currentDestinationStatus = String(row.destinationVerificationStatus ?? row.destination_verification_status ?? 'missing').toLowerCase();
   const currentDestinationActive = Number(row.destinationActive ?? row.destination_active ?? row.destinationIsActive ?? row.destination_is_active ?? 0) === 1;
@@ -107,6 +112,8 @@ function hydratePayoutRow(db: ReturnType<typeof getPaymentDb>, row: Record<strin
   return {
     ...row,
     sellerId,
+    sellerBusinessName: normalizeText(row.sellerBusinessName ?? row.seller_business_name) ?? normalizeText(row.sellerEmail ?? row.seller_email) ?? (sellerId || null),
+    provider: normalizeText(row.provider) ?? normalizeText(row.destinationProviderName ?? row.destination_provider_name) ?? 'paychangu',
     destinationAccountId: destination?.id ?? currentDestinationAccountId,
     destinationMaskedAccount: destination?.maskedAccount ?? normalizeText(row.destinationMaskedAccount ?? row.destination_masked_account) ?? null,
     destinationType: destination?.destinationType ?? normalizeText(row.destinationType ?? row.destination_type) ?? null,
@@ -119,7 +126,7 @@ function hydratePayoutRow(db: ReturnType<typeof getPaymentDb>, row: Record<strin
 
 function shapeRow(row: Record<string, unknown>) {
   const sellerId = normalizeText(row.sellerId ?? row.seller_id) ?? '';
-  const sellerBusinessName = normalizeText(row.sellerBusinessName ?? row.seller_business_name) ?? null;
+  const sellerBusinessName = normalizeText(row.sellerBusinessName ?? row.seller_business_name) ?? normalizeText(row.sellerEmail ?? row.seller_email) ?? (sellerId || null);
   const status = String(row.currentState ?? row.status ?? '').toLowerCase();
   const failureReason = normalizeText(row.failureReason ?? row.failure_reason) ?? null;
   const destinationVerificationStatus = String(row.destinationVerificationStatus ?? row.destination_verification_status ?? 'missing').toLowerCase();
@@ -156,6 +163,7 @@ function shapeRow(row: Record<string, unknown>) {
     ...row,
     sellerId,
     sellerBusinessName,
+    provider: normalizeText(row.provider) ?? normalizeText(row.destinationProviderName ?? row.destination_provider_name) ?? 'paychangu',
     currentState: status,
     attemptCount,
     destinationVerificationStatus,
@@ -207,6 +215,8 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
           p.id,
           p.seller_id AS sellerId,
           s.business_name AS sellerBusinessName,
+          s.email AS sellerEmail,
+          o.seller_id AS orderSellerId,
           p.order_id AS orderId,
           p.escrow_id AS escrowId,
           e.state AS escrowState,
@@ -215,6 +225,7 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
           p.currency,
           p.status,
           p.provider,
+          spa.provider_name AS destinationProviderName,
           p.provider_charge_id AS providerChargeId,
           p.provider_ref_id AS providerReference,
           p.provider_transaction_id AS providerTransactionId,
@@ -260,7 +271,8 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
           (SELECT COUNT(*) FROM payout_events pe WHERE pe.payout_id = p.id) AS auditEventCount,
           (SELECT COUNT(*) FROM payout_adjustments pa WHERE pa.payout_id = p.id) AS adjustmentCount
          FROM payouts p
-         LEFT JOIN sellers s ON s.uid = p.seller_id
+         LEFT JOIN orders o ON o.id = p.order_id
+         LEFT JOIN sellers s ON s.uid = COALESCE(NULLIF(p.seller_id, ''), o.seller_id)
          LEFT JOIN escrows e ON e.id = p.escrow_id
          LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
          ORDER BY p.created_at DESC
@@ -303,6 +315,8 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
           p.id,
           p.seller_id AS sellerId,
           s.business_name AS sellerBusinessName,
+          s.email AS sellerEmail,
+          o.seller_id AS orderSellerId,
           p.order_id AS orderId,
           p.escrow_id AS escrowId,
           e.state AS escrowState,
@@ -311,6 +325,7 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
           p.currency,
           p.status,
           p.provider,
+          spa.provider_name AS destinationProviderName,
           p.provider_charge_id AS providerChargeId,
           p.provider_ref_id AS providerReference,
           p.provider_transaction_id AS providerTransactionId,
@@ -356,7 +371,8 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
           (SELECT COUNT(*) FROM payout_events pe WHERE pe.payout_id = p.id) AS auditEventCount,
           (SELECT COUNT(*) FROM payout_adjustments pa WHERE pa.payout_id = p.id) AS adjustmentCount
          FROM payouts p
-         LEFT JOIN sellers s ON s.uid = p.seller_id
+         LEFT JOIN orders o ON o.id = p.order_id
+         LEFT JOIN sellers s ON s.uid = COALESCE(NULLIF(p.seller_id, ''), o.seller_id)
          LEFT JOIN escrows e ON e.id = p.escrow_id
          LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
          WHERE p.id = ?
