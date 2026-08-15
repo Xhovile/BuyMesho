@@ -30,7 +30,7 @@ export default function FeedbackModal({ open, type, title, message, onClose, act
       icon: AlertTriangle,
       iconWrap: "bg-red-50 border border-red-100",
       iconColor: "text-red-600",
-      accent: "bg-zinc-900 hover:bg-zinc-800",
+      accent: "bg-red-600 hover:bg-red-700",
     },
     info: {
       icon: Info,
@@ -92,7 +92,7 @@ export default function FeedbackModal({ open, type, title, message, onClose, act
 
             <div className="border-t border-zinc-100 bg-zinc-50/70 px-6 py-5">
               {actions && actions.length > 0 ? (
-                <div className="flex flex-col-reverse gap-2.5 sm:flex-row">
+                <div className="flex flex-row gap-2.5">
                   {actions.map((action) => (
                     <button
                       key={action.label}
