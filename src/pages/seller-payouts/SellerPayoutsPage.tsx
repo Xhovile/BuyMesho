@@ -3,6 +3,7 @@ import BrandMark from "../../components/BrandMark";
 import ConfirmModal from "../../components/ConfirmModal";
 import ConnectSettingsCard from "../../components/payouts/ConnectSettingsCard";
 import { EXPLORE_PATH, navigateToPath } from "../../lib/appNavigation";
+import SellerHubPage from "../../SellerHubPage";
 import SellerOrdersPage from "../../SellerOrdersPage";
 import SellerPayoutsAccessGate from "./components/SellerPayoutsAccessGate";
 import SellerPayoutsDestinationsSection from "./components/SellerPayoutsDestinationsSection";
@@ -12,7 +13,7 @@ import SellerPayoutsNotice from "./components/SellerPayoutsNotice";
 import { useSellerPayoutsPage } from "./useSellerPayoutsPage";
 
 export default function SellerPayoutsPage() {
-  const isOrdersView = new URLSearchParams(window.location.search).get("view") === "orders";
+  const view = new URLSearchParams(window.location.search).get("view");
 
   const {
     profileLoading,
@@ -53,18 +54,11 @@ export default function SellerPayoutsPage() {
     handleRefresh,
   } = useSellerPayoutsPage();
 
-  if (isOrdersView) {
-    return <SellerOrdersPage />;
-  }
+  if (!view || view === "hub") return <SellerHubPage />;
+  if (view === "orders") return <SellerOrdersPage />;
 
   if (profileLoading || loading || !isSeller) {
-    return (
-      <SellerPayoutsAccessGate
-        loading={profileLoading || loading}
-        isSeller={isSeller}
-        onBack={() => navigateToPath(EXPLORE_PATH)}
-      />
-    );
+    return <SellerPayoutsAccessGate loading={profileLoading || loading} isSeller={isSeller} onBack={() => navigateToPath(EXPLORE_PATH)} />;
   }
 
   const providerOptions = [...providerMetadata.mobileMoneyOperators, ...providerMetadata.banks];
@@ -75,50 +69,19 @@ export default function SellerPayoutsPage() {
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <BrandMark />
           <div className="flex w-full items-center gap-3 sm:w-auto">
-            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 sm:flex-none">
-              <ArrowLeft className="h-4 w-4" /> Back
-            </button>
-            <button type="button" onClick={() => void handleRefresh()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 sm:flex-none">
-              {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Refresh
-            </button>
+            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 sm:flex-none"><ArrowLeft className="h-4 w-4" /> Back</button>
+            <button type="button" onClick={() => void handleRefresh()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 sm:flex-none">{refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Refresh</button>
           </div>
         </div>
       </header>
-
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8">
         <SellerPayoutsHero summary={summary} earningsSummary={earningsSummary} payouts={payouts} canEditSettings={canEditSettings} />
         {notice ? <SellerPayoutsNotice type={notice.type} message={notice.message} details={lastSaveDiagnostic?.reasons} /> : null}
         <ConnectSettingsCard connectAccount={connectAccount} connectLoading={connectLoading} connectError={connectError} connectDefaultMode={connectDefaultMode} defaultConnectScope={defaultConnectScope} onRefresh={() => void handleConnectRefresh()} onConnect={() => void handleConnect()} onDisconnect={() => void handleDisconnect()} />
-        <SellerPayoutsDestinationsSection
-          form={form}
-          onFormChange={setForm}
-          onSave={handleSaveDestination}
-          onCancel={resetForm}
-          saving={savingDestination}
-          error={destinationFormError}
-          canEditSettings={canEditSettings}
-          isEditing={Boolean(selectedDestinationId)}
-          activeDestinationCount={activeDestinations.length}
-          activeDestinations={activeDestinations}
-          providerOptions={providerOptions}
-          onReplace={startEdit}
-          onRemove={handleRemoveDestination}
-          onMakeDefault={handleMakeDefault}
-        />
+        <SellerPayoutsDestinationsSection form={form} onFormChange={setForm} onSave={handleSaveDestination} onCancel={resetForm} saving={savingDestination} error={destinationFormError} canEditSettings={canEditSettings} isEditing={Boolean(selectedDestinationId)} activeDestinationCount={activeDestinations.length} activeDestinations={activeDestinations} providerOptions={providerOptions} onReplace={startEdit} onRemove={handleRemoveDestination} onMakeDefault={handleMakeDefault} />
         <SellerPayoutsHistorySection payouts={payouts} canViewHistory={canViewHistory} />
       </main>
-
-      <ConfirmModal
-        open={Boolean(removeTarget)}
-        title="Remove payout destination"
-        message={removeTarget ? `Are you sure you want to remove ${removeTarget.providerName} from your payout destinations?` : "Are you sure you want to remove this payout destination?"}
-        cancelText="Cancel"
-        confirmText={removeCountdown > 0 ? `Confirm (${removeCountdown}s)` : "Confirm"}
-        confirmDisabled={savingDestination || removeCountdown > 0}
-        danger
-        onCancel={() => setRemoveTarget(null)}
-        onConfirm={() => void handleConfirmRemoveDestination()}
-      />
+      <ConfirmModal open={Boolean(removeTarget)} title="Remove payout destination" message={removeTarget ? `Are you sure you want to remove ${removeTarget.providerName} from your payout destinations?` : "Are you sure you want to remove this payout destination?"} cancelText="Cancel" confirmText={removeCountdown > 0 ? `Confirm (${removeCountdown}s)` : "Confirm"} confirmDisabled={savingDestination || removeCountdown > 0} danger onCancel={() => setRemoveTarget(null)} onConfirm={() => void handleConfirmRemoveDestination()} />
     </div>
   );
 }
