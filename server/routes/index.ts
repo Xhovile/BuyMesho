@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { mountTotpRoutes } from "../totpServer.js";
+import { registerAccountRoutes } from "../auth/accountRoutes.js";
 import { registerSessionRoutes } from "../auth/sessionRoutes.js";
 import { registerPasskeyRoutes } from "../auth/passkeyRoutes.js";
 import { registerValidatorRoutes } from "./validator.routes.js";
@@ -112,6 +113,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
     }
   }
 
+  registerAccountRoutes(app);
   registerVerificationEmailRoutes(app);
   registerPasswordResetEmailRoutes(app);
   registerEmailChangeRoutes(app);
@@ -154,7 +156,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
       }
       const firebaseUser = req.user?.firebaseUser ?? req.firebaseUser ?? null;
       const email = profile?.email ?? seller?.email ?? firebaseUser?.email ?? "";
-      return res.json({ uid, email, display_name: profile?.display_name ?? profile?.displayName ?? null, university: profile?.university ?? seller?.university ?? null, phone: profile?.phone ?? null, bio: profile?.bio ?? seller?.bio ?? null, business_name: profile?.business_name ?? seller?.business_name ?? null, business_logo: profile?.business_logo ?? seller?.business_logo ?? null, is_verified: !!(profile?.is_verified ?? seller?.is_verified), is_seller: !!(profile?.is_seller ?? seller?.is_seller), join_date: profile?.join_date ?? seller?.join_date ?? null, buyer_details: profile?.buyer_details ?? null });
+      return res.json({ uid, email, display_name: profile?.display_name ?? profile?.displayName ?? null, university: profile?.university ?? seller?.university ?? null, phone: profile?.phone ?? null, profile_picture: profile?.profile_picture ?? profile?.photoURL ?? null, bio: profile?.bio ?? seller?.bio ?? null, business_name: profile?.business_name ?? seller?.business_name ?? null, business_logo: profile?.business_logo ?? seller?.business_logo ?? null, is_verified: !!(profile?.is_verified ?? seller?.is_verified), is_seller: !!(profile?.is_seller ?? seller?.is_seller), join_date: profile?.join_date ?? seller?.join_date ?? null, buyer_details: profile?.buyer_details ?? null });
     } catch (error) {
       console.error("Failed to load profile", error);
       return res.status(500).json({ error: "Failed to load profile" });
