@@ -1,7 +1,6 @@
 import { rateLimit } from "express-rate-limit";
 import type { Express, Request } from "express";
 import {
-  createAuthenticationOptions,
   createDiscoverableAuthenticationOptions,
   createRegistrationOptions,
   verifyAuthentication,
@@ -150,10 +149,41 @@ export function registerPasskeyRoutes(app: Express) {
       const uid = getUserUid(req);
       if (!uid) return res.status(401).json({ error: "Authentication required" });
       const credentials = await credentialRepository.listByUser(uid);
-      return res.json({ enabled: credentials.length > 0, count: credentials.length });
+      return res.json({
+        enabled: credentials.length > 0,
+        count: credentials.length,
+        credentials: credentials.map((credential) => ({
+          id: credential.id,
+          name: credential.name ?? "Passkey",
+          createdAt: credential.createdAt.toISOString(),
+          lastUsedAt: credential.lastUsedAt?.toISOString() ?? null,
+          deviceType: credential.deviceType ?? null,
+          backedUp: credential.backedUp ?? null,
+        })),
+      });
     } catch (error) {
       console.error("[passkeys] failed to load status", error);
       return res.status(500).json({ error: "Unable to load passkey status" });
+    }
+  });
+
+  app.delete("/api/auth/passkey/:credentialId", registerLimiter, requireFirebaseUser, async (req: any, res) => {
+    try {
+      const uid = getUserUid(req);
+      const credentialId = String(req.params.credentialId ?? "").trim();
+      if (!uid) return res.status(401).json({ error: "Authentication required" });
+      if (!credentialId) return res.status(400).json({ error: "Credential ID is required" });
+
+      const credential = await credentialRepository.findByCredentialId(credentialId);
+      if (!credential || credential.userId !== uid) {
+        return res.status(404).json({ error: "Passkey not found" });
+      }
+
+      await credentialRepository.revoke(credentialId);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("[passkeys] failed to revoke credential", error);
+      return res.status(500).json({ error: "Unable to remove passkey" });
     }
   });
 }
