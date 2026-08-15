@@ -88,6 +88,18 @@ export class BuyMeshoPasskeyCredentialRepository implements PasskeyCredentialRep
   }
 }
 
+export async function deleteAllPasskeysForUser(userId: string): Promise<void> {
+  getPaymentDb()
+    .prepare(`DELETE FROM passkey_credentials WHERE user_id = ?`)
+    .run(userId);
+}
+
+export async function deletePasskeyCeremoniesForUser(userId: string): Promise<void> {
+  getPaymentDb()
+    .prepare(`DELETE FROM passkey_ceremonies WHERE user_id = ?`)
+    .run(userId);
+}
+
 export class BuyMeshoPasskeyCeremonyRepository implements PasskeyCeremonyRepository {
   async save(state: CeremonyState): Promise<void> {
     getPaymentDb()
