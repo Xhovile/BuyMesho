@@ -18,6 +18,51 @@ function normalizeText(value: unknown): string | null {
   return text ? text : null;
 }
 
+
+function parseJson(value: unknown): unknown {
+  const text = normalizeText(value);
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function buildDiagnostics(row: Record<string, unknown>) {
+  return {
+    payoutId: normalizeText(row.id) ?? null,
+    sellerId: normalizeText(row.sellerId ?? row.seller_id) ?? null,
+    orderId: normalizeText(row.orderId ?? row.order_id) ?? null,
+    escrowId: normalizeText(row.escrowId ?? row.escrow_id) ?? null,
+    status: normalizeText(row.status) ?? null,
+    provider: normalizeText(row.provider) ?? null,
+    providerStatus: normalizeText(row.providerStatus ?? row.provider_status) ?? null,
+    providerChargeId: normalizeText(row.providerChargeId ?? row.provider_charge_id) ?? null,
+    providerReference: normalizeText(row.providerReference ?? row.provider_ref_id) ?? null,
+    providerTransactionId: normalizeText(row.providerTransactionId ?? row.provider_transaction_id) ?? null,
+    destinationAccountId: normalizeText(row.destinationAccountId ?? row.destination_account_id) ?? null,
+    destinationVerificationStatus: normalizeText(row.destinationVerificationStatus ?? row.destination_verification_status) ?? null,
+    destinationActive: row.destinationActive === null || row.destinationActive === undefined ? null : Boolean(row.destinationActive),
+    destinationLastError: normalizeText(row.destinationLastError ?? row.destination_last_error) ?? null,
+    sellerSuspended: Boolean(row.sellerSuspended ?? row.seller_suspended),
+    failureReason: normalizeText(row.failureReason ?? row.failure_reason) ?? null,
+    manualReviewReason: normalizeText(row.manualReviewReason ?? row.manual_review_reason) ?? null,
+    latestAttemptNo: row.latestAttemptNo == null ? null : Number(row.latestAttemptNo),
+    latestAttemptStatus: normalizeText(row.latestAttemptStatus ?? row.latest_attempt_status) ?? null,
+    latestAttemptFailureReason: normalizeText(row.latestAttemptFailureReason ?? row.latest_attempt_failure_reason) ?? null,
+    latestAttemptAt: normalizeText(row.latestAttemptAt ?? row.latest_attempt_at) ?? null,
+    latestAttemptProviderChargeId: normalizeText(row.latestAttemptProviderChargeId ?? row.latest_attempt_provider_charge_id) ?? null,
+    latestAttemptProviderResponse: parseJson(row.latestAttemptProviderResponse ?? row.latest_attempt_provider_response),
+    latestWebhookEventType: normalizeText(row.latestWebhookEventType ?? row.latest_webhook_event_type) ?? null,
+    latestWebhookEventAt: normalizeText(row.latestWebhookEventAt ?? row.latest_webhook_event_at) ?? null,
+    latestAuditEventType: normalizeText(row.latestAuditEventType ?? row.latest_audit_event_type) ?? null,
+    latestAuditEventAt: normalizeText(row.latestAuditEventAt ?? row.latest_audit_event_at) ?? null,
+    retryEligible: row.retryEligible === null || row.retryEligible === undefined ? null : Boolean(row.retryEligible),
+    retryBlockedReason: normalizeText(row.retryBlockedReason ?? row.retry_blocked_reason) ?? null,
+  };
+}
+
 function findDefaultVerifiedDestination(db: ReturnType<typeof getPaymentDb>, sellerId: string) {
   return db.prepare(
     `SELECT
@@ -136,6 +181,7 @@ function shapeRow(row: Record<string, unknown>) {
       latestEventType: normalizeText(row.latestAuditEventType ?? row.latest_audit_event_type) ?? null,
       latestEventAt: normalizeText(row.latestAuditEventAt ?? row.latest_audit_event_at) ?? null,
     },
+    diagnostics: buildDiagnostics({ ...row, retryEligible, retryBlockedReason }),
   };
 }
 
@@ -205,6 +251,8 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
           (SELECT status FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptStatus,
           (SELECT created_at FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptAt,
           (SELECT failure_reason FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptFailureReason,
+          (SELECT provider_charge_id FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptProviderChargeId,
+          (SELECT response_payload FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptProviderResponse,
           (SELECT event_type FROM payout_events pe WHERE pe.payout_id = p.id AND pe.event_type IN ('payout_reconciled', 'payout_webhook_duplicate', 'payout_webhook_rejected') ORDER BY pe.created_at DESC LIMIT 1) AS latestWebhookEventType,
           (SELECT created_at FROM payout_events pe WHERE pe.payout_id = p.id AND pe.event_type IN ('payout_reconciled', 'payout_webhook_duplicate', 'payout_webhook_rejected') ORDER BY pe.created_at DESC LIMIT 1) AS latestWebhookEventAt,
           (SELECT event_type FROM payout_events pe WHERE pe.payout_id = p.id ORDER BY pe.created_at DESC LIMIT 1) AS latestAuditEventType,
@@ -299,6 +347,8 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
           (SELECT status FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptStatus,
           (SELECT created_at FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptAt,
           (SELECT failure_reason FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptFailureReason,
+          (SELECT provider_charge_id FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptProviderChargeId,
+          (SELECT response_payload FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptProviderResponse,
           (SELECT event_type FROM payout_events pe WHERE pe.payout_id = p.id AND pe.event_type IN ('payout_reconciled', 'payout_webhook_duplicate', 'payout_webhook_rejected') ORDER BY pe.created_at DESC LIMIT 1) AS latestWebhookEventType,
           (SELECT created_at FROM payout_events pe WHERE pe.payout_id = p.id AND pe.event_type IN ('payout_reconciled', 'payout_webhook_duplicate', 'payout_webhook_rejected') ORDER BY pe.created_at DESC LIMIT 1) AS latestWebhookEventAt,
           (SELECT event_type FROM payout_events pe WHERE pe.payout_id = p.id ORDER BY pe.created_at DESC LIMIT 1) AS latestAuditEventType,

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { CircleAlert, Loader2, RefreshCw, ShieldCheck, Wallet, X } from "lucide-react";
 import FormDropdown from "./components/FormDropdown";
 import type { OverrideAction, PayoutAdjustment, PayoutRow, RowAction } from "./AdminPayoutsManager";
+import { classifyPayoutDiagnostic, getPayoutDiagnostics } from "./modules/payouts/diagnostics";
 
 type PayoutDetailDrawerProps = {
   selected: PayoutRow;
@@ -122,6 +123,9 @@ export default function PayoutDetailDrawer({
   onAdjustmentProviderRefChange,
   onCreateAdjustment,
 }: PayoutDetailDrawerProps) {
+  const exactDiagnostics = getPayoutDiagnostics(selected);
+  const primaryDiagnostic = classifyPayoutDiagnostic(selected);
+  const formattedDiagnostics = Object.entries(exactDiagnostics);
   const destinationVerified =
     String(selected.destinationVerificationStatus ?? "").toLowerCase() === "verified" &&
     selected.destinationActive !== false;
@@ -237,6 +241,24 @@ export default function PayoutDetailDrawer({
                 </ul>
               </div>
             ) : null}
+          </AccordionSection>
+
+          <AccordionSection title="Exact diagnostics" description="Actual backend payout state, attempts, events, and raw debug payload." defaultOpen>
+            {primaryDiagnostic.message ? (
+              <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">{primaryDiagnostic.label}</p>
+                <p className="mt-1 font-bold">{primaryDiagnostic.message}</p>
+              </div>
+            ) : null}
+            <div className="grid gap-2 sm:grid-cols-2">
+              {formattedDiagnostics.map(([key, value]) => (
+                <Info key={key} label={key} value={value === null || value === undefined || value === "" ? "—" : typeof value === "object" ? JSON.stringify(value) : String(value)} />
+              ))}
+            </div>
+            <details className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-950 px-4 py-3 text-zinc-100">
+              <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.18em] text-zinc-300">Raw JSON/debug view</summary>
+              <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs">{JSON.stringify(exactDiagnostics, null, 2)}</pre>
+            </details>
           </AccordionSection>
 
           <AccordionSection title="Destination verification" description="Edit routing status and error reason.">

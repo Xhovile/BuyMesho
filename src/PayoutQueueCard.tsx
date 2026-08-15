@@ -1,5 +1,6 @@
 import { BadgeInfo, CircleAlert, Loader2, RefreshCw, ShieldCheck, Wallet, X } from "lucide-react";
 import type { OverrideAction, PayoutRow, RowAction } from "./AdminPayoutsManager";
+import { classifyPayoutDiagnostic, getPayoutDiagnostics } from "./modules/payouts/diagnostics";
 
 type PayoutQueueCardProps = {
   row: PayoutRow;
@@ -40,6 +41,8 @@ export default function PayoutQueueCard({
     provider?: string | null;
     updatedAt?: string;
   };
+  const diagnostic = classifyPayoutDiagnostic(row);
+  const diagnostics = getPayoutDiagnostics(row);
 
   return (
     <div className="rounded-[1.75rem] border border-zinc-400 bg-zinc-100 p-4 shadow-sm">
@@ -76,11 +79,23 @@ export default function PayoutQueueCard({
             <Info label="Updated" value={rowMeta.updatedAt ? new Date(rowMeta.updatedAt).toLocaleString() : "—"} />
           </div>
 
-          {Array.isArray(row.verificationBlockers) && row.verificationBlockers.length > 0 ? (
-            <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-              <strong>Verification blockers:</strong> {row.verificationBlockers.join(" • ")}
+          <div className="rounded-2xl border border-indigo-100 bg-white px-4 py-3 text-sm text-zinc-700">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">
+              {diagnostic.classification === "none" ? "Payout diagnostic" : "Why blocked"}
             </p>
-          ) : null}
+            <p className="mt-1 font-bold text-zinc-950">{diagnostic.message ?? "No actual blocker detected from backend diagnostics."}</p>
+            <details className="mt-3">
+              <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Raw diagnostic values</summary>
+              <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+                {Object.entries(diagnostics).map(([key, value]) => (
+                  <div key={key} className="rounded-xl bg-zinc-50 px-2.5 py-2">
+                    <dt className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">{key}</dt>
+                    <dd className="mt-1 break-all font-mono text-[11px] text-zinc-800">{value === null || value === undefined || value === "" ? "—" : typeof value === "object" ? JSON.stringify(value) : String(value)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </details>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2 lg:w-[340px] lg:justify-end">

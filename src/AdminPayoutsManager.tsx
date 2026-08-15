@@ -20,6 +20,8 @@ import FormDropdown from "./components/FormDropdown";
 import PayoutQueueCard from "./PayoutQueueCard";
 import PayoutDetailDrawer from "./AdminPayoutDetailDrawer";
 
+export type PayoutDiagnostics = Record<string, unknown>;
+
 export type PayoutRow = {
   id: string;
   sellerId: string;
@@ -79,6 +81,11 @@ export type PayoutRow = {
   reserveCapAmount?: number;
   manualAdjustmentAmount?: number;
   netAmount?: number;
+  diagnostics?: PayoutDiagnostics;
+  latestAttemptProviderChargeId?: string | null;
+  latestAttemptProviderReference?: string | null;
+  latestAttemptProviderTransactionId?: string | null;
+  latestAttemptProviderResponse?: unknown;
 };
 
 type PayoutSummary = {
