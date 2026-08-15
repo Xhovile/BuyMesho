@@ -27,10 +27,13 @@ type FeedbackState = {
   actions?: FeedbackAction[];
 } | null;
 
+const RESEND_COOLDOWN_SECONDS = 45;
+
 export default function VerifyEmailPage() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const emailVerified = firebaseUser?.emailVerified ?? false;
 
@@ -44,6 +47,14 @@ export default function VerifyEmailPage() {
       navigateToPath(consumeAuthReturnPath(HOME_PATH));
     }
   }, [authLoading, firebaseUser, emailVerified]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
 
   const showFeedback = (
     type: "success" | "error" | "info",
@@ -74,7 +85,7 @@ export default function VerifyEmailPage() {
       showFeedback(
         "info",
         "Still not verified",
-        "Your email has not been verified yet. Check your inbox and spam folder, then try again."
+        "Your email has not been verified yet. Check your inbox, then try again."
       );
     } finally {
       setBusy(false);
@@ -82,15 +93,19 @@ export default function VerifyEmailPage() {
   };
 
   const handleResend = async () => {
-    if (!firebaseUser) return;
+    if (!firebaseUser || busy || resendCooldown > 0) return;
     setBusy(true);
     try {
       const result = await resendVerificationEmail();
       if (result.ok) {
+        setResendCooldown(RESEND_COOLDOWN_SECONDS);
         showFeedback("success", "Verification sent", result.message || "A verification email has been sent.");
         return;
       }
-      showFeedback("error", "Resend failed", result.message);
+      showFeedback("error", "Could not resend", result.message);
+      if (result.code === "auth/too-many-requests" || result.message.toLowerCase().includes("too many attempts")) {
+        setResendCooldown(RESEND_COOLDOWN_SECONDS);
+      }
     } finally {
       setBusy(false);
     }
@@ -110,7 +125,7 @@ export default function VerifyEmailPage() {
     <AccountPageShell
       eyebrow="Account"
       title="Verify your email"
-      description="Your account is created, but access stays locked until your email address is verified."
+      description="Your account is ready, but access stays locked until your email address is verified."
       backLabel="Back"
     >
       <div className="space-y-6 w-full">
@@ -120,10 +135,7 @@ export default function VerifyEmailPage() {
             <div>
               <p className="font-bold">Verification required</p>
               <p className="mt-2 text-sm leading-relaxed text-amber-800">
-                Please verify your email...          
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-amber-800">
-                This page is where unverified users land after signup or login.
+                Open the BuyMesho verification email and confirm your address before continuing.
               </p>
             </div>
           </div>
@@ -132,9 +144,9 @@ export default function VerifyEmailPage() {
         <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm space-y-4">
           <div className="flex items-center gap-3">
             <MailCheck className="w-5 h-5 text-zinc-700" />
-            <div>
-              <p className="font-bold text-zinc-900">{firebaseUser?.email || "Email not available"}</p>
-              <p className="text-sm text-zinc-500">Open the message we sent and click the verification link.</p>
+            <div className="min-w-0">
+              <p className="font-bold text-zinc-900 truncate">{firebaseUser?.email || "Email not available"}</p>
+              <p className="text-sm text-zinc-500">Check your inbox and spam folder if needed.</p>
             </div>
           </div>
 
@@ -142,11 +154,11 @@ export default function VerifyEmailPage() {
             <button
               type="button"
               onClick={handleResend}
-              disabled={busy || !firebaseUser}
+              disabled={busy || !firebaseUser || resendCooldown > 0}
               className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              Resend verification email
+              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend verification email"}
             </button>
 
             <button
