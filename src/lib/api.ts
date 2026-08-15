@@ -205,8 +205,11 @@ async function performApiFetch(url: string, init: ApiFetchInit = {}) {
       body = await res.json();
     } catch {}
     const message = formatApiErrorMessage(body?.error ?? body?.message) ?? `Request failed (${res.status})`;
-    const error = new Error(message);
-    (error as Error & { status?: number }).status = res.status;
+    const error = new Error(message) as Error & { status?: number; code?: string };
+    error.status = res.status;
+    if (typeof body?.code === "string" && body.code.trim()) {
+      error.code = body.code.trim();
+    }
     throw error;
   }
 
