@@ -3,7 +3,7 @@ import type { RequestHandler } from "express";
 
 function keyForRequest(req: Parameters<Options["keyGenerator"]>[0]): string {
   const uid = req.user?.uid;
-  return uid ? `user:${uid}` : `ip:${ipKeyGenerator(req.ip)}`;
+  return uid ? `user:${uid}` : `ip:${ipKeyGenerator(req.ip ?? "unknown")}`;
 }
 
 function createLimiter(windowMs: number, limit: number, message: string): RequestHandler {
