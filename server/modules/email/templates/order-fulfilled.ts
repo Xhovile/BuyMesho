@@ -24,12 +24,12 @@ export function renderOrderFulfilledEmail(params: {
   const amount = `${currency} ${params.totalAmount.toFixed(2)}`;
 
   const buyerText = [
-    `Hello ${params.recipientName},`,
+    "Hello " + params.recipientName + ",",
     "",
     "You have successfully confirmed delivery of your order. It was a pleasure doing business with you.",
-    `Order: ${params.orderId}`,
-    `Total: ${amount}`,
-    params.counterpartyName ? `Seller: ${params.counterpartyName}` : "",
+    "Order: " + params.orderId,
+    "Total: " + amount,
+    params.counterpartyName ? "Seller: " + params.counterpartyName : "",
     "",
     "You can view the order details in BuyMesho.",
     params.actionUrl,
@@ -38,11 +38,11 @@ export function renderOrderFulfilledEmail(params: {
   ].filter(Boolean).join("\n");
 
   const sellerText = [
-    `Hello ${params.recipientName},`,
+    "Hello " + params.recipientName + ",",
     "",
-    `${params.counterpartyName || "The buyer"} has confirmed delivery of the order. Please check the Seller Payouts page for information about the transaction and payout status.",
-    `Order: ${params.orderId}`,
-    `Total: ${amount}`,
+    (params.counterpartyName || "The buyer") + " has confirmed delivery of the order. Please check the Seller Payouts page for information about the transaction and payout status.",
+    "Order: " + params.orderId,
+    "Total: " + amount,
     "",
     "You can view the transaction and payout information in BuyMesho.",
     params.actionUrl,
