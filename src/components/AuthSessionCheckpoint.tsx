@@ -8,8 +8,6 @@ import BrandMark from "./BrandMark";
 type AuthSessionCheckpointProps = { mode: "login" | "signup"; children: ReactNode };
 type ValidatorAccessState = "checking" | "approved" | "denied" | "unavailable" | "not-validator";
 
-const SIGNUP_JUST_CREATED_KEY = "__buymesho_signup_just_created";
-
 function getTicketValidatorReturnUrl() {
   const params = new URLSearchParams(window.location.search);
   if (params.get("client") !== "ticket-validator") return null;
@@ -42,11 +40,21 @@ async function checkValidatorAccess() {
 export default function AuthSessionCheckpoint({ mode, children }: AuthSessionCheckpointProps) {
   const [restoring, setRestoring] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [sessionExistedOnEntry, setSessionExistedOnEntry] = useState<boolean | null>(null);
   const [validatorAccess, setValidatorAccess] = useState<ValidatorAccessState>("not-validator");
   const isValidatorEntry = Boolean(getTicketValidatorReturnUrl());
-  const signupJustCreated = mode === "signup" && sessionStorage.getItem(SIGNUP_JUST_CREATED_KEY) === "1";
 
-  useEffect(() => onAuthStateChanged(auth, (nextUser) => { setUser(nextUser); setRestoring(false); }), []);
+  useEffect(() => {
+    let initialSessionResolved = false;
+    return onAuthStateChanged(auth, (nextUser) => {
+      setUser(nextUser);
+      if (!initialSessionResolved) {
+        initialSessionResolved = true;
+        setSessionExistedOnEntry(Boolean(nextUser));
+      }
+      setRestoring(false);
+    });
+  }, []);
 
   useEffect(() => {
     if (!user || !isValidatorEntry) { setValidatorAccess("not-validator"); return; }
@@ -58,8 +66,8 @@ export default function AuthSessionCheckpoint({ mode, children }: AuthSessionChe
     return () => { cancelled = true; };
   }, [user?.uid, isValidatorEntry]);
 
-  if (restoring) return <div className="min-h-screen bg-[linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_48%,_#f8fafc_100%)] text-zinc-900"><main className="flex min-h-screen items-center justify-center px-4"><div className="flex items-center gap-3 text-sm font-bold text-zinc-600"><Loader2 className="h-5 w-5 animate-spin" />Checking your session…</div></main></div>;
-  if (signupJustCreated && !isValidatorEntry) return <>{children}</>;
+  if (restoring || sessionExistedOnEntry === null) return <div className="min-h-screen bg-[linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_48%,_#f8fafc_100%)] text-zinc-900"><main className="flex min-h-screen items-center justify-center px-4"><div className="flex items-center gap-3 text-sm font-bold text-zinc-600"><Loader2 className="h-5 w-5 animate-spin" />Checking your session…</div></main></div>;
+  if (!sessionExistedOnEntry) return <>{children}</>;
   if (!user) return <>{children}</>;
 
   const handleContinue = async () => {
