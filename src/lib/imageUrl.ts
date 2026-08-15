@@ -4,10 +4,10 @@ export const LISTING_IMAGE_PRESETS: Record<
   ListingImageRole,
   { width: number; quality: string }
 > = {
-  thumbnail: { width: 160, quality: "auto" },
-  card: { width: 480, quality: "auto" },
-  detail: { width: 1400, quality: "auto" },
-  fullscreen: { width: 2200, quality: "auto" },
+  thumbnail: { width: 160, quality: "auto:low" },
+  card: { width: 480, quality: "auto:eco" },
+  detail: { width: 1400, quality: "auto:good" },
+  fullscreen: { width: 2200, quality: "auto:best" },
 };
 
 function transformCloudinaryUrl(
