@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { mountTotpRoutes } from "../totpServer.js";
 import { registerSessionRoutes } from "../auth/sessionRoutes.js";
+import { registerPasskeyRoutes } from "../auth/passkeyRoutes.js";
 import { registerValidatorRoutes } from "./validator.routes.js";
 import { registerValidatorProjectionRoutes } from "./validatorProjection.routes.js";
 import { registerAccountDeletionRoutes } from "../auth/accountDeletionRoutes.js";
@@ -115,6 +116,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerPasswordResetEmailRoutes(app);
   registerEmailChangeRoutes(app);
   registerLoginEmailCheckRoutes(app);
+  registerPasskeyRoutes(app);
   registerValidatorProjectionRoutes(app);
   registerValidatorRoutes(app);
   registerSessionRoutes(app);
