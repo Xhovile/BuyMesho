@@ -8,6 +8,7 @@ type LegalPageShellProps = {
   subtitle?: string;
   onBack: () => void;
   children: ReactNode;
+  flushContent?: boolean;
 };
 
 export default function LegalPageShell({
@@ -15,6 +16,7 @@ export default function LegalPageShell({
   subtitle = "Secure Marketplace",
   onBack,
   children,
+  flushContent = false,
 }: LegalPageShellProps) {
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -62,9 +64,13 @@ export default function LegalPageShell({
             </button>
           </div>
         </section>
-        <section className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden">
-          {children}
-        </section>
+        {flushContent ? (
+          children
+        ) : (
+          <section className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden">
+            {children}
+          </section>
+        )}
       </main>
     </div>
   );
