@@ -9,3 +9,5 @@ The workflow validates:
 - Frontend and server production build through `npm run build`
 
 The workflow can also be started manually from the GitHub Actions tab.
+
+Seller workspace cache/loading changes are validated through the same CI pipeline.
