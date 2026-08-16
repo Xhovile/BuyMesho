@@ -14,12 +14,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Apply PayChangu payout fixes
+      - name: Apply fixes
         env:
           BRANCH: agent/fix-paychangu-payout-verification-final
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           payout = Path('server/modules/payouts/paychangu.payout.ts')
           text = payout.read_text()
@@ -29,49 +30,37 @@ jobs:
               "export type PayChanguPayoutFailureClass =\n  | 'provider_unavailable'\n  | 'provider_timeout'\n  | 'provider_rate_limited'\n  | 'provider_rejected'\n  | 'provider_authentication_error'\n  | 'provider_configuration_error'\n  | 'provider_conflict'\n  | null;"
           )
 
-          old = """function classifyProviderError(error: unknown, httpStatus?: number): PayChanguPayoutFailureClass {\n  if (httpStatus !== undefined) {\n    if (httpStatus === 429) return 'provider_rate_limited';\n    if (httpStatus >= 500 && httpStatus < 600) return 'provider_unavailable';\n  }\n\n  if (error instanceof Error) {\n    const msg = error.message.toLowerCase();\n    if (msg.includes('timeout') || msg.includes('timed out') || msg.includes('etimedout')) {\n      return 'provider_timeout';\n    }\n    if (\n      msg.includes('network') ||\n      msg.includes('econnrefused') ||\n      msg.includes('enotfound') ||\n      msg.includes('unavailable') ||\n      msg.includes('fetch failed')\n    ) {\n      return 'provider_unavailable';\n    }\n  }\n\n  return 'provider_unavailable';\n}\n"""
-
-          new = """function classifyProviderError(error: unknown, httpStatus?: number): PayChanguPayoutFailureClass {\n  if (httpStatus !== undefined) {\n    if (httpStatus === 429) return 'provider_rate_limited';\n    if (httpStatus >= 500 && httpStatus < 600) return 'provider_unavailable';\n    if (httpStatus === 401 || httpStatus === 403) return 'provider_authentication_error';\n    if (httpStatus === 404) return 'provider_configuration_error';\n    if (httpStatus === 409) return 'provider_conflict';\n    if (httpStatus === 400 || httpStatus === 422) return 'provider_rejected';\n  }\n\n  if (error instanceof Error) {\n    const msg = error.message.toLowerCase();\n    if (msg.includes('timeout') || msg.includes('timed out') || msg.includes('etimedout')) {\n      return 'provider_timeout';\n    }\n    if (\n      msg.includes('network') ||\n      msg.includes('econnrefused') ||\n      msg.includes('enotfound') ||\n      msg.includes('unavailable') ||\n      msg.includes('fetch failed')\n    ) {\n      return 'provider_unavailable';\n    }\n  }\n\n  return 'provider_unavailable';\n}\n"""
-
-          if old not in text:
-              raise SystemExit('Expected classifyProviderError block not found')
-          text = text.replace(old, new, 1)
+          old_fn = re.compile(r"function classifyProviderError\(error: unknown, httpStatus\?: number\): PayChanguPayoutFailureClass \{.*?\n\}\n", re.S)
+          new_fn = """function classifyProviderError(error: unknown, httpStatus?: number): PayChanguPayoutFailureClass {\n  if (httpStatus !== undefined) {\n    if (httpStatus === 429) return 'provider_rate_limited';\n    if (httpStatus >= 500 && httpStatus < 600) return 'provider_unavailable';\n    if (httpStatus === 401 || httpStatus === 403) return 'provider_authentication_error';\n    if (httpStatus === 404) return 'provider_configuration_error';\n    if (httpStatus === 409) return 'provider_conflict';\n    if (httpStatus === 400 || httpStatus === 422) return 'provider_rejected';\n  }\n\n  if (error instanceof Error) {\n    const msg = error.message.toLowerCase();\n    if (msg.includes('timeout') || msg.includes('timed out') || msg.includes('etimedout')) {\n      return 'provider_timeout';\n    }\n    if (\n      msg.includes('network') ||\n      msg.includes('econnrefused') ||\n      msg.includes('enotfound') ||\n      msg.includes('unavailable') ||\n      msg.includes('fetch failed')\n    ) {\n      return 'provider_unavailable';\n    }\n  }\n\n  return 'provider_unavailable';\n}\n"""
+          text, count = old_fn.subn(new_fn, text, count=1)
+          if count != 1:
+              raise SystemExit('classifyProviderError not found')
           payout.write_text(text)
 
           webhook = Path('server/modules/payouts/payout.webhooks.ts')
           text = webhook.read_text()
+          provider_import = 'import { paychanguProvider, normalizePaychanguStatus } from "../payments/paychangu.provider.js";'
+          if provider_import not in text:
+              raise SystemExit('PayChangu webhook provider import not found')
+          text = text.replace(provider_import, provider_import + "\nimport { getPayChanguPayoutStatus } from './paychangu.payout.js';", 1)
 
-          import_line = "import { normalizePaychanguStatus, paychanguProvider } from \"../payments/paychangu.provider.js\";"
-          if import_line in text:
-              text = text.replace(import_line, import_line + "\nimport { getPayChanguPayoutStatus } from './paychangu.payout.js';", 1)
-          else:
-              raise SystemExit('Expected PayChangu provider import not found')
+          status_block = re.compile(
+              r"  const resolvedPayoutId = String\(payout\.id \?\? payoutId \?\? chargeId \?\? \"\"\);.*?^  const payloadAmount =",
+              re.S | re.M,
+          )
+          replacement = """  const resolvedPayoutId = String(payout.id ?? payoutId ?? chargeId ?? \"\");\n  const resolvedSellerId = String(payout.seller_id ?? \"\");\n\n  // Verify the webhook against PayChangu before changing the payout state.\n  const providerChargeForVerification = chargeId || String(payout.provider_charge_id ?? '').trim();\n  if (!providerChargeForVerification) {\n    throw new Error('PayChangu payout webhook is missing charge_id; cannot verify transaction');\n  }\n  const verifiedPayout = await getPayChanguPayoutStatus(providerChargeForVerification);\n  const verifiedStatus = verifiedPayout.status;\n  const verifiedReference = verifiedPayout.reference || providerReference || null;\n  const verifiedTransactionId = verifiedPayout.transactionId || providerTransactionId || null;\n  const verifiedAmount = verifiedPayout.amount;\n  const verifiedCurrency = verifiedPayout.currency;\n  const now = new Date().toISOString();\n  const payoutState = verifiedStatus === \"paid\"\n    ? \"paid\"\n    : verifiedStatus === \"failed\"\n      ? \"failed\"\n      : \"pending\";\n\n  const payloadAmount ="""
+          text, count = status_block.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit('webhook status block not found')
 
-          anchor = "  const payout = payoutRow;\n\n  if (!payout) {"
-          # actual source uses const payoutRow and then const payout after the ignored branch
-          if anchor not in text:
-              anchor = "  const db = getPaymentDb();\n  const payout = payoutRow;\n\n  if (!payout) {"
-          if anchor not in text:
-              raise SystemExit('Webhook payout anchor not found')
-
-          # Replace the section immediately after the payout existence check with a provider re-query.
-          target = "  const resolvedPayoutId = String(payout.id ?? payoutId ?? chargeId ?? \"\");\n  const resolvedSellerId = String(payout.seller_id ?? \"\");\n  const now = new Date().toISOString();\n  const payoutState = providerStatus === \"paid\"\n    ? \"paid\"\n    : providerStatus === \"failed\"\n      ? \"failed\"\n      : \"pending\";\n"
-
-          replacement = """  const resolvedPayoutId = String(payout.id ?? payoutId ?? chargeId ?? \"\");\n  const resolvedSellerId = String(payout.seller_id ?? \"\");\n\n  // PayChangu recommends re-querying the transaction after a webhook.\n  // Treat the provider's status/details response as authoritative instead of\n  // trusting the webhook payload alone.\n  const providerChargeForVerification = chargeId || String(payout.provider_charge_id ?? '').trim();\n  if (!providerChargeForVerification) {\n    throw new Error('PayChangu payout webhook is missing charge_id; cannot verify transaction');\n  }\n\n  const verifiedPayout = await getPayChanguPayoutStatus(providerChargeForVerification);\n  const verifiedStatus = verifiedPayout.status;\n  const verifiedReference = verifiedPayout.reference || providerReference || null;\n  const verifiedTransactionId = verifiedPayout.transactionId || providerTransactionId || null;\n  const verifiedAmount = verifiedPayout.amount;\n  const verifiedCurrency = verifiedPayout.currency;\n  const now = new Date().toISOString();\n  const payoutState = verifiedStatus === \"paid\"\n    ? \"paid\"\n    : verifiedStatus === \"failed\"\n      ? \"failed\"\n      : \"pending\";\n"""
-
-          if target not in text:
-              raise SystemExit('Expected webhook status block not found')
-          text = text.replace(target, replacement, 1)
-
-          text = text.replace("    providerReference || null,\n    providerTransactionId || null,\n    payoutAmount,\n    payoutCurrency,", "    verifiedReference,\n    verifiedTransactionId,\n    verifiedAmount ?? payoutAmount,\n    verifiedCurrency ?? payoutCurrency,", 1)
-
+          text = text.replace(
+              "    providerReference || null,\n    providerTransactionId || null,\n    payoutAmount,\n    payoutCurrency,",
+              "    verifiedReference,\n    verifiedTransactionId,\n    verifiedAmount ?? payoutAmount,\n    verifiedCurrency ?? payoutCurrency,",
+              1,
+          )
           webhook.write_text(text)
           PY
 
-      - name: Remove one-shot workflow and commit fixes
-        env:
-          BRANCH: agent/fix-paychangu-payout-verification-final
-        run: |
           rm -f .github/workflows/one-shot-fix-paychangu-payouts.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
