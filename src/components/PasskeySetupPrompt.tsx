@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Fingerprint, ShieldCheck, X } from "lucide-react";
 import { useAuthUser } from "../hooks/useAuthUser";
 import {
-  consumePasskeySetupOffer,
+  clearPasskeySetupOffer,
   getPasskeyStatus,
+  hasPasskeySetupOffer,
   registerCurrentPasskey,
   supportsPasskeys,
 } from "../lib/passkeys";
@@ -18,26 +19,45 @@ export default function PasskeySetupPrompt() {
 
   useEffect(() => {
     if (loading || !user || !user.emailVerified || !supportsPasskeys()) return;
+    if (!hasPasskeySetupOffer()) return;
 
     let cancelled = false;
+    let retryTimer: number | null = null;
 
     const prepare = async () => {
-      if (!consumePasskeySetupOffer()) return;
-
       setState("checking");
       try {
         const status = await getPasskeyStatus();
-        if (cancelled || status.enabled) return;
+        if (cancelled) return;
+
+        // The offer is now consumed only after the status request succeeds.
+        clearPasskeySetupOffer();
+
+        if (status.enabled) {
+          setState("idle");
+          return;
+        }
+
         setState("ready");
         setOpen(true);
       } catch (error) {
         console.warn("[passkeys] post-login status check failed", error);
+        if (cancelled) return;
+
+        setState("idle");
+        // Keep the offer marker so a transient auth/API race does not silently
+        // discard the post-login passkey prompt.
+        retryTimer = window.setTimeout(() => {
+          void prepare();
+        }, 1200);
       }
     };
 
     void prepare();
+
     return () => {
       cancelled = true;
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
     };
   }, [loading, user]);
 
@@ -53,11 +73,12 @@ export default function PasskeySetupPrompt() {
 
     try {
       await registerCurrentPasskey();
+      clearPasskeySetupOffer();
       setState("success");
       window.setTimeout(close, 1200);
     } catch (error: any) {
       if (error?.name === "NotAllowedError") {
-        // Let the browser/OS own cancellation and "no passkey" messaging.
+        clearPasskeySetupOffer();
         close();
         return;
       }
@@ -81,7 +102,10 @@ export default function PasskeySetupPrompt() {
           </div>
           <button
             type="button"
-            onClick={close}
+            onClick={() => {
+              clearPasskeySetupOffer();
+              close();
+            }}
             disabled={state === "busy"}
             className="rounded-full p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close passkey setup"
@@ -126,7 +150,10 @@ export default function PasskeySetupPrompt() {
               <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <button
                   type="button"
-                  onClick={close}
+                  onClick={() => {
+                    clearPasskeySetupOffer();
+                    close();
+                  }}
                   disabled={state === "busy"}
                   className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
