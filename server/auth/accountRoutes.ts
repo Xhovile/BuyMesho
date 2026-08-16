@@ -18,6 +18,7 @@ export function registerAccountRoutes(app: Express) {
 
     const university = normalizeString(req.body?.university);
     const profilePicture = normalizeString(req.body?.profile_picture);
+    const businessLogo = normalizeString(req.body?.business_logo);
 
     try {
       const firebaseAdmin = getFirebaseAdmin();
@@ -30,15 +31,31 @@ export function registerAccountRoutes(app: Express) {
         { merge: true },
       );
 
-      if (university) {
+      if (university || businessLogo) {
         try {
-          db.prepare(
-            `UPDATE sellers
-             SET university = ?
-             WHERE uid = ?`,
-          ).run(university, uid);
+          const sellerUpdates: string[] = [];
+          const sellerParams: unknown[] = [];
+
+          if (university) {
+            sellerUpdates.push("university = ?");
+            sellerParams.push(university);
+          }
+
+          if (businessLogo) {
+            sellerUpdates.push("business_logo = ?");
+            sellerParams.push(businessLogo);
+          }
+
+          if (sellerUpdates.length > 0) {
+            sellerParams.push(uid);
+            db.prepare(
+              `UPDATE sellers
+               SET ${sellerUpdates.join(", ")}
+               WHERE uid = ?`,
+            ).run(...sellerParams);
+          }
         } catch (error) {
-          console.warn("Failed to sync account university to seller record", error);
+          console.warn("Failed to sync account fields to seller record", error);
         }
       }
 
