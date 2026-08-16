@@ -1,0 +1,87 @@
+name: One-shot seller workspace cache
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply seller workspace loading/cache changes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new, count=1):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f'Expected text not found in {path}: {old[:120]}')
+              p.write_text(text.replace(old, new, count))
+
+          # Hubs are navigation only: render immediately and let destination pages own access/loading.
+          replace('src/SellerHubPage.tsx', 'import { useAccountProfile } from "./hooks/useAccountProfile";\n', '')
+          replace('src/SellerHubPage.tsx', '  const { profile, profileLoading } = useAccountProfile();\n\n  if (profileLoading) return <main className="min-h-screen grid place-items-center bg-zinc-50 text-sm font-semibold text-zinc-500">Loading seller hub…</main>;\n  if (!profile?.is_seller) return <main className="min-h-screen grid place-items-center bg-zinc-50 px-6 text-center"><div><p className="font-extrabold text-zinc-900">Seller access required</p><button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-3 text-sm font-bold text-zinc-600 hover:text-zinc-950">Back to marketplace</button></div></main>;\n\n', '')
+
+          replace('src/MyListingsHubPage.tsx', 'import { useAccountProfile } from "./hooks/useAccountProfile";\n', '')
+          replace('src/MyListingsHubPage.tsx', '  const { profile, profileLoading } = useAccountProfile();\n\n  if (profileLoading) {\n    return (\n      <main className="min-h-screen grid place-items-center bg-zinc-50 text-sm font-semibold text-zinc-500">\n        Loading listings hub…\n      </main>\n    );\n  }\n\n  if (!profile?.is_seller) {\n    return (\n      <main className="min-h-screen grid place-items-center bg-zinc-50 px-6 text-center">\n        <div>\n          <p className="font-extrabold text-zinc-900">Seller access required</p>\n          <button\n            type="button"\n            onClick={() => navigateToPath("/become-seller")}\n            className="mt-3 text-sm font-bold text-zinc-600 hover:text-zinc-950"\n          >\n            Become a seller\n          </button>\n        </div>\n      </main>\n    );\n  }\n\n', '')
+
+          # Persist seller workspace cache for the current tab/session; keep fast in-memory reads.
+          replace('src/lib/sellerWorkspaceCache.ts', 'const memoryCache = new Map<string, CacheEntry<unknown>>();\nconst DEFAULT_TTL_MS = 5 * 60 * 1000;\n\nexport function getSellerCache<T>(key: string, ttlMs = DEFAULT_TTL_MS): T | null {\n  const now = Date.now();\n  const entry = memoryCache.get(key) as CacheEntry<T> | undefined;\n  if (!entry) return null;\n  if (now - entry.storedAt >= ttlMs) {\n    memoryCache.delete(key);\n    return null;\n  }\n  return entry.value;\n}\n\nexport function setSellerCache<T>(key: string, value: T): void {\n  memoryCache.set(key, { value, storedAt: Date.now() });\n}\n\nexport function invalidateSellerCache(key: string): void {\n  memoryCache.delete(key);\n}\n', '''const memoryCache = new Map<string, CacheEntry<unknown>>();\nconst DEFAULT_TTL_MS = 5 * 60 * 1000;\nconst SESSION_CACHE_PREFIX = "__buymesho_seller_workspace_cache_v1:";\n\nfunction getStorageKey(key: string) {\n  return `${SESSION_CACHE_PREFIX}${key}`;\n}\n\nfunction readSessionCache<T>(key: string, ttlMs: number): T | null {\n  try {\n    const raw = window.sessionStorage.getItem(getStorageKey(key));\n    if (!raw) return null;\n    const parsed = JSON.parse(raw) as CacheEntry<T>;\n    if (!parsed || typeof parsed.storedAt !== "number") return null;\n    if (Date.now() - parsed.storedAt >= ttlMs) {\n      window.sessionStorage.removeItem(getStorageKey(key));\n      return null;\n    }\n    return parsed.value;\n  } catch {\n    return null;\n  }\n}\n\nexport function getSellerCache<T>(key: string, ttlMs = DEFAULT_TTL_MS): T | null {\n  const now = Date.now();\n  const entry = memoryCache.get(key) as CacheEntry<T> | undefined;\n  if (entry) {\n    if (now - entry.storedAt < ttlMs) return entry.value;\n    memoryCache.delete(key);\n  }\n\n  const sessionValue = readSessionCache<T>(key, ttlMs);\n  if (sessionValue !== null) {\n    memoryCache.set(key, { value: sessionValue, storedAt: now });\n    return sessionValue;\n  }\n  return null;\n}\n\nexport function setSellerCache<T>(key: string, value: T): void {\n  const entry = { value, storedAt: Date.now() };\n  memoryCache.set(key, entry);\n  try {\n    window.sessionStorage.setItem(getStorageKey(key), JSON.stringify(entry));\n  } catch {\n    // Ignore storage failures; memory cache still helps within the session.\n  }\n}\n\nexport function invalidateSellerCache(key: string): void {\n  memoryCache.delete(key);\n  try {\n    window.sessionStorage.removeItem(getStorageKey(key));\n  } catch {\n    // Ignore storage failures.\n  }\n}\n''')
+
+          # Dashboard: cached snapshot first, silent revalidation second.
+          replace('src/SellerDashboardPage.tsx', 'import { navigateToPath } from "./lib/appNavigation";\n', 'import { navigateToPath } from "./lib/appNavigation";\nimport { getSellerCache, setSellerCache } from "./lib/sellerWorkspaceCache";\n')
+          replace('src/SellerDashboardPage.tsx', '  const [dashboard, setDashboard] = useState<DashboardState | null>(null);\n  const [dashboardLoading, setDashboardLoading] = useState(true);\n', '  const dashboardCacheKey = firebaseUser ? `dashboard:${firebaseUser.uid}` : "";\n  const cachedDashboard = dashboardCacheKey ? getSellerCache<DashboardState>(dashboardCacheKey) : null;\n  const [dashboard, setDashboard] = useState<DashboardState | null>(cachedDashboard);\n  const [dashboardLoading, setDashboardLoading] = useState(!cachedDashboard);\n')
+          replace('src/SellerDashboardPage.tsx', '  const loadDashboard = useCallback(async () => {\n', '  const loadDashboard = useCallback(async (silent = false) => {\n')
+          replace('src/SellerDashboardPage.tsx', '    setDashboardLoading(true);\n    setDashboardError(null);\n', '    if (!silent) setDashboardLoading(true);\n    setDashboardError(null);\n')
+          replace('src/SellerDashboardPage.tsx', '      setDashboard(buildDashboard(seller, listings));\n', '      const nextDashboard = buildDashboard(seller, listings);\n      setDashboard(nextDashboard);\n      if (dashboardCacheKey) setSellerCache(dashboardCacheKey, nextDashboard);\n')
+          replace('src/SellerDashboardPage.tsx', '      setDashboard(null);\n      setDashboardError(error?.message || "Failed to load seller dashboard.");\n    } finally {\n      setDashboardLoading(false);\n', '      if (!dashboard) setDashboard(null);\n      setDashboardError(error?.message || "Failed to load seller dashboard.");\n    } finally {\n      if (!silent) setDashboardLoading(false);\n')
+          replace('src/SellerDashboardPage.tsx', '  }, [firebaseUser, profile?.business_name, profile?.is_seller]);\n\n  useEffect(() => {\n    void loadDashboard();\n  }, [loadDashboard]);\n', '  }, [dashboard, dashboardCacheKey, firebaseUser, profile?.business_name, profile?.is_seller]);\n\n  useEffect(() => {\n    void loadDashboard(Boolean(cachedDashboard));\n    // eslint-disable-next-line react-hooks/exhaustive-deps\n  }, [firebaseUser?.uid, profile?.is_seller]);\n')
+          replace('src/SellerDashboardPage.tsx', '    void loadDashboard();\n  };\n', '    void loadDashboard(false);\n  };\n', 1)
+          replace('src/SellerDashboardPage.tsx', '  if (authLoading || profileLoading) {', '  if (authLoading || (profileLoading && !dashboard)) {')
+
+          # My Listings: cached snapshot first, silent refresh; mutation paths keep cache current.
+          replace('src/MyListingsPage.tsx', 'import { navigateToEditListing,', 'import { navigateToEditListing,')
+          replace('src/MyListingsPage.tsx', 'import type { Listing } from "./types";\n', 'import type { Listing } from "./types";\nimport { getSellerCache, setSellerCache } from "./lib/sellerWorkspaceCache";\n')
+          replace('src/MyListingsPage.tsx', '  const [listings, setListings] = useState<Listing[]>([]);\n  const [loadingListings, setLoadingListings] = useState(true);\n', '  const cachedListings = firebaseUser ? getSellerCache<Listing[]>("listings") : null;\n  const [listings, setListings] = useState<Listing[]>(cachedListings ?? []);\n  const [loadingListings, setLoadingListings] = useState(!cachedListings);\n')
+          replace('src/MyListingsPage.tsx', '      if (active) setLoadingListings(true);\n', '      if (active && !cachedListings) setLoadingListings(true);\n', 1)
+          replace('src/MyListingsPage.tsx', '        setListings(Array.from(uniqueById.values()));\n', '        const nextListings = Array.from(uniqueById.values());\n        setListings(nextListings);\n        setSellerCache("listings", nextListings);\n')
+          replace('src/MyListingsPage.tsx', '    void loadListings();\n\n    return () => {\n', '    void loadListings();\n\n    return () => {\n', 1)
+          replace('src/MyListingsPage.tsx', '  }, [firebaseUser, profile?.is_seller]);\n', '  }, [firebaseUser, profile?.is_seller, cachedListings]);\n', 1)
+          replace('src/MyListingsPage.tsx', '      setListings((prev) => prev.filter((item) => item.id !== listingId));\n', '      setListings((prev) => { const next = prev.filter((item) => item.id !== listingId); setSellerCache("listings", next); return next; });\n')
+          replace('src/MyListingsPage.tsx', '      setListings((prev) => prev.map((item) => (item.id === listing.id ? { ...item, status: nextStatus } : item)));\n', '      setListings((prev) => { const next = prev.map((item) => (item.id === listing.id ? { ...item, status: nextStatus } : item)); setSellerCache("listings", next); return next; });\n')
+          replace('src/MyListingsPage.tsx', '        setListings((prev) =>\n          prev.map((item) => (item.id === result.listing.id ? { ...item, ...result.listing } : item)),\n        );\n', '        setListings((prev) => { const next = prev.map((item) => (item.id === result.listing.id ? { ...item, ...result.listing } : item)); setSellerCache("listings", next); return next; });\n', 1)
+          replace('src/MyListingsPage.tsx', '        setListings((prev) =>\n          prev.map((item) =>\n            item.id === result.listing.id ? { ...item, ...result.listing, status: "available" } : item,\n          ),\n        );\n', '        setListings((prev) => { const next = prev.map((item) => item.id === result.listing.id ? { ...item, ...result.listing, status: "available" } : item); setSellerCache("listings", next); return next; });\n', 1)
+
+          # Seller Orders: cached data should render while profile rehydrates.
+          replace('src/SellerOrdersPage.tsx', '  if (profileLoading) return <main className="min-h-screen grid place-items-center bg-zinc-50 text-sm font-semibold text-zinc-500">Loading seller orders…</main>;', '  if (profileLoading && orders.length === 0) return <main className="min-h-screen grid place-items-center bg-zinc-50 text-sm font-semibold text-zinc-500">Loading seller orders…</main>;')
+
+          # Seller Payouts: cached workspace data should render while profile rehydrates.
+          replace('src/pages/seller-payouts/SellerPayoutsPage.tsx', 'import SellerPayoutsAccessGate from "./components/SellerPayoutsAccessGate";\n', 'import SellerPayoutsAccessGate from "./components/SellerPayoutsAccessGate";\nimport { getSellerCache } from "../../lib/sellerWorkspaceCache";\n')
+          replace('src/pages/seller-payouts/SellerPayoutsPage.tsx', '  const {\n    profileLoading,', '  const {\n    profileLoading,')
+          replace('src/pages/seller-payouts/SellerPayoutsPage.tsx', '  if (profileLoading || loading || !isSeller) {', '  const sellerId = (firebaseUser?.uid ?? "").trim();\n  const hasCachedPayoutData = Boolean(sellerId && getSellerCache(`payouts:${sellerId}`));\n\n  if ((profileLoading && !hasCachedPayoutData) || (loading && !hasCachedPayoutData) || (!isSeller && !profileLoading)) {')
+
+          # Remove this workflow after applying the migration.
+          PY
+
+      - name: Commit changes and remove one-shot workflow
+        shell: bash
+        run: |
+          rm .github/workflows/one-shot-seller-workspace-cache.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/SellerHubPage.tsx src/MyListingsHubPage.tsx src/lib/sellerWorkspaceCache.ts src/SellerDashboardPage.tsx src/MyListingsPage.tsx src/SellerOrdersPage.tsx src/pages/seller-payouts/SellerPayoutsPage.tsx .github/workflows/one-shot-seller-workspace-cache.yml
+          git commit -m "Improve seller workspace loading and caching [skip ci]"
+          git push origin HEAD:main
