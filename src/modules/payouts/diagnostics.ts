@@ -11,6 +11,7 @@ export type PayoutDiagnostics = {
   providerChargeId?: string | null;
   providerReference?: string | null;
   providerTransactionId?: string | null;
+  providerResponseReceived?: boolean;
   destinationAccountId?: string | null;
   destinationVerificationStatus?: string | null;
   destinationActive?: boolean | null;
@@ -52,6 +53,7 @@ function token(value: unknown): string {
 }
 
 export function getPayoutDiagnostics(row: PayoutRow): PayoutDiagnostics {
+  const providerResponse = row.latestAttemptProviderResponse ?? null;
   return (row.diagnostics ?? {
     payoutId: row.id,
     sellerId: row.sellerId,
@@ -63,6 +65,7 @@ export function getPayoutDiagnostics(row: PayoutRow): PayoutDiagnostics {
     providerChargeId: row.providerChargeId,
     providerReference: row.providerReference,
     providerTransactionId: row.providerTransactionId,
+    providerResponseReceived: providerResponse !== null && providerResponse !== undefined,
     destinationAccountId: row.destinationAccountId,
     destinationVerificationStatus: row.destinationVerificationStatus,
     destinationActive: row.destinationActive,
@@ -80,6 +83,10 @@ export function getPayoutDiagnostics(row: PayoutRow): PayoutDiagnostics {
     latestAuditEventAt: row.auditSummary?.latestEventAt ?? null,
     retryEligible: row.retryEligible,
     retryBlockedReason: row.retryBlockedReason,
+    latestAttemptProviderChargeId: row.latestAttemptProviderChargeId ?? null,
+    latestAttemptProviderReference: row.latestAttemptProviderReference ?? null,
+    latestAttemptProviderTransactionId: row.latestAttemptProviderTransactionId ?? null,
+    latestAttemptProviderResponse: providerResponse,
   }) as PayoutDiagnostics;
 }
 
