@@ -74,7 +74,7 @@ export default function AppFooter() {
 
         <div className="h-px w-full max-w-[240px] bg-zinc-200" />
 
-        <div className="text-xs font-bold text-zinc-300">© 2026 Crafted for Students</div>
+        <div className="text-xs font-bold text-zinc-300">© 2026 Crafted For You</div>
       </div>
     </footer>
   );
