@@ -1,6 +1,8 @@
 import express, { type RequestHandler } from "express";
 import { hasAdminAccess } from "../../auth/adminAccess.js";
 import { adminApiLimiter } from "./admin.rateLimit.js";
+import { postgresDb as db } from "../../db.js";
+import { createAdminMessagesRouter } from "../../routes/adminMessages.routes.js";
 
 export function createAdminAccessRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
@@ -12,6 +14,8 @@ export function createAdminAccessRouter(requireAuth: RequestHandler): express.Ro
 
     return res.json({ isAdmin: true });
   });
+
+  router.use(createAdminMessagesRouter({ requireAuth, db }));
 
   return router;
 }
