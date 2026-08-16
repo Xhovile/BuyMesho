@@ -36,8 +36,6 @@ export default function EditProfilePage() {
   useEffect(() => {
     if (authLoading || profileLoading || formInitialized.current) return;
 
-    // If authentication/profile has loaded but the user is not eligible for the seller form,
-    // mark the form as ready so the appropriate fallback message is shown.
     if (!firebaseUser || !profile?.is_seller) {
       setFormReady(true);
       return;
@@ -53,7 +51,6 @@ export default function EditProfilePage() {
           bio: serverProfile.bio || "",
         });
       } catch (err) {
-        // Log the failure and fall back to Firestore-backed profile data
         console.error("Could not fetch seller profile from server, using Firestore fallback:", err);
         setForm({
           businessName: profile.business_name || "",
@@ -107,7 +104,7 @@ export default function EditProfilePage() {
         bio: form.bio,
       };
 
-      await apiFetch("/api/sellers", {
+      const response = await apiFetch("/api/sellers", {
         method: "POST",
         body: JSON.stringify({
           email: firebaseUser.email || "",
@@ -120,7 +117,27 @@ export default function EditProfilePage() {
         }),
       });
 
-      setProfile(updatedProfile);
+      // The seller sync endpoint historically did not persist business_logo.
+      // Persist the logo through the account endpoint as the authoritative image update.
+      if (updatedProfile.business_logo !== profile.business_logo) {
+        await apiFetch("/api/account", {
+          method: "PUT",
+          body: JSON.stringify({
+            university: updatedProfile.university || resolveUniversity(),
+            profile_picture: profile.profile_picture || "",
+            business_logo: updatedProfile.business_logo || "",
+          }),
+        });
+      }
+
+      setProfile({
+        ...updatedProfile,
+        ...(response?.profile || {}),
+        business_name: updatedProfile.business_name,
+        business_logo: updatedProfile.business_logo,
+        university: updatedProfile.university,
+        bio: updatedProfile.bio,
+      });
       showFeedback("success", "Profile updated", "Your seller profile was saved successfully.");
       navigateToPath("/profile");
     } catch (err: any) {
