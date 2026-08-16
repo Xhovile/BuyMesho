@@ -86,12 +86,12 @@ export interface UserProfile {
   is_seller: boolean;
   is_verified: boolean;
   join_date: string;
-  business_name: string | null;
-  business_description: string | null;
-  business_logo: string | null;
-  phone: string | null;
-  university: string | null;
-  campus: string | null;
+  business_name?: string | null;
+  business_description?: string | null;
+  business_logo?: string | null;
+  phone?: string | null;
+  university?: string | null;
+  campus?: string | null;
   buyer_details?: BuyerDeliveryDetails | null;
   profile_visibility?: VisibilitySetting;
   seller_visibility?: VisibilitySetting;
@@ -121,7 +121,7 @@ export interface Listing {
   sold_quantity?: number;
   views_count?: number;
   is_hidden?: number;
-  business_name: string;
+  business_name?: string;
   business_logo?: string | null;
   is_verified: boolean;
   listing_mode?: ListingMode;
