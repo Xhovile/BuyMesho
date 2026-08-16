@@ -166,8 +166,9 @@ export const pool = poolInstance ?? (new Proxy({}, {
 }) as unknown as Pool);
 
 export type DbRow = Record<string, unknown>;
+export type DbQueryRow<Row extends QueryResultRow = DbRow> = Row & Record<string, unknown>;
 export type DbQueryResult<Row extends QueryResultRow = DbRow> = {
-  rows: Row[];
+  rows: DbQueryRow<Row>[];
   rowCount: number;
 };
 
@@ -183,7 +184,7 @@ export async function query<Row extends QueryResultRow = DbRow>(
   try {
     const result = await poolInstance.query<Row>(text, params);
     return {
-      rows: result.rows,
+      rows: result.rows as DbQueryRow<Row>[],
       rowCount: result.rowCount ?? result.rows.length,
     };
   } catch (error) {
