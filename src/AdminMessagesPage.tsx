@@ -1,14 +1,76 @@
-import { Search, MessageSquareText } from "lucide-react";
-import { useState } from "react";
-import { navigateToPath } from "./lib/appNavigation";
+import { useEffect, useState } from "react";
+import { AlertTriangle, Ban, Loader2, MessageSquareText, Search } from "lucide-react";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 
-const FILTERS = ["Unread", "Reported", "Blocked", "All"] as const;
-type Filter = (typeof FILTERS)[number];
+type Filter = "Unread" | "Reported" | "Blocked" | "All";
+
+type AdminConversation = {
+  id: number;
+  listing_id: number | null;
+  event_id: number | null;
+  thread_type: "event" | "listing" | "seller";
+  buyer: { uid: string; email: string | null; business_name: string | null };
+  seller: { uid: string; email: string | null; business_name: string | null };
+  listing: { id: number; name: string } | null;
+  event: { id: number; title: string; organizer_name: string } | null;
+  last_message_preview: string;
+  last_message_at: string | null;
+  updated_at: string | null;
+  open_report_count: number;
+  is_blocked: boolean;
+  is_unread: boolean;
+};
+
+const FILTERS: Filter[] = ["Unread", "Reported", "Blocked", "All"];
+
+function timeLabel(value: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString();
+}
 
 export default function AdminMessagesPage() {
   const [filter, setFilter] = useState<Filter>("Unread");
   const [query, setQuery] = useState("");
+  const [items, setItems] = useState<AdminConversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams({ filter: filter.toLowerCase(), limit: "50" });
+        if (query.trim()) params.set("search", query.trim());
+
+        const response = await fetch(`/api/admin/messages?${params.toString()}`, {
+          signal: controller.signal,
+          credentials: "include",
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(payload?.error || "Failed to load admin messages.");
+        }
+        if (!cancelled) setItems(Array.isArray(payload?.items) ? payload.items : []);
+      } catch (err: any) {
+        if (cancelled || err?.name === "AbortError") return;
+        setError(err?.message || "Failed to load admin messages.");
+        setItems([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, 180);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [filter, query]);
 
   return (
     <AdminWorkspaceLayout
@@ -53,29 +115,97 @@ export default function AdminMessagesPage() {
           </div>
         </div>
 
-        <div className="rounded-[1.75rem] border border-dashed border-zinc-300 bg-white p-8 text-center shadow-sm sm:p-12">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-500">
-            <MessageSquareText className="h-6 w-6" />
+        {loading ? (
+          <div className="flex min-h-56 items-center justify-center rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm">
+            <Loader2 className="h-6 w-6 animate-spin text-zinc-500" aria-label="Loading conversations" />
           </div>
-          <p className="mt-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
-            {filter} conversations
-          </p>
-          <h2 className="mt-2 text-xl font-black tracking-tight text-zinc-900">
-            Message monitoring is ready
-          </h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-zinc-600">
-            Conversation records and moderation states will appear here in the next phase.
-            {query.trim() ? ` Search: “${query.trim()}”` : ""}
-          </p>
-        </div>
+        ) : error ? (
+          <div className="rounded-[1.75rem] border border-red-200 bg-red-50 p-6 text-sm text-red-700 shadow-sm">
+            {error}
+          </div>
+        ) : items.length ? (
+          <div className="space-y-3">
+            {items.map((conversation) => {
+              const buyerName = conversation.buyer.business_name || conversation.buyer.email || conversation.buyer.uid;
+              const sellerName = conversation.seller.business_name || conversation.seller.email || conversation.seller.uid;
+              const context = conversation.listing
+                ? `Listing · ${conversation.listing.name}`
+                : conversation.event
+                  ? `Event · ${conversation.event.title}`
+                  : "Seller conversation";
 
-        <button
-          type="button"
-          onClick={() => navigateToPath("/admin")}
-          className="text-sm font-bold text-zinc-500 hover:text-zinc-900"
-        >
-          Back to Admin Overview
-        </button>
+              return (
+                <article
+                  key={conversation.id}
+                  className="rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-sm"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <div>
+                          <p className="truncate text-base font-black text-zinc-900">{buyerName}</p>
+                          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-zinc-400">Buyer</p>
+                        </div>
+                        <span className="text-zinc-300" aria-hidden="true">↔</span>
+                        <div>
+                          <p className="truncate text-base font-black text-zinc-900">{sellerName}</p>
+                          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-zinc-400">
+                            {conversation.thread_type === "event" ? "Organizer" : "Seller"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <p className="mt-4 text-sm leading-6 text-zinc-700">
+                        {conversation.last_message_preview || "No message preview available."}
+                      </p>
+                      <p className="mt-2 text-xs font-bold text-zinc-400">{context}</p>
+                      <p className="mt-1 text-[11px] font-semibold text-zinc-400">
+                        Conversation #{conversation.id} · {timeLabel(conversation.last_message_at || conversation.updated_at)}
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      {conversation.is_unread ? (
+                        <span className="rounded-full bg-zinc-900 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-white">
+                          Unread
+                        </span>
+                      ) : null}
+                      {conversation.open_report_count > 0 ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-amber-800">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          Reported
+                        </span>
+                      ) : null}
+                      {conversation.is_blocked ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-red-800">
+                          <Ban className="h-3.5 w-3.5" />
+                          Blocked
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-[1.75rem] border border-dashed border-zinc-300 bg-white p-8 text-center shadow-sm sm:p-12">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-500">
+              <MessageSquareText className="h-6 w-6" />
+            </div>
+            <p className="mt-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
+              {filter} conversations
+            </p>
+            <h2 className="mt-2 text-xl font-black tracking-tight text-zinc-900">
+              No conversations found
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-zinc-600">
+              {query.trim()
+                ? `Nothing matched “${query.trim()}”.`
+                : `There are no ${filter.toLowerCase()} conversations to review right now.`}
+            </p>
+          </div>
+        )}
       </section>
     </AdminWorkspaceLayout>
   );
