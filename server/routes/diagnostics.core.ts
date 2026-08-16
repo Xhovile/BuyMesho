@@ -620,7 +620,13 @@ async function checkBusinessInvariants(
           )::text AS terminal_conflict
         FROM escrows
       `);
-      const row = result.rows[0] ?? {};
+      const row = result.rows[0] ?? {
+        released_balance_nonzero: "0",
+        refunded_balance_nonzero: "0",
+        released_missing_entry: "0",
+        refunded_missing_entry: "0",
+        terminal_conflict: "0",
+      };
       record("escrow_released_balance_nonzero", Number(row.released_balance_nonzero ?? 0), "Released escrows have non-zero balances");
       record("escrow_refunded_balance_nonzero", Number(row.refunded_balance_nonzero ?? 0), "Refunded escrows have non-zero balances");
       record("escrow_released_missing_entry", Number(row.released_missing_entry ?? 0), "Released escrows are missing release ledger entries");

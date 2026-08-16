@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Send, Bot, RefreshCw, ShoppingBag, ArrowRight, HelpCircle, Search } from "lucide-react";
-import { queryShoppingAssistant, type ShoppingAssistantResult, type ShoppingAssistantListing } from "../../lib/ai";
+import { queryShoppingAssistant, type ShoppingAssistantResult, type ShoppingAssistantListing, type CopilotConversationMessage } from "../../lib/ai";
 import { formatMoney } from "../../shared/utils/formatMoney";
 import AiIcon, { shouldHideLauncher } from "./AiIcon";
 
