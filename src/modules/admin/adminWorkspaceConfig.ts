@@ -1,9 +1,10 @@
-import { CalendarDays, ClipboardList, CreditCard, ListChecks, ReceiptText, ShieldCheck, Wallet, Wrench } from "lucide-react";
+import { CalendarDays, ClipboardList, CreditCard, ListChecks, MessageSquareText, ReceiptText, ShieldCheck, Wallet, Wrench } from "lucide-react";
 import type { ComponentType } from "react";
 import {
   ADMIN_AUDIT_PATH,
   ADMIN_BALANCE_PATH,
   ADMIN_EVENTS_PATH,
+  ADMIN_MESSAGES_PATH,
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_PATH,
   ADMIN_PAYMENTS_PATH,
@@ -36,6 +37,12 @@ export const ADMIN_HUB_ACTIONS: AdminWorkspaceItem[] = [
     path: ADMIN_REPORTS_PATH,
     icon: ClipboardList,
     description: "Handle user reports and compliance issues.",
+  },
+  {
+    label: "Messages",
+    path: ADMIN_MESSAGES_PATH,
+    icon: MessageSquareText,
+    description: "Monitor marketplace conversations and moderation states.",
   },
   {
     label: "Seller Approvals",
@@ -91,6 +98,11 @@ export const ADMIN_WORKSPACE_NAV_ITEMS: AdminWorkspaceItem[] = [
     label: "Reports",
     path: ADMIN_REPORTS_PATH,
     icon: ClipboardList,
+  },
+  {
+    label: "Messages",
+    path: ADMIN_MESSAGES_PATH,
+    icon: MessageSquareText,
   },
   {
     label: "Seller Applications",
