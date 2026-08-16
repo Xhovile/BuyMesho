@@ -100,7 +100,7 @@ export default function VerifyEmailPage() {
         return;
       }
       showFeedback("error", "Could not resend", result.message);
-      if (!result.ok && (result.code === "auth/too-many-requests" || result.message.toLowerCase().includes("too many attempts"))) {
+      if ("code" in result && (result.code === "auth/too-many-requests" || result.message.toLowerCase().includes("too many attempts"))) {
         setResendCooldown(RESEND_COOLDOWN_SECONDS);
       }
     } finally {
