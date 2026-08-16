@@ -14,13 +14,14 @@ export default function ReportProblemPage({
 }: Props) {
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
   const [sending, setSending] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isLoggedIn) {
+    if (!isLoggedIn || !confirmed) {
       return;
     }
 
@@ -48,6 +49,7 @@ export default function ReportProblemPage({
       );
       setSubject("");
       setDetails("");
+      setConfirmed(false);
     } catch (err: any) {
       alert(err?.message || "Failed to submit problem report.");
     } finally {
@@ -149,15 +151,24 @@ export default function ReportProblemPage({
               </p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm leading-7 text-zinc-700">
-              By submitting a report, you confirm that the information you are
-              providing is truthful to the best of your knowledge and relates to
-              a genuine platform concern.
-            </div>
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm leading-6 text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-100">
+              <input
+                type="checkbox"
+                checked={confirmed}
+                onChange={(e) => setConfirmed(e.target.checked)}
+                disabled={!isLoggedIn || sending}
+                className="mt-1 h-4 w-4 shrink-0 accent-zinc-900"
+              />
+              <span>
+                By submitting a report, you confirm that the information you are
+                providing is truthful to the best of your knowledge and relates to
+                a genuine platform concern.
+              </span>
+            </label>
 
             <button
               type="submit"
-              disabled={!isLoggedIn || sending}
+              disabled={!isLoggedIn || !confirmed || sending}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 py-3 font-bold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:hover:bg-zinc-300"
             >
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit Report"}
