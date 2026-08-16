@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Ban, Loader2, MessageSquareText, Search } from "lucide-react";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
+import { navigateToPath } from "./lib/appNavigation";
 
 type Filter = "Unread" | "Reported" | "Blocked" | "All";
 
@@ -135,9 +136,11 @@ export default function AdminMessagesPage() {
                   : "Seller conversation";
 
               return (
-                <article
+                <button
                   key={conversation.id}
-                  className="rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-sm"
+                  type="button"
+                  onClick={() => navigateToPath(`/admin/messages?conversation=${conversation.id}`)}
+                  className="block w-full rounded-[1.75rem] border border-zinc-200 bg-white p-5 text-left shadow-sm transition hover:border-zinc-300 hover:shadow-md"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
@@ -184,7 +187,7 @@ export default function AdminMessagesPage() {
                       ) : null}
                     </div>
                   </div>
-                </article>
+                </button>
               );
             })}
           </div>
