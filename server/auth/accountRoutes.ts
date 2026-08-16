@@ -18,7 +18,13 @@ export function registerAccountRoutes(app: Express) {
 
     const university = normalizeString(req.body?.university);
     const profilePicture = normalizeString(req.body?.profile_picture);
+    const hasBusinessFields =
+      Object.prototype.hasOwnProperty.call(req.body ?? {}, "business_name") ||
+      Object.prototype.hasOwnProperty.call(req.body ?? {}, "business_logo") ||
+      Object.prototype.hasOwnProperty.call(req.body ?? {}, "bio");
+    const businessName = normalizeString(req.body?.business_name);
     const businessLogo = normalizeString(req.body?.business_logo);
+    const bio = normalizeString(req.body?.bio);
 
     try {
       const firebaseAdmin = getFirebaseAdmin();
@@ -31,7 +37,7 @@ export function registerAccountRoutes(app: Express) {
         { merge: true },
       );
 
-      if (university || businessLogo) {
+      if (university || hasBusinessFields) {
         try {
           const sellerUpdates: string[] = [];
           const sellerParams: unknown[] = [];
@@ -41,9 +47,13 @@ export function registerAccountRoutes(app: Express) {
             sellerParams.push(university);
           }
 
-          if (businessLogo) {
+          if (hasBusinessFields) {
+            sellerUpdates.push("business_name = ?");
+            sellerParams.push(businessName || null);
             sellerUpdates.push("business_logo = ?");
-            sellerParams.push(businessLogo);
+            sellerParams.push(businessLogo || null);
+            sellerUpdates.push("bio = ?");
+            sellerParams.push(bio || null);
           }
 
           if (sellerUpdates.length > 0) {
