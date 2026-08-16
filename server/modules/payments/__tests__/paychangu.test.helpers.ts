@@ -135,7 +135,7 @@ export function clearPaymentState(): void {
 export function seedOrder(
   orderId: string,
   reference: string,
-  status: 'pending_payment' | 'paid' | 'in_escrow' = 'pending_payment',
+  status: 'pending_payment' | 'paid' | 'in_escrow' | 'refunded' = 'pending_payment',
   settlementRoute: 'escrow' | 'connect' = 'escrow',
 ): void {
   const now = new Date().toISOString();
