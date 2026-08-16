@@ -9,7 +9,6 @@ import {
   Shirt,
   Utensils,
 } from "lucide-react";
-import { getListingImagePlaceholderUrl } from "../lib/imageUrl";
 
 type ListingImageProps = {
   src?: string | null;
@@ -57,7 +56,6 @@ function getBackdropClass(category?: string | null, subcategory?: string | null)
 
 export default function ListingImage({
   src,
-  placeholderSrc,
   alt,
   category,
   subcategory,
@@ -65,18 +63,10 @@ export default function ListingImage({
   performanceMode = false,
 }: ListingImageProps) {
   const normalizedSrc = typeof src === "string" ? src.trim() : "";
-  const normalizedPlaceholderSrc = typeof placeholderSrc === "string" ? placeholderSrc.trim() : "";
   const [failed, setFailed] = useState(!normalizedSrc);
-  const [loaded, setLoaded] = useState(false);
-
-  const lqipSrc = useMemo(
-    () => getListingImagePlaceholderUrl(normalizedPlaceholderSrc || normalizedSrc),
-    [normalizedPlaceholderSrc, normalizedSrc],
-  );
 
   useEffect(() => {
     setFailed(!normalizedSrc);
-    setLoaded(false);
   }, [normalizedSrc]);
 
   const FallbackIcon = useMemo(
@@ -105,28 +95,15 @@ export default function ListingImage({
           </span>
         </div>
       ) : (
-        <>
-          {lqipSrc ? (
-            <img
-              src={lqipSrc}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full scale-[1.02] object-cover blur-[1px]"
-              decoding="async"
-            />
-          ) : null}
-
-          <img
-            src={normalizedSrc}
-            alt={alt}
-            loading="lazy"
-            decoding="async"
-            referrerPolicy="no-referrer"
-            onLoad={() => setLoaded(true)}
-            onError={() => setFailed(true)}
-            className={`${className} relative ${performanceMode ? "" : "transition-opacity duration-300 ease-out"} ${loaded ? "opacity-100" : "opacity-0"}`}
-          />
-        </>
+        <img
+          src={normalizedSrc}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+          className={`${className} relative`}
+        />
       )}
     </div>
   );
