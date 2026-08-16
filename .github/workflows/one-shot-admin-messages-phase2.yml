@@ -1,0 +1,36 @@
+name: One-shot Admin Messages Phase 2
+on:
+  push:
+    branches: [main]
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wire admin messages data route
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('server/routes/index.ts')
+          s = p.read_text()
+          import_line = 'import { createAdminMessagesRouter } from "./adminMessages.routes.js";\n'
+          if import_line not in s:
+              marker = 'import { createAdminEventModerationRouter } from "../modules/admin/admin.events.routes.js";\n'
+              if marker not in s:
+                  raise SystemExit('admin event route import marker not found')
+              s = s.replace(marker, marker + import_line, 1)
+          mount_line = '  app.use("/api/admin", createAdminMessagesRouter({ requireAuth, db }));\n'
+          if mount_line not in s:
+              marker = '  app.use("/api/admin", createAdminEventModerationRouter({ requireAuth, db, logAdminAction }));\n'
+              if marker not in s:
+                  raise SystemExit('admin event route mount marker not found')
+              s = s.replace(marker, marker + mount_line, 1)
+          p.write_text(s)
+          PY
+          rm -f .github/workflows/one-shot-admin-messages-phase2.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add server/routes/index.ts .github/workflows/one-shot-admin-messages-phase2.yml
+          git commit -m 'Wire admin messages monitoring API' || exit 0
+          git push
