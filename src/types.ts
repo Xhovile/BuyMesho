@@ -93,6 +93,47 @@ export interface UserProfile {
   university: string | null;
   campus: string | null;
   buyer_details?: BuyerDeliveryDetails | null;
+  profile_visibility?: VisibilitySetting;
+  seller_visibility?: VisibilitySetting;
+  saved_visibility?: VisibilitySetting;
+  bio?: string;
+  profile_picture?: string;
+}
+
+export interface Listing {
+  id: number;
+  seller_uid: string;
+  name: string;
+  price: number;
+  description: string;
+  category: Category;
+  subcategory?: string | null;
+  item_type?: string | null;
+  spec_values?: ListingSpecValues | null;
+  university: University;
+  photos: string[];
+  video_url?: string | null;
+  status: ListingStatus;
+  condition?: ListingCondition;
+  created_at: string;
+  updated_at?: string;
+  quantity?: number;
+  sold_quantity?: number;
+  views_count?: number;
+  is_hidden?: number;
+  business_name: string;
+  business_logo?: string | null;
+  is_verified: boolean;
+  listing_mode?: ListingMode;
+  original_price?: number | null;
+  discount_percent?: number | null;
+  deal_label?: string | null;
+  deal_expires_at?: string | null;
+  is_wholesale?: boolean | null;
+  can_sell_individually?: boolean | null;
+  pack_size?: number | null;
+  bulk_units?: string | null;
+  single_item_price?: number | null;
 }
 
 export interface SellerDashboardPayoutTotals {
@@ -189,9 +230,24 @@ export interface ListingReviewSummary {
   }>;
 }
 
-export interface MessageConversation {
+export interface ListingReviewFeedResponse {
+  summary: ListingReviewSummary;
+  items: ListingReview[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+    hasMore: boolean;
+  };
+  viewerReview: ListingReview | null;
+  canReview: boolean;
+}
+
+export interface Conversation {
   id: number;
-  thread_type?: "listing" | "event" | "seller";
+  listing_id: number | null;
+  event_id?: number | null;
+  thread_type?: "listing" | "event";
   buyer_uid: string;
   seller_uid: string;
   last_message_preview: string | null;
@@ -234,6 +290,8 @@ export interface MessageConversation {
   blocked_by_other?: boolean;
   can_reply?: boolean;
 }
+
+export interface MessageConversation extends Conversation {}
 
 export interface MessageThreadItem {
   id: number;
