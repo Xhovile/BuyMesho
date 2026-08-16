@@ -1,7 +1,8 @@
-import { CalendarDays, ClipboardList, CreditCard, ShieldCheck, Webhook } from "lucide-react";
+import { CalendarDays, ClipboardList, CreditCard, MessageSquareText, ShieldCheck, Webhook } from "lucide-react";
 import type { ComponentType, MouseEvent } from "react";
 import {
   ADMIN_EVENTS_PATH,
+  ADMIN_MESSAGES_PATH,
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_PAYMENTS_PATH,
   ADMIN_PAYOUT_DESTINATIONS_PATH,
@@ -80,6 +81,16 @@ export default function AdminHubPage() {
           onClick={(event) => {
             event.preventDefault();
             navigateToAdminReports();
+          }}
+        />
+        <AdminOverviewCard
+          title="Messages"
+          description="Monitor marketplace conversations and moderation states."
+          icon={MessageSquareText}
+          path={ADMIN_MESSAGES_PATH}
+          onClick={(event) => {
+            event.preventDefault();
+            navigateToPath(ADMIN_MESSAGES_PATH);
           }}
         />
         <AdminOverviewCard
