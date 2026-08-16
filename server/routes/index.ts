@@ -33,6 +33,7 @@ import { createAdminActionsRouter } from "../modules/admin/admin.actions.routes.
 import { createAdminAccessRouter } from "../modules/admin/admin.access.routes.js";
 import { createAdminSummaryRouter } from "../modules/admin/admin.summary.routes.js";
 import { createAdminEventModerationRouter } from "../modules/admin/admin.events.routes.js";
+import { createAdminMessagesRouter } from "./adminMessages.routes.js";
 import { createEscrowRouter } from "../routes/escrowRoutes.js";
 import { createBuyerEscrowRouter } from "../routes/escrow/buyerEscrowRoutes.js";
 import { createOrderRouter } from "./orderRoutes.js";
@@ -212,6 +213,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   app.use("/api/admin", createAdminAccessRouter(requireAuth));
   app.use("/api/admin", createAdminActionsRouter({ requireAuth, db }));
   app.use("/api/admin", createAdminSummaryRouter({ requireAuth, db }));
+  app.use("/api/admin", createAdminMessagesRouter({ requireAuth, db }));
   app.use("/api/admin", createAdminModerationRouter({ requireAuth, db, logAdminAction }));
   app.use("/api/admin", createAdminEventModerationRouter({ requireAuth, db, logAdminAction }));
   app.use("/api/escrow", createEscrowRouter(requireFirebaseUser));
