@@ -1,4 +1,5 @@
 import React from "react";
+import { Facebook, Instagram, Twitter } from "lucide-react";
 import {
   navigateToPath,
   ABOUT_PATH,
@@ -11,8 +12,12 @@ import Logo from "../../photos/Logo.png";
 export default function AppFooter() {
   return (
     <footer className="mt-20 border-t border-zinc-100 bg-white py-12">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 px-4 sm:flex-row">
-        <button type="button" onClick={() => navigateToPath(ABOUT_PATH)} className="flex items-center gap-2.5 text-left">
+      <div className="mx-auto flex max-w-7xl flex-col items-center gap-8 px-4">
+        <button
+          type="button"
+          onClick={() => navigateToPath(ABOUT_PATH)}
+          className="flex items-center gap-2.5 text-left"
+        >
           <span className="inline-flex h-10 w-10 flex-shrink-0 overflow-hidden bg-transparent">
             <img src={Logo} alt="BuyMesho logo" className="h-full w-full object-cover" />
           </span>
@@ -36,6 +41,38 @@ export default function AppFooter() {
             Safety
           </button>
         </div>
+
+        <div className="flex items-center justify-center gap-4">
+          <a
+            href="https://www.facebook.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-14 w-14 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-all duration-300 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md"
+            aria-label="Facebook"
+          >
+            <Facebook className="h-5.5 w-5.5 stroke-[1.75]" />
+          </a>
+          <a
+            href="https://www.instagram.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-14 w-14 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-all duration-300 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md"
+            aria-label="Instagram"
+          >
+            <Instagram className="h-5.5 w-5.5 stroke-[1.75]" />
+          </a>
+          <a
+            href="https://x.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-14 w-14 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-all duration-300 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md"
+            aria-label="X (Twitter)"
+          >
+            <Twitter className="h-5.5 w-5.5 stroke-[1.75]" />
+          </a>
+        </div>
+
+        <div className="h-px w-full max-w-[240px] bg-zinc-200" />
 
         <div className="text-xs font-bold text-zinc-300">© 2026 Crafted for Students</div>
       </div>
