@@ -19,7 +19,7 @@ import {
 export type FeedbackLevel = "success" | "error" | "info";
 
 export type SecurityResult =
-  | { ok: true; message?: string }
+  | { ok: true; message?: string; code?: string }
   | { ok: false; message: string; code?: string };
 
 export type PasswordCredentialInput = {
