@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
+import MyListingsHubPage from "./MyListingsHubPage";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 import {
@@ -218,6 +219,9 @@ function ListingRow({
 }
 
 export default function MyListingsPage() {
+  const view = new URLSearchParams(window.location.search).get("view");
+  if (view !== "listings") return <MyListingsHubPage />;
+
   const { firebaseUser, authLoading, profile, profileLoading } = useAccountProfile();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
