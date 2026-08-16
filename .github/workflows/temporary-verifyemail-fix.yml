@@ -1,0 +1,41 @@
+name: Temporary Verify Email Fix
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply fix
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          path = Path('src/VerifyEmailPage.tsx')
+          text = path.read_text()
+          old = '      if (!result.ok && (result.code === "auth/too-many-requests" || result.message.toLowerCase().includes("too many attempts"))) {'
+          new = '      if ("code" in result && (result.code === "auth/too-many-requests" || result.message.toLowerCase().includes("too many attempts"))) {'
+          if old not in text:
+              raise SystemExit('Expected VerifyEmailPage condition not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Commit fix and remove temporary workflow
+        run: |
+          rm .github/workflows/temporary-verifyemail-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/VerifyEmailPage.tsx .github/workflows/temporary-verifyemail-fix.yml
+          git commit -m "Fix final CI type narrowing error"
+          git push origin HEAD:main
