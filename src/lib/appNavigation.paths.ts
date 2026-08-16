@@ -27,6 +27,7 @@ export const SELLER_PAYOUTS_PATH = "/seller/payouts";
 export const SELLER_PAYOUTS_MANAGE_PATH = "/seller/payouts?view=payouts";
 export const LISTING_PATH = "/listing";
 export const MESSAGES_PATH = "/messages";
+export const SELLER_MESSAGES_PATH = "/messages?scope=seller";
 export const CREATE_PATH = "/create";
 export const EDIT_PATH = "/edit";
 export const LOGIN_PATH = "/login";
