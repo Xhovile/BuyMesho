@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronDown, Loader2, MessageCircle, ShieldAlert } from "luc
 import type { Conversation } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { navigateBackOrPath, navigateToLogin } from "./lib/appNavigation";
+import { apiFetch } from "./lib/api";
 import { deleteConversation, fetchInbox } from "./lib/messages";
 import {
   blockConversationUser,
@@ -178,9 +179,17 @@ export default function MessagesInboxPage() {
   const [filter, setFilter] = useState<InboxFilter>("all");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null);
+  const sellerScope = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("scope") === "seller";
+
+  const fetchScopedInbox = async () => {
+    if (!sellerScope) return fetchInbox();
+    const result = await apiFetch("/api/messages/inbox?scope=seller");
+    const payload = result as { items?: Conversation[] };
+    return Array.isArray(payload.items) ? payload.items : [];
+  };
 
   const loadInbox = async () => {
-    const items = await fetchInbox();
+    const items = await fetchScopedInbox();
     setInbox(items);
   };
 
@@ -197,7 +206,7 @@ export default function MessagesInboxPage() {
       setLoading(true);
       setStatus(null);
       try {
-        const items = await fetchInbox();
+        const items = await fetchScopedInbox();
         if (!cancelled) setInbox(items);
       } catch (error: any) {
         if (!cancelled) setStatus(error?.message || "Failed to load messages.");
@@ -211,7 +220,7 @@ export default function MessagesInboxPage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user]);
+  }, [authLoading, user, sellerScope]);
 
   const counts = useMemo(() => {
     const unread = inbox.filter((item) => Number(item.unread_count || 0) > 0).length;

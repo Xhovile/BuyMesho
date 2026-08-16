@@ -3,7 +3,7 @@ import { navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
 import {
   CREATE_PATH,
   EXPLORE_PATH,
-  MESSAGES_PATH,
+  SELLER_MESSAGES_PATH,
   MY_LISTINGS_PATH,
   SELLER_DASHBOARD_PATH,
   SELLER_ORDERS_PATH,
@@ -38,7 +38,7 @@ const actions = [
   {
     label: "Messages",
     description: "Open your BuyMesho messages and conversations.",
-    path: MESSAGES_PATH,
+    path: SELLER_MESSAGES_PATH,
     icon: MessageSquareText,
   },
   {

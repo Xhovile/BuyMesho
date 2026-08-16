@@ -404,6 +404,14 @@ async function listInbox(req: Request, res: Response) {
   const user = getUser(req);
   if (!user) return res.status(401).json({ error: "Authentication required" });
 
+  const sellerScope = String(req.query.scope || "").trim().toLowerCase() === "seller";
+  const whereClause = sellerScope
+    ? "c.seller_uid = ? AND c.listing_id IS NOT NULL"
+    : "c.buyer_uid = ? OR c.seller_uid = ? OR ? = 1";
+  const params = sellerScope
+    ? [user.uid]
+    : [user.uid, user.uid, user.is_admin ? 1 : 0];
+
   const rows = db
     .prepare(
       `SELECT
@@ -430,10 +438,10 @@ async function listInbox(req: Request, res: Response) {
        LEFT JOIN events e ON e.id = c.event_id
        LEFT JOIN sellers sb ON sb.uid = c.seller_uid
        LEFT JOIN sellers bb ON bb.uid = c.buyer_uid
-       WHERE c.buyer_uid = ? OR c.seller_uid = ? OR ? = 1
+       WHERE ${whereClause}
        ORDER BY c.updated_at DESC, c.id DESC`
     )
-    .all(user.uid, user.uid, user.is_admin ? 1 : 0) as ConversationRow[];
+    .all(...params) as ConversationRow[];
 
   res.json({
     items: rows.map((row) => ({
