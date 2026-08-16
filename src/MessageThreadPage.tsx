@@ -412,7 +412,11 @@ export default function MessageThreadPage() {
               className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-3 text-white disabled:opacity-50"
               aria-label="Send message"
             >
-              <SendHorizontal className="h-5 w-5" />
+              {busy ? (
+                <Loader2 className="h-5 w-5 animate-spin" aria-label="Sending" />
+              ) : (
+                <SendHorizontal className="h-5 w-5" />
+              )}
             </button>
           </div>
         </div>
