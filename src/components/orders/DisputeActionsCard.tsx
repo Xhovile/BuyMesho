@@ -30,7 +30,7 @@ export default function DisputeActionsCard({
         className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
           releaseCompleted
             ? 'border border-zinc-200 bg-zinc-100 text-zinc-500'
-            : 'bg-zinc-900 text-white hover:bg-zinc-800'
+            : 'bg-[#7F1D1D] text-white hover:bg-[#991B1B]'
         }`}
       >
         <CreditCard className="h-4 w-4" />
