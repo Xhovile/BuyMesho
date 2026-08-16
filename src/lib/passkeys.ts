@@ -47,14 +47,26 @@ export function markPasskeySetupOffer(): void {
   }
 }
 
-export function consumePasskeySetupOffer(): boolean {
+export function hasPasskeySetupOffer(): boolean {
   try {
-    const shouldOffer = sessionStorage.getItem(POST_LOGIN_PASSKEY_OFFER_KEY) === "1";
-    if (shouldOffer) sessionStorage.removeItem(POST_LOGIN_PASSKEY_OFFER_KEY);
-    return shouldOffer;
+    return sessionStorage.getItem(POST_LOGIN_PASSKEY_OFFER_KEY) === "1";
   } catch {
     return false;
   }
+}
+
+export function clearPasskeySetupOffer(): void {
+  try {
+    sessionStorage.removeItem(POST_LOGIN_PASSKEY_OFFER_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+export function consumePasskeySetupOffer(): boolean {
+  const shouldOffer = hasPasskeySetupOffer();
+  if (shouldOffer) clearPasskeySetupOffer();
+  return shouldOffer;
 }
 
 export async function beginPasskeyLogin(): Promise<{ customToken: string; uid: string }> {
@@ -91,14 +103,6 @@ export async function registerCurrentPasskey(): Promise<{ credentialId: string }
 
 export async function getPasskeyStatus(): Promise<PasskeyStatus> {
   const status = await apiFetch("/api/auth/passkey/status", { method: "GET" }) as PasskeyStatus;
-
-  // The current LoginPage checks passkey status before redirecting. Keep that
-  // check silent: record the one-time post-login offer and let Home render it.
-  if (window.location.pathname === "/login" && !status.enabled) {
-    markPasskeySetupOffer();
-    return { ...status, enabled: true };
-  }
-
   return status;
 }
 
