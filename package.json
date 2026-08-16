@@ -12,7 +12,7 @@
     "start:server": "node dist-server/server/entry.js",
     "test": "npm run test:integration",
     "reset:finance": "tsx scripts/reset-finance.ts",
-    "backfill:finance": "tsx scripts/backfill-finance.ts",
+    "backfill:finance": "tsx scripts/backfill:finance.ts",
     "repair:transaction-chain": "tsx scripts/repair-transaction-chain.ts",
     "reset:events": "tsx scripts/reset-events.ts",
     "lint": "node scripts/run-lint.mjs",
@@ -40,8 +40,7 @@
     "nodemailer": "^9.0.1",
     "pg": "^8.22.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "vite": "^8.0.16"
+    "react-dom": "^19.0.0"
   },
   "overrides": {
     "ip-address": "10.3.1"
@@ -51,6 +50,8 @@
     "@types/node": "^22.14.0",
     "@types/nodemailer": "^6.4.23",
     "@types/pg": "^8.20.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.21",
     "tailwindcss": "^4.1.21",
     "tsx": "^4.23.0",
