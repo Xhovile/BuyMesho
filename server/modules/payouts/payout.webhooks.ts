@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { createHash } from "crypto";
 import { paychanguProvider, normalizePaychanguStatus } from "../payments/paychangu.provider.js";
+import { getPayChanguPayoutStatus } from './paychangu.payout.js';
 import { getPaymentDb } from "../../postgresCompat.js";
 import {
   findPaymentWebhookDuplicate,
@@ -220,12 +221,25 @@ async function handlePaychanguWebhookInternal(
 
   const resolvedPayoutId = String(payout.id ?? payoutId ?? chargeId ?? "");
   const resolvedSellerId = String(payout.seller_id ?? "");
+
+  // Verify the webhook against PayChangu before changing the payout state.
+  const providerChargeForVerification = chargeId || String(payout.provider_charge_id ?? '').trim();
+  if (!providerChargeForVerification) {
+    throw new Error('PayChangu payout webhook is missing charge_id; cannot verify transaction');
+  }
+  const verifiedPayout = await getPayChanguPayoutStatus(providerChargeForVerification);
+  const verifiedStatus = verifiedPayout.status;
+  const verifiedReference = verifiedPayout.reference || providerReference || null;
+  const verifiedTransactionId = verifiedPayout.transactionId || providerTransactionId || null;
+  const verifiedAmount = verifiedPayout.amount;
+  const verifiedCurrency = verifiedPayout.currency;
   const now = new Date().toISOString();
-  const payoutState = providerStatus === "paid"
+  const payoutState = verifiedStatus === "paid"
     ? "paid"
-    : providerStatus === "failed"
+    : verifiedStatus === "failed"
       ? "failed"
       : "pending";
+
   const payloadAmount = readNumber(transaction?.amount, parsedPayload.amount, extractNestedObject(parsedPayload.data)?.amount);
   const payoutAmount = Number.isFinite(payloadAmount as number) ? Math.round(payloadAmount as number) : Number(payout.amount ?? 0);
   const payoutCurrency = readString(transaction?.currency, parsedPayload.currency, String(payout.currency ?? "MWK")) || "MWK";
@@ -247,10 +261,10 @@ async function handlePaychanguWebhookInternal(
   ).run(
     payoutState,
     providerStatus,
-    providerReference || null,
-    providerTransactionId || null,
-    payoutAmount,
-    payoutCurrency,
+    verifiedReference,
+    verifiedTransactionId,
+    verifiedAmount ?? payoutAmount,
+    verifiedCurrency ?? payoutCurrency,
     rawPayload,
     payoutState,
     now,

@@ -35,6 +35,10 @@ export type PayChanguPayoutFailureClass =
   | 'provider_unavailable'
   | 'provider_timeout'
   | 'provider_rate_limited'
+  | 'provider_rejected'
+  | 'provider_authentication_error'
+  | 'provider_configuration_error'
+  | 'provider_conflict'
   | null;
 
 export interface PayChanguPayoutExecutionResult {
@@ -354,6 +358,10 @@ function classifyProviderError(error: unknown, httpStatus?: number): PayChanguPa
   if (httpStatus !== undefined) {
     if (httpStatus === 429) return 'provider_rate_limited';
     if (httpStatus >= 500 && httpStatus < 600) return 'provider_unavailable';
+    if (httpStatus === 401 || httpStatus === 403) return 'provider_authentication_error';
+    if (httpStatus === 404) return 'provider_configuration_error';
+    if (httpStatus === 409) return 'provider_conflict';
+    if (httpStatus === 400 || httpStatus === 422) return 'provider_rejected';
   }
 
   if (error instanceof Error) {
