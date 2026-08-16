@@ -3,7 +3,6 @@ import {
   navigateToPath,
   ABOUT_PATH,
   PRIVACY_PATH,
-  REPORT_PATH,
   SAFETY_PATH,
   TERMS_PATH,
 } from "../lib/appNavigation";
@@ -35,9 +34,6 @@ export default function AppFooter() {
           </button>
           <button type="button" onClick={() => navigateToPath(SAFETY_PATH)} className="transition-colors hover:text-primary">
             Safety
-          </button>
-          <button type="button" onClick={() => navigateToPath(REPORT_PATH)} className="transition-colors hover:text-primary">
-            Report
           </button>
         </div>
 
