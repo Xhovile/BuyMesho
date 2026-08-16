@@ -1,0 +1,37 @@
+name: One-shot send spinner
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply send button spinner
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/MessageThreadPage.tsx')
+          text = p.read_text()
+          old = '''            >\n              <SendHorizontal className=\"h-5 w-5\" />\n            </button>'''
+          new = '''            >\n              {busy ? (\n                <Loader2 className=\"h-5 w-5 animate-spin\" aria-label=\"Sending\" />\n              ) : (\n                <SendHorizontal className=\"h-5 w-5\" />\n              )}\n            </button>'''
+          if old not in text:
+              raise SystemExit('Expected send button block not found')
+          p.write_text(text.replace(old, new, 1))
+          PY
+      - name: Commit and remove workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/one-shot-send-spinner.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/MessageThreadPage.tsx .github/workflows/one-shot-send-spinner.yml
+          git commit -m "Show spinner while sending messages [skip ci]"
+          git push origin HEAD:main
