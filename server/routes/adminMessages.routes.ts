@@ -155,5 +155,30 @@ export function createAdminMessagesRouter({ requireAuth, db }: { requireAuth: Re
     });
   });
 
+  router.post("/messages/:conversationId/review", ...requireAdmin(requireAuth), (req, res) => {
+    const user = req.user as { uid: string; is_admin?: boolean };
+    const conversationId = Number(req.params.conversationId);
+    if (!Number.isInteger(conversationId)) {
+      return res.status(400).json({ error: "Invalid conversation id" });
+    }
+
+    const conversation = db
+      .prepare("SELECT id FROM conversations WHERE id = ? LIMIT 1")
+      .get(conversationId) as { id: number } | undefined;
+
+    if (!conversation) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
+
+    db.prepare(
+      `INSERT INTO admin_message_reviews (conversation_id, admin_uid, reviewed_at)
+       VALUES (?, ?, CURRENT_TIMESTAMP)
+       ON CONFLICT (conversation_id, admin_uid)
+       DO UPDATE SET reviewed_at = CURRENT_TIMESTAMP`
+    ).run(conversationId, user.uid);
+
+    return res.json({ success: true, conversation_id: conversationId, reviewed_at: new Date().toISOString() });
+  });
+
   return router;
 }
