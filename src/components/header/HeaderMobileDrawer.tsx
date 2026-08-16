@@ -5,7 +5,6 @@ import {
   EyeOff,
   LogOut,
   MessageSquareText,
-  Package,
   Plus,
   Settings,
   ShieldCheck,
@@ -52,7 +51,6 @@ export default function HeaderMobileDrawer({
   onClose,
   onPrimaryClick,
   onBecomeSellerClick,
-  onMyListingsClick,
   onMessagesClick,
   onSavedClick,
   onHiddenClick,
@@ -126,28 +124,6 @@ export default function HeaderMobileDrawer({
                     onClick={() => {
                       onClose();
                       onPrimaryClick();
-                    }}
-                    className={navButtonClass}
-                  />
-
-                  <HeaderMenuItem
-                    label={isSeller ? "My Listings" : "Become Seller"}
-                    icon={
-                      <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
-                        {isSeller ? (
-                          <Package className="w-4 h-4 text-white" />
-                        ) : (
-                          <ShieldCheck className="w-4 h-4 text-white" />
-                        )}
-                      </span>
-                    }
-                    onClick={() => {
-                      onClose();
-                      if (isSeller) {
-                        onMyListingsClick();
-                      } else {
-                        onBecomeSellerClick();
-                      }
                     }}
                     className={navButtonClass}
                   />
