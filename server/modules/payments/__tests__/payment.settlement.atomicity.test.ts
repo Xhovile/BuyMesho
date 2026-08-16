@@ -63,6 +63,7 @@ function seedState(): void {
 function verification() {
   return {
     verified: true,
+    provider: 'paychangu' as const,
     status: 'success',
     reference: paymentReference,
     txRef: paymentReference,
