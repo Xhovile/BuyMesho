@@ -31,8 +31,6 @@ export default function EditProfilePage() {
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const formInitialized = useRef(false);
 
-  // Fetch fresh profile data from the server (PostgreSQL is the authoritative source for seller fields).
-  // Firestore data is used only as a fallback if the server request fails.
   useEffect(() => {
     if (authLoading || profileLoading || formInitialized.current) return;
 
@@ -96,48 +94,27 @@ export default function EditProfilePage() {
 
     setSaving(true);
     try {
+      const response = await apiFetch("/api/account", {
+        method: "PUT",
+        body: JSON.stringify({
+          university: form.university || resolveUniversity(),
+          profile_picture: profile.profile_picture || "",
+          business_name: form.businessName,
+          business_logo: form.logoUrl,
+          bio: form.bio,
+        }),
+      });
+
       const updatedProfile: UserProfile = {
         ...profile,
+        ...(response?.profile || {}),
         business_name: form.businessName,
         business_logo: form.logoUrl || undefined,
         university: form.university,
         bio: form.bio,
       };
 
-      const response = await apiFetch("/api/sellers", {
-        method: "POST",
-        body: JSON.stringify({
-          email: firebaseUser.email || "",
-          business_name: updatedProfile.business_name || "",
-          business_logo: updatedProfile.business_logo || "",
-          university: updatedProfile.university || resolveUniversity(),
-          bio: updatedProfile.bio || "",
-          is_verified: !!firebaseUser.emailVerified,
-          is_seller: true,
-        }),
-      });
-
-      // The seller sync endpoint historically did not persist business_logo.
-      // Persist the logo through the account endpoint as the authoritative image update.
-      if (updatedProfile.business_logo !== profile.business_logo) {
-        await apiFetch("/api/account", {
-          method: "PUT",
-          body: JSON.stringify({
-            university: updatedProfile.university || resolveUniversity(),
-            profile_picture: profile.profile_picture || "",
-            business_logo: updatedProfile.business_logo || "",
-          }),
-        });
-      }
-
-      setProfile({
-        ...updatedProfile,
-        ...(response?.profile || {}),
-        business_name: updatedProfile.business_name,
-        business_logo: updatedProfile.business_logo,
-        university: updatedProfile.university,
-        bio: updatedProfile.bio,
-      });
+      setProfile(updatedProfile);
       showFeedback("success", "Profile updated", "Your seller profile was saved successfully.");
       navigateToPath("/profile");
     } catch (err: any) {
