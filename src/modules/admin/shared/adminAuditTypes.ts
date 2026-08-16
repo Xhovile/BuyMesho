@@ -14,7 +14,7 @@ export const ADMIN_ACTION_TYPES = {
   ADMIN_MARK_PAID: "admin_mark_paid",
   ADMIN_MARK_FAILED: "admin_mark_failed",
   ADMIN_CANCEL_PAYOUT: "admin_cancel",
-  ADMIN_HOLD_PAYOUT: "admin_hold_payout",
+  ADMIN_HOLD_PAYOUT: "admin_hold",
 
   SUSPEND_EVENT_CREATOR: "suspend_event_creator",
   UNSUSPEND_EVENT_CREATOR: "unsuspend_event_creator",
@@ -56,11 +56,8 @@ export const ADMIN_TARGET_TYPES = {
   SYSTEM: "system",
 } as const;
 
-export type AdminActionType =
-  (typeof ADMIN_ACTION_TYPES)[keyof typeof ADMIN_ACTION_TYPES];
-
-export type AdminTargetType =
-  (typeof ADMIN_TARGET_TYPES)[keyof typeof ADMIN_TARGET_TYPES];
+export type AdminActionType = (typeof ADMIN_ACTION_TYPES)[keyof typeof ADMIN_ACTION_TYPES];
+export type AdminTargetType = (typeof ADMIN_TARGET_TYPES)[keyof typeof ADMIN_TARGET_TYPES];
 
 export const ADMIN_ACTION_LABELS: Record<AdminActionType, string> = {
   [ADMIN_ACTION_TYPES.APPROVE_SELLER_APPLICATION]: "Approved seller application",
