@@ -59,7 +59,7 @@ export default function MyListingsHubPage() {
         </button>
 
         <p className="mt-6 text-lg font-black uppercase tracking-[0.28em] text-zinc-600 sm:text-xl">Seller</p>
-        <h1 className="mt-2 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">My Listings</h1>
+        <h1 className="mt-2 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Listings Management</h1>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-600 sm:text-base">
           Choose a listings section below.
         </p>
