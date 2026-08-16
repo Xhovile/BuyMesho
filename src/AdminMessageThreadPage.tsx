@@ -58,6 +58,15 @@ export default function AdminMessageThreadPage() {
         if (cancelled) return;
         setConversation(result.conversation);
         setMessages(result.messages);
+
+        const reviewResponse = await fetch(`/api/admin/messages/${conversationId}/review`, {
+          method: "POST",
+          credentials: "include",
+        });
+        if (!reviewResponse.ok) {
+          const payload = await reviewResponse.json().catch(() => null);
+          throw new Error(payload?.error || "Conversation loaded, but review state could not be saved.");
+        }
       } catch (err: any) {
         if (!cancelled) setError(err?.message || "Failed to load conversation.");
       } finally {
