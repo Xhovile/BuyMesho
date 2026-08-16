@@ -1,5 +1,4 @@
 import { ArrowLeft, ChevronRight, CircleDollarSign, ClipboardList, Settings } from "lucide-react";
-import { useAccountProfile } from "./hooks/useAccountProfile";
 import { navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
 import { EXPLORE_PATH, SETTINGS_PATH, SELLER_ORDERS_PATH, SELLER_PAYOUTS_MANAGE_PATH } from "./lib/appNavigation.paths";
 
@@ -10,11 +9,6 @@ const actions = [
 ] as const;
 
 export default function SellerHubPage() {
-  const { profile, profileLoading } = useAccountProfile();
-
-  if (profileLoading) return <main className="min-h-screen grid place-items-center bg-zinc-50 text-sm font-semibold text-zinc-500">Loading seller hub…</main>;
-  if (!profile?.is_seller) return <main className="min-h-screen grid place-items-center bg-zinc-50 px-6 text-center"><div><p className="font-extrabold text-zinc-900">Seller access required</p><button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-3 text-sm font-bold text-zinc-600 hover:text-zinc-950">Back to marketplace</button></div></main>;
-
   return (
     <main className="min-h-screen bg-zinc-100 px-4 py-6 text-zinc-900 sm:py-10">
       <div className="mx-auto max-w-3xl">
