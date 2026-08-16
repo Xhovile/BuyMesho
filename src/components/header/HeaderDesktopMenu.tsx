@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   Store,
   User,
-  Wallet,
 } from "lucide-react";
 
 import HeaderMenuItem from "./HeaderMenuItem";
@@ -196,10 +195,10 @@ export default function HeaderDesktopMenu({
 
                 {isSeller ? (
                   <HeaderMenuItem
-                    label="Seller Payouts"
+                    label="Seller Management"
                     icon={
                       <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
-                        <Wallet className="w-4 h-4 text-white" />
+                        <Store className="w-4 h-4 text-white" />
                       </span>
                     }
                     onClick={() => {
