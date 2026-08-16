@@ -9,12 +9,10 @@ export const LISTING_IMAGE_PRESETS: Record<
   // Listing/category cards. 480px is intentionally enough for crisp card rendering
   // while avoiding the cost of downloading the original upload.
   card: { width: 480, quality: "auto:eco" },
-  // Main image on the listing details page. Keep this materially above card size
-  // without downloading the original upload before the user asks for fullscreen.
-  detail: { width: 720, quality: "auto:good" },
-  // Fullscreen deliberately does NOT use a Cloudinary width/quality transform.
-  // The original stored image is returned so the browser can render the source
-  // at its native quality when the user explicitly opens fullscreen.
+  // Listing details should show the original uploaded image so the user can inspect
+  // its actual resolution and visual detail without an artificial delivery ceiling.
+  detail: { width: 0, quality: "original" },
+  // Fullscreen also uses the original stored image at native source quality.
   fullscreen: { width: 0, quality: "original" },
 };
 
@@ -35,7 +33,7 @@ export function getListingImageUrl(
 ) {
   if (!src) return "";
 
-  if (role === "fullscreen") {
+  if (role === "detail" || role === "fullscreen") {
     return src;
   }
 
