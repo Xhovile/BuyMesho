@@ -130,6 +130,47 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerMessageRoutes(app);
   registerMessageModerationRoutes(app);
   installPostgresMessageSchemaGuard(db);
+
+  // Phase 12: Admin accounts are read-only in conversations. Participant blocks and
+  // restrictions are enforced before the ordinary send endpoint is allowed to run.
+  app.post("/api/messages/:conversationId/messages", requireAuth, (req: any, res, next) => {
+    const user = req.user as { uid: string; is_admin?: boolean } | undefined;
+    if (!user) return res.status(401).json({ error: "Authentication required" });
+    if (user.is_admin) return res.status(403).json({ error: "Admin accounts cannot send participant messages" });
+
+    const conversationId = Number(req.params.conversationId);
+    if (!Number.isInteger(conversationId)) return res.status(400).json({ error: "Invalid conversation id" });
+
+    try {
+      const conversation = db.prepare(`SELECT id, buyer_uid, seller_uid FROM conversations WHERE id = ? LIMIT 1`).get(conversationId) as { id: number; buyer_uid: string; seller_uid: string } | undefined;
+      if (!conversation || (conversation.buyer_uid !== user.uid && conversation.seller_uid !== user.uid)) {
+        return res.status(403).json({ error: "You cannot send in this conversation" });
+      }
+
+      const blocked = db.prepare(`
+        SELECT 1 AS blocked
+        FROM message_blocks
+        WHERE ((blocker_uid = ? AND blocked_uid = ?) OR (blocker_uid = ? AND blocked_uid = ?))
+          AND block_scope IN ('messages', 'all')
+        LIMIT 1
+      `).get(conversation.buyer_uid, conversation.seller_uid, conversation.seller_uid, conversation.buyer_uid);
+      if (blocked) return res.status(403).json({ error: "Messaging is blocked for this conversation" });
+
+      const restricted = db.prepare(`
+        SELECT 1 AS restricted
+        FROM message_restrictions
+        WHERE conversation_id = ? AND restricted_uid = ?
+        LIMIT 1
+      `).get(conversationId, user.uid);
+      if (restricted) return res.status(403).json({ error: "Messaging is restricted for your account in this conversation" });
+
+      next();
+    } catch (error) {
+      console.error("Message moderation guard error:", error);
+      return res.status(500).json({ error: "Unable to verify messaging permissions" });
+    }
+  });
+
   registerMessagesRoutes(app);
   registerReviewsRoutes(app);
   registerDiagnosticsRoutes(app, { db });
