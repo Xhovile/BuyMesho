@@ -1,6 +1,5 @@
 import type { RequestHandler, Router } from "express";
 import { Router as createRouter } from "express";
-import type { DatabaseSync } from "node:sqlite";
 
 function clean(value: unknown, max = 160) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -17,7 +16,7 @@ function requireAdmin(requireAuth: RequestHandler): RequestHandler[] {
   ];
 }
 
-function ensureAdminMessageReviewSchema(db: DatabaseSync) {
+function ensureAdminMessageReviewSchema(db: any) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS admin_message_reviews (
       conversation_id INTEGER NOT NULL,
@@ -31,7 +30,7 @@ function ensureAdminMessageReviewSchema(db: DatabaseSync) {
   `);
 }
 
-export function createAdminMessagesRouter({ requireAuth, db }: { requireAuth: RequestHandler; db: DatabaseSync }): Router {
+export function createAdminMessagesRouter({ requireAuth, db }: { requireAuth: RequestHandler; db: any }): Router {
   const router = createRouter();
   ensureAdminMessageReviewSchema(db);
 
@@ -46,7 +45,7 @@ export function createAdminMessagesRouter({ requireAuth, db }: { requireAuth: Re
       return res.status(400).json({ error: "Invalid message filter" });
     }
 
-    const params: unknown[] = [user.uid];
+    const params: any[] = [user.uid];
     const conditions: string[] = [];
 
     if (filter === "unread") {
