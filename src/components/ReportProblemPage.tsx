@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  Loader2,
-  AlertTriangle,
-  CheckCircle2,
-  ShieldAlert,
-  FileWarning,
-} from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import LegalPageShell from "./LegalPageShell";
 
@@ -13,28 +7,6 @@ type Props = {
   onBack: () => void;
   isLoggedIn: boolean;
 };
-
-function Section({
-  icon,
-  title,
-  children,
-}: {
-  icon?: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-3">
-      <div className="flex items-center gap-3">
-        {icon}
-        <h3 className="text-sm font-extrabold uppercase tracking-widest text-zinc-900">
-          {title}
-        </h3>
-      </div>
-      <div className="space-y-3 text-sm leading-7 text-zinc-700">{children}</div>
-    </section>
-  );
-}
 
 export default function ReportProblemPage({
   onBack,
@@ -85,112 +57,47 @@ export default function ReportProblemPage({
 
   return (
     <LegalPageShell title="Report a Problem" onBack={onBack}>
-      <div className="p-6 overflow-y-auto flex-1">
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 space-y-3">
-              <p className="text-sm font-semibold text-zinc-900">
-                Help keep BuyMesho safer, more trustworthy, and more useful.
-              </p>
-              <p className="text-sm leading-7 text-zinc-700">
-                This page is for reporting problems connected to BuyMesho,
-                including suspicious activity, misleading listings, abusive
-                behavior, scam attempts, account misuse, and other platform
-                concerns.
-              </p>
-              <p className="text-sm leading-7 text-zinc-700">
-                Clear reports help BuyMesho review issues more effectively and
-                take moderation, safety, or account action where necessary.
-              </p>
-            </div>
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="w-full space-y-6">
+          <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+            <p className="text-sm font-semibold text-zinc-900">
+              Help keep BuyMesho safer, more trustworthy, and more useful.
+            </p>
+            <p className="text-sm leading-7 text-zinc-700">
+              This page is for reporting problems connected to BuyMesho, including
+              suspicious activity, misleading listings, abusive behavior, scam
+              attempts, account misuse, and other platform concerns.
+            </p>
+            <p className="text-sm leading-7 text-zinc-700">
+              Clear reports help BuyMesho review issues more effectively and take
+              moderation, safety, or account action where necessary.
+            </p>
           </div>
 
-          <Section
-            icon={<ShieldAlert className="w-5 h-5 text-zinc-700" />}
-            title="1. What You Should Report"
-          >
-            <p>You should use this page to report issues such as:</p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>fake, misleading, or suspicious listings;</li>
-              <li>suspected scams, payment deception, or impersonation;</li>
-              <li>abusive, threatening, or inappropriate behavior;</li>
-              <li>suspected stolen, prohibited, or unsafe items;</li>
-              <li>seller or buyer misconduct connected to platform use;</li>
-              <li>account misuse, repeated spam, or suspicious platform activity;</li>
-              <li>technical problems that seriously affect platform use.</li>
-            </ul>
-          </Section>
-
-          <Section
-            icon={<FileWarning className="w-5 h-5 text-zinc-700" />}
-            title="2. What Makes a Good Report"
-          >
-            <p>
-              A strong report is specific, factual, and clear. When possible,
-              include:
-            </p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>what happened;</li>
-              <li>which listing, user, or action is involved;</li>
-              <li>when it happened;</li>
-              <li>why it appears suspicious, misleading, unsafe, or abusive;</li>
-              <li>
-                any details that would help BuyMesho understand the issue faster.
-              </li>
-            </ul>
-            <p>
-              Reports that are vague, emotional without detail, or intentionally
-              false are harder to review and may weaken the reporting process.
-            </p>
-          </Section>
-
-          <Section
-            icon={<AlertTriangle className="w-5 h-5 text-zinc-700" />}
-            title="3. Important Reporting Guidance"
-          >
-            <p>
-              Reporting a problem does not automatically guarantee removal of a
-              listing, suspension of an account, or a specific outcome. BuyMesho
-              may review the matter, compare it with available platform records,
-              and decide what action is reasonable under the circumstances.
-            </p>
-            <p>
-              Users should not use the reporting system to harass others, make
-              false accusations, retaliate after ordinary disagreements, or
-              manipulate competition. Misuse of the reporting process may itself
-              lead to moderation action.
-            </p>
-            <p>
-              If a situation appears urgent or involves immediate danger, users
-              should prioritise personal safety and appropriate local help rather
-              than relying only on an online report.
-            </p>
-          </Section>
-
           {!isLoggedIn && (
-            <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
-              <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+            <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" />
               <div>
                 <p className="text-sm font-bold text-amber-800">
                   Login required to submit
                 </p>
-                <p className="text-sm text-amber-700 leading-7">
-                  You can read the reporting guidance now, but you need to log
-                  in before sending a report through the platform.
+                <p className="text-sm leading-7 text-amber-700">
+                  You can read the reporting form now, but you need to log in
+                  before sending a report through the platform.
                 </p>
               </div>
             </div>
           )}
 
           {successMessage ? (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
               <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+                <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-emerald-800">
                     Report submitted
                   </p>
-                  <p className="text-sm text-emerald-700 leading-7">
+                  <p className="text-sm leading-7 text-emerald-700">
                     {successMessage}
                   </p>
                 </div>
@@ -200,7 +107,7 @@ export default function ReportProblemPage({
                 <button
                   type="button"
                   onClick={onBack}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors"
+                  className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-emerald-700"
                 >
                   Back
                 </button>
@@ -209,17 +116,17 @@ export default function ReportProblemPage({
           ) : (
             <form
               onSubmit={handleSubmit}
-              className="bg-white border border-zinc-200 rounded-2xl p-5 space-y-5 shadow-sm"
+              className="w-full space-y-5 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6"
             >
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                <label className="mb-1 block text-xs font-bold uppercase text-zinc-400">
                   Subject
                 </label>
                 <input
                   type="text"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none disabled:bg-zinc-100 disabled:text-zinc-400"
+                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-zinc-100 disabled:text-zinc-400"
                   placeholder="Example: Suspicious seller behavior"
                   required
                   disabled={!isLoggedIn || sending}
@@ -227,23 +134,23 @@ export default function ReportProblemPage({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                <label className="mb-1 block text-xs font-bold uppercase text-zinc-400">
                   Details
                 </label>
                 <textarea
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-40 resize-none disabled:bg-zinc-100 disabled:text-zinc-400"
+                  className="h-40 w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-zinc-100 disabled:text-zinc-400"
                   placeholder="Describe clearly what happened, which listing or user was involved, and why you are reporting it."
                   required
                   disabled={!isLoggedIn || sending}
                 />
-                <p className="mt-2 text-xs text-zinc-500 leading-6">
+                <p className="mt-2 text-xs leading-6 text-zinc-500">
                   Be clear, factual, and specific. Avoid insults or vague claims.
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700 leading-7">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm leading-7 text-zinc-700">
                 By submitting a report, you confirm that the information you are
                 providing is truthful to the best of your knowledge and relates
                 to a genuine platform concern.
@@ -252,13 +159,9 @@ export default function ReportProblemPage({
               <button
                 type="submit"
                 disabled={!isLoggedIn || sending}
-                className="w-full bg-zinc-900 text-white py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 disabled:bg-zinc-300 disabled:hover:bg-zinc-300 disabled:cursor-not-allowed"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 py-3 font-bold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:hover:bg-zinc-300"
               >
-                {sending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  "Submit Report"
-                )}
+                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit Report"}
               </button>
             </form>
           )}
