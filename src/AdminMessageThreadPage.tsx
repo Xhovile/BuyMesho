@@ -82,8 +82,8 @@ export default function AdminMessageThreadPage() {
 
   const participantByUid = useMemo(() => {
     const map = new Map<string, { side: "left" | "right"; name: string; role: string }>();
-    if (buyer?.uid) map.set(buyer.uid, { side: "left", name: buyer.business_name || buyer.email || buyer.uid, role: "Buyer" });
-    if (seller?.uid) map.set(seller.uid, { side: "right", name: seller.business_name || seller.email || seller.uid, role: threadType === "event" ? "Organizer" : "Seller" });
+    if (buyer?.uid) map.set(buyer.uid, { side: "left", name: buyer.business_name || buyer.uid, role: "Buyer" });
+    if (seller?.uid) map.set(seller.uid, { side: "right", name: seller.business_name || seller.uid, role: threadType === "event" ? "Organizer" : "Seller" });
     return map;
   }, [buyer, seller, threadType]);
 
@@ -116,10 +116,7 @@ export default function AdminMessageThreadPage() {
   }
 
   return (
-    <AdminWorkspaceLayout
-      title="Conversation"
-      description="Admin monitoring view · read only"
-    >
+    <AdminWorkspaceLayout title="Conversation" description="Admin monitoring view · read only">
       <section className="space-y-4">
         <button
           type="button"
@@ -147,12 +144,12 @@ export default function AdminMessageThreadPage() {
 
           <div className="mt-5 grid gap-4 border-t border-zinc-100 pt-5 sm:grid-cols-2">
             <Participant
-              name={buyer.business_name || buyer.email || buyer.uid}
+              name={buyer.business_name || buyer.uid}
               role="Buyer"
               uid={buyer.uid}
             />
             <Participant
-              name={seller.business_name || seller.email || seller.uid}
+              name={seller.business_name || seller.uid}
               role={conversation.event ? "Organizer" : "Seller"}
               uid={seller.uid}
               align="right"
@@ -184,9 +181,7 @@ export default function AdminMessageThreadPage() {
                         }`}
                       >
                         <p className="whitespace-pre-wrap break-words">{message.body}</p>
-                        <p className={`mt-2 text-[10px] ${isLeft ? "text-zinc-400" : "text-zinc-400"}`}>
-                          {timeLabel(message.created_at)}
-                        </p>
+                        <p className="mt-2 text-[10px] text-zinc-400">{timeLabel(message.created_at)}</p>
                       </div>
                     </div>
                   </div>
