@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { postgresDb as db } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { ADMIN_ACTION_TYPES, ADMIN_TARGET_TYPES } from "../../src/modules/admin/shared/adminAuditTypes.js";
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.messageHubRoutesInstalled");
 const MODERATION_ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.messageHubModerationRoutesInstalled");
@@ -36,7 +37,10 @@ function initSchema() {
       body TEXT NOT NULL,
       is_read INTEGER NOT NULL DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      read_at DATETIME
+      read_at DATETIME,
+      is_spam INTEGER NOT NULL DEFAULT 0,
+      spam_flag_count INTEGER NOT NULL DEFAULT 0,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS message_blocks (
@@ -50,6 +54,16 @@ function initSchema() {
       UNIQUE (blocker_uid, blocked_uid, block_scope)
     );
 
+    CREATE TABLE IF NOT EXISTS message_restrictions (
+      conversation_id INTEGER NOT NULL,
+      restricted_uid TEXT NOT NULL,
+      reason TEXT,
+      created_by_uid TEXT NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (conversation_id, restricted_uid)
+    );
+
     CREATE TABLE IF NOT EXISTS message_reports (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       conversation_id INTEGER,
@@ -60,7 +74,13 @@ function initSchema() {
       details TEXT,
       status TEXT NOT NULL DEFAULT 'open',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      reviewed_by_uid TEXT,
+      reviewed_at DATETIME,
+      resolution TEXT,
+      resolved_by_uid TEXT,
+      resolved_by_email TEXT,
+      resolved_at DATETIME
     );
 
     CREATE TABLE IF NOT EXISTS sender_spam_profiles (
@@ -72,6 +92,25 @@ function initSchema() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+  `);
+
+  db.exec(`
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_spam INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS spam_flag_count INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+    ALTER TABLE message_reports ADD COLUMN IF NOT EXISTS reviewed_by_uid TEXT;
+    ALTER TABLE message_reports ADD COLUMN IF NOT EXISTS reviewed_at DATETIME;
+    ALTER TABLE message_reports ADD COLUMN IF NOT EXISTS resolution TEXT;
+    ALTER TABLE message_reports ADD COLUMN IF NOT EXISTS resolved_by_uid TEXT;
+    ALTER TABLE message_reports ADD COLUMN IF NOT EXISTS resolved_by_email TEXT;
+    ALTER TABLE message_reports ADD COLUMN IF NOT EXISTS resolved_at DATETIME;
+
+    CREATE INDEX IF NOT EXISTS idx_message_reports_conversation
+      ON message_reports (conversation_id, status, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_message_blocks_blocker
+      ON message_blocks (blocker_uid, blocked_uid, block_scope);
+    CREATE INDEX IF NOT EXISTS idx_message_blocks_blocked
+      ON message_blocks (blocked_uid, blocker_uid, block_scope);
   `);
 }
 
@@ -87,7 +126,7 @@ function parseConversationId(raw: string) {
 function getConversation(conversationId: number) {
   return db
     .prepare(
-      `SELECT id, listing_id, buyer_uid, seller_uid, last_message_preview, last_message_at,
+      `SELECT id, listing_id, event_id, buyer_uid, seller_uid, last_message_preview, last_message_at,
               buyer_unread_count, seller_unread_count, created_at, updated_at
        FROM conversations
        WHERE id = ?
@@ -97,6 +136,7 @@ function getConversation(conversationId: number) {
     | {
         id: number;
         listing_id: number;
+        event_id: number | null;
         buyer_uid: string;
         seller_uid: string;
         last_message_preview: string | null;
@@ -114,12 +154,8 @@ function requireConversationAccess(conversation: ReturnType<typeof getConversati
 }
 
 function resolveBlockTarget(conversation: NonNullable<ReturnType<typeof getConversation>>, uid: string) {
-  if (conversation.buyer_uid === uid) {
-    return conversation.seller_uid;
-  }
-  if (conversation.seller_uid === uid) {
-    return conversation.buyer_uid;
-  }
+  if (conversation.buyer_uid === uid) return conversation.seller_uid;
+  if (conversation.seller_uid === uid) return conversation.buyer_uid;
   return null;
 }
 
@@ -218,15 +254,7 @@ function registerConversationModerationRoutes(app: Express) {
 
     const result = db.prepare(
       `INSERT INTO message_reports (
-         conversation_id,
-         message_id,
-         reporter_uid,
-         reported_uid,
-         reason,
-         details,
-         status,
-         created_at,
-         updated_at
+         conversation_id, message_id, reporter_uid, reported_uid, reason, details, status, created_at, updated_at
        ) VALUES (?, NULL, ?, ?, ?, ?, 'open', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
     ).run(conversationId, user.uid, reportedUid, reason, details || null);
 
@@ -262,15 +290,13 @@ function registerConversationModerationRoutes(app: Express) {
       ? (db.prepare(`SELECT sender_uid FROM messages WHERE id = ? LIMIT 1`).get(messageId) as { sender_uid?: string } | undefined)?.sender_uid ?? null
       : resolveBlockTarget(conversation, user.uid);
 
-    if (!senderUid) {
-      return res.status(400).json({ error: "Unable to resolve sender for spam flagging" });
-    }
+    if (!senderUid) return res.status(400).json({ error: "Unable to resolve sender for spam flagging" });
 
     const messageUpdate = messageId
       ? db.prepare(
           `UPDATE messages
            SET is_spam = 1,
-               spam_flag_count = spam_flag_count + 1,
+               spam_flag_count = COALESCE(spam_flag_count, 0) + 1,
                updated_at = CURRENT_TIMESTAMP
            WHERE id = ?`
         ).run(messageId)
@@ -278,12 +304,7 @@ function registerConversationModerationRoutes(app: Express) {
 
     incrementSpamProfile(senderUid);
 
-    return res.json({
-      success: true,
-      messageId,
-      sender_uid: senderUid,
-      messageUpdated: messageUpdate.changes > 0,
-    });
+    return res.json({ success: true, messageId, sender_uid: senderUid, messageUpdated: messageUpdate.changes > 0 });
   });
 }
 
@@ -293,12 +314,30 @@ function registerAdminMessageReportRoutes(app: Express) {
     if (!user?.is_admin) return res.status(403).json({ error: "Admin access required" });
 
     const status = typeof req.query?.status === "string" && req.query.status.trim() ? req.query.status.trim() : "open";
-    const rows = db.prepare(
-      `SELECT id, conversation_id, message_id, reporter_uid, reported_uid, reason, details, status, created_at, updated_at
-       FROM message_reports
-       WHERE (? = 'all' OR status = ?)
-       ORDER BY created_at DESC, id DESC`
-    ).all(status, status) as Record<string, unknown>[];
+    const conversationId = req.query?.conversation_id ? Number(req.query.conversation_id) : null;
+    const statusFilter = ["open", "reviewed", "resolved", "all"].includes(status) ? status : "open";
+
+    const rows = db.prepare(`
+      SELECT
+        mr.id, mr.conversation_id, mr.message_id, mr.reporter_uid, mr.reported_uid,
+        mr.reason, mr.details, mr.status, mr.created_at, mr.updated_at,
+        mr.reviewed_by_uid, mr.reviewed_at, mr.resolution, mr.resolved_by_uid,
+        mr.resolved_by_email, mr.resolved_at,
+        c.buyer_uid, c.seller_uid,
+        l.name AS listing_name,
+        sb.business_name AS seller_business_name,
+        bb.business_name AS buyer_business_name,
+        msg.body AS message_body
+      FROM message_reports mr
+      LEFT JOIN conversations c ON c.id = mr.conversation_id
+      LEFT JOIN listings l ON l.id = c.listing_id
+      LEFT JOIN sellers sb ON sb.uid = c.seller_uid
+      LEFT JOIN sellers bb ON bb.uid = c.buyer_uid
+      LEFT JOIN messages msg ON msg.id = mr.message_id
+      WHERE (? = 'all' OR mr.status = ?)
+        AND (? IS NULL OR mr.conversation_id = ?)
+      ORDER BY mr.created_at DESC, mr.id DESC
+    `).all(statusFilter, statusFilter, conversationId, conversationId) as Record<string, unknown>[];
 
     return res.json({ data: { items: rows } });
   });
@@ -310,24 +349,51 @@ function registerAdminMessageReportRoutes(app: Express) {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) return res.status(400).json({ error: "Invalid report id" });
 
-    const existing = db.prepare(`SELECT id FROM message_reports WHERE id = ? LIMIT 1`).get(id) as { id?: number } | undefined;
+    const existing = db.prepare(`SELECT id, conversation_id, status FROM message_reports WHERE id = ? LIMIT 1`).get(id) as { id?: number; conversation_id?: number | null; status?: string } | undefined;
     if (!existing) return res.status(404).json({ error: "Report not found" });
 
+    const resolution = normalizeReason(req.body?.resolution) || "Report resolved";
     db.prepare(
       `UPDATE message_reports
        SET status = 'resolved',
+           resolution = ?,
+           resolved_by_uid = ?,
+           resolved_by_email = ?,
+           resolved_at = CURRENT_TIMESTAMP,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`
-    ).run(id);
+    ).run(resolution, user.uid, user.email ?? null, id);
 
-    const updated = db.prepare(
-      `SELECT id, conversation_id, message_id, reporter_uid, reported_uid, reason, details, status, created_at, updated_at
-       FROM message_reports
-       WHERE id = ?
-       LIMIT 1`
-    ).get(id) as Record<string, unknown> | undefined;
+    try {
+      db.prepare(`
+        INSERT INTO admin_actions (admin_uid, admin_email, action_type, target_id, details, target_type)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        user.uid,
+        user.email ?? null,
+        ADMIN_ACTION_TYPES.ADMIN_RESOLVE_REPORT,
+        String(id),
+        JSON.stringify({
+          conversation_id: existing.conversation_id ?? null,
+          report_id: id,
+          resolution,
+        }),
+        ADMIN_TARGET_TYPES.MESSAGE_REPORT,
+      );
+    } catch (error) {
+      console.warn("Failed to record message report resolution in admin audit", error);
+    }
 
-    return res.json({ success: true, report: updated ?? { id, status: 'resolved' } });
+    const updated = db.prepare(`
+      SELECT id, conversation_id, message_id, reporter_uid, reported_uid, reason, details, status,
+             created_at, updated_at, reviewed_by_uid, reviewed_at, resolution,
+             resolved_by_uid, resolved_by_email, resolved_at
+      FROM message_reports
+      WHERE id = ?
+      LIMIT 1
+    `).get(id) as Record<string, unknown> | undefined;
+
+    return res.json({ success: true, report: updated ?? { id, status: "resolved", resolution } });
   });
 }
 
