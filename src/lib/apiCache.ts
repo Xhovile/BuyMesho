@@ -38,6 +38,24 @@ export function readCachedApiJson<T>(url: string): T | null {
   }
 }
 
+export function writeCachedApiJson(url: string, value: unknown): void {
+  if (typeof window === "undefined") return;
+
+  const payload: CachedResponse = {
+    status: 200,
+    statusText: "OK",
+    headers: [["content-type", "application/json"]],
+    body: JSON.stringify(value),
+    timestamp: Date.now(),
+  };
+
+  try {
+    localStorage.setItem(getCacheKey(url), JSON.stringify(payload));
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
 export function isCachedApiResponseFresh(url: string, ttlMs: number = API_CACHE_TTL_MS) {
   const cached = readCachedApiResponse(url);
   if (!cached) return false;
