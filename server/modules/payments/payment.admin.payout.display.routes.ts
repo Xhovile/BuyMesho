@@ -18,7 +18,6 @@ function normalizeText(value: unknown): string | null {
   return text ? text : null;
 }
 
-
 function parseJson(value: unknown): unknown {
   const text = normalizeText(value);
   if (!text) return null;
@@ -159,6 +158,16 @@ function shapeRow(row: Record<string, unknown>) {
     destinationVerificationStatus === 'verified' &&
     destinationActive;
 
+  const retryBlockedReason = retryEligible
+    ? null
+    : sellerSuspended
+      ? 'Seller payouts are suspended'
+      : destinationVerificationStatus !== 'verified' || !destinationActive
+        ? 'Destination pending verification'
+        : status !== 'failed'
+          ? `Retry unavailable while payout is ${status}`
+          : 'Retry unavailable due to policy gate';
+
   return {
     ...row,
     sellerId,
@@ -175,15 +184,7 @@ function shapeRow(row: Record<string, unknown>) {
     retryEligible,
     retryAllowed: retryEligible,
     manualReviewPending: status === 'held',
-    retryBlockedReason: retryEligible
-      ? null
-      : sellerSuspended
-        ? 'Seller payouts are suspended'
-        : destinationVerificationStatus !== 'verified' || !destinationActive
-          ? 'Destination pending verification'
-          : status !== 'failed'
-            ? `Retry unavailable while payout is ${status}`
-            : 'Retry unavailable due to policy gate',
+    retryBlockedReason,
     auditSummary: {
       totalEvents: Number(row.auditEventCount ?? row.audit_event_count ?? 0),
       latestEventType: normalizeText(row.latestAuditEventType ?? row.latest_audit_event_type) ?? null,
