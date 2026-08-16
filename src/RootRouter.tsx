@@ -35,6 +35,7 @@ import logoImage from "../photos/Logo.png";
 const App = lazy(() => import("./App.new"));
 const AdminHubPage = lazy(() => import("./AdminHubPage"));
 const AdminMessagesPage = lazy(() => import("./AdminMessagesPage"));
+const AdminMessageThreadPage = lazy(() => import("./AdminMessageThreadPage"));
 const AdminPaymentsPage = lazy(() => import("./AdminPaymentsConsole"));
 const TransactionInspectorPage = lazy(() => import("./TransactionInspectorPage"));
 const TransactionJsonPage = lazy(() => import("./TransactionJsonPage"));
@@ -309,6 +310,7 @@ export default function RootRouter() {
   const [copilotOpen, setCopilotOpen] = useState(false);
   const threadConversationId = new URLSearchParams(locationSearch).get("conversation");
   const isMessageThread = route === "messages" && !!threadConversationId;
+  const isAdminMessageThread = route === "admin_messages" && !!threadConversationId;
   const isOrderDisputePath = locationPath.startsWith("/orders/") && locationPath.endsWith("/dispute");
   const isOrderTrackingPath = locationPath.startsWith("/orders/") && !locationPath.endsWith("/dispute");
   const isEventsCreatePath = locationPath === EVENTS_CREATE_PATH;
@@ -517,7 +519,7 @@ export default function RootRouter() {
         ) : route === "admin" ? (
           <AdminHubPage />
         ) : route === "admin_messages" ? (
-          <AdminMessagesPage />
+          isAdminMessageThread ? <AdminMessageThreadPage /> : <AdminMessagesPage />
         ) : route === "admin_events" ? (
           <AdminEventModerationPage />
         ) : route === "admin_payments" ? (
