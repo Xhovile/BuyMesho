@@ -6,6 +6,7 @@ import {
   DISPUTES_PATH,
   ADMIN_AUDIT_PATH,
   ADMIN_EVENTS_PATH,
+  ADMIN_MESSAGES_PATH,
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_SETUP_PATH,
   ADMIN_BALANCE_PATH,
@@ -33,6 +34,7 @@ import logoImage from "../photos/Logo.png";
 
 const App = lazy(() => import("./App.new"));
 const AdminHubPage = lazy(() => import("./AdminHubPage"));
+const AdminMessagesPage = lazy(() => import("./AdminMessagesPage"));
 const AdminPaymentsPage = lazy(() => import("./AdminPaymentsConsole"));
 const TransactionInspectorPage = lazy(() => import("./TransactionInspectorPage"));
 const TransactionJsonPage = lazy(() => import("./TransactionJsonPage"));
@@ -370,6 +372,7 @@ export default function RootRouter() {
       "event_creator_dashboard",
       "tickets",
       "admin",
+      "admin_messages",
       "admin_events",
       "admin_payments",
       "admin_transaction_inspector",
@@ -513,6 +516,8 @@ export default function RootRouter() {
           <BecomeSellerPage />
         ) : route === "admin" ? (
           <AdminHubPage />
+        ) : route === "admin_messages" ? (
+          <AdminMessagesPage />
         ) : route === "admin_events" ? (
           <AdminEventModerationPage />
         ) : route === "admin_payments" ? (
