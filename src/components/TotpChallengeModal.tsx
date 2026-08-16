@@ -23,20 +23,22 @@ export default function TotpChallengeModal({
 }: TotpChallengeModalProps) {
   if (!open) return null;
 
+  const displayTitle = title === "Two-factor verification" ? "Two-factor authentication" : title;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
       <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Security</p>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">{title}</h2>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">{displayTitle}</h2>
             <p className="mt-2 text-sm leading-relaxed text-zinc-600">{message}</p>
           </div>
           <button
             type="button"
             onClick={onCancel}
             className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
-            aria-label="Close two-factor verification"
+            aria-label="Close two-factor authentication"
           >
             <X className="h-5 w-5" />
           </button>
