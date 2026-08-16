@@ -3,6 +3,7 @@ import BrandMark from "../../components/BrandMark";
 import ConfirmModal from "../../components/ConfirmModal";
 import ConnectSettingsCard from "../../components/payouts/ConnectSettingsCard";
 import { EXPLORE_PATH, navigateToPath } from "../../lib/appNavigation";
+import { getSellerCache } from "../../lib/sellerWorkspaceCache";
 import SellerHubPage from "../../SellerHubPage";
 import SellerOrdersPage from "../../SellerOrdersPage";
 import SellerPayoutsAccessGate from "./components/SellerPayoutsAccessGate";
@@ -18,6 +19,7 @@ export default function SellerPayoutsPage() {
   const {
     profileLoading,
     isSeller,
+    sellerId,
     loading,
     refreshing,
     connectAccount,
@@ -57,7 +59,9 @@ export default function SellerPayoutsPage() {
   if (!view || view === "hub") return <SellerHubPage />;
   if (view === "orders") return <SellerOrdersPage />;
 
-  if (profileLoading || loading || !isSeller) {
+  const hasCachedPayoutData = Boolean(sellerId && getSellerCache(`payouts:${sellerId}`));
+
+  if ((profileLoading && !hasCachedPayoutData) || (loading && !hasCachedPayoutData) || (!isSeller && !profileLoading)) {
     return <SellerPayoutsAccessGate loading={profileLoading || loading} isSeller={isSeller} onBack={() => navigateToPath(EXPLORE_PATH)} />;
   }
 
