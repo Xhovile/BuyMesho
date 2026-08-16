@@ -1,5 +1,6 @@
 name: BuyMesho CI
 
+# CI validation pipeline
 on:
   push:
     branches:
