@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Bookmark, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
 import { getListingImageUrl } from "../../lib/imageUrl";
 
@@ -16,6 +16,17 @@ function FullscreenToggleIcon({ isFullscreen }: { isFullscreen: boolean }) {
         }`}
       />
     </span>
+  );
+}
+
+function ImageShimmer({ className = "" }: { className?: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`absolute inset-0 overflow-hidden bg-white ${className}`}
+    >
+      <div className="absolute inset-y-0 -left-1/2 w-1/2 animate-[listing-gallery-shimmer_1.25s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-zinc-100 to-transparent" />
+    </div>
   );
 }
 
@@ -53,13 +64,34 @@ export default function ListingGallery({
   onSelectImage,
 }: ListingGalleryProps) {
   const showThumbRail = galleryImages.length > 1;
+  const [mainImageLoading, setMainImageLoading] = useState(Boolean(currentImage));
+  const [fullscreenImageLoading, setFullscreenImageLoading] = useState(Boolean(currentImage));
+
+  useEffect(() => {
+    setMainImageLoading(Boolean(currentImage));
+    setFullscreenImageLoading(Boolean(currentImage));
+  }, [currentImage]);
+
+  useEffect(() => {
+    if (!currentImage) return;
+
+    const preload = (url: string | undefined) => {
+      if (!url) return;
+      const image = new Image();
+      image.decoding = "async";
+      image.src = getListingImageUrl(url, "fullscreen");
+    };
+
+    preload(galleryImages[currentGalleryIndex - 1]);
+    preload(galleryImages[currentGalleryIndex + 1]);
+  }, [currentGalleryIndex, currentImage, galleryImages]);
 
   const renderThumb = (url: string, idx: number, className = "") => (
     <button
       key={`${url}-${idx}`}
       type="button"
       onClick={() => onSelectImage(idx)}
-      className={`overflow-hidden border transition-all ${
+      className={`relative overflow-hidden border transition-all ${
         idx === currentGalleryIndex ? "border-zinc-900" : "border-zinc-200 hover:border-zinc-400"
       } ${className}`}
       aria-label={`View image ${idx + 1}`}
@@ -76,6 +108,13 @@ export default function ListingGallery({
 
   return (
     <>
+      <style>{`
+        @keyframes listing-gallery-shimmer {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(400%); }
+        }
+      `}</style>
+
       <div className="w-full min-w-0 max-w-full">
         <div className="mb-3 flex items-center justify-start gap-2">
           <div className="shrink-0">{actionsMenu}</div>
@@ -108,12 +147,18 @@ export default function ListingGallery({
                 showThumbRail ? "" : "md:max-h-[420px] lg:max-h-[460px]"
               }`}
             >
+              {mainImageLoading ? <ImageShimmer /> : null}
+
               <img
                 src={getListingImageUrl(currentImage, "detail")}
                 alt={listingName}
                 loading="eager"
                 decoding="async"
-                className="h-full w-full object-contain"
+                onLoad={() => setMainImageLoading(false)}
+                onError={() => setMainImageLoading(false)}
+                className={`relative h-full w-full object-contain transition-opacity duration-150 ${
+                  mainImageLoading ? "opacity-0" : "opacity-100"
+                }`}
               />
 
               <button
@@ -180,13 +225,20 @@ export default function ListingGallery({
             </button>
 
             <div className="relative h-full overflow-hidden rounded-xl bg-black sm:rounded-2xl">
+              {fullscreenImageLoading ? <ImageShimmer className="bg-zinc-950" /> : null}
+
               <img
                 src={getListingImageUrl(currentImage, "fullscreen")}
                 alt={listingName}
                 loading="eager"
                 decoding="async"
-                className="h-full w-full object-contain"
+                onLoad={() => setFullscreenImageLoading(false)}
+                onError={() => setFullscreenImageLoading(false)}
+                className={`relative h-full w-full object-contain transition-opacity duration-150 ${
+                  fullscreenImageLoading ? "opacity-0" : "opacity-100"
+                }`}
               />
+
               {showThumbRail ? (
                 <>
                   <button
