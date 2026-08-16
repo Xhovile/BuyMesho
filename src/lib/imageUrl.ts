@@ -4,10 +4,18 @@ export const LISTING_IMAGE_PRESETS: Record<
   ListingImageRole,
   { width: number; quality: string }
 > = {
+  // Small gallery previews. Fast to download and cache.
   thumbnail: { width: 160, quality: "auto:low" },
+  // Listing/category cards. 480px is intentionally enough for crisp card rendering
+  // while avoiding the cost of downloading the original upload.
   card: { width: 480, quality: "auto:eco" },
-  detail: { width: 1400, quality: "auto:good" },
-  fullscreen: { width: 2200, quality: "auto:best" },
+  // Main image on the listing details page. Keep this materially above card size
+  // without downloading the original upload before the user asks for fullscreen.
+  detail: { width: 720, quality: "auto:good" },
+  // Fullscreen deliberately does NOT use a Cloudinary width/quality transform.
+  // The original stored image is returned so the browser can render the source
+  // at its native quality when the user explicitly opens fullscreen.
+  fullscreen: { width: 0, quality: "original" },
 };
 
 function transformCloudinaryUrl(
@@ -25,6 +33,12 @@ export function getListingImageUrl(
   src: string | null | undefined,
   role: ListingImageRole,
 ) {
+  if (!src) return "";
+
+  if (role === "fullscreen") {
+    return src;
+  }
+
   const preset = LISTING_IMAGE_PRESETS[role];
   return transformCloudinaryUrl(
     src,
@@ -32,12 +46,10 @@ export function getListingImageUrl(
   );
 }
 
-export function getListingImagePlaceholderUrl(src: string | null | undefined) {
-  if (!src) return "";
-  if (!src.includes("res.cloudinary.com") || !src.includes("/upload/")) {
-    return "";
-  }
-  return transformCloudinaryUrl(src, "f_auto,q_25,w_48,c_fill,e_blur:120");
+// Backward-compatible helper retained for callers that may still reference it.
+// The image UI no longer renders a blurred LQIP placeholder.
+export function getListingImagePlaceholderUrl(_src: string | null | undefined) {
+  return "";
 }
 
 // Backward-compatible helpers for callers not yet migrated to getListingImageUrl.
