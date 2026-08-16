@@ -290,14 +290,6 @@ export default function SellerDashboardPage() {
                 <RefreshCw className="h-4 w-4" />
                 Refresh
               </button>
-              <button
-                type="button"
-                onClick={() => navigateToPath("/my-listings")}
-                className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm hover:bg-zinc-800"
-              >
-                <ArrowRight className="h-4 w-4" />
-                My Listings
-              </button>
             </div>
           </div>
         </div>
