@@ -92,7 +92,7 @@ export default function ListingSummary({
         </div>
 
         {isOwner ? (
-          <div className="overflow-hidden rounded-3xl border border-zinc-700 border-l-4 border-l-red-800 bg-zinc-900 p-4 text-white shadow-[0_18px_50px_-28px_rgba(0,0,0,0.7)] ring-1 ring-zinc-800/80">
+          <div className="relative overflow-visible rounded-3xl border border-zinc-700 border-l-4 border-l-red-800 bg-zinc-900 p-4 text-white shadow-[0_18px_50px_-28px_rgba(0,0,0,0.7)] ring-1 ring-zinc-800/80">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
@@ -106,7 +106,7 @@ export default function ListingSummary({
                 </p>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="relative z-20 flex shrink-0 items-center gap-2">
                 {ownerActionsMenu ? <div className="shrink-0">{ownerActionsMenu}</div> : null}
                 <button
                   type="button"
