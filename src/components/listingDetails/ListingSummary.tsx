@@ -92,16 +92,16 @@ export default function ListingSummary({
         </div>
 
         {isOwner ? (
-          <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/80 via-zinc-50 to-white p-4 shadow-sm ring-1 ring-blue-100/60">
+          <div className="overflow-hidden rounded-3xl border border-zinc-700 bg-zinc-900 p-4 text-white shadow-[0_18px_50px_-28px_rgba(0,0,0,0.7)] ring-1 ring-zinc-800/80">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-blue-700/80">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
                   Owner view
                 </p>
-                <h2 className="mt-1 text-lg font-black tracking-tight text-zinc-900">
+                <h2 className="mt-1 text-lg font-black tracking-tight text-white">
                   Manage this listing
                 </h2>
-                <p className="mt-1 text-sm leading-6 text-zinc-600">
+                <p className="mt-1 text-sm leading-6 text-zinc-300">
                   Use the tools here to edit details, update stock, record sales, or remove the listing.
                 </p>
               </div>
@@ -111,11 +111,11 @@ export default function ListingSummary({
                 <button
                   type="button"
                   onClick={onShare}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-blue-200 bg-white shadow-sm transition-colors hover:bg-blue-50"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-600 bg-zinc-800 text-white shadow-sm transition-colors hover:bg-zinc-700"
                   aria-label="Share listing"
                   title="Share listing"
                 >
-                  <Share2 className="h-4 w-4 text-blue-700" />
+                  <Share2 className="h-4 w-4 text-zinc-200" />
                 </button>
               </div>
             </div>
