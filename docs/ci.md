@@ -9,3 +9,5 @@ The workflow validates:
 - Frontend and server production build through `npm run build`
 
 The workflow can also be started manually from the GitHub Actions tab.
+
+CI validation branch created after the August 16, 2026 type-compatibility fixes.
