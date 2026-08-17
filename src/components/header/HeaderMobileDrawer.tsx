@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
-import { Bookmark, CreditCard, EyeOff, LogOut, MessageSquareText, Plus, Settings, ShieldCheck, Store, User } from "lucide-react";
+import { Bookmark, CreditCard, EyeOff, Home, LogOut, MessageSquareText, Plus, Settings, ShieldCheck, Store, User } from "lucide-react";
 import HeaderMenuItem from "./HeaderMenuItem";
+import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "../../lib/appNavigation";
 
 const navButtonClass = "w-full flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
 const navSeparatorClass = "mx-4 border-t border-zinc-200";
@@ -52,8 +53,15 @@ export default function HeaderMobileDrawer({
   onSignInClick,
   onCreateAccountClick,
 }: HeaderMobileDrawerProps) {
-  void primaryDrawerLabel;
   void _onMyListingsClick;
+
+  const primaryPath = primaryDrawerLabel === "Home" ? HOME_PATH : EXPLORE_PATH;
+  const primaryIcon = primaryDrawerLabel === "Home" ? <Home className="w-4 h-4 text-white" /> : <Store className="w-4 h-4 text-white" />;
+
+  const handlePrimaryNavigation = () => {
+    onClose();
+    navigateToPath(primaryPath);
+  };
 
   return (
     <AnimatePresence>
@@ -66,9 +74,11 @@ export default function HeaderMobileDrawer({
               <div className="rounded-2xl border border-zinc-100 bg-white p-1 shadow-sm"><button type="button" onClick={onClose} aria-label="Close menu" className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-zinc-50 transition-colors"><span className="text-zinc-600 text-lg leading-none">×</span></button></div>
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-4">
+              <HeaderMenuItem label={primaryDrawerLabel} icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0">{primaryIcon}</span>} onClick={handlePrimaryNavigation} className={navButtonClass} />
+              <HeaderMenuItem label="List Item" icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0">{isSeller ? <Plus className="w-4 h-4 text-white" /> : <Store className="w-4 h-4 text-white" />}</span>} onClick={() => { onClose(); onPrimaryClick(); }} className={navButtonClass} />
+
               {isLoggedIn ? (
                 <>
-                  <HeaderMenuItem label="List Item" icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0">{isSeller ? <Plus className="w-4 h-4 text-white" /> : <Store className="w-4 h-4 text-white" />}</span>} onClick={() => { onClose(); onPrimaryClick(); }} className={navButtonClass} />
                   <HeaderMenuItem label="Messages" extra={unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null} icon={<span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0"><MessageSquareText className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onMessagesClick(); }} className={navButtonClass} />
                   <HeaderMenuItem label="Saved" icon={<span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0"><Bookmark className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onSavedClick(); }} className={navButtonClass} />
                   <HeaderMenuItem label="Hidden" icon={<span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0"><EyeOff className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onHiddenClick(); }} className={navButtonClass} />
@@ -85,7 +95,6 @@ export default function HeaderMobileDrawer({
                 </>
               ) : (
                 <>
-                  <HeaderMenuItem label="List Item" icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0"><Store className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onPrimaryClick(); }} className={navButtonClass} />
                   <HeaderMenuItem label="Become Seller" icon={<span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0"><ShieldCheck className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onBecomeSellerClick(); }} className={navButtonClass} />
                   <div className={navSeparatorClass} aria-hidden="true" />
                   <HeaderMenuItem label="Log In" icon={<span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0"><User className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onSignInClick(); }} className={navButtonClass} />
