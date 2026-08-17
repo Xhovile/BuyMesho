@@ -15,6 +15,7 @@ type HeaderMobileDrawerProps = {
   onClose: () => void;
   onPrimaryClick: () => void;
   onBecomeSellerClick: () => void;
+  onMyListingsClick?: () => void;
   onMessagesClick: () => void;
   onSavedClick: () => void;
   onHiddenClick: () => void;
@@ -38,6 +39,7 @@ export default function HeaderMobileDrawer({
   onClose,
   onPrimaryClick,
   onBecomeSellerClick,
+  onMyListingsClick: _onMyListingsClick,
   onMessagesClick,
   onSavedClick,
   onHiddenClick,
@@ -51,6 +53,7 @@ export default function HeaderMobileDrawer({
   onCreateAccountClick,
 }: HeaderMobileDrawerProps) {
   void primaryDrawerLabel;
+  void _onMyListingsClick;
 
   return (
     <AnimatePresence>
