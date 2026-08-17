@@ -75,263 +75,85 @@ export default function HomeMobileDrawer({ controller }: { controller: HomePageC
               </button>
             </div>
 
-            <div className="flex-1 space-y-[1px] overflow-y-auto px-4 py-4">
+            <div className="flex-1 overflow-y-auto px-4 py-4">
               {controller.isGuest ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      controller.closeMenu();
-                      controller.handleStartSelling();
-                    }}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900">
-                        {controller.isSeller ? (
-                          <Plus className="h-4 w-4 text-white" />
-                        ) : (
-                          <Store className="h-4 w-4 text-white" />
-                        )}
-                      </span>
-                      List Item
-                    </span>
+                  <button type="button" onClick={() => { controller.closeMenu(); controller.handleStartSelling(); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900">{controller.isSeller ? <Plus className="h-4 w-4 text-white" /> : <Store className="h-4 w-4 text-white" />}</span>List Item</span>
                     <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      controller.closeMenu();
-                      navigateToPath(BECOME_SELLER_PATH);
-                    }}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600">
-                        <ShieldCheck className="h-4 w-4 text-white" />
-                      </span>
-                      Become Seller
-                    </span>
+                  <button type="button" onClick={() => { controller.closeMenu(); navigateToPath(BECOME_SELLER_PATH); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600"><ShieldCheck className="h-4 w-4 text-white" /></span>Become Seller</span>
                     <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      controller.closeMenu();
-                      navigateToPath(LOGIN_PATH);
-                    }}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-500">
-                        <UserRound className="h-4 w-4 text-white" />
-                      </span>
-                      Log In
-                    </span>
+                  <button type="button" onClick={() => { controller.closeMenu(); navigateToPath(LOGIN_PATH); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-500"><UserRound className="h-4 w-4 text-white" /></span>Log In</span>
                     <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      controller.closeMenu();
-                      navigateToPath(SIGNUP_PATH);
-                    }}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-500">
-                        <UserRound className="h-4 w-4 text-white" />
-                      </span>
-                      Create Account
-                    </span>
+                  <button type="button" onClick={() => { controller.closeMenu(); navigateToPath(SIGNUP_PATH); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-500"><UserRound className="h-4 w-4 text-white" /></span>Create Account</span>
                     <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </button>
                 </>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      controller.closeMenu();
-                      controller.handleStartSelling();
-                    }}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900">
-                        {controller.isSeller ? (
-                          <Plus className="h-4 w-4 text-white" />
-                        ) : (
-                          <Store className="h-4 w-4 text-white" />
-                        )}
-                      </span>
-                      List Item
-                    </span>
+                  <button type="button" onClick={() => { controller.closeMenu(); controller.handleStartSelling(); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900">{controller.isSeller ? <Plus className="h-4 w-4 text-white" /> : <Store className="h-4 w-4 text-white" />}</span>List Item</span>
                     <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => controller.handleMyListingsClick(controller.closeMenu)}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600">
-                        {controller.isSeller ? (
-                          <Store className="h-4 w-4 text-white" />
-                        ) : (
-                          <ShieldCheck className="h-4 w-4 text-white" />
-                        )}
-                      </span>
-                      {controller.isSeller ? "My Listings" : "Become a Seller"}
-                    </span>
+                  <button type="button" onClick={() => controller.handleMyListingsClick(controller.closeMenu)} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600">{controller.isSeller ? <Store className="h-4 w-4 text-white" /> : <ShieldCheck className="h-4 w-4 text-white" />}</span>{controller.isSeller ? "My Listings" : "Become a Seller"}</span>
                     <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => controller.handleMessagesClick(controller.closeMenu)}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-500">
-                        <MessageSquareText className="h-4 w-4 text-white" />
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span>Messages</span>
-                        {controller.unreadCount > 0 ? (
-                          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
-                            {controller.unreadCount}
-                          </span>
-                        ) : null}
-                      </div>
-                    </span>
+                  <button type="button" onClick={() => controller.handleMessagesClick(controller.closeMenu)} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-500"><MessageSquareText className="h-4 w-4 text-white" /></span><div className="flex items-center gap-2"><span>Messages</span>{controller.unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{controller.unreadCount}</span> : null}</div></span>
                     <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => controller.handleSavedClick(controller.closeMenu)}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700">
-                        <Bookmark className="h-4 w-4 text-white" />
-                      </span>
-                      Saved
-                    </span>
+                  <button type="button" onClick={() => controller.handleSavedClick(controller.closeMenu)} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700"><Bookmark className="h-4 w-4 text-white" /></span>Saved</span>
                     <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => controller.handleHiddenClick(controller.closeMenu)}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700">
-                        <EyeOff className="h-4 w-4 text-white" />
-                      </span>
-                      Hidden
-                    </span>
+                  <button type="button" onClick={() => controller.handleHiddenClick(controller.closeMenu)} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700"><EyeOff className="h-4 w-4 text-white" /></span>Hidden</span>
                     <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => controller.handleBuyerPaymentsClick(controller.closeMenu)}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500">
-                        <CreditCard className="h-4 w-4 text-white" />
-                      </span>
-                      Payments
-                    </span>
+                  <button type="button" onClick={() => controller.handleBuyerPaymentsClick(controller.closeMenu)} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500"><CreditCard className="h-4 w-4 text-white" /></span>Payments</span>
                     <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </button>
 
-                  {controller.isSeller ? (
-                    <button
-                      type="button"
-                      onClick={() => controller.handleSellerPayoutsClick(controller.closeMenu)}
-                      className={navButtonClass}
-                    >
-                      <span className="inline-flex items-center gap-3">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600">
-                          <Wallet className="h-4 w-4 text-white" />
-                        </span>
-                        Seller Payouts
-                      </span>
-                      <ChevronRight className="h-4 w-4 text-zinc-400" />
-                    </button>
-                  ) : null}
+                  {controller.isSeller ? <button type="button" onClick={() => controller.handleSellerPayoutsClick(controller.closeMenu)} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600"><Wallet className="h-4 w-4 text-white" /></span>Seller Payouts</span>
+                    <ChevronRight className="h-4 w-4 text-zinc-400" />
+                  </button> : null}
 
-                  {controller.isAdmin ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        controller.closeMenu();
-                        navigateToAdminModerationQueue();
-                      }}
-                      className={navButtonClass}
-                    >
-                      <span className="inline-flex items-center gap-3">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-700">
-                          <ShieldCheck className="h-4 w-4 text-white" />
-                        </span>
-                        ADMIN
-                      </span>
-                      <ChevronRight className="h-4 w-4 text-zinc-400" />
-                    </button>
-                  ) : null}
+                  {controller.isAdmin ? <button type="button" onClick={() => { controller.closeMenu(); navigateToAdminModerationQueue(); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-700"><ShieldCheck className="h-4 w-4 text-white" /></span>ADMIN</span>
+                    <ChevronRight className="h-4 w-4 text-zinc-400" />
+                  </button> : null}
 
-                  <button
-                    type="button"
-                    onClick={() => controller.handleSettingsClick(controller.closeMenu)}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-500">
-                        <Settings className="h-4 w-4 text-white" />
-                      </span>
-                      Settings
-                    </span>
+                  <button type="button" onClick={() => controller.handleSettingsClick(controller.closeMenu)} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-500"><Settings className="h-4 w-4 text-white" /></span>Settings</span>
                     <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => controller.handleProfileClick(controller.closeMenu)}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-500">
-                        <UserRound className="h-4 w-4 text-white" />
-                      </span>
-                      Profile
-                    </span>
+                  <button type="button" onClick={() => controller.handleProfileClick(controller.closeMenu)} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-500"><UserRound className="h-4 w-4 text-white" /></span>Profile</span>
                     <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </button>
 
-                  {controller.isLoggedIn ? (
-                    <button
-                      type="button"
-                      onClick={() => void controller.handleLogout(controller.closeMenu)}
-                      className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
-                    >
-                      <span className="inline-flex items-center gap-3">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500">
-                          <LogOut className="h-4 w-4 text-white" />
-                        </span>
-                        Log Out
-                      </span>
-                      <ChevronRight className="h-4 w-4 text-zinc-400" />
-                    </button>
-                  ) : null}
+                  {controller.isLoggedIn ? <button type="button" onClick={() => void controller.handleLogout(controller.closeMenu)} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500"><LogOut className="h-4 w-4 text-white" /></span>Log Out</span>
+                    <ChevronRight className="h-4 w-4 text-zinc-400" />
+                  </button> : null}
                 </>
               )}
             </div>
