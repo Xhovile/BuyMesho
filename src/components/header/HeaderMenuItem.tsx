@@ -1,5 +1,4 @@
 import { type ReactNode } from "react";
-import { ChevronRight } from "lucide-react";
 
 type HeaderMenuItemProps = {
   label: ReactNode;
@@ -19,7 +18,7 @@ export default function HeaderMenuItem({ label, icon, onClick, className, extra 
           {extra}
         </span>
       </span>
-      <ChevronRight className="h-4 w-4 text-zinc-400" />
+      <span aria-hidden="true" className="h-4 w-4" />
     </button>
   );
 }
