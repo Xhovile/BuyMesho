@@ -3,6 +3,16 @@ import { AlertTriangle, ArrowLeft, FileText, MessageSquare, ShieldAlert } from "
 import { navigateBackOrPath, PAYMENTS_HUB_PATH } from "./lib/appNavigation";
 import { fetchOrderById, openOrderDispute, type OrderBundle } from "./lib/orderApi";
 import { resolveOrderIdentifier } from "./lib/orderIdentifier";
+import FormDropdown from "./components/FormDropdown";
+
+const DISPUTE_REASONS = [
+  { value: "not_received", label: "Item not received" },
+  { value: "not_as_described", label: "Item not as described" },
+  { value: "wrong_item", label: "Wrong item sent" },
+  { value: "damaged", label: "Item arrived damaged" },
+  { value: "payment_issue", label: "Payment not confirmed" },
+  { value: "other", label: "Other" },
+] as const;
 
 export default function OrderDisputePage() {
   const [bundle, setBundle] = useState<OrderBundle | null>(null);
@@ -33,6 +43,7 @@ export default function OrderDisputePage() {
         setLoading(false);
       }
     };
+
     if (orderParam) {
       void load();
     } else {
@@ -50,6 +61,7 @@ export default function OrderDisputePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reason.trim() || !order) return;
+
     try {
       setError(null);
       await openOrderDispute(order.id, [reason.trim(), details.trim()].filter(Boolean).join(" — "));
@@ -141,26 +153,15 @@ export default function OrderDisputePage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-                <div>
-                  <label htmlFor="dispute-reason" className="block text-sm font-bold text-zinc-700">
-                    Reason for dispute
-                  </label>
-                  <select
-                    id="dispute-reason"
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    required
-                    className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
-                  >
-                    <option value="">Select a reason</option>
-                    <option value="not_received">Item not received</option>
-                    <option value="not_as_described">Item not as described</option>
-                    <option value="wrong_item">Wrong item sent</option>
-                    <option value="damaged">Item arrived damaged</option>
-                    <option value="payment_issue">Payment not confirmed</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
+                <FormDropdown
+                  label="Reason for dispute"
+                  value={reason}
+                  onChange={setReason}
+                  placeholder="Select a reason"
+                  options={DISPUTE_REASONS}
+                  searchable={false}
+                  disabled={!order || loading}
+                />
 
                 <div>
                   <label htmlFor="dispute-details" className="block text-sm font-bold text-zinc-700">
@@ -186,7 +187,8 @@ export default function OrderDisputePage() {
 
                 <button
                   type="submit"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
+                  disabled={!order || !reason.trim() || loading}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ShieldAlert className="h-4 w-4" />
                   Submit dispute
