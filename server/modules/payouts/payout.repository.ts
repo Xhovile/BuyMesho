@@ -1,10 +1,8 @@
 import './payout.schema.js';
 import { randomUUID } from 'crypto';
 import { getPaymentDb } from '../../postgresCompat.js';
-import {
-  buildPayChanguPayoutChargeId,
-  type PayChanguPayoutExecutionResult,
-} from './paychangu.payout.js';
+import { buildPayChanguPayoutChargeId } from './payout.charge-id.js';
+import type { PayChanguPayoutExecutionResult } from './paychangu.payout.js';
 import { PAYOUT_POLICY, isRetryableFailureCode } from './payout.policy.js';
 import { PayoutStatusRepository } from './payout.status-repository.js';
 import {
