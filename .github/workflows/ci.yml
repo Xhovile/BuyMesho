@@ -1,6 +1,5 @@
 name: BuyMesho CI
 
-# CI validation pipeline
 on:
   push:
     branches:
@@ -19,8 +18,9 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate and Build
+    name: Validate, Test and Build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -33,13 +33,13 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Lint
         run: npm run lint
 
-      - name: Structure gate
-        run: npm run check:structure-gate
+      - name: Integration and financial integrity tests
+        run: npm run test
 
-      - name: Frontend and server build
+      - name: Production build
         run: npm run build
