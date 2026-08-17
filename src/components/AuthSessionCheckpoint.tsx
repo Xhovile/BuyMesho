@@ -3,10 +3,12 @@ import { ArrowRight, CheckCircle2, Loader2, LogOut, ShieldAlert } from "lucide-r
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { auth } from "../firebase";
 import { navigateToPath } from "../lib/appNavigation";
+import { apiFetch } from "../lib/api";
 import BrandMark from "./BrandMark";
 
 type AuthSessionCheckpointProps = { mode: "login" | "signup"; children: ReactNode };
 type ValidatorAccessState = "checking" | "approved" | "denied" | "unavailable" | "not-validator";
+type ValidatorHandoffResponse = { code: string; expiresInSeconds?: number };
 
 function getTicketValidatorReturnUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -72,7 +74,19 @@ export default function AuthSessionCheckpoint({ mode, children }: AuthSessionChe
 
   const handleContinue = async () => {
     const target = getTicketValidatorReturnUrl();
-    if (target) { target.searchParams.set("buymesho_session", await user.getIdToken(true)); window.location.replace(target.toString()); return; }
+    if (target) {
+      try {
+        const handoff = await apiFetch("/api/validator/handoff", {
+          method: "POST",
+          body: JSON.stringify({ client: "ticket-validator" }),
+        }) as ValidatorHandoffResponse;
+        target.searchParams.set("buymesho_session", handoff.code);
+        window.location.replace(target.toString());
+      } catch (error) {
+        console.error("Failed to create Ticket Validator auth handoff:", error);
+      }
+      return;
+    }
     navigateToPath("/");
   };
   const handleUseAnotherAccount = async () => { await signOut(auth); };
