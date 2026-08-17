@@ -1,25 +1,12 @@
 import { type RefObject } from "react";
 
 import { AnimatePresence, motion } from "motion/react";
-import {
-  Bookmark,
-  CreditCard,
-  EyeOff,
-  House,
-  LogOut,
-  MessageSquareText,
-  Plus,
-  Settings,
-  ShieldCheck,
-  Store,
-  User,
-} from "lucide-react";
+import { Bookmark, CreditCard, EyeOff, House, LogOut, MessageSquareText, Plus, Settings, ShieldCheck, Store, User } from "lucide-react";
 
 import HeaderMenuItem from "./HeaderMenuItem";
 import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "../../lib/appNavigation";
 
-const desktopMenuItemClass =
-  "w-full flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
+const desktopMenuItemClass = "w-full flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
 const desktopSeparatorClass = "mx-4 border-t border-zinc-200";
 
 type HeaderDesktopMenuProps = {
@@ -48,56 +35,20 @@ type HeaderDesktopMenuProps = {
   onCreateAccountClick: () => void;
 };
 
-export default function HeaderDesktopMenu({
-  menuRef,
-  open,
-  isLoggedIn,
-  isSeller,
-  isAdmin,
-  unreadCount,
-  primaryDrawerLabel,
-  onClose,
-  onPrimaryClick,
-  onListItemClick,
-  onBecomeSellerClick,
-  onMyListingsClick: _onMyListingsClick,
-  onMessagesClick,
-  onSavedClick,
-  onHiddenClick,
-  onPaymentsClick,
-  onSellerPayoutsClick,
-  onAdminClick,
-  onSettingsClick,
-  onProfileClick,
-  onLogoutClick,
-  onSignInClick,
-  onCreateAccountClick,
-}: HeaderDesktopMenuProps) {
+export default function HeaderDesktopMenu({ menuRef, open, isLoggedIn, isSeller, isAdmin, unreadCount, primaryDrawerLabel, onClose, onPrimaryClick, onListItemClick, onBecomeSellerClick, onMyListingsClick: _onMyListingsClick, onMessagesClick, onSavedClick, onHiddenClick, onPaymentsClick, onSellerPayoutsClick, onAdminClick, onSettingsClick, onProfileClick, onLogoutClick, onSignInClick, onCreateAccountClick }: HeaderDesktopMenuProps) {
   void _onMyListingsClick;
-
   const primaryPath = primaryDrawerLabel === "Home" ? HOME_PATH : EXPLORE_PATH;
-  const handlePrimaryNavigation = () => {
-    onClose();
-    navigateToPath(primaryPath);
-  };
-  const handleListItem = () => {
-    onClose();
-    (onListItemClick ?? onPrimaryClick)();
-  };
+  const handlePrimaryNavigation = () => { onClose(); navigateToPath(primaryPath); };
+  const handleSellAction = () => { onClose(); (onListItemClick ?? onPrimaryClick)(); };
 
   return (
     <AnimatePresence>
       {open ? (
         <motion.div ref={menuRef} initial={{ opacity: 0, y: -8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.98 }} transition={{ duration: 0.16 }} className="absolute right-0 top-full mt-3 w-72 overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl z-[70]" role="menu" aria-label="Desktop header menu">
-          <div className="border-b border-zinc-100 px-4 pb-3 pt-4">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p>
-            <h2 className="mt-1 text-base font-black text-zinc-900">Start here</h2>
-          </div>
-
+          <div className="border-b border-zinc-100 px-4 pb-3 pt-4"><p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p><h2 className="mt-1 text-base font-black text-zinc-900">Start here</h2></div>
           <div className="max-h-[calc(100vh-9rem)] overflow-y-auto overscroll-contain p-2">
             <HeaderMenuItem label={primaryDrawerLabel} icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0">{primaryDrawerLabel === "Home" ? <House className="w-4 h-4 text-white" /> : <Store className="w-4 h-4 text-white" />}</span>} onClick={handlePrimaryNavigation} className={desktopMenuItemClass} />
-            <HeaderMenuItem label="List Item" icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0"><Plus className="w-4 h-4 text-white" /></span>} onClick={handleListItem} className={desktopMenuItemClass} />
-
+            <HeaderMenuItem label={isSeller ? "List Item" : "Sell"} icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0">{isSeller ? <Plus className="w-4 h-4 text-white" /> : <Store className="w-4 h-4 text-white" />}</span>} onClick={handleSellAction} className={desktopMenuItemClass} />
             {isLoggedIn ? (
               <>
                 <HeaderMenuItem label="Messages" extra={unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null} icon={<span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0"><MessageSquareText className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onMessagesClick(); }} className={desktopMenuItemClass} />
