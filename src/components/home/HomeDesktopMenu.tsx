@@ -10,7 +10,6 @@ import {
   MessageSquareText,
   Settings,
   ShieldCheck,
-  ShoppingBag,
   Store,
   UserRound,
   Wallet,
@@ -18,7 +17,6 @@ import {
 
 import {
   BECOME_SELLER_PATH,
-  EXPLORE_PATH,
   LOGIN_PATH,
   SIGNUP_PATH,
   navigateToAdminModerationQueue,
@@ -73,18 +71,6 @@ export default function HomeDesktopMenu({ controller }: { controller: HomePageCo
             {controller.isGuest ? (
               <>
                 <MenuRow
-                  label="Market"
-                  icon={
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-600">
-                      <ShoppingBag className="h-4 w-4 text-white" />
-                    </span>
-                  }
-                  onClick={() => {
-                    controller.closeMenu();
-                    navigateToPath(EXPLORE_PATH);
-                  }}
-                />
-                <MenuRow
                   label="Become Seller"
                   icon={
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600">
@@ -123,18 +109,6 @@ export default function HomeDesktopMenu({ controller }: { controller: HomePageCo
               </>
             ) : (
               <>
-                <MenuRow
-                  label="Market"
-                  icon={
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-600">
-                      <ShoppingBag className="h-4 w-4 text-white" />
-                    </span>
-                  }
-                  onClick={() => {
-                    controller.closeMenu();
-                    navigateToPath(EXPLORE_PATH);
-                  }}
-                />
                 <MenuRow
                   label={controller.isSeller ? "My Listings" : "Become a Seller"}
                   icon={
