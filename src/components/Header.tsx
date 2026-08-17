@@ -1,4 +1,4 @@
-import { Plus, Store, User, Menu, X } from "lucide-react";
+import { Plus, User, Menu, X } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import type { User as FirebaseUser } from "firebase/auth";
 import { signOut } from "firebase/auth";
@@ -174,7 +174,6 @@ export default function Header({
     afterClose?.();
     try {
       await signOut(auth);
-      // Force a full document reload so Firebase/WebAuthn/browser credential state is clean before passkey login.
       window.location.replace(LOGIN_PATH);
     } catch {
       // Keep UI usable even if sign-out fails briefly.
@@ -294,7 +293,7 @@ export default function Header({
                     onClick={() => handleSellClick()}
                     className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
                   >
-                    {isSeller ? <Plus className="w-4 h-4 text-red-500" /> : <Store className="w-4 h-4 text-red-500" />}
+                    <Plus className="w-4 h-4 text-red-500" />
                     <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
                   </button>
 
