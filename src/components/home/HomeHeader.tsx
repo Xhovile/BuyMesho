@@ -6,12 +6,14 @@ import HomeDesktopMenu from "./HomeDesktopMenu";
 import PasskeySetupPrompt from "../PasskeySetupPrompt";
 import { EXPLORE_PATH, navigateToPath } from "../../lib/appNavigation";
 
+const cardButtonClass =
+  "rounded-2xl border border-zinc-200 bg-white text-zinc-900 shadow-md transition-all hover:border-zinc-300 hover:shadow-lg active:scale-95";
 const desktopProfileButtonClass =
-  "w-11 h-11 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95";
+  `w-11 h-11 ${cardButtonClass} flex items-center justify-center overflow-hidden`;
 const desktopMenuButtonClass =
-  "w-11 h-11 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-zinc-50 hover:border-zinc-300 hover:shadow-md transition-all active:scale-95";
-const marketButtonClass =
-  "items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 shadow-md transition-all hover:border-zinc-300 hover:shadow-lg active:scale-95 sm:flex sm:px-5";
+  `w-11 h-11 ${cardButtonClass} flex items-center justify-center`;
+const desktopActionButtonClass =
+  `hidden items-center gap-2 ${cardButtonClass} px-4 py-2.5 text-sm font-bold sm:flex sm:px-5`;
 
 export default function HomeHeader({ controller }: { controller: HomePageController }) {
   return (
@@ -22,39 +24,98 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
             <BrandMark />
 
             <div className="ml-auto flex flex-shrink-0 items-center gap-2">
-              <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className={marketButtonClass} aria-label="Go to Market">
+              <button
+                type="button"
+                onClick={() => navigateToPath(EXPLORE_PATH)}
+                className={`${desktopActionButtonClass} !px-4 sm:!px-5`}
+                aria-label="Go to Market"
+              >
                 Market
               </button>
 
-              <button onClick={controller.handleStartSelling} disabled={controller.isSellerProfileLoading} className="hidden items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition-all hover:bg-slate-800 hover:shadow-lg hover:shadow-zinc-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-slate-900 disabled:hover:shadow-none sm:flex sm:px-5">
+              <button
+                onClick={controller.handleStartSelling}
+                disabled={controller.isSellerProfileLoading}
+                className={desktopActionButtonClass}
+              >
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">{controller.isSellerProfileLoading ? "Loading..." : controller.isSeller ? "List Item" : "Sell"}</span>
+                <span className="hidden sm:inline">
+                  {controller.isSellerProfileLoading
+                    ? "Loading..."
+                    : controller.isSeller
+                      ? "List Item"
+                      : "Sell"}
+                </span>
               </button>
 
               <div className="hidden flex-shrink-0 items-center gap-2 md:flex">
-                <button type="button" onClick={() => controller.handleProfileClick()} className={desktopProfileButtonClass}>
-                  {controller.avatarUrl ? <img src={controller.avatarUrl} alt="Profile" className="h-full w-full object-cover" /> : controller.isLoggedIn ? <div className="flex h-full w-full items-center justify-center bg-red-900/5 font-bold text-red-900">{controller.fallbackLetter}</div> : <div className="flex h-full w-full items-center justify-center bg-zinc-50 text-zinc-500"><UserRound className="h-5 w-5" /></div>}
+                <button
+                  type="button"
+                  onClick={() => controller.handleProfileClick()}
+                  className={desktopProfileButtonClass}
+                >
+                  {controller.avatarUrl ? (
+                    <img src={controller.avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+                  ) : controller.isLoggedIn ? (
+                    <div className="flex h-full w-full items-center justify-center bg-red-900/5 font-bold text-red-900">
+                      {controller.fallbackLetter}
+                    </div>
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-zinc-50 text-zinc-500">
+                      <UserRound className="h-5 w-5" />
+                    </div>
+                  )}
                 </button>
+
                 <div ref={controller.desktopMenuRef} className="relative">
-                  <button type="button" onClick={() => controller.setDesktopMenuOpen((value) => !value)} className={desktopMenuButtonClass} aria-label={controller.desktopMenuOpen ? "Close menu" : "Open menu"} aria-expanded={controller.desktopMenuOpen} aria-haspopup="menu">
-                    {controller.desktopMenuOpen ? <X className="h-5 w-5 text-zinc-700" /> : <Menu className="h-5 w-5 text-zinc-700" />}
+                  <button
+                    type="button"
+                    onClick={() => controller.setDesktopMenuOpen((value) => !value)}
+                    className={desktopMenuButtonClass}
+                    aria-label={controller.desktopMenuOpen ? "Close menu" : "Open menu"}
+                    aria-expanded={controller.desktopMenuOpen}
+                    aria-haspopup="menu"
+                  >
+                    {controller.desktopMenuOpen ? (
+                      <X className="h-5 w-5 text-zinc-700" />
+                    ) : (
+                      <Menu className="h-5 w-5 text-zinc-700" />
+                    )}
                   </button>
+
                   <HomeDesktopMenu controller={controller} />
                 </div>
               </div>
             </div>
 
             <div className="flex flex-shrink-0 items-center gap-2">
-              <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center rounded-2xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-bold text-zinc-900 shadow-md transition-all hover:border-zinc-300 hover:shadow-lg active:scale-95 md:hidden" aria-label="Go to Market">
+              <button
+                type="button"
+                onClick={() => navigateToPath(EXPLORE_PATH)}
+                className={`inline-flex items-center ${cardButtonClass} px-3 py-2.5 text-sm font-bold md:hidden`}
+                aria-label="Go to Market"
+              >
                 Market
               </button>
-              <button onClick={() => controller.setMobileMenuOpen((value) => !value)} className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-slate-900 bg-slate-900 transition-all active:scale-95 hover:bg-slate-800 hover:border-slate-800 md:hidden" aria-label={controller.mobileMenuOpen ? "Close menu" : "Open menu"} aria-expanded={controller.mobileMenuOpen} aria-controls="mobile-home-menu">
-                {controller.mobileMenuOpen ? <X className="h-5 w-5 text-white" /> : <Menu className="h-5 w-5 text-white" />}
+
+              <button
+                onClick={() => controller.setMobileMenuOpen((value) => !value)}
+                className={`flex h-11 w-11 items-center justify-center overflow-hidden ${cardButtonClass} md:hidden`}
+                aria-label={controller.mobileMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={controller.mobileMenuOpen}
+                aria-controls="mobile-home-menu"
+              >
+                {controller.mobileMenuOpen ? (
+                  <X className="h-5 w-5 text-zinc-700" />
+                ) : (
+                  <Menu className="h-5 w-5 text-zinc-700" />
+                )}
               </button>
             </div>
           </div>
         </div>
       </header>
+
       <PasskeySetupPrompt />
     </>
   );
