@@ -37,7 +37,7 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
                 disabled={controller.isSellerProfileLoading}
                 className={desktopActionButtonClass}
               >
-                {controller.isSeller ? <Plus className="h-4 w-4" /> : <Store className="h-4 w-4" />}
+                <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">
                   {controller.isSellerProfileLoading
                     ? "Loading..."
