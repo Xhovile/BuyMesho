@@ -1,7 +1,7 @@
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 
 const SETUP_ITEMS = [
-  "Set ADMIN_UIDS/ADMIN_EMAILS and matching VITE_ADMIN_UIDS/VITE_ADMIN_EMAILS.",
+  "Set ADMIN_UIDS/ADMIN_EMAILS for server-side admin authorization.",
   "Ensure Firebase custom claim (admin or role=admin) is applied if using claim-based access.",
   "Confirm admin account can call /api/admin/access successfully.",
   "If TOTP is enabled, ensure admin session includes x-buymesho-totp-session header after verification.",
