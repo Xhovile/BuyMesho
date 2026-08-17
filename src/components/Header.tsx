@@ -47,6 +47,8 @@ type HeaderProps = {
 };
 
 const DESKTOP_BREAKPOINT = 768;
+const headerCardButtonClass =
+  "rounded-2xl border border-zinc-200 bg-white text-zinc-900 shadow-md transition-all hover:border-zinc-300 hover:shadow-lg active:scale-95";
 
 export default function Header({
   searchValue,
@@ -291,7 +293,7 @@ export default function Header({
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button
                     onClick={() => handleSellClick()}
-                    className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
+                    className={`hidden sm:flex items-center gap-2 ${headerCardButtonClass} px-4 sm:px-5 py-2.5 text-sm font-bold`}
                   >
                     <Plus className="w-4 h-4 text-red-500" />
                     <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
@@ -305,7 +307,7 @@ export default function Header({
                       }
                       onProfileClick();
                     }}
-                    className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
+                    className={`w-11 h-11 ${headerCardButtonClass} flex items-center justify-center overflow-hidden`}
                   >
                     {firebaseUser ? (
                       avatarUrl ? (
@@ -324,7 +326,7 @@ export default function Header({
                     <button
                       type="button"
                       onClick={() => setDesktopMenuOpen((value) => !value)}
-                      className="w-11 h-11 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-zinc-50 hover:border-zinc-300 hover:shadow-md transition-all active:scale-95"
+                      className={`w-11 h-11 ${headerCardButtonClass} flex items-center justify-center`}
                       aria-label={desktopMenuOpen ? "Close menu" : "Open menu"}
                       aria-expanded={desktopMenuOpen}
                       aria-haspopup="menu"
@@ -360,12 +362,12 @@ export default function Header({
 
                   <button
                     onClick={() => setMobileMenuOpen((value) => !value)}
-                    className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
+                    className={`md:hidden w-11 h-11 ${headerCardButtonClass} flex items-center justify-center overflow-hidden`}
                     aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
                     aria-expanded={mobileMenuOpen}
                     aria-controls="mobile-header-menu"
                   >
-                    {mobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
+                    {mobileMenuOpen ? <X className="w-5 h-5 text-zinc-700" /> : <Menu className="w-5 h-5 text-zinc-700" />}
                   </button>
                 </div>
               </div>
@@ -397,12 +399,12 @@ export default function Header({
                     <button
                       type="button"
                       onClick={() => setMobileMenuOpen((value) => !value)}
-                      className="md:hidden inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-900 bg-slate-900 text-white hover:bg-slate-800 hover:border-slate-800 transition-all"
+                      className={`md:hidden inline-flex h-10 w-10 shrink-0 items-center justify-center ${headerCardButtonClass}`}
                       aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
                       aria-expanded={mobileMenuOpen}
                       aria-controls="mobile-header-menu"
                     >
-                      {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                      {mobileMenuOpen ? <X className="w-4 h-4 text-zinc-700" /> : <Menu className="w-4 h-4 text-zinc-700" />}
                     </button>
                   ) : null}
                 </div>
