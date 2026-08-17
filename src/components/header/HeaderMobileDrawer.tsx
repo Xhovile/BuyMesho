@@ -15,7 +15,7 @@ import {
 import HeaderMenuItem from "./HeaderMenuItem";
 
 const navButtonClass =
-  "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
+  "w-full flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
 
 type HeaderMobileDrawerProps = {
   open: boolean;
@@ -98,7 +98,7 @@ export default function HeaderMobileDrawer({
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p>
                 <h2 id="drawer-title" className="mt-1 text-base font-black text-zinc-900">Start here</h2>
               </div>
-              <button type="button" onClick={onClose} aria-label="Close menu" className="w-9 h-9 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors">
+              <button type="button" onClick={onClose} aria-label="Close menu" className="w-9 h-9 rounded-2xl flex items-center justify-center hover:bg-zinc-50 transition-colors">
                 <span className="text-zinc-600 text-lg leading-none">×</span>
               </button>
             </div>
@@ -115,7 +115,7 @@ export default function HeaderMobileDrawer({
                   {isAdmin ? <HeaderMenuItem label="ADMIN" icon={<span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0"><ShieldCheck className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onAdminClick(); }} className={navButtonClass} /> : null}
                   <HeaderMenuItem label="Settings" icon={<span className="w-8 h-8 rounded-full bg-slate-500 flex items-center justify-center flex-shrink-0"><Settings className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onSettingsClick(); }} className={navButtonClass} />
                   <HeaderMenuItem label="Profile" icon={<span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0"><User className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onProfileClick(); }} className={navButtonClass} />
-                  <HeaderMenuItem label="Log Out" icon={<span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0"><LogOut className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); void onLogoutClick(); }} className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors" />
+                  <HeaderMenuItem label="Log Out" icon={<span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0"><LogOut className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); void onLogoutClick(); }} className="w-full flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors" />
                 </>
               ) : (
                 <>
