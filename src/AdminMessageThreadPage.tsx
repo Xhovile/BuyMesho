@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ChevronDown, Loader2, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import { navigateToPath } from "./lib/appNavigation";
+import { apiFetch } from "./lib/api";
 import { getConversationIdFromUrl } from "./lib/messagesNavigation";
 
 type Participant = { uid: string; role: string; email: string | null; business_name: string | null; is_suspended: boolean };
@@ -28,12 +29,9 @@ export default function AdminMessageThreadPage() {
     if (!conversationId || Number.isNaN(conversationId)) { navigateToPath("/admin/messages"); return; }
     setLoading(true); setError(null);
     try {
-      const response = await fetch(`/api/admin/messages/${conversationId}`, { credentials: "include" });
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(payload?.error || "Failed to load conversation.");
+      const payload = await apiFetch(`/api/admin/messages/${conversationId}`);
       setData(payload as ThreadData);
-      const review = await fetch(`/api/admin/messages/${conversationId}/review`, { method:"POST", credentials:"include" });
-      if (!review.ok) { const reviewPayload = await review.json().catch(() => null); throw new Error(reviewPayload?.error || "Conversation loaded, but admin review state could not be saved."); }
+      await apiFetch(`/api/admin/messages/${conversationId}/review`, { method: "POST" });
     } catch (err:any) { setError(err?.message || "Failed to load conversation."); } finally { setLoading(false); }
   };
   useEffect(() => { void load(); }, [conversationId]);
@@ -42,9 +40,7 @@ export default function AdminMessageThreadPage() {
     if (!conversationId) return;
     setBusyAction(`${action}:${targetUid || reportId || ""}`);
     try {
-      const response = await fetch(`/api/admin/messages/${conversationId}/action`, { method:"POST", headers:{"Content-Type":"application/json"}, credentials:"include", body:JSON.stringify({ action, target_uid:targetUid, report_id:reportId, resolution:resolution.trim() || undefined }) });
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(payload?.error || "Moderation action failed.");
+      await apiFetch(`/api/admin/messages/${conversationId}/action`, { method: "POST", body: JSON.stringify({ action, target_uid: targetUid, report_id: reportId, resolution: resolution.trim() || undefined }) });
       setOpenMenu(null); setResolution(""); await load();
     } catch (err:any) { setError(err?.message || "Moderation action failed."); } finally { setBusyAction(null); }
   };

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, Ban, ChevronRight, Loader2, MessageSquareText, Search, ShieldAlert } from "lucide-react";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import { navigateToPath } from "./lib/appNavigation";
+import { apiFetch } from "./lib/api";
 
 type Filter = "Unread" | "Reported" | "Blocked" | "All";
 type AdminConversation = {
@@ -51,9 +52,7 @@ export default function AdminMessagesPage() {
       try {
         const params = new URLSearchParams({ filter: filter.toLowerCase(), limit: "50" });
         if (query.trim()) params.set("search", query.trim());
-        const response = await fetch(`/api/admin/messages?${params.toString()}`, { signal: controller.signal, credentials: "include" });
-        const payload = await response.json().catch(() => null);
-        if (!response.ok) throw new Error(payload?.error || "Failed to load admin messages.");
+        const payload = await apiFetch(`/api/admin/messages?${params.toString()}`, { signal: controller.signal });
         if (!cancelled) {
           setItems(Array.isArray(payload?.items) ? payload.items : []);
           setNextCursor(payload?.pagination?.nextCursor ?? null);
@@ -73,9 +72,8 @@ export default function AdminMessagesPage() {
   useEffect(() => {
     const loadSummary = async () => {
       try {
-        const response = await fetch("/api/admin/messages/summary", { credentials: "include" });
-        const payload = await response.json().catch(() => null);
-        if (response.ok) setSummary({ unread: Number(payload?.unread || 0), reported: Number(payload?.reported || 0), blocked: Number(payload?.blocked || 0) });
+        const payload = await apiFetch("/api/admin/messages/summary");
+        setSummary({ unread: Number(payload?.unread || 0), reported: Number(payload?.reported || 0), blocked: Number(payload?.blocked || 0) });
       } catch {
         // Indicators are supplementary; the main inbox remains usable.
       }
@@ -90,9 +88,7 @@ export default function AdminMessagesPage() {
     try {
       const params = new URLSearchParams({ filter: filter.toLowerCase(), limit: "50", cursor: nextCursor });
       if (query.trim()) params.set("search", query.trim());
-      const response = await fetch(`/api/admin/messages?${params.toString()}`, { credentials: "include" });
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(payload?.error || "Failed to load next page.");
+      const payload = await apiFetch(`/api/admin/messages?${params.toString()}`);
       setCursorStack((stack) => [...stack, nextCursor]);
       setItems(Array.isArray(payload?.items) ? payload.items : []);
       setNextCursor(payload?.pagination?.nextCursor ?? null);
