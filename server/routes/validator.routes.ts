@@ -2,6 +2,7 @@ import type { Express, NextFunction, Request, Response } from "express";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { hasAdminAccess } from "./adminAccess.js";
 import { getPaymentDb } from "../postgresCompat.js";
+import { validatorHandoffHandler, validatorHandoffExchangeHandler } from "../auth/validatorHandoff.js";
 
 type VerifiedRequestUser = {
   uid: string;
@@ -233,30 +234,16 @@ function validatorEventsHandler(req: Request, res: Response) {
 }
 
 function validatorSessionHandler(req: Request, res: Response) {
-  const user = req.user as VerifiedRequestUser | undefined;
-  if (!user) return res.status(401).json({ error: "Authentication required" });
-  if (!isEventCreatorActive(loadCreatorRecord(user.uid))) {
-    return res.status(403).json({ error: "Approved event creator access is required" });
-  }
-
-  void (async () => {
-    try {
-      const customToken = await getFirebaseAdmin().auth().createCustomToken(user.uid, {
-        client: "ticket-validator",
-        role: user.is_admin ? "admin" : "validator",
-      });
-      return res.json({ success: true, customToken });
-    } catch (error) {
-      console.error("Failed to create Ticket Validator session token:", error);
-      return res.status(500).json({ error: "Unable to create Ticket Validator session" });
-    }
-  })();
+  return validatorHandoffExchangeHandler(req, res);
 }
 
 export function registerValidatorRoutes(app: Express) {
   if ((app as any)[ROUTES_INSTALLED_FLAG]) return;
 
-  app.post("/api/validator/session", verifyBearerIdentity, validatorSessionHandler);
+  // Cross-domain authentication uses a short-lived, single-use handoff code.
+  // The Firebase ID token remains inside BuyMesho and never enters a URL.
+  app.post("/api/validator/handoff", verifyBearerIdentity, validatorHandoffHandler);
+  app.post("/api/validator/session", validatorSessionHandler);
   app.get("/api/validator/me", verifyBearerIdentity, validatorMeHandler);
   app.get("/api/validator/events", verifyBearerIdentity, validatorEventsHandler);
 
