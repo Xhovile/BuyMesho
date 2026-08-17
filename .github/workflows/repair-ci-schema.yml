@@ -2,30 +2,35 @@ name: Repair CI Schema and Import Cycle
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
   repair:
-    if: ${{ !contains(github.event.head_commit.message, '[repair-ci]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Patch test schema and payout import cycle
+      - name: Patch repository
         shell: bash
         run: |
-          python - <<'PY'
+          if git log -1 --pretty=%s | grep -Fq '[repair-ci]'; then
+            echo 'Repair commit already applied.'
+            exit 0
+          fi
+
+          python3 - <<'PY'
           from pathlib import Path
 
           bootstrap = Path('server/testDatabaseBootstrap.ts')
-          s = bootstrap.read_text()
-          marker = "runMigrations();\n"
-          patch = r'''runMigrations();
+          text = bootstrap.read_text()
+          marker = 'runMigrations();\n'
+          patch = '''runMigrations();
 
-// Keep the pristine CI database aligned with the current PostgreSQL repositories.
+// Keep the CI database aligned with the current PostgreSQL repositories.
 db.exec(`
   ALTER TABLE sellers ADD COLUMN IF NOT EXISTS is_verified INTEGER NOT NULL DEFAULT 0;
   ALTER TABLE sellers ADD COLUMN IF NOT EXISTS is_seller INTEGER NOT NULL DEFAULT 0;
@@ -65,27 +70,28 @@ db.exec(`
     ON payment_webhook_events(provider, tx_ref, event_type, payload_hash);
 `);
 '''
-          if "settlement_route TEXT" not in s:
-              s = s.replace(marker, patch, 1)
-              bootstrap.write_text(s)
+          if 'settlement_route TEXT' not in text:
+              bootstrap.write_text(text.replace(marker, patch, 1))
 
           repo = Path('server/modules/payouts/payout.repository.ts')
-          s = repo.read_text()
+          text = repo.read_text()
           old = """import {\n  buildPayChanguPayoutChargeId,\n  type PayChanguPayoutExecutionResult,\n} from './paychangu.payout.js';"""
           new = """import { buildPayChanguPayoutChargeId } from './payout.charge-id.js';\nimport type { PayChanguPayoutExecutionResult } from './paychangu.payout.js';"""
-          if old in s:
-              repo.write_text(s.replace(old, new, 1))
+          if old in text:
+              repo.write_text(text.replace(old, new, 1))
+          else:
+              raise SystemExit('Expected payout.repository import block was not found')
           PY
 
       - name: Commit repair
         shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if git diff --quiet; then
-            echo "No repair changes required."
+            echo 'No changes were needed.'
             exit 0
           fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add server/testDatabaseBootstrap.ts server/modules/payouts/payout.repository.ts
-          git commit -m "[repair-ci] align test schema and break payout import cycle"
+          git commit -m '[repair-ci] align test schema and break payout import cycle'
           git push
