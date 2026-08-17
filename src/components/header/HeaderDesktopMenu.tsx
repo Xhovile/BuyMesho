@@ -1,13 +1,13 @@
 import { type RefObject } from "react";
-
 import { AnimatePresence, motion } from "motion/react";
-import { Bookmark, CreditCard, EyeOff, House, LogOut, MessageSquareText, Plus, Settings, ShieldCheck, Store, User } from "lucide-react";
+import { Bookmark, CreditCard, EyeOff, LogOut, MessageSquareText, Plus, Settings, ShieldCheck, Store, User } from "lucide-react";
 import HeaderMenuItem from "./HeaderMenuItem";
 import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "../../lib/appNavigation";
 
 const desktopMenuItemClass = "w-full flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
 const desktopSeparatorClass = "mx-4 border-t border-zinc-200";
-const primaryButtonClass = "w-full rounded-2xl bg-white px-4 py-3 text-center text-base font-black uppercase tracking-wide text-zinc-900 hover:bg-zinc-50 transition-colors";
+const primaryButtonClass = "w-full rounded-xl bg-white px-4 py-3 text-center text-base font-black uppercase tracking-wide text-zinc-900 hover:bg-zinc-50 transition-colors";
+const primaryWrapperClass = "rounded-2xl border border-zinc-100 bg-white p-1 shadow-sm mb-2";
 
 type HeaderDesktopMenuProps = {
   menuRef: RefObject<HTMLDivElement | null>; open: boolean; isLoggedIn: boolean; isSeller: boolean; isAdmin: boolean; unreadCount: number; primaryDrawerLabel: string;
@@ -24,7 +24,7 @@ export default function HeaderDesktopMenu({ menuRef, open, isLoggedIn, isSeller,
   return <AnimatePresence>{open ? <motion.div ref={menuRef} initial={{ opacity: 0, y: -8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.98 }} transition={{ duration: 0.16 }} className="absolute right-0 top-full mt-3 w-72 overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl z-[70]" role="menu" aria-label="Desktop header menu">
     <div className="border-b border-zinc-100 px-4 pb-3 pt-4"><p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p><h2 className="mt-1 text-base font-black text-zinc-900">Start here</h2></div>
     <div className="max-h-[calc(100vh-9rem)] overflow-y-auto overscroll-contain p-2">
-      <HeaderMenuItem label={primaryDrawerLabel} icon={null} onClick={handlePrimaryNavigation} className={primaryButtonClass} />
+      <div className={primaryWrapperClass}><HeaderMenuItem label={primaryDrawerLabel} icon={null} onClick={handlePrimaryNavigation} className={primaryButtonClass} /></div>
       <HeaderMenuItem label={isSeller ? "List Item" : "Sell"} icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0"><Plus className="w-4 h-4 text-white" /></span>} onClick={handleSellAction} className={desktopMenuItemClass} />
       {isLoggedIn ? <>
         <HeaderMenuItem label="Messages" extra={unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null} icon={<span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0"><MessageSquareText className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onMessagesClick(); }} className={desktopMenuItemClass} />
