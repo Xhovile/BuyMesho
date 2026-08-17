@@ -17,6 +17,8 @@ import HeaderMenuItem from "./HeaderMenuItem";
 const navButtonClass =
   "w-full flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
 
+const navSeparatorClass = "mx-4 border-t border-zinc-200";
+
 type HeaderMobileDrawerProps = {
   open: boolean;
   isLoggedIn: boolean;
@@ -116,14 +118,14 @@ export default function HeaderMobileDrawer({
                   {isAdmin ? <HeaderMenuItem label="ADMIN" icon={<span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0"><ShieldCheck className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onAdminClick(); }} className={navButtonClass} /> : null}
                   <HeaderMenuItem label="Settings" icon={<span className="w-8 h-8 rounded-full bg-slate-500 flex items-center justify-center flex-shrink-0"><Settings className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onSettingsClick(); }} className={navButtonClass} />
                   <HeaderMenuItem label="Profile" icon={<span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0"><User className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onProfileClick(); }} className={navButtonClass} />
-                  <div className="-mx-4 border-t border-zinc-200" aria-hidden="true" />
+                  <div className={navSeparatorClass} aria-hidden="true" />
                   <HeaderMenuItem label="Log Out" icon={<span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0"><LogOut className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); void onLogoutClick(); }} className="w-full flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors" />
                 </>
               ) : (
                 <>
                   <HeaderMenuItem label="List Item" icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0">{isSeller ? <Plus className="w-4 h-4 text-white" /> : <Store className="w-4 h-4 text-white" />}</span>} onClick={() => { onClose(); onPrimaryClick(); }} className={navButtonClass} />
                   <HeaderMenuItem label="Become Seller" icon={<span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0"><ShieldCheck className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onBecomeSellerClick(); }} className={navButtonClass} />
-                  <div className="-mx-4 border-t border-zinc-200" aria-hidden="true" />
+                  <div className={navSeparatorClass} aria-hidden="true" />
                   <HeaderMenuItem label="Log In" icon={<span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0"><User className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onSignInClick(); }} className={navButtonClass} />
                   <HeaderMenuItem label="Create Account" icon={<span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0"><User className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onCreateAccountClick(); }} className={navButtonClass} />
                 </>
