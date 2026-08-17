@@ -65,4 +65,53 @@ export function prepareSync(sql:string):PgCompatPreparedStatement{return{run(...
 export function beginSync(){if(transactionDepth===0)sendWorkerRequest({op:"begin"});transactionDepth+=1;}
 export function commitSync(){if(transactionDepth<=0)return;transactionDepth-=1;if(transactionDepth===0)sendWorkerRequest({op:"commit"});}
 export function rollbackSync(){if(transactionDepth<=0)return;transactionDepth=0;sendWorkerRequest({op:"rollback"});}
+
+export class PgCompatDatabase {
+  prepare(sql: string): PgCompatPreparedStatement {
+    return prepareSync(sql);
+  }
+
+  exec(sql: string): void {
+    if (!sql.trim()) return;
+    executeSync(sql, []);
+  }
+
+  pragma(_statement: string): void {}
+
+  transaction<T extends (...args: any[]) => any>(fn: T): T {
+    return ((...args: Parameters<T>) => {
+      const outerTransaction = transactionDepth > 0;
+      if (!outerTransaction) beginSync();
+      try {
+        const result = fn(...args);
+        if (!outerTransaction) commitSync();
+        return result;
+      } catch (error) {
+        if (!outerTransaction) {
+          try {
+            rollbackSync();
+          } catch {
+            // Preserve the original error if rollback itself fails.
+          }
+        }
+        throw error;
+      }
+    }) as T;
+  }
+
+  async close(): Promise<void> {
+    const currentWorker = worker;
+    worker = null;
+    workerPort = null;
+    if (currentWorker) {
+      void currentWorker.terminate().catch(() => undefined);
+    }
+    await closePool();
+  }
+}
+
+export const postgresDb = new PgCompatDatabase();
+
 export { closePool, getClient, pool, query, withTransaction };
+export type { PoolClient, QueryResultRow };
+export default postgresDb;
