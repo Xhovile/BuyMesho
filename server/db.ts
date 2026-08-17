@@ -292,6 +292,13 @@ function workerExecArgv(): string[] {
     if (arg === "--import" || arg === "--require" || arg === "--loader") {
       const value = args[index + 1];
       if (value) {
+        // The safety bootstrap belongs to the parent test process. Re-running it
+        // inside the PostgreSQL worker would see the already-verified test URL
+        // copied into DATABASE_URL and falsely reject it as production-identical.
+        if (value.includes("server/testSafety.ts")) {
+          index += 1;
+          continue;
+        }
         allowed.push(arg, value);
         index += 1;
       }
@@ -306,6 +313,12 @@ function workerExecArgv(): string[] {
       arg === "--no-warnings" ||
       arg === "--enable-source-maps"
     ) {
+      if (
+        arg.startsWith("--import=") &&
+        arg.includes("server/testSafety.ts")
+      ) {
+        continue;
+      }
       allowed.push(arg);
     }
   }
