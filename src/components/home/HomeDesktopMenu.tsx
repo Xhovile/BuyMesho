@@ -8,6 +8,7 @@ import {
   EyeOff,
   LogOut,
   MessageSquareText,
+  Plus,
   Settings,
   ShieldCheck,
   Store,
@@ -48,6 +49,11 @@ function MenuRow({
 }
 
 export default function HomeDesktopMenu({ controller }: { controller: HomePageController }) {
+  const handleSellAction = () => {
+    controller.closeMenu();
+    controller.handleStartSelling();
+  };
+
   return (
     <AnimatePresence>
       {controller.desktopMenuOpen ? (
@@ -68,6 +74,16 @@ export default function HomeDesktopMenu({ controller }: { controller: HomePageCo
           </div>
 
           <div className="max-h-[calc(100vh-9rem)] space-y-1 overflow-y-auto overscroll-contain p-2">
+            <MenuRow
+              label={controller.isSeller ? "List Item" : "Sell"}
+              icon={
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900">
+                  <Plus className="h-4 w-4 text-white" />
+                </span>
+              }
+              onClick={handleSellAction}
+            />
+
             {controller.isGuest ? (
               <>
                 <MenuRow
