@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: buymesho-ci-${{ github.workflow }}-${{ github.ref }}
@@ -46,9 +46,6 @@ jobs:
 
       - name: Lint
         run: npm run lint
-
-      - name: Repair CI schema and payout import cycle
-        run: node scripts/repair-ci.mjs
 
       - name: Prepare isolated test database
         env:
