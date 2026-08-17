@@ -11,7 +11,12 @@ type HeaderMenuItemProps = {
 
 export default function HeaderMenuItem({ label, icon, onClick, className, extra }: HeaderMenuItemProps) {
   return (
-    <button type="button" onClick={onClick} className={className} role="menuitem">
+    <button
+      type="button"
+      onClick={onClick}
+      className={`${className} [&>span:first-child>span:first-child]:!bg-zinc-900`}
+      role="menuitem"
+    >
       <span className="inline-flex items-center gap-3">
         {icon}
         <span className="inline-flex items-center gap-2">
