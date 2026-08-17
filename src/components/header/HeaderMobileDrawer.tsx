@@ -63,6 +63,11 @@ export default function HeaderMobileDrawer({
     navigateToPath(primaryPath);
   };
 
+  const handleSellAction = () => {
+    onClose();
+    onPrimaryClick();
+  };
+
   return (
     <AnimatePresence>
       {open ? (
@@ -75,8 +80,7 @@ export default function HeaderMobileDrawer({
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-4">
               <HeaderMenuItem label={primaryDrawerLabel} icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0">{primaryIcon}</span>} onClick={handlePrimaryNavigation} className={navButtonClass} />
-              <HeaderMenuItem label="List Item" icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0">{isSeller ? <Plus className="w-4 h-4 text-white" /> : <Store className="w-4 h-4 text-white" />}</span>} onClick={() => { onClose(); onPrimaryClick(); }} className={navButtonClass} />
-
+              <HeaderMenuItem label={isSeller ? "List Item" : "Sell"} icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0">{isSeller ? <Plus className="w-4 h-4 text-white" /> : <Store className="w-4 h-4 text-white" />}</span>} onClick={handleSellAction} className={navButtonClass} />
               {isLoggedIn ? (
                 <>
                   <HeaderMenuItem label="Messages" extra={unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null} icon={<span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0"><MessageSquareText className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onMessagesClick(); }} className={navButtonClass} />
