@@ -4,7 +4,7 @@ import fs from "node:fs";
 import dotenv from "dotenv";
 import { type PoolClient, type QueryResultRow, Pool } from "pg";
 
-import { closePool, getClient, pool, query, withTransaction } from "./postgres.js";
+import { closePool, getClient, pool, query, withTransaction } from "./postgres.ts";
 
 dotenv.config();
 
