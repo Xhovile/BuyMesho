@@ -26,7 +26,7 @@ import {
 import type { HomePageController } from "../../hooks/useHomePageController";
 
 const navButtonClass =
-  "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
+  "w-full flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
 
 export default function HomeMobileDrawer({ controller }: { controller: HomePageController }) {
   return (
@@ -69,7 +69,7 @@ export default function HomeMobileDrawer({ controller }: { controller: HomePageC
                 type="button"
                 onClick={controller.closeMenu}
                 aria-label="Close menu"
-                className="flex h-9 w-9 items-center justify-center rounded-2xl border border-zinc-200 transition-colors hover:bg-zinc-50"
+                className="flex h-9 w-9 items-center justify-center rounded-2xl transition-colors hover:bg-zinc-50"
               >
                 <X className="h-4 w-4 text-zinc-600" />
               </button>
