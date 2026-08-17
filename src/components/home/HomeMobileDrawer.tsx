@@ -1,4 +1,4 @@
-import { BECOME_SELLER_PATH, LOGIN_PATH, SIGNUP_PATH, navigateToAdminModerationQueue, navigateToPath } from "../../lib/appNavigation";
+import { BECOME_SELLER_PATH, EXPLORE_PATH, LOGIN_PATH, SIGNUP_PATH, navigateToAdminModerationQueue, navigateToPath } from "../../lib/appNavigation";
 import HeaderMobileDrawer from "../header/HeaderMobileDrawer";
 import type { HomePageController } from "../../hooks/useHomePageController";
 
@@ -11,7 +11,7 @@ export default function HomeMobileDrawer({ controller }: { controller: HomePageC
       isSeller={controller.isSeller}
       isAdmin={controller.isAdmin}
       unreadCount={controller.unreadCount}
-      primaryDrawerLabel="Home"
+      primaryDrawerLabel="Market"
       onClose={controller.closeMenu}
       onPrimaryClick={() => {
         controller.closeMenu();
