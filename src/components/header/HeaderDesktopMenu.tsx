@@ -4,7 +4,7 @@ import { Bookmark, CreditCard, EyeOff, LogOut, MessageSquareText, Plus, Settings
 import HeaderMenuItem from "./HeaderMenuItem";
 
 type HeaderDesktopMenuProps = {
-  menuRef: RefObject<HTMLDivElement | null>; open: boolean; isLoggedIn: boolean; isSeller: boolean; isAdmin: boolean; unreadCount: number;
+  menuRef: RefObject<HTMLDivElement | null>; open: boolean; isLoggedIn: boolean; isSeller: boolean; isAdmin: boolean; unreadCount: number; primaryDrawerLabel?: string;
   onClose: () => void; onPrimaryClick: () => void; onListItemClick?: () => void; onBecomeSellerClick: () => void; onMyListingsClick?: () => void;
   onMessagesClick: () => void; onSavedClick: () => void; onHiddenClick: () => void; onPaymentsClick: () => void; onSellerPayoutsClick: () => void; onAdminClick: () => void;
   onSettingsClick: () => void; onProfileClick: () => void; onLogoutClick: () => void | Promise<void>; onSignInClick: () => void; onCreateAccountClick: () => void;
