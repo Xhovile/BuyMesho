@@ -21,9 +21,6 @@ jobs:
     name: Validate, Test and Build
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      NODE_ENV: test
-      TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
 
     steps:
       - name: Checkout
@@ -39,9 +36,11 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Verify test database secret is configured
+        env:
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
         run: |
           if [ -z "$TEST_DATABASE_URL" ]; then
-            echo "TEST_DATABASE_URL GitHub repository secret is not configured."
+            echo "TEST_DATABASE_URL GitHub repository secret is not configured or is unavailable to this workflow."
             exit 1
           fi
 
@@ -49,6 +48,9 @@ jobs:
         run: npm run lint
 
       - name: Integration and financial integrity tests
+        env:
+          NODE_ENV: test
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
         run: npm run test
 
       - name: Production build
