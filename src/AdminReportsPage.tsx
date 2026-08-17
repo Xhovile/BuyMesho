@@ -207,6 +207,16 @@ function MessageReportCard({
         </div>
 
         <div className="flex flex-col gap-2 min-w-[180px]">
+          {report.conversation_id != null ? (
+            <button
+              type="button"
+              onClick={() => navigateToPath(`/admin/messages?conversation=${report.conversation_id}`)}
+              className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-bold"
+            >
+              Open Conversation
+            </button>
+          ) : null}
+
           {report.status !== "resolved" ? (
             <button
               onClick={onResolve}
