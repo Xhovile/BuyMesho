@@ -11,7 +11,6 @@ import type {
   SellerConnectAccountUpsertInput,
 } from './connect.types.js';
 
-const CONNECT_TOKEN_ENCRYPTION_KEY = process.env.CONNECT_TOKEN_ENCRYPTION_KEY ?? process.env.SELLER_PAYOUT_ENCRYPTION_KEY ?? '';
 const PAYCHANGU_API_BASE_URL = process.env.PAYCHANGU_BASE_URL ?? process.env.PAYCHANGU_API_BASE_URL ?? 'https://api.paychangu.com';
 const PAYCHANGU_REVOKE_ACCESS_TOKEN_PATH = process.env.PAYCHANGU_REVOKE_ACCESS_TOKEN_PATH ?? '/new-endpoint-2';
 const CONNECT_ATTEMPT_TTL_MS = 15 * 60 * 1000;
@@ -30,6 +29,12 @@ function readRequiredEnv(name: string): string {
   return value;
 }
 
+function getConnectTokenEncryptionKey(): string {
+  return process.env.CONNECT_TOKEN_ENCRYPTION_KEY?.trim()
+    || process.env.SELLER_PAYOUT_ENCRYPTION_KEY?.trim()
+    || '';
+}
+
 function validateBaseUrl(value: string): string {
   try {
     new URL(value);
@@ -43,7 +48,7 @@ export function validateConnectEnvironment(): void {
   const missing: string[] = [];
   if (!process.env.PAYCHANGU_SECRET_KEY?.trim()) missing.push('PAYCHANGU_SECRET_KEY');
   if (!process.env.PAYCHANGU_WEBHOOK_SECRET?.trim()) missing.push('PAYCHANGU_WEBHOOK_SECRET');
-  if (!CONNECT_TOKEN_ENCRYPTION_KEY.trim()) missing.push('CONNECT_TOKEN_ENCRYPTION_KEY');
+  if (!getConnectTokenEncryptionKey()) missing.push('CONNECT_TOKEN_ENCRYPTION_KEY');
 
   if (missing.length > 0) {
     throw new Error(`Missing required Connect environment variables: ${missing.join(', ')}`);
@@ -53,11 +58,12 @@ export function validateConnectEnvironment(): void {
 }
 
 function requireEncryptionKey(): string {
-  if (!CONNECT_TOKEN_ENCRYPTION_KEY) {
+  const key = getConnectTokenEncryptionKey();
+  if (!key) {
     throw new Error('CONNECT_TOKEN_ENCRYPTION_KEY is not configured');
   }
 
-  return CONNECT_TOKEN_ENCRYPTION_KEY;
+  return key;
 }
 
 function getDerivedKey(): Buffer {
