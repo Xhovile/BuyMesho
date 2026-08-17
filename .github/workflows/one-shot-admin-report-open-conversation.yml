@@ -1,0 +1,53 @@
+name: One-shot Reports Open Conversation
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Add Open Conversation to chat reports
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/AdminReportsPage.tsx')
+          s = p.read_text()
+          old = '''        <div className="flex flex-col gap-2 min-w-[180px]">
+          {report.status !== "resolved" ? ('''
+          new = '''        <div className="flex flex-col gap-2 min-w-[180px]">
+          {report.conversation_id != null ? (
+            <button
+              type="button"
+              onClick={() => navigateToPath(`/admin/messages?conversation=${report.conversation_id}`)}
+              className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-bold"
+            >
+              Open Conversation
+            </button>
+          ) : null}
+
+          {report.status !== "resolved" ? ('''
+          if old not in s:
+              raise SystemExit('Target chat report action block not found')
+          if 'Open Conversation' not in s:
+              s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/AdminReportsPage.tsx
+          git commit -m 'Add Open Conversation to chat reports'
+          git push origin main
+      - name: Remove temporary workflow
+        if: always()
+        shell: bash
+        run: |
+          rm -f .github/workflows/one-shot-admin-report-open-conversation.yml
+          git add .github/workflows/one-shot-admin-report-open-conversation.yml
+          git commit -m 'Remove temporary report conversation workflow' || true
+          git push origin main || true
