@@ -15,11 +15,11 @@ function parseCsvEnv(value: string | undefined, normalizeLowercase = false): str
 }
 
 export function getConfiguredAdminEmails(): string[] {
-  return parseCsvEnv(process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS, true);
+  return parseCsvEnv(process.env.ADMIN_EMAILS, true);
 }
 
 export function getConfiguredAdminUids(): string[] {
-  return parseCsvEnv(process.env.ADMIN_UIDS || process.env.VITE_ADMIN_UIDS);
+  return parseCsvEnv(process.env.ADMIN_UIDS);
 }
 
 export function isConfiguredAdmin(identity?: Pick<AdminIdentity, "email" | "uid">): boolean {
