@@ -18,24 +18,17 @@ jobs:
           from pathlib import Path
           p = Path('src/AdminReportsPage.tsx')
           s = p.read_text()
-          old = '''        <div className="flex flex-col gap-2 min-w-[180px]">
-          {report.status !== "resolved" ? ('''
-          new = '''        <div className="flex flex-col gap-2 min-w-[180px]">
-          {report.conversation_id != null ? (
-            <button
-              type="button"
-              onClick={() => navigateToPath(`/admin/messages?conversation=${report.conversation_id}`)}
-              className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-bold"
-            >
-              Open Conversation
-            </button>
-          ) : null}
-
-          {report.status !== "resolved" ? ('''
-          if old not in s:
-              raise SystemExit('Target chat report action block not found')
-          if 'Open Conversation' not in s:
-              s = s.replace(old, new, 1)
+          start = s.index('function MessageReportCard(')
+          end = s.index('function ContentReportCard(')
+          segment = s[start:end]
+          marker = '        <div className="flex flex-col gap-2 min-w-[180px]">'
+          pos = segment.find(marker)
+          if pos < 0:
+              raise SystemExit('Chat report action container not found')
+          if 'Open Conversation' not in segment:
+              insert_at = start + pos + len(marker)
+              insertion = '''\n          {report.conversation_id != null ? (\n            <button\n              type="button"\n              onClick={() => navigateToPath(`/admin/messages?conversation=${report.conversation_id}`)}\n              className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-bold"\n            >\n              Open Conversation\n            </button>\n          ) : null}\n'''
+              s = s[:insert_at] + insertion + s[insert_at:]
           p.write_text(s)
           PY
           git config user.name 'github-actions[bot]'
@@ -47,6 +40,8 @@ jobs:
         if: always()
         shell: bash
         run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           rm -f .github/workflows/one-shot-admin-report-open-conversation.yml
           git add .github/workflows/one-shot-admin-report-open-conversation.yml
           git commit -m 'Remove temporary report conversation workflow' || true
