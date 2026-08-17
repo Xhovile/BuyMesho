@@ -1,6 +1,6 @@
 import type { Express, RequestHandler } from "express";
-import { askBuyMeshoCopilot } from "../lib/buymesho-copilot.js";
 import { compareBuyMeshoListings } from "../lib/listing-comparison.js";
+import { shoppingAssistant } from "../lib/shopping-assistant.js";
 import {
   generateListingDraft,
   suggestPricing,
@@ -59,7 +59,7 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
         return res.status(400).json({ error: "currentPrice must be a non-negative number" });
       }
 
-      const pricing = await suggestPricing({ name, category, condition, specs, currentPrice });
+      const pricing = await suggestPricing({ name, category, condition, specs, currentPrice, db });
       return res.json({ pricing });
     } catch (error) {
       console.error("AI Suggest Pricing error:", error);
@@ -89,10 +89,13 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
         return res.status(400).json({ error: `contextListings must contain at most ${MAX_CONTEXT_LISTINGS} items` });
       }
 
-      const result = await askBuyMeshoCopilot({
+      const result = await shoppingAssistant({
         query,
         university: typeof university === "string" ? university : undefined,
+        category: typeof category === "string" ? category : undefined,
+        maxPrice: typeof maxPrice === "number" ? maxPrice : undefined,
         contextListings: Array.isArray(contextListings) ? contextListings : [],
+        db,
       });
 
       return res.json({ result });

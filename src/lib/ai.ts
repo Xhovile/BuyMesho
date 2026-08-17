@@ -14,6 +14,8 @@ export type PriceSuggestionResult = {
   confidence_score: number;
   market_insight: string;
   pricing_tips: string[];
+  evidence_source?: "marketplace_comparables" | "ai_only" | "insufficient_data";
+  comparable_count?: number;
 };
 
 export type ShoppingAssistantListing = {
