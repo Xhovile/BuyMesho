@@ -40,9 +40,11 @@ jobs:
             echo "PLATFORM_REPO_TOKEN GitHub repository secret is not configured or is unavailable to this workflow."
             exit 1
           fi
-          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/Xhovile/".insteadOf "ssh://git@github.com/Xhovile/"
-          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/Xhovile/".insteadOf "git@github.com:Xhovile/"
-          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/Xhovile/".insteadOf "https://github.com/Xhovile/"
+          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/Xhovile/Platform.git".insteadOf "ssh://git@github.com/Xhovile/Platform.git"
+          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/Xhovile/Platform.git".insteadOf "git@github.com:Xhovile/Platform.git"
+          echo "Verifying authenticated access to Xhovile/Platform..."
+          git ls-remote ssh://git@github.com/Xhovile/Platform.git HEAD >/dev/null
+          echo "Private Platform dependency access verified."
 
       - name: Sync npm lockfile metadata
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
