@@ -16,6 +16,8 @@ type FeedbackAction = { label: string; onClick: () => void; variant?: "primary" 
 type FeedbackState = { open: boolean; type: "success" | "error" | "info"; title: string; message: string; actions?: FeedbackAction[] } | null;
 type AuthTransitionState = { redirecting: boolean; destinationLabel?: string } | null;
 
+type ValidatorHandoffResponse = { code: string; expiresInSeconds?: number };
+
 function getTicketValidatorReturnUrl() {
   const params = new URLSearchParams(window.location.search);
   const client = params.get("client");
@@ -56,9 +58,21 @@ export default function LoginPage() {
     if (returnUrl && auth.currentUser) {
       setAuthTransition({ redirecting: true, destinationLabel: "Ticket Validator" });
       window.setTimeout(async () => {
-        const token = await auth.currentUser!.getIdToken(true);
-        returnUrl.searchParams.set("buymesho_session", token);
-        window.location.replace(returnUrl.toString());
+        try {
+          const handoff = await apiFetch("/api/validator/handoff", {
+            method: "POST",
+            body: JSON.stringify({ client: "ticket-validator" }),
+          }) as ValidatorHandoffResponse;
+          returnUrl.searchParams.set("buymesho_session", handoff.code);
+          window.location.replace(returnUrl.toString());
+        } catch (error) {
+          setAuthTransition({ redirecting: false });
+          showFeedback(
+            "error",
+            "Ticket Validator sign-in failed",
+            error instanceof Error ? error.message : "We could not prepare your secure Validator session. Please try again.",
+          );
+        }
       }, 700);
       return;
     }
