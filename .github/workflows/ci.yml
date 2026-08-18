@@ -32,6 +32,18 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Configure Git access to private Platform dependency
+        env:
+          PLATFORM_REPO_TOKEN: ${{ secrets.PLATFORM_REPO_TOKEN }}
+        run: |
+          if [ -z "$PLATFORM_REPO_TOKEN" ]; then
+            echo "PLATFORM_REPO_TOKEN GitHub repository secret is not configured or is unavailable to this workflow."
+            exit 1
+          fi
+          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"
+          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/".insteadOf "git@github.com:"
+          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/".insteadOf "https://github.com/"
+
       - name: Sync npm lockfile metadata
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 
