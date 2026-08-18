@@ -1,5 +1,4 @@
 import { auth } from "../firebase";
-import { getTotpVerifiedSessionToken } from "./totpSession";
 import {
   API_CACHE_TTL_MS,
   isCachedApiResponseFresh,
@@ -24,14 +23,7 @@ async function authHeader() {
 
   if (!token) return {} as Record<string, string>;
 
-  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-
-  const totpSessionToken = getTotpVerifiedSessionToken();
-  if (totpSessionToken) {
-    headers["x-buymesho-totp-session"] = totpSessionToken;
-  }
-
-  return headers;
+  return { Authorization: `Bearer ${token}` };
 }
 
 const API_FETCH_TIMEOUT_MS = 15000;
@@ -56,17 +48,13 @@ function formatApiErrorMessage(value: unknown): string | null {
   }
 
   if (Array.isArray(value)) {
-    const parts = value
-      .map((item) => formatApiErrorMessage(item))
-      .filter((item): item is string => Boolean(item));
+    const parts = value.map((item) => formatApiErrorMessage(item)).filter((item): item is string => Boolean(item));
     return parts.length > 0 ? parts.join(", ") : null;
   }
 
   if (typeof value === "object" && value !== null) {
     const record = value as Record<string, unknown>;
-    const directMessage = formatApiErrorMessage(
-      record.message ?? record.error ?? record.detail ?? record.reason,
-    );
+    const directMessage = formatApiErrorMessage(record.message ?? record.error ?? record.detail ?? record.reason);
     if (directMessage) return directMessage;
 
     const parts = Object.entries(record)
@@ -90,14 +78,10 @@ function createCombinedAbortSignal(signal?: AbortSignal) {
       callerAborted = true;
       controller.abort(signal.reason);
     } else {
-      signal.addEventListener(
-        "abort",
-        () => {
-          callerAborted = true;
-          controller.abort(signal.reason);
-        },
-        { once: true }
-      );
+      signal.addEventListener("abort", () => {
+        callerAborted = true;
+        controller.abort(signal.reason);
+      }, { once: true });
     }
   }
 
@@ -105,14 +89,8 @@ function createCombinedAbortSignal(signal?: AbortSignal) {
 }
 
 function normalizeAbortReason(reason: unknown, fallbackMessage: string) {
-  if (reason instanceof Error && reason.message.trim()) {
-    return reason;
-  }
-
-  if (typeof reason === "string" && reason.trim()) {
-    return new Error(reason.trim());
-  }
-
+  if (reason instanceof Error && reason.message.trim()) return reason;
+  if (typeof reason === "string" && reason.trim()) return new Error(reason.trim());
   return new Error(fallbackMessage);
 }
 
@@ -120,64 +98,21 @@ function getRetryableMethod(method?: string) {
   return (method || "GET").trim().toUpperCase();
 }
 
-function shouldRetrySafeRequest(method: string) {
-  return method === "GET" || method === "HEAD";
+function shouldRetrySafeRequest(method?: string) {
+  const normalized = getRetryableMethod(method);
+  return normalized === "GET" || normalized === "HEAD" || normalized === "OPTIONS";
 }
 
 function isSellerWorkspaceCacheable(url: string) {
-  return (
-    url.startsWith("/api/sellers/") ||
-    url === "/api/seller/orders" ||
-    url.startsWith("/api/payouts/") ||
-    url.startsWith("/api/connect/")
-  );
+  return /^\/api\/(sellers(?:\/|$)|seller\/orders(?:\/|$)|payouts(?:\/|$)|connect(?:\/|$))/i.test(url);
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function rewriteLegacyPayoutRoute(url: string, init: ApiFetchInit) {
+  return { url, init };
 }
 
-function rewriteLegacyPayoutRoute(url: string, init: ApiFetchInit): { url: string; init: ApiFetchInit } {
-  const match = url.match(/^\/api\/payouts\/([^/]+)\/(retry|override)$/);
-  if (!match) {
-    return { url, init };
-  }
-
-  const payload = typeof init.body === "string" ? (() => {
-    try {
-      return JSON.parse(init.body) as Record<string, unknown>;
-    } catch {
-      return null;
-    }
-  })() : null;
-
-  const payoutId = typeof payload?.payoutId === "string" ? payload.payoutId.trim() : "";
-  if (!payoutId) {
-    return { url, init };
-  }
-
-  return {
-    url: `/api/admin/payouts/${encodeURIComponent(payoutId)}/${match[2]}`,
-    init,
-  };
-}
-
-function rewriteEventLifecyclePayload(url: string, init: ApiFetchInit): ApiFetchInit {
-  if (!/^\/api\/events(?:\/\d+)?$/.test(url) || typeof init.body !== "string") return init;
-  let payload: Record<string, any>;
-  try {
-    payload = JSON.parse(init.body);
-  } catch {
-    return init;
-  }
-  if (!payload || typeof payload !== "object" || !payload.spec_values || typeof payload.spec_values !== "object") return init;
-  const spec = payload.spec_values as Record<string, unknown>;
-  const lifecycleKeys = ["end_time", "publication_mode", "publication_at", "runtime_mode"] as const;
-  const nextPayload = { ...payload };
-  for (const key of lifecycleKeys) {
-    if (nextPayload[key] === undefined && spec[key] !== undefined && spec[key] !== "") nextPayload[key] = spec[key];
-  }
-  return { ...init, body: JSON.stringify(nextPayload) };
+function rewriteEventLifecyclePayload(url: string, init: ApiFetchInit) {
+  return { url, init };
 }
 
 async function performApiFetch(url: string, init: ApiFetchInit = {}) {
@@ -200,13 +135,11 @@ async function performApiFetch(url: string, init: ApiFetchInit = {}) {
 
   let res: Response;
   try {
-    res = await fetch(url, { ...init, headers, signal: controller.signal });
+    res = await fetch(url, { ...init, headers, credentials: "same-origin", signal: controller.signal });
   } catch (error: any) {
     if (error?.name === "AbortError" || controller.signal.aborted) {
       const reason = controller.signal.reason;
-      if (timedOut && !wasCallerAborted()) {
-        throw normalizeAbortReason(reason, `Request timed out after ${timeoutMs}ms.`);
-      }
+      if (timedOut && !wasCallerAborted()) throw normalizeAbortReason(reason, `Request timed out after ${timeoutMs}ms.`);
       throw normalizeAbortReason(reason, "Request aborted.");
     }
     throw error;
@@ -222,9 +155,7 @@ async function performApiFetch(url: string, init: ApiFetchInit = {}) {
     const message = formatApiErrorMessage(body?.error ?? body?.message) ?? `Request failed (${res.status})`;
     const error = new Error(message) as Error & { status?: number; code?: string };
     error.status = res.status;
-    if (typeof body?.code === "string" && body.code.trim()) {
-      error.code = body.code.trim();
-    }
+    if (typeof body?.code === "string" && body.code.trim()) error.code = body.code.trim();
     throw error;
   }
 
@@ -246,38 +177,18 @@ export async function apiFetch(url: string, init: ApiFetchInit = {}) {
   }
 
   let lastError: unknown = null;
-
   for (let attempt = 1; attempt <= retryAttempts; attempt += 1) {
     try {
       const data = await performApiFetch(rewrittenUrl, eventInit);
-      if (cacheableSellerRead) {
-        writeCachedApiJson(rewrittenUrl, data);
-      }
+      if (cacheableSellerRead) writeCachedApiJson(rewrittenUrl, data);
       return data;
     } catch (error: any) {
       lastError = error;
-
       const status = typeof error?.status === "number" ? error.status : null;
-      const retryableStatus = status !== null && RETRYABLE_STATUS_CODES.has(status);
-      const retryableError =
-        error?.name === "AbortError" ||
-        /Request timed out/i.test(String(error?.message || "")) ||
-        /fetch/i.test(String(error?.message || ""));
-      const canRetry = attempt < retryAttempts && shouldRetrySafeRequest(method) && (retryableStatus || retryableError);
-
-      if (!canRetry) {
-        if (cacheableSellerRead && cachedSellerRead !== null) {
-          return cachedSellerRead;
-        }
-        throw error;
-      }
-
-      await sleep(retryDelayMs * attempt);
+      const retryable = status !== null && RETRYABLE_STATUS_CODES.has(status);
+      if (attempt >= retryAttempts || !retryable) throw error;
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs * attempt));
     }
-  }
-
-  if (cacheableSellerRead && cachedSellerRead !== null) {
-    return cachedSellerRead;
   }
 
   throw lastError instanceof Error ? lastError : new Error("Request failed.");
