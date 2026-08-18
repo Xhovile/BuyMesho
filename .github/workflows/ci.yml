@@ -41,9 +41,17 @@ jobs:
             exit 1
           fi
 
-          echo "Verifying authenticated HTTPS access to Xhovile/Platform..."
-          git ls-remote "https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/Xhovile/Platform.git" HEAD >/dev/null
-          echo "Private Platform HTTPS access verified."
+          echo "Verifying token access to Xhovile/Platform via GitHub API..."
+          http_code=$(curl -sS -o /tmp/platform-response.json -w "%{http_code}" \
+            -H "Authorization: Bearer $PLATFORM_REPO_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/Xhovile/Platform)
+          if [ "$http_code" != "200" ]; then
+            echo "PLATFORM_REPO_TOKEN cannot access Xhovile/Platform (HTTP $http_code)."
+            cat /tmp/platform-response.json
+            exit 1
+          fi
+          echo "Private Platform repository access verified."
 
           git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"
           git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/".insteadOf "git@github.com:"
