@@ -14,7 +14,12 @@ import {
   upsertTotpEnrollment,
 } from "./totpStoreCompat.js";
 import { getTotpDisplayName, normalizeTotpCode, type TotpMfaStatus } from "../lib/totp.js";
-import { clearTotpSessionCookie, setTotpSessionTokenCookie } from "../../server/auth/totpSessionCookie.js";
+import {
+  clearTotpSessionCookie,
+  clearValidatorTotpSessionCookie,
+  setTotpSessionTokenCookie,
+  setValidatorTotpSessionTokenCookie,
+} from "../../server/auth/totpSessionCookie.js";
 
 export type AuthUserContext = {
   uid: string;
@@ -143,15 +148,27 @@ export function createTotpAuthRouter(deps: TotpAuthRoutesDeps) {
 
     const session = createTotpVerifiedSession(user.uid);
     setTotpSessionTokenCookie(res, session.token, session.expiresAt);
+
+    if (req.body?.purpose === "ticket-validator") {
+      const validatorSession = createTotpVerifiedSession(user.uid);
+      setValidatorTotpSessionTokenCookie(res, validatorSession.token, validatorSession.expiresAt);
+    }
+
     return sendOk(res, {
       verified: true,
       status: record.status,
       expiresAt: session.expiresAt,
+      purpose: req.body?.purpose === "ticket-validator" ? "ticket-validator" : "default",
     });
   });
 
   router.delete("/session", (_req, res) => {
     clearTotpSessionCookie(res);
+    return res.status(204).end();
+  });
+
+  router.delete("/validator-session", (_req, res) => {
+    clearValidatorTotpSessionCookie(res);
     return res.status(204).end();
   });
 
@@ -161,6 +178,7 @@ export function createTotpAuthRouter(deps: TotpAuthRoutesDeps) {
 
     const removed = disableTotpEnrollment(user.uid);
     clearTotpSessionCookie(res);
+    clearValidatorTotpSessionCookie(res);
     return sendOk(res, { removed });
   });
 
