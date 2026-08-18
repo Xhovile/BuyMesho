@@ -1,11 +1,13 @@
 import type { NextFunction, Request, Response } from "express";
 import { isConfiguredAdmin } from "./adminAccess.js";
 import { verifyIdToken } from "./firebaseAdmin.js";
+import { normalizeUserRole, type UserRole } from "./rbac.js";
 
 export type CanonicalRequestUser = {
   uid: string;
   email: string | null;
   email_verified: boolean;
+  role: UserRole | null;
   is_admin: boolean;
 };
 
@@ -25,14 +27,17 @@ export async function resolveCanonicalIdentity(req: Request): Promise<CanonicalR
     const decoded = await verifyIdToken(token, true);
     const uid = decoded.uid;
     const email = decoded.email ?? null;
+    const claimRole = normalizeUserRole((decoded as any).role);
+    const claimAdmin = (decoded as any).admin === true;
+    const legacyAdmin = !claimRole && !claimAdmin && isConfiguredAdmin({ uid, email });
+    const role = claimRole ?? (claimAdmin || legacyAdmin ? "admin" : null);
+
     return {
       uid,
       email,
       email_verified: decoded.email_verified === true,
-      is_admin:
-        (decoded as any).admin === true ||
-        (decoded as any).role === "admin" ||
-        isConfiguredAdmin({ uid, email }),
+      role,
+      is_admin: role === "admin",
     };
   } catch {
     return null;
