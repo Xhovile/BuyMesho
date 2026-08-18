@@ -2,6 +2,8 @@ import { createHash, randomBytes } from "node:crypto";
 import type { Request, Response } from "express";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { query, withTransaction } from "../postgres.js";
+import { getTotpEnrollmentSummary, verifyTotpVerifiedSession } from "../../src/server/totpStoreCompat.js";
+import { readTotpSessionCookie } from "./totpSessionCookie.js";
 
 type AuthenticatedValidatorRequestUser = {
   uid: string;
@@ -67,9 +69,28 @@ function userRole(customClaims: Record<string, unknown> | undefined) {
   return "validator";
 }
 
+function ensureValidatorAuthentication(req: Request, uid: string) {
+  const enrollment = getTotpEnrollmentSummary(uid);
+  if (enrollment?.status !== "enabled") return { ok: true as const };
+
+  const token = readTotpSessionCookie(req);
+  if (!token || !verifyTotpVerifiedSession(uid, token)) {
+    return {
+      ok: false as const,
+      status: 401,
+      error: "Two-factor verification is required before opening Ticket Validator",
+    };
+  }
+
+  return { ok: true as const };
+}
+
 export async function validatorHandoffHandler(req: Request, res: Response) {
   const user = req.user as AuthenticatedValidatorRequestUser | undefined;
   if (!user) return res.status(401).json({ error: "Authentication required" });
+
+  const authentication = ensureValidatorAuthentication(req, user.uid);
+  if (!authentication.ok) return res.status(authentication.status).json({ error: authentication.error });
 
   if (!(await loadActiveEventCreator(user.uid))) {
     return res.status(403).json({ error: "Approved event creator access is required" });
@@ -166,6 +187,6 @@ export async function validatorHandoffExchangeHandler(req: Request, res: Respons
     }
   } catch (error) {
     console.error("Failed to redeem Ticket Validator auth handoff:", error);
-    return res.status(500).json({ error: "Unable to redeem Ticket Validator sign-in handoff" });
+    return res.status(500).json({ error: "Unable to redeem Ticket Validator auth handoff" });
   }
 }
