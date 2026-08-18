@@ -1,99 +1,97 @@
 import express, { type RequestHandler } from 'express';
-import { getPaymentDb } from '../postgresCompat.js';
-import { orderRepository } from '../modules/orders/order.repository.js';
-import { paymentRepository } from '../modules/payments/payment.repository.js';
-import { escrowRepository } from '../modules/escrow/escrow.repository.js';
+import { query } from '../postgres.js';
+import { orderRepository, type StoredOrder } from '../modules/orders/order.repository.js';
+import { paymentRepository, type StoredPayment } from '../modules/payments/payment.repository.js';
+import { escrowRepository, type StoredEscrow } from '../modules/escrow/escrow.repository.js';
 
 function jsonError(error: unknown, fallback: string): { error: string } {
   return { error: error instanceof Error ? error.message : fallback };
 }
 
 type OrderLookupResult = {
-  order: NonNullable<ReturnType<typeof orderRepository.findById>>;
-  payment: ReturnType<typeof paymentRepository.findByReference> | null;
-  escrow: ReturnType<typeof escrowRepository.findByOrderId> | null;
+  order: StoredOrder;
+  payment: StoredPayment | null;
+  escrow: StoredEscrow | null;
   dispute: Record<string, unknown> | null;
 };
 
-function findOrderByParam(param: string) {
-  const byId = orderRepository.findById(param);
+async function findOrderByParam(param: string) {
+  const byId = await orderRepository.findByIdAsync(param);
   if (byId) return byId;
-
-  const byPaymentRef = orderRepository.findByPaymentReference(param);
-  if (byPaymentRef) return byPaymentRef;
-
-  return undefined;
+  return orderRepository.findByPaymentReferenceAsync(param);
 }
 
-function buildOrderBundle(order: NonNullable<ReturnType<typeof orderRepository.findById>>): OrderLookupResult {
+async function buildOrderBundle(order: StoredOrder): Promise<OrderLookupResult> {
   const paymentReference = order.paymentReference ?? null;
-  const payment = paymentReference ? paymentRepository.findByReference(paymentReference) : null;
-  const escrow = escrowRepository.findByOrderId(order.id);
-  const db = getPaymentDb();
-  const dispute = db.prepare('SELECT * FROM disputes WHERE order_id = ? ORDER BY created_at DESC LIMIT 1').get(order.id) as Record<string, unknown> | undefined;
+  const [payment, escrow, disputeResult] = await Promise.all([
+    paymentReference ? paymentRepository.findByReferenceAsync(paymentReference) : Promise.resolve(undefined),
+    escrowRepository.findByOrderIdAsync(order.id),
+    query<Record<string, unknown>>(
+      'SELECT * FROM disputes WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1',
+      [order.id],
+    ),
+  ]);
 
   return {
     order,
     payment: payment ?? null,
     escrow: escrow ?? null,
-    dispute: dispute ?? null,
+    dispute: disputeResult.rows[0] ?? null,
   };
 }
 
-function listMyOrders(buyerId: string): OrderLookupResult[] {
-  const db = getPaymentDb();
-  const rows = db
-    .prepare('SELECT id FROM orders WHERE buyer_id = ? ORDER BY created_at DESC, updated_at DESC')
-    .all(buyerId) as Array<{ id: string }>;
+async function listMyOrders(buyerId: string): Promise<OrderLookupResult[]> {
+  const result = await query<{ id: string }>(
+    'SELECT id FROM orders WHERE buyer_id = $1 ORDER BY created_at DESC, updated_at DESC',
+    [buyerId],
+  );
 
-  return rows
-    .map((row) => {
-      const order = orderRepository.findById(row.id);
-      return order ? buildOrderBundle(order) : null;
-    })
-    .filter((entry): entry is OrderLookupResult => entry !== null);
+  const orders = await Promise.all(
+    result.rows.map((row) => orderRepository.findByIdAsync(row.id)),
+  );
+
+  return (await Promise.all(
+    orders
+      .filter((order): order is StoredOrder => Boolean(order))
+      .map((order) => buildOrderBundle(order)),
+  ));
 }
 
 export function createOrderRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
-  router.get('/me', requireAuth, (req, res) => {
+  router.get('/me', requireAuth, async (req, res) => {
     try {
       const buyerId = req.user!.uid;
-      return res.status(200).json(listMyOrders(buyerId));
+      return res.status(200).json(await listMyOrders(buyerId));
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to fetch orders'));
     }
   });
 
-  router.get('/by-reference/:reference', requireAuth, (req, res) => {
+  router.get('/by-reference/:reference', requireAuth, async (req, res) => {
     try {
-      const order = orderRepository.findByPaymentReference(req.params.reference);
-      if (!order) {
-        return res.status(404).json({ error: 'Order not found' });
-      }
+      const order = await orderRepository.findByPaymentReferenceAsync(req.params.reference);
+      if (!order) return res.status(404).json({ error: 'Order not found' });
       if (order.buyerId !== req.user!.uid && !req.user?.is_admin) {
         return res.status(403).json({ error: 'You can only view your own orders' });
       }
 
-      return res.status(200).json(buildOrderBundle(order));
+      return res.status(200).json(await buildOrderBundle(order));
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to fetch order'));
     }
   });
 
-  router.get('/:idOrReference', requireAuth, (req, res) => {
+  router.get('/:idOrReference', requireAuth, async (req, res) => {
     try {
-      const order = findOrderByParam(req.params.idOrReference);
-      if (!order) {
-        return res.status(404).json({ error: 'Order not found' });
-      }
-
+      const order = await findOrderByParam(req.params.idOrReference);
+      if (!order) return res.status(404).json({ error: 'Order not found' });
       if (order.buyerId !== req.user!.uid && !req.user?.is_admin) {
         return res.status(403).json({ error: 'You can only view your own orders' });
       }
 
-      return res.status(200).json(buildOrderBundle(order));
+      return res.status(200).json(await buildOrderBundle(order));
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to fetch order'));
     }
