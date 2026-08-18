@@ -1,4 +1,4 @@
-import { parentPort, type MessagePort } from "node:worker_threads";
+import { parentPort, workerData, type MessagePort } from "node:worker_threads";
 import fs from "node:fs";
 import path from "node:path";
 import { Client, Pool, type PoolClient } from "pg";
@@ -35,9 +35,9 @@ type WorkerResponse = WorkerSuccessResponse | WorkerFailureResponse;
 type Queryable = Pick<Client, "query"> | Pick<Pool, "query">;
 type TransactionClient = PoolClient | Client;
 
-const workerPort = parentPort as MessagePort | null;
+const workerPort = (workerData as { port?: MessagePort } | undefined)?.port ?? parentPort;
 if (!workerPort) {
-  throw new Error("PostgreSQL worker started without a parent port.");
+  throw new Error("PostgreSQL worker started without a communication port.");
 }
 
 function parseBoolean(value: string | undefined): boolean | undefined {
@@ -131,9 +131,7 @@ function sendResponse(response: WorkerResponse): void {
 }
 
 function releaseTransactionClient(client: TransactionClient): void {
-  if ("release" in client) {
-    client.release();
-  }
+  if ("release" in client) client.release();
 }
 
 async function rollbackAndReleaseTransaction(): Promise<void> {
@@ -163,12 +161,12 @@ workerPort.on("message", async (request: WorkerRequest) => {
     if (request.op === "begin") {
       if (transactionClient) throw new Error("Transaction already active");
 
-      if (isTestWorker) {
-        transactionClient = await getTestClient();
-      } else {
-        if (!pool) throw new Error("PostgreSQL worker pool is unavailable.");
-        transactionClient = await pool.connect();
-      }
+      transactionClient = isTestWorker
+        ? await getTestClient()
+        : await (async () => {
+            if (!pool) throw new Error("PostgreSQL worker pool is unavailable.");
+            return pool.connect();
+          })();
 
       await transactionClient.query("BEGIN");
       sendResponse({ id: request.id, ok: true, rows: [], rowCount: 0 });
@@ -198,7 +196,6 @@ workerPort.on("message", async (request: WorkerRequest) => {
     }
   } catch (error) {
     await rollbackAndReleaseTransaction();
-
     sendResponse({
       id: request.id,
       ok: false,
