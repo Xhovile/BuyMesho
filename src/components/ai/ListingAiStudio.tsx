@@ -159,7 +159,11 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
           </div>
 
           <p className="text-neutral-600 text-[11px] leading-relaxed pt-1">{pricingResult.market_insight}</p>
-          <p className="text-[10px] text-neutral-500">AI decision support only · Confidence {Math.round(pricingResult.confidence_score)}% · Not a market valuation</p>
+          <p className="text-[10px] text-neutral-500">
+            AI decision support only · Confidence {Math.round(pricingResult.confidence_score)}% · Not a market valuation
+            {pricingResult.evidence_source === "marketplace_comparables" ? ` · Based on ${pricingResult.comparable_count ?? 0} BuyMesho comparable${(pricingResult.comparable_count ?? 0) === 1 ? "" : "s"}` : null}
+            {pricingResult.evidence_source === "insufficient_data" ? " · Insufficient market data" : null}
+          </p>
 
           <button
             type="button"

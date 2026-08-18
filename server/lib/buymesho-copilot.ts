@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { generateGeminiJson } from "./gemini.js";
 import { architectureAsPromptContext, BUYMESHO_ARCHITECTURE_VERSION } from "./buymesho-architecture.js";
 
 type CopilotListing = {
@@ -30,42 +30,6 @@ export type BuyMeshoCopilotResult = {
   match_reasons: Record<string, string>;
   suggested_follow_ups: string[];
 };
-
-const FALLBACK_RESPONSE: BuyMeshoCopilotResult = {
-  reply:
-    "BuyMesho Copilot is temporarily unavailable. Your message has not been lost. Please try again, or use the marketplace directly while the service recovers.",
-  recommended_listing_ids: [],
-  match_reasons: {},
-  suggested_follow_ups: [],
-};
-
-function getClient() {
-  const key = process.env.GEMINI_API_KEY?.trim();
-  if (!key) throw new Error("GEMINI_API_KEY environment variable is missing");
-  return new GoogleGenAI({ apiKey: key });
-}
-
-function modelCandidates() {
-  return Array.from(
-    new Set(
-      [
-        process.env.GEMINI_MODEL?.trim(),
-        "gemini-3.6-flash",
-        "gemini-2.5-flash",
-        "gemini-flash-latest",
-        "gemini-3.1-flash-lite",
-      ].filter((value): value is string => Boolean(value))
-    )
-  );
-}
-
-function parseJson<T>(text: string): T {
-  const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-  const start = cleaned.indexOf("{");
-  const end = cleaned.lastIndexOf("}");
-  if (start < 0 || end <= start) throw new Error("Copilot returned invalid JSON");
-  return JSON.parse(cleaned.slice(start, end + 1)) as T;
-}
 
 function sanitizeListings(listings: CopilotListing[]) {
   return listings.slice(0, 30).map((listing) => ({
@@ -145,44 +109,28 @@ export async function askBuyMeshoCopilot(input: BuyMeshoCopilotInput): Promise<B
     available_listings: listings,
   });
 
-  let lastError: unknown;
+  const result = await generateGeminiJson<BuyMeshoCopilotResult>({
+    systemInstruction: SYSTEM_INSTRUCTION,
+    payload,
+  });
 
-  for (const model of modelCandidates()) {
-    try {
-      const response = await getClient().models.generateContent({
-        model,
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
-          responseMimeType: "application/json",
-        },
-        contents: [{ role: "user", parts: [{ text: payload }] }],
-      });
+  const allowedIds = new Set(listings.map((listing) => listing.id));
+  const ids = Array.isArray(result.recommended_listing_ids)
+    ? result.recommended_listing_ids.filter((id) => allowedIds.has(String(id))).slice(0, 4)
+    : [];
 
-      const text = response.text?.trim();
-      if (!text) throw new Error("Copilot returned an empty response");
-      const result = parseJson<BuyMeshoCopilotResult>(text);
-
-      const allowedIds = new Set(listings.map((listing) => listing.id));
-      const ids = Array.isArray(result.recommended_listing_ids)
-        ? result.recommended_listing_ids.filter((id) => allowedIds.has(String(id))).slice(0, 4)
-        : [];
-
-      return {
-        reply: typeof result.reply === "string" && result.reply.trim() ? result.reply.trim() : FALLBACK_RESPONSE.reply,
-        recommended_listing_ids: ids.map(String),
-        match_reasons: Object.fromEntries(
-          ids.map((id) => [id, String(result.match_reasons?.[id] ?? "Matches the information in the current listing context.")])
-        ),
-        suggested_follow_ups: Array.isArray(result.suggested_follow_ups)
-          ? result.suggested_follow_ups.filter((value) => typeof value === "string").slice(0, 3)
-          : [],
-      };
-    } catch (error) {
-      lastError = error;
-      console.warn(`[BuyMesho Copilot] Model "${model}" failed`, error instanceof Error ? error.message : error);
-    }
+  if (typeof result.reply !== "string" || !result.reply.trim()) {
+    throw new Error("Copilot returned an empty reply");
   }
 
-  console.error("BuyMesho Copilot unavailable:", lastError);
-  return FALLBACK_RESPONSE;
+  return {
+    reply: result.reply.trim(),
+    recommended_listing_ids: ids.map(String),
+    match_reasons: Object.fromEntries(
+      ids.map((id) => [id, String(result.match_reasons?.[id] ?? "Matches the information in the current listing context.")])
+    ),
+    suggested_follow_ups: Array.isArray(result.suggested_follow_ups)
+      ? result.suggested_follow_ups.filter((value) => typeof value === "string").slice(0, 3)
+      : [],
+  };
 }
