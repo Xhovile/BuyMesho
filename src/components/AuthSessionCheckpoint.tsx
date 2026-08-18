@@ -88,13 +88,19 @@ export default function AuthSessionCheckpoint({ mode, children }: AuthSessionChe
     setValidatorHandoff(null);
     setTotpChallengeError("");
 
-    void checkValidatorAccess()
-      .then((handoff) => {
+    void (async () => {
+      try {
+        // Validator entry is a deliberate step-up authentication boundary.
+        // Invalidate any existing BuyMesho TOTP session first so the handoff
+        // cannot be authorized by a previous verification.
+        await apiFetch("/api/totp/session", { method: "DELETE" });
         if (cancelled) return;
-        setValidatorHandoff(handoff.code);
-        setValidatorAccess("approved");
-      })
-      .catch((error) => {
+        await checkValidatorAccess().then((handoff) => {
+          if (cancelled) return;
+          setValidatorHandoff(handoff.code);
+          setValidatorAccess("approved");
+        });
+      } catch (error) {
         if (cancelled) return;
         if (isTotpRequiredError(error)) {
           setValidatorAccess("totp-required");
@@ -102,10 +108,11 @@ export default function AuthSessionCheckpoint({ mode, children }: AuthSessionChe
           return;
         }
         const status = typeof (error as { status?: unknown })?.status === "number"
-          ? Number((error as { status?: number }).status)
+          ? Number((error as { status?: number })?.status)
           : null;
         setValidatorAccess(status === 403 ? "denied" : "unavailable");
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
@@ -164,7 +171,7 @@ export default function AuthSessionCheckpoint({ mode, children }: AuthSessionChe
 
   const validatorContent = () => {
     if (validatorAccess === "checking") return <><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-slate-400">Ticket Validator</p><h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Checking your access</h1><p className="mt-3 text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">We’re checking whether this BuyMesho account is an approved event creator.</p><div className="mt-8 flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-sm font-bold text-zinc-700"><Loader2 className="h-5 w-5 animate-spin" />Verifying Validator access…</div></>;
-    if (validatorAccess === "totp-required") return <><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-amber-600">Ticket Validator</p><h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Two-factor verification required</h1><p className="mt-3 text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">Complete your BuyMesho authenticator verification to continue to Ticket Validator.</p><div className="mt-7 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-900">Your account is signed in, but Validator access requires a current 2FA verification.</div></>;
+    if (validatorAccess === "totp-required") return <><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-amber-600">Ticket Validator</p><h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Two-factor verification required</h1><p className="mt-3 text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">Complete your BuyMesho authenticator verification to continue to Ticket Validator.</p><div className="mt-7 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-900">Your account is signed in, but Validator access requires a fresh 2FA verification.</div></>;
     if (validatorAccess === "approved") return <><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-emerald-600">Ticket Validator</p><h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Access confirmed</h1><p className="mt-3 text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">This account is an approved event creator and can access Ticket Validator.</p><div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3"><div className="flex items-center gap-2 text-sm font-bold text-emerald-800"><CheckCircle2 className="h-4 w-4" />Validator access available</div><p className="mt-1 truncate text-xs font-semibold text-emerald-700">{user.email || "Current BuyMesho account"}</p></div><div className="mt-7 grid gap-3 sm:grid-cols-2"><button type="button" onClick={() => void handleContinue()} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 font-bold text-white transition hover:bg-zinc-800">Continue to Validator <ArrowRight className="h-4 w-4" /></button><button type="button" onClick={() => void handleUseAnotherAccount()} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-300 bg-white px-5 py-3 font-bold text-zinc-900 transition hover:bg-zinc-50"><LogOut className="h-4 w-4" />Use another account</button></div></>;
     if (validatorAccess === "unavailable") return <><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-amber-600">Ticket Validator</p><h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">We couldn’t verify access</h1><p className="mt-3 text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">BuyMesho could not verify this account’s Validator access right now. Your account has not been signed out.</p><div className="mt-7 grid gap-3 sm:grid-cols-2"><button type="button" onClick={() => window.location.reload()} className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3 font-bold text-white">Try again</button><button type="button" onClick={() => void handleUseAnotherAccount()} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-300 bg-white px-5 py-3 font-bold text-zinc-900"><LogOut className="h-4 w-4" />Use another account</button></div></>;
     return <><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-red-600">Ticket Validator</p><h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">This account doesn’t have access</h1><p className="mt-3 text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">The BuyMesho account you’re currently signed in with is not an approved event creator account, so it cannot access Ticket Validator.</p><div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3"><div className="flex items-center gap-2 text-sm font-bold text-red-800"><ShieldAlert className="h-4 w-4" />Validator access unavailable</div><p className="mt-1 truncate text-xs font-semibold text-red-700">{user.email || "Current BuyMesho account"}</p></div><button type="button" onClick={() => void handleUseAnotherAccount()} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 font-bold text-white"><LogOut className="h-4 w-4" />Use another account</button></>;
