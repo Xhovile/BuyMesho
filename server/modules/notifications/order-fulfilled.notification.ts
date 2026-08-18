@@ -1,15 +1,18 @@
 import { getFirebaseAdmin } from "../../auth/firebaseAdmin.js";
-import { getPaymentDb } from "../../postgresCompat.js";
+import { query } from "../../postgres.js";
 import { sendEmail } from "../email/email.service.js";
 import { renderOrderFulfilledEmail } from "../email/templates/order-fulfilled.js";
 import type { StoredOrder } from "../orders/order.repository.js";
 
 type RecipientRole = "buyer" | "seller";
 
-function getSellerBusinessName(sellerUid: string): string | null {
+async function getSellerBusinessName(sellerUid: string): Promise<string | null> {
   try {
-    const row = getPaymentDb().prepare("SELECT business_name FROM sellers WHERE uid = ? LIMIT 1").get(sellerUid) as { business_name?: string | null } | undefined;
-    const name = row?.business_name?.trim();
+    const result = await query<{ business_name?: string | null }>(
+      "SELECT business_name FROM sellers WHERE uid = $1 LIMIT 1",
+      [sellerUid],
+    );
+    const name = result.rows[0]?.business_name?.trim();
     return name || null;
   } catch (error) {
     console.warn("Failed to load seller business name for fulfilled-order email", error);
@@ -23,7 +26,7 @@ async function sendOrderFulfilledEmail(order: StoredOrder, role: RecipientRole):
   const email = userRecord.email?.trim();
   if (!email) return;
 
-  const sellerBusinessName = getSellerBusinessName(order.sellerId) || "BuyMesho seller";
+  const sellerBusinessName = (await getSellerBusinessName(order.sellerId)) || "BuyMesho seller";
   const buyerCheckoutName = order.buyerDetails?.fullName?.trim();
   const recipientName = role === "buyer"
     ? buyerCheckoutName || userRecord.displayName?.trim() || "there"
