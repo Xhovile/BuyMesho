@@ -1,20 +1,14 @@
-import { describe, expect, it } from "vitest";
+import test from "node:test";
+import assert from "node:assert/strict";
 import { hasAdminRole, hasRole, normalizeUserRole } from "./rbac.js";
 
-describe("RBAC role model", () => {
-  it("normalizes supported roles", () => {
-    expect(normalizeUserRole("ADMIN")).toBe("admin");
-    expect(normalizeUserRole("finance_admin")).toBe("finance_admin");
-    expect(normalizeUserRole("unknown")).toBeNull();
-  });
+test("RBAC role model", () => {
+  assert.equal(normalizeUserRole("ADMIN"), "admin");
+  assert.equal(normalizeUserRole("finance_admin"), "finance_admin");
+  assert.equal(normalizeUserRole("unknown"), null);
 
-  it("uses explicit role claims for authorization", () => {
-    expect(hasAdminRole({ role: "admin" })).toBe(true);
-    expect(hasAdminRole({ role: "finance_admin" })).toBe(false);
-    expect(hasRole({ role: "moderator" }, "moderator")).toBe(true);
-  });
-
-  it("does not treat a finance role as full admin", () => {
-    expect(hasAdminRole({ role: "finance_admin", is_admin: false })).toBe(false);
-  });
+  assert.equal(hasAdminRole({ role: "admin" }), true);
+  assert.equal(hasAdminRole({ role: "finance_admin" }), false);
+  assert.equal(hasRole({ role: "moderator" }, "moderator"), true);
+  assert.equal(hasAdminRole({ role: "finance_admin", is_admin: false }), false);
 });
