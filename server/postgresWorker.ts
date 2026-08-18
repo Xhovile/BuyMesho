@@ -1,7 +1,7 @@
 import { parentPort, type MessagePort } from "node:worker_threads";
 import fs from "node:fs";
 import path from "node:path";
-import { Pool, type PoolClient } from "pg";
+import { Client, Pool, type PoolClient } from "pg";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -31,6 +31,8 @@ type WorkerFailureResponse = {
   error: string;
 };
 type WorkerResponse = WorkerSuccessResponse | WorkerFailureResponse;
+
+type Queryable = Pick<Client, "query"> | Pick<Pool, "query">;
 
 const workerPort = parentPort as MessagePort | null;
 if (!workerPort) {
@@ -79,8 +81,9 @@ const sslCa = loadSslCaCertificate();
 const sslMode = process.env.PGSSLMODE?.trim().toLowerCase();
 const sslEnabled = sslMode !== "disable";
 const rejectUnauthorized = parseBoolean(process.env.PGSSL_REJECT_UNAUTHORIZED) ?? false;
+const isTestWorker = process.env.NODE_ENV === "test";
 
-const pool = new Pool({
+const connectionConfig = {
   connectionString: stripSslQueryParams(connectionString),
   ssl: sslEnabled
     ? {
@@ -88,12 +91,35 @@ const pool = new Pool({
         ...(sslCa ? { ca: sslCa } : {}),
       }
     : false,
-  max: Number(process.env.PGPOOL_MAX ?? 10) || 10,
-  idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT_MS ?? 30000) || 30000,
   connectionTimeoutMillis: Number(process.env.PGPOOL_CONNECTION_TIMEOUT_MS ?? 10000) || 10000,
-});
+};
 
-let transactionClient: PoolClient | null = null;
+const pool = isTestWorker
+  ? null
+  : new Pool({
+      ...connectionConfig,
+      max: Number(process.env.PGPOOL_MAX ?? 10) || 10,
+      idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT_MS ?? 30000) || 30000,
+    });
+
+const testClient = isTestWorker ? new Client(connectionConfig) : null;
+let testClientConnected = false;
+let transactionClient: PoolClient | Client | null = null;
+
+async function getTestClient(): Promise<Client> {
+  if (!testClient) throw new Error("Test PostgreSQL client is unavailable.");
+  if (!testClientConnected) {
+    await testClient.connect();
+    testClientConnected = true;
+  }
+  return testClient;
+}
+
+async function getQueryTarget(): Promise<Queryable> {
+  if (isTestWorker) return getTestClient();
+  if (!pool) throw new Error("PostgreSQL worker pool is unavailable.");
+  return pool;
+}
 
 function isQueryRequest(request: WorkerRequest): request is WorkerQueryRequest {
   return request.op === "query";
@@ -103,31 +129,58 @@ function sendResponse(response: WorkerResponse): void {
   workerPort.postMessage(response);
 }
 
+async function rollbackAndReleaseTransaction(): Promise<void> {
+  if (!transactionClient) return;
+
+  try {
+    await transactionClient.query("ROLLBACK");
+  } catch {
+    // Preserve the original failure.
+  }
+
+  if (!isTestWorker) {
+    try {
+      transactionClient.release();
+    } catch {
+      // Ignore release failures.
+    }
+  }
+
+  transactionClient = null;
+}
+
 workerPort.on("message", async (request: WorkerRequest) => {
   const signal = new Int32Array(request.signal);
 
   try {
     if (request.op === "begin") {
       if (transactionClient) throw new Error("Transaction already active");
-      transactionClient = await pool.connect();
+
+      if (isTestWorker) {
+        transactionClient = await getTestClient();
+      } else {
+        if (!pool) throw new Error("PostgreSQL worker pool is unavailable.");
+        transactionClient = await pool.connect();
+      }
+
       await transactionClient.query("BEGIN");
       sendResponse({ id: request.id, ok: true, rows: [], rowCount: 0 });
     } else if (request.op === "commit") {
       if (transactionClient) {
         await transactionClient.query("COMMIT");
-        transactionClient.release();
+        if (!isTestWorker) transactionClient.release();
         transactionClient = null;
       }
       sendResponse({ id: request.id, ok: true, rows: [], rowCount: 0 });
     } else if (request.op === "rollback") {
       if (transactionClient) {
         await transactionClient.query("ROLLBACK");
-        transactionClient.release();
+        if (!isTestWorker) transactionClient.release();
         transactionClient = null;
       }
       sendResponse({ id: request.id, ok: true, rows: [], rowCount: 0 });
     } else if (isQueryRequest(request)) {
-      const activeClient = transactionClient ?? pool;
+      const activeClient = transactionClient ?? (await getQueryTarget());
       const result = await activeClient.query(request.sql, request.params ?? []);
       sendResponse({
         id: request.id,
@@ -137,15 +190,7 @@ workerPort.on("message", async (request: WorkerRequest) => {
       });
     }
   } catch (error) {
-    if (transactionClient && request.op !== "begin") {
-      try {
-        await transactionClient.query("ROLLBACK");
-      } catch {
-        // Preserve the original failure.
-      }
-      transactionClient.release();
-      transactionClient = null;
-    }
+    await rollbackAndReleaseTransaction();
 
     sendResponse({
       id: request.id,
