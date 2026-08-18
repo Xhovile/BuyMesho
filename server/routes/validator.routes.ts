@@ -1,7 +1,7 @@
-import type { Express, NextFunction, Request, Response } from "express";
-import { getFirebaseAdmin } from "./firebaseAdmin.js";
+import type { Express, Request, Response } from "express";
 import { hasAdminAccess } from "./adminAccess.js";
 import { getPaymentDb } from "../postgresCompat.js";
+import { requireCanonicalIdentity } from "../auth/canonicalAuth.js";
 import { validatorHandoffHandler, validatorHandoffExchangeHandler } from "../auth/validatorHandoff.js";
 
 type VerifiedRequestUser = {
@@ -68,28 +68,6 @@ type ValidatorEvent = {
 };
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.validatorRoutesInstalled");
-
-function verifyBearerIdentity(req: Request, res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  if (!header) return res.status(401).json({ error: "Missing Authorization Bearer token" });
-  const [scheme, token] = header.split(" ");
-  if (scheme !== "Bearer" || !token) return res.status(401).json({ error: "Missing Authorization Bearer token" });
-
-  void (async () => {
-    try {
-      const decoded = await getFirebaseAdmin().auth().verifyIdToken(token.trim(), true);
-      req.user = {
-        uid: decoded.uid,
-        email: decoded.email ?? null,
-        email_verified: (decoded as any).email_verified === true,
-        is_admin: (decoded as any).admin === true || (decoded as any).role === "admin",
-      } as VerifiedRequestUser;
-      next();
-    } catch {
-      return res.status(401).json({ error: "Invalid or expired token" });
-    }
-  })();
-}
 
 function normalizeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -240,12 +218,10 @@ function validatorSessionHandler(req: Request, res: Response) {
 export function registerValidatorRoutes(app: Express) {
   if ((app as any)[ROUTES_INSTALLED_FLAG]) return;
 
-  // Cross-domain authentication uses a short-lived, single-use handoff code.
-  // The Firebase ID token remains inside BuyMesho and never enters a URL.
-  app.post("/api/validator/handoff", verifyBearerIdentity, validatorHandoffHandler);
+  app.post("/api/validator/handoff", requireCanonicalIdentity, validatorHandoffHandler);
   app.post("/api/validator/session", validatorSessionHandler);
-  app.get("/api/validator/me", verifyBearerIdentity, validatorMeHandler);
-  app.get("/api/validator/events", verifyBearerIdentity, validatorEventsHandler);
+  app.get("/api/validator/me", requireCanonicalIdentity, validatorMeHandler);
+  app.get("/api/validator/events", requireCanonicalIdentity, validatorEventsHandler);
 
   // Event tickets, Attendees, Scanner, status changes and offline sync are
   // owned by validatorProjection.routes.ts. Keeping them out of this module
