@@ -35,10 +35,11 @@ type WorkerResponse = WorkerSuccessResponse | WorkerFailureResponse;
 type Queryable = Pick<Client, "query"> | Pick<Pool, "query">;
 type TransactionClient = PoolClient | Client;
 
-const workerPort = (workerData as { port?: MessagePort } | undefined)?.port ?? parentPort;
-if (!workerPort) {
+const configuredWorkerPort = (workerData as { port?: MessagePort } | undefined)?.port ?? parentPort;
+if (!configuredWorkerPort) {
   throw new Error("PostgreSQL worker started without a communication port.");
 }
+const workerPort: MessagePort = configuredWorkerPort;
 
 function parseBoolean(value: string | undefined): boolean | undefined {
   if (value === undefined) return undefined;
