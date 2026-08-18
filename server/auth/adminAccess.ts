@@ -1,6 +1,9 @@
+import { hasAdminRole, normalizeUserRole, type UserRole } from "./rbac.js";
+
 export type AdminIdentity = {
   email?: string | null;
   uid?: string | null;
+  role?: string | null;
   is_admin?: boolean;
 };
 
@@ -32,7 +35,20 @@ export function isConfiguredAdmin(identity?: Pick<AdminIdentity, "email" | "uid"
   return false;
 }
 
+export function getUserRole(identity?: AdminIdentity): UserRole | null {
+  const explicitRole = normalizeUserRole(identity?.role);
+  if (explicitRole) return explicitRole;
+
+  // Legacy migration fallback. New authorization should use the Firebase
+  // custom `role` claim; ADMIN_UIDS/ADMIN_EMAILS remain only to avoid
+  // breaking existing administrators during claim migration.
+  if (identity?.is_admin === true || isConfiguredAdmin(identity)) return "admin";
+  return null;
+}
+
 export function hasAdminAccess(identity?: AdminIdentity): boolean {
-  if (identity?.is_admin === true) return true;
-  return isConfiguredAdmin(identity);
+  return hasAdminRole({
+    role: getUserRole(identity),
+    is_admin: identity?.is_admin === true,
+  });
 }
