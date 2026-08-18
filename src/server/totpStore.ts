@@ -8,7 +8,6 @@ import { createHash, randomBytes } from "crypto";
 import type { TotpMfaStatus } from "../lib/totp.js";
 import {
   decryptOrMigrateTotpSecret,
-  decryptTotpSecret,
   encryptTotpSecret,
   isEncryptedTotpSecret,
 } from "../../server/auth/totpSecretEncryption.js";
