@@ -172,7 +172,7 @@ export type DbQueryResult<Row extends QueryResultRow = DbRow> = {
   rowCount: number;
 };
 
-export async function query<Row extends QueryResultRow = DbRow>(
+async function queryImpl<Row extends QueryResultRow = DbRow>(
   text: string,
   params: unknown[] = [],
 ): Promise<DbQueryResult<Row>> {
@@ -192,6 +192,12 @@ export async function query<Row extends QueryResultRow = DbRow>(
     throw new Error(`PostgreSQL query failed: ${message}`);
   }
 }
+
+// Expose the helper using pg's native query interface so it can be passed to
+// repositories that accept Pick<PoolClient, "query"> without creating an
+// incompatible function type at the boundary. Runtime usage remains the
+// same narrow (text, params) helper implemented above.
+export const query = queryImpl as unknown as PoolClient["query"];
 
 export async function getClient(): Promise<PoolClient> {
   if (!poolInstance) {
