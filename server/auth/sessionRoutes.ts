@@ -1,10 +1,11 @@
-import type { Express, NextFunction, Request, Response } from "express";
+import type { Express, Request, Response } from "express";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { hasAdminAccess } from "./adminAccess.js";
 import { revokeTotpVerifiedSessions } from "../../src/server/totpStoreCompat.js";
 import { getPaymentDb } from "../postgresCompat.js";
 import { orderRepository } from "../modules/orders/order.repository.js";
 import { paymentRepository } from "../modules/payments/payment.repository.js";
+import { requireCanonicalIdentity } from "./canonicalAuth.js";
 
 type VerifiedRequestUser = {
   uid: string;
@@ -87,33 +88,6 @@ type ValidatorTicket = {
 };
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.sessionRoutesInstalled");
-
-function verifyBearerIdentity(req: Request, res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  if (!header) {
-    return res.status(401).json({ error: "Missing Authorization Bearer token" });
-  }
-
-  const [scheme, token] = header.split(" ");
-  if (scheme !== "Bearer" || !token) {
-    return res.status(401).json({ error: "Missing Authorization Bearer token" });
-  }
-
-  void (async () => {
-    try {
-      const decoded = await getFirebaseAdmin().auth().verifyIdToken(token.trim(), true);
-      req.user = {
-        uid: decoded.uid,
-        email: decoded.email ?? null,
-        email_verified: (decoded as any).email_verified === true,
-        is_admin: (decoded as any).admin === true || (decoded as any).role === "admin",
-      } as VerifiedRequestUser;
-      next();
-    } catch {
-      return res.status(401).json({ error: "Invalid or expired token" });
-    }
-  })();
-}
 
 function normalizeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -461,12 +435,12 @@ async function revokeSessionsHandler(req: Request, res: Response) {
 export function registerSessionRoutes(app: Express) {
   if ((app as any)[ROUTES_INSTALLED_FLAG]) return;
 
-  app.get("/api/auth/validator/me", verifyBearerIdentity, validatorMeHandler);
-  app.get("/api/validator/me", verifyBearerIdentity, validatorMeHandler);
-  app.get("/api/validator/events", verifyBearerIdentity, validatorEventsHandler);
-  app.get("/api/validator/events/:eventId/tickets", verifyBearerIdentity, validatorEventTicketsHandler);
-  app.get("/api/validator/tickets/resolve", verifyBearerIdentity, validatorResolveTicketHandler);
-  app.post("/api/auth/revoke-sessions", verifyBearerIdentity, revokeSessionsHandler);
+  app.get("/api/auth/validator/me", requireCanonicalIdentity, validatorMeHandler);
+  app.get("/api/validator/me", requireCanonicalIdentity, validatorMeHandler);
+  app.get("/api/validator/events", requireCanonicalIdentity, validatorEventsHandler);
+  app.get("/api/validator/events/:eventId/tickets", requireCanonicalIdentity, validatorEventTicketsHandler);
+  app.get("/api/validator/tickets/resolve", requireCanonicalIdentity, validatorResolveTicketHandler);
+  app.post("/api/auth/revoke-sessions", requireCanonicalIdentity, revokeSessionsHandler);
 
   (app as any)[ROUTES_INSTALLED_FLAG] = true;
 }
