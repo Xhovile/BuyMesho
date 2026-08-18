@@ -49,11 +49,14 @@ export default function TotpChallengeModal({
             <label className="mb-2 block text-sm font-semibold text-zinc-700">Authenticator code</label>
             <input
               autoFocus
+              type="password"
               inputMode="numeric"
+              autoComplete="one-time-code"
               maxLength={6}
               value={code}
               onChange={(e) => onCodeChange(e.target.value.replace(/\D/g, ""))}
-              placeholder="123456"
+              placeholder="••••••"
+              aria-label="6-digit authenticator code"
               className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold tracking-[0.3em] outline-none focus:border-zinc-900"
             />
           </div>
