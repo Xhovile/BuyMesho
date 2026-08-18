@@ -8,7 +8,7 @@ import BrandMark from "./BrandMark";
 
 type AuthSessionCheckpointProps = { mode: "login" | "signup"; children: ReactNode };
 type ValidatorAccessState = "checking" | "approved" | "denied" | "unavailable" | "not-validator";
-type ValidatorHandoffResponse = { code: string; expiresInSeconds?: number };
+type ValidatorHandoffResponse = { success?: boolean; code: string; expiresInSeconds?: number };
 
 function getTicketValidatorReturnUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -17,26 +17,22 @@ function getTicketValidatorReturnUrl() {
   if (!returnTo) return null;
   try {
     const target = new URL(returnTo);
-    const allowedOrigin = import.meta.env.VITE_TICKET_VALIDATOR_URL?.trim() || "https://ticket-validator.vercel.app";
+    const allowedOrigin = import.meta.env.VITE_TICKET_VALIDATOR_URL?.trim() || "https://ticketvalidator.vercel.app";
     return target.origin === new URL(allowedOrigin).origin ? target : null;
   } catch { return null; }
 }
 
-async function checkValidatorAccess() {
-  const user = auth.currentUser;
-  if (!user) return false;
-  const token = await user.getIdToken();
-  const response = await fetch("/api/event-creator/overview", { headers: { Authorization: `Bearer ${token}` } });
-  if (!response.ok) throw new Error(`Validator access check failed: ${response.status}`);
-  const payload = await response.json();
-  const creator = payload?.creator;
-  if (!creator) return false;
-  if (String(creator.status || "").trim().toLowerCase() !== "approved") return false;
-  if (creator.active_until) {
-    const activeUntil = new Date(creator.active_until).getTime();
-    if (Number.isFinite(activeUntil) && activeUntil < Date.now()) return false;
+async function checkValidatorAccess(): Promise<ValidatorHandoffResponse> {
+  const handoff = await apiFetch("/api/validator/handoff", {
+    method: "POST",
+    body: JSON.stringify({ client: "ticket-validator" }),
+  }) as ValidatorHandoffResponse;
+
+  if (!handoff || typeof handoff.code !== "string" || !handoff.code) {
+    throw new Error("BuyMesho returned an invalid Ticket Validator access handoff.");
   }
-  return true;
+
+  return handoff;
 }
 
 export default function AuthSessionCheckpoint({ mode, children }: AuthSessionCheckpointProps) {
@@ -44,6 +40,7 @@ export default function AuthSessionCheckpoint({ mode, children }: AuthSessionChe
   const [user, setUser] = useState<User | null>(null);
   const [sessionExistedOnEntry, setSessionExistedOnEntry] = useState<boolean | null>(null);
   const [validatorAccess, setValidatorAccess] = useState<ValidatorAccessState>("not-validator");
+  const [validatorHandoff, setValidatorHandoff] = useState<string | null>(null);
   const isValidatorEntry = Boolean(getTicketValidatorReturnUrl());
 
   useEffect(() => {
@@ -59,13 +56,33 @@ export default function AuthSessionCheckpoint({ mode, children }: AuthSessionChe
   }, []);
 
   useEffect(() => {
-    if (!user || !isValidatorEntry) { setValidatorAccess("not-validator"); return; }
+    if (!user || !isValidatorEntry) {
+      setValidatorAccess("not-validator");
+      setValidatorHandoff(null);
+      return;
+    }
+
     let cancelled = false;
     setValidatorAccess("checking");
+    setValidatorHandoff(null);
+
     void checkValidatorAccess()
-      .then((approved) => { if (!cancelled) setValidatorAccess(approved ? "approved" : "denied"); })
-      .catch(() => { if (!cancelled) setValidatorAccess("unavailable"); });
-    return () => { cancelled = true; };
+      .then((handoff) => {
+        if (cancelled) return;
+        setValidatorHandoff(handoff.code);
+        setValidatorAccess("approved");
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        const status = typeof (error as { status?: unknown })?.status === "number"
+          ? Number((error as { status?: number }).status)
+          : null;
+        setValidatorAccess(status === 401 || status === 403 ? "denied" : "unavailable");
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user?.uid, isValidatorEntry]);
 
   if (restoring || sessionExistedOnEntry === null) return <div className="min-h-screen bg-[linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_48%,_#f8fafc_100%)] text-zinc-900"><main className="flex min-h-screen items-center justify-center px-4"><div className="flex items-center gap-3 text-sm font-bold text-zinc-600"><Loader2 className="h-5 w-5 animate-spin" />Checking your session…</div></main></div>;
@@ -76,11 +93,8 @@ export default function AuthSessionCheckpoint({ mode, children }: AuthSessionChe
     const target = getTicketValidatorReturnUrl();
     if (target) {
       try {
-        const handoff = await apiFetch("/api/validator/handoff", {
-          method: "POST",
-          body: JSON.stringify({ client: "ticket-validator" }),
-        }) as ValidatorHandoffResponse;
-        target.searchParams.set("buymesho_session", handoff.code);
+        const code = validatorHandoff || (await checkValidatorAccess()).code;
+        target.searchParams.set("buymesho_session", code);
         window.location.replace(target.toString());
       } catch (error) {
         console.error("Failed to create Ticket Validator auth handoff:", error);
