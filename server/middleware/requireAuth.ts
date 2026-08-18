@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { verifyIdToken } from "../auth/firebaseAdmin.js";
 import { isConfiguredAdmin } from "../auth/adminAccess.js";
 import { getTotpEnrollment, verifyTotpVerifiedSession } from "../../src/server/totpStoreCompat.js";
+import { readTotpSessionCookie } from "../auth/totpSessionCookie.js";
 
 function getBearerToken(req: Request): string | null {
   const header = req.headers.authorization;
@@ -11,13 +12,6 @@ function getBearerToken(req: Request): string | null {
   if (type !== "Bearer" || !token) return null;
 
   return token.trim();
-}
-
-function getTotpSessionToken(req: Request): string | null {
-  const header = req.headers["x-buymesho-totp-session"];
-  if (Array.isArray(header)) return header[0]?.trim() || null;
-  if (typeof header === "string") return header.trim() || null;
-  return null;
 }
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -31,7 +25,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     const decoded = await verifyIdToken(token, true);
     const enrollment = getTotpEnrollment(decoded.uid);
     const totpEnabled = enrollment?.status === "enabled";
-    const totpSessionToken = getTotpSessionToken(req);
+    const totpSessionToken = readTotpSessionCookie(req);
     const totpVerified = !totpEnabled || (!!totpSessionToken && verifyTotpVerifiedSession(decoded.uid, totpSessionToken));
 
     if (!totpVerified) {
@@ -64,7 +58,7 @@ export async function attachOptionalAuth(req: Request, _res: Response, next: Nex
     const decoded = await verifyIdToken(token, true);
     const enrollment = getTotpEnrollment(decoded.uid);
     const totpEnabled = enrollment?.status === "enabled";
-    const totpSessionToken = getTotpSessionToken(req);
+    const totpSessionToken = readTotpSessionCookie(req);
     const totpVerified = !totpEnabled || (!!totpSessionToken && verifyTotpVerifiedSession(decoded.uid, totpSessionToken));
 
     if (!totpVerified) return next();

@@ -11,10 +11,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase";
 import { apiFetch } from "./api";
-import {
-  clearTotpVerifiedSessionToken,
-  setTotpVerifiedSessionToken,
-} from "./totpSession";
+import { clearTotpVerifiedSessionToken } from "./totpSession";
 
 export type FeedbackLevel = "success" | "error" | "info";
 
@@ -165,12 +162,12 @@ export type TotpConfirmResponse = {
   accountName: string;
   enrolledAt: string | null;
   confirmedAt: string | null;
+  sessionExpiresAt?: string;
 };
 
 export type TotpVerifyResponse = {
   verified: true;
   status: "disabled" | "pending" | "enabled";
-  sessionToken: string;
   expiresAt: string;
 };
 
@@ -258,10 +255,6 @@ export async function verifyTotpChallenge(
     });
 
     const data = extractApiData<TotpVerifyResponse>(response);
-    if (data?.sessionToken) {
-      setTotpVerifiedSessionToken(data.sessionToken);
-    }
-
     return { ok: true, data };
   } catch (error: any) {
     return {

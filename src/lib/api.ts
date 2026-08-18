@@ -1,11 +1,10 @@
 import { auth } from "../firebase";
-import { getTotpVerifiedSessionToken } from "./totpSession";
-import {
-  API_CACHE_TTL_MS,
-  isCachedApiResponseFresh,
-  readCachedApiJson,
-  writeCachedApiJson,
-} from "./apiCache";
+import { clearSensitiveApiCache } from "./apiCache";
+
+// Remove authenticated API responses persisted by older builds. Current builds
+// intentionally do not write or read seller/order/payout/connect responses from
+// browser storage.
+clearSensitiveApiCache();
 
 async function authHeader() {
   const user = auth.currentUser;
@@ -24,14 +23,7 @@ async function authHeader() {
 
   if (!token) return {} as Record<string, string>;
 
-  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-
-  const totpSessionToken = getTotpVerifiedSessionToken();
-  if (totpSessionToken) {
-    headers["x-buymesho-totp-session"] = totpSessionToken;
-  }
-
-  return headers;
+  return { Authorization: `Bearer ${token}` };
 }
 
 const API_FETCH_TIMEOUT_MS = 15000;
@@ -124,15 +116,6 @@ function shouldRetrySafeRequest(method: string) {
   return method === "GET" || method === "HEAD";
 }
 
-function isSellerWorkspaceCacheable(url: string) {
-  return (
-    url.startsWith("/api/sellers/") ||
-    url === "/api/seller/orders" ||
-    url.startsWith("/api/payouts/") ||
-    url.startsWith("/api/connect/")
-  );
-}
-
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -200,7 +183,7 @@ async function performApiFetch(url: string, init: ApiFetchInit = {}) {
 
   let res: Response;
   try {
-    res = await fetch(url, { ...init, headers, signal: controller.signal });
+    res = await fetch(url, { ...init, headers, credentials: "same-origin", signal: controller.signal });
   } catch (error: any) {
     if (error?.name === "AbortError" || controller.signal.aborted) {
       const reason = controller.signal.reason;
@@ -238,22 +221,12 @@ export async function apiFetch(url: string, init: ApiFetchInit = {}) {
   const method = getRetryableMethod(eventInit.method);
   const retryAttempts = eventInit.retryAttempts ?? (shouldRetrySafeRequest(method) ? DEFAULT_SAFE_RETRY_ATTEMPTS : 1);
   const retryDelayMs = eventInit.retryDelayMs ?? DEFAULT_SAFE_RETRY_DELAY_MS;
-  const cacheableSellerRead = method === "GET" && isSellerWorkspaceCacheable(rewrittenUrl);
-  const cachedSellerRead = cacheableSellerRead ? readCachedApiJson<unknown>(rewrittenUrl) : null;
-
-  if (cacheableSellerRead && cachedSellerRead !== null && isCachedApiResponseFresh(rewrittenUrl, API_CACHE_TTL_MS)) {
-    return cachedSellerRead;
-  }
 
   let lastError: unknown = null;
 
   for (let attempt = 1; attempt <= retryAttempts; attempt += 1) {
     try {
-      const data = await performApiFetch(rewrittenUrl, eventInit);
-      if (cacheableSellerRead) {
-        writeCachedApiJson(rewrittenUrl, data);
-      }
-      return data;
+      return await performApiFetch(rewrittenUrl, eventInit);
     } catch (error: any) {
       lastError = error;
 
@@ -265,19 +238,10 @@ export async function apiFetch(url: string, init: ApiFetchInit = {}) {
         /fetch/i.test(String(error?.message || ""));
       const canRetry = attempt < retryAttempts && shouldRetrySafeRequest(method) && (retryableStatus || retryableError);
 
-      if (!canRetry) {
-        if (cacheableSellerRead && cachedSellerRead !== null) {
-          return cachedSellerRead;
-        }
-        throw error;
-      }
+      if (!canRetry) throw error;
 
       await sleep(retryDelayMs * attempt);
     }
-  }
-
-  if (cacheableSellerRead && cachedSellerRead !== null) {
-    return cachedSellerRead;
   }
 
   throw lastError instanceof Error ? lastError : new Error("Request failed.");
