@@ -33,6 +33,7 @@ type WorkerFailureResponse = {
 type WorkerResponse = WorkerSuccessResponse | WorkerFailureResponse;
 
 type Queryable = Pick<Client, "query"> | Pick<Pool, "query">;
+type TransactionClient = PoolClient | Client;
 
 const workerPort = parentPort as MessagePort | null;
 if (!workerPort) {
@@ -104,7 +105,7 @@ const pool = isTestWorker
 
 const testClient = isTestWorker ? new Client(connectionConfig) : null;
 let testClientConnected = false;
-let transactionClient: PoolClient | Client | null = null;
+let transactionClient: TransactionClient | null = null;
 
 async function getTestClient(): Promise<Client> {
   if (!testClient) throw new Error("Test PostgreSQL client is unavailable.");
@@ -129,6 +130,12 @@ function sendResponse(response: WorkerResponse): void {
   workerPort.postMessage(response);
 }
 
+function releaseTransactionClient(client: TransactionClient): void {
+  if ("release" in client) {
+    client.release();
+  }
+}
+
 async function rollbackAndReleaseTransaction(): Promise<void> {
   if (!transactionClient) return;
 
@@ -140,7 +147,7 @@ async function rollbackAndReleaseTransaction(): Promise<void> {
 
   if (!isTestWorker) {
     try {
-      transactionClient.release();
+      releaseTransactionClient(transactionClient);
     } catch {
       // Ignore release failures.
     }
@@ -168,14 +175,14 @@ workerPort.on("message", async (request: WorkerRequest) => {
     } else if (request.op === "commit") {
       if (transactionClient) {
         await transactionClient.query("COMMIT");
-        if (!isTestWorker) transactionClient.release();
+        if (!isTestWorker) releaseTransactionClient(transactionClient);
         transactionClient = null;
       }
       sendResponse({ id: request.id, ok: true, rows: [], rowCount: 0 });
     } else if (request.op === "rollback") {
       if (transactionClient) {
         await transactionClient.query("ROLLBACK");
-        if (!isTestWorker) transactionClient.release();
+        if (!isTestWorker) releaseTransactionClient(transactionClient);
         transactionClient = null;
       }
       sendResponse({ id: request.id, ok: true, rows: [], rowCount: 0 });
