@@ -6,10 +6,28 @@ import {
 import { postgresDb } from "../../server/db.js";
 import { createHash, randomBytes } from "crypto";
 import type { TotpMfaStatus } from "../lib/totp.js";
+import {
+  decryptOrMigrateTotpSecret,
+  decryptTotpSecret,
+  encryptTotpSecret,
+  isEncryptedTotpSecret,
+} from "../../server/auth/totpSecretEncryption.js";
 
 const TOTP_VERIFIED_SESSION_TTL_MS = 15 * 60 * 1000;
 const verifiedSessionDb = postgresDb;
 let totpTablesEnsured = false;
+
+function migratePlaintextTotpSecrets(): void {
+  const rows = verifiedSessionDb
+    .prepare("SELECT user_id, secret FROM totp_enrollments")
+    .all() as Array<{ user_id: string; secret: string }>;
+
+  const update = verifiedSessionDb.prepare("UPDATE totp_enrollments SET secret = ? WHERE user_id = ?");
+  for (const row of rows) {
+    if (isEncryptedTotpSecret(row.secret)) continue;
+    update.run(encryptTotpSecret(row.secret), row.user_id);
+  }
+}
 
 function ensureTotpTables(): void {
   if (totpTablesEnsured) return;
@@ -36,6 +54,9 @@ function ensureTotpTables(): void {
     )
   `);
 
+  // Existing installations may already contain plaintext secrets. Migrate them
+  // once, in-place, before exposing the store to the rest of the application.
+  migratePlaintextTotpSecrets();
   totpTablesEnsured = true;
 }
 
@@ -62,6 +83,16 @@ export type TotpVerifiedSession = {
   userId: string;
   expiresAt: string;
 };
+
+function readAndMigrateSecret(userId: string, storedSecret: string): string {
+  const result = decryptOrMigrateTotpSecret(storedSecret);
+  if (result.migrated && result.encryptedValue) {
+    verifiedSessionDb
+      .prepare("UPDATE totp_enrollments SET secret = ? WHERE user_id = ?")
+      .run(result.encryptedValue, userId);
+  }
+  return result.secret;
+}
 
 export function getTotpEnrollment(userId: string): TotpEnrollmentRecord | null {
   ensureTotpTables();
@@ -93,7 +124,7 @@ export function getTotpEnrollment(userId: string): TotpEnrollmentRecord | null {
     userId: row.user_id,
     email: row.email,
     status: row.status,
-    secret: row.secret,
+    secret: readAndMigrateSecret(row.user_id, row.secret),
     issuer: row.issuer,
     accountName: row.account_name,
     enrolledAt: row.enrolled_at,
@@ -127,7 +158,7 @@ export function listTotpEnrollments(): TotpEnrollmentRecord[] {
     userId: row.user_id,
     email: row.email,
     status: row.status,
-    secret: row.secret,
+    secret: readAndMigrateSecret(row.user_id, row.secret),
     issuer: row.issuer,
     accountName: row.account_name,
     enrolledAt: row.enrolled_at,
@@ -182,7 +213,7 @@ export function upsertTotpEnrollment(input: TotpEnrollmentInput): TotpEnrollment
       next.userId,
       next.email,
       next.status,
-      next.secret,
+      encryptTotpSecret(next.secret),
       next.issuer,
       next.accountName,
       next.enrolledAt,
