@@ -14,6 +14,7 @@ import {
   upsertTotpEnrollment,
 } from "./totpStoreCompat.js";
 import { getTotpDisplayName, normalizeTotpCode, type TotpMfaStatus } from "../lib/totp.js";
+import { clearTotpSessionCookie, setTotpSessionTokenCookie } from "../../server/auth/totpSessionCookie.js";
 
 export type AuthUserContext = {
   uid: string;
@@ -25,15 +26,8 @@ export type TotpAuthRoutesDeps = {
   resolveUser: (req: Request) => Promise<AuthUserContext | null> | AuthUserContext | null;
 };
 
-type JsonResponse = {
-  ok: true;
-  data?: unknown;
-};
-
-type ErrorResponse = {
-  ok: false;
-  error: string;
-};
+type JsonResponse = { ok: true; data?: unknown };
+type ErrorResponse = { ok: false; error: string };
 
 function sendOk(res: Response, data?: unknown) {
   return res.json({ ok: true, data } satisfies JsonResponse);
@@ -47,10 +41,7 @@ function requireString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-async function getUserContext(
-  req: Request,
-  resolveUser: TotpAuthRoutesDeps["resolveUser"]
-): Promise<AuthUserContext | null> {
+async function getUserContext(req: Request, resolveUser: TotpAuthRoutesDeps["resolveUser"]): Promise<AuthUserContext | null> {
   const resolved = await resolveUser(req);
   return resolved ?? null;
 }
@@ -125,17 +116,14 @@ export function createTotpAuthRouter(deps: TotpAuthRoutesDeps) {
     if (!confirmed) return sendError(res, 500, "Failed to confirm TOTP enrollment.");
 
     const session = createTotpVerifiedSession(user.uid);
+    setTotpSessionTokenCookie(res, session.token, session.expiresAt);
     return sendOk(res, {
       status: confirmed.status,
       confirmedAt: confirmed.confirmedAt,
-      sessionToken: session.token,
       sessionExpiresAt: session.expiresAt,
     });
   });
 
-  // After Firebase email/password authentication succeeds, the login page calls
-  // this endpoint to prove possession of the configured authenticator app.
-  // This route was missing even though enrollment/status routes existed.
   router.post("/challenge/verify", async (req, res) => {
     const user = await getUserContext(req, deps.resolveUser);
     if (!user) return sendError(res, 401, "Login required.");
@@ -150,20 +138,21 @@ export function createTotpAuthRouter(deps: TotpAuthRoutesDeps) {
 
     const result = verifyTotpCode({ secret: record.secret, code });
     if (result.ok === false) {
-      return sendError(
-        res,
-        400,
-        result.reason === "clock_skew" ? "That code has expired." : "Invalid authenticator code."
-      );
+      return sendError(res, 400, result.reason === "clock_skew" ? "That code has expired." : "Invalid authenticator code.");
     }
 
     const session = createTotpVerifiedSession(user.uid);
+    setTotpSessionTokenCookie(res, session.token, session.expiresAt);
     return sendOk(res, {
       verified: true,
       status: record.status,
-      sessionToken: session.token,
       expiresAt: session.expiresAt,
     });
+  });
+
+  router.delete("/session", (_req, res) => {
+    clearTotpSessionCookie(res);
+    return res.status(204).end();
   });
 
   router.post("/disable", async (req, res) => {
@@ -171,6 +160,7 @@ export function createTotpAuthRouter(deps: TotpAuthRoutesDeps) {
     if (!user) return sendError(res, 401, "Login required.");
 
     const removed = disableTotpEnrollment(user.uid);
+    clearTotpSessionCookie(res);
     return sendOk(res, { removed });
   });
 
