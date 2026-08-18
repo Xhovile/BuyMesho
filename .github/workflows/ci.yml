@@ -40,9 +40,9 @@ jobs:
             echo "PLATFORM_REPO_TOKEN GitHub repository secret is not configured or is unavailable to this workflow."
             exit 1
           fi
-          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"
-          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/".insteadOf "git@github.com:"
-          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/Xhovile/".insteadOf "ssh://git@github.com/Xhovile/"
+          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/Xhovile/".insteadOf "git@github.com:Xhovile/"
+          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/Xhovile/".insteadOf "https://github.com/Xhovile/"
 
       - name: Sync npm lockfile metadata
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
