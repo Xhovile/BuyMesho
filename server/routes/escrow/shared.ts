@@ -1,5 +1,6 @@
 import type { Request } from 'express';
 import rateLimit from 'express-rate-limit';
+import type { StoredOrder } from '../../modules/orders/order.repository.js';
 
 export const disputeLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -81,6 +82,52 @@ export function assertOrderAccess<TOrder extends OrderAccessOrder>(
       error: {
         status: 403,
         body: { error: 'You are not allowed to access this order' },
+      },
+    };
+  }
+
+  return { order };
+}
+
+export async function assertOrderAccessAsync(
+  req: Request,
+  orderId: string,
+): Promise<OrderAccessResult<StoredOrder>> {
+  const { orderRepository } = await import('../../modules/orders/order.repository.js');
+  const order = await orderRepository.findByIdAsync(orderId);
+
+  if (!order) {
+    return { error: { status: 404, body: { error: 'Order not found' } } };
+  }
+
+  if (!canAccessOrder(req, order)) {
+    return {
+      error: {
+        status: 403,
+        body: { error: 'You are not allowed to access this order' },
+      },
+    };
+  }
+
+  return { order };
+}
+
+export async function assertEscrowReleaseAccessAsync(
+  req: Request,
+  orderId: string,
+): Promise<OrderAccessResult<StoredOrder>> {
+  const { orderRepository } = await import('../../modules/orders/order.repository.js');
+  const order = await orderRepository.findByIdAsync(orderId);
+
+  if (!order) {
+    return { error: { status: 404, body: { error: 'Order not found' } } };
+  }
+
+  if (!canReleaseEscrow(req, order)) {
+    return {
+      error: {
+        status: 403,
+        body: { error: 'Only the buyer or an admin can release escrow for this order' },
       },
     };
   }
