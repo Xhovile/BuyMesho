@@ -1,4 +1,4 @@
-import { parentPort, workerData, type MessagePort } from "node:worker_threads";
+import { parentPort, type MessagePort } from "node:worker_threads";
 import type { Pool, PoolClient } from "pg";
 
 import dotenv from "dotenv";
@@ -28,7 +28,6 @@ type WorkerFailureResponse = {
   ok: false;
   error: string;
 };
-type WorkerResponse = WorkerSuccessResponse | WorkerFailureResponse;
 
 type PostgresModule = {
   pool: Pool;
@@ -50,36 +49,31 @@ function isQueryRequest(request: WorkerRequest): request is WorkerQueryRequest {
   return request.op === "query";
 }
 
+let transactionClient: PoolClient | null = null;
+
 workerPort.on("message", async (request: WorkerRequest) => {
   const signal = new Int32Array(request.signal);
-  let transactionClient: PoolClient | null = null;
 
   try {
     if (request.op === "begin") {
+      if (transactionClient) throw new Error("Transaction already active");
       transactionClient = await pool.connect();
       await transactionClient.query("BEGIN");
-      (workerPort as MessagePort).postMessage({
-        id: request.id,
-        ok: true,
-        rows: [],
-        rowCount: 0,
-      } satisfies WorkerSuccessResponse);
     } else if (request.op === "commit") {
-      (workerPort as MessagePort).postMessage({
-        id: request.id,
-        ok: true,
-        rows: [],
-        rowCount: 0,
-      } satisfies WorkerSuccessResponse);
+      if (transactionClient) {
+        await transactionClient.query("COMMIT");
+        transactionClient.release();
+        transactionClient = null;
+      }
     } else if (request.op === "rollback") {
-      (workerPort as MessagePort).postMessage({
-        id: request.id,
-        ok: true,
-        rows: [],
-        rowCount: 0,
-      } satisfies WorkerSuccessResponse);
+      if (transactionClient) {
+        await transactionClient.query("ROLLBACK");
+        transactionClient.release();
+        transactionClient = null;
+      }
     } else if (isQueryRequest(request)) {
-      const result = await pool.query(request.sql, request.params ?? []);
+      const activeClient = transactionClient ?? pool;
+      const result = await activeClient.query(request.sql, request.params ?? []);
       (workerPort as MessagePort).postMessage({
         id: request.id,
         ok: true,
@@ -87,8 +81,17 @@ workerPort.on("message", async (request: WorkerRequest) => {
         rowCount: result.rowCount ?? (result.rows ?? []).length,
       } satisfies WorkerSuccessResponse);
     }
+
+    if (request.op !== "query") {
+      (workerPort as MessagePort).postMessage({
+        id: request.id,
+        ok: true,
+        rows: [],
+        rowCount: 0,
+      } satisfies WorkerSuccessResponse);
+    }
   } catch (error) {
-    if (transactionClient) {
+    if (transactionClient && request.op !== "begin") {
       try {
         await transactionClient.query("ROLLBACK");
       } catch {
