@@ -51,10 +51,25 @@ jobs:
             cat /tmp/platform-response.json
             exit 1
           fi
-          echo "Private Platform repository access verified."
+          echo "Private Platform repository access verified via API."
 
-          git config --global url."https://x-access-token:${PLATFORM_REPO_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"
-          echo "Configured SSH Git URLs to resolve through authenticated HTTPS."
+          cat > "$HOME/.netrc" <<EOF
+machine github.com
+  login x-access-token
+  password $PLATFORM_REPO_TOKEN
+EOF
+          chmod 600 "$HOME/.netrc"
+
+          git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+          git config --global url."https://github.com/".insteadOf "git+ssh://git@github.com/"
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          echo "Configured Git SSH URLs to use HTTPS with the repository credential."
+
+      - name: Verify Git access to Platform
+        run: |
+          git ls-remote https://github.com/Xhovile/Platform.git HEAD >/tmp/platform-head.txt
+          test -s /tmp/platform-head.txt
+          echo "Git access to Xhovile/Platform verified."
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
