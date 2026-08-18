@@ -7,6 +7,7 @@ import { payoutRepository, payoutService } from '../../modules/payouts/payout.se
 import { calculatePayoutFormula } from '../../modules/payouts/payout.policy.js';
 import { assertEscrowReleaseReadiness } from '../../modules/escrow/escrow.rules.js';
 import { getPaymentDb } from '../../postgresCompat.js';
+import { withTransaction } from '../../postgres.js';
 import { assertEscrowReleaseAccess, assertOrderAccess, escrowActionLimiter, jsonError } from './shared.js';
 
 type VerifiedPayoutDestination = {
@@ -16,7 +17,20 @@ type VerifiedPayoutDestination = {
   provider_name?: string | null;
 };
 
-function resolveVerifiedPayoutDestination(sellerId: string): VerifiedPayoutDestination | undefined {
+function resolveVerifiedPayoutDestination(sellerId: string, client?: { query: Function }): Promise<VerifiedPayoutDestination | undefined> | VerifiedPayoutDestination | undefined {
+  if (client) {
+    return client.query(
+      `SELECT id, destination_type, provider_ref_id, provider_name
+       FROM seller_payout_accounts
+       WHERE seller_uid = $1
+         AND is_active = 1
+         AND verification_status = 'verified'
+       ORDER BY is_default DESC, updated_at DESC
+       LIMIT 1`,
+      [sellerId],
+    ).then((result: { rows: VerifiedPayoutDestination[] }) => result.rows[0]);
+  }
+
   const db = getPaymentDb();
   return db
     .prepare(
@@ -156,23 +170,19 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
 
       const requestedDestinationAccountId = getRequestedDestinationAccountId(req.body);
 
-      const result = getPaymentDb().transaction(() => {
-        const released = escrowRepository.releaseToSellerEarnings({
-          orderId,
-          releasedBy: requesterId,
-          reference: releaseReference,
-        });
+      const result = await withTransaction(async (client) => {
+        const released = await escrowRepository.releaseToSellerEarningsAsync(
+          { orderId, releasedBy: requesterId, reference: releaseReference },
+          client,
+        );
 
-        if (!released) {
-          return undefined;
-        }
+        if (!released) return undefined;
 
         if (!releaseReadiness.payoutEligible) {
           throw new Error('Escrow release succeeded but payout is not eligible');
         }
 
-        const destination = resolveVerifiedPayoutDestination(access.order.sellerId);
-
+        const destination = await resolveVerifiedPayoutDestination(access.order.sellerId, client);
         if (!destination) {
           throw new Error('No verified active payout destination found for seller');
         }
@@ -196,7 +206,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           currency: released.releaseEntry.currency,
         });
 
-        const payout = payoutService.createEligiblePayoutCandidate({
+        const payout = await payoutService.createEligiblePayoutCandidateAsync({
           sellerId: access.order.sellerId,
           orderId,
           escrowId: released.escrow.id,
@@ -224,7 +234,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
             requestedDestinationAccountId,
             settlementReferenceAt: released.releaseEntry.createdAt,
           },
-        });
+        }, client);
 
         const settlementReferenceAt =
           access.order.paidAt ??
@@ -233,7 +243,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           released.releaseEntry.createdAt;
         const settlementElapsed = hasPastSettlementMidnightTPlusOne(settlementReferenceAt);
 
-        const orderUpdated = serverOrderService.setStatus(orderId, 'fulfilled');
+        const orderUpdated = await serverOrderService.setStatusAsync(orderId, 'fulfilled', client);
         if (!orderUpdated) {
           console.warn(`[escrow] release: order ${orderId} not found when updating status to fulfilled`);
         }
@@ -253,7 +263,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           settlementReferenceAt,
           settlementElapsed,
         };
-      })();
+      });
 
       if (!result) {
         return res.status(404).json({ error: 'Escrow not found' });
@@ -284,7 +294,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         await notifyOrderFulfilled(result.orderUpdated);
       }
 
-      payoutRepository.addEvent({
+      await payoutService.addEventAsync({
         payoutId: finalPayout.id,
         sellerId: access.order.sellerId,
         eventType: 'payout_released',
