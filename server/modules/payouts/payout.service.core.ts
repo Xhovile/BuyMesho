@@ -7,6 +7,7 @@ import {
   reconcileProviderCallbackFlow,
 } from './payout.service.reconciliation.js';
 import { applyAdminOverrideAtomic } from './payout.admin-override.atomic.js';
+import type { PoolClient } from 'pg';
 import {
   type CreateConnectPayoutInput,
   type CreateEligiblePayoutInput,
@@ -27,12 +28,20 @@ export class PayoutService {
     return this.repository.createEligibleForRelease(input);
   }
 
+  async createEligiblePayoutCandidateAsync(input: CreateEligiblePayoutInput, client?: PoolClient): Promise<PayoutRecord> {
+    return this.repository.createEligibleForReleaseAsync(input, client);
+  }
+
   createConnectPayoutCandidate(input: CreateConnectPayoutInput): { payout: PayoutRecord; created: boolean } {
     return this.repository.createConnectPayoutCandidate(input);
   }
 
   addEvent(input: Parameters<PayoutTransitionRepository['addEvent']>[0]): void {
     this.repository.addEvent(input);
+  }
+
+  async addEventAsync(input: Parameters<PayoutTransitionRepository['addEvent']>[0], client?: PoolClient): Promise<void> {
+    return this.repository.addEventAsync(input, client);
   }
 
   async executePayout(input: ExecutePayoutInput) {
