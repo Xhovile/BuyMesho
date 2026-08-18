@@ -1,47 +1,47 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getPaymentDb } from '../../../postgresCompat.js';
+import { query } from '../../../postgres.js';
 import { escrowRepository } from '../escrow.repository.js';
 
-function cleanup(orderId: string): void {
-  getPaymentDb().prepare('DELETE FROM escrows WHERE order_id = ?').run(orderId);
+async function cleanup(orderId: string): Promise<void> {
+  await query('DELETE FROM escrows WHERE order_id = $1', [orderId]);
 }
 
-test('escrow state machine allows funded -> released', () => {
+test('escrow state machine allows funded -> released', async () => {
   const orderId = 'escrow-state-released-1';
-  cleanup(orderId);
+  await cleanup(orderId);
   try {
-    escrowRepository.create(orderId, 'MWK', 1000);
-    assert.equal(escrowRepository.updateState(orderId, 'held')?.state, 'held');
-    assert.equal(escrowRepository.updateState(orderId, 'released')?.state, 'released');
+    await escrowRepository.createAsync(orderId, 'MWK', 1000);
+    assert.equal((await escrowRepository.updateStateAsync(orderId, 'held'))?.state, 'held');
+    assert.equal((await escrowRepository.updateStateAsync(orderId, 'released'))?.state, 'released');
   } finally {
-    cleanup(orderId);
+    await cleanup(orderId);
   }
 });
 
-test('escrow state machine allows funded -> refunded', () => {
+test('escrow state machine allows funded -> refunded', async () => {
   const orderId = 'escrow-state-refunded-1';
-  cleanup(orderId);
+  await cleanup(orderId);
   try {
-    escrowRepository.create(orderId, 'MWK', 1000);
-    assert.equal(escrowRepository.updateState(orderId, 'refunded')?.state, 'refunded');
+    await escrowRepository.createAsync(orderId, 'MWK', 1000);
+    assert.equal((await escrowRepository.updateStateAsync(orderId, 'refunded'))?.state, 'refunded');
   } finally {
-    cleanup(orderId);
+    await cleanup(orderId);
   }
 });
 
-test('escrow state machine blocks refunded -> funded', () => {
+test('escrow state machine blocks refunded -> funded', async () => {
   const orderId = 'escrow-state-terminal-1';
-  cleanup(orderId);
+  await cleanup(orderId);
   try {
-    escrowRepository.create(orderId, 'MWK', 1000);
-    escrowRepository.updateState(orderId, 'refunded');
-    assert.throws(
-      () => escrowRepository.updateState(orderId, 'funded'),
+    await escrowRepository.createAsync(orderId, 'MWK', 1000);
+    await escrowRepository.updateStateAsync(orderId, 'refunded');
+    await assert.rejects(
+      () => escrowRepository.updateStateAsync(orderId, 'funded'),
       /Illegal escrow state transition: refunded -> funded/,
     );
-    assert.equal(escrowRepository.findByOrderId(orderId)?.state, 'refunded');
+    assert.equal((await escrowRepository.findByOrderIdAsync(orderId))?.state, 'refunded');
   } finally {
-    cleanup(orderId);
+    await cleanup(orderId);
   }
 });
