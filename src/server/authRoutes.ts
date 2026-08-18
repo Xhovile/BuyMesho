@@ -12,11 +12,13 @@ import {
   getTotpEnrollmentSummary,
   setTotpStatus,
   upsertTotpEnrollment,
+  verifyTotpVerifiedSession,
 } from "./totpStoreCompat.js";
 import { getTotpDisplayName, normalizeTotpCode, type TotpMfaStatus } from "../lib/totp.js";
 import {
   clearTotpSessionCookie,
   clearValidatorTotpSessionCookie,
+  readTotpSessionCookie,
   setTotpSessionTokenCookie,
   setValidatorTotpSessionTokenCookie,
 } from "../../server/auth/totpSessionCookie.js";
@@ -67,6 +69,19 @@ export function createTotpAuthRouter(deps: TotpAuthRoutesDeps) {
       accountName: summary?.accountName ?? getTotpDisplayName(user.displayName ?? null, user.email ?? null),
       hasSecret: !!summary,
     });
+  });
+
+  router.get("/session", async (req, res) => {
+    const user = await getUserContext(req, deps.resolveUser);
+    if (!user) return sendError(res, 401, "Login required.");
+
+    const summary = getTotpEnrollmentSummary(user.uid);
+    const enabled = summary?.status === "enabled";
+    if (!enabled) return sendOk(res, { enabled: false, verified: true });
+
+    const token = readTotpSessionCookie(req);
+    const verified = !!token && verifyTotpVerifiedSession(user.uid, token);
+    return sendOk(res, { enabled: true, verified });
   });
 
   router.post("/enroll/start", async (req, res) => {
