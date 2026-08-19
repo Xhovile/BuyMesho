@@ -86,7 +86,9 @@ export async function reconcileEventCreatorOwnership(
   const logger = options.logger ?? console;
   const limit = Math.max(1, Math.min(Math.trunc(options.limit ?? DEFAULT_BATCH_LIMIT), MAX_BATCH_LIMIT));
   const rows = database
-    .prepare("SELECT uid FROM event_creators ORDER BY updated_at ASC, uid ASC LIMIT ?")
+    .prepare(
+      "SELECT uid FROM event_creators ORDER BY ownership_checked_at ASC NULLS FIRST, uid ASC LIMIT ?",
+    )
     .all(limit) as EventCreatorRow[];
 
   let removed = 0;
@@ -96,6 +98,9 @@ export async function reconcileEventCreatorOwnership(
   for (const row of rows) {
     try {
       await lookupUser(row.uid);
+      database
+        .prepare("UPDATE event_creators SET ownership_checked_at = CURRENT_TIMESTAMP WHERE uid = ?")
+        .run(row.uid);
     } catch (error: any) {
       if (error?.code === "auth/user-not-found") {
         deleteEventOwnerRecords(row.uid, database);
