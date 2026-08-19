@@ -53,11 +53,7 @@ jobs:
           fi
           echo "Private Platform repository access verified via API."
 
-          cat > "$HOME/.netrc" <<EOF
-machine github.com
-  login x-access-token
-  password $PLATFORM_REPO_TOKEN
-EOF
+          printf 'machine github.com\nlogin x-access-token\npassword %s\n' "$PLATFORM_REPO_TOKEN" > "$HOME/.netrc"
           chmod 600 "$HOME/.netrc"
 
           git config --global --unset-all 'url.https://github.com/.insteadOf' || true
