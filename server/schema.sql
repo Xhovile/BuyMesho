@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS event_creators (
   status TEXT NOT NULL DEFAULT 'approved',
   active_until TIMESTAMPTZ,
   approved_at TIMESTAMPTZ,
+  ownership_checked_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
