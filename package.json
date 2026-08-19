@@ -30,7 +30,7 @@
     "@tailwindcss/vite": "^4.1.14",
     "@types/multer": "^2.0.0",
     "@vitejs/plugin-react": "^5.0.4",
-    "@xhovile/platform": "git+https://github.com/Xhovile/Platform.git#main",
+    "@xhovile/platform": "github:Xhovile/Platform#main",
     "cloudinary": "^2.9.0",
     "dotenv": "^17.2.3",
     "esbuild": "^0.28.0",
