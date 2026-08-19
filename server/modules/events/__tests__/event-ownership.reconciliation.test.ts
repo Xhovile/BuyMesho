@@ -57,7 +57,8 @@ test("reconciliation preserves events when Firebase Auth user exists", async () 
   });
 
   assert.deepEqual(result, { checked: 1, removed: 0, failed: 0 });
-  assert.equal(database.statements.length, 0);
+  assert.equal(database.statements.length, 1);
+  assert.equal(database.statements[0]?.startsWith("UPDATE event_creators SET ownership_checked_at"), true);
 });
 
 test("reconciliation removes all event-owned data when Firebase Auth user is missing", async () => {
