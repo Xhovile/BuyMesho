@@ -19,35 +19,28 @@ export function createAdminTicketTransactionSearchRouter(params: {
     return true;
   }
 
+  function resolveTicket(raw: unknown) {
+    const ticketId = String(raw ?? "").trim();
+    if (!ticketId) return null;
+    return findEventTicketIdentity(db, ticketId);
+  }
+
   router.get("/ticket-search", requireAuth, (req, res) => {
     if (!requireAdmin(req, res)) return;
 
-    const ticketId = String(req.query.ticketId ?? req.query.q ?? "").trim();
-    if (!ticketId) return res.status(400).json({ error: "ticketId or q is required" });
-
-    const identity = findEventTicketIdentity(db, ticketId);
+    const identity = resolveTicket(req.query.ticketId ?? req.query.q);
     if (!identity) return res.status(404).json({ error: "Event ticket not found" });
 
     const transaction = getEventTransactionByTicketId(db, identity.ticketId);
     if (!transaction) return res.status(404).json({ error: "Event ticket transaction not found" });
 
-    return res.json({
-      ticketId: identity.ticketId,
-      identity,
-      transaction,
-      source: "event_ticket_identity",
-    });
+    return res.json({ ticketId: identity.ticketId, identity, transaction, source: "event_ticket_identity" });
   });
 
-  // Payments/admin tools can use this endpoint as a Ticket-ID-first search
-  // without duplicating the event_tickets → order → payment relationship.
-  router.get("/payments/ticket-search", requireAuth, (req, res) => {
+  router.get("/ticket-payments", requireAuth, (req, res) => {
     if (!requireAdmin(req, res)) return;
 
-    const ticketId = String(req.query.ticketId ?? req.query.q ?? "").trim();
-    if (!ticketId) return res.status(400).json({ error: "ticketId or q is required" });
-
-    const identity = findEventTicketIdentity(db, ticketId);
+    const identity = resolveTicket(req.query.ticketId ?? req.query.q);
     if (!identity) return res.status(404).json({ error: "Event ticket not found" });
 
     const rows = db.prepare(`
