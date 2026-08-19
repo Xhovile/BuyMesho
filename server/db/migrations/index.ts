@@ -3,6 +3,7 @@ import { ensureMessageSchema } from "../../../src/server/messageSchema.js";
 import { initPaymentSchema } from "../../postgresCompat/schema.js";
 import { ensurePayoutLifecycleSchema } from "../../modules/payouts/payout.schema.js";
 import { backfillEventTickets } from "../../modules/orders/eventTicketProjection.js";
+import { ensureEventOwnershipIntegrityMigration } from "./20260819_event_ownership_integrity.js";
 
 function ensureExtraTables() {
   postgresDb.exec(`
@@ -207,6 +208,7 @@ function backfillFulfilledAtFromUpdatedAt() {
 export function runMigrations() {
   ensureExtraTables();
   ensureEventLifecycleSchema();
+  ensureEventOwnershipIntegrityMigration();
   ensureMessageSchema(postgresDb);
   normalizeHardDeleteAfterColumn();
   updateSellerPayoutAccountColumns();

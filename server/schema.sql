@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS event_creators (
   status TEXT NOT NULL DEFAULT 'approved',
   active_until TIMESTAMPTZ,
   approved_at TIMESTAMPTZ,
+  ownership_checked_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -134,7 +135,7 @@ CREATE TABLE IF NOT EXISTS event_creator_applications (
 
 CREATE TABLE IF NOT EXISTS events (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  creator_uid TEXT,
+  creator_uid TEXT NOT NULL,
   event_type TEXT NOT NULL,
   event_title TEXT NOT NULL,
   organizer_name TEXT NOT NULL,
@@ -152,7 +153,8 @@ CREATE TABLE IF NOT EXISTS events (
   status TEXT NOT NULL DEFAULT 'published',
   deleted_at TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (creator_uid) REFERENCES event_creators(uid) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS event_activity (

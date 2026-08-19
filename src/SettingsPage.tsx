@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { House, ShoppingBag } from "lucide-react";
+import { House, ShoppingBag, Loader2 } from "lucide-react";
 import BrandMark from "./components/BrandMark";
 import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
 import TermsPage from "./components/TermsPage";
 import SafetyTipsPage from "./components/SafetyTipsPage";
 import ReportProblemPage from "./components/ReportProblemPage";
-import ConfirmModal from "./components/ConfirmModal";
 import FeedbackModal from "./components/FeedbackModal";
 import PasswordPromptModal from "./components/PasswordPromptModal";
 import TotpSetupModal from "./components/TotpSetupModal";
+import AccountDeletionModal, { type AccountDeletionResult } from "./components/AccountDeletionModal";
 import SettingsAccountSection from "./components/settings/SettingsAccountSection";
 import SettingsSecuritySection from "./components/settings/SettingsSecuritySection";
 import SettingsPrivacySection from "./components/settings/SettingsPrivacySection";
@@ -118,6 +118,7 @@ export default function SettingsPage() {
   const [passwordPromptAction, setPasswordPromptAction] =
     useState<PasswordPromptAction>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteRecoveryBusy, setDeleteRecoveryBusy] = useState(false);
   const [feedback, setFeedback] = useState<{
     open: boolean;
     type: "success" | "error" | "info";
@@ -249,20 +250,25 @@ export default function SettingsPage() {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (!firebaseUser) return;
-    setDeleteConfirmOpen(false);
+  const performAccountDeletion = async (): Promise<AccountDeletionResult> => {
+    if (!firebaseUser) return "failed";
+
     const result = await deleteCurrentAccount();
     if (!result.ok) {
       if ("code" in result && result.code === "auth/requires-recent-login") {
-        setPasswordPromptAction("deleteAccount");
-        setPasswordPromptOpen(true);
-        return;
+        return "reauth-required";
       }
       showFeedback("error", "Delete account failed", result.message);
-      return;
+      return "failed";
     }
+
     navigateToPath(LOGIN_PATH);
+    return "deleted";
+  };
+
+  const handleDeleteAccount = () => {
+    if (!firebaseUser || deleteRecoveryBusy) return;
+    setDeleteConfirmOpen(true);
   };
 
   const handlePasswordPromptSubmit = async () => {
@@ -291,7 +297,12 @@ export default function SettingsPage() {
       const promptAction = passwordPromptAction;
       setPasswordPromptAction(null);
       if (promptAction === "deleteAccount") {
-        await handleDeleteAccount();
+        setDeleteRecoveryBusy(true);
+        try {
+          await performAccountDeletion();
+        } finally {
+          setDeleteRecoveryBusy(false);
+        }
         return;
       }
       showFeedback(
@@ -486,7 +497,7 @@ export default function SettingsPage() {
             onNavigate={navigateToPath}
             onSellerPayouts={navigateToSellerPayouts}
             onLogout={handleLogout}
-            onDeleteAccount={() => setDeleteConfirmOpen(true)}
+            onDeleteAccount={handleDeleteAccount}
             paths={{ editAccount: EDIT_ACCOUNT_PATH, editProfile: EDIT_PROFILE_PATH, becomeSeller: BECOME_SELLER_PATH, moderationQueue: ADMIN_MODERATION_QUEUE_PATH, adminSetup: ADMIN_SETUP_PATH }}
           />
           <SettingsSecuritySection
@@ -562,15 +573,33 @@ export default function SettingsPage() {
         onSubmit={handlePasswordPromptSubmit}
         onCancel={handlePasswordPromptCancel}
       />
-      <ConfirmModal
+
+      <AccountDeletionModal
         open={deleteConfirmOpen}
-        title="Delete account"
-        message="Are you sure you want to delete your account? This action cannot be undone."
-        confirmText="Delete"
-        danger
-        onConfirm={() => void handleDeleteAccount()}
         onCancel={() => setDeleteConfirmOpen(false)}
+        onDelete={async () => {
+          const result = await performAccountDeletion();
+          setDeleteConfirmOpen(false);
+          return result;
+        }}
+        onReauthRequired={() => {
+          setPasswordPromptAction("deleteAccount");
+          setPasswordPromptOpen(true);
+        }}
       />
+
+      {deleteRecoveryBusy && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4 rounded-3xl bg-white px-8 py-7 shadow-2xl">
+            <Loader2 className="h-10 w-10 animate-spin text-red-600" />
+            <div className="text-center">
+              <p className="text-base font-extrabold text-zinc-900">Deleting your account</p>
+              <p className="mt-1 text-sm font-medium text-zinc-500">Removing your data securely.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {feedback && <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} onClose={() => setFeedback(null)} />}
     </div>
   );
