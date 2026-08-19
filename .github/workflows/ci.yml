@@ -60,9 +60,10 @@ machine github.com
 EOF
           chmod 600 "$HOME/.netrc"
 
-          git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
-          git config --global url."https://github.com/".insteadOf "git+ssh://git@github.com/"
-          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git config --global --unset-all 'url.https://github.com/.insteadOf' || true
+          git config --global --add 'url.https://github.com/.insteadOf' 'ssh://git@github.com/'
+          git config --global --add 'url.https://github.com/.insteadOf' 'git+ssh://git@github.com/'
+          git config --global --add 'url.https://github.com/.insteadOf' 'git@github.com:'
           echo "Configured Git SSH URLs to use HTTPS with the repository credential."
 
       - name: Verify Git access to Platform
