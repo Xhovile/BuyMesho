@@ -90,6 +90,7 @@ export function createAdminEventTransactionRouter(params: {
 
         return {
           ...event,
+          status: event.status,
           ticket_price: event.ticket_price == null ? null : Number(event.ticket_price),
           spec_values: specValues,
           message_threads: Number(messageRow?.message_threads ?? 0),
