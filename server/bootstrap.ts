@@ -15,6 +15,9 @@ import { requireFirebaseUser } from "./middleware/requireFirebaseUser.js";
 import { createIdempotencyMiddleware } from "./idempotency/middleware.js";
 import { startPayoutReconciliationScheduler } from "./modules/payouts/payout.reconciliation.scheduler.js";
 import { startEventOwnershipReconciliationScheduler } from "./modules/events/event-ownership.reconciliation.js";
+import { createEventTicketIdentityRouter } from "./modules/events/eventTicketIdentity.routes.js";
+import { createAdminEventTransactionRouter } from "./modules/admin/adminEventTransaction.routes.js";
+import { createAdminTicketTransactionSearchRouter } from "./modules/admin/adminTicketTransactionSearch.routes.js";
 
 dotenv.config();
 
@@ -85,11 +88,17 @@ export async function startServer() {
     createIdempotencyMiddleware("messages.send"),
   );
 
+  // Canonical event-transaction reads precede the broader admin event router.
+  app.use("/api/admin", createAdminEventTransactionRouter({ db, requireAuth }));
+  app.use("/api/admin", createAdminTicketTransactionSearchRouter({ db, requireAuth }));
+
   registerRoutes(app, {
     db,
     requireAuth,
     requireFirebaseUser,
   });
+
+  app.use("/api/event-tickets", createEventTicketIdentityRouter({ db, requireAuth }));
 
   // Temporary Validator diagnostic endpoint. It is registered immediately
   // after registerRoutes() so the live Render process can prove that this
