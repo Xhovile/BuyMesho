@@ -253,3 +253,4 @@ db.exec(`
     ON payment_webhook_events(provider, tx_ref, event_type, payload_hash);
 `);
 console.log('[CI] Test PostgreSQL schema bootstrap completed.');
+await db.close();
