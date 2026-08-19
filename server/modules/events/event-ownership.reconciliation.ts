@@ -3,6 +3,7 @@ import { postgresDb as db } from "../../db.js";
 
 type EventCreatorRow = { uid: string };
 type Logger = Pick<Console, "log" | "warn" | "error">;
+type UserLookup = (uid: string) => Promise<unknown>;
 
 type ReconciliationResult = {
   checked: number;
@@ -74,7 +75,12 @@ export function deleteEventOwnerRecords(userId: string, database = db): void {
 }
 
 export async function reconcileEventCreatorOwnership(
-  options: { limit?: number; database?: any; logger?: Logger } = {},
+  options: {
+    limit?: number;
+    database?: any;
+    logger?: Logger;
+    lookupUser?: UserLookup;
+  } = {},
 ): Promise<ReconciliationResult> {
   const database = options.database ?? db;
   const logger = options.logger ?? console;
@@ -85,11 +91,11 @@ export async function reconcileEventCreatorOwnership(
 
   let removed = 0;
   let failed = 0;
-  const auth = getFirebaseAdmin().auth();
+  const lookupUser = options.lookupUser ?? ((uid: string) => getFirebaseAdmin().auth().getUser(uid));
 
   for (const row of rows) {
     try {
-      await auth.getUser(row.uid);
+      await lookupUser(row.uid);
     } catch (error: any) {
       if (error?.code === "auth/user-not-found") {
         deleteEventOwnerRecords(row.uid, database);
