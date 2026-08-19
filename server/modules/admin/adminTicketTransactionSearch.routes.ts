@@ -32,12 +32,7 @@ export function createAdminTicketTransactionSearchRouter(params: {
     const transaction = getEventTransactionByTicketId(db, identity.ticketId);
     if (!transaction) return res.status(404).json({ error: "Event ticket transaction not found" });
 
-    return res.json({
-      ticketId: identity.ticketId,
-      identity,
-      transaction,
-      source: "event_ticket_identity",
-    });
+    return res.json({ ticketId: identity.ticketId, identity, transaction, source: "event_ticket_identity" });
   });
 
   router.get("/ticket-payments", requireAuth, (req, res) => {
@@ -73,12 +68,7 @@ export function createAdminTicketTransactionSearchRouter(params: {
       ORDER BY p.created_at DESC
     `).all(identity.ticketId) as Array<Record<string, unknown>>;
 
-    return res.json({
-      ticketId: identity.ticketId,
-      orderId: identity.orderId,
-      eventId: identity.eventId,
-      payments: rows,
-    });
+    return res.json({ ticketId: identity.ticketId, orderId: identity.orderId, eventId: identity.eventId, payments: rows });
   });
 
   return router;
