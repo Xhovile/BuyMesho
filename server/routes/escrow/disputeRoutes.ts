@@ -10,18 +10,52 @@ import {
   jsonError,
 } from './shared.js';
 
+async function resolveTicketToOrder(ticketId: string): Promise<{ ticketId: string; orderId: string } | null> {
+  const result = await query<{ id?: string; order_id?: string }>(
+    `SELECT id, order_id
+     FROM event_tickets
+     WHERE id = $1 OR code = $1
+     LIMIT 1`,
+    [ticketId],
+  );
+
+  const row = result.rows[0];
+  if (!row?.id || !row.order_id) return null;
+  return { ticketId: String(row.id), orderId: String(row.order_id) };
+}
+
 export function createDisputeRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
   router.post('/', disputeLimiter, requireAuth, async (req, res) => {
     try {
-      const { orderId, reason } = req.body as { orderId?: string; reason?: string };
+      const { orderId: requestedOrderId, ticketId: requestedTicketId, reason } = req.body as {
+        orderId?: string;
+        ticketId?: string;
+        reason?: string;
+      };
 
-      if (!orderId || !reason) {
-        return res.status(400).json({ error: 'orderId and reason are required' });
+      const orderId = requestedOrderId?.trim() || '';
+      const ticketIdInput = requestedTicketId?.trim() || '';
+      if ((!orderId && !ticketIdInput) || !reason?.trim()) {
+        return res.status(400).json({ error: 'ticketId or orderId, and reason are required' });
       }
 
-      const access = await assertOrderAccessAsync(req, orderId);
+      let resolvedTicketId: string | null = null;
+      let resolvedOrderId = orderId;
+
+      if (ticketIdInput) {
+        const resolved = await resolveTicketToOrder(ticketIdInput);
+        if (!resolved) return res.status(404).json({ error: 'Event ticket not found' });
+        resolvedTicketId = resolved.ticketId;
+        resolvedOrderId = resolved.orderId;
+      }
+
+      if (!resolvedOrderId) {
+        return res.status(400).json({ error: 'A valid order or ticket is required' });
+      }
+
+      const access = await assertOrderAccessAsync(req, resolvedOrderId);
       if ('error' in access) return res.status(access.error.status).json(access.error.body);
 
       const openedBy = req.user!.uid;
@@ -29,28 +63,32 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
 
       const result = await withTransaction(async (client) => {
         const existingResult = await client.query<Record<string, unknown>>(
-          `SELECT * FROM disputes
-           WHERE order_id = $1 AND status = 'open'
-           ORDER BY created_at ASC LIMIT 1`,
-          [orderId],
+          resolvedTicketId
+            ? `SELECT * FROM disputes
+               WHERE ticket_id = $1 AND status = 'open'
+               ORDER BY created_at ASC LIMIT 1`
+            : `SELECT * FROM disputes
+               WHERE order_id = $1 AND status = 'open'
+               ORDER BY created_at ASC LIMIT 1`,
+          [resolvedTicketId ?? resolvedOrderId],
         );
 
         const existing = existingResult.rows[0];
         if (existing) return { created: false, dispute: existing };
 
         const id = randomUUID();
-        const escrow = await escrowRepository.findByOrderIdAsync(orderId, client);
+        const escrow = await escrowRepository.findByOrderIdAsync(resolvedOrderId, client);
 
         await client.query(
           `INSERT INTO disputes (
-            id, order_id, escrow_id, opened_by, reason, status, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, 'open', $6, $7)`,
-          [id, orderId, escrow?.id ?? null, openedBy, reason, now, now],
+            id, order_id, ticket_id, escrow_id, opened_by, reason, status, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, 'open', $7, $8)`,
+          [id, resolvedOrderId, resolvedTicketId, escrow?.id ?? null, openedBy, reason.trim(), now, now],
         );
 
         if (escrow) {
-          await escrowRepository.updateStateAsync(orderId, 'disputed', client);
-          const updatedOrder = await serverOrderService.setStatusAsync(orderId, 'disputed', client);
+          await escrowRepository.updateStateAsync(resolvedOrderId, 'disputed', client);
+          const updatedOrder = await serverOrderService.setStatusAsync(resolvedOrderId, 'disputed', client);
           if (!updatedOrder) throw new Error('Order not found while opening dispute');
         }
 
@@ -67,6 +105,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       return res.status(result.created ? 201 : 200).json({
         id: result.dispute.id,
         orderId: result.dispute.order_id,
+        ticketId: result.dispute.ticket_id ?? null,
         openedBy: result.dispute.opened_by,
         reason: result.dispute.reason,
         status: result.dispute.status,
@@ -75,6 +114,31 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       });
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to open dispute'));
+    }
+  });
+
+  router.get('/ticket/:ticketId', disputeLimiter, requireAuth, async (req, res) => {
+    try {
+      const ticket = await resolveTicketToOrder(String(req.params.ticketId ?? '').trim());
+      if (!ticket) return res.status(404).json({ error: 'Event ticket not found' });
+
+      const access = await assertOrderAccessAsync(req, ticket.orderId);
+      if ('error' in access) return res.status(access.error.status).json(access.error.body);
+
+      const result = await query<Record<string, unknown>>(
+        `SELECT * FROM disputes
+         WHERE ticket_id = $1
+            OR (ticket_id IS NULL AND order_id = $2)
+         ORDER BY CASE WHEN ticket_id = $1 THEN 0 ELSE 1 END, created_at DESC
+         LIMIT 1`,
+        [ticket.ticketId, ticket.orderId],
+      );
+
+      const dispute = result.rows[0];
+      if (!dispute) return res.status(404).json({ error: 'No dispute found for this ticket' });
+      return res.status(200).json(dispute);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch dispute for ticket'));
     }
   });
 
