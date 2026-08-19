@@ -17,6 +17,7 @@ import { startPayoutReconciliationScheduler } from "./modules/payouts/payout.rec
 import { startEventOwnershipReconciliationScheduler } from "./modules/events/event-ownership.reconciliation.js";
 import { createEventTicketIdentityRouter } from "./modules/events/eventTicketIdentity.routes.js";
 import { createAdminEventTransactionRouter } from "./modules/admin/adminEventTransaction.routes.js";
+import { createAdminTicketTransactionSearchRouter } from "./modules/admin/adminTicketTransactionSearch.routes.js";
 
 dotenv.config();
 
@@ -91,6 +92,7 @@ export async function startServer() {
   // broader admin event router so legacy moderation actions remain unchanged
   // while reads come from the shared event ticket transaction source of truth.
   app.use("/api/admin", createAdminEventTransactionRouter({ db, requireAuth }));
+  app.use("/api/admin", createAdminTicketTransactionSearchRouter({ db, requireAuth }));
 
   registerRoutes(app, {
     db,
