@@ -207,6 +207,14 @@ export async function openOrderDispute(orderId: string, reason: string): Promise
   }) as Promise<Record<string, unknown>>;
 }
 
+export async function openTicketDispute(ticketId: string, reason: string): Promise<Record<string, unknown>> {
+  return apiFetch("/api/disputes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ticketId, reason }),
+  }) as Promise<Record<string, unknown>>;
+}
+
 export async function releaseOrderEscrow(orderId: string): Promise<Record<string, unknown>> {
   return apiFetch(`/api/escrow/${encodeURIComponent(orderId)}/release`, {
     method: "POST",
