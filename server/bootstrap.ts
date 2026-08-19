@@ -15,6 +15,7 @@ import { requireFirebaseUser } from "./middleware/requireFirebaseUser.js";
 import { createIdempotencyMiddleware } from "./idempotency/middleware.js";
 import { startPayoutReconciliationScheduler } from "./modules/payouts/payout.reconciliation.scheduler.js";
 import { startEventOwnershipReconciliationScheduler } from "./modules/events/event-ownership.reconciliation.js";
+import { createEventTicketIdentityRouter } from "./modules/events/eventTicketIdentity.routes.js";
 
 dotenv.config();
 
@@ -90,6 +91,8 @@ export async function startServer() {
     requireAuth,
     requireFirebaseUser,
   });
+
+  app.use("/api/event-tickets", createEventTicketIdentityRouter({ db, requireAuth }));
 
   // Temporary Validator diagnostic endpoint. It is registered immediately
   // after registerRoutes() so the live Render process can prove that this
