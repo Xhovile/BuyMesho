@@ -2,6 +2,12 @@ import { postgresDb } from "../../db.js";
 
 export function ensureEventOwnershipIntegrityMigration() {
   postgresDb.exec(`
+    ALTER TABLE event_creators
+      ADD COLUMN IF NOT EXISTS ownership_checked_at TIMESTAMPTZ;
+
+    CREATE INDEX IF NOT EXISTS idx_event_creators_ownership_checked_at
+      ON event_creators (ownership_checked_at ASC NULLS FIRST, uid ASC);
+
     DELETE FROM event_activity
     WHERE event_id IN (
       SELECT e.id
