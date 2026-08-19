@@ -16,6 +16,7 @@ import { createIdempotencyMiddleware } from "./idempotency/middleware.js";
 import { startPayoutReconciliationScheduler } from "./modules/payouts/payout.reconciliation.scheduler.js";
 import { startEventOwnershipReconciliationScheduler } from "./modules/events/event-ownership.reconciliation.js";
 import { createEventTicketIdentityRouter } from "./modules/events/eventTicketIdentity.routes.js";
+import { createAdminEventTransactionRouter } from "./modules/admin/adminEventTransaction.routes.js";
 
 dotenv.config();
 
@@ -85,6 +86,11 @@ export async function startServer() {
     requireAuth,
     createIdempotencyMiddleware("messages.send"),
   );
+
+  // These canonical event-transaction GET handlers intentionally precede the
+  // broader admin event router so legacy moderation actions remain unchanged
+  // while reads come from the shared event ticket transaction source of truth.
+  app.use("/api/admin", createAdminEventTransactionRouter({ db, requireAuth }));
 
   registerRoutes(app, {
     db,
