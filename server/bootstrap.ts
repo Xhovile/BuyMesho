@@ -88,9 +88,7 @@ export async function startServer() {
     createIdempotencyMiddleware("messages.send"),
   );
 
-  // These canonical event-transaction GET handlers intentionally precede the
-  // broader admin event router so legacy moderation actions remain unchanged
-  // while reads come from the shared event ticket transaction source of truth.
+  // Canonical event-transaction reads precede the broader admin event router.
   app.use("/api/admin", createAdminEventTransactionRouter({ db, requireAuth }));
   app.use("/api/admin", createAdminTicketTransactionSearchRouter({ db, requireAuth }));
 
