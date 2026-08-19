@@ -54,11 +54,11 @@ function seed() {
       ('event_tx_ticket_a',991001,'event_tx_order_a','TICKET-EVENT-A','Canonical Event','General Admission','Buyer A','a@example.com','0990000001','Waiting Entry',?,?,'Canonical Event','2026-08-21','18:00','Venue A','Lilongwe','{}'),
       ('event_tx_ticket_b',991001,'event_tx_order_b','TICKET-EVENT-B','Canonical Event','General Admission','Buyer B','b@example.com','0990000002','Waiting Entry',?,?,'Canonical Event','2026-08-21','18:00','Venue A','Lilongwe','{}'),
       ('event_tx_ticket_other',991002,'event_tx_order_other','TICKET-OTHER','Other Event','General Admission','Buyer C','c@example.com','0990000003','Waiting Entry',?,?,'Other Event','2026-08-22','18:00','Venue B','Lilongwe','{}')
-  `).run(now, now, now, now, now, now, now, now, now, now, now, now, now, now, now, now, now, now);
+  `).run(now, now, now, now, now, now);
 
   db.prepare(`
     INSERT INTO disputes (id,order_id,escrow_id,opened_by,reason,status,created_at,updated_at,ticket_id)
-    VALUES ('event_tx_dispute_a','event_tx_order_a',NULL,'buyer-a','ticket issue','open',?,?, 'event_tx_ticket_a')
+    VALUES ('event_tx_dispute_a','event_tx_order_a',NULL,'buyer-a','ticket issue','open',?,?,'event_tx_ticket_a')
   `).run(now, now);
 }
 
