@@ -109,11 +109,12 @@ export function getEventTicketTransaction(db: PgCompatDatabase, ticketId: string
     .prepare(`
       SELECT id, status, reason, opened_by, created_at, updated_at
       FROM disputes
-      WHERE order_id = ?
-      ORDER BY created_at DESC
+      WHERE ticket_id = ?
+         OR (ticket_id IS NULL AND order_id = ?)
+      ORDER BY CASE WHEN ticket_id = ? THEN 0 ELSE 1 END, created_at DESC
       LIMIT 1
     `)
-    .get(identity.orderId) as Record<string, unknown> | undefined;
+    .get(identity.ticketId, identity.orderId, identity.ticketId) as Record<string, unknown> | undefined;
 
   return {
     ticketId: identity.ticketId,
