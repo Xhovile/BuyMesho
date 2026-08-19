@@ -14,6 +14,7 @@ import { requireAuth } from "./middleware/requireAuth.js";
 import { requireFirebaseUser } from "./middleware/requireFirebaseUser.js";
 import { createIdempotencyMiddleware } from "./idempotency/middleware.js";
 import { startPayoutReconciliationScheduler } from "./modules/payouts/payout.reconciliation.scheduler.js";
+import { startEventOwnershipReconciliationScheduler } from "./modules/events/event-ownership.reconciliation.js";
 
 dotenv.config();
 
@@ -140,6 +141,7 @@ export async function startServer() {
 
     setImmediate(() => {
       startPayoutReconciliationScheduler();
+      startEventOwnershipReconciliationScheduler();
     });
   });
 }
