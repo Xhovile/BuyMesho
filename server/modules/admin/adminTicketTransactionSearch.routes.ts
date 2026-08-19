@@ -11,8 +11,16 @@ export function createAdminTicketTransactionSearchRouter(params: {
   const router = express.Router();
   const { requireAuth, db } = params;
 
+  function requireAdmin(req: express.Request, res: express.Response): boolean {
+    if (!hasAdminAccess(req.user)) {
+      res.status(403).json({ error: "Admin access required" });
+      return false;
+    }
+    return true;
+  }
+
   router.get("/ticket-search", requireAuth, (req, res) => {
-    if (!hasAdminAccess(req.user)) return res.status(403).json({ error: "Admin access required" });
+    if (!requireAdmin(req, res)) return;
 
     const ticketId = String(req.query.ticketId ?? req.query.q ?? "").trim();
     if (!ticketId) return res.status(400).json({ error: "ticketId or q is required" });
@@ -31,8 +39,10 @@ export function createAdminTicketTransactionSearchRouter(params: {
     });
   });
 
-  router.get("/ticket-payments", requireAuth, (req, res) => {
-    if (!hasAdminAccess(req.user)) return res.status(403).json({ error: "Admin access required" });
+  // Payments/admin tools can use this endpoint as a Ticket-ID-first search
+  // without duplicating the event_tickets → order → payment relationship.
+  router.get("/payments/ticket-search", requireAuth, (req, res) => {
+    if (!requireAdmin(req, res)) return;
 
     const ticketId = String(req.query.ticketId ?? req.query.q ?? "").trim();
     if (!ticketId) return res.status(400).json({ error: "ticketId or q is required" });
@@ -68,7 +78,12 @@ export function createAdminTicketTransactionSearchRouter(params: {
       ORDER BY p.created_at DESC
     `).all(identity.ticketId) as Array<Record<string, unknown>>;
 
-    return res.json({ ticketId: identity.ticketId, payments: rows });
+    return res.json({
+      ticketId: identity.ticketId,
+      orderId: identity.orderId,
+      eventId: identity.eventId,
+      payments: rows,
+    });
   });
 
   return router;
