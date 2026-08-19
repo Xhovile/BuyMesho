@@ -16,6 +16,57 @@ const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.accountDeletionRoutesInstalle
 
 db.pragma("foreign_keys = ON");
 
+function ensureEventOwnershipIntegrity() {
+  // Repair any historical orphaned events before the ownership constraint is enforced.
+  db.exec(`
+    DELETE FROM event_activity
+    WHERE event_id IN (
+      SELECT e.id
+      FROM events e
+      LEFT JOIN event_creators ec ON ec.uid = e.creator_uid
+      WHERE e.creator_uid IS NULL OR ec.uid IS NULL
+    );
+
+    DELETE FROM events
+    WHERE creator_uid IS NULL
+       OR NOT EXISTS (
+         SELECT 1
+         FROM event_creators ec
+         WHERE ec.uid = events.creator_uid
+       );
+  `);
+
+  try {
+    db.exec(`
+      ALTER TABLE events ALTER COLUMN creator_uid SET NOT NULL;
+
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = 'fk_events_creator_uid'
+            AND conrelid = 'events'::regclass
+        ) THEN
+          ALTER TABLE events
+            ADD CONSTRAINT fk_events_creator_uid
+            FOREIGN KEY (creator_uid)
+            REFERENCES event_creators(uid)
+            ON DELETE CASCADE;
+        END IF;
+      END
+      $$;
+    `);
+  } catch (error) {
+    // The app should remain bootable if an older/alternative test database does not
+    // support PostgreSQL DDL exactly like production. The explicit cleanup below
+    // still protects account deletion, and production migrations can retry the constraint.
+    console.warn("Event ownership constraint setup skipped:", error);
+  }
+}
+
+ensureEventOwnershipIntegrity();
+
 function verifyBearerIdentity(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (!header) return res.status(401).json({ error: "Missing Authorization Bearer token" });
@@ -147,6 +198,15 @@ async function purgeCloudinaryUrls(urls: string[]) {
 
 function cleanupUserRecords(userId: string) {
   const transaction = db.transaction((uid: string) => {
+    // Event data belongs to the account and must not survive account deletion.
+    // Delete children first so this also works before the ownership FK has been installed.
+    db.prepare(
+      `DELETE FROM event_activity WHERE event_id IN (SELECT id FROM events WHERE creator_uid = ?)`
+    ).run(uid);
+    db.prepare(`DELETE FROM events WHERE creator_uid = ?`).run(uid);
+    db.prepare(`DELETE FROM event_creator_applications WHERE applicant_uid = ?`).run(uid);
+    db.prepare(`DELETE FROM event_creators WHERE uid = ?`).run(uid);
+
     db.prepare(
       `DELETE FROM reports WHERE reporter_uid = ? OR listing_id IN (SELECT id FROM listings WHERE seller_uid = ?)`
     ).run(uid, uid);
