@@ -253,4 +253,15 @@ db.exec(`
     ON payment_webhook_events(provider, tx_ref, event_type, payload_hash);
 `);
 console.log('[CI] Test PostgreSQL schema bootstrap completed.');
-await db.close();
+
+const shutdownTimeout = setTimeout(() => {
+  console.warn('[CI] Test database shutdown exceeded 5s; forcing bootstrap process exit.');
+  process.exit(0);
+}, 5000);
+shutdownTimeout.unref();
+
+try {
+  await db.close();
+} finally {
+  clearTimeout(shutdownTimeout);
+}
