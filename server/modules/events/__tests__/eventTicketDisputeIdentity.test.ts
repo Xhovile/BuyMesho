@@ -7,6 +7,7 @@ const db = getPaymentDb();
 const eventId = 990021;
 const orderId = "event_ticket_dispute_identity_order";
 const ticketId = "event_ticket_dispute_identity_ticket";
+const creatorUid = "creator_dispute_identity_test";
 
 beforeEach(() => {
   db.prepare("DELETE FROM disputes WHERE order_id = ?").run(orderId);
@@ -14,14 +15,23 @@ beforeEach(() => {
   db.prepare("DELETE FROM event_tickets WHERE id = ?").run(ticketId);
   db.prepare("DELETE FROM orders WHERE id = ?").run(orderId);
   db.prepare("DELETE FROM events WHERE id = ?").run(eventId);
+  db.prepare("DELETE FROM event_creators WHERE uid = ?").run(creatorUid);
 
   const now = new Date().toISOString();
+
+  db.prepare(`
+    INSERT INTO event_creators (
+      uid, email, display_name, organization_name, organization_type, contact_whatsapp,
+      event_types, status, created_at, updated_at
+    ) VALUES (?, 'creator@example.com', 'Test Creator', 'Test Creator Org', 'events', '0990000000', 'concert', 'approved', ?, ?)
+  `).run(creatorUid, now, now);
+
   db.prepare(`
     INSERT INTO events (
       id, creator_uid, event_type, event_title, organizer_name, event_date, start_time,
       venue, location, ticket_mode, ticket_price, description, spec_values, status, created_at, updated_at
-    ) VALUES (?, 'creator_dispute_identity_test', 'concert', 'Dispute Identity Event', 'Test Creator', '2026-08-20', '18:00', 'Test Venue', 'Lilongwe', 'paid', 5000, 'Test', '{}', 'published', ?, ?)
-  `).run(eventId, now, now);
+    ) VALUES (?, ?, 'concert', 'Dispute Identity Event', 'Test Creator', '2026-08-20', '18:00', 'Test Venue', 'Lilongwe', 'paid', 5000, 'Test', '{}', 'published', ?, ?)
+  `).run(eventId, creatorUid, now, now);
 
   db.prepare(`
     INSERT INTO orders (
