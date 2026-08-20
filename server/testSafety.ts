@@ -1,6 +1,5 @@
 import "dotenv/config";
 import { after } from "node:test";
-import { postgresDb } from "./postgresCompat.js";
 
 function getDatabaseName(connectionString: string): string {
   try {
@@ -53,13 +52,14 @@ if (process.env.NODE_ENV === "test") {
     );
   }
 
-  // Make the existing database layer use the verified test database even if a
-  // production DATABASE_URL is present in the developer's environment.
   process.env.DATABASE_URL = testUrl;
   process.env.ALLOW_MOCK_DATABASE = "false";
 
-  // Integration tests use a shared PostgreSQL worker. Always tear it down so
-  // assertion failures cannot leave Node waiting on worker/pool handles.
+  // Import the PostgreSQL layer only after DATABASE_URL has been switched to the
+  // verified test database. This prevents postgres.ts from validating/creating
+  // a connection against the normal application database during test startup.
+  const { postgresDb } = await import("./postgresCompat.js");
+
   after(async () => {
     await postgresDb.close();
   });
