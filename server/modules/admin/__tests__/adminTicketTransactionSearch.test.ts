@@ -23,5 +23,5 @@ test("ticket identity can resolve the payment transaction used by admin search",
   const transaction = getEventTicketTransaction(db, ticket.id);
   assert.ok(transaction, "ticket transaction should resolve");
   assert.equal(transaction?.ticketId, identity?.ticketId);
-  assert.equal(transaction?.order?.id, identity?.orderId ?? transaction?.order?.id);
+  assert.equal(transaction?.orderId, identity?.orderId);
 });
