@@ -142,6 +142,7 @@ if (connectionString) {
       max: Number(process.env.PGPOOL_MAX ?? 10) || 10,
       idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT_MS ?? 30_000) || 30_000,
       connectionTimeoutMillis: Number(process.env.PGPOOL_CONNECTION_TIMEOUT_MS ?? 10_000) || 10_000,
+      allowExitOnIdle: process.env.NODE_ENV === "test",
     });
   } catch (err) {
     console.error("[BuyMesho] Failed to create PostgreSQL pool:", err instanceof Error ? err.message : err);
@@ -195,8 +196,8 @@ async function queryImpl<Row extends QueryResultRow = DbRow>(
 
 // Expose the helper using pg's native query interface so it can be passed to
 // repositories that accept Pick<PoolClient, "query"> without creating an
-// incompatible function type at the boundary. Runtime usage remains the
-// same narrow (text, params) helper implemented above.
+// incompatible function type at the boundary. Runtime usage remains the same
+// narrow (text, params) helper implemented above.
 export const query = queryImpl as unknown as PoolClient["query"];
 
 export async function getClient(): Promise<PoolClient> {
