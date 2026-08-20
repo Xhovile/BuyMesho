@@ -10,18 +10,10 @@ import { registerMessagingDiagnosticsRoutes } from "./messaging.js";
 import type { DiagnosticPayload, NamedCheck } from "./types.js";
 
 type DiagnosticResponse = DiagnosticPayload;
-
 type ExecResult = { stdout: string; stderr: string };
-type ExecFailure = Error & {
-  code?: string | number;
-  killed?: boolean;
-  signal?: NodeJS.Signals | null;
-  stdout?: string;
-  stderr?: string;
-};
+type ExecFailure = Error & { code?: string | number; killed?: boolean; signal?: NodeJS.Signals | null; stdout?: string; stderr?: string };
 
 const execFileAsync = promisify(execFile);
-
 const TESTS = {
   "payout-downtime": "server/modules/payouts/__tests__/payout.downtime.test.ts",
   "event-ticket-dispute": "server/modules/events/__tests__/eventTicketDisputeIdentity.test.ts",
@@ -41,9 +33,7 @@ async function fetchDiagnostic(path: string): Promise<DiagnosticResponse> {
   });
 
   const contentType = response.headers.get("content-type") ?? "";
-  const body = contentType.includes("application/json")
-    ? await response.json()
-    : { overall: "FAIL", error: await response.text() };
+  const body = contentType.includes("application/json") ? await response.json() : { overall: "FAIL", error: await response.text() };
 
   if (!body || typeof body !== "object") {
     return {
@@ -55,7 +45,6 @@ async function fetchDiagnostic(path: string): Promise<DiagnosticResponse> {
       error: `${path} returned an invalid diagnostic payload`,
     };
   }
-
   return body as DiagnosticResponse;
 }
 
@@ -63,18 +52,6 @@ function combineOverall(values: string[]): "PASS" | "WARN" | "FAIL" {
   if (values.includes("FAIL")) return "FAIL";
   if (values.includes("WARN")) return "WARN";
   return "PASS";
-}
-
-function diagnosticFailure(error: unknown, durationMs: number, details?: Record<string, unknown>) {
-  return {
-    overall: "FAIL",
-    authoritative: true,
-    diagnostic_version: "4.2",
-    timestamp: new Date().toISOString(),
-    duration_ms: durationMs,
-    error: error instanceof Error ? error.message : String(error),
-    ...(details ? { details } : {}),
-  };
 }
 
 export function registerDiagnosticsRoutes(app: Express, _deps?: { db?: any }) {
@@ -97,41 +74,22 @@ export function registerDiagnosticsRoutes(app: Express, _deps?: { db?: any }) {
     } as const;
 
     try {
-      const results = await Promise.all(
-        Object.entries(paths).map(async ([key, path]) => [key, await fetchDiagnostic(path)] as const),
-      );
-
+      const results = await Promise.all(Object.entries(paths).map(async ([key, path]) => [key, await fetchDiagnostic(path)] as const));
       const checks: Record<string, NamedCheck> = {};
       const statuses: string[] = [];
 
       for (const [key, result] of results) {
         statuses.push(result.overall);
         if (result.checks) {
-          for (const [checkKey, check] of Object.entries(result.checks)) {
-            checks[`${key}.${checkKey}`] = check;
-          }
+          for (const [checkKey, check] of Object.entries(result.checks)) checks[`${key}.${checkKey}`] = check;
         } else {
-          checks[key] = {
-            status: result.overall,
-            message: result.error ?? `${key} diagnostic completed`,
-          };
+          checks[key] = { status: result.overall, message: result.error ?? `${key} diagnostic completed` };
         }
       }
 
       const overall = combineOverall(statuses);
-      const payload: DiagnosticPayload = {
-        overall,
-        authoritative: true,
-        diagnostic_version: "4.1",
-        timestamp: new Date().toISOString(),
-        duration_ms: Date.now() - started,
-        checks,
-      };
-
-      res
-        .status(overall === "FAIL" ? 503 : 200)
-        .setHeader("Cache-Control", "no-store")
-        .json(payload);
+      const payload: DiagnosticPayload = { overall, authoritative: true, diagnostic_version: "4.1", timestamp: new Date().toISOString(), duration_ms: Date.now() - started, checks };
+      res.status(overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json(payload);
     } catch (error) {
       res.status(503).setHeader("Cache-Control", "no-store").json({
         overall: "FAIL",
@@ -154,19 +112,13 @@ export function registerDiagnosticsRoutes(app: Express, _deps?: { db?: any }) {
 
     const testName = typeof req.query.test === "string" ? req.query.test : "";
     if (!testName) {
-      res.status(400).setHeader("Cache-Control", "no-store").json({
-        error: "Missing test query parameter",
-        available: Object.keys(TESTS),
-      });
+      res.status(400).setHeader("Cache-Control", "no-store").json({ error: "Missing test query parameter", available: Object.keys(TESTS) });
       return;
     }
 
     const testPath = TESTS[testName as keyof typeof TESTS];
     if (!testPath) {
-      res.status(400).setHeader("Cache-Control", "no-store").json({
-        error: `Unknown test: ${testName}`,
-        available: Object.keys(TESTS),
-      });
+      res.status(400).setHeader("Cache-Control", "no-store").json({ error: `Unknown test: ${testName}`, available: Object.keys(TESTS) });
       return;
     }
 
@@ -174,30 +126,14 @@ export function registerDiagnosticsRoutes(app: Express, _deps?: { db?: any }) {
       const result = await execFileAsync(
         process.execPath,
         ["--trace-uncaught", "--import", "tsx", "--import", "./server/testSafety.ts", "--test", "--test-concurrency=1", testPath],
-        {
-          cwd: process.cwd(),
-          env: { ...process.env, NODE_ENV: "test" },
-          timeout: 15000,
-          killSignal: "SIGTERM",
-          maxBuffer: 2 * 1024 * 1024,
-        },
+        { cwd: process.cwd(), env: { ...process.env, NODE_ENV: "test" }, timeout: 15000, killSignal: "SIGTERM", maxBuffer: 2 * 1024 * 1024 },
       ) as ExecResult;
 
-      res.status(200).setHeader("Cache-Control", "no-store").json({
-        status: "passed",
-        test: testName,
-        path: testPath,
-        timedOut: false,
-        exitCode: 0,
-        duration_ms: Date.now() - started,
-        stdout: result.stdout,
-        stderr: result.stderr,
-      });
+      res.status(200).setHeader("Cache-Control", "no-store").json({ status: "passed", test: testName, path: testPath, timedOut: false, exitCode: 0, duration_ms: Date.now() - started, stdout: result.stdout, stderr: result.stderr });
     } catch (error) {
       const failure = error as ExecFailure;
       const timedOut = failure.killed === true || failure.code === "ETIMEDOUT";
       const exitCode = typeof failure.code === "number" ? failure.code : null;
-
       res.status(200).setHeader("Cache-Control", "no-store").json({
         status: timedOut ? "timed_out" : "failed",
         test: testName,
