@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-
-type ConnectApiModule = typeof import('../api.ts');
+import * as api from '../api.ts';
 
 function installSessionStorage(): void {
   const store = new Map<string, string>();
@@ -26,13 +25,7 @@ function installSessionStorage(): void {
   });
 }
 
-async function importFreshConnectApi(tag: string): Promise<ConnectApiModule> {
-  return import(new URL(`../api.ts?${tag}`, import.meta.url).href) as Promise<ConnectApiModule>;
-}
-
-test('validateConnectStartPayload rejects malformed frontend env values', async () => {
-  const api = await importFreshConnectApi('validation');
-
+test('validateConnectStartPayload rejects malformed frontend env values', () => {
   assert.throws(
     () =>
       api.validateConnectStartPayload({
@@ -94,7 +87,6 @@ test('validateConnectStartPayload rejects malformed frontend env values', async 
 
 test('createConnectAuthorizationLink strips sellerUid and stores connect context', async () => {
   installSessionStorage();
-  const api = await importFreshConnectApi('create-link');
 
   const originalFetch = global.fetch;
   let requestBody: Record<string, unknown> | null = null;
@@ -135,9 +127,8 @@ test('createConnectAuthorizationLink strips sellerUid and stores connect context
   }
 });
 
-test('getStoredConnectContext and clearStoredConnectContext round-trip session storage', async () => {
+test('getStoredConnectContext and clearStoredConnectContext round-trip session storage', () => {
   installSessionStorage();
-  const api = await importFreshConnectApi('storage');
 
   window.sessionStorage.setItem(
     'buymesho.paychangu.connectContext',
