@@ -25,7 +25,7 @@ import FeedbackModal from "../FeedbackModal";
 import TicketHolderForm, { type TicketHolderInformation } from "../tickets/TicketHolderForm";
 
 export default function EventDetailsView() {
-  const { user: firebaseUser } = useAuthUser();
+  const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const eventId = useMemo(() => {
     if (typeof window === "undefined") return null;
     const params = new URLSearchParams(window.location.search);
@@ -142,13 +142,13 @@ export default function EventDetailsView() {
     }
     setNotice(null);
     setTicketHolderOpen(true);
-  }, [autoBuyRequested, canBuyOrCart, event, eventPageUrl, firebaseUser?.uid]);
+  }, [canBuyOrCart, event, eventPageUrl, firebaseUser?.uid, autoBuyRequested]);
 
   useEffect(() => {
-    if (!autoBuyRequested || !firebaseUser?.uid || !event || autoBuyHandledRef.current) return;
+    if (!autoBuyRequested || authLoading || !event || autoBuyHandledRef.current) return;
     autoBuyHandledRef.current = true;
     handleBuyTicket();
-  }, [autoBuyRequested, event, firebaseUser?.uid, handleBuyTicket]);
+  }, [autoBuyRequested, authLoading, event, handleBuyTicket]);
 
   const submitTicketHolder = async (ticketHolder: TicketHolderInformation) => {
     if (!event || !firebaseUser?.uid) return;
