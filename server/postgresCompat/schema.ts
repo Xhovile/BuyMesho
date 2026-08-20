@@ -207,6 +207,7 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
   ensureColumn(db, "orders", "checkout_request_hash", "TEXT");
   ensureColumn(db, "orders", "buyer_details", "TEXT");
   ensureColumn(db, "orders", "delivery_status", "TEXT NOT NULL DEFAULT 'action_required'");
+  ensureColumn(db, "disputes", "status", "TEXT NOT NULL DEFAULT 'open'");
   ensureColumn(db, "disputes", "ticket_id", "TEXT");
   db.exec(`UPDATE orders SET delivery_status = 'action_required' WHERE delivery_status IS NULL OR btrim(delivery_status) = ''`);
   db.exec(`UPDATE orders SET delivery_status = 'delivered' WHERE status IN ('fulfilled','closed')`);
