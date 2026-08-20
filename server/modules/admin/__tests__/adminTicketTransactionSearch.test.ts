@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getPaymentDb } from "../../postgresCompat.js";
+import { getPaymentDb } from "../../../postgresCompat.js";
 import { findEventTicketIdentity, getEventTicketTransaction } from "../../events/eventTransactionIdentity.js";
 
 const db = getPaymentDb();
