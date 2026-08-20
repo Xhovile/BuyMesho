@@ -1,4 +1,6 @@
 import "dotenv/config";
+import { after } from "node:test";
+import { postgresDb } from "./postgresCompat.js";
 
 function getDatabaseName(connectionString: string): string {
   try {
@@ -55,4 +57,10 @@ if (process.env.NODE_ENV === "test") {
   // production DATABASE_URL is present in the developer's environment.
   process.env.DATABASE_URL = testUrl;
   process.env.ALLOW_MOCK_DATABASE = "false";
+
+  // Integration tests use a shared PostgreSQL worker. Always tear it down so
+  // assertion failures cannot leave Node waiting on worker/pool handles.
+  after(async () => {
+    await postgresDb.close();
+  });
 }
