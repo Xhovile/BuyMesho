@@ -550,6 +550,12 @@ export default function EventsCreatePage() {
 
   const handlePosterPick = () => posterInputRef.current?.click();
 
+  const handlePosterRemove = () => {
+    setPosterAssetUrl("");
+    setFormError(null);
+    if (posterInputRef.current) posterInputRef.current.value = "";
+  };
+
   const handlePosterChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -603,7 +609,7 @@ export default function EventsCreatePage() {
         status: existingEvent?.status || "published",
         spec_values: {
           ...normalizedValues,
-          ...(posterAssetUrl ? { poster_image_url: posterAssetUrl } : {}),
+          poster_image_url: posterAssetUrl || null,
         },
       };
 
@@ -803,10 +809,27 @@ export default function EventsCreatePage() {
                       {posterUploading ? "Uploading…" : posterAssetUrl ? "Replace poster" : "Choose poster"}
                     </button>
                   </div>
-                  <input ref={posterInputRef} type="file" accept="image/*" className="hidden" onChange={handlePosterChange} />
+                  <input
+                    ref={posterInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple={false}
+                    className="hidden"
+                    onChange={handlePosterChange}
+                  />
                   {posterAssetUrl ? (
-                    <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white">
+                    <div className="relative mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white">
                       <img src={posterAssetUrl} alt="Poster preview" className="h-56 w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={handlePosterRemove}
+                        disabled={posterUploading}
+                        aria-label="Remove poster"
+                        title="Remove poster"
+                        className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-black/60 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/75 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
                     </div>
                   ) : (
                     <div className="mt-4 rounded-[1.5rem] border border-dashed border-zinc-300 bg-white p-5 text-sm text-zinc-500">
