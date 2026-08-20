@@ -25,7 +25,7 @@ import FeedbackModal from "../FeedbackModal";
 import TicketHolderForm, { type TicketHolderInformation } from "../tickets/TicketHolderForm";
 
 export default function EventDetailsView() {
-  const { user: firebaseUser, loading: authLoading } = useAuthUser();
+  const { user: firebaseUser } = useAuthUser();
   const eventId = useMemo(() => {
     if (typeof window === "undefined") return null;
     const params = new URLSearchParams(window.location.search);
@@ -131,7 +131,9 @@ export default function EventDetailsView() {
   const handleBuyTicket = useCallback(() => {
     if (!event) return;
     if (!firebaseUser?.uid) {
-      navigateToLoginWithReturnPath(eventPageUrl || `${EVENTS_PATH}?event=${event.id}`);
+      navigateToLoginWithReturnPath(
+        autoBuyRequested ? `${eventPageUrl}&buy=1` : eventPageUrl || `${EVENTS_PATH}?event=${event.id}`
+      );
       return;
     }
     if (!canBuyOrCart) {
@@ -140,13 +142,13 @@ export default function EventDetailsView() {
     }
     setNotice(null);
     setTicketHolderOpen(true);
-  }, [canBuyOrCart, event, eventPageUrl, firebaseUser?.uid]);
+  }, [autoBuyRequested, canBuyOrCart, event, eventPageUrl, firebaseUser?.uid]);
 
   useEffect(() => {
-    if (!autoBuyRequested || authLoading || !event || autoBuyHandledRef.current) return;
+    if (!autoBuyRequested || !firebaseUser?.uid || !event || autoBuyHandledRef.current) return;
     autoBuyHandledRef.current = true;
     handleBuyTicket();
-  }, [autoBuyRequested, authLoading, event, handleBuyTicket]);
+  }, [autoBuyRequested, event, firebaseUser?.uid, handleBuyTicket]);
 
   const submitTicketHolder = async (ticketHolder: TicketHolderInformation) => {
     if (!event || !firebaseUser?.uid) return;
