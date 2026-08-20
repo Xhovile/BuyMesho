@@ -125,64 +125,73 @@ export default function EventsStrip({
             return (
               <article
                 key={item.id}
-                className="group w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md sm:w-[260px]"
+                className="group relative w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md sm:w-[260px]"
               >
-                <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
-                  <div className={`absolute inset-0 bg-gradient-to-br ${accent}`} />
-                  {imageSrc ? (
-                    <img
-                      src={imageSrc}
-                      alt={posterAlt}
-                      className="relative h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : null}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/5" />
-                  <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 px-4 py-4 text-white">
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/75">Featured event</p>
-                      <h3 className="mt-2 max-w-[12rem] truncate text-xl font-black tracking-[-0.05em] leading-none">
-                        {item.event_title}
-                      </h3>
-                    </div>
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm">
-                      <Ticket className="h-4 w-4" />
-                    </div>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  aria-label={`Open event details for ${item.event_title}`}
+                  onClick={() => navigateToPath(`${EVENTS_PATH}?event=${item.id}`)}
+                  className="absolute inset-0 z-0 rounded-3xl"
+                />
 
-                <div className="p-4">
-                  <p className="line-clamp-2 text-sm leading-relaxed text-zinc-600">{snippet}</p>
-
-                  <div className="mt-4 grid gap-2 text-sm text-zinc-600">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays className="h-4 w-4 text-red-900" />
-                      <span className="font-medium text-zinc-700">{date}</span>
-                      <span className="text-zinc-300">•</span>
-                      <span>{item.start_time}</span>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-red-900" />
-                      <span className="line-clamp-2 leading-relaxed text-zinc-700">
-                        {item.venue}
-                        {item.location ? ` • ${item.location}` : ""}
-                      </span>
+                <div className="relative z-10 pointer-events-none">
+                  <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${accent}`} />
+                    {imageSrc ? (
+                      <img
+                        src={imageSrc}
+                        alt={posterAlt}
+                        className="relative h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : null}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/5" />
+                    <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 px-4 py-4 text-white">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/75">Featured event</p>
+                        <h3 className="mt-2 max-w-[12rem] truncate text-xl font-black tracking-[-0.05em] leading-none">
+                          {item.event_title}
+                        </h3>
+                      </div>
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm">
+                        <Ticket className="h-4 w-4" />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-3 overflow-hidden rounded-2xl border border-orange-200 bg-white">
-                    <div className="flex items-stretch">
-                      <button
-                        type="button"
-                        onClick={() => navigateToPath(`${EVENTS_PATH}?event=${item.id}`)}
-                        className="flex flex-1 items-center justify-center bg-orange-700 px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-orange-800"
-                      >
-                        Buy Ticket
-                      </button>
-                      <div className="flex min-w-[6.5rem] items-center justify-center border-l border-orange-200 bg-white px-4 py-3 text-sm font-black tracking-tight text-zinc-950">
-                        {price}
+                  <div className="p-4">
+                    <p className="line-clamp-2 text-sm leading-relaxed text-zinc-600">{snippet}</p>
+
+                    <div className="mt-4 grid gap-2 text-sm text-zinc-600">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="h-4 w-4 text-red-900" />
+                        <span className="font-medium text-zinc-700">{date}</span>
+                        <span className="text-zinc-300">•</span>
+                        <span>{item.start_time}</span>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-red-900" />
+                        <span className="line-clamp-2 leading-relaxed text-zinc-700">
+                          {item.venue}
+                          {item.location ? ` • ${item.location}` : ""}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 overflow-hidden rounded-2xl border border-orange-200 bg-white pointer-events-auto">
+                      <div className="flex items-stretch">
+                        <button
+                          type="button"
+                          onClick={() => navigateToPath(`${EVENTS_PATH}?event=${item.id}&buy=1`)}
+                          className="relative z-20 flex flex-1 items-center justify-center bg-orange-700 px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-orange-800"
+                        >
+                          Buy Ticket
+                        </button>
+                        <div className="flex min-w-[6.5rem] items-center justify-center border-l border-orange-200 bg-white px-4 py-3 text-sm font-black tracking-tight text-zinc-950">
+                          {price}
+                        </div>
                       </div>
                     </div>
                   </div>
