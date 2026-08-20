@@ -189,7 +189,7 @@ export default function EventsStrip({
                         >
                           Buy Ticket
                         </button>
-                        <div className="flex min-w-[6.5rem] items-center justify-center border-l border-orange-200 bg-white px-4 py-3 text-sm font-black tracking-tight text-zinc-950">
+                        <div className="pointer-events-none flex min-w-[6.5rem] items-center justify-center border-l border-orange-200 bg-white px-4 py-3 text-sm font-black tracking-tight text-zinc-950">
                           {price}
                         </div>
                       </div>
