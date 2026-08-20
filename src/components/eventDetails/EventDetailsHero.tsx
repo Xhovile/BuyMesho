@@ -75,11 +75,15 @@ export default function EventDetailsHero({
               <X className="h-5 w-5" />
             </button>
             <div
-              className="max-h-full max-w-full overflow-hidden rounded-[1.5rem] bg-zinc-950 shadow-2xl"
+              className="max-h-full max-w-full rounded-[1.5rem] bg-zinc-950 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {posterUrl ? (
-                <img src={posterUrl} alt={posterAlt} className="max-h-[90vh] max-w-[95vw] object-contain" />
+                <img
+                  src={posterUrl}
+                  alt={posterAlt}
+                  className="block h-auto w-auto max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-2rem)] object-contain sm:max-h-[calc(100dvh-3rem)] sm:max-w-[calc(100vw-3rem)]"
+                />
               ) : (
                 <div className="flex h-[60vh] w-[80vw] items-center justify-center text-sm text-zinc-300">No poster available</div>
               )}

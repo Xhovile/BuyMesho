@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Ticket, X } from "lucide-react";
 
 import EventActionsMenu from "./EventActionsMenu";
@@ -25,7 +25,7 @@ import FeedbackModal from "../FeedbackModal";
 import TicketHolderForm, { type TicketHolderInformation } from "../tickets/TicketHolderForm";
 
 export default function EventDetailsView() {
-  const { user: firebaseUser } = useAuthUser();
+  const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const eventId = useMemo(() => {
     if (typeof window === "undefined") return null;
     const params = new URLSearchParams(window.location.search);
@@ -34,6 +34,11 @@ export default function EventDetailsView() {
     const parsed = Number(raw);
     return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
   }, []);
+  const autoBuyRequested = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return new URLSearchParams(window.location.search).get("buy") === "1";
+  }, []);
+  const autoBuyHandledRef = useRef(false);
 
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -123,10 +128,12 @@ export default function EventDetailsView() {
     }
   };
 
-  const handleBuyTicket = () => {
+  const handleBuyTicket = useCallback(() => {
     if (!event) return;
     if (!firebaseUser?.uid) {
-      navigateToLoginWithReturnPath(eventPageUrl || `${EVENTS_PATH}?event=${event.id}`);
+      navigateToLoginWithReturnPath(
+        autoBuyRequested ? `${eventPageUrl}&buy=1` : eventPageUrl || `${EVENTS_PATH}?event=${event.id}`
+      );
       return;
     }
     if (!canBuyOrCart) {
@@ -135,7 +142,13 @@ export default function EventDetailsView() {
     }
     setNotice(null);
     setTicketHolderOpen(true);
-  };
+  }, [canBuyOrCart, event, eventPageUrl, firebaseUser?.uid, autoBuyRequested]);
+
+  useEffect(() => {
+    if (!autoBuyRequested || authLoading || !event || autoBuyHandledRef.current) return;
+    autoBuyHandledRef.current = true;
+    handleBuyTicket();
+  }, [autoBuyRequested, authLoading, event, handleBuyTicket]);
 
   const submitTicketHolder = async (ticketHolder: TicketHolderInformation) => {
     if (!event || !firebaseUser?.uid) return;
