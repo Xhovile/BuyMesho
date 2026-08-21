@@ -5,20 +5,11 @@ import { orderRepository } from "../orders/order.repository.js";
 import { serverOrderService } from "../orders/order.service.js";
 import { escrowRepository } from "../escrow/escrow.repository.js";
 import { applyVerifiedPayChanguPayment } from "./paychangu.flow.js";
-import {
-  isAcceptedPaychanguEventType,
-  isPaychanguSuccessStatus,
-  paychanguProvider,
-} from "./paychangu.provider.js";
-import {
-  findPaymentWebhookDuplicate,
-  insertPaymentWebhookEvent,
-  recordPaymentWebhookDuplicateAttempt,
-  updatePaymentWebhookEventStatus,
-} from "../../postgresCompat/webhooks.js";
+import { isAcceptedPaychanguEventType, isPaychanguSuccessStatus, paychanguProvider } from "./paychangu.provider.js";
+import { findPaymentWebhookDuplicate, getPaymentWebhookEventStatus, insertPaymentWebhookEvent, recordPaymentWebhookDuplicateAttempt, updatePaymentWebhookEventStatus } from "../../postgresCompat/webhooks.js";
 
-type PayChanguWebhookContext = { signature?: string; payload: string | Buffer | Record<string, unknown>; };
-type ParsedWebhookPayload = { rawPayload: string; parsedPayload: Record<string, unknown> | null; };
+type PayChanguWebhookContext = { signature?: string; payload: string | Buffer | Record<string, unknown> };
+type ParsedWebhookPayload = { rawPayload: string; parsedPayload: Record<string, unknown> | null };
 type PaymentWebhookResponse =
   | { ok: true; status: "processed" | "ignored" | "duplicate"; reference?: string | null }
   | { ok: false; error: string };
@@ -33,40 +24,49 @@ function normalizeCurrency(value:string|undefined|null):string{return String(val
 function readAmountAndCurrency(payload:Record<string,unknown>|null):{amount?:{amount:number;currency:string};currency:string}{const directAmount=payload?.amount,nestedData=extractNestedObject(payload?.data),nestedTransaction=extractNestedObject(nestedData?.transaction);const amountCandidate=(typeof directAmount==='number'?directAmount:Number(directAmount))||Number(nestedTransaction?.amount??nestedData?.amount??payload?.amount??NaN);const currency=readString(nestedTransaction?.currency,nestedData?.currency,payload?.currency);return Number.isFinite(amountCandidate)&&amountCandidate>0?{amount:{amount:Math.round(amountCandidate),currency},currency}:{currency};}
 
 async function handlePayChanguWebhookInternal(context:PayChanguWebhookContext):Promise<PaymentWebhookResponse>{
-  const {rawPayload,parsedPayload}=parseRawWebhookPayload(context.payload);const payloadHash=sha256(rawPayload);if(!parsedPayload)return{ok:false,error:'Invalid PayChangu webhook payload'};
+  const {rawPayload,parsedPayload}=parseRawWebhookPayload(context.payload);const payloadHash=sha256(rawPayload);const now=new Date().toISOString();
+  if(!parsedPayload){
+    const audit=insertPaymentWebhookEvent({provider:'paychangu',providerEventId:null,reference:null,txRef:null,eventType:null,payloadHash,processingStatus:'failed',signatureValid:false,payload:rawPayload,error:'Malformed webhook payload: invalid JSON',createdAt:now});
+    if(audit.inserted)updatePaymentWebhookEventStatus(audit.id,'failed',{processedAt:now,error:'Malformed webhook payload: invalid JSON',signatureValid:false});
+    return{ok:false,error:'Malformed webhook payload: invalid JSON'};
+  }
   const eventType=readString(parsedPayload.event_type,parsedPayload.event),eventId=readString(parsedPayload.event_id,parsedPayload.eventId),txRef=readString(parsedPayload.tx_ref,parsedPayload.reference,extractNestedObject(parsedPayload.data)?.tx_ref,extractNestedObject(parsedPayload.data)?.reference),providerSecret=process.env.PAYCHANGU_WEBHOOK_SECRET;
   const verified=await paychanguProvider.verifyWebhook(context.signature,rawPayload,{paychanguWebhookSecret:providerSecret});
-  const webhookInput={provider:'paychangu',providerEventId:eventId||null,reference:txRef||null,txRef:txRef||null,eventType:eventType||null,payloadHash,processingStatus:'received',signatureValid:verified.valid,payload:rawPayload,createdAt:new Date().toISOString()};
+  const webhookInput={provider:'paychangu',providerEventId:eventId||null,reference:txRef||null,txRef:txRef||null,eventType:eventType||null,payloadHash,processingStatus:'received',signatureValid:verified.valid,payload:rawPayload,createdAt:now};
   if(!verified.valid){const inserted=insertPaymentWebhookEvent({...webhookInput,processingStatus:'rejected',error:'Invalid PayChangu webhook signature'});if(inserted.inserted===false)recordPaymentWebhookDuplicateAttempt(webhookInput,inserted.existingId);return{ok:false,error:'Invalid PayChangu webhook signature'};}
-  const duplicate=findPaymentWebhookDuplicate(webhookInput);if(duplicate){recordPaymentWebhookDuplicateAttempt(webhookInput,duplicate.id);return{ok:true,status:'duplicate',reference:txRef||null};}
-  const inserted=insertPaymentWebhookEvent(webhookInput);if(inserted.inserted===false){recordPaymentWebhookDuplicateAttempt(webhookInput,inserted.existingId);return{ok:true,status:'duplicate',reference:txRef||null};}
-  if(!eventType||!txRef||!isAcceptedPaychanguEventType(eventType)){updatePaymentWebhookEventStatus(inserted.id,'ignored',{processedAt:new Date().toISOString(),error:!eventType?'Missing PayChangu webhook event type':`Unhandled PayChangu webhook event type: ${eventType}`,signatureValid:true});return{ok:true,status:'ignored',reference:txRef||null};}
+  const duplicate=findPaymentWebhookDuplicate(webhookInput);
+  if(duplicate){
+    const existingStatus=getPaymentWebhookEventStatus(duplicate.id);
+    if(existingStatus==='processed'){
+      recordPaymentWebhookDuplicateAttempt(webhookInput,duplicate.id);
+      return{ok:true,status:'duplicate',reference:txRef||null};
+    }
+  }
+  const inserted=insertPaymentWebhookEvent(webhookInput);
+  if(inserted.inserted===false){recordPaymentWebhookDuplicateAttempt(webhookInput,inserted.existingId);return{ok:true,status:'duplicate',reference:txRef||null};}
+  if(!eventType||!txRef||!isAcceptedPaychanguEventType(eventType)){updatePaymentWebhookEventStatus(inserted.id,'ignored',{processedAt:now,error:!eventType?'Missing PayChangu webhook event type':`Unhandled PayChangu webhook event type: ${eventType}`,signatureValid:true});return{ok:true,status:'ignored',reference:txRef||null};}
   const status=readString(extractNestedObject(parsedPayload.data)?.status,extractNestedObject(extractNestedObject(parsedPayload.data)?.transaction)?.status,parsedPayload.status)||'unknown';
-  const payment=await paymentRepository.findByReferenceAsync(txRef);if(!payment){updatePaymentWebhookEventStatus(inserted.id,'ignored',{processedAt:new Date().toISOString(),error:`No stored payment found for reference ${txRef}`,signatureValid:true});return{ok:true,status:'ignored',reference:txRef};}
-  const {amount,currency}=readAmountAndCurrency(parsedPayload);const now=new Date().toISOString();
+  const payment=await paymentRepository.findByReferenceAsync(txRef);
+  if(!payment){updatePaymentWebhookEventStatus(inserted.id,'ignored',{processedAt:now,error:`No stored payment found for reference ${txRef}`,signatureValid:true});return{ok:true,status:'ignored',reference:txRef};}
+  const {amount,currency}=readAmountAndCurrency(parsedPayload);
   if(isPaychanguSuccessStatus(status)){
     const order=await orderRepository.findByIdAsync(payment.orderId);const expectedCurrency=normalizeCurrency(order?.currency);const receivedCurrency=normalizeCurrency(amount?.currency??currency);const receivedAmount=amount?.amount;
     if(!order||receivedAmount!==order.total.amount||!receivedCurrency||receivedCurrency!==expectedCurrency){const reason=!order?`Associated order not found for payment ${txRef}`:`Payment amount or currency does not exactly match order total for ${order.id}`;updatePaymentWebhookEventStatus(inserted.id,'ignored',{processedAt:now,error:reason,signatureValid:true});return{ok:true,status:'ignored',reference:txRef};}
     await applyVerifiedPayChanguPayment({verified:true,provider:'paychangu',txRef,reference:txRef,status,currency:receivedCurrency,amount:{amount:receivedAmount,currency:receivedCurrency},checkoutUrl:null,rawResponse:parsedPayload});
     updatePaymentWebhookEventStatus(inserted.id,'processed',{processedAt:now,signatureValid:true});return{ok:true,status:'processed',reference:txRef};
   }
-  if(['reversed','refunded','chargeback','charged_back'].includes(status.toLowerCase())){
+  const lowered=status.toLowerCase();
+  if(['reversed','refunded','chargeback','charged_back'].includes(lowered)){
     await paymentRepository.updateByReferenceAsync(txRef,current=>({...current,status:'refunded',verified:false,verification:{verified:false,provider:'paychangu',txRef,reference:txRef,status,currency,amount,checkoutUrl:null,rawResponse:parsedPayload,failureReason:`PayChangu webhook reported ${status}`},updatedAt:now}));
-    if(payment.orderId){
-      try{await serverOrderService.setStatusAsync(payment.orderId,'refunded');}catch{await orderRepository.updateAsync(payment.orderId,current=>({...current,status:'refunded',updatedAt:now}));}
-      const escrow=await escrowRepository.findByOrderIdAsync(payment.orderId);
-      if(escrow&&(escrow.state==='funded'||escrow.state==='held')&&escrow.balanceAmount>0){
-        await escrowRepository.refundHeldBalanceAsync({orderId:payment.orderId,refundedBy:'paychangu_webhook',reference:txRef,note:`PayChangu webhook reported ${status}`});
-      }else if(escrow&&escrow.state!=='refunded'){
-        await escrowRepository.updateStateAsync(payment.orderId,'refunded');
-      }
-    }
+    try{await serverOrderService.setStatusAsync(payment.orderId,'refunded');}catch{}
+    const escrow=await escrowRepository.findByOrderIdAsync(payment.orderId);
+    if(escrow&&(escrow.state==='funded'||escrow.state==='held')&&escrow.balanceAmount>0){await escrowRepository.refundHeldBalanceAsync({orderId:payment.orderId,refundedBy:'paychangu_webhook',reference:txRef,note:`PayChangu webhook reported ${status}`});}
     updatePaymentWebhookEventStatus(inserted.id,'processed',{processedAt:now,signatureValid:true});return{ok:true,status:'processed',reference:txRef};
   }
-  await paymentRepository.updateByReferenceAsync(txRef,current=>({...current,verified:false,verification:{verified:false,provider:'paychangu',txRef,reference:txRef,status,currency,amount,checkoutUrl:null,rawResponse:parsedPayload,failureReason:`PayChangu webhook reported ${status}`},status:['failed','cancelled','canceled','expired','declined'].includes(status.toLowerCase())?'failed':current.status,updatedAt:now}));
+  await paymentRepository.updateByReferenceAsync(txRef,current=>({...current,verified:false,verification:{verified:false,provider:'paychangu',txRef,reference:txRef,status,currency,amount,checkoutUrl:null,rawResponse:parsedPayload,failureReason:`PayChangu webhook reported ${status}`},status:['failed','cancelled','canceled','expired','declined'].includes(lowered)?'failed':current.status,updatedAt:now}));
   updatePaymentWebhookEventStatus(inserted.id,'processed',{processedAt:now,signatureValid:true});return{ok:true,status:'processed',reference:txRef};
 }
 
-async function paymentWebhookRouteHandler(req:Request,res:Response){try{const signature=getHeaderValue(req,['x-paychangu-signature','signature']);const result=await handlePayChanguWebhookInternal({signature,payload:req.body as Buffer|string|Record<string,unknown>});if(result.ok===false)return res.status(401).json({error:result.error});return res.status(200).json(result);}catch(error){const message=error instanceof Error?error.message:'Webhook processing failed';return res.status(500).json({error:message});}}
+async function paymentWebhookRouteHandler(req:Request,res:Response){try{const signature=getHeaderValue(req,['x-paychangu-signature','signature']);const result=await handlePayChanguWebhookInternal({signature,payload:req.body as Buffer|string|Record<string,unknown>});if(result.ok===false)return res.status(400).json({error:result.error});return res.status(200).json(result);}catch(error){const message=error instanceof Error?error.message:'Webhook processing failed';return res.status(500).json({error:message});}}
 function handlePaychanguWebhook(contextOrSignature:PayChanguWebhookContext|string|undefined,payload?:PayChanguWebhookContext['payload']):Promise<PaymentWebhookResponse>{return typeof contextOrSignature!=='object'?handlePayChanguWebhookInternal({signature:contextOrSignature,payload:payload??''}):handlePayChanguWebhookInternal(contextOrSignature);}
 export const paymentWebhookHandler=Object.assign(paymentWebhookRouteHandler,{handlePaychanguWebhook});
