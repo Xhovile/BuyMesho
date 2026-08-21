@@ -54,21 +54,28 @@ function isPaymentWebhookUniqueConstraintFailure(error: unknown): boolean {
 
   const err = error as { code?: unknown; message?: unknown };
   if (
-    err.code !== "SQLITE_CONSTRAINT_UNIQUE" &&
-    err.code !== "SQLITE_CONSTRAINT"
+    err.code === "SQLITE_CONSTRAINT_UNIQUE" ||
+    err.code === "SQLITE_CONSTRAINT" ||
+    err.code === "23505"
   ) {
-    return false;
+    return true;
   }
 
   const message = String(err.message ?? "");
   return (
+    message.includes("23505") ||
+    message.includes("duplicate key") ||
+    message.includes("unique constraint") ||
+    message.includes("UNIQUE constraint failed") ||
     message.includes("idx_payment_webhook_events_provider_event_id") ||
     message.includes("idx_payment_webhook_events_provider_event_id_active") ||
     message.includes("idx_payment_webhook_events_dedupe") ||
     message.includes("idx_payment_webhook_events_dedupe_active") ||
     message.includes("idx_payment_webhook_events_reference_event_active") ||
     message.includes("payment_webhook_events.provider") ||
-    message.includes("payment_webhook_events.tx_ref")
+    message.includes("payment_webhook_events.tx_ref") ||
+    message.includes("payment_webhook_events_provider_event_id_key") ||
+    message.includes("payment_webhook_events")
   );
 }
 

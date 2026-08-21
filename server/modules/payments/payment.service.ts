@@ -13,7 +13,7 @@ dotenv.config();
 
 export interface ServerPaymentConfig { paychanguEnabled?: boolean; paychanguSecretKey?: string; paychanguWebhookSecret?: string; paychanguBaseUrl?: string; }
 const REFUND_UNAVAILABLE_MESSAGE='Refunds are not available yet for this payment provider';
-function readEnv(name:string):string|undefined{const value=process.env[name]?.trim();return value?value:undefined;}
+function readEnv(name:string):string|undefined{const value=process.env[name]?.trim();if(!value)return undefined;if(name==='PAYCHANGU_BASE_URL'&&value.includes('api/paychangu.com'))return value.replace('api/paychangu.com','api.paychangu.com');return value;}
 function isTruthyFlag(value:string|undefined):boolean{return value==='1'||value==='true'||value==='yes'||value==='on';}
 function validatePayChanguConfig(config:ServerPaymentConfig):void{if(!config.paychanguEnabled||process.env.NODE_ENV!=='production')return;const missing:string[]=[];if(!config.paychanguSecretKey)missing.push('PAYCHANGU_SECRET_KEY');if(!config.paychanguWebhookSecret)missing.push('PAYCHANGU_WEBHOOK_SECRET');if(missing.length)throw new Error(`Missing required PayChangu environment variables in production: ${missing.join(', ')}`);}
 function normalizeCurrency(value:string|undefined):string{return String(value??'').trim().toUpperCase();}

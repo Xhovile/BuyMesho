@@ -12,11 +12,11 @@ export interface StoredPayment extends PaymentResult {
 type DbExecutor = Pick<PoolClient, 'query'>;
 
 const PAYMENT_ALLOWED_TRANSITIONS: Readonly<Record<PaymentIntentStatus, readonly PaymentIntentStatus[]>> = {
-  pending: ['pending', 'requires_action', 'authorized', 'captured', 'failed', 'cancelled'],
-  requires_action: ['requires_action', 'authorized', 'captured', 'failed', 'cancelled'],
-  authorized: ['authorized', 'captured', 'failed', 'cancelled'],
+  pending: ['pending', 'requires_action', 'authorized', 'captured', 'failed', 'cancelled', 'refunded'],
+  requires_action: ['requires_action', 'authorized', 'captured', 'failed', 'cancelled', 'refunded'],
+  authorized: ['authorized', 'captured', 'failed', 'cancelled', 'refunded'],
   captured: ['captured', 'refunded'],
-  failed: ['failed', 'captured', 'cancelled'],
+  failed: ['failed', 'captured', 'cancelled', 'refunded'],
   cancelled: ['cancelled'],
   refunded: ['refunded'],
 } as const;
@@ -81,19 +81,17 @@ export class PostgresPaymentRepository {
   }
 
   private async saveAsyncOnExecutor(payment: StoredPayment, executor: DbExecutor): Promise<StoredPayment> {
-    const values = [
-      payment.id, payment.orderId, payment.provider, payment.method, payment.status, payment.reference,
-      payment.providerReference ?? null, payment.amount.currency, payment.amount.amount, payment.checkoutUrl ?? null,
-      payment.paidAt ?? null, payment.rawResponse ? JSON.stringify(payment.rawResponse) : null,
-      payment.verified ? 1 : 0, payment.verification ? JSON.stringify(payment.verification) : null,
-      payment.createdAt, payment.updatedAt,
-    ];
-
     const updated = await executor.query(
-      `UPDATE payments SET id=$1, order_id=$2, provider=$3, method=$4, status=$5, provider_reference=$7,
-        currency=$8, amount=$9, checkout_url=$10, paid_at=$11, raw_response=$12, verified=$13,
-        verification=$14, updated_at=$16 WHERE reference=$6`,
-      values,
+      `UPDATE payments SET id=$1, order_id=$2, provider=$3, method=$4, status=$5, provider_reference=$6,
+        currency=$7, amount=$8, checkout_url=$9, paid_at=$10, raw_response=$11, verified=$12,
+        verification=$13, updated_at=$14 WHERE reference=$15`,
+      [
+        payment.id, payment.orderId, payment.provider, payment.method, payment.status,
+        payment.providerReference ?? null, payment.amount.currency, payment.amount.amount, payment.checkoutUrl ?? null,
+        payment.paidAt ?? null, payment.rawResponse ? JSON.stringify(payment.rawResponse) : null,
+        payment.verified ? 1 : 0, payment.verification ? JSON.stringify(payment.verification) : null,
+        payment.updatedAt, payment.reference,
+      ],
     );
 
     if ((updated.rowCount ?? 0) === 0) {
@@ -101,7 +99,13 @@ export class PostgresPaymentRepository {
         `INSERT INTO payments (id,order_id,provider,method,status,reference,provider_reference,currency,amount,
           checkout_url,paid_at,raw_response,verified,verification,created_at,updated_at)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
-        values,
+        [
+          payment.id, payment.orderId, payment.provider, payment.method, payment.status, payment.reference,
+          payment.providerReference ?? null, payment.amount.currency, payment.amount.amount, payment.checkoutUrl ?? null,
+          payment.paidAt ?? null, payment.rawResponse ? JSON.stringify(payment.rawResponse) : null,
+          payment.verified ? 1 : 0, payment.verification ? JSON.stringify(payment.verification) : null,
+          payment.createdAt, payment.updatedAt,
+        ],
       );
     }
     return payment;

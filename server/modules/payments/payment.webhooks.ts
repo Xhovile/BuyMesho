@@ -2,6 +2,8 @@ import type { Request, Response } from "express";
 import { createHash } from "crypto";
 import { paymentRepository } from "./payment.repository.js";
 import { orderRepository } from "../orders/order.repository.js";
+import { serverOrderService } from "../orders/order.service.js";
+import { escrowRepository } from "../escrow/escrow.repository.js";
 import { applyVerifiedPayChanguPayment } from "./paychangu.flow.js";
 import {
   isAcceptedPaychanguEventType,
@@ -46,6 +48,19 @@ async function handlePayChanguWebhookInternal(context:PayChanguWebhookContext):P
     const order=await orderRepository.findByIdAsync(payment.orderId);const expectedCurrency=normalizeCurrency(order?.currency);const receivedCurrency=normalizeCurrency(amount?.currency??currency);const receivedAmount=amount?.amount;
     if(!order||receivedAmount!==order.total.amount||!receivedCurrency||receivedCurrency!==expectedCurrency){const reason=!order?`Associated order not found for payment ${txRef}`:`Payment amount or currency does not exactly match order total for ${order.id}`;updatePaymentWebhookEventStatus(inserted.id,'ignored',{processedAt:now,error:reason,signatureValid:true});return{ok:true,status:'ignored',reference:txRef};}
     await applyVerifiedPayChanguPayment({verified:true,provider:'paychangu',txRef,reference:txRef,status,currency:receivedCurrency,amount:{amount:receivedAmount,currency:receivedCurrency},checkoutUrl:null,rawResponse:parsedPayload});
+    updatePaymentWebhookEventStatus(inserted.id,'processed',{processedAt:now,signatureValid:true});return{ok:true,status:'processed',reference:txRef};
+  }
+  if(['reversed','refunded','chargeback','charged_back'].includes(status.toLowerCase())){
+    await paymentRepository.updateByReferenceAsync(txRef,current=>({...current,status:'refunded',verified:false,verification:{verified:false,provider:'paychangu',txRef,reference:txRef,status,currency,amount,checkoutUrl:null,rawResponse:parsedPayload,failureReason:`PayChangu webhook reported ${status}`},updatedAt:now}));
+    if(payment.orderId){
+      try{await serverOrderService.setStatusAsync(payment.orderId,'refunded');}catch{await orderRepository.updateAsync(payment.orderId,current=>({...current,status:'refunded',updatedAt:now}));}
+      const escrow=await escrowRepository.findByOrderIdAsync(payment.orderId);
+      if(escrow&&(escrow.state==='funded'||escrow.state==='held')&&escrow.balanceAmount>0){
+        await escrowRepository.refundHeldBalanceAsync({orderId:payment.orderId,refundedBy:'paychangu_webhook',reference:txRef,note:`PayChangu webhook reported ${status}`});
+      }else if(escrow&&escrow.state!=='refunded'){
+        await escrowRepository.updateStateAsync(payment.orderId,'refunded');
+      }
+    }
     updatePaymentWebhookEventStatus(inserted.id,'processed',{processedAt:now,signatureValid:true});return{ok:true,status:'processed',reference:txRef};
   }
   await paymentRepository.updateByReferenceAsync(txRef,current=>({...current,verified:false,verification:{verified:false,provider:'paychangu',txRef,reference:txRef,status,currency,amount,checkoutUrl:null,rawResponse:parsedPayload,failureReason:`PayChangu webhook reported ${status}`},status:['failed','cancelled','canceled','expired','declined'].includes(status.toLowerCase())?'failed':current.status,updatedAt:now}));
