@@ -44,8 +44,10 @@ async function handlePaychanguWebhookInternal(context:PayoutWebhookContext):Prom
 
   const db=getPaymentDb();
   const referenceKey=chargeId||payoutId;
-  const duplicateByReference=referenceKey?db.prepare(`SELECT id FROM payment_webhook_events WHERE provider='paychangu_payout' AND reference=? LIMIT 1`).get(referenceKey) as {id:number}|undefined:undefined;
-  const duplicate=duplicateByReference??findPaymentWebhookDuplicate(webhookInput);
+  const existingByReference=referenceKey?db.prepare(`SELECT id, processing_status, payload FROM payment_webhook_events WHERE provider='paychangu_payout' AND reference=? ORDER BY id DESC LIMIT 1`).get(referenceKey) as {id:number;processing_status:string;payload:string|null}|undefined:undefined;
+  const exactDuplicate=findPaymentWebhookDuplicate(webhookInput);
+  const referenceDuplicate=existingByReference && existingByReference.processing_status==='processed' && existingByReference.payload===rawPayload;
+  const duplicate=exactDuplicate??(referenceDuplicate?{id:existingByReference.id}:null);
   if(duplicate){
     recordPayoutWebhookAudit(payoutRow,'payout_webhook_duplicate',`Duplicate PayChangu payout webhook event ${eventId||chargeId||payoutId||'unknown'}`,rawPayload);
     recordPaymentWebhookDuplicateAttempt(webhookInput,duplicate.id);
