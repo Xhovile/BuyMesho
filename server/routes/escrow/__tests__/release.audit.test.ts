@@ -51,6 +51,7 @@ test('release creates payout_released audit event with formula snapshot', async 
     createdAt: now,
     updatedAt: now,
   });
+  serverOrderService.setStatus(orderId, 'paid');
   serverOrderService.setStatus(orderId, 'in_escrow');
   escrowRepository.create(orderId, 'MWK', 1500);
 
