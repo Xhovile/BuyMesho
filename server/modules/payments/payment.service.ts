@@ -63,7 +63,9 @@ export class ServerPaymentService{
     return saved;
   }
 
-  async verifyPayChanguPayment(txRef:string):Promise<PaymentVerificationResult>{const requestedTxRef=txRef.trim();const verification=await paychanguProvider.verifyPayment(requestedTxRef,this.resolveConfig());const returnedReference=verification.reference?.trim()||requestedTxRef;const payment=await paymentRepository.findByReferenceAsync(requestedTxRef);let strictVerified=verification.verified;let failureReason=verification.failureReason;
+  async verifyPaychanguPayment(txRef:string):Promise<PaymentVerificationResult>{return this.verifyPayChanguPaymentInternal(txRef);}
+  async verifyPayChanguPayment(txRef:string):Promise<PaymentVerificationResult>{return this.verifyPayChanguPaymentInternal(txRef);}
+  private async verifyPayChanguPaymentInternal(txRef:string):Promise<PaymentVerificationResult>{const requestedTxRef=txRef.trim();const verification=await paychanguProvider.verifyPayment(requestedTxRef,this.resolveConfig());const returnedReference=verification.reference?.trim()||requestedTxRef;const payment=await paymentRepository.findByReferenceAsync(requestedTxRef);let strictVerified=verification.verified;let failureReason=verification.failureReason;
     if(returnedReference!==requestedTxRef){strictVerified=false;failureReason=failureReason??'Verified transaction reference does not match requested transaction reference';}
     if(!payment){strictVerified=false;failureReason=failureReason??'Stored payment record not found for this reference';}
     else if(payment.reference!==requestedTxRef){strictVerified=false;failureReason=failureReason??'Stored payment reference does not match requested transaction reference';}
