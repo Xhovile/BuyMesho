@@ -72,7 +72,9 @@ export async function gatePayoutForSubmission(payoutId: string): Promise<{
      LEFT JOIN orders o ON o.id = p.order_id
      LEFT JOIN escrows e ON e.id = p.escrow_id
      LEFT JOIN sellers s ON s.uid = p.seller_id
-     LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
+     LEFT JOIN seller_payout_accounts spa
+       ON spa.id = p.destination_account_id
+      AND spa.seller_uid = p.seller_id
      WHERE p.id = $1 LIMIT 1`,
     [payoutId],
   );
@@ -202,13 +204,19 @@ export async function reserveRetryAttempt(input: {
     const id = randomUUID();
     const now = new Date().toISOString();
 
-    await updatePayoutStatus(input.payoutId, 'processing', {
-      provider: input.provider,
-      providerChargeId,
-      providerStatus: 'processing',
-      approvedBy: input.actorType === 'admin' ? input.actorId ?? null : null,
-      sentAt: now,
-    }, client);
+    // A concurrent retry may arrive while an existing provider attempt is already
+    // processing. The payout status is already protected by the processing guard;
+    // allocate a fresh attempt instead of issuing an invalid processing -> processing
+    // transition that the database deliberately rejects.
+    if (current.status !== 'processing') {
+      await updatePayoutStatus(input.payoutId, 'processing', {
+        provider: input.provider,
+        providerChargeId,
+        providerStatus: 'processing',
+        approvedBy: input.actorType === 'admin' ? input.actorId ?? null : null,
+        sentAt: now,
+      }, client);
+    }
 
     await client.query(
       `INSERT INTO payout_attempts
