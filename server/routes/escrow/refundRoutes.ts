@@ -1,0 +1,70 @@
+import express, { type RequestHandler } from 'express';
+import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
+import { orderRepository } from '../../modules/orders/order.repository.js';
+import { serverOrderService } from '../../modules/orders/order.service.js';
+import { getPaymentDb } from '../../postgresCompat.js';
+import { escrowActionLimiter, jsonError } from './shared.js';
+
+export function createRefundRouter(requireAuth: RequestHandler): express.Router {
+  const router = express.Router();
+
+  router.post('/:orderId/refund', escrowActionLimiter, requireAuth, async (req, res) => {
+    try {
+      if (req.user?.is_admin !== true) {
+        return res.status(403).json({ error: 'Only an admin can refund escrow' });
+      }
+
+      const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+      if (!reason) return res.status(400).json({ error: 'Refund reason is required' });
+
+      const order = orderRepository.findById(req.params.orderId);
+      if (!order) return res.status(404).json({ error: 'Order not found' });
+
+      const escrow = escrowRepository.findByOrderId(req.params.orderId);
+      if (!escrow) return res.status(404).json({ error: 'Escrow not found' });
+
+      const cancelledPayouts = await Promise.resolve(getPaymentDb().transaction(() => {
+        const db = getPaymentDb();
+        const linked = db.prepare(
+          `SELECT id, status
+           FROM payouts
+           WHERE escrow_id = ?
+             AND COALESCE(release_entry_id, '') = ''
+             AND status NOT IN ('paid', 'cancelled', 'failed', 'refunded')`,
+        ).all(escrow.id) as Array<{ id: string; status: string }>;
+
+        for (const payout of linked) {
+          db.prepare(
+            `UPDATE payouts
+             SET status = 'cancelled',
+                 failure_reason = 'payout_cancelled',
+                 updated_at = ?
+             WHERE id = ?`,
+          ).run(new Date().toISOString(), payout.id);
+        }
+
+        return linked.map((payout) => ({ ...payout, status: 'cancelled' }));
+      }) as Array<{ id: string; status: string }>);
+
+      const refund = escrowRepository.refundHeldBalance({
+        orderId: req.params.orderId,
+        refundedBy: req.user.uid,
+        note: reason,
+        reference: `escrow-refund:${req.params.orderId}`,
+      });
+      if (!refund) return res.status(404).json({ error: 'Escrow not found' });
+
+      const updatedOrder = serverOrderService.setStatus(req.params.orderId, 'refunded');
+      return res.status(200).json({
+        escrow: refund.escrow,
+        refundEntry: refund.refundEntry,
+        cancelledPayouts,
+        order: updatedOrder ?? order,
+      });
+    } catch (error) {
+      return res.status(400).json(jsonError(error, 'Failed to refund escrow'));
+    }
+  });
+
+  return router;
+}
