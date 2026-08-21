@@ -23,7 +23,7 @@ export function createRefundRouter(requireAuth: RequestHandler): express.Router 
       const escrow = escrowRepository.findByOrderId(req.params.orderId);
       if (!escrow) return res.status(404).json({ error: 'Escrow not found' });
 
-      const cancelledPayouts = await Promise.resolve(getPaymentDb().transaction(() => {
+      const cancelPayouts = getPaymentDb().transaction(() => {
         const db = getPaymentDb();
         const linked = db.prepare(
           `SELECT id, status
@@ -44,7 +44,8 @@ export function createRefundRouter(requireAuth: RequestHandler): express.Router 
         }
 
         return linked.map((payout) => ({ ...payout, status: 'cancelled' }));
-      }) as Array<{ id: string; status: string }>);
+      });
+      const cancelledPayouts = cancelPayouts();
 
       const refund = escrowRepository.refundHeldBalance({
         orderId: req.params.orderId,
