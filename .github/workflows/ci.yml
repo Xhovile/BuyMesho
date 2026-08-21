@@ -80,15 +80,6 @@ jobs:
             exit 1
           fi
 
-      - name: Diagnose TypeScript module resolution
-        run: |
-          echo '--- payment.webhooks.ts (relevant section) ---'
-          sed -n '1,45p' server/modules/payments/payment.webhooks.ts
-          echo '--- postgresCompat/webhooks.ts (relevant section) ---'
-          sed -n '1,90p' server/postgresCompat/webhooks.ts
-          echo '--- TypeScript resolution trace ---'
-          npx tsc --noEmit -p tsconfig.server.json --traceResolution 2>&1 | grep -E 'payment\.webhooks|postgresCompat/webhooks|webhooks\.ts' | head -n 200 || true
-
       - name: Lint
         run: npm run lint
 
