@@ -39,7 +39,7 @@ function parsePositiveIntegerEnv(
   if (!Number.isFinite(parsed) || parsed <= 0) return defaultValue;
   const integer = Math.trunc(parsed);
   const min = options.min ?? 1;
-  const max = options.max ?? integer;
+  const max = options.max ?? Number.POSITIVE_INFINITY;
   return Math.min(Math.max(integer, min), max);
 }
 
