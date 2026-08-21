@@ -60,7 +60,15 @@ if (process.env.NODE_ENV === "test") {
   // a connection against the normal application database during test startup.
   const { postgresDb } = await import("./postgresCompat.js");
 
-  after(async () => {
-    await postgresDb.close();
+  after(() => {
+    // Do not make the test runner wait indefinitely for pool/worker teardown.
+    // postgres.ts uses allowExitOnIdle in test mode, so cleanup can finish in
+    // the background while idle database handles remain eligible for process exit.
+    void postgresDb.close().catch((error) => {
+      console.warn(
+        "[BuyMesho] PostgreSQL test cleanup failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+    });
   });
 }
