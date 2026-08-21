@@ -4,7 +4,7 @@ import type { PoolClient } from 'pg';
 import type { PayoutRecord, PayoutStatus } from './payout.shared.js';
 
 const PAYOUT_ALLOWED_TRANSITIONS: Readonly<Record<PayoutStatus, readonly PayoutStatus[]>> = {
-  pending_settlement: ['pending_settlement', 'eligible', 'ready_for_payout', 'held', 'cancelled'],
+  pending_settlement: ['pending_settlement', 'eligible', 'ready_for_payout', 'queued', 'processing', 'held', 'cancelled'],
   eligible: ['eligible', 'ready_for_payout', 'queued', 'held', 'cancelled'],
   ready_for_payout: ['ready_for_payout', 'queued', 'held', 'cancelled'],
   queued: ['queued', 'processing', 'pending', 'paid', 'failed', 'held', 'cancelled'],
