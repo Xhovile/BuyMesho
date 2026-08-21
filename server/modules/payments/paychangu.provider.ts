@@ -27,10 +27,20 @@ export const PAYCHANGU_ACCEPTED_EVENT_TYPES = new Set([
   'payment.success',
   'payment.successful',
   'payment.completed',
+  'payment.failed',
+  'payment.reversed',
+  'payment.refunded',
+  'payment.cancelled',
+  'payment.canceled',
   'charge.success',
   'charge.completed',
-  'api.charge.payment',
+  'charge.failed',
+  'charge.reversed',
+  'charge.refunded',
   'transaction.success',
+  'transaction.failed',
+  'transaction.reversed',
+  'api.charge.payment',
 ]);
 
 export interface PayChanguConfig {
