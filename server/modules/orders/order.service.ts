@@ -15,7 +15,14 @@ function transitionOrder(current: StoredOrder, status: OrderStatus): StoredOrder
 }
 
 export class ServerOrderService {
-  create(order: OrderState): StoredOrder { return orderRepository.save({ ...order, status:'pending_payment', deliveryStatus:'action_required', paymentReference:order.paymentReference ?? null }); }
+  create(order: OrderState): StoredOrder {
+    return orderRepository.save({
+      ...order,
+      status: order.status ?? 'pending_payment',
+      deliveryStatus: order.deliveryStatus ?? 'action_required',
+      paymentReference: order.paymentReference ?? null,
+    });
+  }
   markPaid(order: OrderState): StoredOrder { const current=orderRepository.findById(order.id); if(!current)throw new Error(`Order ${order.id} not found`); return transitionOrder(current,'paid'); }
   confirmByPaymentReference(reference:string):StoredOrder|undefined{const current=orderRepository.findByPaymentReference(reference);return current?transitionOrder(current,'paid'):undefined;}
   complete(order:OrderState):StoredOrder{const current=orderRepository.findById(order.id);if(!current)throw new Error(`Order ${order.id} not found`);return transitionOrder(current,'closed');}
