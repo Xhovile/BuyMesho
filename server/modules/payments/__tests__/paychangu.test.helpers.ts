@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import { createHash, createHmac } from 'crypto';
 import express from 'express';
 import { mountPayChanguRoutes } from '../payment.routes.js';
+import { serverPaymentService } from '../payment.service.js';
+import { paymentWebhookHandler } from '../payment.webhooks.js';
+import { payoutWebhookHandler } from '../../payouts/payout.webhooks.js';
 import { serverOrderService } from '../../orders/order.service.js';
 import { orderRepository } from '../../orders/order.repository.js';
 import { paymentRepository } from '../payment.repository.js';
@@ -108,6 +111,26 @@ export function createApp(): express.Express {
   app.use('/api/payments/paychangu-payout/webhook', express.raw({ type: 'application/json' }));
   app.use(express.json());
   mountPayChanguRoutes(app, requireAuth);
+
+  // These are the canonical public PayChangu endpoints exercised by the integration suite.
+  app.post('/api/payments/paychangu/initialize', requireAuth, async (req, res) => {
+    try {
+      const result = await serverPaymentService.createPayment(req.body as any);
+      return res.status(201).json(result);
+    } catch (error) {
+      return res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to initialize PayChangu payment' });
+    }
+  });
+  app.get('/api/payments/paychangu/verify/:txRef', async (req, res) => {
+    try {
+      return res.status(200).json(await serverPaymentService.verifyPaychanguPayment(req.params.txRef));
+    } catch (error) {
+      return res.status(400).json({ error: error instanceof Error ? error.message : 'PayChangu verification failed' });
+    }
+  });
+  app.post('/api/payments/paychangu/webhook', async (req, res) => paymentWebhookHandler(req, res));
+  app.post('/api/payments/paychangu-payout/webhook', async (req, res) => payoutWebhookHandler(req, res));
+
   return app;
 }
 
@@ -160,7 +183,7 @@ export function seedOrder(
 export function seedVerifiedSellerPayoutDestination(destinationId = 'dest_seller_1_connect'): void {
   const db = getPaymentDb();
   const now = new Date().toISOString();
-  db.prepare(`INSERT INTO sellers (uid, email) VALUES ('seller_1', 'seller@example.com')`).run();
+  db.prepare(`INSERT INTO sellers (uid, email) VALUES ('seller_1', 'seller@example.com') ON CONFLICT (uid) DO UPDATE SET email = EXCLUDED.email`).run();
   db.prepare(
     `INSERT INTO seller_payout_accounts (
       id, seller_uid, destination_type, provider_name, provider_ref_id, currency,
@@ -170,7 +193,12 @@ export function seedVerifiedSellerPayoutDestination(destinationId = 'dest_seller
     ) VALUES (?, 'seller_1', 'mobile_money', 'paychangu', 'provider-dest-1', 'MWK',
       'Seller One', NULL, 'encrypted-mobile', '***1111',
       'seller-1-destination-fingerprint', 1, 'verified', 1,
-      NULL, ?, NULL, NULL, 1, ?, ?)`,
+      NULL, ?, NULL, NULL, 1, ?, ?)
+    ON CONFLICT (id) DO UPDATE SET
+      seller_uid = EXCLUDED.seller_uid,
+      verification_status = EXCLUDED.verification_status,
+      is_active = EXCLUDED.is_active,
+      updated_at = EXCLUDED.updated_at`,
   ).run(destinationId, now, now, now);
 }
 
@@ -264,15 +292,15 @@ export function fetchConnectPayoutsForOrder(orderId: string): ConnectPayoutRow[]
 export function countPayoutEvents(payoutId: string, eventType: string): number {
   const row = getPaymentDb()
     .prepare('SELECT COUNT(*) AS count FROM payout_events WHERE payout_id = ? AND event_type = ?')
-    .get(payoutId, eventType) as { count: number };
-  return row.count;
+    .get(payoutId, eventType) as { count: number | string };
+  return Number(row.count ?? 0);
 }
 
 export function countEscrowsForOrder(orderId: string): number {
   const row = getPaymentDb()
     .prepare('SELECT COUNT(*) AS count FROM escrows WHERE order_id = ?')
-    .get(orderId) as { count: number };
-  return row.count;
+    .get(orderId) as { count: number | string };
+  return Number(row.count ?? 0);
 }
 
 export { orderRepository, paymentRepository, escrowRepository };
