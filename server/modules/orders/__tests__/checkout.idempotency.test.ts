@@ -31,11 +31,12 @@ function clearState() {
   db.prepare('DELETE FROM listings').run();
 }
 
-function seedListing() {
-  getPaymentDb().prepare(`
+function seedListing(): number {
+  const result = getPaymentDb().prepare(`
     INSERT INTO listings (seller_uid, name, price, status, quantity, sold_quantity, is_hidden)
     VALUES (?, ?, ?, 'available', 5, 0, 0)
   `).run('seller_idempotency_1', 'Idempotency Test Item', 1000);
+  return Number(result.lastInsertRowid);
 }
 
 function mockPayChangu() {
@@ -73,7 +74,7 @@ async function postCheckout(base: string, key: string, payload: Record<string, u
 
 test('checkout idempotency: replay returns the same order and payment instead of creating another checkout', async () => {
   clearState();
-  seedListing();
+  const listingId = seedListing();
   mockPayChangu();
 
   const app = createApp();
@@ -81,7 +82,7 @@ test('checkout idempotency: replay returns the same order and payment instead of
   const port = (server.address() as { port: number }).port;
   const base = `http://127.0.0.1:${port}`;
   const payload = {
-    listingId: 1,
+    listingId,
     quantity: 1,
     method: 'mobile_money',
     settlementRoute: 'escrow',
@@ -118,7 +119,7 @@ test('checkout idempotency: replay returns the same order and payment instead of
 
 test('checkout idempotency: reusing a key for different checkout parameters is rejected', async () => {
   clearState();
-  seedListing();
+  const listingId = seedListing();
   mockPayChangu();
 
   const app = createApp();
@@ -128,7 +129,7 @@ test('checkout idempotency: reusing a key for different checkout parameters is r
 
   try {
     const first = await postCheckout(base, 'checkout-idem-002', {
-      listingId: 1,
+      listingId,
       quantity: 1,
       method: 'mobile_money',
       settlementRoute: 'escrow',
@@ -138,7 +139,7 @@ test('checkout idempotency: reusing a key for different checkout parameters is r
     assert.equal(first.status, 201);
 
     const conflicting = await postCheckout(base, 'checkout-idem-002', {
-      listingId: 1,
+      listingId,
       quantity: 2,
       method: 'mobile_money',
       settlementRoute: 'escrow',
