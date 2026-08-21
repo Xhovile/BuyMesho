@@ -199,6 +199,7 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
   ensureColumn(db, "listings", "university", "TEXT NOT NULL DEFAULT ''");
   ensureColumn(db, "listings", "whatsapp_number", "TEXT");
   ensureColumn(db, "listings", "views_count", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(db, "listings", "whatsapp_clicks", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "seller_payout_accounts", "verification_status", "TEXT NOT NULL DEFAULT 'pending'");
   ensureColumn(db, "seller_payout_accounts", "verification_attempts", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "seller_payout_accounts", "last_error", "TEXT");
