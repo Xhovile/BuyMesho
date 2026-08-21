@@ -192,8 +192,13 @@ export async function reserveRetryAttempt(input: {
   actorId?: string | null;
 }): Promise<{ id: string; attemptNo: number; providerChargeId: string; createdAt: string }> {
   return withTransaction(async (client) => {
-    const current = await getPayout(input.payoutId, client);
-    if (!current) throw new Error('Payout not found');
+    const currentResult = await client.query<Record<string, unknown>>(
+      'SELECT * FROM payouts WHERE id = $1 FOR UPDATE',
+      [input.payoutId],
+    );
+    const currentRow = currentResult.rows[0];
+    if (!currentRow) throw new Error('Payout not found');
+    const current = rowToPayout(currentRow);
 
     const attemptResult = await client.query<{ max_attempt_no: number }>(
       `SELECT COALESCE(MAX(attempt_no), 0) AS max_attempt_no FROM payout_attempts WHERE payout_id = $1`,
@@ -204,10 +209,6 @@ export async function reserveRetryAttempt(input: {
     const id = randomUUID();
     const now = new Date().toISOString();
 
-    // A concurrent retry may arrive while an existing provider attempt is already
-    // processing. The payout status is already protected by the processing guard;
-    // allocate a fresh attempt instead of issuing an invalid processing -> processing
-    // transition that the database deliberately rejects.
     if (current.status !== 'processing') {
       await updatePayoutStatus(input.payoutId, 'processing', {
         provider: input.provider,
