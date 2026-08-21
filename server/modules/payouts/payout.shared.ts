@@ -205,23 +205,25 @@ export function providerFailureReason(
 ): string {
   if (reasonCode === 'provider_rate_limited') {
     return exactMessage
-      ? `Provider rate-limited: ${exactMessage}`
-      : 'Provider rate-limited';
+      ? `Manual review required: Provider rate-limited: ${exactMessage}`
+      : 'Manual review required: Provider rate-limited';
   }
 
   if (reasonCode === 'provider_timeout') {
     return exactMessage
-      ? `Provider timeout: ${exactMessage}`
-      : 'Provider timeout';
+      ? `Manual review required: Provider timeout: ${exactMessage}`
+      : 'Manual review required: Provider timeout';
   }
 
   if (reasonCode === 'provider_unavailable') {
     return exactMessage
-      ? `Provider unavailable: ${exactMessage}`
-      : 'Provider unavailable';
+      ? `Manual review required: Provider unavailable: ${exactMessage}`
+      : 'Manual review required: Provider unavailable';
   }
 
-  return exactMessage ?? 'Payout failed';
+  return exactMessage
+    ? `Manual review required: ${exactMessage}`
+    : 'Manual review required: Payout failed';
 }
 
 export function canViewPayoutSettings(context: PayoutPermissionContext): boolean {
