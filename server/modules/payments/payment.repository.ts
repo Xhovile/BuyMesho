@@ -12,11 +12,11 @@ export interface StoredPayment extends PaymentResult {
 type DbExecutor = Pick<PoolClient, 'query'>;
 
 const PAYMENT_ALLOWED_TRANSITIONS: Readonly<Record<PaymentIntentStatus, readonly PaymentIntentStatus[]>> = {
-  pending: ['pending', 'requires_action', 'authorized', 'captured', 'failed', 'cancelled', 'refunded'],
-  requires_action: ['requires_action', 'authorized', 'captured', 'failed', 'cancelled', 'refunded'],
-  authorized: ['authorized', 'captured', 'failed', 'cancelled', 'refunded'],
+  pending: ['pending', 'requires_action', 'authorized', 'captured', 'failed', 'cancelled'],
+  requires_action: ['requires_action', 'authorized', 'captured', 'failed', 'cancelled'],
+  authorized: ['authorized', 'captured', 'failed', 'cancelled'],
   captured: ['captured', 'refunded'],
-  failed: ['failed', 'captured', 'cancelled', 'refunded'],
+  failed: ['failed', 'captured', 'cancelled'],
   cancelled: ['cancelled'],
   refunded: ['refunded'],
 } as const;
