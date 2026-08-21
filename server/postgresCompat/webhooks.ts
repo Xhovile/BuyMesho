@@ -35,6 +35,12 @@ export interface FindPaymentWebhookDuplicateInput {
   payloadHash?: string | null;
 }
 
+export interface RecordPaymentWebhookDuplicateAttemptInput
+  extends FindPaymentWebhookDuplicateInput {
+  payload?: string | null;
+  createdAt?: string | null;
+}
+
 export interface UpdatePaymentWebhookEventStatusOptions {
   processedAt?: string | null;
   error?: string | null;
@@ -254,7 +260,7 @@ export function insertPaymentWebhookEvent(
 }
 
 export function recordPaymentWebhookDuplicateAttempt(
-  input: InsertPaymentWebhookEventInput,
+  input: RecordPaymentWebhookDuplicateAttemptInput,
   existingId?: number,
 ): number | null {
   const db = getPaymentDb();
@@ -284,7 +290,7 @@ export function recordPaymentWebhookDuplicateAttempt(
           ? `Duplicate PayChangu webhook event; existing event id ${existingId}`
           : "Duplicate PayChangu webhook event",
         input.payload ?? null,
-        input.createdAt,
+        input.createdAt ?? new Date().toISOString(),
       );
 
     return Number(result.lastInsertRowid);
