@@ -1,85 +1,125 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { randomUUID } from 'crypto';
-import { getPaymentDb } from '../../../postgresCompat.js';
+import { query, withTransaction } from '../../../postgres.js';
 import { payoutService } from '../payout.service.js';
-import { serverOrderService } from '../../orders/order.service.js';
-import { escrowRepository } from '../../escrow/escrow.repository.js';
 
-function seedPayout(prefix: string, status: 'eligible' | 'failed' = 'eligible') {
-  const db = getPaymentDb();
+async function seedPayout(prefix: string, status: 'eligible' | 'failed' = 'eligible') {
   const payoutId = `${prefix}-payout`;
   const orderId = `${prefix}-order`;
   const sellerId = `${prefix}-seller`;
   const destinationId = `${prefix}-destination`;
+  const escrowId = `${prefix}-escrow`;
+  const releaseEntryId = `${prefix}-release`;
+  const destinationFingerprint = randomUUID();
   const now = new Date().toISOString();
 
-  db.prepare('DELETE FROM payout_attempts WHERE payout_id = ?').run(payoutId);
-  db.prepare('DELETE FROM payout_events WHERE payout_id = ?').run(payoutId);
-  db.prepare('DELETE FROM payouts WHERE id = ?').run(payoutId);
-  db.prepare('DELETE FROM escrows WHERE order_id = ?').run(orderId);
-  db.prepare('DELETE FROM orders WHERE id = ?').run(orderId);
-  db.prepare('DELETE FROM seller_payout_accounts WHERE id = ?').run(destinationId);
-  db.prepare('DELETE FROM sellers WHERE uid = ?').run(sellerId);
+  await withTransaction(async (client) => {
+    await client.query('DELETE FROM payout_attempts WHERE payout_id = $1', [payoutId]);
+    await client.query('DELETE FROM payout_events WHERE payout_id = $1', [payoutId]);
+    await client.query('DELETE FROM payouts WHERE id = $1', [payoutId]);
+    await client.query('DELETE FROM escrows WHERE order_id = $1', [orderId]);
+    await client.query('DELETE FROM orders WHERE id = $1', [orderId]);
+    await client.query('DELETE FROM seller_payout_accounts WHERE id = $1', [destinationId]);
+    await client.query('DELETE FROM sellers WHERE uid = $1', [sellerId]);
 
-  db.prepare(`INSERT INTO sellers (uid, email, is_verified, is_suspended)
-    VALUES (?, ?, 1, 0)`).run(sellerId, `${prefix}@example.com`);
+    await client.query(
+      `INSERT INTO sellers (uid, email, is_verified, is_suspended)
+       VALUES ($1, $2, 1, 0)`,
+      [sellerId, `${prefix}@example.com`],
+    );
 
-  db.prepare(`INSERT INTO seller_payout_accounts (
-    id, seller_uid, destination_type, provider_name, provider_ref_id,
-    currency, account_name, mobile_encrypted, masked_account, destination_fingerprint,
-    is_default, verification_status, verification_attempts,
-    is_active, created_at, updated_at
-  ) VALUES (?, ?, 'mobile_money', 'Airtel Money', 'airtel-money',
-    'MWK', 'Downtime Seller', '265999111444', '****1444', ?,
-    1, 'verified', 1,
-    1, ?, ?)
-  `).run(destinationId, sellerId, randomUUID(), now, now);
+    await client.query(
+      `INSERT INTO seller_payout_accounts (
+         id, seller_uid, destination_type, provider_name, provider_ref_id,
+         currency, account_name, mobile_encrypted, masked_account, destination_fingerprint,
+         is_default, verification_status, verification_attempts,
+         is_active, created_at, updated_at
+       ) VALUES ($1, $2, 'mobile_money', 'Airtel Money', 'airtel-money',
+         'MWK', 'Downtime Seller', '265999111444', '****1444', $3,
+         1, 'verified', 1, 1, $4, $4)`,
+      [destinationId, sellerId, destinationFingerprint, now],
+    );
 
-  serverOrderService.create({
-    id: orderId,
-    buyerId: `${prefix}-buyer`,
-    sellerId,
-    source: 'listing',
-    status: 'fulfilled',
-    currency: 'MWK',
-    subtotal: { amount: 1500, currency: 'MWK' },
-    total: { amount: 1500, currency: 'MWK' },
-    items: [],
-    createdAt: now,
-    updatedAt: now,
+    await client.query(
+      `INSERT INTO orders (
+         id, buyer_id, seller_id, source, status, delivery_status, currency,
+         subtotal_amount, subtotal_currency, total_amount, total_currency,
+         payment_provider, settlement_route, payment_reference,
+         checkout_idempotency_key, checkout_request_hash, escrow_id, items,
+         buyer_details, placed_at, paid_at, fulfilled_at, created_at, updated_at
+       ) VALUES (
+         $1, $2, $3, 'listing', 'fulfilled', 'delivered', 'MWK',
+         1500, 'MWK', 1500, 'MWK', NULL, NULL, NULL,
+         NULL, NULL, $4, $5, NULL, $6, $6, $6, $6, $6
+       )`,
+      [orderId, `${prefix}-buyer`, sellerId, escrowId, JSON.stringify([]), now],
+    );
+
+    const escrowEntry = {
+      id: randomUUID(),
+      escrowId,
+      entryType: 'credit',
+      amount: 1500,
+      currency: 'MWK',
+      balanceAfter: 1500,
+      note: 'Payment received — funds held in escrow',
+      createdAt: now,
+    };
+
+    const releaseEntry = {
+      id: releaseEntryId,
+      escrowId,
+      entryType: 'release',
+      amount: 1500,
+      currency: 'MWK',
+      balanceAfter: 0,
+      note: 'Escrow released to seller earnings',
+      actorId: 'admin-downtime-test',
+      createdAt: now,
+    };
+
+    await client.query(
+      `INSERT INTO escrows (
+         id, order_id, state, currency, balance_amount, balance_currency,
+         entries, created_at, updated_at
+       ) VALUES ($1, $2, 'released', 'MWK', 0, 'MWK', $3, $4, $4)`,
+      [escrowId, orderId, JSON.stringify([escrowEntry, releaseEntry]), now],
+    );
+
+    await client.query(
+      `INSERT INTO payouts (
+         id, seller_id, order_id, escrow_id, release_entry_id,
+         destination_account_id, amount, currency, status, provider,
+         requested_by, requested_at, created_at, updated_at
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'MWK', $8, 'paychangu', $9, $10, $10, $10)`,
+      [
+        payoutId,
+        sellerId,
+        orderId,
+        escrowId,
+        releaseEntryId,
+        destinationId,
+        1470,
+        status,
+        'admin-downtime-test',
+        now,
+      ],
+    );
+
+    await client.query(
+      `UPDATE payouts
+       SET failure_reason = NULL, manual_review_reason = NULL
+       WHERE id = $1`,
+      [payoutId],
+    );
   });
-  db.prepare(`UPDATE orders SET status = 'fulfilled' WHERE id = ?`).run(orderId);
-
-  escrowRepository.create(orderId, 'MWK', 1500);
-  escrowRepository.updateState(orderId, 'released');
-  const escrow = escrowRepository.findByOrderId(orderId);
-
-  db.prepare(`INSERT INTO payouts (
-    id, seller_id, order_id, escrow_id, release_entry_id,
-    destination_account_id, amount, currency, status, provider,
-    requested_by, requested_at, created_at, updated_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, 'MWK', ?, 'paychangu', ?, ?, ?, ?)`).run(
-    payoutId,
-    sellerId,
-    orderId,
-    escrow?.id ?? `${prefix}-escrow`,
-    `${prefix}-release`,
-    destinationId,
-    1470,
-    status,
-    'admin-downtime-test',
-    now,
-    now,
-    now,
-  );
-  db.prepare(`UPDATE payouts SET failure_reason = NULL, manual_review_reason = NULL WHERE id = ?`).run(payoutId);
 
   return { payoutId, sellerId };
 }
 
 test('provider balance lookup timeout holds payout for manual review', async () => {
-  const { payoutId } = seedPayout('balance-timeout');
+  const { payoutId } = await seedPayout('balance-timeout');
   const originalFetch = global.fetch;
   const originalSecretKey = process.env.PAYCHANGU_SECRET_KEY;
   process.env.PAYCHANGU_SECRET_KEY = 'test-secret-key';
@@ -98,21 +138,23 @@ test('provider balance lookup timeout holds payout for manual review', async () 
     assert.equal(result.reasonCode, 'provider_timeout');
     assert.equal(result.nextAction, 'manual_review');
 
-    const db = getPaymentDb();
-    const payout = db.prepare(`SELECT status, failure_reason, manual_review_reason, paid_at FROM payouts WHERE id = ?`).get(payoutId) as {
-      status: string;
-      failure_reason: string | null;
-      manual_review_reason: string | null;
-      paid_at: string | null;
-    };
+    const payoutResult = await query<Record<string, unknown>>(
+      `SELECT status, failure_reason, manual_review_reason, paid_at
+       FROM payouts WHERE id = $1`,
+      [payoutId],
+    );
+    const payout = payoutResult.rows[0];
 
     assert.equal(payout.status, 'held');
     assert.equal(payout.failure_reason, 'provider_timeout');
-    assert.match(payout.manual_review_reason ?? '', /manual review/i);
+    assert.match(String(payout.manual_review_reason ?? ''), /manual review/i);
     assert.equal(payout.paid_at, null);
 
-    const attempts = db.prepare(`SELECT COUNT(*) AS count FROM payout_attempts WHERE payout_id = ?`).get(payoutId) as { count: number };
-    assert.equal(attempts.count, 0);
+    const attemptsResult = await query<{ count: string | number }>(
+      `SELECT COUNT(*) AS count FROM payout_attempts WHERE payout_id = $1`,
+      [payoutId],
+    );
+    assert.equal(Number(attemptsResult.rows[0]?.count ?? 0), 0);
   } finally {
     global.fetch = originalFetch;
     if (originalSecretKey === undefined) {
@@ -124,9 +166,11 @@ test('provider balance lookup timeout holds payout for manual review', async () 
 });
 
 test('provider payout submission outage holds payout without writing paid state', async () => {
-  const { payoutId } = seedPayout('submit-outage', 'failed');
-  const db = getPaymentDb();
-  db.prepare(`UPDATE payouts SET failure_reason = 'provider_timeout' WHERE id = ?`).run(payoutId);
+  const { payoutId } = await seedPayout('submit-outage', 'failed');
+  await query(
+    `UPDATE payouts SET failure_reason = 'provider_timeout' WHERE id = $1`,
+    [payoutId],
+  );
 
   const originalFetch = global.fetch;
   const originalSecretKey = process.env.PAYCHANGU_SECRET_KEY;
@@ -153,17 +197,16 @@ test('provider payout submission outage holds payout without writing paid state'
     assert.equal(result.nextAction, 'retry_blocked');
     assert.ok(result.attempt);
 
-    const payout = db.prepare(`SELECT status, failure_reason, manual_review_reason, paid_at, last_attempt_id FROM payouts WHERE id = ?`).get(payoutId) as {
-      status: string;
-      failure_reason: string | null;
-      manual_review_reason: string | null;
-      paid_at: string | null;
-      last_attempt_id: string | null;
-    };
+    const payoutResult = await query<Record<string, unknown>>(
+      `SELECT status, failure_reason, manual_review_reason, paid_at, last_attempt_id
+       FROM payouts WHERE id = $1`,
+      [payoutId],
+    );
+    const payout = payoutResult.rows[0];
 
     assert.equal(payout.status, 'held');
     assert.equal(payout.failure_reason, 'provider_unavailable');
-    assert.match(payout.manual_review_reason ?? '', /provider outage|manual review/i);
+    assert.match(String(payout.manual_review_reason ?? ''), /provider outage|manual review/i);
     assert.equal(payout.paid_at, null);
     assert.ok(payout.last_attempt_id);
   } finally {
