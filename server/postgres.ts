@@ -235,7 +235,11 @@ export async function withTransaction<T>(
 }
 
 export async function closePool(): Promise<void> {
-  if (poolInstance) {
-    await poolInstance.end();
-  }
+  const currentPool = poolInstance;
+  if (!currentPool) return;
+
+  // Clear the reference before awaiting end() so concurrent or repeated
+  // teardown hooks become harmless instead of calling Pool.end() twice.
+  poolInstance = null;
+  await currentPool.end();
 }
