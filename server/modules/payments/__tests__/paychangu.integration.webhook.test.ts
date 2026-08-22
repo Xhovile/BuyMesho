@@ -80,7 +80,7 @@ test('integration: PayChangu callback for Connect order queues payout without es
     assert.equal(payout.net_amount, 970);
     assert.equal(payout.seller_receives_amount, 970);
     assert.equal(payout.amount, 970);
-    assert.equal(payout.status, 'queued');
+    assert.equal(payout.status, 'pending_settlement');
     const formula = JSON.parse(payout.formula_snapshot ?? '{}') as Record<string, unknown>;
     assert.equal(formula.grossAmount, 1000);
     assert.equal(formula.platformFeeAmount, 30);
