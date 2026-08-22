@@ -63,7 +63,10 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     assert.equal(verifyResult.verified, true);
     const rawWebhook = JSON.stringify({ event_type: 'api.charge.payment', event_id: 'evt_success_1', tx_ref: checkoutResult.reference, data: { tx_ref: checkoutResult.reference, status: 'paid', amount: 1000, currency: 'MWK' } });
     assert.equal((await postPayChanguWebhook(base, rawWebhook, signWebhook(rawWebhook))).status, 200);
-    assert.equal((await postPayChanguWebhook(base, rawWebhook, signWebhook(rawWebhook))).status, 200);
+    const duplicateRes = await postPayChanguWebhook(base, rawWebhook, signWebhook(rawWebhook));
+    if (duplicateRes.status !== 200) {
+      throw new Error(`Duplicate webhook failed: HTTP ${duplicateRes.status}; body=${await duplicateRes.text()}`);
+    }
     const savedOrder = orderRepository.findById(checkoutResult.orderId!);
     const savedPayment = paymentRepository.findByReference(checkoutResult.reference!);
     const auditRows = fetchWebhookAuditRows(checkoutResult.reference!);
