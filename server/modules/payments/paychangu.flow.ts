@@ -67,6 +67,14 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
     const existingPayment=(await Promise.all(referenceCandidates.map(candidate=>paymentRepository.findByReferenceAsync(candidate,client)))).find(Boolean);
     if(existingPayment?.status==='refunded')return{payment:existingPayment,order,verification,sellerPayoutQueued:false,payoutId:null,orderEnteredEscrow:false};
 
+    // Verification and webhook delivery may both legitimately report the same
+    // successful payment. Once an escrow order is already in escrow, the
+    // webhook must be idempotent rather than attempting the illegal
+    // in_escrow -> paid transition.
+    if(existingPayment?.status==='captured' && order.status==='in_escrow'){
+      return{payment:existingPayment,order,verification,sellerPayoutQueued:false,payoutId:null,orderEnteredEscrow:false};
+    }
+
     const payment=await updatePaymentByReferences(referenceCandidates,current=>({...current,verified:true,verification,status:'captured',paidAt:new Date().toISOString(),updatedAt:new Date().toISOString()}),client);
     const confirmedOrder=await confirmOrderByReferences(referenceCandidates,client);
     const activeOrder=confirmedOrder ?? await serverOrderService.setStatusAsync(order.id,'paid',client) ?? order;
@@ -81,10 +89,7 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
       return{payment,order:activeOrder,verification,sellerPayoutQueued:created,payoutId:payout.id,orderEnteredEscrow:false};
     }
 
-    const escrowAmount=activeOrder.total.amount;const currency=normalizeReference(activeOrder.currency).toUpperCase();
-    const escrow=await escrowRepository.createAsync(activeOrder.id,currency,escrowAmount,client);
-    const escrowedOrder=await serverOrderService.markInEscrowAsync(activeOrder.id,escrow.id,client) ?? activeOrder;
-    return{payment,order:escrowedOrder,verification,sellerPayoutQueued:false,payoutId:null,orderEnteredEscrow:escrowedOrder.status==='in_escrow'&&order.status!=='in_escrow'};
+    const escrowAmount=activeOrder.total.amount;const currency=normalizeReference(activeOrder.currency).toUpperCase();const escrow=await escrowRepository.createAsync(activeOrder.id,currency,escrowAmount,client);const escrowedOrder=await serverOrderService.markInEscrowAsync(activeOrder.id,escrow.id,client) ?? activeOrder;return{payment,order:escrowedOrder,verification,sellerPayoutQueued:false,payoutId:null,orderEnteredEscrow:escrowedOrder.status==='in_escrow'&&order.status!=='in_escrow'};
   });
 
   if(settlement.sellerPayoutQueued&&settlement.payoutId&&settlement.order)emitSellerPayoutQueuedNotification(settlement.order.sellerId,settlement.order.id,settlement.payoutId);
