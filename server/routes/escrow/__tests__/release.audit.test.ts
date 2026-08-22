@@ -9,6 +9,8 @@ import { serverOrderService } from '../../../modules/orders/order.service.js';
 import { payoutRepository } from '../../../modules/payouts/payout.service.js';
 
 const orderId = 'order-release-payout-audit';
+const sellerId = 'seller-release-audit';
+const destinationId = 'destination-release-audit';
 
 function createReleaseApp(uid: string, isAdmin = false): express.Express {
   const app = express();
@@ -30,18 +32,21 @@ function clearState(): void {
   db.prepare('DELETE FROM payouts WHERE order_id = ?').run(orderId);
   db.prepare('DELETE FROM escrows WHERE order_id = ?').run(orderId);
   db.prepare('DELETE FROM orders WHERE id = ?').run(orderId);
-  db.prepare('DELETE FROM seller_payout_accounts WHERE seller_uid = ?').run('seller-release-audit');
-  db.prepare('DELETE FROM sellers WHERE uid = ?').run('seller-release-audit');
+  db.prepare('DELETE FROM seller_payout_account_events WHERE seller_uid = ?').run(sellerId);
+  db.prepare('DELETE FROM seller_payout_accounts WHERE seller_uid = ?').run(sellerId);
+  db.prepare('DELETE FROM sellers WHERE uid = ?').run(sellerId);
 }
 
 test('release creates payout_released audit event with formula snapshot', async () => {
   clearState();
 
   const now = new Date().toISOString();
+  const db = getPaymentDb();
+
   serverOrderService.create({
     id: orderId,
     buyerId: 'buyer-release-audit',
-    sellerId: 'seller-release-audit',
+    sellerId,
     source: 'listing',
     status: 'in_escrow',
     currency: 'MWK',
@@ -54,6 +59,16 @@ test('release creates payout_released audit event with formula snapshot', async 
   serverOrderService.setStatus(orderId, 'paid');
   serverOrderService.setStatus(orderId, 'in_escrow');
   escrowRepository.create(orderId, 'MWK', 1500);
+
+  db.prepare('INSERT INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)')
+    .run(sellerId, `${sellerId}@example.com`);
+  db.prepare(
+    `INSERT INTO seller_payout_accounts (
+      id, seller_uid, destination_type, provider_name, provider_ref_id,
+      currency, account_name, mobile_encrypted, masked_account, destination_fingerprint,
+      is_default, verification_status, verification_attempts, is_active, created_at, updated_at
+    ) VALUES (?, ?, 'mobile_money', 'paychangu', 'airtel-money', 'MWK', 'Release Audit Test', '0990000000', '****0000', ?, 1, 'verified', 0, 1, ?, ?)`,
+  ).run(destinationId, sellerId, randomUUIDCompat(), now, now);
 
   const app = createReleaseApp('buyer-release-audit');
   const server = app.listen(0);
@@ -94,3 +109,7 @@ test('release creates payout_released audit event with formula snapshot', async 
     clearState();
   }
 });
+
+function randomUUIDCompat(): string {
+  return `audit-fingerprint-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
