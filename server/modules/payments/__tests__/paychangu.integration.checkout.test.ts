@@ -47,11 +47,16 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
       body: JSON.stringify({ listingId: 999, quantity: 1, method: 'mobile_money', returnUrl: 'https://example.com/return', cancelUrl: 'https://example.com/cancel', buyerName: 'Buyer One' }),
     });
     assert.equal(checkoutRes.status, 201);
-    const checkoutResult = await checkoutRes.json() as { orderId?: string; reference?: string; checkoutUrl?: string; items?: Array<{ reference?: string }> };
+    const checkoutResult = await checkoutRes.json() as {
+      orderId?: string;
+      reference?: string;
+      checkoutUrl?: string;
+      order?: { items?: Array<{ reference?: string }> };
+    };
     assert.ok(checkoutResult.orderId);
     assert.ok(checkoutResult.reference);
     assert.ok(checkoutResult.checkoutUrl);
-    assert.equal(checkoutResult.items?.[0]?.reference, `${checkoutResult.orderId}-ITEM-01`);
+    assert.equal(checkoutResult.order?.items?.[0]?.reference, `${checkoutResult.orderId}-ITEM-01`);
     const verifyRes = await fetch(`${base}/api/payments/paychangu/verify/${encodeURIComponent('txref-integration-1')}`, { headers: { authorization: 'Bearer test' } });
     assert.equal(verifyRes.status, 200);
     const verifyResult = await verifyRes.json() as { verified?: boolean };
