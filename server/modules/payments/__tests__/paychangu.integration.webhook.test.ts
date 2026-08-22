@@ -250,6 +250,11 @@ test('integration: reversed webhook refunds captured escrow according to domain 
   try {
     seedOrder('order_reversed_1', 'txref-reversed-1', 'in_escrow');
     seedStoredPayment('order_reversed_1', 'txref-reversed-1');
+    paymentRepository.updateByReference('txref-reversed-1', payment => ({
+      ...payment,
+      status: 'captured',
+      verified: true,
+    }));
     escrowRepository.create('order_reversed_1', 'MWK', 1000);
     const rawWebhook = JSON.stringify({ event_type: 'api.charge.payment', tx_ref: 'txref-reversed-1', data: { tx_ref: 'txref-reversed-1', status: 'reversed', amount: 1000, currency: 'MWK' } });
     assert.equal((await postPayChanguWebhook(base, rawWebhook)).status, 200);
