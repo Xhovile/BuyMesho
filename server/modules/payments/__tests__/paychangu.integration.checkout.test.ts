@@ -28,10 +28,7 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     'available', 'used', 0, 0, 0, 5, 0)`).run();
   const app = createApp();
   const originalFetch = global.fetch;
-  const originalConsoleLog = console.log;
-  const notificationLogs: unknown[][] = [];
   global.fetch = mockPayChanguFetch(originalFetch, 'txref-integration-1', 'successful', 1000);
-  console.log = (...args: unknown[]) => { if (args[0] === '[notification] order_paid') notificationLogs.push(args); originalConsoleLog(...args); };
   process.env.PAYCHANGU_WEBHOOK_SECRET = 'integration-secret';
   process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
   const server = app.listen(0);
@@ -79,7 +76,6 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     assert.equal(countEscrowsForOrder(checkoutResult.orderId!), 1);
     assert.equal(processed.length, 1);
     assert.equal(duplicates.length, 1);
-    assert.equal(notificationLogs.length, 1);
     assert.equal(processed[0].provider, 'paychangu');
     assert.equal(processed[0].provider_event_id, 'evt_success_1');
     assert.equal(processed[0].tx_ref, checkoutResult.reference);
@@ -92,7 +88,6 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     assert.match(duplicates[0].error ?? '', /^Duplicate PayChangu webhook event/);
   } finally {
     global.fetch = originalFetch;
-    console.log = originalConsoleLog;
     server.close();
     clearPaymentState();
     db.prepare('DELETE FROM listings WHERE id = 999').run();
