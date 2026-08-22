@@ -39,7 +39,11 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
   try {
     const checkoutRes = await fetch(`${base}/api/payments/checkout`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: 'Bearer test' },
+      headers: {
+        'content-type': 'application/json',
+        authorization: 'Bearer test',
+        'Idempotency-Key': 'atomic-checkout-test-1',
+      },
       body: JSON.stringify({ listingId: 999, quantity: 1, method: 'mobile_money', returnUrl: 'https://example.com/return', cancelUrl: 'https://example.com/cancel', buyerName: 'Buyer One' }),
     });
     assert.equal(checkoutRes.status, 201);
