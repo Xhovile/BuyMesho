@@ -77,7 +77,7 @@ test('payment webhook idempotency retries a non-terminal event after the referen
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
 
   const rawWebhook = JSON.stringify({
-    event_type: 'checkout.payment',
+    event_type: 'payment.success',
     event_id: 'evt-retry-1',
     tx_ref: 'txref-retry-1',
     status: 'successful',
