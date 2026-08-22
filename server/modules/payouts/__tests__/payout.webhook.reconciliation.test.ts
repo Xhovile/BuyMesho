@@ -210,8 +210,9 @@ test('duplicate payout webhooks are acknowledged once and logged as duplicates',
   process.env.PAYCHANGU_PAYOUT_WEBHOOK_SECRET = secret;
 
   const { payoutId, chargeId } = seedWebhookPayout('payout-webhook');
+  const eventId = `evt-payout-${randomUUID()}`;
   const payload = buildWebhookPayload({
-    eventId: 'evt-payout-1',
+    eventId,
     status: 'successful',
     chargeId,
     payoutId,
