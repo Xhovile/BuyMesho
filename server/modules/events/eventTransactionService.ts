@@ -173,7 +173,7 @@ export function getEventTransactionSummary(
       FROM orders o
       LEFT JOIN payments p ON p.order_id = o.id
       WHERE o.id IN (${placeholders})
-      ORDER BY p.created_at DESC NULLS LAST
+      ORDER BY p.paid_at DESC NULLS LAST, p.created_at DESC NULLS LAST, p.id DESC NULLS LAST
     `)
     .all(...orderIds) as Array<Record<string, unknown>>;
 

@@ -177,6 +177,6 @@ test('retry is blocked without writing payout_retried when retry limit is reache
   assert.equal(result.attempt, null);
   assert.equal(result.reasonCode, 'manual_review_required');
 
-  const rows = db.prepare(`SELECT COUNT(*) AS count FROM payout_events WHERE payout_id = ? AND event_type = 'payout_retried'`).get(payoutId) as { count: number };
-  assert.equal(rows.count, 0);
+  const rows = db.prepare(`SELECT COUNT(*) AS count FROM payout_events WHERE payout_id = ? AND event_type = 'payout_retried'`).get(payoutId) as { count: number | string };
+  assert.equal(Number(rows.count), 0);
 });

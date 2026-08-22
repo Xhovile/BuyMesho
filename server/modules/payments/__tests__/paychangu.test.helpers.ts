@@ -167,7 +167,7 @@ export function seedOrder(
     buyerId: 'buyer_1',
     sellerId: 'seller_1',
     source: 'listing',
-    status,
+    status: 'pending_payment',
     currency: 'MWK',
     subtotal: { amount: 1000, currency: 'MWK' },
     total: { amount: 1000, currency: 'MWK' },
@@ -178,6 +178,19 @@ export function seedOrder(
     paymentReference: reference,
     settlementRoute,
   });
+
+  if (status === 'paid') {
+    serverOrderService.setStatus(orderId, 'paid');
+  } else if (status === 'in_escrow') {
+    serverOrderService.setStatus(orderId, 'paid');
+    const escrow = escrowRepository.create(orderId, 'MWK', 1000);
+    serverOrderService.markInEscrow(orderId, escrow.id);
+  } else if (status === 'refunded') {
+    serverOrderService.setStatus(orderId, 'paid');
+    const escrow = escrowRepository.create(orderId, 'MWK', 1000);
+    serverOrderService.markInEscrow(orderId, escrow.id);
+    serverOrderService.setStatus(orderId, 'refunded');
+  }
 }
 
 export function seedVerifiedSellerPayoutDestination(destinationId = 'dest_seller_1_connect'): void {

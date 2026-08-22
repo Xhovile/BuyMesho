@@ -27,10 +27,20 @@ export const PAYCHANGU_ACCEPTED_EVENT_TYPES = new Set([
   'payment.success',
   'payment.successful',
   'payment.completed',
+  'payment.failed',
+  'payment.reversed',
+  'payment.refunded',
+  'payment.cancelled',
+  'payment.canceled',
   'charge.success',
   'charge.completed',
-  'api.charge.payment',
+  'charge.failed',
+  'charge.reversed',
+  'charge.refunded',
   'transaction.success',
+  'transaction.failed',
+  'transaction.reversed',
+  'api.charge.payment',
 ]);
 
 export interface PayChanguConfig {
@@ -61,8 +71,17 @@ interface PayChanguPaymentInitResponse {
   data?: PayChanguPaymentInitData;
 }
 
+function normalizeBaseUrl(value: string | undefined): string {
+  if (!value) return 'https://api.paychangu.com';
+  let trimmed = value.trim();
+  if (trimmed.includes('api/paychangu.com')) {
+    trimmed = trimmed.replace('api/paychangu.com', 'api.paychangu.com');
+  }
+  return trimmed.replace(/\/$/, '');
+}
+
 function getBaseUrl(config: PayChanguConfig): string {
-  return config.paychanguBaseUrl?.replace(/\/$/, '') ?? 'https://api.paychangu.com';
+  return normalizeBaseUrl(config.paychanguBaseUrl || process.env.PAYCHANGU_BASE_URL);
 }
 
 function normalizeTxRef(value: string | undefined, fallback: string): string {
@@ -78,8 +97,9 @@ function buildPayChanguJsonHeaders(config: PayChanguConfig): Record<string, stri
     'Content-Type': 'application/json',
   };
 
-  if (config.paychanguSecretKey) {
-    headers.Authorization = `Bearer ${config.paychanguSecretKey}`;
+  const secretKey = config.paychanguSecretKey || process.env.PAYCHANGU_SECRET_KEY;
+  if (secretKey) {
+    headers.Authorization = `Bearer ${secretKey}`;
   }
 
   return headers;
