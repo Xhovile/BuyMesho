@@ -7,7 +7,7 @@ import { escrowRepository } from "../escrow/escrow.repository.js";
 import { applyVerifiedPayChanguPayment } from "./paychangu.flow.js";
 import { isAcceptedPaychanguEventType, isPaychanguSuccessStatus, paychanguProvider } from "./paychangu.provider.js";
 import { getPaymentDb } from "../../postgresCompat.js";
-import { insertPaymentWebhookEvent, recordPaymentWebhookDuplicateAttempt, updatePaymentWebhookEventStatus } from "../../postgresCompat/webhooks.js";
+import { findPaymentWebhookDuplicate, getPaymentWebhookEventStatus, insertPaymentWebhookEvent, recordPaymentWebhookDuplicateAttempt, updatePaymentWebhookEventStatus } from "../../postgresCompat/webhooks.js";
 
 type PayChanguWebhookContext = { signature?: string; payload: string | Buffer | Record<string, unknown> };
 type ParsedWebhookPayload = { rawPayload: string; parsedPayload: Record<string, unknown> | null };
@@ -150,10 +150,13 @@ async function handlePayChanguWebhookInternal(context: PayChanguWebhookContext):
     return { ok: false, error: 'Invalid PayChangu webhook signature' };
   }
 
-  const duplicate = findExactWebhookDuplicate(eventId || null, txRef || null, eventType || null, payloadHash);
+  const duplicate = findPaymentWebhookDuplicate({ provider: 'paychangu', providerEventId: eventId || null, reference: txRef || null, txRef: txRef || null, eventType: eventType || null, payloadHash });
   if (duplicate) {
-    recordPaymentWebhookDuplicateAttempt({ provider: 'paychangu', providerEventId: eventId || null, reference: txRef || null, txRef: txRef || null, eventType: eventType || null, payloadHash }, duplicate.id);
-    return { ok: true, status: 'duplicate', reference: txRef || null };
+    const existingStatus = getPaymentWebhookEventStatus(duplicate.id);
+    if (existingStatus === 'processed') {
+      recordPaymentWebhookDuplicateAttempt({ provider: 'paychangu', providerEventId: eventId || null, reference: txRef || null, txRef: txRef || null, eventType: eventType || null, payloadHash }, duplicate.id);
+      return { ok: true, status: 'duplicate', reference: txRef || null };
+    }
   }
 
   const inserted = insertPaymentWebhookEvent({ provider: 'paychangu', providerEventId: eventId || null, reference: txRef || null, txRef: txRef || null, eventType: eventType || null, payloadHash, processingStatus: 'received', signatureValid: true, payload: rawPayload, createdAt: now });
