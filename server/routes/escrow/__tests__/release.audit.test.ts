@@ -48,7 +48,7 @@ test('release creates payout_released audit event with formula snapshot', async 
     buyerId: 'buyer-release-audit',
     sellerId,
     source: 'listing',
-    status: 'in_escrow',
+    status: 'pending_payment',
     currency: 'MWK',
     subtotal: { amount: 1500, currency: 'MWK' },
     total: { amount: 1500, currency: 'MWK' },
