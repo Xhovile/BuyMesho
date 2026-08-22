@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { getPaymentDb } from "../postgresCompat.js";
 
 export type PaymentWebhookProcessingStatus =
@@ -53,6 +54,26 @@ function normalizeOptionalText(
   if (value === null || value === undefined) return null;
   const text = String(value).trim();
   return text ? text : null;
+}
+
+function buildEventId(input: {
+  providerEventId?: string | null;
+  reference?: string | null;
+  txRef?: string | null;
+  eventType?: string | null;
+  payloadHash?: string | null;
+}): string {
+  const providerEventId = normalizeOptionalText(input.providerEventId);
+  if (providerEventId) return providerEventId;
+
+  const payloadHash = normalizeOptionalText(input.payloadHash);
+  if (payloadHash) return `internal:${payloadHash}`;
+
+  const reference = normalizeOptionalText(input.reference);
+  const txRef = normalizeOptionalText(input.txRef);
+  const eventType = normalizeOptionalText(input.eventType);
+  const identity = [reference, txRef, eventType].filter(Boolean).join(":");
+  return identity ? `internal:${identity}` : `internal:${randomUUID()}`;
 }
 
 function isPaymentWebhookUniqueConstraintFailure(error: unknown): boolean {
@@ -187,6 +208,7 @@ export function insertPaymentWebhookEvent(
     payload: input.payload ?? null,
     error: normalizeOptionalText(input.error),
   };
+  const eventId = buildEventId(normalized);
 
   if (!normalized.provider) {
     throw new Error("payment webhook provider is required");
@@ -196,11 +218,12 @@ export function insertPaymentWebhookEvent(
     const result = db
       .prepare(
         `INSERT INTO payment_webhook_events (
-           provider, provider_event_id, reference, tx_ref, event_type, payload_hash,
+           event_id, provider, provider_event_id, reference, tx_ref, event_type, payload_hash,
            processing_status, error, signature_valid, payload, created_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
+        eventId,
         normalized.provider,
         normalized.providerEventId,
         normalized.reference,
@@ -274,11 +297,12 @@ export function recordPaymentWebhookDuplicateAttempt(
     const result = db
       .prepare(
         `INSERT INTO payment_webhook_events (
-           provider, provider_event_id, reference, tx_ref, event_type, payload_hash,
+           event_id, provider, provider_event_id, reference, tx_ref, event_type, payload_hash,
            processing_status, processed_at, error, signature_valid, payload, created_at
-         ) VALUES (?, ?, ?, ?, ?, ?, 'duplicate', ?, ?, 0, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, 'duplicate', ?, ?, 0, ?, ?)`,
       )
       .run(
+        `duplicate:${existingId ?? "unknown"}:${randomUUID()}`,
         provider,
         normalizeOptionalText(input.providerEventId),
         normalizeOptionalText(input.reference ?? input.txRef),
