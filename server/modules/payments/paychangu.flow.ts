@@ -46,8 +46,22 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
   if(!isCaptured(verification))throw new Error(`applyVerifiedPayChanguPayment only accepts verified paid/captured statuses for ${reference}`);
 
   const settlement=await withTransaction(async(client)=>{
-    const order=await resolveOrderByReferences(referenceCandidates,client);
-    if(!order){const payment= (await Promise.all(referenceCandidates.map(candidate=>paymentRepository.findByReferenceAsync(candidate,client)))).find(Boolean);return{payment,verification,sellerPayoutQueued:false,payoutId:null,orderEnteredEscrow:false,order:undefined};}
+    let order=await resolveOrderByReferences(referenceCandidates,client);
+
+    // PostgreSQL migration path: preserve the legacy semantic fallback used by
+    // the original PayChangu flow. A valid payment record may be resolvable by
+    // provider reference even when the order lookup by payment reference is
+    // temporarily unavailable in the projection.
+    if(!order){
+      const payment=(await Promise.all(referenceCandidates.map(candidate=>paymentRepository.findByReferenceAsync(candidate,client)))).find(Boolean);
+      if(payment){
+        order=await orderRepository.findByIdAsync(payment.orderId,client);
+      }
+      if(!order){
+        return{payment,verification,sellerPayoutQueued:false,payoutId:null,orderEnteredEscrow:false,order:undefined};
+      }
+    }
+
     if(['refunded','closed','disputed'].includes(order.status)){const payment=(await Promise.all(referenceCandidates.map(candidate=>paymentRepository.findByReferenceAsync(candidate,client)))).find(Boolean);return{payment,order,verification,sellerPayoutQueued:false,payoutId:null,orderEnteredEscrow:false};}
 
     const existingPayment=(await Promise.all(referenceCandidates.map(candidate=>paymentRepository.findByReferenceAsync(candidate,client)))).find(Boolean);
