@@ -112,7 +112,6 @@ export function createApp(): express.Express {
   app.use(express.json());
   mountPayChanguRoutes(app, requireAuth);
 
-  // These are the canonical public PayChangu endpoints exercised by the integration suite.
   app.post('/api/payments/paychangu/initialize', requireAuth, async (req, res) => {
     try {
       const result = await serverPaymentService.createPayment(req.body as any);
@@ -150,6 +149,7 @@ export function clearPaymentState(): void {
   db.prepare('DELETE FROM escrows').run();
   db.prepare('DELETE FROM seller_payout_account_events').run();
   db.prepare('DELETE FROM seller_payout_accounts WHERE seller_uid = ?').run('seller_1');
+  db.prepare('DELETE FROM seller_connect_accounts WHERE seller_uid = ?').run('seller_1');
   db.prepare('DELETE FROM payment_webhook_events').run();
   orderRepository.clear();
   paymentRepository.clear();
@@ -213,6 +213,37 @@ export function seedVerifiedSellerPayoutDestination(destinationId = 'dest_seller
       is_active = EXCLUDED.is_active,
       updated_at = EXCLUDED.updated_at`,
   ).run(destinationId, now, now, now);
+}
+
+export function seedConnectedSellerAccount(connectAccountId = 'connect_seller_1'): void {
+  const db = getPaymentDb();
+  const now = new Date().toISOString();
+  db.prepare(`INSERT INTO sellers (uid, email) VALUES ('seller_1', 'seller@example.com') ON CONFLICT (uid) DO UPDATE SET email = EXCLUDED.email`).run();
+  db.prepare(
+    `INSERT INTO seller_connect_accounts (
+      id, seller_uid, provider_name, status, mode, scope,
+      authorization_url, connect_user_id, connect_user_email, connect_user_name,
+      access_token_encrypted, refresh_token_encrypted, webhook_url,
+      webhook_secret_encrypted, connected_at, revoked_at, last_error,
+      raw_profile, created_at, updated_at
+    ) VALUES (?, 'seller_1', 'paychangu', 'connected', 'test', 'payments',
+      'https://connect.paychangu.test/authorize', 'connect-user-1',
+      'seller@example.com', 'Seller One', 'encrypted-access-token',
+      NULL, 'https://example.com/paychangu/connect-webhook', NULL, ?, NULL,
+      NULL, '{"id":"connect-user-1","email":"seller@example.com"}', ?, ?)
+    ON CONFLICT (seller_uid) DO UPDATE SET
+      status = EXCLUDED.status,
+      mode = EXCLUDED.mode,
+      scope = EXCLUDED.scope,
+      connect_user_id = EXCLUDED.connect_user_id,
+      connect_user_email = EXCLUDED.connect_user_email,
+      connect_user_name = EXCLUDED.connect_user_name,
+      connected_at = EXCLUDED.connected_at,
+      revoked_at = NULL,
+      last_error = NULL,
+      raw_profile = EXCLUDED.raw_profile,
+      updated_at = EXCLUDED.updated_at`,
+  ).run(connectAccountId, now, now, now);
 }
 
 export function seedStoredPayment(orderId: string, reference: string, amount = 1000, currency = 'MWK'): void {
