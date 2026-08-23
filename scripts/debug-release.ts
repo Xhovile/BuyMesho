@@ -3,6 +3,7 @@ import express from 'express';
 import { createBuyerEscrowRouter } from '../server/routes/escrow/buyerEscrowRoutes.js';
 import { orderRepository } from '../server/modules/orders/order.repository.js';
 import { escrowRepository } from '../server/modules/escrow/escrow.repository.js';
+import { query } from '../server/postgres.js';
 import { getPaymentDb } from '../server/postgresCompat.js';
 
 if (process.env.NODE_ENV !== 'test') {
@@ -57,6 +58,73 @@ async function main() {
   const server = app.listen(0);
   const port = (server.address() as any).port;
 
+  let diagnosticsFinished = false;
+  const diagnostics = setTimeout(async () => {
+    if (diagnosticsFinished) return;
+
+    try {
+      const activity = await query<{
+        pid: number;
+        state: string;
+        wait_event_type: string | null;
+        wait_event: string | null;
+        query: string;
+        backend_xid: string | null;
+        query_start: string | null;
+      }>(
+        `SELECT pid, state, wait_event_type, wait_event, query, backend_xid, query_start
+         FROM pg_stat_activity
+         WHERE datname = current_database()
+           AND pid <> pg_backend_pid()
+         ORDER BY query_start NULLS LAST`,
+      );
+
+      console.log('[release-debug-db] activity:', JSON.stringify(activity.rows, null, 2));
+
+      const locks = await query<{
+        blocked_pid: number;
+        blocked_query: string;
+        blocking_pid: number | null;
+        blocking_query: string | null;
+        locktype: string;
+        mode: string;
+        relation: string | null;
+      }>(
+        `SELECT
+           blocked.pid AS blocked_pid,
+           blocked.query AS blocked_query,
+           blocking.pid AS blocking_pid,
+           blocking.query AS blocking_query,
+           blocked_locks.locktype,
+           blocked_locks.mode,
+           blocked_locks.relation::regclass::text AS relation
+         FROM pg_locks blocked_locks
+         JOIN pg_stat_activity blocked ON blocked.pid = blocked_locks.pid
+         LEFT JOIN LATERAL (
+           SELECT a.pid, a.query
+           FROM pg_locks blocking_locks
+           JOIN pg_stat_activity a ON a.pid = blocking_locks.pid
+           WHERE blocking_locks.locktype = blocked_locks.locktype
+             AND blocking_locks.database IS NOT DISTINCT FROM blocked_locks.database
+             AND blocking_locks.relation IS NOT DISTINCT FROM blocked_locks.relation
+             AND blocking_locks.page IS NOT DISTINCT FROM blocked_locks.page
+             AND blocking_locks.tuple IS NOT DISTINCT FROM blocked_locks.tuple
+             AND blocking_locks.transactionid IS NOT DISTINCT FROM blocked_locks.transactionid
+             AND blocking_locks.classid IS NOT DISTINCT FROM blocked_locks.classid
+             AND blocking_locks.objid IS NOT DISTINCT FROM blocked_locks.objid
+             AND blocking_locks.objsubid IS NOT DISTINCT FROM blocked_locks.objsubid
+             AND blocking_locks.granted
+           LIMIT 1
+         ) blocking ON true
+         WHERE NOT blocked_locks.granted`,
+      );
+
+      console.log('[release-debug-db] locks:', JSON.stringify(locks.rows, null, 2));
+    } catch (error) {
+      console.error('[release-debug-db] diagnostics failed:', error);
+    }
+  }, 3000);
+
   try {
     const response = await fetch(`http://127.0.0.1:${port}/api/escrow/${releasePayoutOrderId}/release`, {
       method: 'POST',
@@ -64,10 +132,14 @@ async function main() {
       body: JSON.stringify({ reference: 'buyer-confirmed-delivery' }),
     });
 
+    diagnosticsFinished = true;
+    clearTimeout(diagnostics);
     console.log('Status:', response.status);
     const body = await response.json();
     console.log('Body:', JSON.stringify(body, null, 2));
   } finally {
+    diagnosticsFinished = true;
+    clearTimeout(diagnostics);
     server.close();
   }
 }
