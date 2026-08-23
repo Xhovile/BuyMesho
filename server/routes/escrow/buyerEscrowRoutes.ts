@@ -316,7 +316,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         payoutId: finalPayout.id,
         sellerId: access.order.sellerId,
         eventType: 'payout_released',
-        actorType: req.user?.is_admin ? 'admin' : 'system',
+        actorType: req.user?.is_admin ? 'admin' : 'buyer',
         actorId: requesterId,
         note: 'Escrow release created payout candidate',
         payload: {
