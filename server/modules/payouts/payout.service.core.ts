@@ -17,6 +17,11 @@ import {
   type ReconcileProviderCallbackInput,
 } from './payout.shared.js';
 
+function payoutDebug(stage: string, details?: Record<string, unknown>): void {
+  if (process.env.NODE_ENV !== 'test') return;
+  console.error(`[payout-debug] ${stage}`, details ?? {});
+}
+
 export class PayoutService {
   constructor(private readonly repository: PayoutTransitionRepository = payoutRepository) {}
 
@@ -29,7 +34,15 @@ export class PayoutService {
   }
 
   async createEligiblePayoutCandidateAsync(input: CreateEligiblePayoutInput, client?: PoolClient): Promise<PayoutRecord> {
-    return this.repository.createEligibleForReleaseAsync(input, client);
+    payoutDebug('candidate:service:start', {
+      hasClient: Boolean(client),
+      repositoryType: this.repository?.constructor?.name,
+      escrowId: input.escrowId,
+      amount: input.amount,
+    });
+    const result = await this.repository.createEligibleForReleaseAsync(input, client);
+    payoutDebug('candidate:service:end', { payoutId: result.id, status: result.status });
+    return result;
   }
 
   createConnectPayoutCandidate(input: CreateConnectPayoutInput): { payout: PayoutRecord; created: boolean } {
