@@ -31,7 +31,7 @@ if (process.env.NODE_ENV === "test") {
   if (!testUrl) {
     throw new Error(
       "TEST DATABASE SAFETY: TEST_DATABASE_URL is required when NODE_ENV=test. " +
-      "Refusing to run tests without an explicitly configured test database.",
+        "Refusing to run tests without an explicitly configured test database.",
     );
   }
 
@@ -41,7 +41,7 @@ if (process.env.NODE_ENV === "test") {
   if (normalizedProductionUrl && normalizedTestUrl === normalizedProductionUrl) {
     throw new Error(
       "TEST DATABASE SAFETY: TEST_DATABASE_URL is identical to DATABASE_URL. " +
-      "Refusing to run tests against the configured production database.",
+        "Refusing to run tests against the configured production database.",
     );
   }
 
@@ -55,10 +55,10 @@ if (process.env.NODE_ENV === "test") {
   process.env.DATABASE_URL = testUrl;
   process.env.ALLOW_MOCK_DATABASE = "false";
 
-  // Import the PostgreSQL layer only after DATABASE_URL has been switched to the
-  // verified test database. This prevents postgres.ts from validating/creating
-  // a connection against the normal application database during test startup.
   const { postgresDb } = await import("./postgresCompat.js");
+  const { repairPaymentWebhookTestSchema } = await import("./testDatabaseSchemaRepair.js");
+
+  repairPaymentWebhookTestSchema();
 
   after(async () => {
     try {

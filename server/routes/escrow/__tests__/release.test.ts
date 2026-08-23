@@ -207,12 +207,13 @@ test('release endpoint creates a pending-settlement payout candidate without imm
   const requests = mockPayChanguFetch();
 
   const nowStamp = now();
-  serverOrderService.create({
+  await orderRepository.saveAsync({
     id: releasePayoutOrderId,
     buyerId: 'buyer-release-payout-1',
     sellerId,
     source: 'listing',
     status: 'in_escrow',
+    deliveryStatus: 'action_required',
     currency: 'MWK',
     subtotal: { amount: 1500, currency: 'MWK' },
     total: { amount: 1500, currency: 'MWK' },
@@ -220,8 +221,7 @@ test('release endpoint creates a pending-settlement payout candidate without imm
     createdAt: nowStamp,
     updatedAt: nowStamp,
   });
-  serverOrderService.setStatus(releasePayoutOrderId, 'in_escrow');
-  escrowRepository.create(releasePayoutOrderId, 'MWK', 1500);
+  await escrowRepository.createAsync(releasePayoutOrderId, 'MWK', 1500);
   seedVerifiedDestination();
 
   const app = createReleaseApp('buyer-release-payout-1');
@@ -403,7 +403,7 @@ test('refund endpoint records a pre-release escrow refund ledger entry and zeroe
   clearReleasePayoutState();
 
   const nowStamp = now();
-  serverOrderService.create({
+  const createdOrder = serverOrderService.create({
     id: refundOrderId,
     buyerId: 'buyer-refund-before-release-1',
     sellerId: sellerId,
@@ -416,6 +416,8 @@ test('refund endpoint records a pre-release escrow refund ledger entry and zeroe
     createdAt: nowStamp,
     updatedAt: nowStamp,
   });
+  serverOrderService.markPaid(createdOrder);
+  serverOrderService.setStatus(refundOrderId, 'in_escrow');
   escrowRepository.create(refundOrderId, 'MWK', 1600);
 
   const app = createReleaseApp('admin-refund-before-release-1', true);
@@ -517,7 +519,7 @@ test('refund endpoint cancels manual payouts linked to the order escrow before r
   clearReleasePayoutState();
 
   const nowStamp = now();
-  serverOrderService.create({
+  const createdOrder = serverOrderService.create({
     id: refundOrderId,
     buyerId: 'buyer-refund-before-release-1',
     sellerId,
@@ -530,6 +532,8 @@ test('refund endpoint cancels manual payouts linked to the order escrow before r
     createdAt: nowStamp,
     updatedAt: nowStamp,
   });
+  serverOrderService.markPaid(createdOrder);
+  serverOrderService.setStatus(refundOrderId, 'in_escrow');
   const escrow = escrowRepository.create(refundOrderId, 'MWK', 1600);
 
   const db = getPaymentDb();

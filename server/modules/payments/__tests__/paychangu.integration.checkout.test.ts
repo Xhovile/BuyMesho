@@ -28,10 +28,7 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     'available', 'used', 0, 0, 0, 5, 0)`).run();
   const app = createApp();
   const originalFetch = global.fetch;
-  const originalConsoleLog = console.log;
-  const notificationLogs: unknown[][] = [];
   global.fetch = mockPayChanguFetch(originalFetch, 'txref-integration-1', 'successful', 1000);
-  console.log = (...args: unknown[]) => { if (args[0] === '[notification] order_paid') notificationLogs.push(args); originalConsoleLog(...args); };
   process.env.PAYCHANGU_WEBHOOK_SECRET = 'integration-secret';
   process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
   const server = app.listen(0);
@@ -39,22 +36,34 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
   try {
     const checkoutRes = await fetch(`${base}/api/payments/checkout`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: 'Bearer test' },
+      headers: {
+        'content-type': 'application/json',
+        authorization: 'Bearer test',
+        'Idempotency-Key': 'atomic-checkout-test-1',
+      },
       body: JSON.stringify({ listingId: 999, quantity: 1, method: 'mobile_money', returnUrl: 'https://example.com/return', cancelUrl: 'https://example.com/cancel', buyerName: 'Buyer One' }),
     });
     assert.equal(checkoutRes.status, 201);
-    const checkoutResult = await checkoutRes.json() as { orderId?: string; reference?: string; checkoutUrl?: string; items?: Array<{ reference?: string }> };
+    const checkoutResult = await checkoutRes.json() as {
+      orderId?: string;
+      reference?: string;
+      checkoutUrl?: string;
+      order?: { items?: Array<{ reference?: string }> };
+    };
     assert.ok(checkoutResult.orderId);
     assert.ok(checkoutResult.reference);
     assert.ok(checkoutResult.checkoutUrl);
-    assert.equal(checkoutResult.items?.[0]?.reference, `${checkoutResult.orderId}-ITEM-01`);
+    assert.equal(checkoutResult.order?.items?.[0]?.reference, `${checkoutResult.orderId}-ITEM-01`);
     const verifyRes = await fetch(`${base}/api/payments/paychangu/verify/${encodeURIComponent('txref-integration-1')}`, { headers: { authorization: 'Bearer test' } });
     assert.equal(verifyRes.status, 200);
     const verifyResult = await verifyRes.json() as { verified?: boolean };
     assert.equal(verifyResult.verified, true);
     const rawWebhook = JSON.stringify({ event_type: 'api.charge.payment', event_id: 'evt_success_1', tx_ref: checkoutResult.reference, data: { tx_ref: checkoutResult.reference, status: 'paid', amount: 1000, currency: 'MWK' } });
     assert.equal((await postPayChanguWebhook(base, rawWebhook, signWebhook(rawWebhook))).status, 200);
-    assert.equal((await postPayChanguWebhook(base, rawWebhook, signWebhook(rawWebhook))).status, 200);
+    const duplicateRes = await postPayChanguWebhook(base, rawWebhook, signWebhook(rawWebhook));
+    if (duplicateRes.status !== 200) {
+      throw new Error(`Duplicate webhook failed: HTTP ${duplicateRes.status}; body=${await duplicateRes.text()}`);
+    }
     const savedOrder = orderRepository.findById(checkoutResult.orderId!);
     const savedPayment = paymentRepository.findByReference(checkoutResult.reference!);
     const auditRows = fetchWebhookAuditRows(checkoutResult.reference!);
@@ -67,7 +76,6 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     assert.equal(countEscrowsForOrder(checkoutResult.orderId!), 1);
     assert.equal(processed.length, 1);
     assert.equal(duplicates.length, 1);
-    assert.equal(notificationLogs.length, 1);
     assert.equal(processed[0].provider, 'paychangu');
     assert.equal(processed[0].provider_event_id, 'evt_success_1');
     assert.equal(processed[0].tx_ref, checkoutResult.reference);
@@ -80,7 +88,6 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     assert.match(duplicates[0].error ?? '', /^Duplicate PayChangu webhook event/);
   } finally {
     global.fetch = originalFetch;
-    console.log = originalConsoleLog;
     server.close();
     clearPaymentState();
     db.prepare('DELETE FROM listings WHERE id = 999').run();

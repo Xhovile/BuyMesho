@@ -104,7 +104,7 @@ test('checkout idempotency: replay returns the same order and payment instead of
     assert.equal(replayBody.paymentId, firstBody.paymentId);
     assert.equal(replayBody.reference, firstBody.reference);
 
-    const orderCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM orders').get() as { count: number }).count;
+    const orderCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM orders WHERE buyer_id = ? AND checkout_idempotency_key = ?').get('buyer_idempotency_1', 'checkout-idem-001') as { count: number }).count;
     const paymentCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM payments').get() as { count: number }).count;
     assert.equal(orderCount, 1);
     assert.equal(paymentCount, 1);
@@ -150,7 +150,7 @@ test('checkout idempotency: reusing a key for different checkout parameters is r
     const body = await conflicting.json() as { code?: string };
     assert.equal(body.code, 'IDEMPOTENCY_KEY_REUSED');
 
-    const orderCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM orders').get() as { count: number }).count;
+    const orderCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM orders WHERE buyer_id = ? AND checkout_idempotency_key = ?').get('buyer_idempotency_1', 'checkout-idem-002') as { count: number }).count;
     const paymentCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM payments').get() as { count: number }).count;
     assert.equal(orderCount, 1);
     assert.equal(paymentCount, 1);

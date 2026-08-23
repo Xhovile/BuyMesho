@@ -13,10 +13,15 @@ dotenv.config();
 
 export interface ServerPaymentConfig { paychanguEnabled?: boolean; paychanguSecretKey?: string; paychanguWebhookSecret?: string; paychanguBaseUrl?: string; }
 const REFUND_UNAVAILABLE_MESSAGE='Refunds are not available yet for this payment provider';
-function readEnv(name:string):string|undefined{const value=process.env[name]?.trim();if(!value)return undefined;if(name==='PAYCHANGU_BASE_URL'&&value.includes('api/paychangu.com'))return value.replace('api/paychangu.com','api.paychangu.com');return value;}
+function readEnv(name:string):string|undefined{const value=process.env[name]?.trim();if(!value)return undefined;if(name==='PAYCHANGU_BASE_URL'&&value.includes('api/paychangu.com'))return value.replace('api.paychangu.com','api.paychangu.com');return value;}
 function isTruthyFlag(value:string|undefined):boolean{return value==='1'||value==='true'||value==='yes'||value==='on';}
 function validatePayChanguConfig(config:ServerPaymentConfig):void{if(!config.paychanguEnabled||process.env.NODE_ENV!=='production')return;const missing:string[]=[];if(!config.paychanguSecretKey)missing.push('PAYCHANGU_SECRET_KEY');if(!config.paychanguWebhookSecret)missing.push('PAYCHANGU_WEBHOOK_SECRET');if(missing.length)throw new Error(`Missing required PayChangu environment variables in production: ${missing.join(', ')}`);}
 function normalizeCurrency(value:string|undefined):string{return String(value??'').trim().toUpperCase();}
+function normalizeReference(value:string|undefined|null):string{return String(value??'').trim();}
+function stripPayChanguPrefix(value:string):string{return value.replace(/^PAYCHANGU-/i,'');}
+function equivalentPayChanguReferences(left:string|undefined|null,right:string|undefined|null):boolean{const a=normalizeReference(left);const b=normalizeReference(right);return Boolean(a&&b&&stripPayChanguPrefix(a)===stripPayChanguPrefix(b));}
+function uniqueReferences(values:Array<string|undefined|null>):string[]{const seen=new Set<string>();const out:string[]=[];for(const value of values){const reference=normalizeReference(value);if(!reference||seen.has(reference))continue;seen.add(reference);out.push(reference);}return out;}
+function buildReferenceCandidates(requestedReference:string,verifiedReference:string|undefined|null):string[]{return uniqueReferences([requestedReference,verifiedReference,stripPayChanguPrefix(requestedReference),verifiedReference?stripPayChanguPrefix(verifiedReference):null]);}
 function paymentMatchesExpectedTotal(expected:{amount:number;currency:string},actual?:{amount:number;currency:string}):boolean{return Boolean(actual&&actual.amount===expected.amount&&normalizeCurrency(expected.currency)===normalizeCurrency(actual.currency));}
 function parsePendingWebhookPayload(payload:string):PaymentVerificationResult|null{
   try{
@@ -63,16 +68,55 @@ export class ServerPaymentService{
     return saved;
   }
 
-  async verifyPaychanguPayment(txRef:string):Promise<PaymentVerificationResult>{return this.verifyPayChanguPaymentInternal(txRef);}
-  async verifyPayChanguPayment(txRef:string):Promise<PaymentVerificationResult>{return this.verifyPayChanguPaymentInternal(txRef);}
-  private async verifyPayChanguPaymentInternal(txRef:string):Promise<PaymentVerificationResult>{const requestedTxRef=txRef.trim();const verification=await paychanguProvider.verifyPayment(requestedTxRef,this.resolveConfig());const returnedReference=verification.reference?.trim()||requestedTxRef;const payment=await paymentRepository.findByReferenceAsync(requestedTxRef);let strictVerified=verification.verified;let failureReason=verification.failureReason;
-    if(returnedReference!==requestedTxRef){strictVerified=false;failureReason=failureReason??'Verified transaction reference does not match requested transaction reference';}
-    if(!payment){strictVerified=false;failureReason=failureReason??'Stored payment record not found for this reference';}
-    else if(payment.reference!==requestedTxRef){strictVerified=false;failureReason=failureReason??'Stored payment reference does not match requested transaction reference';}
-    else{const order=await orderRepository.findByIdAsync(payment.orderId);if(!order){strictVerified=false;failureReason=failureReason??'Associated order not found';}else if(order.paymentReference&&order.paymentReference!==requestedTxRef){strictVerified=false;failureReason=failureReason??'Order payment reference does not match requested transaction reference';}else if(!paymentMatchesExpectedTotal(order.total,verification.amount)){strictVerified=false;failureReason=failureReason??`Payment amount or currency does not exactly match order total for ${order.id}`;}}
-    const strictVerification:PaymentVerificationResult={...verification,verified:strictVerified,orderId:payment?.orderId,failureReason};
+  async verifyPaychanguPayment(txRef:string):Promise<PaymentVerificationResult>{return this.verifyPaychanguPaymentInternal(txRef);}
+  private async verifyPaychanguPaymentInternal(txRef:string):Promise<PaymentVerificationResult>{
+    const requestedTxRef=normalizeReference(txRef);
+    const verification=await paychanguProvider.verifyPayment(requestedTxRef,this.resolveConfig());
+    const verifiedReference=normalizeReference(verification.reference)||normalizeReference(verification.txRef)||requestedTxRef;
+    const referencesEquivalent=equivalentPayChanguReferences(requestedTxRef,verifiedReference);
+    const referenceCandidates=buildReferenceCandidates(requestedTxRef,verifiedReference);
+
+    const payment=await (async()=>{
+      if(!referencesEquivalent)return undefined;
+      for(const reference of referenceCandidates){
+        const found=await paymentRepository.findByReferenceAsync(reference);
+        if(found)return found;
+      }
+      return undefined;
+    })();
+
+    let strictVerified=verification.verified;
+    let failureReason=verification.failureReason;
+
+    if(!referencesEquivalent){
+      strictVerified=false;
+      failureReason='PayChangu verification reference does not match requested transaction reference';
+    } else if(!payment){
+      strictVerified=false;
+      failureReason=failureReason??'Stored payment record not found for this reference';
+    } else {
+      const order=await orderRepository.findByIdAsync(payment.orderId);
+      if(!order){
+        strictVerified=false;
+        failureReason=failureReason??'Associated order not found';
+      } else if(order.paymentReference&&!equivalentPayChanguReferences(order.paymentReference,payment.reference)){
+        strictVerified=false;
+        failureReason=failureReason??'Order payment reference does not match the stored payment reference';
+      } else if(!paymentMatchesExpectedTotal(order.total,verification.amount)){
+        strictVerified=false;
+        failureReason=failureReason??`Payment amount or currency does not exactly match order total for ${order.id}`;
+      }
+    }
+
+    const canonicalReference=payment?.reference??requestedTxRef;
+    const strictVerification:PaymentVerificationResult={...verification,verified:strictVerified,reference:canonicalReference,txRef:canonicalReference,orderId:payment?.orderId,failureReason};
     if(payment)await paymentRepository.updateByReferenceAsync(payment.reference,current=>({...current,verified:strictVerification.verified,verification:strictVerification}));
-    if(strictVerification.verified&&payment){const currentOrder=await orderRepository.findByIdAsync(payment.orderId);if(currentOrder&&!['in_escrow','fulfilled','refunded','closed','disputed'].includes(currentOrder.status)){await applyVerifiedPayChanguPayment({...strictVerification,provider:'paychangu',reference:requestedTxRef,txRef:requestedTxRef,status:strictVerification.status??'captured'});}}
+    if(strictVerification.verified&&payment){
+      const currentOrder=await orderRepository.findByIdAsync(payment.orderId);
+      if(currentOrder&&!['in_escrow','fulfilled','refunded','closed','disputed'].includes(currentOrder.status)){
+        await applyVerifiedPayChanguPayment({...strictVerification,provider:'paychangu',reference:canonicalReference,txRef:canonicalReference,status:strictVerification.status??'captured'});
+      }
+    }
     return strictVerification;
   }
 

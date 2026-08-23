@@ -1,4 +1,3 @@
-import './payout.schema.js';
 import { getPaymentDb } from '../../postgresCompat.js';
 import { getPayChanguPayoutStatus } from './paychangu.payout.js';
 import { payoutRepository, type PayoutRepository } from './payout.repository.js';

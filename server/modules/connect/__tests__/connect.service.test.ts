@@ -81,11 +81,20 @@ test('validateConnectEnvironment throws when each required env value is missing'
   delete process.env.PAYCHANGU_WEBHOOK_SECRET;
   assert.throws(() => service.validateConnectEnvironment(), /PAYCHANGU_WEBHOOK_SECRET/);
 
-  setConnectEnv();
-  delete process.env.CONNECT_TOKEN_ENCRYPTION_KEY;
-  assert.throws(() => service.validateConnectEnvironment(), /CONNECT_TOKEN_ENCRYPTION_KEY/);
-
-  setConnectEnv();
+  const previousConnectKey = process.env.CONNECT_TOKEN_ENCRYPTION_KEY;
+  const previousSellerPayoutKey = process.env.SELLER_PAYOUT_ENCRYPTION_KEY;
+  try {
+    setConnectEnv();
+    delete process.env.CONNECT_TOKEN_ENCRYPTION_KEY;
+    delete process.env.SELLER_PAYOUT_ENCRYPTION_KEY;
+    assert.throws(() => service.validateConnectEnvironment(), /CONNECT_TOKEN_ENCRYPTION_KEY/);
+  } finally {
+    if (previousConnectKey === undefined) delete process.env.CONNECT_TOKEN_ENCRYPTION_KEY;
+    else process.env.CONNECT_TOKEN_ENCRYPTION_KEY = previousConnectKey;
+    if (previousSellerPayoutKey === undefined) delete process.env.SELLER_PAYOUT_ENCRYPTION_KEY;
+    else process.env.SELLER_PAYOUT_ENCRYPTION_KEY = previousSellerPayoutKey;
+    setConnectEnv();
+  }
 });
 
 test('startConnectOnboarding creates a pending attempt and authorization URL', async () => {

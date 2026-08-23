@@ -153,7 +153,16 @@ test('financial integrity: late success webhook cannot resurrect a refunded orde
     const reference = 'txref-late-success-after-refund-1';
     seedOrder(orderId, reference, 'refunded');
     seedStoredPayment(orderId, reference);
-    paymentRepository.updateByReference(reference, (current) => ({ ...current, status: 'refunded', verified: false }));
+    paymentRepository.updateByReference(reference, (current) => ({
+      ...current,
+      status: 'captured',
+      verified: true,
+    }));
+    paymentRepository.updateByReference(reference, (current) => ({
+      ...current,
+      status: 'refunded',
+      verified: false,
+    }));
 
     const escrow = escrowRepository.create(orderId, 'MWK', 1000);
     escrowRepository.refundHeldBalance({ orderId, refundedBy: 'system-test', reference: 'refund-late-success-test' });
