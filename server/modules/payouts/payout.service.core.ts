@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import { payoutRepository, type PayoutTransitionRepository } from './payout.transition-repository.js';
 import { applyAdminOverrideAtomic } from './payout.admin-override.atomic.js';
 import type { PoolClient } from 'pg';
@@ -9,6 +10,8 @@ import {
   type PayoutRequest,
   type ReconcileProviderCallbackInput,
 } from './payout.shared.js';
+
+const require = createRequire(import.meta.url);
 
 function payoutDebug(stage: string, details?: Record<string, unknown>): void {
   if (process.env.NODE_ENV !== 'test') return;
@@ -70,9 +73,8 @@ export class PayoutService {
   }
 
   reconcileProviderCallback(input: ReconcileProviderCallbackInput): PayoutRecord | undefined {
-    // This flow remains synchronous by contract; defer the provider/reconciliation
-    // module load until the operation is actually requested.
-    throw new Error('reconcileProviderCallback is not available through the async payout service facade');
+    const { reconcileProviderCallbackFlow } = require('./payout.service.reconciliation.js') as typeof import('./payout.service.reconciliation.js');
+    return reconcileProviderCallbackFlow(this.repository, input);
   }
 
   async reconcilePendingPayoutStatuses(input: {
