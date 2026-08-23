@@ -1,4 +1,3 @@
-import './payout.schema.js';
 import { randomUUID } from 'crypto';
 import { getPaymentDb } from '../../postgresCompat.js';
 import { query, withTransaction } from '../../postgres.js';
