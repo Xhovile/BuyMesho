@@ -207,12 +207,13 @@ test('release endpoint creates a pending-settlement payout candidate without imm
   const requests = mockPayChanguFetch();
 
   const nowStamp = now();
-  const createdOrder = serverOrderService.create({
+  await orderRepository.saveAsync({
     id: releasePayoutOrderId,
     buyerId: 'buyer-release-payout-1',
     sellerId,
     source: 'listing',
     status: 'in_escrow',
+    deliveryStatus: 'action_required',
     currency: 'MWK',
     subtotal: { amount: 1500, currency: 'MWK' },
     total: { amount: 1500, currency: 'MWK' },
@@ -220,9 +221,7 @@ test('release endpoint creates a pending-settlement payout candidate without imm
     createdAt: nowStamp,
     updatedAt: nowStamp,
   });
-  serverOrderService.markPaid(createdOrder);
-  serverOrderService.setStatus(releasePayoutOrderId, 'in_escrow');
-  escrowRepository.create(releasePayoutOrderId, 'MWK', 1500);
+  await escrowRepository.createAsync(releasePayoutOrderId, 'MWK', 1500);
   seedVerifiedDestination();
 
   const app = createReleaseApp('buyer-release-payout-1');

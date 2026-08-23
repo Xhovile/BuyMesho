@@ -5,7 +5,6 @@ import { createEscrowRouter } from '../../escrowRoutes.js';
 import { getPaymentDb } from '../../../postgresCompat.js';
 import { escrowRepository } from '../../../modules/escrow/escrow.repository.js';
 import { orderRepository } from '../../../modules/orders/order.repository.js';
-import { serverOrderService } from '../../../modules/orders/order.service.js';
 import { payoutRepository } from '../../../modules/payouts/payout.service.js';
 
 const orderId = 'order-release-payout-audit';
@@ -41,14 +40,14 @@ test('release creates payout_released audit event with formula snapshot', async 
   clearState();
 
   const now = new Date().toISOString();
-  const db = getPaymentDb();
 
-  serverOrderService.create({
+  await orderRepository.saveAsync({
     id: orderId,
     buyerId: 'buyer-release-audit',
     sellerId,
     source: 'listing',
-    status: 'pending_payment',
+    status: 'in_escrow',
+    deliveryStatus: 'action_required',
     currency: 'MWK',
     subtotal: { amount: 1500, currency: 'MWK' },
     total: { amount: 1500, currency: 'MWK' },
@@ -56,10 +55,9 @@ test('release creates payout_released audit event with formula snapshot', async 
     createdAt: now,
     updatedAt: now,
   });
-  serverOrderService.setStatus(orderId, 'paid');
-  serverOrderService.setStatus(orderId, 'in_escrow');
-  escrowRepository.create(orderId, 'MWK', 1500);
+  await escrowRepository.createAsync(orderId, 'MWK', 1500);
 
+  const db = getPaymentDb();
   db.prepare('INSERT INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)')
     .run(sellerId, `${sellerId}@example.com`);
   db.prepare(
