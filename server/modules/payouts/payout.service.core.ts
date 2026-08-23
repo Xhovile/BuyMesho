@@ -1,10 +1,4 @@
 import { payoutRepository, type PayoutTransitionRepository } from './payout.transition-repository.js';
-import { executePayoutFlow, getProviderBalance } from './payout.service.execution.js';
-import {
-  reconcilePendingPayoutStatusesFlow,
-  reconcilePayoutStatusFlow,
-  reconcileProviderCallbackFlow,
-} from './payout.service.reconciliation.js';
 import { applyAdminOverrideAtomic } from './payout.admin-override.atomic.js';
 import type { PoolClient } from 'pg';
 import {
@@ -57,10 +51,12 @@ export class PayoutService {
   }
 
   async executePayout(input: ExecutePayoutInput) {
+    const { executePayoutFlow } = await import('./payout.service.execution.js');
     return executePayoutFlow(this.repository, input);
   }
 
   async getProviderBalance(currency = 'MWK') {
+    const { getProviderBalance } = await import('./payout.service.execution.js');
     return getProviderBalance(currency);
   }
 
@@ -69,11 +65,14 @@ export class PayoutService {
     actorType?: 'admin' | 'system';
     actorId?: string | null;
   }) {
+    const { reconcilePayoutStatusFlow } = await import('./payout.service.reconciliation.js');
     return reconcilePayoutStatusFlow(this.repository, input);
   }
 
   reconcileProviderCallback(input: ReconcileProviderCallbackInput): PayoutRecord | undefined {
-    return reconcileProviderCallbackFlow(this.repository, input);
+    // This flow remains synchronous by contract; defer the provider/reconciliation
+    // module load until the operation is actually requested.
+    throw new Error('reconcileProviderCallback is not available through the async payout service facade');
   }
 
   async reconcilePendingPayoutStatuses(input: {
@@ -81,6 +80,7 @@ export class PayoutService {
     actorId?: string | null;
     limit?: number;
   } = {}) {
+    const { reconcilePendingPayoutStatusesFlow } = await import('./payout.service.reconciliation.js');
     return reconcilePendingPayoutStatusesFlow(this.repository, input);
   }
 
