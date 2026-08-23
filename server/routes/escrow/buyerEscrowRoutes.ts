@@ -83,6 +83,11 @@ function hasPastSettlementMidnightTPlusOne(referenceAt: string | null | undefine
   return Date.now() >= settlementAt;
 }
 
+function releaseDebug(stage: string, details?: Record<string, unknown>): void {
+  if (process.env.NODE_ENV !== 'test') return;
+  console.error(`[escrow-release-debug] ${stage}`, details ?? {});
+}
+
 export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
@@ -169,12 +174,16 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           : `escrow-release:${orderId}`;
 
       const requestedDestinationAccountId = getRequestedDestinationAccountId(req.body);
+      releaseDebug('transaction:start', { orderId, requesterId, sellerId: access.order.sellerId });
 
       const result = await withTransaction(async (client) => {
+        releaseDebug('transaction:begin');
+        releaseDebug('releaseToSellerEarningsAsync:start');
         const released = await escrowRepository.releaseToSellerEarningsAsync(
           { orderId, releasedBy: requesterId, reference: releaseReference },
           client,
         );
+        releaseDebug('releaseToSellerEarningsAsync:end', { released: Boolean(released) });
 
         if (!released) return undefined;
 
@@ -182,7 +191,9 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           throw new Error('Escrow release succeeded but payout is not eligible');
         }
 
+        releaseDebug('destinationLookup:start');
         const destination = await resolveVerifiedPayoutDestination(access.order.sellerId, client);
+        releaseDebug('destinationLookup:end', { found: Boolean(destination), destinationId: destination?.id });
         if (!destination) {
           throw new Error('No verified active payout destination found for seller');
         }
@@ -206,6 +217,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           currency: released.releaseEntry.currency,
         });
 
+        releaseDebug('createEligiblePayoutCandidateAsync:start', { amount: payoutFormula.sellerReceivesAmount });
         const payout = await payoutService.createEligiblePayoutCandidateAsync({
           sellerId: access.order.sellerId,
           orderId,
@@ -235,6 +247,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
             settlementReferenceAt: released.releaseEntry.createdAt,
           },
         }, client);
+        releaseDebug('createEligiblePayoutCandidateAsync:end', { payoutId: payout.id, status: payout.status });
 
         const settlementReferenceAt =
           access.order.paidAt ??
@@ -243,11 +256,14 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           released.releaseEntry.createdAt;
         const settlementElapsed = hasPastSettlementMidnightTPlusOne(settlementReferenceAt);
 
+        releaseDebug('setStatusAsync:start', { from: access.order.status, to: 'fulfilled' });
         const orderUpdated = await serverOrderService.setStatusAsync(orderId, 'fulfilled', client);
+        releaseDebug('setStatusAsync:end', { updated: Boolean(orderUpdated) });
         if (!orderUpdated) {
           console.warn(`[escrow] release: order ${orderId} not found when updating status to fulfilled`);
         }
 
+        releaseDebug('transaction:callback:end');
         return {
           escrow: released.escrow,
           payout,
@@ -264,6 +280,8 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           settlementElapsed,
         };
       });
+
+      releaseDebug('transaction:commit:end', { result: Boolean(result) });
 
       if (!result) {
         return res.status(404).json({ error: 'Escrow not found' });
@@ -350,6 +368,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
             },
       });
     } catch (error) {
+      releaseDebug('route:error', { error: error instanceof Error ? error.message : String(error) });
       return res.status(500).json(jsonError(error, 'Failed to release escrow'));
     }
   });
