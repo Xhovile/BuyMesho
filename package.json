@@ -33,6 +33,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "@xhovile/platform": "github:Xhovile/Platform#main",
     "cloudinary": "^2.9.0",
+    "dotenv": "^17.2.3",
     "esbuild": "^0.28.0",
     "express": "^4.22.2",
     "express-rate-limit": "^8.5.0",
