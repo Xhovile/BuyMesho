@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import express from 'express';
 import { createBuyerEscrowRouter } from '../server/routes/escrow/buyerEscrowRoutes.js';
-import { serverOrderService } from '../server/modules/orders/order.service.js';
+import { orderRepository } from '../server/modules/orders/order.repository.js';
 import { escrowRepository } from '../server/modules/escrow/escrow.repository.js';
 import { getPaymentDb } from '../server/postgresCompat.js';
 
@@ -10,13 +10,11 @@ if (process.env.NODE_ENV !== 'test') {
   process.exit(1);
 }
 
-// Minimal debug reproduction of the test
 async function main() {
   process.env.PAYCHANGU_SECRET_KEY = 'test-secret-key';
   const releasePayoutOrderId = 'order-release-payout-step-3';
   const sellerId = 'seller-release-payout-1';
 
-  // clear state
   const db = getPaymentDb();
   db.prepare('DELETE FROM payout_events WHERE payout_id IN (SELECT id FROM payouts WHERE order_id = ?)').run(releasePayoutOrderId);
   db.prepare('DELETE FROM payout_attempts WHERE payout_id IN (SELECT id FROM payouts WHERE order_id = ?)').run(releasePayoutOrderId);
@@ -29,12 +27,13 @@ async function main() {
   db.prepare('DELETE FROM sellers WHERE uid = ?').run(sellerId);
 
   const nowStamp = new Date().toISOString();
-  serverOrderService.create({
+  await orderRepository.saveAsync({
     id: releasePayoutOrderId,
     buyerId: 'buyer-release-payout-1',
     sellerId,
     source: 'listing',
     status: 'in_escrow',
+    deliveryStatus: 'action_required',
     currency: 'MWK',
     subtotal: { amount: 1500, currency: 'MWK' },
     total: { amount: 1500, currency: 'MWK' },
@@ -42,10 +41,8 @@ async function main() {
     createdAt: nowStamp,
     updatedAt: nowStamp,
   });
-  serverOrderService.setStatus(releasePayoutOrderId, 'in_escrow');
-  escrowRepository.create(releasePayoutOrderId, 'MWK', 1500);
+  await escrowRepository.createAsync(releasePayoutOrderId, 'MWK', 1500);
 
-  // seed destination directly (simpler approach)
   db.prepare('INSERT INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)').run(sellerId, `${sellerId}@example.com`);
   db.prepare(`INSERT INTO seller_payout_accounts (id, seller_uid, destination_type, provider_name, provider_ref_id, currency, account_name, mobile_encrypted, masked_account, destination_fingerprint, is_default, verification_status, verification_attempts, is_active, created_at, updated_at) VALUES (?, ?, 'mobile_money', 'paychangu', 'airtel-money', 'MWK', 'Release Test', '0990000000', '****0000', ?, 1, 'verified', 0, 1, ?, ?)`)
     .run('destination-release-payout-1', sellerId, 'debug-fingerprint', nowStamp, nowStamp);
