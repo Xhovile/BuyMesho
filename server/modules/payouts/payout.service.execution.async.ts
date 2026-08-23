@@ -1,4 +1,3 @@
-import './payout.schema.js';
 import { query } from '../../postgres.js';
 import {
   executePayChanguPayout,

@@ -1,4 +1,3 @@
-import './payout.schema.js';
 import { payoutRepository, type PayoutTransitionRepository } from './payout.transition-repository.js';
 import { executePayoutFlow, getProviderBalance } from './payout.service.execution.js';
 import {
