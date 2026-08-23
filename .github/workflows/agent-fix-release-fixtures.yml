@@ -1,0 +1,131 @@
+name: Apply release fixture migration fix
+
+on:
+  push:
+    branches:
+      - fix/integration-test-failures
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.ref_name == 'fix/integration-test-failures'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: fix/integration-test-failures
+
+      - name: Update release fixtures
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          audit = Path('server/routes/escrow/__tests__/release.audit.test.ts')
+          text = audit.read_text()
+          text = text.replace(
+              "import { serverOrderService } from '../../../modules/orders/order.service.js';\n",
+              "",
+          )
+          old = '''  const now = new Date().toISOString();
+  const db = getPaymentDb();
+
+  serverOrderService.create({
+    id: orderId,
+    buyerId: 'buyer-release-audit',
+    sellerId,
+    source: 'listing',
+    status: 'pending_payment',
+    currency: 'MWK',
+    subtotal: { amount: 1500, currency: 'MWK' },
+    total: { amount: 1500, currency: 'MWK' },
+    items: [{ listingId: 'listing-release-audit', title: 'Audit Item', quantity: 1, unitPrice: { amount: 1500, currency: 'MWK' } }],
+    createdAt: now,
+    updatedAt: now,
+  });
+  serverOrderService.setStatus(orderId, 'paid');
+  serverOrderService.setStatus(orderId, 'in_escrow');
+  escrowRepository.create(orderId, 'MWK', 1500);
+
+  db.prepare('INSERT INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)')
+'''
+          new = '''  const now = new Date().toISOString();
+
+  await orderRepository.saveAsync({
+    id: orderId,
+    buyerId: 'buyer-release-audit',
+    sellerId,
+    source: 'listing',
+    status: 'in_escrow',
+    deliveryStatus: 'action_required',
+    currency: 'MWK',
+    subtotal: { amount: 1500, currency: 'MWK' },
+    total: { amount: 1500, currency: 'MWK' },
+    items: [{ listingId: 'listing-release-audit', title: 'Audit Item', quantity: 1, unitPrice: { amount: 1500, currency: 'MWK' } }],
+    createdAt: now,
+    updatedAt: now,
+  });
+  await escrowRepository.createAsync(orderId, 'MWK', 1500);
+
+  const db = getPaymentDb();
+  db.prepare('INSERT INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)')
+'''
+          if old not in text:
+              raise SystemExit('audit fixture pattern not found')
+          audit.write_text(text.replace(old, new, 1))
+
+          release = Path('server/routes/escrow/__tests__/release.test.ts')
+          text = release.read_text()
+          old = '''  const nowStamp = now();
+  const createdOrder = serverOrderService.create({
+    id: releasePayoutOrderId,
+    buyerId: 'buyer-release-payout-1',
+    sellerId,
+    source: 'listing',
+    status: 'in_escrow',
+    currency: 'MWK',
+    subtotal: { amount: 1500, currency: 'MWK' },
+    total: { amount: 1500, currency: 'MWK' },
+    items: [{ listingId: 'listing-release-payout-1', title: 'Release Item', quantity: 1, unitPrice: { amount: 1500, currency: 'MWK' } }],
+    createdAt: nowStamp,
+    updatedAt: nowStamp,
+  });
+  serverOrderService.markPaid(createdOrder);
+  serverOrderService.setStatus(releasePayoutOrderId, 'in_escrow');
+  escrowRepository.create(releasePayoutOrderId, 'MWK', 1500);
+  seedVerifiedDestination();
+'''
+          new = '''  const nowStamp = now();
+  await orderRepository.saveAsync({
+    id: releasePayoutOrderId,
+    buyerId: 'buyer-release-payout-1',
+    sellerId,
+    source: 'listing',
+    status: 'in_escrow',
+    deliveryStatus: 'action_required',
+    currency: 'MWK',
+    subtotal: { amount: 1500, currency: 'MWK' },
+    total: { amount: 1500, currency: 'MWK' },
+    items: [{ listingId: 'listing-release-payout-1', title: 'Release Item', quantity: 1, unitPrice: { amount: 1500, currency: 'MWK' } }],
+    createdAt: nowStamp,
+    updatedAt: nowStamp,
+  });
+  await escrowRepository.createAsync(releasePayoutOrderId, 'MWK', 1500);
+  seedVerifiedDestination();
+'''
+          if old not in text:
+              raise SystemExit('release fixture pattern not found')
+          release.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Commit changes and remove helper workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git diff --check
+          git add server/routes/escrow/__tests__/release.audit.test.ts server/routes/escrow/__tests__/release.test.ts .github/workflows/agent-fix-release-fixtures.yml
+          git rm .github/workflows/agent-fix-release-fixtures.yml
+          git commit -m "test: seed release fixtures through async repositories"
+          git push origin HEAD:fix/integration-test-failures
