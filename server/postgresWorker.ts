@@ -31,7 +31,6 @@ type WorkerFailureResponse = {
   error: string;
 };
 type WorkerResponse = WorkerSuccessResponse | WorkerFailureResponse;
-
 type Queryable = Pick<Client, "query"> | Pick<Pool, "query">;
 type TransactionClient = PoolClient | Client;
 
@@ -108,11 +107,48 @@ const testClient = isTestWorker ? new Client(connectionConfig) : null;
 let testClientConnected = false;
 let transactionClient: TransactionClient | null = null;
 
+function formatWorkerError(error: unknown): string {
+  if (error instanceof Error) {
+    return `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ""}`;
+  }
+  return String(error);
+}
+
+function logWorkerLifecycle(event: string, details?: unknown): void {
+  if (details === undefined) {
+    console.error(`[BuyMesho] PostgreSQL worker ${event}`);
+    return;
+  }
+  console.error(`[BuyMesho] PostgreSQL worker ${event}: ${formatWorkerError(details)}`);
+}
+
+if (testClient) {
+  testClient.on("error", (error) => {
+    logWorkerLifecycle("client error", error);
+  });
+  testClient.on("end", () => {
+    logWorkerLifecycle("client end");
+    testClientConnected = false;
+  });
+}
+
+process.on("uncaughtException", (error) => {
+  logWorkerLifecycle("uncaughtException", error);
+});
+
+process.on("unhandledRejection", (reason) => {
+  logWorkerLifecycle("unhandledRejection", reason);
+});
+
+logWorkerLifecycle("started", `testWorker=${isTestWorker}`);
+
 async function getTestClient(): Promise<Client> {
   if (!testClient) throw new Error("Test PostgreSQL client is unavailable.");
   if (!testClientConnected) {
+    logWorkerLifecycle("connecting test client");
     await testClient.connect();
     testClientConnected = true;
+    logWorkerLifecycle("test client connected");
   }
   return testClient;
 }
@@ -140,15 +176,15 @@ async function rollbackAndReleaseTransaction(): Promise<void> {
 
   try {
     await transactionClient.query("ROLLBACK");
-  } catch {
-    // Preserve the original failure.
+  } catch (error) {
+    logWorkerLifecycle("rollback failed", error);
   }
 
   if (!isTestWorker) {
     try {
       releaseTransactionClient(transactionClient);
-    } catch {
-      // Ignore release failures.
+    } catch (error) {
+      logWorkerLifecycle("transaction release failed", error);
     }
   }
 
@@ -196,6 +232,7 @@ workerPort.on("message", async (request: WorkerRequest) => {
       });
     }
   } catch (error) {
+    logWorkerLifecycle(`request ${request.op} failed`, error);
     await rollbackAndReleaseTransaction();
     sendResponse({
       id: request.id,
