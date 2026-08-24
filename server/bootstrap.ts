@@ -18,6 +18,14 @@ import { startEventOwnershipReconciliationScheduler } from "./modules/events/eve
 import { createEventTicketIdentityRouter } from "./modules/events/eventTicketIdentity.routes.js";
 import { createAdminEventTransactionRouter } from "./modules/admin/adminEventTransaction.routes.js";
 import { createAdminTicketTransactionSearchRouter } from "./modules/admin/adminTicketTransactionSearch.routes.js";
+import {
+  checkoutRateLimit,
+  publicPaymentStatusRateLimit,
+  paymentWebhookRateLimit,
+  payoutWebhookRateLimit,
+  messageSendRateLimit,
+  messageReportRateLimit,
+} from "./middleware/platformRateLimits.js";
 
 dotenv.config();
 
@@ -85,8 +93,20 @@ export async function startServer() {
   app.use(
     "/api/messages/:conversationId/messages",
     requireAuth,
+    messageSendRateLimit,
     createIdempotencyMiddleware("messages.send"),
   );
+
+  app.use(
+    "/api/messages/:conversationId/report",
+    requireAuth,
+    messageReportRateLimit,
+  );
+
+  app.use("/api/payments/checkout", checkoutRateLimit);
+  app.use("/api/payments/public-status", publicPaymentStatusRateLimit);
+  app.use("/api/payments/webhooks/paychangu", paymentWebhookRateLimit);
+  app.use("/api/payments/webhooks/payouts", payoutWebhookRateLimit);
 
   // Canonical event-transaction reads precede the broader admin event router.
   app.use("/api/admin", createAdminEventTransactionRouter({ db, requireAuth }));
