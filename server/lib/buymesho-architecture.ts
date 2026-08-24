@@ -178,7 +178,6 @@ export const BUYMESHO_ARCHITECTURE: ArchitectureSource[] = [
       "server/routes/ai.routes.ts",
       "server/lib/listing-ai-studio.ts",
       "server/lib/ai.ts",
-      "server/lib/buymesho-copilot.ts",
       "src/lib/ai.ts",
       "src/components/ai/ListingAiStudio.tsx",
       "src/components/ai/BuyMeshoCopilotDrawer.tsx",
