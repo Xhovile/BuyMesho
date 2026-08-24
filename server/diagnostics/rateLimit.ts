@@ -1,23 +1,22 @@
-import { connect as connectTcp, type Socket } from "node:net";
-import { connect as connectTls, type TLSSocket } from "node:tls";
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { MemoryStore, RateLimiter, RateLimitStoreUnavailableError } from "@xhovile/platform/rate-limit";
 import { rateLimit } from "@xhovile/platform/rate-limit/express";
 import { RedisStore } from "@xhovile/platform/rate-limit/redis";
 import type { DiagnosticPayload, NamedCheck, CheckStatus } from "./types.js";
 
-const DIAGNOSTIC_VERSION = "1.0";
-const RUN_WINDOW_MS = 60_000;
+const DIAGNOSTIC_VERSION = "1.1";
+const RUN_WINDOW_MS = 10 * 60_000;
 
-type ReqLike = { headers: Record<string, string | string[] | undefined>; query?: Record<string, unknown> };
+type RedisEvalClient = { eval(script: string, options: { keys: string[]; arguments: string[] }): Promise<unknown> };
+type RedisSocket = import("node:net").Socket | import("node:tls").TLSSocket;
 
-function authTokenMatches(req: ReqLike): boolean {
+function authTokenMatches(req: Request): boolean {
   const expected = process.env.RATE_LIMIT_DIAGNOSTIC_TOKEN?.trim();
   if (!expected) return false;
-  const header = req.headers.authorization;
-  const bearer = Array.isArray(header) ? header[0] : header;
-  const queryToken = typeof req.query?.token === "string" ? req.query.token : "";
-  return bearer === `Bearer ${expected}` || queryToken === expected;
+  const authorization = req.get("authorization");
+  const bearerMatches = authorization === `Bearer ${expected}`;
+  const queryToken = typeof req.query.token === "string" ? req.query.token : "";
+  return bearerMatches || queryToken === expected;
 }
 
 function result(status: CheckStatus, message: string, details?: Record<string, unknown>): NamedCheck {
@@ -90,12 +89,6 @@ async function runExpressCheck(app: Express, token: string): Promise<NamedCheck>
     : result("FAIL", "Express adapter returned unexpected status or headers", { responses });
 }
 
-type RedisEvalClient = {
-  eval(script: string, options: { keys: string[]; arguments: string[] }): Promise<unknown>;
-};
-
-type RedisSocket = Socket | TLSSocket;
-
 function encodeResp(values: string[]): Buffer {
   return Buffer.from(`*${values.length}\r\n${values.map((value) => `$${Buffer.byteLength(value)}\r\n${value}\r\n`).join("")}`);
 }
@@ -106,20 +99,15 @@ async function redisCommand(urlString: string, values: string[]): Promise<Buffer
   const port = Number(url.port || (url.protocol === "rediss:" ? 6380 : 6379));
   const tls = url.protocol === "rediss:";
   if (url.protocol !== "redis:" && url.protocol !== "rediss:") throw new Error("REDIS_URL must use redis:// or rediss://");
-
-  const socket: RedisSocket = tls
-    ? connectTls({ host, port, servername: host })
-    : connectTcp({ host, port });
+  const net = await import("node:net");
+  const tlsModule = await import("node:tls");
+  const socket: RedisSocket = tls ? tlsModule.connect({ host, port, servername: host }) : net.connect({ host, port });
 
   const connected = new Promise<void>((resolve, reject) => {
     const onError = (error: Error) => reject(error);
     socket.once("error", onError);
-    socket.once(tls ? "secureConnect" : "connect", () => {
-      socket.removeListener("error", onError);
-      resolve();
-    });
+    socket.once(tls ? "secureConnect" : "connect", () => { socket.removeListener("error", onError); resolve(); });
   });
-
   const response = new Promise<Buffer>((resolve, reject) => {
     let buffer = Buffer.alloc(0);
     const onData = (chunk: Buffer) => {
@@ -134,13 +122,12 @@ async function redisCommand(urlString: string, values: string[]): Promise<Buffer
     socket.once("error", reject);
     socket.setTimeout(5000, () => reject(new Error("Redis command timed out")));
   });
-
   await connected;
   socket.write(encodeResp(values));
   return response;
 }
 
-function parseRedisSimpleOrInteger(response: Buffer): number | null {
+function parseRedisInteger(response: Buffer): number | null {
   const text = response.toString("utf8");
   if (text.startsWith("+OK") || text.startsWith("+PONG")) return null;
   const match = text.match(/^:([-\d]+)\r\n/);
@@ -150,8 +137,8 @@ function parseRedisSimpleOrInteger(response: Buffer): number | null {
   return value;
 }
 
-function createRawRedisEvalClient(urlString: string): RedisEvalClient {
-  return {
+function buildRedisStore(urlString: string) {
+  const client: RedisEvalClient = {
     eval: async (script, options) => {
       const url = new URL(urlString);
       const username = url.username ? decodeURIComponent(url.username) : "default";
@@ -160,13 +147,10 @@ function createRawRedisEvalClient(urlString: string): RedisEvalClient {
       if (password) await redisCommand(urlString, ["AUTH", username, password]);
       if (db) await redisCommand(urlString, ["SELECT", db]);
       const result = await redisCommand(urlString, ["EVAL", script, String(options.keys.length), ...options.keys, ...options.arguments]);
-      return parseRedisSimpleOrInteger(result);
+      return parseRedisInteger(result);
     },
   };
-}
-
-function buildRedisStore(url: string) {
-  return new RedisStore(createRawRedisEvalClient(url));
+  return new RedisStore(client);
 }
 
 async function runRedisCheck(): Promise<NamedCheck> {
@@ -204,7 +188,7 @@ async function runDistributedCheck(token: string): Promise<NamedCheck> {
 
 function renderHtml(payload: DiagnosticPayload): string {
   const rows = Object.entries(payload.checks ?? {}).map(([name, check]) => `<tr><td>${name}</td><td class="${check.status}">${check.status}</td><td>${check.message}</td></tr>`).join("");
-  return `<!doctype html><html><head><meta charset="utf-8"><title>BuyMesho Rate Limit Diagnostics</title><style>body{font-family:system-ui,sans-serif;max-width:1000px;margin:40px auto;padding:0 20px}table{width:100%;border-collapse:collapse}td{padding:10px;border-bottom:1px solid #ddd}.PASS{color:#087f5b}.WARN{color:#b25e00}.FAIL{color:#c92a2a}code{background:#f4f4f4;padding:2px 5px}</style></head><body><h1>BuyMesho Rate Limit Diagnostics</h1><h2 class="${payload.overall}">${payload.overall}</h2><p>${payload.duration_ms} ms · ${payload.timestamp}</p><table><tr><th align="left">Check</th><th align="left">Status</th><th align="left">Message</th></tr>${rows}</table><h3>Setup</h3><p><code>RATE_LIMIT_DIAGNOSTIC_TOKEN</code> protects this endpoint. <code>REDIS_URL</code> enables Redis checks. <code>RATE_LIMIT_DIAGNOSTIC_PEER_URL</code> enables the two-instance Redis test.</p></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><title>BuyMesho Rate Limit Diagnostics</title><style>body{font-family:system-ui,sans-serif;max-width:1000px;margin:40px auto;padding:0 20px}table{width:100%;border-collapse:collapse}td{padding:10px;border-bottom:1px solid #ddd}.PASS{color:#087f5b}.WARN{color:#b25e00}.FAIL{color:#c92a2a}code{background:#f4f4f4;padding:2px 5px}</style></head><body><h1>BuyMesho Rate Limit Diagnostics</h1><h2 class="${payload.overall}">${payload.overall}</h2><p>${payload.duration_ms} ms · ${payload.timestamp}</p><table><tr><th align="left">Check</th><th align="left">Status</th><th align="left">Message</th></tr>${rows}</table><h3>Setup</h3><p>This endpoint is restricted to authenticated administrators. <code>REDIS_URL</code> enables Redis checks. <code>RATE_LIMIT_DIAGNOSTIC_PEER_URL</code> enables the two-instance Redis test.</p></body></html>`;
 }
 
 export function registerRateLimitDiagnosticsRoutes(app: Express) {
@@ -226,7 +210,7 @@ export function registerRateLimitDiagnosticsRoutes(app: Express) {
   app.get("/api/diagnostics/rate-limit", async (req, res) => {
     const started = Date.now();
     if (!authTokenMatches(req)) return res.status(404).send("Not found");
-    const token = process.env.RATE_LIMIT_DIAGNOSTIC_TOKEN!.trim();
+    const token = process.env.RATE_LIMIT_DIAGNOSTIC_TOKEN?.trim() ?? "";
     const checks: Record<string, NamedCheck> = {};
     try {
       checks.core = await runCoreCheck();
@@ -240,7 +224,7 @@ export function registerRateLimitDiagnosticsRoutes(app: Express) {
       checks.runtime = result("FAIL", "Rate-limit diagnostic runner failed", { error: error instanceof Error ? error.message : String(error) });
     }
     const payload: DiagnosticPayload = { overall: overall(checks), authoritative: true, diagnostic_version: DIAGNOSTIC_VERSION, timestamp: new Date().toISOString(), duration_ms: Date.now() - started, checks };
-    if ((req.query.format ?? "html") === "json") return res.status(payload.overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json(payload);
+    if (req.query.format === "json") return res.status(payload.overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json(payload);
     return res.status(payload.overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").type("html").send(renderHtml(payload));
   });
 }
