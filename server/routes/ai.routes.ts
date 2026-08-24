@@ -13,7 +13,6 @@ import {
 
 const MAX_TEXT_LENGTH = 8_000;
 const MAX_DRAFT_KEYS = 40;
-const MAX_CONTEXT_LISTINGS = 30;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -68,11 +67,11 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
     }
   });
 
-  // Public discovery endpoint. The database is authoritative for candidate listings;
-  // client-supplied context can only narrow the candidate set.
+  // Public discovery endpoint. The database is authoritative for every candidate listing.
+  // No client-supplied listing records are accepted as marketplace context.
   app.post("/api/ai/shopping-assistant", publicAiRateLimit, async (req, res) => {
     try {
-      const { query, university, category, maxPrice, contextListings } = req.body || {};
+      const { query, university, category, maxPrice } = req.body || {};
       if (typeof query !== "string" || !query.trim() || query.length > MAX_TEXT_LENGTH) {
         return res.status(400).json({ error: "query is required and must be 8,000 characters or fewer" });
       }
@@ -85,16 +84,12 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
       if (maxPrice !== undefined && (typeof maxPrice !== "number" || !Number.isFinite(maxPrice) || maxPrice < 0)) {
         return res.status(400).json({ error: "maxPrice must be a non-negative number" });
       }
-      if (contextListings !== undefined && (!Array.isArray(contextListings) || contextListings.length > MAX_CONTEXT_LISTINGS)) {
-        return res.status(400).json({ error: `contextListings must contain at most ${MAX_CONTEXT_LISTINGS} items` });
-      }
 
       const result = await shoppingAssistant({
         query,
         university: typeof university === "string" ? university : undefined,
         category: typeof category === "string" ? category : undefined,
         maxPrice: typeof maxPrice === "number" ? maxPrice : undefined,
-        contextListings: Array.isArray(contextListings) ? contextListings : [],
         db,
       });
 
