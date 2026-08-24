@@ -95,7 +95,6 @@ export async function queryShoppingAssistant(payload: {
   university?: string;
   category?: string;
   maxPrice?: number;
-  contextListings?: ShoppingAssistantListing[];
 }): Promise<ShoppingAssistantResult | null> {
   try {
     const response = await apiFetch("/api/ai/shopping-assistant", {

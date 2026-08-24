@@ -8,7 +8,7 @@ export type ArchitectureSource = {
  * Verified implementation snapshot used by user-facing BuyMesho AI services.
  * This is not a roadmap, proposal, assumption, or generic marketplace model.
  */
-export const BUYMESHO_ARCHITECTURE_VERSION = "2026-08-11";
+export const BUYMESHO_ARCHITECTURE_VERSION = "2026-08-24";
 
 export const BUYMESHO_ARCHITECTURE: ArchitectureSource[] = [
   {
@@ -178,7 +178,6 @@ export const BUYMESHO_ARCHITECTURE: ArchitectureSource[] = [
       "server/routes/ai.routes.ts",
       "server/lib/listing-ai-studio.ts",
       "server/lib/ai.ts",
-      "server/lib/buymesho-copilot.ts",
       "src/lib/ai.ts",
       "src/components/ai/ListingAiStudio.tsx",
       "src/components/ai/BuyMeshoCopilotDrawer.tsx",
@@ -188,7 +187,8 @@ export const BUYMESHO_ARCHITECTURE: ArchitectureSource[] = [
       "AI Listing Studio exists for listing enhancement, pricing suggestions and moderation.",
       "BuyMesho Copilot exists as an in-product assistant drawer.",
       "A product comparison capability exists in the current application code.",
-      "AI server routes call server-side AI services; the Copilot must not invent product/platform behavior beyond this registry and the supplied live listing context.",
+      "AI server routes call server-side AI services; the Copilot must not invent product/platform behavior beyond this registry and canonical marketplace data loaded server-side for the request.",
+      "The public Shopping Assistant applies client discovery constraints to canonical server-side marketplace listings; client-supplied listing records are not accepted as authoritative marketplace context.",
     ],
   },
 ];

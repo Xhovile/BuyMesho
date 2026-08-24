@@ -1,7 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 
 export const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
-const DEFAULT_GEMINI_FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
+const DEFAULT_GEMINI_FALLBACK_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite"];
+
+// Stable Gemini models currently approved for the BuyMesho production configuration.
+export const SUPPORTED_GEMINI_PRODUCTION_MODELS = new Set([
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite",
+]);
 
 export class GeminiServiceError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
@@ -44,6 +51,56 @@ export function getGeminiModelCandidates(): string[] {
       ].filter((value): value is string => Boolean(value)),
     ),
   );
+}
+
+export type GeminiConfigurationDiagnostics = {
+  apiKeyConfigured: boolean;
+  models: string[];
+  invalidModels: string[];
+  valid: boolean;
+};
+
+export function getGeminiConfigurationDiagnostics(): GeminiConfigurationDiagnostics {
+  const models = getGeminiModelCandidates();
+  const invalidModels = models.filter((model) => !SUPPORTED_GEMINI_PRODUCTION_MODELS.has(model));
+
+  return {
+    apiKeyConfigured: Boolean(process.env.GEMINI_API_KEY?.trim()),
+    models,
+    invalidModels,
+    valid: invalidModels.length === 0,
+  };
+}
+
+export function validateGeminiConfiguration(options?: { strict?: boolean }): GeminiConfigurationDiagnostics {
+  const diagnostics = getGeminiConfigurationDiagnostics();
+  if (options?.strict && diagnostics.invalidModels.length > 0) {
+    throw new GeminiServiceError(
+      `Unsupported Gemini production model configuration: ${diagnostics.invalidModels.join(", ")}`,
+    );
+  }
+  return diagnostics;
+}
+
+export function logGeminiConfiguration(): GeminiConfigurationDiagnostics {
+  const diagnostics = validateGeminiConfiguration({ strict: process.env.NODE_ENV === "production" });
+
+  console.info(
+    `[BuyMesho Gemini] API key configured: ${diagnostics.apiKeyConfigured ? "yes" : "no"}; ` +
+      `models: ${diagnostics.models.join(", ")}`,
+  );
+
+  if (diagnostics.invalidModels.length > 0) {
+    console.error(
+      `[BuyMesho Gemini] Unsupported configured models: ${diagnostics.invalidModels.join(", ")}`,
+    );
+  }
+
+  if (!diagnostics.apiKeyConfigured) {
+    console.warn("[BuyMesho Gemini] GEMINI_API_KEY is not configured; AI endpoints will be unavailable.");
+  }
+
+  return diagnostics;
 }
 
 function stripJsonFence(text: string): string {
