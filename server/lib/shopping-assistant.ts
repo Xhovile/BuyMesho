@@ -68,6 +68,11 @@ function extractMaxPrice(query: string): number | undefined {
   return match ? parseBudgetToNumber(match[1]) : undefined;
 }
 
+function extractMinPrice(query: string): number | undefined {
+  const match = query.toLowerCase().match(/(?:over|above|more than|from|starting at|at least)\s*(?:mwk\s*)?([0-9][0-9,]*(?:\.\d+)?\s*[km]?)/i);
+  return match ? parseBudgetToNumber(match[1]) : undefined;
+}
+
 function extractCondition(query: string): string | undefined {
   const normalized = query.toLowerCase();
   if (CONDITION_ALIASES.used.some((value) => normalized.includes(value))) return "Used";
@@ -100,6 +105,21 @@ function conversationSearchContext(conversation: ShoppingAssistantConversationMe
   return `${priorUserText} ${query}`.trim();
 }
 
+export function deriveAssistantContext(input: Pick<ShoppingAssistantInput, "query" | "conversation" | "university" | "category" | "maxPrice">): ShoppingAssistantContext {
+  const conversation = normalizeConversation(input.conversation);
+  const contextText = conversationSearchContext(conversation, input.query);
+  const maxPrice = input.maxPrice ?? extractMaxPrice(contextText);
+  const minPrice = extractMinPrice(contextText);
+  const condition = extractCondition(contextText);
+  return {
+    ...(input.category ? { category: input.category.trim().slice(0, 150) } : {}),
+    ...(minPrice !== undefined ? { min_price: minPrice } : {}),
+    ...(maxPrice !== undefined ? { max_price: maxPrice } : {}),
+    ...(condition ? { condition } : {}),
+    ...(input.university ? { university: input.university.trim().slice(0, 150) } : {}),
+  };
+}
+
 function sanitizeListings(listings: ShoppingAssistantListing[]) {
   return listings.slice(0, 30).map((listing) => ({
     id: String(listing.id), name: String(listing.name).slice(0, 200), category: listing.category?.slice(0, 100), price: Number(listing.price),
@@ -115,6 +135,8 @@ export function loadMarketplaceCandidates(db: any, input: Omit<ShoppingAssistant
   if (input.university) { where += " AND l.university = ?"; params.push(input.university); }
   const maxPrice = input.maxPrice ?? extractMaxPrice(input.query);
   if (typeof maxPrice === "number" && Number.isFinite(maxPrice)) { where += " AND l.price <= ?"; params.push(maxPrice); }
+  const minPrice = extractMinPrice(input.query);
+  if (typeof minPrice === "number" && Number.isFinite(minPrice)) { where += " AND l.price >= ?"; params.push(minPrice); }
   const condition = extractCondition(input.query);
   if (condition) { where += " AND LOWER(l.condition) = LOWER(?)"; params.push(condition); }
   const terms = extractSearchTerms(input.query);
@@ -139,16 +161,6 @@ function normalizeIntent(value: unknown, mode: ShoppingAssistantMode): ShoppingA
 function normalizeConfidence(value: unknown): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
   return Math.max(0, Math.min(1, value));
-}
-
-function normalizeContext(value: unknown, fallback: ShoppingAssistantInput, query: string): ShoppingAssistantContext {
-  const raw = value && typeof value === "object" ? value as Record<string, unknown> : {};
-  const maxPrice = typeof raw.max_price === "number" && Number.isFinite(raw.max_price) ? Math.max(0, raw.max_price) : fallback.maxPrice ?? extractMaxPrice(query);
-  const minPrice = typeof raw.min_price === "number" && Number.isFinite(raw.min_price) ? Math.max(0, raw.min_price) : undefined;
-  const condition = typeof raw.condition === "string" && raw.condition.trim() ? raw.condition.trim().slice(0, 100) : extractCondition(query);
-  const category = typeof raw.category === "string" && raw.category.trim() ? raw.category.trim().slice(0, 150) : fallback.category;
-  const university = typeof raw.university === "string" && raw.university.trim() ? raw.university.trim().slice(0, 150) : fallback.university;
-  return { ...(category ? { category } : {}), ...(minPrice !== undefined ? { min_price: minPrice } : {}), ...(maxPrice !== undefined ? { max_price: maxPrice } : {}), ...(condition ? { condition } : {}), ...(university ? { university } : {}) };
 }
 
 function normalizeSuggestions(value: unknown, fallback: unknown): ShoppingAssistantSuggestion[] {
@@ -179,12 +191,13 @@ function normalizeAiResponse(result: ShoppingAssistantAiResponse, input: Shoppin
   const matchReasons = Object.fromEntries(recommendationIds.map((id) => [id, typeof matchReasonsRaw[id] === "string" && matchReasonsRaw[id].trim() ? matchReasonsRaw[id].trim().slice(0, 400) : "Matches the current BuyMesho listing context."]));
   const suggestions = normalizeSuggestions(result.suggestions, result.suggested_follow_ups);
   const recommendedListings = recommendationIds.map((id) => allowedById.get(id)!).filter(Boolean);
+  const derivedContext = deriveAssistantContext(input);
   return {
     reply: typeof result.reply === "string" && result.reply.trim() ? result.reply.trim().slice(0, 8_000) : "I couldn't generate a response from the current BuyMesho information.",
     intent: { type: normalizeIntent(result.intent?.type, input.mode), ...(normalizeConfidence(result.intent?.confidence) !== undefined ? { confidence: normalizeConfidence(result.intent?.confidence) } : {}) },
     recommendations: recommendedListings,
     suggestions,
-    context: normalizeContext(result.context, input, input.query),
+    context: derivedContext,
     recommended_listing_ids: recommendationIds,
     match_reasons: matchReasons,
     suggested_follow_ups: suggestions.map((suggestion) => suggestion.label),
@@ -197,11 +210,12 @@ export async function shoppingAssistant(input: ShoppingAssistantInput): Promise<
   if (!query) throw new Error("Shopping assistant query is required");
   if (input.mode !== "ask" && input.mode !== "shop") throw new Error("Shopping assistant mode is invalid");
   const conversation = normalizeConversation(input.conversation);
+  const derivedContext = deriveAssistantContext({ ...input, conversation });
   const retrievalQuery = conversationSearchContext(conversation, query);
-  const listings = input.mode === "shop" ? sanitizeListings(loadMarketplaceCandidates(input.db, { query: retrievalQuery, university: input.university, category: input.category, maxPrice: input.maxPrice, db: input.db })) : [];
+  const listings = input.mode === "shop" ? sanitizeListings(loadMarketplaceCandidates(input.db, { query: retrievalQuery, university: input.university, category: input.category, maxPrice: derivedContext.max_price, db: input.db })) : [];
   const payload = {
     mode: input.mode,
-    current_user_context: { university: input.university, category: input.category, max_price: input.maxPrice ?? extractMaxPrice(query), condition: extractCondition(query) },
+    current_user_context: derivedContext,
     current_query: query,
     conversation,
     available_listings: listings,
