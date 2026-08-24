@@ -84,12 +84,12 @@ BuyMesho uses a split production deployment:
 
 Therefore the production architecture is **Vercel frontend + Render API**, not a single Vercel-hosted full-stack server.
 
-The canonical Node production build path is the `build`/`start` pair in `package.json`:
+The repository-defined Node production build path is the `build`/`start` pair in `package.json`:
 
 - `npm run build` builds the Vite frontend and bundles `server.ts` to `dist/server.js` with esbuild.
 - `npm start` runs `node dist/server.js`.
 
-The separate `build:server` / `start:server` TypeScript path exists in the repository but is not the documented canonical production path. Changes should avoid treating the two server build modes as interchangeable without an explicit migration.
+The separate `build:server` / `start:server` TypeScript path exists in the repository, but this document does not assert which path the external Render deployment currently invokes. Treat the two build modes as distinct until the deployment configuration explicitly establishes one as canonical.
 
 ## Maintenance rule
 
