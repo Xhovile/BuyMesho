@@ -131,6 +131,7 @@ export function loadPricingComparables(db: any, input: { name: string; category:
   `).all(...params) as Array<Record<string, unknown>>;
 
   const normalizedInputName = normalizeComparableName(input.name);
+  const minimumOverlap = terms.length > 1 ? 2 / 3 : 1;
   const scored = rows
     .map((row) => {
       const name = String(row.name ?? "").slice(0, 160);
@@ -146,13 +147,14 @@ export function loadPricingComparables(db: any, input: { name: string; category:
         condition: typeof row.condition === "string" ? row.condition.slice(0, 100) : undefined,
         price: Number(row.price),
         relevance: (exactName ? 10 : 0) + overlap,
+        overlap,
       };
     })
-    .filter((row) => Number.isFinite(row.price) && row.price > 0 && row.relevance >= 0.5)
+    .filter((row) => Number.isFinite(row.price) && row.price > 0 && row.overlap >= minimumOverlap)
     .sort((a, b) => b.relevance - a.relevance)
     .slice(0, 8);
 
-  return scored.map(({ relevance: _relevance, ...row }) => row);
+  return scored.map(({ relevance: _relevance, overlap: _overlap, ...row }) => row);
 }
 
 export async function suggestPricing(input: {
