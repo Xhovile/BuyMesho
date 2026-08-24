@@ -4,6 +4,7 @@ import path from "node:path";
 const ROOT = process.cwd();
 const CLIENT_ROOTS = ["src", "public"];
 const CLIENT_FILES = ["index.html", "vite.config.ts", "vite.config.js", "vite.config.mjs"];
+const BUILT_CLIENT_ROOTS = ["dist/assets"];
 const TEXT_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".json", ".html", ".css", ".scss", ".md", ".env"]);
 
 const forbiddenPatterns = [
@@ -13,16 +14,16 @@ const forbiddenPatterns = [
   { label: "import.meta.env.*GEMINI*", pattern: /import\.meta\.env\.[A-Z0-9_]*GEMINI[A-Z0-9_]*/gi },
 ];
 
-async function collectFiles(targetPath) {
+async function collectFiles(targetPath, { skipBuildDirs = true } = {}) {
   const info = await stat(targetPath);
   if (info.isFile()) return [targetPath];
 
   const entries = await readdir(targetPath, { withFileTypes: true });
   const files = [];
   for (const entry of entries) {
-    if (entry.name === "node_modules" || entry.name === ".git" || entry.name === "dist" || entry.name === "dist-server") continue;
+    if (entry.name === "node_modules" || entry.name === ".git" || (skipBuildDirs && (entry.name === "dist" || entry.name === "dist-server"))) continue;
     const child = path.join(targetPath, entry.name);
-    if (entry.isDirectory()) files.push(...await collectFiles(child));
+    if (entry.isDirectory()) files.push(...await collectFiles(child, { skipBuildDirs }));
     else files.push(child);
   }
   return files;
@@ -34,13 +35,15 @@ function isTextFile(filePath) {
 
 async function main() {
   const targets = [
-    ...CLIENT_ROOTS.map((root) => path.join(ROOT, root)),
-    ...CLIENT_FILES.map((file) => path.join(ROOT, file)),
+    ...CLIENT_ROOTS.map((root) => ({ path: path.join(ROOT, root), skipBuildDirs: true })),
+    ...CLIENT_FILES.map((file) => ({ path: path.join(ROOT, file), skipBuildDirs: true })),
+    ...BUILT_CLIENT_ROOTS.map((root) => ({ path: path.join(ROOT, root), skipBuildDirs: false })),
   ];
+
   const files = [];
   for (const target of targets) {
     try {
-      files.push(...await collectFiles(target));
+      files.push(...await collectFiles(target.path, { skipBuildDirs: target.skipBuildDirs }));
     } catch (error) {
       if (error?.code !== "ENOENT") throw error;
     }
@@ -67,7 +70,8 @@ async function main() {
     return;
   }
 
-  console.log(`Gemini secret exposure guard passed (${new Set(files).size} client-facing files scanned).`);
+  const builtClientFiles = files.filter((file) => path.relative(ROOT, file).startsWith(`dist${path.sep}assets${path.sep}`));
+  console.log(`Gemini secret exposure guard passed (${new Set(files).size} client-facing source/bundle files scanned; ${builtClientFiles.length} built assets present).`);
 }
 
 await main();
