@@ -1,10 +1,10 @@
 import type { Request } from 'express';
 import type { StoredOrder } from '../../modules/orders/order.repository.js';
-import { platformUserRateLimit } from '../../middleware/platformRateLimit.js';
+import { platformIpRateLimit } from '../../middleware/platformRateLimit.js';
 
-export const disputeLimiter = platformUserRateLimit('escrow.dispute', 10, 60 * 1000);
-export const payoutLimiter = platformUserRateLimit('escrow.payout', 30, 60 * 1000);
-export const escrowActionLimiter = platformUserRateLimit('escrow.action', 20, 60 * 1000);
+export const disputeLimiter = platformIpRateLimit('escrow.dispute', 10, 60 * 1000);
+export const payoutLimiter = platformIpRateLimit('escrow.payout', 30, 60 * 1000);
+export const escrowActionLimiter = platformIpRateLimit('escrow.action', 20, 60 * 1000);
 
 export function jsonError(error: unknown, fallback: string): { error: string } {
   return { error: error instanceof Error ? error.message : fallback };
