@@ -24,7 +24,7 @@ test.afterEach(restoreEnv);
 test("Gemini diagnostics validate approved production models without exposing the key", () => {
   process.env.GEMINI_API_KEY = "secret-value";
   process.env.GEMINI_MODEL = "gemini-3.6-flash";
-  process.env.GEMINI_FALLBACK_MODELS = "gemini-3.5-flash-lite,gemini-3.1-flash-lite";
+  process.env.GEMINI_FALLBACK_MODELS = "gemini-3.5-flash,gemini-3.5-flash-lite";
 
   const diagnostics = getGeminiConfigurationDiagnostics();
 
@@ -33,8 +33,8 @@ test("Gemini diagnostics validate approved production models without exposing th
   assert.equal(diagnostics.valid, true);
   assert.deepEqual(diagnostics.models, [
     "gemini-3.6-flash",
+    "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
-    "gemini-3.1-flash-lite",
   ]);
   assert.equal(JSON.stringify(diagnostics).includes("secret-value"), false);
 });
