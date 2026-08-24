@@ -77,27 +77,21 @@ export default function BuyMeshoCopilotDrawer({ isOpen, onClose, availableListin
   if (!isOpen || shouldHideLauncher()) return null;
 
   const handleModeChange = (nextMode: ShoppingAssistantMode) => { setMode(nextMode); setQuery(""); setStarterSuggestionsVisible(true); setFollowUpSuggestionsVisible(false); };
-
   const handleSend = async (userText: string) => {
     const trimmed = userText.trim();
     if (!trimmed || loading) return;
-
-    const conversation: AssistantConversationMessage[] = messages.map((message) => ({ role: message.role, text: message.text })).slice(-8);
-    setStarterSuggestionsVisible(false);
-    setFollowUpSuggestionsVisible(false);
-    setMessages((prev) => [...prev, { role: "user", text: trimmed }]);
-    setQuery("");
-    setLoading(true);
+    const conversation: AssistantConversationMessage[] = messages.map(({ role, text }) => ({ role, text })).slice(-8);
+    setStarterSuggestionsVisible(false); setFollowUpSuggestionsVisible(false); setMessages((prev) => [...prev, { role: "user", text: trimmed }]); setQuery(""); setLoading(true);
     try {
-      const result = await queryShoppingAssistant({ mode, query: trimmed, conversation });
+      const result = await queryShoppingAssistant({ mode, query: trimmed, conversation: [...conversation, { role: "user", text: trimmed }].slice(-8) });
       setMessages((prev) => [...prev, { role: "assistant", text: result.reply, result }]);
-      setFollowUpSuggestionsVisible(result.suggested_follow_ups.length > 0);
+      setFollowUpSuggestionsVisible(result.suggestions.length > 0);
     } catch (error) {
       console.warn("BuyMesho Assistant query failed:", error);
       setMessages((prev) => [...prev, { role: "assistant", text: "BuyMesho Assistant is temporarily unavailable. Please try again later." }]);
     } finally { setLoading(false); }
   };
-  const latestFollowUpMessageIndex = messages.reduce((latest, message, index) => message.role === "assistant" && (message.result?.suggested_follow_ups?.length ?? 0) > 0 ? index : latest, -1);
+  const latestFollowUpMessageIndex = messages.reduce((latest, message, index) => message.role === "assistant" && (message.result?.suggestions?.length ?? 0) > 0 ? index : latest, -1);
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in">
@@ -117,7 +111,7 @@ export default function BuyMeshoCopilotDrawer({ isOpen, onClose, availableListin
               {msg.role === "assistant" ? renderAssistantText(msg.text) : <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>}
               {msg.result?.recommended_listings?.length ? <div className="mt-3 space-y-2 border-t border-zinc-200/80 pt-3"><p className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-zinc-500"><ShoppingBag className="h-3 w-3" /> Current BuyMesho matches</p><div className="grid gap-2">{msg.result.recommended_listings.map((item) => { const reason = msg.result?.match_reasons?.[String(item.id)]; return <button type="button" key={item.id} onClick={() => onSelectListing?.(item.id)} className="group flex items-start justify-between gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-2.5 text-left hover:border-zinc-300 hover:bg-zinc-100"><span className="min-w-0 space-y-1"><span className="block truncate text-xs font-bold">{item.name}</span><span className="block text-xs font-extrabold">{formatMoney(item.price)}</span>{item.condition ? <span className="block text-[11px] text-zinc-500">Condition: {item.condition}</span> : null}{reason ? <span className="block line-clamp-2 text-[11px] leading-snug text-zinc-600">{reason}</span> : null}</span><ArrowRight className="mt-1 h-4 w-4 shrink-0 text-zinc-400" /></button>; })}</div></div> : null}
             </div>
-            {followUpSuggestionsVisible && idx === latestFollowUpMessageIndex && idx === messages.length - 1 && msg.result?.suggested_follow_ups?.length ? <div className="mt-2 flex max-w-[88%] flex-wrap gap-1.5">{msg.result.suggested_follow_ups.map((prompt) => <button type="button" key={prompt} onClick={() => handleSend(prompt)} className="cursor-pointer rounded-full border border-emerald-300/80 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-950">{prompt}</button>)}</div> : null}
+            {followUpSuggestionsVisible && idx === latestFollowUpMessageIndex && idx === messages.length - 1 && msg.result?.suggestions?.length ? <div className="mt-2 flex max-w-[88%] flex-wrap gap-1.5">{msg.result.suggestions.map((suggestion) => <button type="button" key={suggestion.id} onClick={() => handleSend(suggestion.label)} className="cursor-pointer rounded-full border border-emerald-300/80 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-950">{suggestion.label}</button>)}</div> : null}
           </div>)}
           {loading ? <div className="flex w-fit animate-pulse items-center gap-2 rounded-2xl border border-zinc-200 bg-white p-3 text-xs font-semibold text-zinc-700"><RefreshCw className="h-3.5 w-3.5 animate-spin text-red-900" /> {mode === "shop" ? "Searching current BuyMesho listings…" : "Checking BuyMesho's current product guidance…"}</div> : null}
           <div ref={messagesEndRef} />
