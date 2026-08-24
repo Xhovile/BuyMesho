@@ -50,3 +50,11 @@ export const messageReportRateLimit: RequestHandler = rateLimit({
   getUserId: (request) => request.user?.uid,
   storeFailure: "fail-closed",
 });
+
+export const validatorRateLimit: RequestHandler = rateLimit({
+  name: "validator",
+  limit: 120,
+  windowMs: 60_000,
+  key: "ip",
+  storeFailure: "fail-closed",
+});
