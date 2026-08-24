@@ -22,11 +22,14 @@ export function useIsAdmin(user: User | null | undefined) {
 
       if (!nextValue) {
         try {
-          const token = await user.getIdToken();
+          // Force-refresh the Firebase ID token so an admin claim restored
+          // after app startup is available before the admin API request.
+          const token = await user.getIdToken(true);
           const response = await fetch("/api/admin/access", {
             headers: {
               Authorization: `Bearer ${token}`,
             },
+            credentials: "same-origin",
           });
 
           if (response.ok) {
