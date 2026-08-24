@@ -34,7 +34,7 @@ const SUGGESTED_QUERIES: Record<AssistantMode, string[]> = {
 };
 
 function renderInlineMarkdown(text: string): ReactNode[] {
-  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+  const parts = text.split(/(\*\*[^*\n]+\*\*|`[^`\n]+`|\*[^*\n]+\*|_[^_\n]+_)/g);
 
   return parts.map((part, index) => {
     if (part.startsWith("**") && part.endsWith("**")) {
@@ -50,6 +50,14 @@ function renderInlineMarkdown(text: string): ReactNode[] {
         <code key={index} className="rounded bg-zinc-100 px-1 py-0.5 font-mono text-[0.9em]">
           {part.slice(1, -1)}
         </code>
+      );
+    }
+
+    if ((part.startsWith("*") && part.endsWith("*")) || (part.startsWith("_") && part.endsWith("_"))) {
+      return (
+        <em key={index} className="italic">
+          {part.slice(1, -1)}
+        </em>
       );
     }
 
@@ -186,6 +194,16 @@ export default function BuyMeshoCopilotDrawer({
   ]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (isOpen && !wasOpenRef.current) {
+      setStarterSuggestionsVisible(true);
+      setFollowUpSuggestionsVisible(false);
+      setQuery("");
+    }
+    wasOpenRef.current = isOpen;
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -271,10 +289,10 @@ export default function BuyMeshoCopilotDrawer({
 
         <div className="shrink-0 border-b border-zinc-200 bg-zinc-50 px-4 py-3">
           <div className="grid grid-cols-2 gap-2 rounded-2xl border border-zinc-200 bg-white p-1">
-            <button type="button" onClick={() => handleModeChange("ask")} className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition ${mode === "ask" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}>
+            <button type="button" onClick={() => handleModeChange("ask")} aria-pressed={mode === "ask"} className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition ${mode === "ask" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}>
               <HelpCircle className="h-4 w-4" /> Ask BuyMesho
             </button>
-            <button type="button" onClick={() => handleModeChange("shop")} className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition ${mode === "shop" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}>
+            <button type="button" onClick={() => handleModeChange("shop")} aria-pressed={mode === "shop"} className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition ${mode === "shop" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}>
               <Search className="h-4 w-4" /> Shop
             </button>
           </div>
@@ -353,7 +371,7 @@ export default function BuyMeshoCopilotDrawer({
 
         <div className="shrink-0 border-t border-zinc-200 bg-white p-3 sm:p-4">
           <form onSubmit={(e) => { e.preventDefault(); handleSend(query); }} className="flex items-center gap-2">
-            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={mode === "shop" ? "Describe what you want to buy…" : "Ask how BuyMesho works…"} className="flex-1 rounded-2xl border border-zinc-200 bg-zinc-100 px-4 py-2.5 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 hover:bg-zinc-50 focus:border-black focus:bg-white focus:ring-2 focus:ring-black" />
+            <input aria-label={mode === "shop" ? "Describe what you want to buy" : "Ask how BuyMesho works"} type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={mode === "shop" ? "Describe what you want to buy…" : "Ask how BuyMesho works…"} className="flex-1 rounded-2xl border border-zinc-200 bg-zinc-100 px-4 py-2.5 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 hover:bg-zinc-50 focus:border-black focus:bg-white focus:ring-2 focus:ring-black" />
             <button type="submit" disabled={!query.trim() || loading} className="shrink-0 cursor-pointer rounded-2xl bg-zinc-900 p-2.5 text-white transition-all hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40" aria-label={mode === "shop" ? "Search BuyMesho listings" : "Ask BuyMesho Assistant"}>
               <Send className="h-4 w-4" />
             </button>
