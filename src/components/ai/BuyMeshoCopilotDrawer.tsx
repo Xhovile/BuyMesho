@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { X, Send, Bot, RefreshCw, ShoppingBag, ArrowRight, HelpCircle, Search } from "lucide-react";
-import { queryShoppingAssistant, type ShoppingAssistantMode, type ShoppingAssistantResult, type ShoppingAssistantListing } from "../../lib/ai";
+import { queryShoppingAssistant, type AssistantConversationMessage, type ShoppingAssistantMode, type ShoppingAssistantResult, type ShoppingAssistantListing } from "../../lib/ai";
 import { formatMoney } from "../../shared/utils/formatMoney";
 import AiIcon, { shouldHideLauncher } from "./AiIcon";
 
@@ -77,12 +77,19 @@ export default function BuyMeshoCopilotDrawer({ isOpen, onClose, availableListin
   if (!isOpen || shouldHideLauncher()) return null;
 
   const handleModeChange = (nextMode: ShoppingAssistantMode) => { setMode(nextMode); setQuery(""); setStarterSuggestionsVisible(true); setFollowUpSuggestionsVisible(false); };
+
   const handleSend = async (userText: string) => {
     const trimmed = userText.trim();
     if (!trimmed || loading) return;
-    setStarterSuggestionsVisible(false); setFollowUpSuggestionsVisible(false); setMessages((prev) => [...prev, { role: "user", text: trimmed }]); setQuery(""); setLoading(true);
+
+    const conversation: AssistantConversationMessage[] = messages.map((message) => ({ role: message.role, text: message.text })).slice(-8);
+    setStarterSuggestionsVisible(false);
+    setFollowUpSuggestionsVisible(false);
+    setMessages((prev) => [...prev, { role: "user", text: trimmed }]);
+    setQuery("");
+    setLoading(true);
     try {
-      const result = await queryShoppingAssistant({ mode, query: trimmed });
+      const result = await queryShoppingAssistant({ mode, query: trimmed, conversation });
       setMessages((prev) => [...prev, { role: "assistant", text: result.reply, result }]);
       setFollowUpSuggestionsVisible(result.suggested_follow_ups.length > 0);
     } catch (error) {
