@@ -1,18 +1,10 @@
-import rateLimit from "express-rate-limit";
 import type { Express, Request, Response } from "express";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
+import { platformIpRateLimit } from "../middleware/platformRateLimit.js";
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.loginEmailCheckRoutesInstalled");
 
-const loginEmailCheckLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    error: "Too many email checks. Please wait a moment and try again.",
-  },
-});
+const loginEmailCheckLimiter = platformIpRateLimit("auth.login-email-check", 20, 15 * 60 * 1000);
 
 function isValidEmailFormat(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);

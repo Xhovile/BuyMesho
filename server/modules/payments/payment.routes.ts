@@ -1,6 +1,5 @@
 import express, { type RequestHandler } from "express";
 import { createHash, randomUUID } from "crypto";
-import rateLimit from "express-rate-limit";
 import { serverPaymentService } from "./payment.service.js";
 import { serverOrderService } from "../orders/order.service.js";
 import { orderRepository } from "../orders/order.repository.js";
@@ -12,22 +11,6 @@ import { paymentWebhookHandler } from "./payment.webhooks.js";
 import { payoutWebhookHandler } from "../payouts/payout.webhooks.js";
 
 export { payoutWebhookHandler };
-
-const checkoutLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many checkout requests. Please try again in a moment." },
-});
-
-const orderLookupLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 60,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many order lookup requests. Please try again in a moment." },
-});
 
 type ListingRow = {
   id: number;
@@ -208,7 +191,7 @@ function idempotentCheckoutResponse(order: ReturnType<typeof orderRepository.fin
 export function createPaymentRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
-  router.post("/checkout", checkoutLimiter, requireAuth, async (req: any, res) => {
+  router.post("/checkout", requireAuth, async (req: any, res) => {
     try {
       const body = req.body ?? {};
       const listingId = body.listingId;
@@ -487,7 +470,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  router.get("/public-status/:reference", orderLookupLimiter, async (req, res) => {
+  router.get("/public-status/:reference", async (req, res) => {
     try {
       const reference = decodeURIComponent(req.params.reference ?? "").trim();
       if (!reference) {

@@ -1,20 +1,12 @@
-import rateLimit from "express-rate-limit";
 import type { Express, Request, Response } from "express";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { sendEmail } from "../modules/email/email.service.js";
 import { renderPasswordResetEmail } from "../modules/email/templates/password-reset.js";
+import { platformIpRateLimit } from "../middleware/platformRateLimit.js";
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.passwordResetEmailRoutesInstalled");
 
-const passwordResetLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    error: "Too many password reset requests. Please wait and try again.",
-  },
-});
+const passwordResetLimiter = platformIpRateLimit("auth.password-reset", 5, 15 * 60 * 1000);
 
 async function passwordResetHandler(req: Request, res: Response) {
   const email = typeof req.body?.email === "string" ? req.body.email.trim() : "";
@@ -36,10 +28,7 @@ async function passwordResetHandler(req: Request, res: Response) {
       html,
     });
 
-    return res.json({
-      success: true,
-      message: "Password reset email sent.",
-    });
+    return res.json({ success: true, message: "Password reset email sent." });
   } catch (error: any) {
     if (error?.code === "auth/user-not-found") {
       return res.status(404).json({ error: "No account found for that email address." });
