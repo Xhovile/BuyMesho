@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { navigateToPath } from "../../lib/appNavigation";
 import AdminWorkspaceNav from "./AdminWorkspaceNav";
 import DiagnosticsDrawer from "./DiagnosticsDrawer";
+import EventTicketSearchPanel from "../../components/EventTicketSearchPanel";
 
 type AdminWorkspaceLayoutProps = {
   title: string;
@@ -21,6 +22,10 @@ export default function AdminWorkspaceLayout({
 }: AdminWorkspaceLayoutProps) {
   const pathname = window.location.pathname;
   const isAuditLog = pathname.includes("audit-log") || pathname.includes("audit");
+  const showEventTicketSearch =
+    pathname === "/admin/events" ||
+    pathname === "/admin/payments" ||
+    pathname === "/admin/transaction-inspector";
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -58,7 +63,7 @@ export default function AdminWorkspaceLayout({
         </section>
 
         {showNav ? <AdminWorkspaceNav pathname={pathname} /> : null}
-
+        {showEventTicketSearch ? <EventTicketSearchPanel mode="admin" /> : null}
         {children}
       </main>
     </div>

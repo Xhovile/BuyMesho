@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowLeft, FileText, MessageSquare, ShieldAlert } from "lucide-react";
 import { navigateBackOrPath, PAYMENTS_HUB_PATH } from "./lib/appNavigation";
-import { fetchOrderById, openOrderDispute, type OrderBundle } from "./lib/orderApi";
+import { apiFetch } from "./lib/api";
+import { fetchOrderById, openOrderDispute, openTicketDispute, type OrderBundle } from "./lib/orderApi";
 import { resolveOrderIdentifier } from "./lib/orderIdentifier";
 import FormDropdown from "./components/FormDropdown";
 
@@ -20,7 +21,9 @@ export default function OrderDisputePage() {
   const [details, setDetails] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ticketId, setTicketId] = useState<string | null>(null);
 
   const orderParam = useMemo(() => {
     const parts = window.location.pathname.split("/");
@@ -32,9 +35,23 @@ export default function OrderDisputePage() {
     const load = async () => {
       setLoading(true);
       setError(null);
+      const requestedTicketId = new URLSearchParams(window.location.search).get("ticketId")?.trim() || null;
+      setTicketId(requestedTicketId);
       try {
         const resolved = await resolveOrderIdentifier(orderParam ?? "");
         const data = await fetchOrderById(resolved);
+
+        if (requestedTicketId) {
+          const identity = (await apiFetch(`/api/event-tickets/${encodeURIComponent(requestedTicketId)}/identity`)) as {
+            ticketId?: string;
+            orderId?: string | null;
+          };
+          if (!identity?.ticketId || identity.orderId !== data.order.id) {
+            throw new Error("The Ticket ID does not belong to this order.");
+          }
+          setTicketId(identity.ticketId);
+        }
+
         setBundle(data);
       } catch (err) {
         setBundle(null);
@@ -60,14 +77,22 @@ export default function OrderDisputePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reason.trim() || !order) return;
+    if (!reason.trim() || !order || submitting) return;
 
     try {
       setError(null);
-      await openOrderDispute(order.id, [reason.trim(), details.trim()].filter(Boolean).join(" — "));
+      setSubmitting(true);
+      const disputeReason = [reason.trim(), details.trim()].filter(Boolean).join(" — ");
+      if (ticketId) {
+        await openTicketDispute(ticketId, disputeReason);
+      } else {
+        await openOrderDispute(order.id, disputeReason);
+      }
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit dispute.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -91,7 +116,7 @@ export default function OrderDisputePage() {
               <ShieldAlert className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Order dispute</p>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">{ticketId ? "Event ticket dispute" : "Order dispute"}</p>
               <h1 className="text-3xl font-black tracking-tight text-zinc-950">Report a problem</h1>
             </div>
           </div>
@@ -108,9 +133,15 @@ export default function OrderDisputePage() {
             <div className="mt-6 rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-zinc-500" />
-                <h2 className="text-base font-black text-zinc-950">Order details</h2>
+                <h2 className="text-base font-black text-zinc-950">{ticketId ? "Ticket and order details" : "Order details"}</h2>
               </div>
               <div className="mt-4 grid gap-3 text-sm">
+                {ticketId ? (
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <span className="text-emerald-700">Ticket ID</span>
+                    <p className="mt-1 break-all font-mono font-bold text-emerald-950">{ticketId}</p>
+                  </div>
+                ) : null}
                 <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
                   <span className="text-zinc-500">Reference</span>
                   <p className="mt-1 break-all font-semibold text-zinc-900">{paymentReference}</p>
@@ -160,7 +191,7 @@ export default function OrderDisputePage() {
                   placeholder="Select a reason"
                   options={DISPUTE_REASONS}
                   searchable={false}
-                  disabled={!order || loading}
+                  disabled={!order || loading || submitting}
                 />
 
                 <div>
@@ -174,6 +205,7 @@ export default function OrderDisputePage() {
                     rows={4}
                     placeholder="Describe the issue in as much detail as possible..."
                     className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                    disabled={submitting}
                   />
                 </div>
 
@@ -187,11 +219,11 @@ export default function OrderDisputePage() {
 
                 <button
                   type="submit"
-                  disabled={!order || !reason.trim() || loading}
+                  disabled={!order || !reason.trim() || loading || submitting}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ShieldAlert className="h-4 w-4" />
-                  Submit dispute
+                  {submitting ? "Submitting…" : "Submit dispute"}
                 </button>
               </form>
             )}

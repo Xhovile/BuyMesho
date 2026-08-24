@@ -11,6 +11,7 @@ import {
 import { auth } from "../firebase";
 import { useAccountProfile } from "../hooks/useAccountProfile";
 import BrandMark from "./BrandMark";
+import EventTicketSearchPanel from "./EventTicketSearchPanel";
 
 type AccountPageShellProps = {
   eyebrow: string;
@@ -43,6 +44,8 @@ export default function AccountPageShell({
 }: AccountPageShellProps) {
   const { firebaseUser } = useAccountProfile();
   const isProfilePage = title === "My profile";
+  const pathname = window.location.pathname;
+  const showEventTicketSearch = pathname === "/explore/events/manage" || pathname === "/explore/events/dashboard";
 
   const handleLogout = async () => {
     try {
@@ -126,6 +129,7 @@ export default function AccountPageShell({
             )}
           </div>
 
+          {showEventTicketSearch ? <EventTicketSearchPanel mode="creator" /> : null}
           <div className={childrenWrapperClassName}>{children}</div>
         </div>
       </main>
