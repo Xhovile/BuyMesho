@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { loadPricingComparables } from "../listing-ai-studio.js";
 
-test("pricing comparables require strong name overlap", () => {
+test("pricing comparables require complete identity-token coverage", () => {
   const db = {
     prepare() {
       return {
@@ -25,8 +25,8 @@ test("pricing comparables require strong name overlap", () => {
     condition: "Used",
   });
 
-  assert.deepEqual(result.map((listing) => listing.id), ["1", "2", "5"]);
-  assert.equal(result.length, 3);
+  assert.deepEqual(result.map((listing) => listing.id), ["1", "2"]);
+  assert.equal(result.length, 2);
 });
 
 test("pricing comparables reject empty or unusable product names", () => {
