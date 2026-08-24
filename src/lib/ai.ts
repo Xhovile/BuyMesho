@@ -19,6 +19,9 @@ export type PriceSuggestionResult = {
 };
 
 export type ShoppingAssistantMode = "ask" | "shop";
+export type ShoppingAssistantIntent = "product_discovery" | "price_filter" | "category_discovery" | "listing_comparison" | "seller_help" | "order_help" | "buyer_protection" | "account_help" | "navigation_help" | "general_help";
+export type ShoppingAssistantSuggestion = { id: string; label: string; intent: ShoppingAssistantIntent; action: "send_message" };
+export type ShoppingAssistantContext = { category?: string; min_price?: number; max_price?: number; condition?: string; university?: string };
 
 export type ShoppingAssistantListing = {
   id: string;
@@ -33,6 +36,10 @@ export type ShoppingAssistantListing = {
 
 export type ShoppingAssistantResult = {
   reply: string;
+  intent: { type: ShoppingAssistantIntent; confidence?: number };
+  recommendations: ShoppingAssistantListing[];
+  suggestions: ShoppingAssistantSuggestion[];
+  context: ShoppingAssistantContext;
   recommended_listing_ids: string[];
   match_reasons: Record<string, string>;
   suggested_follow_ups: string[];
