@@ -29,6 +29,27 @@ test("shopping assistant candidates come only from the canonical marketplace que
   assert.ok(receivedParams.includes(300000));
 });
 
+test("shopping assistant candidate loader filters explicit condition against the listing condition field", () => {
+  let receivedSql = "";
+  let receivedParams: unknown[] = [];
+  const db = {
+    prepare(sql: string) {
+      receivedSql = sql;
+      return {
+        all(...params: unknown[]) {
+          receivedParams = params;
+          return [{ id: 202, name: "Used ThinkPad", category: "Electronics", price: 180000, description: "Laptop", condition: "Used", university: "LUANAR" }];
+        },
+      };
+    },
+  };
+
+  const result = loadMarketplaceCandidates(db, { query: "find used laptops", db });
+  assert.equal(result[0]?.condition, "Used");
+  assert.match(receivedSql, /LOWER\(l\.condition\) = LOWER\(\?\)/);
+  assert.ok(receivedParams.includes("Used"));
+});
+
 test("shopping assistant candidate loader returns no marketplace records without a server database", () => {
   assert.deepEqual(loadMarketplaceCandidates(undefined, { query: "laptop" }), []);
 });
