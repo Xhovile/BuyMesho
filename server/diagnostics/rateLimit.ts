@@ -2,9 +2,11 @@ import type { Express, Request } from "express";
 import { MemoryStore, RateLimiter, RateLimitStoreUnavailableError } from "@xhovile/platform/rate-limit";
 import { rateLimit } from "@xhovile/platform/rate-limit/express";
 import { RedisStore } from "@xhovile/platform/rate-limit/redis";
+import { hasAdminAccess } from "../auth/adminAccess.js";
+import { requireAuth } from "../middleware/requireAuth.js";
 import type { DiagnosticPayload, NamedCheck, CheckStatus } from "./types.js";
 
-const DIAGNOSTIC_VERSION = "1.1";
+const DIAGNOSTIC_VERSION = "1.2";
 const RUN_WINDOW_MS = 10 * 60_000;
 
 type RedisEvalClient = { eval(script: string, options: { keys: string[]; arguments: string[] }): Promise<unknown> };
@@ -102,7 +104,6 @@ async function redisCommand(urlString: string, values: string[]): Promise<Buffer
   const net = await import("node:net");
   const tlsModule = await import("node:tls");
   const socket: RedisSocket = tls ? tlsModule.connect({ host, port, servername: host }) : net.connect({ host, port });
-
   const connected = new Promise<void>((resolve, reject) => {
     const onError = (error: Error) => reject(error);
     socket.once("error", onError);
@@ -207,9 +208,10 @@ export function registerRateLimitDiagnosticsRoutes(app: Express) {
     }
   });
 
-  app.get("/api/diagnostics/rate-limit", async (req, res) => {
+  app.get("/api/diagnostics/rate-limit", requireAuth, async (req, res) => {
     const started = Date.now();
-    if (!authTokenMatches(req)) return res.status(404).send("Not found");
+    const user = req.user as { uid?: string; email?: string; role?: string; is_admin?: boolean } | undefined;
+    if (!hasAdminAccess(user)) return res.status(403).json({ error: "Administrator access required" });
     const token = process.env.RATE_LIMIT_DIAGNOSTIC_TOKEN?.trim() ?? "";
     const checks: Record<string, NamedCheck> = {};
     try {
