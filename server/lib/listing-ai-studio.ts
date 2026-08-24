@@ -84,6 +84,7 @@ export async function generateListingDraft(currentDraft: Record<string, unknown>
 
 const GENERIC_COMPARABLE_TERMS = new Set([
   "new", "used", "original", "genuine", "brand", "model", "size", "pack", "piece", "pieces", "item", "items",
+  "laptop", "phone", "smartphone", "tablet", "computer", "notebook", "pc", "inch", "inches",
 ]);
 
 function extractComparableTerms(name: string): string[] {
@@ -93,7 +94,7 @@ function extractComparableTerms(name: string): string[] {
       .replace(/[^a-z0-9\s-]/g, " ")
       .split(/\s+/)
       .map((term) => term.trim())
-      .filter((term) => term.length >= 3 && !GENERIC_COMPARABLE_TERMS.has(term) && !/^\d+$/.test(term))
+      .filter((term) => term.length >= 2 && !GENERIC_COMPARABLE_TERMS.has(term))
       .slice(0, 6),
   )];
 }
@@ -119,6 +120,7 @@ export function loadPricingComparables(db: any, input: { name: string; category:
     params.push(input.condition);
   }
 
+  // Fetch a bounded superset with SQL, then apply conservative identity matching in application code.
   where += ` AND (${terms.map(() => "LOWER(name) LIKE ?").join(" OR ")})`;
   params.push(...terms.map((term) => `%${term}%`));
 
@@ -131,12 +133,11 @@ export function loadPricingComparables(db: any, input: { name: string; category:
   `).all(...params) as Array<Record<string, unknown>>;
 
   const normalizedInputName = normalizeComparableName(input.name);
-  const minimumOverlap = terms.length > 1 ? 2 / 3 : 1;
   const scored = rows
     .map((row) => {
       const name = String(row.name ?? "").slice(0, 160);
       const normalizedName = normalizeComparableName(name);
-      const matchedTerms = terms.filter((term) => normalizedName.includes(term));
+      const matchedTerms = terms.filter((term) => normalizedName.split(" ").includes(term));
       const overlap = matchedTerms.length / terms.length;
       const exactName = normalizedName === normalizedInputName;
 
@@ -150,7 +151,7 @@ export function loadPricingComparables(db: any, input: { name: string; category:
         overlap,
       };
     })
-    .filter((row) => Number.isFinite(row.price) && row.price > 0 && row.overlap >= minimumOverlap)
+    .filter((row) => Number.isFinite(row.price) && row.price > 0 && row.overlap === 1)
     .sort((a, b) => b.relevance - a.relevance)
     .slice(0, 8);
 
