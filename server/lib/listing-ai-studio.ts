@@ -59,8 +59,10 @@ const PRICING_INSTRUCTION = [
   "Provide a pricing suggestion for a BuyMesho listing in Malawi using supplied product information and supplied BuyMesho comparable listings when present.",
   "This is AI decision support, not an authoritative market valuation.",
   "Do not claim to have current market, transaction, or comparable-listing data unless it is explicitly supplied in the request.",
+  "Treat marketplace comparable evidence as strong only when at least 3 relevant BuyMesho listings are supplied.",
+  "When fewer than 3 relevant comparables are supplied, treat the marketplace evidence as insufficient and do not present it as a reliable market benchmark.",
   "If comparable_count is 0 and the product information is insufficient to make a defensible estimate, return confidence_score 0 and explain the missing information in market_insight instead of inventing a price.",
-  "When comparable listings are supplied, ground the price range in those BuyMesho listing prices and explain that evidence in market_insight.",
+  "When at least 3 comparable listings are supplied, ground the price range in those BuyMesho listing prices and explain that evidence in market_insight.",
   "Return JSON with min_price, max_price, recommended_price, deal_rating (bargain|fair|premium), confidence_score (0-100), market_insight, pricing_tips, evidence_source, comparable_count.",
   "All prices must be MWK and numeric.",
 ].join(" ");
@@ -80,9 +82,35 @@ export async function generateListingDraft(currentDraft: Record<string, unknown>
   });
 }
 
-function loadPricingComparables(db: any, input: { name: string; category: string; condition?: string }): Array<{ id: string; name: string; category?: string; condition?: string; price: number }> {
+const GENERIC_COMPARABLE_TERMS = new Set([
+  "new", "used", "original", "genuine", "brand", "model", "size", "pack", "piece", "pieces", "item", "items",
+]);
+
+function extractComparableTerms(name: string): string[] {
+  return [...new Set(
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, " ")
+      .split(/\s+/)
+      .map((term) => term.trim())
+      .filter((term) => term.length >= 3 && !GENERIC_COMPARABLE_TERMS.has(term) && !/^\d+$/.test(term))
+      .slice(0, 6),
+  )];
+}
+
+function normalizeComparableName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function loadPricingComparables(db: any, input: { name: string; category: string; condition?: string }): Array<{ id: string; name: string; category?: string; condition?: string; price: number }> {
   if (!db) return [];
-  const terms = input.name.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").split(/\s+/).filter((term) => term.length >= 3).slice(0, 4);
+  const terms = extractComparableTerms(input.name);
+  if (terms.length === 0) return [];
+
   const params: unknown[] = [input.category];
   let where = "WHERE is_hidden = 0 AND deleted_at IS NULL AND status != 'sold' AND category = ?";
 
@@ -91,28 +119,40 @@ function loadPricingComparables(db: any, input: { name: string; category: string
     params.push(input.condition);
   }
 
-  if (terms.length > 0) {
-    where += ` AND (${terms.map(() => "LOWER(name) LIKE ?").join(" OR ")})`;
-    params.push(...terms.map((term) => `%${term}%`));
-  }
+  where += ` AND (${terms.map(() => "LOWER(name) LIKE ?").join(" OR ")})`;
+  params.push(...terms.map((term) => `%${term}%`));
 
   const rows = db.prepare(`
     SELECT id, name, category, condition, price
     FROM listings
     ${where}
     ORDER BY created_at DESC
-    LIMIT 12
+    LIMIT 40
   `).all(...params) as Array<Record<string, unknown>>;
 
-  return rows
-    .map((row) => ({
-      id: String(row.id),
-      name: String(row.name ?? "").slice(0, 160),
-      category: typeof row.category === "string" ? row.category.slice(0, 100) : undefined,
-      condition: typeof row.condition === "string" ? row.condition.slice(0, 100) : undefined,
-      price: Number(row.price),
-    }))
-    .filter((row) => Number.isFinite(row.price) && row.price > 0);
+  const normalizedInputName = normalizeComparableName(input.name);
+  const scored = rows
+    .map((row) => {
+      const name = String(row.name ?? "").slice(0, 160);
+      const normalizedName = normalizeComparableName(name);
+      const matchedTerms = terms.filter((term) => normalizedName.includes(term));
+      const overlap = matchedTerms.length / terms.length;
+      const exactName = normalizedName === normalizedInputName;
+
+      return {
+        id: String(row.id),
+        name,
+        category: typeof row.category === "string" ? row.category.slice(0, 100) : undefined,
+        condition: typeof row.condition === "string" ? row.condition.slice(0, 100) : undefined,
+        price: Number(row.price),
+        relevance: (exactName ? 10 : 0) + overlap,
+      };
+    })
+    .filter((row) => Number.isFinite(row.price) && row.price > 0 && row.relevance >= 0.5)
+    .sort((a, b) => b.relevance - a.relevance)
+    .slice(0, 8);
+
+  return scored.map(({ relevance: _relevance, ...row }) => row);
 }
 
 export async function suggestPricing(input: {
@@ -126,12 +166,26 @@ export async function suggestPricing(input: {
   const comparable_listings = loadPricingComparables(input.db, input);
   const result = await generateGeminiJson<PriceSuggestionResult>({
     systemInstruction: PRICING_INSTRUCTION,
-    payload: { ...input, db: undefined, comparable_count: comparable_listings.length, comparable_listings },
+    payload: {
+      ...input,
+      db: undefined,
+      comparable_count: comparable_listings.length,
+      comparable_evidence_quality: comparable_listings.length >= 3 ? "strong" : "insufficient",
+      comparable_listings,
+    },
   });
+
+  const evidenceSource = comparable_listings.length >= 3
+    ? "marketplace_comparables"
+    : comparable_listings.length > 0
+      ? "insufficient_data"
+      : result.confidence_score > 0
+        ? "ai_only"
+        : "insufficient_data";
 
   return {
     ...result,
-    evidence_source: comparable_listings.length > 0 ? "marketplace_comparables" : result.confidence_score > 0 ? "ai_only" : "insufficient_data",
+    evidence_source: evidenceSource,
     comparable_count: comparable_listings.length,
   };
 }
