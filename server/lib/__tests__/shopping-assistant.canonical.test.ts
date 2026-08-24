@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { loadMarketplaceCandidates } from "../shopping-assistant.js";
+import { loadMarketplaceCandidates, shoppingAssistant } from "../shopping-assistant.js";
 
 // Regression guard: marketplace candidates must be loaded by the server, never supplied by the client.
 test("shopping assistant candidates come only from the canonical marketplace query", () => {
@@ -12,42 +12,14 @@ test("shopping assistant candidates come only from the canonical marketplace que
       return {
         all(...params: unknown[]) {
           receivedParams = params;
-          return [
-            {
-              id: 101,
-              name: "Canonical Laptop",
-              category: "Electronics",
-              price: 250000,
-              description: "Canonical database listing",
-              condition: "Used",
-              university: "LUANAR",
-              location: "Bunda",
-            },
-          ];
+          return [{ id: 101, name: "Canonical Laptop", category: "Electronics", price: 250000, description: "Canonical database listing", condition: "Used", university: "LUANAR", location: "Bunda" }];
         },
       };
     },
   };
 
-  const result = loadMarketplaceCandidates(db, {
-    query: "laptop under 300k",
-    university: "LUANAR",
-    category: "Electronics",
-    maxPrice: 300000,
-    db,
-  });
-
-  assert.deepEqual(result, [
-    {
-      id: "101",
-      name: "Canonical Laptop",
-      category: "Electronics",
-      price: 250000,
-      description: "Canonical database listing",
-      condition: "Used",
-      university: "LUANAR",
-    },
-  ]);
+  const result = loadMarketplaceCandidates(db, { query: "laptop under 300k", university: "LUANAR", category: "Electronics", maxPrice: 300000, db });
+  assert.deepEqual(result, [{ id: "101", name: "Canonical Laptop", category: "Electronics", price: 250000, description: "Canonical database listing", condition: "Used", university: "LUANAR" }]);
   assert.match(receivedSql, /FROM listings l/);
   assert.match(receivedSql, /l\.is_hidden = 0/);
   assert.match(receivedSql, /l\.deleted_at IS NULL/);
@@ -58,8 +30,12 @@ test("shopping assistant candidates come only from the canonical marketplace que
 });
 
 test("shopping assistant candidate loader returns no marketplace records without a server database", () => {
-  assert.deepEqual(
-    loadMarketplaceCandidates(undefined, { query: "laptop" }),
-    [],
+  assert.deepEqual(loadMarketplaceCandidates(undefined, { query: "laptop" }), []);
+});
+
+test("shopping assistant rejects an invalid mode before invoking AI", async () => {
+  await assert.rejects(
+    () => shoppingAssistant({ mode: "invalid" as never, query: "How does BuyMesho work?" }),
+    /mode is invalid/,
   );
 });
