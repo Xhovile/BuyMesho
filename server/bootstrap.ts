@@ -25,6 +25,7 @@ import {
   payoutWebhookRateLimit,
   messageSendRateLimit,
   messageReportRateLimit,
+  validatorRateLimit,
 } from "./middleware/platformRateLimits.js";
 
 dotenv.config();
@@ -107,6 +108,7 @@ export async function startServer() {
   app.use("/api/payments/public-status", publicPaymentStatusRateLimit);
   app.use("/api/payments/webhooks/paychangu", paymentWebhookRateLimit);
   app.use("/api/payments/webhooks/payouts", payoutWebhookRateLimit);
+  app.use("/api/validator", validatorRateLimit);
 
   // Canonical event-transaction reads precede the broader admin event router.
   app.use("/api/admin", createAdminEventTransactionRouter({ db, requireAuth }));
