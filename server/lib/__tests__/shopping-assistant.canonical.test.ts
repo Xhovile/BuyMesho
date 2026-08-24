@@ -46,12 +46,12 @@ test("shopping assistant candidates come only from the canonical marketplace que
       description: "Canonical database listing",
       condition: "Used",
       university: "LUANAR",
-      location: "Bunda",
     },
   ]);
   assert.match(receivedSql, /FROM listings l/);
   assert.match(receivedSql, /l\.is_hidden = 0/);
   assert.match(receivedSql, /l\.deleted_at IS NULL/);
+  assert.doesNotMatch(receivedSql, /l\.location/);
   assert.ok(receivedParams.includes("LUANAR"));
   assert.ok(receivedParams.includes("Electronics"));
   assert.ok(receivedParams.includes(300000));

@@ -8,7 +8,7 @@ Gemini is accessed only from the server-side `server/lib/gemini.ts` service. The
 
 `GEMINI_MODEL` defaults to `gemini-3.6-flash`.
 
-Google documents `gemini-3.6-flash` as a stable production model. Fallback models should be explicit stable model IDs, not moving aliases.
+Google currently lists Gemini 3.7 Flash, 3.6 Flash, 3.5 Flash, 3.5 Flash-Lite, and 3.1 Flash-Lite as stable Gemini 3 API models. BuyMesho keeps a small explicit allowlist of stable model IDs rather than accepting moving aliases.
 
 ## Configuration
 

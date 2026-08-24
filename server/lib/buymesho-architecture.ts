@@ -18,7 +18,7 @@ export const BUYMESHO_ARCHITECTURE: ArchitectureSource[] = [
       "BuyMesho is a client application mounted through src/main.tsx and routed through the RootRouter/app navigation layer.",
       "The application has dedicated public and authenticated experiences rather than a single undifferentiated page.",
       "Navigation includes marketplace, account, messaging, seller, events/tickets, payments/orders and admin areas present in the implementation.",
-      "The current UI hides the global Copilot launcher on Profile, Become Seller, Create/List Item, My Listings, Messages, Saved, Hidden, Payments, Seller Payouts and Admin pages, while keeping it visible on Settings and other eligible pages.",
+      "The current UI hides the global BuyMesho Assistant launcher on Profile, Become Seller, Create/List Item, My Listings, Messages, Saved, Hidden, Payments, Seller Payouts and Admin pages, while keeping it visible on Settings and other eligible pages.",
     ],
   },
   {
@@ -185,9 +185,9 @@ export const BUYMESHO_ARCHITECTURE: ArchitectureSource[] = [
     ],
     verifiedFacts: [
       "AI Listing Studio exists for listing enhancement, pricing suggestions and moderation.",
-      "BuyMesho Copilot exists as an in-product assistant drawer.",
+      "BuyMesho Assistant exists as an in-product assistant drawer.",
       "A product comparison capability exists in the current application code.",
-      "AI server routes call server-side AI services; the Copilot must not invent product/platform behavior beyond this registry and canonical marketplace data loaded server-side for the request.",
+      "AI server routes call server-side AI services; the Assistant must not invent product/platform behavior beyond this registry and canonical marketplace data loaded server-side for the request.",
       "The public Shopping Assistant applies client discovery constraints to canonical server-side marketplace listings; client-supplied listing records are not accepted as authoritative marketplace context.",
     ],
   },

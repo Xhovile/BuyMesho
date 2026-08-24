@@ -95,9 +95,9 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
 
       return res.json({ result });
     } catch (error) {
-      console.error("BuyMesho Copilot error:", error);
-      const message = error instanceof Error ? error.message : "BuyMesho Copilot is currently unavailable";
-      return res.status(503).json({ error: message, code: "COPILOT_UNAVAILABLE" });
+      console.error("BuyMesho Assistant error:", error);
+      const message = error instanceof Error ? error.message : "BuyMesho Assistant is currently unavailable";
+      return res.status(503).json({ error: message, code: "ASSISTANT_UNAVAILABLE" });
     }
   });
 

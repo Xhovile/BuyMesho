@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Send, Bot, RefreshCw, ShoppingBag, ArrowRight, HelpCircle, Search } from "lucide-react";
-import { queryShoppingAssistant, type ShoppingAssistantResult, type ShoppingAssistantListing, type CopilotConversationMessage } from "../../lib/ai";
+import { queryShoppingAssistant, type ShoppingAssistantResult, type ShoppingAssistantListing } from "../../lib/ai";
 import { formatMoney } from "../../shared/utils/formatMoney";
 import AiIcon, { shouldHideLauncher } from "./AiIcon";
 
@@ -49,7 +49,7 @@ export default function BuyMeshoCopilotDrawer({
   >([
     {
       role: "assistant",
-      text: "Muli bwanji! I am BuyMesho Copilot. Ask me about how BuyMesho works, buying and selling, or switch to Shop to describe what you want to find.",
+      text: "Muli bwanji! I am BuyMesho Assistant. Ask me about how BuyMesho works, buying and selling, or switch to Shop to describe what you want to find.",
     },
   ]);
 
@@ -83,11 +83,6 @@ export default function BuyMeshoCopilotDrawer({
     const trimmed = userText.trim();
     if (!trimmed || loading) return;
 
-    const conversation: CopilotConversationMessage[] = messages.slice(-8).map((message) => ({
-      role: message.role,
-      text: message.text,
-    }));
-
     setMessages((prev) => [...prev, { role: "user", text: trimmed }]);
     setQuery("");
     setLoading(true);
@@ -97,19 +92,15 @@ export default function BuyMeshoCopilotDrawer({
 
       setMessages((prev) => [
         ...prev,
-        result
-          ? { role: "assistant", text: result.reply, result }
-          : {
-              role: "assistant",
-              text: "BuyMesho Copilot is currently unavailable. No fabricated marketplace information was generated.",
-            },
+        { role: "assistant", text: result.reply, result },
       ]);
-    } catch {
+    } catch (error) {
+      console.warn("BuyMesho Assistant query failed:", error);
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          text: "BuyMesho Copilot is currently unavailable. Please try again later.",
+          text: "BuyMesho Assistant is temporarily unavailable. Please try again later.",
         },
       ]);
     } finally {
@@ -126,11 +117,11 @@ export default function BuyMeshoCopilotDrawer({
               <AiIcon className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="text-base font-extrabold leading-tight text-zinc-900">BuyMesho Copilot</h3>
+              <h3 className="text-base font-extrabold leading-tight text-zinc-900">BuyMesho Assistant</h3>
               <p className="text-xs font-semibold text-zinc-500">Ask about BuyMesho or discover products</p>
             </div>
           </div>
-          <button onClick={onClose} className="cursor-pointer rounded-2xl p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900" aria-label="Close BuyMesho Copilot">
+          <button onClick={onClose} className="cursor-pointer rounded-2xl p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900" aria-label="Close BuyMesho Assistant">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -151,7 +142,7 @@ export default function BuyMeshoCopilotDrawer({
             <div key={idx} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
               <div className={`max-w-[88%] rounded-3xl px-4 py-3 text-sm shadow-2xs ${msg.role === "user" ? "rounded-br-xs bg-zinc-900 text-white" : "rounded-bl-xs border border-zinc-200 bg-white text-zinc-900"}`}>
                 {msg.role === "assistant" && (
-                  <div className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-zinc-700"><Bot className="h-3.5 w-3.5 text-zinc-900" /> BuyMesho Copilot</div>
+                  <div className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-zinc-700"><Bot className="h-3.5 w-3.5 text-zinc-900" /> BuyMesho Assistant</div>
                 )}
                 <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
 
@@ -209,7 +200,7 @@ export default function BuyMeshoCopilotDrawer({
         <div className="shrink-0 border-t border-zinc-200 bg-white p-3 sm:p-4">
           <form onSubmit={(e) => { e.preventDefault(); handleSend(query); }} className="flex items-center gap-2">
             <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={mode === "shop" ? "Describe what you want to buy…" : "Ask how BuyMesho works…"} className="flex-1 rounded-2xl border border-zinc-200 bg-zinc-100 px-4 py-2.5 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 hover:bg-zinc-50 focus:border-black focus:bg-white focus:ring-2 focus:ring-black" />
-            <button type="submit" disabled={!query.trim() || loading} className="shrink-0 cursor-pointer rounded-2xl bg-zinc-900 p-2.5 text-white transition-all hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40" aria-label={mode === "shop" ? "Search BuyMesho listings" : "Ask BuyMesho Copilot"}>
+            <button type="submit" disabled={!query.trim() || loading} className="shrink-0 cursor-pointer rounded-2xl bg-zinc-900 p-2.5 text-white transition-all hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40" aria-label={mode === "shop" ? "Search BuyMesho listings" : "Ask BuyMesho Assistant"}>
               <Send className="h-4 w-4" />
             </button>
           </form>

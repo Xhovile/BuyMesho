@@ -37,7 +37,7 @@ export type ShoppingAssistantResult = {
   recommended_listings: ShoppingAssistantListing[];
 };
 
-export type CopilotConversationMessage = {
+export type AssistantConversationMessage = {
   role: "user" | "assistant";
   text: string;
 };
@@ -95,17 +95,17 @@ export async function queryShoppingAssistant(payload: {
   university?: string;
   category?: string;
   maxPrice?: number;
-}): Promise<ShoppingAssistantResult | null> {
-  try {
-    const response = await apiFetch("/api/ai/shopping-assistant", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    return response?.result ?? null;
-  } catch (err) {
-    console.warn("BuyMesho Copilot query failed:", err);
-    return null;
+}): Promise<ShoppingAssistantResult> {
+  const response = await apiFetch("/api/ai/shopping-assistant", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  if (!response?.result) {
+    throw new Error("BuyMesho Assistant returned an empty response.");
   }
+
+  return response.result as ShoppingAssistantResult;
 }
 
 /** The server owns canonical listing truth for comparisons; clients submit IDs only. */
