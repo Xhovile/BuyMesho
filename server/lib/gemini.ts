@@ -1,13 +1,13 @@
 import { GoogleGenAI } from "@google/genai";
 
 export const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
-const DEFAULT_GEMINI_FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
+const DEFAULT_GEMINI_FALLBACK_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite"];
 
 // Stable Gemini models currently approved for the BuyMesho production configuration.
 export const SUPPORTED_GEMINI_PRODUCTION_MODELS = new Set([
   "gemini-3.6-flash",
+  "gemini-3.5-flash",
   "gemini-3.5-flash-lite",
-  "gemini-3.1-flash-lite",
 ]);
 
 export class GeminiServiceError extends Error {
