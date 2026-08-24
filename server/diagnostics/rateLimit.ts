@@ -1,4 +1,4 @@
-import type { Express, RequestHandler } from "express";
+import type { Express } from "express";
 import { MemoryStore, RateLimiter, RateLimitStoreUnavailableError } from "@xhovile/platform/rate-limit";
 import { rateLimit } from "@xhovile/platform/rate-limit/express";
 import { RedisStore } from "@xhovile/platform/rate-limit/redis";
@@ -22,109 +22,63 @@ function overall(checks: Record<string, NamedCheck>): CheckStatus {
 
 async function runCoreCheck(): Promise<NamedCheck> {
   const now = Date.now();
-  const store = new MemoryStore();
-  const limiter = new RateLimiter(
-    { name: `diagnostic.core.${now}`, limit: 3, windowMs: RUN_WINDOW_MS, key: "ip" },
-    store,
-    { now: () => now },
-  );
+  const limiter = new RateLimiter({ name: `diagnostic.core.${now}`, limit: 3, windowMs: RUN_WINDOW_MS, key: "ip" }, new MemoryStore(), { now: () => now });
   const responses = await Promise.all(Array.from({ length: 4 }, () => limiter.check({ ip: "diagnostic-ip" })));
   const allowed = responses.filter((item) => item.allowed).length;
   const denied = responses.filter((item) => !item.allowed).length;
-  return allowed === 3 && denied === 1
-    ? result("PASS", "Platform fixed-window core enforces the configured limit", { allowed, denied })
-    : result("FAIL", "Platform fixed-window core returned an unexpected decision count", { allowed, denied });
+  return allowed === 3 && denied === 1 ? result("PASS", "Platform fixed-window core enforces the configured limit", { allowed, denied }) : result("FAIL", "Platform fixed-window core returned an unexpected decision count", { allowed, denied });
 }
 
 async function runIsolationCheck(): Promise<NamedCheck> {
   const now = Date.now();
-  const store = new MemoryStore();
-  const limiter = new RateLimiter(
-    { name: `diagnostic.isolation.${now}`, limit: 1, windowMs: RUN_WINDOW_MS, key: "user" },
-    store,
-    { now: () => now },
-  );
+  const limiter = new RateLimiter({ name: `diagnostic.isolation.${now}`, limit: 1, windowMs: RUN_WINDOW_MS, key: "user" }, new MemoryStore(), { now: () => now });
   const firstA = await limiter.check({ userId: "user-a" });
   const secondA = await limiter.check({ userId: "user-a" });
   const firstB = await limiter.check({ userId: "user-b" });
-  return firstA.allowed && !secondA.allowed && firstB.allowed
-    ? result("PASS", "User-key counters are isolated correctly")
-    : result("FAIL", "User-key counters are not isolated correctly", { first_a: firstA.allowed, second_a: secondA.allowed, first_b: firstB.allowed });
+  return firstA.allowed && !secondA.allowed && firstB.allowed ? result("PASS", "User-key counters are isolated correctly") : result("FAIL", "User-key counters are not isolated correctly", { first_a: firstA.allowed, second_a: secondA.allowed, first_b: firstB.allowed });
 }
 
 async function runConcurrencyCheck(): Promise<NamedCheck> {
   const now = Date.now();
-  const store = new MemoryStore();
-  const limiter = new RateLimiter(
-    { name: `diagnostic.concurrency.${now}`, limit: 10, windowMs: RUN_WINDOW_MS, key: "ip" },
-    store,
-    { now: () => now },
-  );
+  const limiter = new RateLimiter({ name: `diagnostic.concurrency.${now}`, limit: 10, windowMs: RUN_WINDOW_MS, key: "ip" }, new MemoryStore(), { now: () => now });
   const responses = await Promise.all(Array.from({ length: 20 }, () => limiter.check({ ip: "concurrent-diagnostic-ip" })));
   const allowed = responses.filter((item) => item.allowed).length;
   const denied = responses.filter((item) => !item.allowed).length;
-  return allowed === 10 && denied === 10
-    ? result("PASS", "Concurrent MemoryStore checks enforce the fixed-window limit", { allowed, denied })
-    : result("FAIL", "Concurrent MemoryStore checks produced an unexpected decision count", { allowed, denied });
+  return allowed === 10 && denied === 10 ? result("PASS", "Concurrent MemoryStore checks enforce the fixed-window limit", { allowed, denied }) : result("FAIL", "Concurrent MemoryStore checks produced an unexpected decision count", { allowed, denied });
 }
 
 async function runFailureModeChecks(): Promise<NamedCheck> {
   const failingStore = { increment: async () => { throw new Error("diagnostic store failure"); } };
-  const failClosed = new RateLimiter(
-    { name: `diagnostic.closed.${Date.now()}`, limit: 1, windowMs: RUN_WINDOW_MS, key: "ip" },
-    failingStore,
-    { storeFailure: "fail-closed" },
-  );
-  const failOpen = new RateLimiter(
-    { name: `diagnostic.open.${Date.now()}`, limit: 1, windowMs: RUN_WINDOW_MS, key: "ip" },
-    failingStore,
-    { storeFailure: "fail-open" },
-  );
+  const failClosed = new RateLimiter({ name: `diagnostic.closed.${Date.now()}`, limit: 1, windowMs: RUN_WINDOW_MS, key: "ip" }, failingStore, { storeFailure: "fail-closed" });
+  const failOpen = new RateLimiter({ name: `diagnostic.open.${Date.now()}`, limit: 1, windowMs: RUN_WINDOW_MS, key: "ip" }, failingStore, { storeFailure: "fail-open" });
   let closed = false;
-  try {
-    await failClosed.check({ ip: "diagnostic-ip" });
-  } catch (error) {
-    closed = error instanceof RateLimitStoreUnavailableError;
-  }
+  try { await failClosed.check({ ip: "diagnostic-ip" }); } catch (error) { closed = error instanceof RateLimitStoreUnavailableError; }
   const opened = await failOpen.check({ ip: "diagnostic-ip" });
-  return closed && opened.allowed && opened.degraded
-    ? result("PASS", "Fail-open and fail-closed semantics behave correctly")
-    : result("FAIL", "Store failure semantics are incorrect", { fail_closed_rejected: closed, fail_open_allowed: opened.allowed, fail_open_degraded: opened.degraded });
+  return closed && opened.allowed && opened.degraded ? result("PASS", "Fail-open and fail-closed semantics behave correctly") : result("FAIL", "Store failure semantics are incorrect", { fail_closed_rejected: closed, fail_open_allowed: opened.allowed, fail_open_degraded: opened.degraded });
 }
 
 async function runExpressCheck(): Promise<NamedCheck> {
-  const responses: Array<Record<string, string | number | null>> = [];
   const headers = new Map<string, string>();
   const response = {
-    setHeader(name: string, value: string) { headers.set(name, value); return this; },
     statusCode: 200,
+    setHeader(name: string, value: string) { headers.set(name, value); return this; },
     status(code: number) { this.statusCode = code; return this; },
     json(_body: unknown) { return this; },
   };
   const handler = rateLimit({ name: `diagnostic.express.${Date.now()}`, limit: 3, windowMs: RUN_WINDOW_MS, key: "ip" });
   const request = { ip: "diagnostic-express-ip" };
+  const responses: Array<Record<string, string | number | null>> = [];
 
   for (let index = 0; index < 4; index += 1) {
     headers.clear();
     response.statusCode = 200;
-    await new Promise<void>((resolve, reject) => {
-      handler(request as never, response as never, (error?: unknown) => error ? reject(error) : resolve());
-      queueMicrotask(resolve);
-    });
-    responses.push({
-      status: response.statusCode,
-      limit: headers.get("RateLimit-Limit") ?? null,
-      remaining: headers.get("RateLimit-Remaining") ?? null,
-      reset: headers.get("RateLimit-Reset") ?? null,
-      retryAfter: headers.get("Retry-After") ?? null,
-    });
+    await (handler as any)(request, response, (error?: unknown) => { if (error) throw error; });
+    responses.push({ status: response.statusCode, limit: headers.get("RateLimit-Limit") ?? null, remaining: headers.get("RateLimit-Remaining") ?? null, reset: headers.get("RateLimit-Reset") ?? null, retryAfter: headers.get("Retry-After") ?? null });
   }
 
   const denied = responses[3];
   const headersPresent = Boolean(denied?.limit && denied?.remaining && denied?.reset && denied?.retryAfter);
-  return responses.filter((item) => item.status === 200).length === 3 && denied?.status === 429 && headersPresent
-    ? result("PASS", "Express adapter returns 429 and the expected rate-limit headers", { responses })
-    : result("FAIL", "Express adapter returned unexpected status or headers", { responses });
+  return responses.filter((item) => item.status === 200).length === 3 && denied?.status === 429 && headersPresent ? result("PASS", "Express adapter returns 429 and the expected rate-limit headers", { responses }) : result("FAIL", "Express adapter returned unexpected status or headers", { responses });
 }
 
 type RedisEvalClient = { eval(script: string, options: { keys: string[]; arguments: string[] }): Promise<unknown> };
@@ -139,16 +93,10 @@ async function redisCommand(urlString: string, values: string[]): Promise<Buffer
   const tlsModule = await import("node:tls");
   const socket = tls ? tlsModule.connect({ host, port, servername: host }) : net.connect({ host, port });
   const payload = `*${values.length}\r\n${values.map((value) => `$${Buffer.byteLength(value)}\r\n${value}\r\n`).join("")}`;
-  await new Promise<void>((resolve, reject) => {
-    socket.once("error", reject);
-    socket.once(tls ? "secureConnect" : "connect", () => resolve());
-  });
+  await new Promise<void>((resolve, reject) => { socket.once("error", reject); socket.once(tls ? "secureConnect" : "connect", () => resolve()); });
   return await new Promise<Buffer>((resolve, reject) => {
     let buffer = Buffer.alloc(0);
-    socket.on("data", (chunk: Buffer) => {
-      buffer = Buffer.concat([buffer, chunk]);
-      if (/^[+\-:]/.test(buffer.toString("utf8"))) { resolve(buffer); socket.end(); }
-    });
+    socket.on("data", (chunk: Buffer) => { buffer = Buffer.concat([buffer, chunk]); if (/^[+\-:]/.test(buffer.toString("utf8"))) { resolve(buffer); socket.end(); } });
     socket.once("error", reject);
     socket.setTimeout(5000, () => reject(new Error("Redis command timed out")));
     socket.write(payload);
@@ -158,23 +106,19 @@ async function redisCommand(urlString: string, values: string[]): Promise<Buffer
 function parseRedisInteger(response: Buffer): number {
   const match = response.toString("utf8").match(/^:([-\d]+)\r\n/);
   if (!match) throw new Error(`Unexpected Redis response: ${response.toString("utf8").slice(0, 120)}`);
-  const value = Number(match[1]);
-  if (!Number.isSafeInteger(value)) throw new Error("Invalid Redis integer response");
-  return value;
+  return Number(match[1]);
 }
 
 function buildRedisStore(urlString: string) {
-  const client: RedisEvalClient = {
-    eval: async (script, options) => {
-      const url = new URL(urlString);
-      const username = url.username ? decodeURIComponent(url.username) : "default";
-      const password = url.password ? decodeURIComponent(url.password) : "";
-      const db = url.pathname && url.pathname !== "/" ? url.pathname.slice(1) : "";
-      if (password) await redisCommand(urlString, ["AUTH", username, password]);
-      if (db) await redisCommand(urlString, ["SELECT", db]);
-      return parseRedisInteger(await redisCommand(urlString, ["EVAL", script, String(options.keys.length), ...options.keys, ...options.arguments]));
-    },
-  };
+  const client: RedisEvalClient = { eval: async (script, options) => {
+    const url = new URL(urlString);
+    const username = url.username ? decodeURIComponent(url.username) : "default";
+    const password = url.password ? decodeURIComponent(url.password) : "";
+    const db = url.pathname && url.pathname !== "/" ? url.pathname.slice(1) : "";
+    if (password) await redisCommand(urlString, ["AUTH", username, password]);
+    if (db) await redisCommand(urlString, ["SELECT", db]);
+    return parseRedisInteger(await redisCommand(urlString, ["EVAL", script, String(options.keys.length), ...options.keys, ...options.arguments]));
+  } };
   return new RedisStore(client);
 }
 
@@ -185,8 +129,7 @@ async function runRedisCheck(): Promise<NamedCheck> {
     const store = buildRedisStore(url);
     const key = `diagnostic.atomic.${Date.now()}`;
     const counts = (await Promise.all(Array.from({ length: 20 }, () => store.increment(key, RUN_WINDOW_MS, Date.now())))).map((item) => item.count).sort((a, b) => a - b);
-    const expected = counts.every((count, index) => count === index + 1);
-    return expected ? result("PASS", "RedisStore atomically increments a shared fixed-window counter", { counts }) : result("FAIL", "RedisStore returned unexpected concurrent counter values", { counts });
+    return counts.every((count, index) => count === index + 1) ? result("PASS", "RedisStore atomically increments a shared fixed-window counter", { counts }) : result("FAIL", "RedisStore returned unexpected concurrent counter values", { counts });
   } catch (error) {
     return result("FAIL", "RedisStore diagnostic failed", { error: error instanceof Error ? error.message : String(error) });
   }
@@ -194,7 +137,7 @@ async function runRedisCheck(): Promise<NamedCheck> {
 
 function renderHtml(payload: DiagnosticPayload): string {
   const rows = Object.entries(payload.checks ?? {}).map(([name, check]) => `<tr><td>${name}</td><td class="${check.status}">${check.status}</td><td>${check.message}</td></tr>`).join("");
-  return `<!doctype html><html><head><meta charset="utf-8"><title>BuyMesho Rate Limit Diagnostics</title><style>body{font-family:system-ui,sans-serif;max-width:1000px;margin:40px auto;padding:0 20px}table{width:100%;border-collapse:collapse}td{padding:10px;border-bottom:1px solid #ddd}.PASS{color:#087f5b}.WARN{color:#b25e00}.FAIL{color:#c92a2a}code{background:#f4f4f4;padding:2px 5px}</style></head><body><h1>BuyMesho Rate Limit Diagnostics</h1><h2 class="${payload.overall}">${payload.overall}</h2><p>${payload.duration_ms} ms · ${payload.timestamp}</p><table><tr><th align="left">Check</th><th align="left">Status</th><th align="left">Message</th></tr>${rows}</table><p><code>REDIS_URL</code> enables Redis checks. The diagnostic is enabled by the server-side <code>RATE_LIMIT_DIAGNOSTIC_TOKEN</code> secret.</p></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><title>BuyMesho Rate Limit Diagnostics</title><style>body{font-family:system-ui,sans-serif;max-width:1000px;margin:40px auto;padding:0 20px}table{width:100%;border-collapse:collapse}td{padding:10px;border-bottom:1px solid #ddd}.PASS{color:#087f5b}.WARN{color:#b25e00}.FAIL{color:#c92a2a}</style></head><body><h1>BuyMesho Rate Limit Diagnostics</h1><h2 class="${payload.overall}">${payload.overall}</h2><p>${payload.duration_ms} ms · ${payload.timestamp}</p><table><tr><th align="left">Check</th><th align="left">Status</th><th align="left">Message</th></tr>${rows}</table><p>Redis checks are enabled only when <code>REDIS_URL</code> is configured. This diagnostic is enabled by the server-side <code>RATE_LIMIT_DIAGNOSTIC_TOKEN</code> secret.</p></body></html>`;
 }
 
 export function registerRateLimitDiagnosticsRoutes(app: Express) {
@@ -212,14 +155,7 @@ export function registerRateLimitDiagnosticsRoutes(app: Express) {
     } catch (error) {
       checks.runtime = result("FAIL", "Rate-limit diagnostic runner failed", { error: error instanceof Error ? error.message : String(error) });
     }
-    const payload: DiagnosticPayload = {
-      overall: overall(checks),
-      authoritative: true,
-      diagnostic_version: DIAGNOSTIC_VERSION,
-      timestamp: new Date().toISOString(),
-      duration_ms: Date.now() - started,
-      checks,
-    };
+    const payload: DiagnosticPayload = { overall: overall(checks), authoritative: true, diagnostic_version: DIAGNOSTIC_VERSION, timestamp: new Date().toISOString(), duration_ms: Date.now() - started, checks };
     if (req.query.format === "json") return res.status(payload.overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json(payload);
     return res.status(payload.overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").type("html").send(renderHtml(payload));
   });
