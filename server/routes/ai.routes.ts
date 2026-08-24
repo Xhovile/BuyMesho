@@ -6,8 +6,33 @@ import { authenticatedAiRateLimit, publicAiRateLimit } from "../middleware/aiRat
 
 const MAX_TEXT_LENGTH = 8_000;
 const MAX_DRAFT_KEYS = 40;
+const MAX_CONVERSATION_MESSAGES = 8;
+const MAX_CONVERSATION_MESSAGE_LENGTH = 2_000;
+const MAX_CONVERSATION_TOTAL_LENGTH = 8_000;
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function validateConversation(value: unknown): { role: "user" | "assistant"; text: string }[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) throw new Error("conversation must be an array");
+  if (value.length > MAX_CONVERSATION_MESSAGES) throw new Error(`conversation must contain at most ${MAX_CONVERSATION_MESSAGES} messages`);
+
+  const conversation: { role: "user" | "assistant"; text: string }[] = [];
+  let totalLength = 0;
+  for (const message of value) {
+    if (!isPlainObject(message) || (message.role !== "user" && message.role !== "assistant") || typeof message.text !== "string") {
+      throw new Error("conversation messages must contain a valid role and text");
+    }
+    const text = message.text.trim();
+    if (!text || text.length > MAX_CONVERSATION_MESSAGE_LENGTH) {
+      throw new Error(`conversation message text must be 1-${MAX_CONVERSATION_MESSAGE_LENGTH} characters`);
+    }
+    totalLength += text.length;
+    if (totalLength > MAX_CONVERSATION_TOTAL_LENGTH) throw new Error(`conversation text cannot exceed ${MAX_CONVERSATION_TOTAL_LENGTH} characters`);
+    conversation.push({ role: message.role, text });
+  }
+  return conversation;
 }
 
 export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandler, db?: any) {
@@ -40,16 +65,24 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
 
   app.post("/api/ai/shopping-assistant", publicAiRateLimit, async (req, res) => {
     try {
-      const { mode, query, university, category, maxPrice } = req.body || {};
+      const { mode, query, conversation, university, category, maxPrice } = req.body || {};
       if (mode !== "ask" && mode !== "shop") return res.status(400).json({ error: "mode must be ask or shop" });
       if (typeof query !== "string" || !query.trim() || query.length > MAX_TEXT_LENGTH) return res.status(400).json({ error: "query is required and must be 8,000 characters or fewer" });
       if (university !== undefined && (typeof university !== "string" || university.length > 150)) return res.status(400).json({ error: "university must be a string of 150 characters or fewer" });
       if (category !== undefined && (typeof category !== "string" || category.length > 150)) return res.status(400).json({ error: "category must be a string of 150 characters or fewer" });
       if (maxPrice !== undefined && (typeof maxPrice !== "number" || !Number.isFinite(maxPrice) || maxPrice < 0)) return res.status(400).json({ error: "maxPrice must be a non-negative number" });
 
+      let validatedConversation;
+      try {
+        validatedConversation = validateConversation(conversation);
+      } catch (error) {
+        return res.status(400).json({ error: error instanceof Error ? error.message : "conversation is invalid" });
+      }
+
       const result = await shoppingAssistant({
         mode,
         query,
+        conversation: validatedConversation,
         university: typeof university === "string" ? university : undefined,
         category: typeof category === "string" ? category : undefined,
         maxPrice: typeof maxPrice === "number" ? maxPrice : undefined,
