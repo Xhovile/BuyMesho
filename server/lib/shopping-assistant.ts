@@ -17,7 +17,6 @@ export type ShoppingAssistantInput = {
   university?: string;
   category?: string;
   maxPrice?: number;
-  contextListings?: ShoppingAssistantListing[];
   db?: any;
 };
 
@@ -79,7 +78,7 @@ function sanitizeListings(listings: ShoppingAssistantListing[]) {
   }));
 }
 
-function loadMarketplaceCandidates(db: any, input: ShoppingAssistantInput): ShoppingAssistantListing[] {
+export function loadMarketplaceCandidates(db: any, input: ShoppingAssistantInput): ShoppingAssistantListing[] {
   if (!db) return [];
 
   const params: any[] = [];
@@ -143,18 +142,19 @@ Your job has two distinct responsibilities:
 
 SOURCE-OF-TRUTH RULES:
 - The verified BuyMesho architecture registry is authoritative for platform behavior.
-- The supplied listing context is authoritative only for the listings available to this request.
+- The available listing context is authoritative for the listings available to this request, and it is fetched server-side from the canonical BuyMesho marketplace database.
+- Client-provided listing records are never trusted as marketplace context.
 - Do not use generic e-commerce assumptions, old memories, roadmaps, design suggestions, or unsupported claims to fill gaps.
 - A feature is not a BuyMesho feature merely because another marketplace normally has it.
-- A listing is not available merely because the user asks for it; recommend only supplied listings.
+- A listing is not available merely because the user asks for it; recommend only listings loaded from the canonical marketplace database.
 
 DISCOVERY RULES:
 - Understand natural-language constraints such as product type, budget, category, condition, university, location, and stated preferences.
-- Recommend only listing IDs present in the supplied context.
+- Recommend only listing IDs present in the server-loaded canonical context.
 - Return at most 4 recommendations.
 - Do not invent product names, prices, stock, sellers, ratings, specifications, availability, delivery methods, or locations.
-- If no supplied listing matches, say that no matching listing was found in the current listing context. Do not fabricate alternatives.
-- Never imply that the supplied context represents all BuyMesho listings unless that is explicitly established by the caller.
+- If no canonical listing matches, say that no matching listing was found in the current BuyMesho listing context. Do not fabricate alternatives.
+- Never imply that the server-loaded context represents all BuyMesho listings unless that is explicitly established by the caller.
 - match_reasons must be grounded only in supplied listing fields.
 
 BUYING GUIDANCE:
@@ -184,10 +184,7 @@ export async function shoppingAssistant(input: ShoppingAssistantInput): Promise<
   const query = input.query.trim();
   if (!query) throw new Error("Shopping assistant query is required");
 
-  const suppliedListings = Array.isArray(input.contextListings) ? input.contextListings : [];
-  const marketplaceListings = suppliedListings.length > 0
-    ? suppliedListings
-    : loadMarketplaceCandidates(input.db, input);
+  const marketplaceListings = loadMarketplaceCandidates(input.db, input);
   const listings = sanitizeListings(marketplaceListings);
 
   const payload = {
