@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { ShieldAlert } from "lucide-react";
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
-import { PAYMENTS_HUB_PATH, navigateToOrderDispute } from "./lib/appNavigation";
+import { navigateToPath } from "./lib/appNavigation";
+import { apiFetch } from "./lib/api";
 import { resolveOrderIdentifier } from "./lib/orderIdentifier";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
@@ -24,8 +25,22 @@ function DisputesPageContent() {
     try {
       setLoading(true);
       setError(null);
+
+      try {
+        const ticketIdentity = (await apiFetch(`/api/event-tickets/${encodeURIComponent(value)}/identity`)) as {
+          ticketId?: string;
+          orderId?: string | null;
+        };
+        if (ticketIdentity?.ticketId && ticketIdentity.orderId) {
+          navigateToPath(`/orders/${encodeURIComponent(ticketIdentity.orderId)}/dispute?ticketId=${encodeURIComponent(ticketIdentity.ticketId)}`);
+          return;
+        }
+      } catch {
+        // Not an event Ticket ID; continue with the existing order/reference resolver.
+      }
+
       const resolved = await resolveOrderIdentifier(value);
-      navigateToOrderDispute(resolved);
+      navigateToPath(`/orders/${encodeURIComponent(resolved)}/dispute`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to resolve the reference.");
     } finally {
@@ -48,7 +63,7 @@ function DisputesPageContent() {
               Open a dispute
             </h1>
             <p className="mt-2 text-sm leading-7 text-zinc-600 sm:text-base">
-              Enter the order reference, order ID, or ticket code related to the issue.
+              Enter the order reference, order ID, or Ticket ID related to the issue.
             </p>
           </div>
         </div>
@@ -58,7 +73,7 @@ function DisputesPageContent() {
             <input
               value={reference}
               onChange={(event) => setReference(event.target.value)}
-              placeholder="Enter order reference, order ID, or ticket code"
+              placeholder="Enter order reference, order ID, or Ticket ID"
               className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900"
             />
             <button
