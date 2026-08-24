@@ -95,6 +95,7 @@ export async function suggestListingPricing(payload: {
 export async function queryShoppingAssistant(payload: {
   mode: ShoppingAssistantMode;
   query: string;
+  conversation?: AssistantConversationMessage[];
   university?: string;
   category?: string;
   maxPrice?: number;
