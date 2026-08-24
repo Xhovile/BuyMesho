@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { X, Send, Bot, RefreshCw, ShoppingBag, ArrowRight, HelpCircle, Search } from "lucide-react";
 import { queryShoppingAssistant, type ShoppingAssistantResult, type ShoppingAssistantListing } from "../../lib/ai";
 import { formatMoney } from "../../shared/utils/formatMoney";
@@ -12,6 +12,11 @@ type Props = {
 };
 
 type AssistantMode = "ask" | "shop";
+type AssistantMessage = {
+  role: "user" | "assistant";
+  text: string;
+  result?: ShoppingAssistantResult;
+};
 
 const SUGGESTED_QUERIES: Record<AssistantMode, string[]> = {
   ask: [
@@ -28,6 +33,137 @@ const SUGGESTED_QUERIES: Record<AssistantMode, string[]> = {
   ],
 };
 
+function renderInlineMarkdown(text: string): ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={index} className="font-extrabold">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <code key={index} className="rounded bg-zinc-100 px-1 py-0.5 font-mono text-[0.9em]">
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+
+    return part;
+  });
+}
+
+function renderAssistantText(text: string) {
+  const lines = text.replace(/\r/g, "").split("\n");
+  const blocks: ReactNode[] = [];
+  let paragraphLines: string[] = [];
+  let orderedItems: string[] = [];
+  let unorderedItems: string[] = [];
+
+  const flushParagraph = () => {
+    if (!paragraphLines.length) return;
+    const content = paragraphLines.join(" ").trim();
+    if (content) {
+      blocks.push(
+        <p key={`p-${blocks.length}`} className="leading-relaxed">
+          {renderInlineMarkdown(content)}
+        </p>,
+      );
+    }
+    paragraphLines = [];
+  };
+
+  const flushLists = () => {
+    if (orderedItems.length) {
+      const items = orderedItems;
+      orderedItems = [];
+      blocks.push(
+        <ol key={`ol-${blocks.length}`} className="list-decimal space-y-2 pl-5 leading-relaxed marker:font-semibold">
+          {items.map((item, index) => (
+            <li key={index} className="pl-1">
+              {renderInlineMarkdown(item)}
+            </li>
+          ))}
+        </ol>,
+      );
+    }
+
+    if (unorderedItems.length) {
+      const items = unorderedItems;
+      unorderedItems = [];
+      blocks.push(
+        <ul key={`ul-${blocks.length}`} className="list-disc space-y-2 pl-5 leading-relaxed marker:text-zinc-500">
+          {items.map((item, index) => (
+            <li key={index} className="pl-1">
+              {renderInlineMarkdown(item)}
+            </li>
+          ))}
+        </ul>,
+      );
+    }
+  };
+
+  const flush = () => {
+    flushParagraph();
+    flushLists();
+  };
+
+  lines.forEach((rawLine) => {
+    const line = rawLine.trim();
+
+    if (!line) {
+      flush();
+      return;
+    }
+
+    const headingMatch = line.match(/^#{1,3}\s+(.+)$/);
+    if (headingMatch) {
+      flush();
+      blocks.push(
+        <h4 key={`h-${blocks.length}`} className="text-[0.95rem] font-extrabold leading-snug text-zinc-950">
+          {renderInlineMarkdown(headingMatch[1])}
+        </h4>,
+      );
+      return;
+    }
+
+    const orderedMatch = line.match(/^\d+[.)]\s+(.+)$/);
+    if (orderedMatch) {
+      flushParagraph();
+      if (unorderedItems.length) flushLists();
+      orderedItems.push(orderedMatch[1]);
+      return;
+    }
+
+    const unorderedMatch = line.match(/^[-*]\s+(.+)$/);
+    if (unorderedMatch) {
+      flushParagraph();
+      if (orderedItems.length) flushLists();
+      unorderedItems.push(unorderedMatch[1]);
+      return;
+    }
+
+    if (orderedItems.length) {
+      orderedItems[orderedItems.length - 1] += ` ${line}`;
+      return;
+    }
+
+    if (unorderedItems.length) {
+      unorderedItems[unorderedItems.length - 1] += ` ${line}`;
+      return;
+    }
+
+    paragraphLines.push(line);
+  });
+
+  flush();
+  return <div className="space-y-3">{blocks}</div>;
+}
+
 export default function BuyMeshoCopilotDrawer({
   isOpen,
   onClose,
@@ -40,13 +176,9 @@ export default function BuyMeshoCopilotDrawer({
   const [mode, setMode] = useState<AssistantMode>("ask");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState<
-    Array<{
-      role: "user" | "assistant";
-      text: string;
-      result?: ShoppingAssistantResult;
-    }>
-  >([
+  const [starterSuggestionsVisible, setStarterSuggestionsVisible] = useState(true);
+  const [followUpSuggestionsVisible, setFollowUpSuggestionsVisible] = useState(false);
+  const [messages, setMessages] = useState<AssistantMessage[]>([
     {
       role: "assistant",
       text: "Muli bwanji! I am BuyMesho Assistant. Ask me about how BuyMesho works, buying and selling, or switch to Shop to describe what you want to find.",
@@ -77,12 +209,16 @@ export default function BuyMeshoCopilotDrawer({
   const handleModeChange = (nextMode: AssistantMode) => {
     setMode(nextMode);
     setQuery("");
+    setStarterSuggestionsVisible(true);
+    setFollowUpSuggestionsVisible(false);
   };
 
   const handleSend = async (userText: string) => {
     const trimmed = userText.trim();
     if (!trimmed || loading) return;
 
+    setStarterSuggestionsVisible(false);
+    setFollowUpSuggestionsVisible(false);
     setMessages((prev) => [...prev, { role: "user", text: trimmed }]);
     setQuery("");
     setLoading(true);
@@ -94,6 +230,7 @@ export default function BuyMeshoCopilotDrawer({
         ...prev,
         { role: "assistant", text: result.reply, result },
       ]);
+      setFollowUpSuggestionsVisible(result.suggested_follow_ups.length > 0);
     } catch (error) {
       console.warn("BuyMesho Assistant query failed:", error);
       setMessages((prev) => [
@@ -107,6 +244,12 @@ export default function BuyMeshoCopilotDrawer({
       setLoading(false);
     }
   };
+
+  const latestFollowUpMessageIndex = messages.reduce(
+    (latestIndex, message, index) =>
+      message.role === "assistant" && (message.result?.suggested_follow_ups?.length ?? 0) > 0 ? index : latestIndex,
+    -1,
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in">
@@ -142,9 +285,13 @@ export default function BuyMeshoCopilotDrawer({
             <div key={idx} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
               <div className={`max-w-[88%] rounded-3xl px-4 py-3 text-sm shadow-2xs ${msg.role === "user" ? "rounded-br-xs bg-zinc-900 text-white" : "rounded-bl-xs border border-zinc-200 bg-white text-zinc-900"}`}>
                 {msg.role === "assistant" && (
-                  <div className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-zinc-700"><Bot className="h-3.5 w-3.5 text-zinc-900" /> BuyMesho Assistant</div>
+                  <div className="mb-2 flex items-center gap-1.5 text-xs font-bold text-zinc-700"><Bot className="h-3.5 w-3.5 text-zinc-900" /> BuyMesho Assistant</div>
                 )}
-                <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+                {msg.role === "assistant" ? (
+                  renderAssistantText(msg.text)
+                ) : (
+                  <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+                )}
 
                 {msg.result?.recommended_listings?.length ? (
                   <div className="mt-3 space-y-2 border-t border-zinc-200/80 pt-3">
@@ -169,10 +316,15 @@ export default function BuyMeshoCopilotDrawer({
                 ) : null}
               </div>
 
-              {msg.result?.suggested_follow_ups?.length ? (
+              {followUpSuggestionsVisible &&
+              idx === latestFollowUpMessageIndex &&
+              idx === messages.length - 1 &&
+              msg.result?.suggested_follow_ups?.length ? (
                 <div className="mt-2 flex max-w-[88%] flex-wrap justify-start gap-1.5">
-                  {msg.result.suggested_follow_ups.map((prompt, pIdx) => (
-                    <button key={pIdx} onClick={() => handleSend(prompt)} className="cursor-pointer rounded-full border border-emerald-300/80 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-950 transition-all hover:border-emerald-400 hover:bg-emerald-100/80">{prompt}</button>
+                  {msg.result.suggested_follow_ups.map((prompt) => (
+                    <button key={prompt} type="button" onClick={() => handleSend(prompt)} className="cursor-pointer rounded-full border border-emerald-300/80 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-950 transition-all hover:border-emerald-400 hover:bg-emerald-100/80">
+                      {prompt}
+                    </button>
                   ))}
                 </div>
               ) : null}
@@ -188,14 +340,16 @@ export default function BuyMeshoCopilotDrawer({
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="shrink-0 border-t border-zinc-200 bg-zinc-50/80 px-4 py-3">
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-500">Try asking:</p>
-          <div className="flex flex-wrap gap-1.5">
-            {SUGGESTED_QUERIES[mode].map((q) => (
-              <button key={q} onClick={() => handleSend(q)} className="cursor-pointer rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-left text-xs font-semibold text-zinc-700 shadow-2xs transition-all hover:border-zinc-300 hover:bg-zinc-100">{q}</button>
-            ))}
+        {starterSuggestionsVisible ? (
+          <div className="shrink-0 border-t border-zinc-200 bg-zinc-50/80 px-4 py-3">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-500">Try asking</p>
+            <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
+              {SUGGESTED_QUERIES[mode].map((q) => (
+                <button key={q} type="button" onClick={() => handleSend(q)} className="cursor-pointer rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-left text-xs font-semibold text-zinc-700 shadow-2xs transition-all hover:border-zinc-300 hover:bg-zinc-100">{q}</button>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="shrink-0 border-t border-zinc-200 bg-white p-3 sm:p-4">
           <form onSubmit={(e) => { e.preventDefault(); handleSend(query); }} className="flex items-center gap-2">
