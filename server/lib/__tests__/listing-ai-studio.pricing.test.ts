@@ -25,7 +25,8 @@ test("pricing comparables require complete identity-token coverage", () => {
     condition: "Used",
   });
 
-  assert.deepEqual(result.map((listing) => listing.id), ["1", "2"]);
+  // Exact product identity ranks ahead of a broader name variant.
+  assert.deepEqual(result.map((listing) => listing.id), ["2", "1"]);
   assert.equal(result.length, 2);
 });
 
