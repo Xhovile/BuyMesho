@@ -10,7 +10,8 @@
     "start": "node dist/server.js",
     "dev:server": "tsx server.ts",
     "start:server": "node dist-server/server/entry.js",
-    "test": "npm run test:ai-shopping && npm run test:ai-pricing && npm run test:ai-config && npm run test:integration && npm run test:routing-guards",
+    "test": "npm run check:gemini-secret-exposure && npm run test:ai-shopping && npm run test:ai-pricing && npm run test:ai-config && npm run test:integration && npm run test:routing-guards",
+    "check:gemini-secret-exposure": "node scripts/check-gemini-secret-exposure.mjs",
     "test:ai-shopping": "NODE_ENV=test node --import tsx --import ./server/testSafety.ts --test --test-concurrency=1 server/lib/__tests__/shopping-assistant.canonical.test.ts",
     "test:ai-pricing": "NODE_ENV=test node --import tsx --import ./server/testSafety.ts --test --test-concurrency=1 server/lib/__tests__/listing-ai-studio.pricing.test.ts",
     "test:ai-config": "NODE_ENV=test node --import tsx --import ./server/testSafety.ts --test --test-concurrency=1 server/lib/__tests__/gemini.config.test.ts",
@@ -44,7 +45,7 @@
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "multer": "^2.2.0",
-    "nodemailer": "^9.0.1",
+    "nodemailer": "^9.0.0",
     "pg": "^8.22.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
