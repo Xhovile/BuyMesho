@@ -9,7 +9,6 @@ export type ShoppingAssistantListing = {
   description?: string;
   condition?: string;
   university?: string;
-  location?: string;
 };
 
 export type ShoppingAssistantInput = {
@@ -74,7 +73,6 @@ function sanitizeListings(listings: ShoppingAssistantListing[]) {
     description: listing.description?.slice(0, 1200),
     condition: listing.condition?.slice(0, 100),
     university: listing.university?.slice(0, 150),
-    location: listing.location?.slice(0, 150),
   }));
 }
 
@@ -115,7 +113,7 @@ export function loadMarketplaceCandidates(db: any, input: ShoppingAssistantInput
   }
 
   const rows = db.prepare(`
-    SELECT l.id, l.name, l.category, l.price, l.description, l.condition, l.university, l.location
+    SELECT l.id, l.name, l.category, l.price, l.description, l.condition, l.university
     FROM listings l
     ${where}
     ORDER BY l.created_at DESC
@@ -130,7 +128,6 @@ export function loadMarketplaceCandidates(db: any, input: ShoppingAssistantInput
     description: typeof row.description === "string" ? row.description : undefined,
     condition: typeof row.condition === "string" ? row.condition : undefined,
     university: typeof row.university === "string" ? row.university : undefined,
-    location: typeof row.location === "string" ? row.location : undefined,
   }));
 }
 
@@ -149,7 +146,7 @@ SOURCE-OF-TRUTH RULES:
 - A listing is not available merely because the user asks for it; recommend only listings loaded from the canonical marketplace database.
 
 DISCOVERY RULES:
-- Understand natural-language constraints such as product type, budget, category, condition, university, location, and stated preferences.
+- Understand natural-language constraints such as product type, budget, category, condition, university, and stated preferences.
 - Recommend only listing IDs present in the server-loaded canonical context.
 - Return at most 4 recommendations.
 - Do not invent product names, prices, stock, sellers, ratings, specifications, availability, delivery methods, or locations.
