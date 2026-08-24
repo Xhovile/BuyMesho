@@ -5,6 +5,7 @@ import { registerPaymentDiagnosticsRoutes } from "./payments.js";
 import { registerInfrastructureDiagnosticsRoutes } from "./infrastructure.js";
 import { registerApiDiagnosticsRoutes } from "./api.js";
 import { registerMessagingDiagnosticsRoutes } from "./messaging.js";
+import { registerRateLimitDiagnosticsRoutes } from "./rateLimit.js";
 import type { DiagnosticPayload, NamedCheck } from "./types.js";
 
 type DiagnosticResponse = DiagnosticPayload;
@@ -19,23 +20,11 @@ async function fetchDiagnostic(path: string): Promise<DiagnosticResponse> {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(12000),
   });
-
   const contentType = response.headers.get("content-type") ?? "";
-  const body = contentType.includes("application/json")
-    ? await response.json()
-    : { overall: "FAIL", error: await response.text() };
-
+  const body = contentType.includes("application/json") ? await response.json() : { overall: "FAIL", error: await response.text() };
   if (!body || typeof body !== "object") {
-    return {
-      overall: "FAIL",
-      authoritative: true,
-      diagnostic_version: "4.0",
-      timestamp: new Date().toISOString(),
-      duration_ms: 0,
-      error: `${path} returned an invalid diagnostic payload`,
-    };
+    return { overall: "FAIL", authoritative: true, diagnostic_version: "4.0", timestamp: new Date().toISOString(), duration_ms: 0, error: `${path} returned an invalid diagnostic payload` };
   }
-
   return body as DiagnosticResponse;
 }
 
@@ -52,6 +41,7 @@ export function registerDiagnosticsRoutes(app: Express, _deps?: { db?: any }) {
   registerInfrastructureDiagnosticsRoutes(app);
   registerApiDiagnosticsRoutes(app);
   registerMessagingDiagnosticsRoutes(app);
+  registerRateLimitDiagnosticsRoutes(app);
 
   app.get("/api/diagnostics", async (_req, res) => {
     const started = Date.now();
@@ -65,48 +55,23 @@ export function registerDiagnosticsRoutes(app: Express, _deps?: { db?: any }) {
     } as const;
 
     try {
-      const results = await Promise.all(
-        Object.entries(paths).map(async ([key, path]) => [key, await fetchDiagnostic(path)] as const),
-      );
-
+      const results = await Promise.all(Object.entries(paths).map(async ([key, path]) => [key, await fetchDiagnostic(path)] as const));
       const checks: Record<string, NamedCheck> = {};
       const statuses: string[] = [];
-
       for (const [key, result] of results) {
         statuses.push(result.overall);
         if (result.checks) {
-          for (const [checkKey, check] of Object.entries(result.checks)) {
-            checks[`${key}.${checkKey}`] = check;
-          }
+          for (const [checkKey, check] of Object.entries(result.checks)) checks[`${key}.${checkKey}`] = check;
         } else {
-          checks[key] = {
-            status: result.overall,
-            message: result.error ?? `${key} diagnostic completed`,
-          };
+          checks[key] = { status: result.overall, message: result.error ?? `${key} diagnostic completed` };
         }
       }
-
       const overall = combineOverall(statuses);
-      const payload: DiagnosticPayload = {
-        overall,
-        authoritative: true,
-        diagnostic_version: "4.1",
-        timestamp: new Date().toISOString(),
-        duration_ms: Date.now() - started,
-        checks,
-      };
-
-      res
-        .status(overall === "FAIL" ? 503 : 200)
-        .setHeader("Cache-Control", "no-store")
-        .json(payload);
+      const payload: DiagnosticPayload = { overall, authoritative: true, diagnostic_version: "4.1", timestamp: new Date().toISOString(), duration_ms: Date.now() - started, checks };
+      res.status(overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json(payload);
     } catch (error) {
       res.status(503).setHeader("Cache-Control", "no-store").json({
-        overall: "FAIL",
-        authoritative: true,
-        diagnostic_version: "4.1",
-        timestamp: new Date().toISOString(),
-        duration_ms: Date.now() - started,
+        overall: "FAIL", authoritative: true, diagnostic_version: "4.1", timestamp: new Date().toISOString(), duration_ms: Date.now() - started,
         error: error instanceof Error ? error.message : String(error),
       } satisfies DiagnosticPayload);
     }
