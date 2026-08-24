@@ -18,21 +18,23 @@ export type PriceSuggestionResult = {
   comparable_count?: number;
 };
 
+export type ShoppingAssistantListing = {
+  id: string;
+  name: string;
+  category?: string;
+  price: number;
+  description?: string;
+  condition?: string;
+  university?: string;
+  location?: string;
+};
+
 export type ShoppingAssistantResult = {
   reply: string;
   recommended_listing_ids: string[];
   match_reasons: Record<string, string>;
   suggested_follow_ups: string[];
-  recommended_listings?: Array<{
-    id: string;
-    name: string;
-    category?: string;
-    price: number;
-    description?: string;
-    condition?: string;
-    university?: string;
-    location?: string;
-  }>;
+  recommended_listings: ShoppingAssistantListing[];
 };
 
 export type CopilotConversationMessage = {
