@@ -12,8 +12,9 @@ on:
 permissions:
   contents: read
 
+# CI uses one shared TEST_DATABASE_URL, so only one run may touch it at a time.
 concurrency:
-  group: buymesho-ci-${{ github.workflow }}-${{ github.ref }}
+  group: buymesho-ci-test-database
   cancel-in-progress: false
 
 jobs:
@@ -82,6 +83,12 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Reset shared test database
+        env:
+          NODE_ENV: test
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+        run: node --import tsx --import ./server/testSafety.ts ./scripts/reset-test-database.ts
 
       - name: Prepare isolated test database
         env:
