@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { loadMarketplaceCandidates } from "../shopping-assistant.js";
 
+// Regression guard: marketplace candidates must be loaded by the server, never supplied by the client.
 test("shopping assistant candidates come only from the canonical marketplace query", () => {
   let receivedSql = "";
   let receivedParams: unknown[] = [];
