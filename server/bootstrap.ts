@@ -18,6 +18,7 @@ import { startEventOwnershipReconciliationScheduler } from "./modules/events/eve
 import { createEventTicketIdentityRouter } from "./modules/events/eventTicketIdentity.routes.js";
 import { createAdminEventTransactionRouter } from "./modules/admin/adminEventTransaction.routes.js";
 import { createAdminTicketTransactionSearchRouter } from "./modules/admin/adminTicketTransactionSearch.routes.js";
+import { logGeminiConfiguration } from "./lib/gemini.js";
 import {
   checkoutRateLimit,
   publicPaymentStatusRateLimit,
@@ -29,6 +30,7 @@ import {
 } from "./middleware/platformRateLimits.js";
 
 dotenv.config();
+logGeminiConfiguration();
 
 const getDirname = () => {
   try {
