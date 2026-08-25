@@ -1,147 +1,123 @@
 import type { Express, RequestHandler } from "express";
 import { compareBuyMeshoListings } from "../lib/listing-comparison.js";
 import { shoppingAssistant } from "../lib/shopping-assistant.js";
-import {
-  generateListingDraft,
-  suggestPricing,
-  moderateContent,
-} from "../lib/listing-ai-studio.js";
-import {
-  authenticatedAiRateLimit,
-  publicAiRateLimit,
-} from "../middleware/aiRateLimit.js";
+import { generateListingDraft, suggestPricing, moderateContent } from "../lib/listing-ai-studio.js";
+import { authenticatedAiRateLimit, publicAiRateLimit } from "../middleware/aiRateLimit.js";
 
 const MAX_TEXT_LENGTH = 8_000;
 const MAX_DRAFT_KEYS = 40;
-
+const MAX_CONVERSATION_MESSAGES = 8;
+const MAX_CONVERSATION_MESSAGE_LENGTH = 2_000;
+const MAX_CONVERSATION_TOTAL_LENGTH = 8_000;
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function validateConversation(value: unknown): { role: "user" | "assistant"; text: string }[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) throw new Error("conversation must be an array");
+  if (value.length > MAX_CONVERSATION_MESSAGES) throw new Error(`conversation must contain at most ${MAX_CONVERSATION_MESSAGES} messages`);
+
+  const conversation: { role: "user" | "assistant"; text: string }[] = [];
+  let totalLength = 0;
+  for (const message of value) {
+    if (!isPlainObject(message) || (message.role !== "user" && message.role !== "assistant") || typeof message.text !== "string") {
+      throw new Error("conversation messages must contain a valid role and text");
+    }
+    const text = message.text.trim();
+    if (!text || text.length > MAX_CONVERSATION_MESSAGE_LENGTH) {
+      throw new Error(`conversation message text must be 1-${MAX_CONVERSATION_MESSAGE_LENGTH} characters`);
+    }
+    totalLength += text.length;
+    if (totalLength > MAX_CONVERSATION_TOTAL_LENGTH) throw new Error(`conversation text cannot exceed ${MAX_CONVERSATION_TOTAL_LENGTH} characters`);
+    conversation.push({ role: message.role, text });
+  }
+  return conversation;
+}
+
 export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandler, db?: any) {
-  // Authenticated seller tooling. Rate-limit after auth so the per-user key can be used.
   app.post("/api/ai/listing-draft", requireFirebaseUser, authenticatedAiRateLimit, async (req, res) => {
     try {
       const currentDraft = req.body?.currentDraft;
-      if (!isPlainObject(currentDraft)) {
-        return res.status(400).json({ error: "currentDraft object is required" });
-      }
-      if (Object.keys(currentDraft).length > MAX_DRAFT_KEYS) {
-        return res.status(400).json({ error: "currentDraft contains too many fields" });
-      }
-
-      const draft = await generateListingDraft(currentDraft);
-      return res.json({ draft });
+      if (!isPlainObject(currentDraft)) return res.status(400).json({ error: "currentDraft object is required" });
+      if (Object.keys(currentDraft).length > MAX_DRAFT_KEYS) return res.status(400).json({ error: "currentDraft contains too many fields" });
+      return res.json({ draft: await generateListingDraft(currentDraft) });
     } catch (error) {
       console.error("AI Listing Draft error:", error);
-      const message = error instanceof Error ? error.message : "AI listing enhancement is currently unavailable";
-      return res.status(503).json({ error: message, code: "AI_UNAVAILABLE" });
+      return res.status(503).json({ error: error instanceof Error ? error.message : "AI listing enhancement is currently unavailable", code: "AI_UNAVAILABLE" });
     }
   });
 
   app.post("/api/ai/suggest-pricing", requireFirebaseUser, authenticatedAiRateLimit, async (req, res) => {
     try {
       const { name, category, condition, specs, currentPrice } = req.body || {};
-      if (typeof name !== "string" || !name.trim() || name.length > 300) {
-        return res.status(400).json({ error: "name is required and must be 300 characters or fewer" });
-      }
-      if (typeof category !== "string" || !category.trim() || category.length > 150) {
-        return res.status(400).json({ error: "category is required and must be 150 characters or fewer" });
-      }
-      if (condition !== undefined && (typeof condition !== "string" || condition.length > 100)) {
-        return res.status(400).json({ error: "condition must be a string of 100 characters or fewer" });
-      }
-      if (specs !== undefined && !isPlainObject(specs)) {
-        return res.status(400).json({ error: "specs must be an object" });
-      }
-      if (currentPrice !== undefined && (typeof currentPrice !== "number" || !Number.isFinite(currentPrice) || currentPrice < 0)) {
-        return res.status(400).json({ error: "currentPrice must be a non-negative number" });
-      }
-
-      const pricing = await suggestPricing({ name, category, condition, specs, currentPrice, db });
-      return res.json({ pricing });
+      if (typeof name !== "string" || !name.trim() || name.length > 300) return res.status(400).json({ error: "name is required and must be 300 characters or fewer" });
+      if (typeof category !== "string" || !category.trim() || category.length > 150) return res.status(400).json({ error: "category is required and must be 150 characters or fewer" });
+      if (condition !== undefined && (typeof condition !== "string" || condition.length > 100)) return res.status(400).json({ error: "condition must be a string of 100 characters or fewer" });
+      if (specs !== undefined && !isPlainObject(specs)) return res.status(400).json({ error: "specs must be an object" });
+      if (currentPrice !== undefined && (typeof currentPrice !== "number" || !Number.isFinite(currentPrice) || currentPrice < 0)) return res.status(400).json({ error: "currentPrice must be a non-negative number" });
+      return res.json({ pricing: await suggestPricing({ name, category, condition, specs, currentPrice, db }) });
     } catch (error) {
       console.error("AI Suggest Pricing error:", error);
-      const message = error instanceof Error ? error.message : "AI pricing suggestions are currently unavailable";
-      return res.status(503).json({ error: message, code: "AI_UNAVAILABLE" });
+      return res.status(503).json({ error: error instanceof Error ? error.message : "AI pricing suggestions are currently unavailable", code: "AI_UNAVAILABLE" });
     }
   });
 
-  // Public discovery endpoint. The database is authoritative for every candidate listing.
-  // No client-supplied listing records are accepted as marketplace context.
   app.post("/api/ai/shopping-assistant", publicAiRateLimit, async (req, res) => {
     try {
-      const { query, university, category, maxPrice } = req.body || {};
-      if (typeof query !== "string" || !query.trim() || query.length > MAX_TEXT_LENGTH) {
-        return res.status(400).json({ error: "query is required and must be 8,000 characters or fewer" });
-      }
-      if (university !== undefined && (typeof university !== "string" || university.length > 150)) {
-        return res.status(400).json({ error: "university must be a string of 150 characters or fewer" });
-      }
-      if (category !== undefined && (typeof category !== "string" || category.length > 150)) {
-        return res.status(400).json({ error: "category must be a string of 150 characters or fewer" });
-      }
-      if (maxPrice !== undefined && (typeof maxPrice !== "number" || !Number.isFinite(maxPrice) || maxPrice < 0)) {
-        return res.status(400).json({ error: "maxPrice must be a non-negative number" });
+      const { mode, query, conversation, university, category, maxPrice } = req.body || {};
+      if (mode !== "ask" && mode !== "shop") return res.status(400).json({ error: "mode must be ask or shop" });
+      if (typeof query !== "string" || !query.trim() || query.length > MAX_TEXT_LENGTH) return res.status(400).json({ error: "query is required and must be 8,000 characters or fewer" });
+      if (university !== undefined && (typeof university !== "string" || university.length > 150)) return res.status(400).json({ error: "university must be a string of 150 characters or fewer" });
+      if (category !== undefined && (typeof category !== "string" || category.length > 150)) return res.status(400).json({ error: "category must be a string of 150 characters or fewer" });
+      if (maxPrice !== undefined && (typeof maxPrice !== "number" || !Number.isFinite(maxPrice) || maxPrice < 0)) return res.status(400).json({ error: "maxPrice must be a non-negative number" });
+
+      let validatedConversation;
+      try {
+        validatedConversation = validateConversation(conversation);
+      } catch (error) {
+        return res.status(400).json({ error: error instanceof Error ? error.message : "conversation is invalid" });
       }
 
       const result = await shoppingAssistant({
+        mode,
         query,
+        conversation: validatedConversation,
         university: typeof university === "string" ? university : undefined,
         category: typeof category === "string" ? category : undefined,
         maxPrice: typeof maxPrice === "number" ? maxPrice : undefined,
         db,
       });
-
       return res.json({ result });
     } catch (error) {
       console.error("BuyMesho Assistant error:", error);
-      const message = error instanceof Error ? error.message : "BuyMesho Assistant is currently unavailable";
-      return res.status(503).json({ error: message, code: "ASSISTANT_UNAVAILABLE" });
+      return res.status(503).json({ error: error instanceof Error ? error.message : "BuyMesho Assistant is currently unavailable", code: "ASSISTANT_UNAVAILABLE" });
     }
   });
 
-  // Public comparison endpoint. Only canonical BuyMesho listing IDs are accepted.
   app.post("/api/ai/compare-listings", publicAiRateLimit, async (req, res) => {
     try {
       const { listingIds } = req.body || {};
-      if (!Array.isArray(listingIds) || listingIds.length < 2 || listingIds.length > 3) {
-        return res.status(400).json({ error: "Between 2 and 3 listingIds are required for comparison" });
-      }
-
+      if (!Array.isArray(listingIds) || listingIds.length < 2 || listingIds.length > 3) return res.status(400).json({ error: "Between 2 and 3 listingIds are required for comparison" });
       const normalizedIds = listingIds.map((id) => String(id).trim());
-      if (normalizedIds.some((id) => !/^\d+$/.test(id))) {
-        return res.status(400).json({ error: "listingIds must contain only numeric BuyMesho listing IDs" });
-      }
-      if (new Set(normalizedIds).size !== normalizedIds.length) {
-        return res.status(400).json({ error: "listingIds must be unique" });
-      }
-
-      const comparison = await compareBuyMeshoListings(db, normalizedIds);
-      return res.json({ comparison });
+      if (normalizedIds.some((id) => !/^\d+$/.test(id))) return res.status(400).json({ error: "listingIds must contain only numeric BuyMesho listing IDs" });
+      if (new Set(normalizedIds).size !== normalizedIds.length) return res.status(400).json({ error: "listingIds must be unique" });
+      return res.json({ comparison: await compareBuyMeshoListings(db, normalizedIds) });
     } catch (error) {
       console.error("BuyMesho listing comparison error:", error);
-      const message = error instanceof Error ? error.message : "BuyMesho listing comparison is currently unavailable";
-      return res.status(503).json({ error: message, code: "COMPARISON_UNAVAILABLE" });
+      return res.status(503).json({ error: error instanceof Error ? error.message : "BuyMesho listing comparison is currently unavailable", code: "COMPARISON_UNAVAILABLE" });
     }
   });
 
   app.post("/api/ai/moderate", requireFirebaseUser, authenticatedAiRateLimit, async (req, res) => {
     try {
       const { text, type = "listing" } = req.body || {};
-      if (typeof text !== "string" || !text.trim() || text.length > MAX_TEXT_LENGTH) {
-        return res.status(400).json({ error: "text is required and must be 8,000 characters or fewer" });
-      }
-      if (type !== "listing" && type !== "message") {
-        return res.status(400).json({ error: "type must be listing or message" });
-      }
-
-      const moderation = await moderateContent({ text, type });
-      return res.json({ moderation });
+      if (typeof text !== "string" || !text.trim() || text.length > MAX_TEXT_LENGTH) return res.status(400).json({ error: "text is required and must be 8,000 characters or fewer" });
+      if (type !== "listing" && type !== "message") return res.status(400).json({ error: "type must be listing or message" });
+      return res.json({ moderation: await moderateContent({ text, type }) });
     } catch (error) {
       console.error("AI Moderation error:", error);
-      const message = error instanceof Error ? error.message : "AI moderation is currently unavailable";
-      return res.status(503).json({ error: message, code: "AI_UNAVAILABLE" });
+      return res.status(503).json({ error: error instanceof Error ? error.message : "AI moderation is currently unavailable", code: "AI_UNAVAILABLE" });
     }
   });
 }
