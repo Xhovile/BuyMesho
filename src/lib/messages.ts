@@ -1,6 +1,7 @@
 import { apiFetch } from "./api";
 import type { Conversation, MessageThreadItem } from "../types";
 import { preloadConversation } from "./messagesNavigation";
+import { auth } from "../firebase";
 
 export interface ConversationResponse {
   conversation: Conversation | null;
@@ -26,7 +27,20 @@ function unwrapData<T>(payload: any, fallback: T): T {
 export async function fetchInbox(): Promise<Conversation[]> {
   const result = await apiFetch("/api/messages/inbox");
   const data = unwrapData<{ items: Conversation[] }>(result, { items: [] });
-  return Array.isArray(data.items) ? data.items : [];
+  const items = Array.isArray(data.items) ? data.items : [];
+  const currentUserUid = auth.currentUser?.uid;
+
+  if (!currentUserUid) return [];
+
+  // The shared user inbox (the Messages item in the Home/Explore drawer)
+  // is strictly buyer-facing: only conversations where the current user
+  // is the buyer and the other participant is a seller. Event threads and
+  // seller-side/admin conversations do not belong in this inbox.
+  return items.filter((conversation) =>
+    conversation.buyer_uid === currentUserUid &&
+    conversation.thread_type !== "event" &&
+    conversation.seller_uid !== currentUserUid,
+  );
 }
 
 export async function fetchConversation(conversationId: number): Promise<ConversationResponse> {
