@@ -52,9 +52,32 @@ export default function SettingsAccountSection({
             </div>
           </div>
           <button type="button" onClick={() => onNavigate(paths.editAccount)} disabled={verifiedAccountRequiredDisabled} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"><span className="font-bold text-zinc-900">Edit Account</span><ChevronRight className="w-4 h-4 text-zinc-400" /></button>
-          {profile?.is_seller ? <><button type="button" onClick={() => onNavigate(paths.editProfile)} disabled={verifiedAccountRequiredDisabled} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"><span className="font-bold text-zinc-900">Edit Seller Profile</span><ChevronRight className="w-4 h-4 text-zinc-400" /></button><button type="button" onClick={onSellerPayouts} disabled={verifiedAccountRequiredDisabled} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-emerald-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"><span className="font-bold text-zinc-900 inline-flex items-center gap-2"><Wallet className="w-4 h-4 text-emerald-700" />Seller settings</span><ChevronRight className="w-4 h-4 text-zinc-400" /></button></> : <button type="button" onClick={() => onNavigate(paths.becomeSeller)} disabled={verifiedAccountRequiredDisabled} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"><span className="font-bold text-zinc-900">Become Seller</span><ChevronRight className="w-4 h-4 text-zinc-400" /></button>}
-          <button type="button" onClick={() => void onLogout()} disabled={!firebaseUser} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"><span className="font-bold text-zinc-900 inline-flex items-center gap-2"><LogOut className="w-4 h-4" />Logout</span><ChevronRight className="w-4 h-4 text-zinc-400" /></button>
-          <button type="button" onClick={onDeleteAccount} disabled={!firebaseUser} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-red-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"><span className="font-bold text-red-700 inline-flex items-center gap-2"><ShieldAlert className="w-4 h-4" />Delete Account</span><ChevronRight className="w-4 h-4 text-red-300" /></button>
+          {profile?.is_seller ? <>
+            <button type="button" 
+              onClick={() => onNavigate(paths.editProfile)} 
+              disabled={verifiedAccountRequiredDisabled} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100">
+              <span className="font-bold text-zinc-900">Edit Seller Profile</span>
+              <ChevronRight className="w-4 h-4 text-zinc-400" />
+            </button>
+            <button type="button" 
+              onClick={onSellerPayouts} 
+              disabled={verifiedAccountRequiredDisabled} 
+              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-emerald-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100">
+              <span className="font-bold text-zinc-900 inline-flex items-center gap-2"><Wallet className="w-4 h-4 text-emerald-700" />Seller Management</span>
+              <ChevronRight className="w-4 h-4 text-zinc-400" />
+            </button>
+          </> : <button type="button" 
+                  onClick={() => onNavigate(paths.becomeSeller)}
+                  disabled={verifiedAccountRequiredDisabled} 
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100">
+            <span className="font-bold text-zinc-900">Become Seller</span>
+            <ChevronRight className="w-4 h-4 text-zinc-400" />
+          </button>
+          }
+          <button type="button" 
+            onClick={() => void onLogout()} disabled={!firebaseUser} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"><span className="font-bold text-zinc-900 inline-flex items-center gap-2"><LogOut className="w-4 h-4" />Logout</span><ChevronRight className="w-4 h-4 text-zinc-400" /></button>
+          <button type="button" 
+            onClick={onDeleteAccount} disabled={!firebaseUser} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-red-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"><span className="font-bold text-red-700 inline-flex items-center gap-2"><ShieldAlert className="w-4 h-4" />Delete Account</span><ChevronRight className="w-4 h-4 text-red-300" /></button>
         </div>
       ) : null}
     </section>
