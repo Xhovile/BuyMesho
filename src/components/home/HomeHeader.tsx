@@ -1,10 +1,10 @@
-import { Menu, Plus, ShoppingBag, UserRound, X } from "lucide-react";
+import { Menu, Plus, UserRound, X } from "lucide-react";
 
 import BrandMark from "../BrandMark";
 import type { HomePageController } from "../../hooks/useHomePageController";
-import HomeDesktopMenu from "./HomeDesktopMenu";
+import HeaderDesktopMenu from "../header/HeaderDesktopMenu";
 import PasskeySetupPrompt from "../PasskeySetupPrompt";
-import { EXPLORE_PATH, navigateToPath } from "../../lib/appNavigation";
+import { BECOME_SELLER_PATH, CREATE_PATH, EXPLORE_PATH, SIGNUP_PATH, navigateToAdminModerationQueue, navigateToPath } from "../../lib/appNavigation";
 
 const cardButtonClass =
   "rounded-2xl border border-zinc-200 bg-white text-zinc-900 shadow-md transition-all hover:border-zinc-300 hover:shadow-lg active:scale-95";
@@ -16,6 +16,15 @@ const desktopActionButtonClass =
   `hidden items-center gap-2 ${cardButtonClass} px-4 py-2.5 text-sm font-bold sm:flex sm:px-5`;
 
 export default function HomeHeader({ controller }: { controller: HomePageController }) {
+  const handleMessagesClick = () => controller.handleMessagesClick();
+  const handleSavedClick = () => controller.handleSavedClick();
+  const handleHiddenClick = () => controller.handleHiddenClick();
+  const handlePaymentsClick = () => controller.handleBuyerPaymentsClick();
+  const handleSellerPayoutsClick = () => controller.handleSellerPayoutsClick();
+  const handleSettingsClick = () => controller.handleSettingsClick();
+  const handleProfileClick = () => controller.handleProfileClick();
+  const handleLogout = () => controller.handleLogout();
+
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 px-4 py-3 backdrop-blur-sm">
@@ -51,7 +60,7 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
               <div className="hidden flex-shrink-0 items-center gap-2 md:flex">
                 <button
                   type="button"
-                  onClick={() => controller.handleProfileClick()}
+                  onClick={handleProfileClick}
                   className={desktopProfileButtonClass}
                 >
                   {controller.avatarUrl ? (
@@ -83,7 +92,29 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
                     )}
                   </button>
 
-                  <HomeDesktopMenu controller={controller} />
+                  <HeaderDesktopMenu
+                    menuRef={controller.desktopMenuRef}
+                    open={controller.desktopMenuOpen}
+                    isLoggedIn={controller.isLoggedIn}
+                    isSeller={controller.isSeller}
+                    isAdmin={controller.isAdmin}
+                    unreadCount={controller.unreadCount}
+                    primaryDrawerLabel="Market"
+                    onClose={controller.closeMenu}
+                    onPrimaryClick={controller.handleStartSelling}
+                    onBecomeSellerClick={() => navigateToPath(BECOME_SELLER_PATH)}
+                    onMessagesClick={handleMessagesClick}
+                    onSavedClick={handleSavedClick}
+                    onHiddenClick={handleHiddenClick}
+                    onPaymentsClick={handlePaymentsClick}
+                    onSellerPayoutsClick={handleSellerPayoutsClick}
+                    onAdminClick={() => navigateToAdminModerationQueue()}
+                    onSettingsClick={handleSettingsClick}
+                    onProfileClick={handleProfileClick}
+                    onLogoutClick={handleLogout}
+                    onSignInClick={() => navigateToPath(SESSION_LOGIN_PATH)}
+                    onCreateAccountClick={() => navigateToPath(SIGNUP_PATH)}
+                  />
                 </div>
               </div>
             </div>
