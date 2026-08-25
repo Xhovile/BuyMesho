@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, BarChart3, ChevronRight, ClipboardList, MessageSquareText, Package, Plus, Settings } from "lucide-react";
+import { ArrowLeft, BarChart3, ChevronRight, ClipboardList, MessageSquareText, Package, Plus, Settings, WalletCards } from "lucide-react";
 import { navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
 import {
   CREATE_PATH,
@@ -8,6 +8,7 @@ import {
   MY_LISTINGS_PATH,
   SELLER_DASHBOARD_PATH,
   SELLER_ORDERS_PATH,
+  SELLER_PAYOUTS_PATH,
   SETTINGS_PATH,
 } from "./lib/appNavigation.paths";
 import { apiFetch } from "./lib/api";
@@ -90,20 +91,26 @@ export default function SellerHubPage() {
       badge: orderAttentionCount,
     },
     {
-      label: "Listings",
+      label: "Earnings",
+      description: "View balances, payout history, and payout destinations.",
+      path: SELLER_PAYOUTS_PATH,
+      icon: WalletCards,
+    },
+    {
+      label: "My Listings",
       description: "View, edit, update stock, mark sold, and manage your listings.",
       path: `${MY_LISTINGS_PATH}?view=listings`,
       icon: Package,
     },
     {
-      label: "Dashboard",
+      label: "Listings Performance",
       description: "Review listing performance, views, active listings, and seller traction.",
       path: SELLER_DASHBOARD_PATH,
       icon: BarChart3,
     },
     {
-      label: "Settings",
-      description: "Manage your BuyMesho account and seller preferences.",
+      label: "Settings & Security",
+      description: "Manage your account, profile, and security preferences.",
       path: SETTINGS_PATH,
       icon: Settings,
     },
