@@ -24,6 +24,19 @@ const desktopActionButtonClass =
   `hidden items-center gap-2 ${cardButtonClass} px-4 py-2.5 text-sm font-bold sm:flex sm:px-5`;
 
 export default function HomeHeader({ controller }: { controller: HomePageController }) {
+  const {
+    desktopMenuOpen,
+    desktopMenuRef,
+    setDesktopMenuOpen,
+    isLoggedIn,
+    isSeller,
+    isAdmin,
+    unreadCount,
+    avatarUrl,
+    fallbackLetter,
+    isSellerProfileLoading,
+  } = controller;
+
   const handleMessagesClick = () => controller.handleMessagesClick();
   const handleSavedClick = () => controller.handleSavedClick();
   const handleHiddenClick = () => controller.handleHiddenClick();
@@ -34,16 +47,16 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
   const handleLogout = () => controller.handleLogout();
 
   useEffect(() => {
-    if (!controller.desktopMenuOpen) return;
+    if (!desktopMenuOpen) return;
 
     const handlePointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node | null;
-      if (target && controller.desktopMenuRef.current?.contains(target)) return;
-      controller.setDesktopMenuOpen(false);
+      if (target && desktopMenuRef.current?.contains(target)) return;
+      setDesktopMenuOpen(false);
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") controller.setDesktopMenuOpen(false);
+      if (event.key === "Escape") setDesktopMenuOpen(false);
     };
 
     document.addEventListener("mousedown", handlePointerDown);
@@ -55,7 +68,7 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
       document.removeEventListener("touchstart", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [controller]);
+  }, [desktopMenuOpen, desktopMenuRef, setDesktopMenuOpen]);
 
   return (
     <>
@@ -76,14 +89,14 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
 
               <button
                 onClick={controller.handleStartSelling}
-                disabled={controller.isSellerProfileLoading}
+                disabled={isSellerProfileLoading}
                 className={desktopActionButtonClass}
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">
-                  {controller.isSellerProfileLoading
+                  {isSellerProfileLoading
                     ? "Loading..."
-                    : controller.isSeller
+                    : isSeller
                       ? "List Item"
                       : "Sell"}
                 </span>
@@ -95,11 +108,11 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
                   onClick={handleProfileClick}
                   className={desktopProfileButtonClass}
                 >
-                  {controller.avatarUrl ? (
-                    <img src={controller.avatarUrl} alt="Profile" className="h-full w-full object-cover" />
-                  ) : controller.isLoggedIn ? (
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+                  ) : isLoggedIn ? (
                     <div className="flex h-full w-full items-center justify-center bg-red-900/5 font-bold text-red-900">
-                      {controller.fallbackLetter}
+                      {fallbackLetter}
                     </div>
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-zinc-50 text-zinc-500">
@@ -108,16 +121,16 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
                   )}
                 </button>
 
-                <div ref={controller.desktopMenuRef} className="relative">
+                <div ref={desktopMenuRef} className="relative">
                   <button
                     type="button"
-                    onClick={() => controller.setDesktopMenuOpen((value) => !value)}
+                    onClick={() => setDesktopMenuOpen((value) => !value)}
                     className={desktopMenuButtonClass}
-                    aria-label={controller.desktopMenuOpen ? "Close menu" : "Open menu"}
-                    aria-expanded={controller.desktopMenuOpen}
+                    aria-label={desktopMenuOpen ? "Close menu" : "Open menu"}
+                    aria-expanded={desktopMenuOpen}
                     aria-haspopup="menu"
                   >
-                    {controller.desktopMenuOpen ? (
+                    {desktopMenuOpen ? (
                       <X className="h-5 w-5 text-zinc-700" />
                     ) : (
                       <Menu className="h-5 w-5 text-zinc-700" />
@@ -125,12 +138,12 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
                   </button>
 
                   <HeaderDesktopMenu
-                    menuRef={controller.desktopMenuRef}
-                    open={controller.desktopMenuOpen}
-                    isLoggedIn={controller.isLoggedIn}
-                    isSeller={controller.isSeller}
-                    isAdmin={controller.isAdmin}
-                    unreadCount={controller.unreadCount}
+                    menuRef={desktopMenuRef}
+                    open={desktopMenuOpen}
+                    isLoggedIn={isLoggedIn}
+                    isSeller={isSeller}
+                    isAdmin={isAdmin}
+                    unreadCount={unreadCount}
                     primaryDrawerLabel="Market"
                     onClose={controller.closeMenu}
                     onPrimaryClick={controller.handleStartSelling}
