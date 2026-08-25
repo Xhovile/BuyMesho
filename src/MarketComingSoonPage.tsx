@@ -16,6 +16,7 @@ function getComingSoonTitle(pathname: string) {
   if (pathname === "/explore/accommodation") return "Accommodation";
   if (pathname === "/explore/innovation") return "Innovation";
   if (pathname === "/explore/lay-by") return "Lay-by";
+  if (pathname === "/explore/lending") return "Lending";
   return "Coming soon";
 }
 
