@@ -63,7 +63,7 @@ export default function SettingsAccountSection({
               onClick={onSellerPayouts} 
               disabled={verifiedAccountRequiredDisabled} 
               className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-emerald-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100">
-              <span className="font-bold text-zinc-900 inline-flex items-center gap-2"><Wallet className="w-4 h-4 text-emerald-700" />Seller Management</span>
+              <span className="font-bold text-zinc-900 inline-flex items-center gap-2"><Wallet className="w-4 h-4 text-emerald-700" />Seller Workspace</span>
               <ChevronRight className="w-4 h-4 text-zinc-400" />
             </button>
           </> : <button type="button" 
