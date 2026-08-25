@@ -265,6 +265,13 @@ function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
         description: "Browse seller profiles on BuyMesho.",
         canonicalPath: "/explore/sellers",
       };
+    case "/explore/lending":
+      return {
+        title: "BuyMesho Lending",
+        description: "Lending on BuyMesho is coming soon.",
+        canonicalPath: "/explore/lending",
+        noindex: true,
+      };
     case "/privacy":
       return {
         title: "BuyMesho Privacy Policy",
@@ -424,7 +431,7 @@ export default function RootRouter() {
           <EventDetailsPage />
         ) : isEventsDirectoryPath ? (
           <EventsDirectoryPage />
-        ) : locationPath === "/explore/lay-by" || locationPath === "/explore/accommodation" || locationPath === "/explore/innovation" ? (
+        ) : locationPath === "/explore/lay-by" || locationPath === "/explore/accommodation" || locationPath === "/explore/innovation" || locationPath === "/explore/lending" ? (
           <MarketComingSoonPage />
         ) : locationPath === "/explore/sellers" ? (
           <SellersDirectoryPage />
