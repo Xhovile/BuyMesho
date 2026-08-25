@@ -4,7 +4,14 @@ import BrandMark from "../BrandMark";
 import type { HomePageController } from "../../hooks/useHomePageController";
 import HeaderDesktopMenu from "../header/HeaderDesktopMenu";
 import PasskeySetupPrompt from "../PasskeySetupPrompt";
-import { BECOME_SELLER_PATH, CREATE_PATH, EXPLORE_PATH, SIGNUP_PATH, navigateToAdminModerationQueue, navigateToPath } from "../../lib/appNavigation";
+import {
+  BECOME_SELLER_PATH,
+  EXPLORE_PATH,
+  LOGIN_PATH,
+  SIGNUP_PATH,
+  navigateToAdminModerationQueue,
+  navigateToPath,
+} from "../../lib/appNavigation";
 
 const cardButtonClass =
   "rounded-2xl border border-zinc-200 bg-white text-zinc-900 shadow-md transition-all hover:border-zinc-300 hover:shadow-lg active:scale-95";
@@ -112,7 +119,7 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
                     onSettingsClick={handleSettingsClick}
                     onProfileClick={handleProfileClick}
                     onLogoutClick={handleLogout}
-                    onSignInClick={() => navigateToPath(SESSION_LOGIN_PATH)}
+                    onSignInClick={() => navigateToPath(LOGIN_PATH)}
                     onCreateAccountClick={() => navigateToPath(SIGNUP_PATH)}
                   />
                 </div>
