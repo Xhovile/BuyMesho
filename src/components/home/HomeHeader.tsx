@@ -1,4 +1,5 @@
 import { Menu, Plus, UserRound, X } from "lucide-react";
+import { useEffect } from "react";
 
 import BrandMark from "../BrandMark";
 import type { HomePageController } from "../../hooks/useHomePageController";
@@ -31,6 +32,30 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
   const handleSettingsClick = () => controller.handleSettingsClick();
   const handleProfileClick = () => controller.handleProfileClick();
   const handleLogout = () => controller.handleLogout();
+
+  useEffect(() => {
+    if (!controller.desktopMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (target && controller.desktopMenuRef.current?.contains(target)) return;
+      controller.setDesktopMenuOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") controller.setDesktopMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [controller]);
 
   return (
     <>
