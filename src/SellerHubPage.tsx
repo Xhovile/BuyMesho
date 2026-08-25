@@ -27,9 +27,8 @@ function isSellerOrderActionRequired(bundle: SellerOrderSummary): boolean {
   const order = bundle.order;
   if (!order) return false;
   if (["draft", "pending_payment"].includes(String(order.status))) return false;
-  if (order.deliveryStatus === "delivered" || ["fulfilled", "closed"].includes(String(order.status))) return false;
-  if (order.deliveryStatus === "pending_delivery") return false;
-  return order.deliveryStatus !== "delivered";
+  if (["fulfilled", "closed"].includes(String(order.status))) return false;
+  return order.deliveryStatus === "action_required";
 }
 
 function formatBadgeCount(count: number): string {
