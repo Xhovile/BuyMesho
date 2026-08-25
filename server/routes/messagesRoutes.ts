@@ -407,10 +407,10 @@ async function listInbox(req: Request, res: Response) {
   const sellerScope = String(req.query.scope || "").trim().toLowerCase() === "seller";
   const whereClause = sellerScope
     ? "c.seller_uid = ? AND c.listing_id IS NOT NULL"
-    : "c.buyer_uid = ? OR c.seller_uid = ? OR ? = 1";
+    : "c.buyer_uid = ? AND c.seller_uid != ? AND c.event_id IS NULL";
   const params = sellerScope
     ? [user.uid]
-    : [user.uid, user.uid, user.is_admin ? 1 : 0];
+    : [user.uid, user.uid];
 
   const rows = db
     .prepare(
