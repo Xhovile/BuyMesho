@@ -83,7 +83,7 @@ export default function BuyMeshoCopilotDrawer({ isOpen, onClose, availableListin
     const conversation: AssistantConversationMessage[] = messages.map(({ role, text }) => ({ role, text })).slice(-8);
     setStarterSuggestionsVisible(false); setFollowUpSuggestionsVisible(false); setMessages((prev) => [...prev, { role: "user", text: trimmed }]); setQuery(""); setLoading(true);
     try {
-      const result = await queryShoppingAssistant({ mode, query: trimmed, conversation: [...conversation, { role: "user", text: trimmed }].slice(-8) });
+      const result = await queryShoppingAssistant({ mode, query: trimmed, conversation: [...conversation, { role: "user", text: trimmed } satisfies AssistantConversationMessage].slice(-8) });
       setMessages((prev) => [...prev, { role: "assistant", text: result.reply, result }]);
       setFollowUpSuggestionsVisible(result.suggestions.length > 0);
     } catch (error) {
