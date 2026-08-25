@@ -131,12 +131,13 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerMessageModerationRoutes(app);
   installPostgresMessageSchemaGuard(db);
 
-  // Phase 12: Admin accounts are read-only in conversations. Participant blocks and
-  // restrictions are enforced before the ordinary send endpoint is allowed to run.
+  // Admin Messages is a dedicated moderation/read-only surface. Being an admin
+  // does not make an account read-only everywhere else; a dual-role seller must
+  // still be able to use Seller Management messaging when they are a participant
+  // in the conversation.
   app.post("/api/messages/:conversationId/messages", requireAuth, (req: any, res, next) => {
     const user = req.user as { uid: string; is_admin?: boolean } | undefined;
     if (!user) return res.status(401).json({ error: "Authentication required" });
-    if (user.is_admin) return res.status(403).json({ error: "Admin accounts cannot send participant messages" });
 
     const conversationId = Number(req.params.conversationId);
     if (!Number.isInteger(conversationId)) return res.status(400).json({ error: "Invalid conversation id" });
