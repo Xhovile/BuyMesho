@@ -77,22 +77,11 @@ export default function SellerHubPage() {
 
   const actions = [
     {
-      label: "List Item",
-      description: "Create and publish a new listing to the marketplace.",
-      path: CREATE_PATH,
-      icon: Plus,
-    },
-    {
-      label: "Dashboard",
-      description: "Review listing performance, views, active listings, and seller traction.",
-      path: SELLER_DASHBOARD_PATH,
-      icon: BarChart3,
-    },
-    {
-      label: "Listings",
-      description: "View, edit, update stock, mark sold, and manage your listings.",
-      path: `${MY_LISTINGS_PATH}?view=listings`,
-      icon: Package,
+      label: "Messages",
+      description: "Open your BuyMesho messages and conversations.",
+      path: SELLER_MESSAGES_PATH,
+      icon: MessageSquareText,
+      badge: messageUnreadCount,
     },
     {
       label: "Orders",
@@ -102,11 +91,16 @@ export default function SellerHubPage() {
       badge: orderAttentionCount,
     },
     {
-      label: "Messages",
-      description: "Open your BuyMesho messages and conversations.",
-      path: SELLER_MESSAGES_PATH,
-      icon: MessageSquareText,
-      badge: messageUnreadCount,
+      label: "Listings",
+      description: "View, edit, update stock, mark sold, and manage your listings.",
+      path: `${MY_LISTINGS_PATH}?view=listings`,
+      icon: Package,
+    },
+    {
+      label: "Dashboard",
+      description: "Review listing performance, views, active listings, and seller traction.",
+      path: SELLER_DASHBOARD_PATH,
+      icon: BarChart3,
     },
     {
       label: "Settings",
@@ -119,14 +113,24 @@ export default function SellerHubPage() {
   return (
     <main className="min-h-screen bg-zinc-100 px-4 py-6 text-zinc-900 sm:py-10">
       <div className="mx-auto max-w-3xl">
-        <button
-          type="button"
-          onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-          className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => navigateBackOrPath(EXPLORE_PATH)}
+            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateToPath(CREATE_PATH)}
+            className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-zinc-800"
+          >
+            <Plus className="h-4 w-4" />
+            List Item
+          </button>
+        </div>
 
         <p className="mt-6 text-lg font-black uppercase tracking-[0.28em] text-zinc-600 sm:text-xl">Seller</p>
         <h1 className="mt-2 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Seller Management</h1>
