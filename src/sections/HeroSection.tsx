@@ -51,8 +51,12 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
   };
 
   return (
-    <section className="relative px-4 pt-6 pb-4 sm:pt-8 sm:pb-5">
-      <div className="absolute inset-x-4 top-0 -z-10 h-24 rounded-[2rem] bg-gradient-to-r from-red-900/5 via-white to-amber-300/10 blur-2xl" />
+    <section className="relative overflow-hidden border-b border-zinc-200/80 bg-gradient-to-br from-red-900/10 via-zinc-100 to-amber-500/10 px-4 pt-6 pb-5 sm:pt-8 sm:pb-7">
+      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
+        <div className="absolute left-1/4 top-0 h-40 w-40 rounded-full bg-red-900/10 blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 h-44 w-44 rounded-full bg-amber-400/10 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-32 w-32 rounded-full bg-zinc-300/20 blur-3xl" />
+      </div>
 
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col gap-4 sm:relative sm:block">
@@ -60,7 +64,7 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
             <motion.p
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-400"
+              className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-500"
             >
               Market
             </motion.p>
@@ -86,7 +90,7 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
             <button
               type="button"
               onClick={handleHeroAction}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(0,0,0,0.45)] transition-all hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_20px_40px_-14px_rgba(0,0,0,0.5)]"
             >
               <Plus className="w-4 h-4" />
               {actionLabel}
