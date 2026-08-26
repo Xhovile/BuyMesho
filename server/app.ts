@@ -1,6 +1,7 @@
 import express, { type Express } from "express";
 import { paymentWebhookHandler } from "./modules/payments/payment.webhooks.js";
 import { payoutWebhookHandler } from "./modules/payouts/payout.webhooks.js";
+import { payChanguCallbackHandler, payChanguReturnHandler } from "./modules/payments/paychangu.callback.js";
 
 export function createApp(): Express {
   const app = express();
@@ -29,10 +30,18 @@ export function createApp(): Express {
     next();
   });
 
+  // PayChangu webhooks must receive the exact raw JSON body so the Signature
+  // HMAC can be verified before JSON parsing.
   app.use("/api/payments/paychangu/webhook", express.raw({ type: "application/json" }));
   app.use("/api/payments/paychangu-payout/webhook", express.raw({ type: "application/json" }));
   app.post("/api/payments/paychangu/webhook", paymentWebhookHandler);
   app.post("/api/payments/paychangu-payout/webhook", payoutWebhookHandler);
+
+  // PayChangu Standard Checkout uses callback_url for the successful-payment
+  // browser redirect/IPN flow. This is intentionally separate from the POST
+  // webhook endpoint above.
+  app.get("/api/payments/paychangu/callback", payChanguCallbackHandler);
+  app.get("/api/payments/paychangu/return", payChanguReturnHandler);
 
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ extended: true, limit: "10mb" }));
