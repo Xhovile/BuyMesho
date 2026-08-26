@@ -138,7 +138,6 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
                   </button>
 
                   <HeaderDesktopMenu
-                    menuRef={desktopMenuRef}
                     open={desktopMenuOpen}
                     isLoggedIn={isLoggedIn}
                     isSeller={isSeller}
