@@ -239,7 +239,7 @@ export default function MyListingsPage() {
   useEffect(() => {
     let active = true;
 
-    const loadListings = async (force = false) => {
+    const loadListings = async () => {
       if (!firebaseUser || !profile?.is_seller) {
         if (active) {
           setListings([]);
@@ -248,18 +248,14 @@ export default function MyListingsPage() {
         return;
       }
 
-      if (!force) {
-        const cached = getSellerCache<Listing[]>("listings");
-        if (cached !== null) {
-          setListings(cached);
-          setLoadingListings(false);
-          return;
-        }
+      const cached = getSellerCache<Listing[]>("listings");
+      if (cached !== null) {
+        setListings(cached);
+        setLoadingListings(false);
+        return;
       }
 
-      if (force) setRefreshing(true);
-      else setLoadingListings(true);
-
+      setLoadingListings(true);
       try {
         const data = await fetchSellerListings(firebaseUser.uid);
         const nextListings = normalizeListings(data);
@@ -270,15 +266,12 @@ export default function MyListingsPage() {
         console.error("Failed to load my listings", error);
         if (active) setListings([]);
       } finally {
-        if (active) {
-          setLoadingListings(false);
-          setRefreshing(false);
-        }
+        if (active) setLoadingListings(false);
       }
     };
 
     if (!authLoading && !profileLoading) {
-      void loadListings(false);
+      void loadListings();
     }
 
     return () => {
@@ -286,22 +279,21 @@ export default function MyListingsPage() {
     };
   }, [authLoading, firebaseUser, profile?.is_seller, profileLoading]);
 
-  const refreshListings = () => {
-    void (async () => {
-      if (!firebaseUser || !profile?.is_seller) return;
-      setRefreshing(true);
-      try {
-        const data = await fetchSellerListings(firebaseUser.uid);
-        const nextListings = normalizeListings(data);
-        setListings(nextListings);
-        setSellerCache("listings", nextListings);
-      } catch (error) {
-        console.error("Failed to refresh my listings", error);
-        window.alert("Failed to refresh listings.");
-      } finally {
-        setRefreshing(false);
-      }
-    })();
+  const refreshListings = async () => {
+    if (!firebaseUser || !profile?.is_seller || refreshing) return;
+
+    setRefreshing(true);
+    try {
+      const data = await fetchSellerListings(firebaseUser.uid);
+      const nextListings = normalizeListings(data);
+      setListings(nextListings);
+      setSellerCache("listings", nextListings);
+    } catch (error) {
+      console.error("Failed to refresh my listings", error);
+      window.alert("Failed to refresh listings.");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleDeleteListing = async (listingId: number) => {
@@ -326,7 +318,7 @@ export default function MyListingsPage() {
   const handleToggleStatus = async (listing: Listing) => {
     if (actionLoadingId === listing.id) return;
 
-    const nextStatus = listing.status === "sold" ? "available" : "sold";
+    const nextStatus: Listing["status"] = listing.status === "sold" ? "available" : "sold";
     setActionLoadingId(listing.id);
     try {
       await apiFetch(`/api/listings/${listing.id}/status`, {
@@ -387,7 +379,9 @@ export default function MyListingsPage() {
       if (result?.listing) {
         setListings((prev) => {
           const next = prev.map((item) =>
-            item.id === result.listing.id ? { ...item, ...result.listing, status: "available" } : item,
+            item.id === result.listing.id
+              ? { ...item, ...result.listing, status: "available" as const }
+              : item,
           );
           setSellerCache("listings", next);
           return next;
@@ -451,7 +445,7 @@ export default function MyListingsPage() {
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
-              onClick={refreshListings}
+              onClick={() => void refreshListings()}
               disabled={refreshing}
               className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
             >
@@ -485,7 +479,7 @@ export default function MyListingsPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={refreshListings}
+                  onClick={() => void refreshListings()}
                   disabled={refreshing}
                   className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
                 >
