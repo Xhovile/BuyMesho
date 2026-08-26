@@ -21,7 +21,6 @@
     "reset:events": "tsx scripts/reset-events.ts",
     "lint": "node scripts/run-lint.mjs",
     "smoke:paychangu": "tsx scripts/paychangu-smoke.ts",
-    "diagnose:payment-webhook-schema": "tsx scripts/diagnose-payment-webhook-schema.ts",
     "migrate:roles": "tsx scripts/migrate-admin-roles.ts",
     "verify:roles": "tsx scripts/verify-admin-roles.ts",
     "test:event-ticket-identity": "node --import tsx --test server/modules/events/__tests__/eventTicketIdentity.test.ts server/modules/events/__tests__/eventTicketDisputeIdentity.test.ts server/modules/events/__tests__/eventTransactionService.test.ts",
@@ -63,8 +62,8 @@
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.21",
     "tailwindcss": "^4.1.21",
-    "tsx": "^4.23.0",
     "typescript": "~5.8.2",
+    "tsx": "^4.23.0",
     "vite": "^8.0.16"
   }
 }
