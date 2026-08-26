@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
@@ -10,6 +10,7 @@ import {
   navigateToPath,
   navigateToSellerProfile,
 } from "./lib/appNavigation";
+import { getSellerCache, setSellerCache } from "./lib/sellerWorkspaceCache";
 import type { Listing } from "./types";
 
 function formatMWK(value: number): string {
@@ -38,6 +39,16 @@ async function fetchSellerListings(uid: string): Promise<Listing[]> {
     const data = await apiFetch(`/api/users/${uid}/listings`);
     return Array.isArray(data) ? (data as Listing[]) : [];
   }
+}
+
+function normalizeListings(data: unknown): Listing[] {
+  const uniqueById = new Map<number, Listing>();
+  for (const item of Array.isArray(data) ? data : []) {
+    if (!item || typeof item !== "object" || !Number.isFinite(Number((item as Listing).id))) continue;
+    const listing = item as Listing;
+    uniqueById.set(Number(listing.id), listing);
+  }
+  return Array.from(uniqueById.values());
 }
 
 type ListingRowProps = {
@@ -219,14 +230,16 @@ function ListingRow({
 
 export default function MyListingsPage() {
   const { firebaseUser, authLoading, profile, profileLoading } = useAccountProfile();
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [loadingListings, setLoadingListings] = useState(true);
+  const cachedListings = getSellerCache<Listing[]>("listings");
+  const [listings, setListings] = useState<Listing[]>(cachedListings ?? []);
+  const [loadingListings, setLoadingListings] = useState(cachedListings === null);
+  const [refreshing, setRefreshing] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
 
-    const loadListings = async () => {
+    const loadListings = async (force = false) => {
       if (!firebaseUser || !profile?.is_seller) {
         if (active) {
           setListings([]);
@@ -235,35 +248,61 @@ export default function MyListingsPage() {
         return;
       }
 
-      if (active) setLoadingListings(true);
+      if (!force) {
+        const cached = getSellerCache<Listing[]>("listings");
+        if (cached !== null) {
+          setListings(cached);
+          setLoadingListings(false);
+          return;
+        }
+      }
+
+      if (force) setRefreshing(true);
+      else setLoadingListings(true);
+
       try {
         const data = await fetchSellerListings(firebaseUser.uid);
+        const nextListings = normalizeListings(data);
         if (!active) return;
-
-        const uniqueById = new Map<number, Listing>();
-        for (const item of data) {
-          if (!item || typeof item !== "object" || !Number.isFinite(Number((item as Listing).id))) {
-            continue;
-          }
-          const listing = item as Listing;
-          uniqueById.set(Number(listing.id), listing);
-        }
-
-        setListings(Array.from(uniqueById.values()));
+        setListings(nextListings);
+        setSellerCache("listings", nextListings);
       } catch (error) {
         console.error("Failed to load my listings", error);
         if (active) setListings([]);
       } finally {
-        if (active) setLoadingListings(false);
+        if (active) {
+          setLoadingListings(false);
+          setRefreshing(false);
+        }
       }
     };
 
-    void loadListings();
+    if (!authLoading && !profileLoading) {
+      void loadListings(false);
+    }
 
     return () => {
       active = false;
     };
-  }, [firebaseUser, profile?.is_seller]);
+  }, [authLoading, firebaseUser, profile?.is_seller, profileLoading]);
+
+  const refreshListings = () => {
+    void (async () => {
+      if (!firebaseUser || !profile?.is_seller) return;
+      setRefreshing(true);
+      try {
+        const data = await fetchSellerListings(firebaseUser.uid);
+        const nextListings = normalizeListings(data);
+        setListings(nextListings);
+        setSellerCache("listings", nextListings);
+      } catch (error) {
+        console.error("Failed to refresh my listings", error);
+        window.alert("Failed to refresh listings.");
+      } finally {
+        setRefreshing(false);
+      }
+    })();
+  };
 
   const handleDeleteListing = async (listingId: number) => {
     if (actionLoadingId === listingId) return;
@@ -271,7 +310,11 @@ export default function MyListingsPage() {
     setActionLoadingId(listingId);
     try {
       await apiFetch(`/api/listings/${listingId}`, { method: "DELETE" });
-      setListings((prev) => prev.filter((item) => item.id !== listingId));
+      setListings((prev) => {
+        const next = prev.filter((item) => item.id !== listingId);
+        setSellerCache("listings", next);
+        return next;
+      });
     } catch (error) {
       console.error("Failed to delete listing", error);
       window.alert("Failed to delete listing.");
@@ -291,7 +334,11 @@ export default function MyListingsPage() {
         body: JSON.stringify({ status: nextStatus }),
       });
 
-      setListings((prev) => prev.map((item) => (item.id === listing.id ? { ...item, status: nextStatus } : item)));
+      setListings((prev) => {
+        const next = prev.map((item) => (item.id === listing.id ? { ...item, status: nextStatus } : item));
+        setSellerCache("listings", next);
+        return next;
+      });
     } catch (error) {
       console.error("Failed to toggle listing status", error);
       window.alert("Failed to update listing status.");
@@ -312,9 +359,11 @@ export default function MyListingsPage() {
       });
 
       if (result?.listing) {
-        setListings((prev) =>
-          prev.map((item) => (item.id === result.listing.id ? { ...item, ...result.listing } : item)),
-        );
+        setListings((prev) => {
+          const next = prev.map((item) => (item.id === result.listing.id ? { ...item, ...result.listing } : item));
+          setSellerCache("listings", next);
+          return next;
+        });
       }
     } catch (error) {
       console.error("Failed to record sale", error);
@@ -336,11 +385,13 @@ export default function MyListingsPage() {
       });
 
       if (result?.listing) {
-        setListings((prev) =>
-          prev.map((item) =>
+        setListings((prev) => {
+          const next = prev.map((item) =>
             item.id === result.listing.id ? { ...item, ...result.listing, status: "available" } : item,
-          ),
-        );
+          );
+          setSellerCache("listings", next);
+          return next;
+        });
       }
     } catch (error) {
       console.error("Failed to restock listing", error);
@@ -400,9 +451,18 @@ export default function MyListingsPage() {
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
+              onClick={refreshListings}
+              disabled={refreshing}
+              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </button>
+            <button
+              type="button"
               onClick={() => navigateToPath(SELLER_DASHBOARD_PATH)}
               className="inline-flex items-center gap-2 rounded-2xl bg-[#34C759] px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-[#30B955] transition-colors"
-              >
+            >
               Open Dashboard
             </button>
             <button
@@ -423,6 +483,15 @@ export default function MyListingsPage() {
                 <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">Your listings</h2>
               </div>
               <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={refreshListings}
+                  disabled={refreshing}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                  {refreshing ? "Refreshing..." : "Refresh"}
+                </button>
                 <button
                   type="button"
                   onClick={() => navigateToPath(SELLER_DASHBOARD_PATH)}
