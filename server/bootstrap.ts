@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import { createServer as createViteServer, type ViteDevServer } from "vite";
 import { createApp } from "./app.js";
 import { runMigrations } from "./db/migrations/index.js";
+import { ensurePaymentWebhookEventSchema } from "./modules/payments/payment.webhook.schema.js";
 import { registerRoutes } from "./routes/index.js";
 import { registerMarketplaceRoutes } from "./routes/marketplace.routes.js";
 import { registerSellerProfileRoutes } from "./routes/sellerProfile.routes.js";
@@ -86,6 +87,10 @@ async function serveSpaShell(req: express.Request, res: express.Response, vite: 
 export async function startServer() {
   const app = createApp();
   const db: any = runMigrations();
+
+  // Keep the live payment webhook audit schema compatible with the current
+  // webhook persistence layer. This is idempotent and runs on every startup.
+  ensurePaymentWebhookEventSchema(db);
 
   if (getConfiguredAdminEmails().length === 0) {
     console.warn(
