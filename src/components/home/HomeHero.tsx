@@ -25,10 +25,11 @@ const heroCards = [
 
 export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => void }) {
   return (
-    <section className="relative overflow-hidden pb-8 pt-4 sm:pb-14 sm:pt-8">
+    <section className="relative overflow-hidden border-b border-zinc-200/80 bg-gradient-to-br from-red-900/10 via-zinc-100 to-amber-500/10 pb-8 pt-4 sm:pb-14 sm:pt-8">
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
         <div className="absolute left-1/2 top-10 h-[24rem] w-[24rem] -translate-x-1/2 rounded-full bg-red-900/10 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-44 w-44 rounded-full bg-amber-200/20 blur-3xl" />
+        <div className="absolute bottom-0 right-0 h-44 w-44 rounded-full bg-amber-200/30 blur-3xl" />
+        <div className="absolute bottom-10 left-8 h-40 w-40 rounded-full bg-zinc-300/25 blur-3xl" />
       </div>
 
       <div className="mx-auto max-w-7xl px-4">
@@ -54,7 +55,7 @@ export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => voi
               {trustPills.map((item) => (
                 <span
                   key={item}
-                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-600 shadow-sm"
+                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200/90 bg-white/95 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-600 shadow-[0_8px_20px_-10px_rgba(0,0,0,0.25)]"
                 >
                   <Check className="h-3.5 w-3.5 text-red-900" />
                   {item}
@@ -72,7 +73,7 @@ export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => voi
               return (
                 <div
                   key={card.title}
-                  className={`absolute w-64 rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.3)] ${card.className}`}
+                  className={`absolute w-64 rounded-[1.75rem] border border-zinc-200/90 bg-white/95 p-5 shadow-[0_24px_65px_-20px_rgba(0,0,0,0.32),0_10px_25px_-12px_rgba(0,0,0,0.16)] ring-1 ring-black/5 backdrop-blur-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_30px_75px_-20px_rgba(0,0,0,0.36),0_12px_30px_-12px_rgba(0,0,0,0.18)] ${card.className}`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-zinc-900 text-white shadow-lg shadow-zinc-900/15">
