@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import { paymentWebhookHandler } from "./modules/payments/payment.webhooks.js";
 import { payoutWebhookHandler } from "./modules/payouts/payout.webhooks.js";
 import { payChanguCallbackHandler, payChanguReturnHandler } from "./modules/payments/paychangu.callback.js";
+import { verifyPayChanguWebhookSignature } from "./modules/payments/paychangu.webhook.auth.js";
 
 export function createApp(): Express {
   const app = express();
@@ -20,7 +21,7 @@ export function createApp(): Express {
     }
 
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Signature, X-PayChangu-Signature");
 
     if (req.method === "OPTIONS") {
       res.status(204).end();
@@ -34,7 +35,23 @@ export function createApp(): Express {
   // HMAC can be verified before JSON parsing.
   app.use("/api/payments/paychangu/webhook", express.raw({ type: "application/json" }));
   app.use("/api/payments/paychangu-payout/webhook", express.raw({ type: "application/json" }));
-  app.post("/api/payments/paychangu/webhook", paymentWebhookHandler);
+
+  app.post("/api/payments/paychangu/webhook", (req, res, next) => {
+    const signature =
+      typeof req.headers.signature === "string"
+        ? req.headers.signature
+        : typeof req.headers["x-paychangu-signature"] === "string"
+          ? req.headers["x-paychangu-signature"]
+          : undefined;
+
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from("");
+    if (!verifyPayChanguWebhookSignature(rawBody, signature, process.env.PAYCHANGU_WEBHOOK_SECRET)) {
+      res.status(403).json({ error: "Invalid PayChangu webhook signature" });
+      return;
+    }
+
+    next();
+  }, paymentWebhookHandler);
   app.post("/api/payments/paychangu-payout/webhook", payoutWebhookHandler);
 
   // PayChangu Standard Checkout uses callback_url for the successful-payment
