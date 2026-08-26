@@ -291,6 +291,17 @@ export default function Header({
                 <BrandMark subtitle={headerSubtitle} />
 
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {isMarketRoute ? (
+                    <button
+                      type="button"
+                      onClick={() => navigateToPath(HOME_PATH)}
+                      className={`hidden md:inline-flex items-center justify-center ${headerCardButtonClass} px-4 py-2.5 text-sm font-bold`}
+                      aria-label="Go to Home"
+                    >
+                      Home
+                    </button>
+                  ) : null}
+
                   <button
                     onClick={() => handleSellClick()}
                     className={`hidden sm:flex items-center gap-2 ${headerCardButtonClass} px-4 sm:px-5 py-2.5 text-sm font-bold`}
@@ -321,17 +332,6 @@ export default function Header({
                       <User className="w-5 h-5 text-zinc-600" />
                     )}
                   </button>
-
-                  {isMarketRoute ? (
-                    <button
-                      type="button"
-                      onClick={() => navigateToPath(HOME_PATH)}
-                      className={`hidden md:inline-flex items-center justify-center ${headerCardButtonClass} px-4 py-2.5 text-sm font-bold`}
-                      aria-label="Go to Home"
-                    >
-                      Home
-                    </button>
-                  ) : null}
 
                   <div ref={desktopMenuRef} className="relative hidden md:block">
                     <button
