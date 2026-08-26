@@ -25,17 +25,15 @@ const heroCards = [
 
 export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => void }) {
   return (
-    <section className="relative overflow-hidden border-b border-zinc-200/80 bg-gradient-to-br from-red-900/10 via-zinc-100 to-amber-500/10 pb-8 pt-4 sm:pb-14 sm:pt-8">
+    <section className="relative overflow-hidden border-b border-zinc-200 bg-gradient-to-br from-zinc-900/10 to-zinc-100 pb-8 pt-4 sm:pb-14 sm:pt-8">
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-        <div className="absolute left-1/2 top-10 h-[24rem] w-[24rem] -translate-x-1/2 rounded-full bg-red-900/10 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-44 w-44 rounded-full bg-amber-200/30 blur-3xl" />
-        <div className="absolute bottom-10 left-8 h-40 w-40 rounded-full bg-zinc-300/25 blur-3xl" />
+        <div className="absolute left-1/2 top-10 h-[24rem] w-[24rem] -translate-x-1/2 rounded-full bg-zinc-900/8 blur-3xl" />
+        <div className="absolute bottom-0 right-0 h-44 w-44 rounded-full bg-zinc-300/20 blur-3xl" />
       </div>
 
       <div className="mx-auto max-w-7xl px-4">
         <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12">
           <div className="mx-auto flex max-w-2xl flex-col items-center text-center lg:mx-0 lg:items-center">
-
             <h1 className="mt-5 text-4xl font-black tracking-[-0.06em] leading-[0.92] text-zinc-950 sm:text-6xl lg:text-[4.75rem]">
               Buy. Sell. Online.
             </h1>
@@ -65,7 +63,7 @@ export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => voi
           </div>
 
           <div className="relative hidden min-h-[30rem] lg:block" aria-hidden="true">
-            <div className="pointer-events-none absolute inset-8 rounded-[2.5rem] bg-[radial-gradient(circle_at_top_left,rgba(127,29,29,0.12),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(245,158,11,0.14),transparent_30%)] blur-2xl" />
+            <div className="pointer-events-none absolute inset-8 rounded-[2.5rem] bg-[radial-gradient(circle_at_top_left,rgba(39,39,42,0.10),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(161,161,170,0.10),transparent_30%)] blur-2xl" />
 
             {heroCards.map((card) => {
               const Icon = card.icon;
