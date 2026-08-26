@@ -4,6 +4,7 @@ import AccountPageShell from "./components/AccountPageShell";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 import { navigateToPath } from "./lib/appNavigation";
+import { MY_LISTINGS_PATH, SELLER_HUB_PATH, SELLER_MESSAGES_PATH, SELLER_ORDERS_PATH, SELLER_PAYOUTS_MANAGE_PATH } from "./lib/appNavigation.paths";
 import type { Listing } from "./types";
 
 type SellerProfile = {
@@ -168,14 +169,14 @@ export default function SellerDashboardPage() {
       const listings = listingsResult.status === "fulfilled" ? listingsResult.value : [];
 
       if (sellerResult.status !== "fulfilled" && listingsResult.status !== "fulfilled") {
-        throw sellerResult.reason ?? listingsResult.reason ?? new Error("Failed to load seller dashboard data.");
+        throw sellerResult.reason ?? listingsResult.reason ?? new Error("Failed to load listing performance data.");
       }
 
       setDashboard(buildDashboard(seller, listings));
     } catch (error: any) {
-      console.error("Failed to load seller dashboard", error);
+      console.error("Failed to load listing performance", error);
       setDashboard(null);
-      setDashboardError(error?.message || "Failed to load seller dashboard.");
+      setDashboardError(error?.message || "Failed to load listing performance data.");
     } finally {
       setDashboardLoading(false);
     }
@@ -193,15 +194,15 @@ export default function SellerDashboardPage() {
     return (
       <AccountPageShell
         eyebrow="Seller"
-        title="Dashboard"
-        description="Review your seller performance and listing traction."
-        backLabel="Back to Listings"
-        onBack={() => navigateToPath("/my-listings")}
+        title="Listings Performance"
+        description="Review listing performance, views, activity, and seller traction."
+        backLabel="Back to Workspace"
+        onBack={() => navigateToPath(SELLER_HUB_PATH)}
         childrenSectionClassName="w-full"
       >
         <div className="flex items-center justify-center gap-3 rounded-[2rem] border border-zinc-200 bg-white p-10 text-zinc-500 shadow-sm">
           <Loader2 className="h-5 w-5 animate-spin" />
-          Loading dashboard...
+          Loading Listings Performance...
         </div>
       </AccountPageShell>
     );
@@ -211,15 +212,15 @@ export default function SellerDashboardPage() {
     return (
       <AccountPageShell
         eyebrow="Seller"
-        title="Dashboard"
-        description="Review your seller performance and listing traction."
-        backLabel="Back to Listings"
-        onBack={() => navigateToPath("/my-listings")}
+        title="Listings Performance"
+        description="Review listing performance, views, activity, and seller traction."
+        backLabel="Back to Workspace"
+        onBack={() => navigateToPath(SELLER_HUB_PATH)}
         childrenSectionClassName="w-full"
       >
         <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
           <h2 className="text-2xl font-black tracking-tight text-zinc-900">Login required</h2>
-          <p className="mt-3 text-sm text-zinc-500">You need to log in before opening the seller dashboard.</p>
+          <p className="mt-3 text-sm text-zinc-500">You need to log in before opening Listings Performance.</p>
           <button
             type="button"
             onClick={() => navigateToPath("/login")}
@@ -236,15 +237,15 @@ export default function SellerDashboardPage() {
     return (
       <AccountPageShell
         eyebrow="Seller"
-        title="Dashboard"
-        description="Review your seller performance and listing traction."
-        backLabel="Back to Listings"
-        onBack={() => navigateToPath("/my-listings")}
+        title="Listings Performance"
+        description="Review listing performance, views, activity, and seller traction."
+        backLabel="Back to Workspace"
+        onBack={() => navigateToPath(SELLER_HUB_PATH)}
         childrenSectionClassName="w-full"
       >
         <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
           <h2 className="text-2xl font-black tracking-tight text-zinc-900">Seller access required</h2>
-          <p className="mt-3 text-sm text-zinc-500">Only seller accounts can access this dashboard.</p>
+          <p className="mt-3 text-sm text-zinc-500">Only seller accounts can access Listings Performance.</p>
           <button
             type="button"
             onClick={() => navigateToPath("/become-seller")}
@@ -268,17 +269,17 @@ export default function SellerDashboardPage() {
   return (
     <AccountPageShell
       eyebrow="Seller"
-      title="Dashboard"
-      description="Review your seller performance, listings, and traction in one place."
-      backLabel="Back to Listings"
-      onBack={() => navigateToPath("/my-listings")}
+      title="Listings Performance"
+      description="Review listing performance, views, activity, and seller traction in one place."
+      backLabel="Back to Workspace"
+      onBack={() => navigateToPath(SELLER_HUB_PATH)}
       childrenSectionClassName="w-full"
     >
       <div className="space-y-6">
         <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-4 shadow-sm sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="max-w-2xl">
-              <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">Live dashboard</h2>
+              <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">Live performance</h2>
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -297,11 +298,11 @@ export default function SellerDashboardPage() {
         {dashboardLoading ? (
           <div className="flex min-h-[220px] items-center justify-center gap-3 rounded-[2rem] border border-zinc-200 bg-white p-10 text-zinc-500 shadow-sm">
             <Loader2 className="h-5 w-5 animate-spin" />
-            Loading dashboard metrics...
+            Loading Listings Performance metrics...
           </div>
         ) : dashboardError ? (
           <div className="rounded-[2rem] border border-red-200 bg-red-50 p-6 text-center text-red-900 shadow-sm">
-            <h3 className="text-lg font-black tracking-tight">Dashboard failed to load</h3>
+            <h3 className="text-lg font-black tracking-tight">Listings Performance failed to load</h3>
             <p className="mt-2 text-sm font-medium">{dashboardError}</p>
             <button
               type="button"
@@ -359,7 +360,7 @@ export default function SellerDashboardPage() {
                 <div className="mt-4 space-y-3">
                   <button
                     type="button"
-                    onClick={() => navigateToPath("/my-listings")}
+                    onClick={() => navigateToPath(MY_LISTINGS_PATH)}
                     className="flex w-full items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left text-sm font-bold text-zinc-900 hover:bg-zinc-100"
                   >
                     <span>Open My Listings</span>
@@ -367,18 +368,26 @@ export default function SellerDashboardPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => navigateToPath("/seller/payouts")}
+                    onClick={() => navigateToPath(SELLER_PAYOUTS_MANAGE_PATH)}
                     className="flex w-full items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left text-sm font-bold text-zinc-900 hover:bg-zinc-100"
                   >
-                    <span>Open Seller Payouts</span>
+                    <span>Open Earnings</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => navigateToPath("/profile")}
+                    onClick={() => navigateToPath(SELLER_ORDERS_PATH)}
                     className="flex w-full items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left text-sm font-bold text-zinc-900 hover:bg-zinc-100"
                   >
-                    <span>Open Business Profile</span>
+                    <span>Open Orders</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateToPath(SELLER_MESSAGES_PATH)}
+                    className="flex w-full items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left text-sm font-bold text-zinc-900 hover:bg-zinc-100"
+                  >
+                    <span>Open Messages</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
                 </div>
