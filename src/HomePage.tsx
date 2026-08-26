@@ -269,7 +269,7 @@ export default function HomePage() {
 
               <div className="mt-4 grid gap-3 sm:gap-4 md:mt-6 md:gap-8">
                 <div className="rounded-[1.5rem] border border-red-950/10 bg-zinc-900 p-4 text-white shadow-[0_18px_40px_-24px_rgba(0,0,0,0.45)] sm:p-5 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:max-w-4xl">
-                  01 — Access</p>
+                  <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-zinc-400">01 — Access</p>
           <div data-why-buymesho-card="access" className="mb-4 flex h-[88px] w-full max-w-[230px] -rotate-1 items-center justify-between overflow-hidden rounded-3xl border border-zinc-200 bg-white p-4 shadow-[0_14px_30px_-20px_rgba(0,0,0,0.35)]">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/10 bg-red-50 text-2xl font-black text-red-900">↗</div>
             <div className="pr-2 text-right">
@@ -283,7 +283,7 @@ export default function HomePage() {
                   </div>
 
                   <div className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50/80 p-4 sm:p-5 md:rounded-none md:border-0 md:border-l md:border-zinc-200 md:bg-transparent md:p-0 md:pl-6">
-                    02 — Purpose</p>
+                    <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-zinc-400">02 — Purpose</p>
           <div data-why-buymesho-card="purpose" className="mb-4 flex h-[88px] w-full max-w-[230px] rotate-1 items-center justify-between overflow-hidden rounded-3xl border border-zinc-200 bg-white p-4 shadow-[0_14px_30px_-20px_rgba(0,0,0,0.35)]">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/10 bg-red-50 text-2xl font-black text-red-900">✦</div>
             <div className="pr-2 text-right">
@@ -297,7 +297,7 @@ export default function HomePage() {
                   </div>
 
                   <div className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50/80 p-4 sm:p-5 md:rounded-none md:border-0 md:border-l md:border-zinc-200 md:bg-transparent md:p-0 md:pl-6">
-                    03 — Structure</p>
+                    <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-zinc-400">03 — Structure</p>
           <div data-why-buymesho-card="structure" className="mb-4 flex h-[88px] w-full max-w-[230px] -rotate-1 items-center justify-between overflow-hidden rounded-3xl border border-zinc-200 bg-white p-4 shadow-[0_14px_30px_-20px_rgba(0,0,0,0.35)]">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/10 bg-red-50 text-2xl font-black text-red-900">≡</div>
             <div className="pr-2 text-right">
