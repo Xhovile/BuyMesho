@@ -17,41 +17,53 @@ export default function WhyBuyMeshoSection() {
               </p>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-3 md:gap-8 md:border-t md:border-zinc-200 md:pt-7">
-              <div className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50/80 p-4 sm:p-5 md:rounded-none md:border-0 md:bg-transparent md:p-0">
-                <div className="mb-4 flex h-[88px] w-full max-w-[230px] -rotate-1 items-center justify-between overflow-hidden rounded-3xl border border-zinc-200 bg-white p-4 shadow-[0_14px_30px_-20px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:translate-y-[-2px] hover:rotate-0">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/10 bg-red-50 text-2xl font-black text-red-900">↗</div>
+            <div className="grid gap-3 md:grid-cols-3 md:gap-6 md:border-t md:border-zinc-200 md:pt-7">
+              <div className="group rounded-[1.75rem] border border-zinc-200 bg-white p-4 shadow-[0_18px_40px_-26px_rgba(0,0,0,0.28)] transition-transform duration-200 hover:-translate-y-1 sm:p-5 md:min-h-[290px]">
+                <div className="flex h-[96px] w-full items-center justify-between overflow-hidden rounded-3xl border border-zinc-200 bg-zinc-50 p-4 shadow-[0_14px_30px_-20px_rgba(0,0,0,0.25)] -rotate-1 transition-transform duration-200 group-hover:rotate-0">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-red-900/10 bg-red-50 text-2xl font-black text-red-900">↗</div>
                   <div className="pr-2 text-right">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">ACCESS</p>
-                    <p className="mt-1 text-xs font-extrabold text-zinc-900">Open marketplace</p>
+                    <p className="mt-1 text-xs font-extrabold text-zinc-900 sm:text-sm">Open marketplace</p>
                   </div>
                 </div>
-                <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-zinc-400">01 — Access</p>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-700 sm:text-base md:mt-4 md:text-base md:text-zinc-800">Everyone can buy on BuyMesho.</p>
+                <div className="mt-5">
+                  <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-zinc-400">01 — Access</p>
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-700 sm:text-base md:text-[1.02rem] md:leading-7">
+                    Everyone can buy on BuyMesho.
+                  </p>
+                </div>
               </div>
 
-              <div className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50/80 p-4 sm:p-5 md:rounded-none md:border-0 md:border-l md:border-zinc-200 md:bg-transparent md:p-0 md:pl-6">
-                <div className="mb-4 flex h-[88px] w-full max-w-[230px] rotate-1 items-center justify-between overflow-hidden rounded-3xl border border-zinc-200 bg-white p-4 shadow-[0_14px_30px_-20px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:translate-y-[-2px] hover:rotate-0">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/10 bg-red-50 text-2xl font-black text-red-900">✦</div>
+              <div className="group rounded-[1.75rem] border border-zinc-200 bg-white p-4 shadow-[0_18px_40px_-26px_rgba(0,0,0,0.28)] transition-transform duration-200 hover:-translate-y-1 sm:p-5 md:min-h-[290px]">
+                <div className="flex h-[96px] w-full items-center justify-between overflow-hidden rounded-3xl border border-zinc-200 bg-zinc-50 p-4 shadow-[0_14px_30px_-20px_rgba(0,0,0,0.25)] rotate-1 transition-transform duration-200 group-hover:rotate-0">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-red-900/10 bg-red-50 text-2xl font-black text-red-900">✦</div>
                   <div className="pr-2 text-right">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">PURPOSE</p>
-                    <p className="mt-1 text-xs font-extrabold text-zinc-900">Student enterprise</p>
+                    <p className="mt-1 text-xs font-extrabold text-zinc-900 sm:text-sm">Student enterprise</p>
                   </div>
                 </div>
-                <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-zinc-400">02 — Purpose</p>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-700 sm:text-base md:mt-4 md:text-base md:text-zinc-800">Seller restrictions apply only because the platform&apos;s primary goal is to help student entrepreneurs develop and grow.</p>
+                <div className="mt-5">
+                  <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-zinc-400">02 — Purpose</p>
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-700 sm:text-base md:text-[1.02rem] md:leading-7">
+                    Seller restrictions apply only because the platform&apos;s primary goal is to help student entrepreneurs develop and grow.
+                  </p>
+                </div>
               </div>
 
-              <div className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50/80 p-4 sm:p-5 md:rounded-none md:border-0 md:border-l md:border-zinc-200 md:bg-transparent md:p-0 md:pl-6">
-                <div className="mb-4 flex h-[88px] w-full max-w-[230px] -rotate-1 items-center justify-between overflow-hidden rounded-3xl border border-zinc-200 bg-white p-4 shadow-[0_14px_30px_-20px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:translate-y-[-2px] hover:rotate-0">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/10 bg-red-50 text-2xl font-black text-red-900">≡</div>
+              <div className="group rounded-[1.75rem] border border-zinc-200 bg-white p-4 shadow-[0_18px_40px_-26px_rgba(0,0,0,0.28)] transition-transform duration-200 hover:-translate-y-1 sm:p-5 md:min-h-[290px]">
+                <div className="flex h-[96px] w-full items-center justify-between overflow-hidden rounded-3xl border border-zinc-200 bg-zinc-50 p-4 shadow-[0_14px_30px_-20px_rgba(0,0,0,0.25)] -rotate-1 transition-transform duration-200 group-hover:rotate-0">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-red-900/10 bg-red-50 text-2xl font-black text-red-900">≡</div>
                   <div className="pr-2 text-right">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">STRUCTURE</p>
-                    <p className="mt-1 text-xs font-extrabold text-zinc-900">Built for commerce</p>
+                    <p className="mt-1 text-xs font-extrabold text-zinc-900 sm:text-sm">Built for commerce</p>
                   </div>
                 </div>
-                <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-zinc-400">03 — Structure</p>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-700 sm:text-base md:mt-4 md:text-base md:text-zinc-800">List once, get discovered faster, and build trust through a structured marketplace designed for real commerce.</p>
+                <div className="mt-5">
+                  <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-zinc-400">03 — Structure</p>
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-700 sm:text-base md:text-[1.02rem] md:leading-7">
+                    List once, get discovered faster, and build trust through a structured marketplace designed for real commerce.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
