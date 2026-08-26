@@ -322,6 +322,17 @@ export default function Header({
                     )}
                   </button>
 
+                  {isMarketRoute ? (
+                    <button
+                      type="button"
+                      onClick={() => navigateToPath(HOME_PATH)}
+                      className={`hidden md:inline-flex items-center justify-center ${headerCardButtonClass} px-4 py-2.5 text-sm font-bold`}
+                      aria-label="Go to Home"
+                    >
+                      Home
+                    </button>
+                  ) : null}
+
                   <div ref={desktopMenuRef} className="relative hidden md:block">
                     <button
                       type="button"
@@ -335,7 +346,6 @@ export default function Header({
                     </button>
 
                     <HeaderDesktopMenu
-                      menuRef={desktopMenuRef}
                       open={desktopMenuOpen}
                       isLoggedIn={!!firebaseUser}
                       isSeller={isSeller}
