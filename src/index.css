@@ -79,6 +79,90 @@ form.w-full.space-y-6 > button.min-w-\[180px\] {
   width: 100%;
 }
 
+/* Why BuyMesho: turn the three supporting points into visual object cards.
+   This intentionally uses the existing DOM so the section remains content-driven
+   while gaining the same visual-object rhythm as the Library reference. */
+section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div {
+  position: relative;
+  isolation: isolate;
+  padding-top: 96px;
+}
+
+section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  width: min(100%, 230px);
+  height: 74px;
+  border: 1px solid rgba(24, 24, 27, 0.11);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 82% 20%, rgba(127, 29, 29, 0.12), transparent 35%),
+    linear-gradient(145deg, #ffffff 0%, #f4f4f5 100%);
+  box-shadow: 0 16px 32px -22px rgba(0, 0, 0, 0.35);
+}
+
+section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div::after {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(127, 29, 29, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.84);
+  color: #7f1d1d;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 8px 18px -14px rgba(0, 0, 0, 0.4);
+}
+
+section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div:nth-child(1)::after {
+  content: "↗";
+}
+
+section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div:nth-child(2)::after {
+  content: "✦";
+}
+
+section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div:nth-child(3)::after {
+  content: "≡";
+}
+
+section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div:nth-child(1)::before {
+  transform: rotate(-1.5deg);
+}
+
+section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div:nth-child(2)::before {
+  transform: rotate(1deg);
+}
+
+section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div:nth-child(3)::before {
+  transform: rotate(-0.75deg);
+}
+
+@media (max-width: 767px) {
+  section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div::before {
+    width: 100%;
+    height: 66px;
+    border-radius: 20px;
+  }
+
+  section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div::after {
+    top: 14px;
+    left: 16px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    font-size: 18px;
+  }
+}
+
 @keyframes buymesho-loader-spin {
   to {
     transform: rotate(360deg);
