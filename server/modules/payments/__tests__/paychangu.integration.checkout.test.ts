@@ -28,6 +28,8 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     'available', 'used', 0, 0, 0, 5, 0)`).run();
   const app = createApp();
   const originalFetch = global.fetch;
+  const originalWebhookUrl = process.env.PAYCHANGU_WEBHOOK_URL;
+  process.env.PAYCHANGU_WEBHOOK_URL = 'https://buymesho-webhook.test/api/payments/paychangu/webhook';
   global.fetch = mockPayChanguFetch(originalFetch, 'txref-integration-1', 'successful', 1000);
   process.env.PAYCHANGU_WEBHOOK_SECRET = 'integration-secret';
   process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
@@ -88,6 +90,8 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     assert.match(duplicates[0].error ?? '', /^Duplicate PayChangu webhook event/);
   } finally {
     global.fetch = originalFetch;
+    if (originalWebhookUrl === undefined) delete process.env.PAYCHANGU_WEBHOOK_URL;
+    else process.env.PAYCHANGU_WEBHOOK_URL = originalWebhookUrl;
     server.close();
     clearPaymentState();
     db.prepare('DELETE FROM listings WHERE id = 999').run();
