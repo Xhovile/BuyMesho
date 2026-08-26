@@ -100,7 +100,11 @@ export class ServerPaymentService{
     let result:PaymentResult;
     if(request.provider==='paychangu'){
       const resolvedConfig=this.resolveConfig();
-      result=await paychanguProvider.createPayment(request,{
+      const serverControlledReturnUrl=resolvedConfig.paychanguReturnUrl??request.returnUrl;
+      const payChanguRequest:CreatePaymentRequest=serverControlledReturnUrl&&request.returnUrl!==serverControlledReturnUrl
+        ? {...request,returnUrl:serverControlledReturnUrl}
+        : request;
+      result=await paychanguProvider.createPayment(payChanguRequest,{
         ...resolvedConfig,
         paychanguCallbackUrl:resolvedConfig.paychanguCallbackUrl,
         paychanguReturnUrl:resolvedConfig.paychanguReturnUrl,
