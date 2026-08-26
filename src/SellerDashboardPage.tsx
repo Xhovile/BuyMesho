@@ -5,6 +5,7 @@ import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 import { navigateToPath } from "./lib/appNavigation";
 import { MY_LISTINGS_PATH, SELLER_HUB_PATH, SELLER_MESSAGES_PATH, SELLER_ORDERS_PATH, SELLER_PAYOUTS_MANAGE_PATH } from "./lib/appNavigation.paths";
+import { getSellerCache, setSellerCache } from "./lib/sellerWorkspaceCache";
 import type { Listing } from "./types";
 
 type SellerProfile = { uid: string; business_name: string | null; profile_views: number };
@@ -12,18 +13,53 @@ type DashboardState = { seller: SellerProfile; stats: { total_listings: number; 
 
 function formatNumber(value: number | string | null | undefined) { const safeValue = Number(value ?? 0); if (!Number.isFinite(safeValue)) return "0"; return safeValue.toLocaleString(); }
 function StatCard({ icon: Icon, label, value, helper }: { icon: typeof BarChart3; label: string; value: string; helper?: string }) { return <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">{label}</p><p className="mt-2 text-2xl font-black tracking-tight text-zinc-900">{value}</p>{helper ? <p className="mt-1 text-xs font-medium text-zinc-500">{helper}</p> : null}</div><span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-50 text-zinc-700"><Icon className="h-5 w-5" /></span></div></div>; }
-async function fetchSellerProfile(uid: string): Promise<SellerProfile> { try { return (await apiFetch(`/api/sellers/${uid}`)) as SellerProfile; } catch { return (await apiFetch(`/api/users/${uid}`)) as SellerProfile; } }
-async function fetchSellerListings(uid: string): Promise<Listing[]> { try { const data = await apiFetch(`/api/sellers/${uid}/listings`); return Array.isArray(data) ? (data as Listing[]) : []; } catch { const data = await apiFetch(`/api/users/${uid}/listings`); return Array.isArray(data) ? (data as Listing[]) : []; } }
+async function fetchSellerProfile(uid: string): Promise<SellerProfile> { try { const seller = (await apiFetch(`/api/sellers/${uid}`)) as SellerProfile; setSellerCache("profile", seller); return seller; } catch { const seller = (await apiFetch(`/api/users/${uid}`)) as SellerProfile; setSellerCache("profile", seller); return seller; } }
+async function fetchSellerListings(uid: string): Promise<Listing[]> { try { const data = await apiFetch(`/api/sellers/${uid}/listings`); const listings = Array.isArray(data) ? (data as Listing[]) : []; setSellerCache("listings", listings); return listings; } catch { const data = await apiFetch(`/api/users/${uid}/listings`); const listings = Array.isArray(data) ? (data as Listing[]) : []; setSellerCache("listings", listings); return listings; } }
 function buildDashboard(seller: SellerProfile, listings: Listing[]): DashboardState { const totalListings = listings.length; const activeListings = listings.filter((item) => String(item.status).toLowerCase() !== "sold").length; const soldListings = listings.filter((item) => String(item.status).toLowerCase() === "sold").length; const totalViews = listings.reduce((sum, item) => sum + Number(item.views_count ?? 0), 0); const repeatSellerActivity = totalListings > 1 || soldListings > 0; const byCampusMap = new Map<string, number>(); for (const item of listings) { const campus = typeof item.university === "string" && item.university.trim() ? item.university.trim() : "Unknown campus"; byCampusMap.set(campus, (byCampusMap.get(campus) ?? 0) + 1); } const byCampus = Array.from(byCampusMap.entries()).map(([university, count]) => ({ university, count })).sort((a, b) => b.count - a.count || a.university.localeCompare(b.university)); const topListingSource = [...listings].sort((a, b) => { const viewsA = Number(a.views_count ?? 0); const viewsB = Number(b.views_count ?? 0); if (viewsB !== viewsA) return viewsB - viewsA; return new Date(String(b.created_at ?? 0)).getTime() - new Date(String(a.created_at ?? 0)).getTime(); })[0]; return { seller: { uid: seller.uid, business_name: seller.business_name ?? null, profile_views: Number(seller.profile_views ?? 0) }, stats: { total_listings: totalListings, active_listings: activeListings, sold_listings: soldListings, total_views: totalViews, repeat_seller_activity: repeatSellerActivity }, byCampus, top_listing: topListingSource ? { id: Number(topListingSource.id), name: typeof topListingSource.name === "string" ? topListingSource.name : "Untitled listing", views_count: Number(topListingSource.views_count ?? 0), status: String(topListingSource.status ?? "available"), created_at: String(topListingSource.created_at ?? new Date().toISOString()) } : null }; }
 
 export default function SellerDashboardPage() {
   const { firebaseUser, authLoading, profile, profileLoading } = useAccountProfile();
-  const [dashboard, setDashboard] = useState<DashboardState | null>(null);
-  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboard, setDashboard] = useState<DashboardState | null>(() => {
+    const seller = getSellerCache<SellerProfile>("profile");
+    const listings = getSellerCache<Listing[]>("listings");
+    return seller && listings ? buildDashboard(seller, listings) : null;
+  });
+  const [dashboardLoading, setDashboardLoading] = useState(() => {
+    const seller = getSellerCache<SellerProfile>("profile");
+    const listings = getSellerCache<Listing[]>("listings");
+    return !(seller && listings);
+  });
   const [dashboardError, setDashboardError] = useState<string | null>(null);
-  const loadDashboard = useCallback(async () => { if (!firebaseUser || !profile?.is_seller) { setDashboard(null); setDashboardLoading(false); return; } setDashboardLoading(true); setDashboardError(null); try { const [sellerResult, listingsResult] = await Promise.allSettled([fetchSellerProfile(firebaseUser.uid), fetchSellerListings(firebaseUser.uid)]); const seller = sellerResult.status === "fulfilled" ? sellerResult.value : { uid: firebaseUser.uid, business_name: profile.business_name ?? null, profile_views: 0 }; const listings = listingsResult.status === "fulfilled" ? listingsResult.value : []; if (sellerResult.status !== "fulfilled" && listingsResult.status !== "fulfilled") throw sellerResult.reason ?? listingsResult.reason ?? new Error("Failed to load listing performance data."); setDashboard(buildDashboard(seller, listings)); } catch (error: any) { console.error("Failed to load listing performance", error); setDashboard(null); setDashboardError(error?.message || "Failed to load listing performance data."); } finally { setDashboardLoading(false); } }, [firebaseUser, profile?.business_name, profile?.is_seller]);
-  useEffect(() => { void loadDashboard(); }, [loadDashboard]);
-  const handleRetry = () => { void loadDashboard(); };
+
+  const loadDashboard = useCallback(async (force = false) => {
+    if (!firebaseUser || !profile?.is_seller) { setDashboard(null); setDashboardLoading(false); return; }
+    if (!force) {
+      const cachedSeller = getSellerCache<SellerProfile>("profile");
+      const cachedListings = getSellerCache<Listing[]>("listings");
+      if (cachedSeller && cachedListings) {
+        setDashboard(buildDashboard(cachedSeller, cachedListings));
+        setDashboardLoading(false);
+        return;
+      }
+    }
+    setDashboardLoading(true);
+    setDashboardError(null);
+    try {
+      const [sellerResult, listingsResult] = await Promise.allSettled([fetchSellerProfile(firebaseUser.uid), fetchSellerListings(firebaseUser.uid)]);
+      const seller = sellerResult.status === "fulfilled" ? sellerResult.value : { uid: firebaseUser.uid, business_name: profile.business_name ?? null, profile_views: 0 };
+      const listings = listingsResult.status === "fulfilled" ? listingsResult.value : [];
+      if (sellerResult.status !== "fulfilled" && listingsResult.status !== "fulfilled") throw sellerResult.reason ?? listingsResult.reason ?? new Error("Failed to load listing performance data.");
+      setSellerCache("profile", seller);
+      setSellerCache("listings", listings);
+      setDashboard(buildDashboard(seller, listings));
+    } catch (error: any) {
+      console.error("Failed to load listing performance", error);
+      setDashboardError(error?.message || "Failed to load listing performance data.");
+    } finally { setDashboardLoading(false); }
+  }, [firebaseUser, profile?.business_name, profile?.is_seller]);
+
+  useEffect(() => { void loadDashboard(false); }, [loadDashboard]);
+  const handleRetry = () => { void loadDashboard(true); };
 
   if (authLoading || profileLoading) return <AccountPageShell eyebrow="Seller" title="Listings Performance" description="Review listing performance, views, activity, and seller traction." backLabel="Back to Workspace" onBack={() => navigateToPath(SELLER_HUB_PATH)} childrenSectionClassName="w-full"><div className="flex items-center justify-center gap-3 rounded-[2rem] border border-zinc-200 bg-white p-10 text-zinc-500 shadow-sm"><Loader2 className="h-5 w-5 animate-spin" />Loading Listings Performance...</div></AccountPageShell>;
 

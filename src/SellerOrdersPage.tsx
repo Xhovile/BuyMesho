@@ -44,64 +44,36 @@ const FILTERS: Array<{ key: FilterKey; label: string }> = [
 function money(order: OrderBundle["order"]): string {
   return `${order.currency} ${Number(order.total.amount).toLocaleString()}`;
 }
-
-function isSellerOrder(bundle: OrderBundle): boolean {
-  return !["draft", "pending_payment"].includes(bundle.order.status);
-}
-
-function isDelivered(bundle: OrderBundle): boolean {
-  return bundle.order.deliveryStatus === "delivered" || ["fulfilled", "closed"].includes(bundle.order.status);
-}
-
-function isPendingDelivery(bundle: OrderBundle): boolean {
-  return bundle.order.deliveryStatus === "pending_delivery" && !isDelivered(bundle);
-}
-
-function isEscrow(bundle: OrderBundle): boolean {
-  return bundle.escrow?.state === "in_escrow" || bundle.order.status === "in_escrow";
-}
-
-function isActionRequired(bundle: OrderBundle): boolean {
-  if (!isSellerOrder(bundle) || isDelivered(bundle) || isPendingDelivery(bundle)) return false;
-  return bundle.order.deliveryStatus !== "delivered";
-}
-
-function matchesFilter(bundle: OrderBundle, filter: FilterKey): boolean {
-  if (!isSellerOrder(bundle)) return false;
-  if (filter === "all") return true;
-  if (filter === "action_required") return isActionRequired(bundle);
-  if (filter === "escrow") return isEscrow(bundle);
-  if (filter === "delivered") return isDelivered(bundle);
-  if (filter === "pending_delivery") return isPendingDelivery(bundle);
-  if (filter === "disputed") return bundle.order.status === "disputed";
-  return true;
-}
-
-function getFilterCount(orders: OrderBundle[], filter: FilterKey): number {
-  return orders.filter((bundle) => matchesFilter(bundle, filter)).length;
-}
-
-function orderStatusLabel(bundle: OrderBundle): string {
-  if (bundle.order.deliveryStatus === "pending_delivery") return "Pending Delivery";
-  if (isDelivered(bundle)) return "Delivered";
-  if (bundle.order.status === "disputed") return "Disputed";
-  if (isEscrow(bundle)) return "In Escrow";
-  if (bundle.order.status === "paid") return "Action Required";
-  return bundle.order.status.replaceAll("_", " ");
-}
+function isSellerOrder(bundle: OrderBundle): boolean { return !["draft", "pending_payment"].includes(bundle.order.status); }
+function isDelivered(bundle: OrderBundle): boolean { return bundle.order.deliveryStatus === "delivered" || ["fulfilled", "closed"].includes(bundle.order.status); }
+function isPendingDelivery(bundle: OrderBundle): boolean { return bundle.order.deliveryStatus === "pending_delivery" && !isDelivered(bundle); }
+function isEscrow(bundle: OrderBundle): boolean { return bundle.escrow?.state === "in_escrow" || bundle.order.status === "in_escrow"; }
+function isActionRequired(bundle: OrderBundle): boolean { if (!isSellerOrder(bundle) || isDelivered(bundle) || isPendingDelivery(bundle)) return false; return bundle.order.deliveryStatus !== "delivered"; }
+function matchesFilter(bundle: OrderBundle, filter: FilterKey): boolean { if (!isSellerOrder(bundle)) return false; if (filter === "all") return true; if (filter === "action_required") return isActionRequired(bundle); if (filter === "escrow") return isEscrow(bundle); if (filter === "delivered") return isDelivered(bundle); if (filter === "pending_delivery") return isPendingDelivery(bundle); if (filter === "disputed") return bundle.order.status === "disputed"; return true; }
+function getFilterCount(orders: OrderBundle[], filter: FilterKey): number { return orders.filter((bundle) => matchesFilter(bundle, filter)).length; }
+function orderStatusLabel(bundle: OrderBundle): string { if (bundle.order.deliveryStatus === "pending_delivery") return "Pending Delivery"; if (isDelivered(bundle)) return "Delivered"; if (bundle.order.status === "disputed") return "Disputed"; if (isEscrow(bundle)) return "In Escrow"; if (bundle.order.status === "paid") return "Action Required"; return bundle.order.status.replaceAll("_", " "); }
 
 export default function SellerOrdersPage() {
   const { profileLoading, profile } = useAccountProfile();
   const [orders, setOrders] = useState<OrderBundle[]>(() => getSellerCache<OrderBundle[]>("orders") ?? []);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [selected, setSelected] = useState<OrderBundle | null>(null);
-  const [loading, setLoading] = useState(() => !getSellerCache<OrderBundle[]>("orders"));
+  const cachedOrders = getSellerCache<OrderBundle[]>("orders");
+  const [loading, setLoading] = useState(() => cachedOrders === null);
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadOrders = async (silent = false) => {
-    if (silent) setRefreshing(true); else setLoading(true);
+  const loadOrders = async (force = false) => {
+    if (!force) {
+      const cached = getSellerCache<OrderBundle[]>("orders");
+      if (cached !== null) {
+        setOrders(cached);
+        setLoading(false);
+        return;
+      }
+    }
+    if (force) setRefreshing(true); else setLoading(true);
     try {
       const data = await apiFetch("/api/seller/orders");
       const nextOrders = Array.isArray(data) ? (data as OrderBundle[]) : [];
@@ -117,21 +89,15 @@ export default function SellerOrdersPage() {
   };
 
   useEffect(() => {
-    if (!profileLoading && profile?.is_seller) void loadOrders(Boolean(orders.length));
+    if (!profileLoading && profile?.is_seller && cachedOrders === null) void loadOrders(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileLoading, profile?.is_seller]);
 
-  const filteredOrders = useMemo(
-    () => orders.filter((bundle) => matchesFilter(bundle, filter)),
-    [orders, filter],
-  );
-
+  const filteredOrders = useMemo(() => orders.filter((bundle) => matchesFilter(bundle, filter)), [orders, filter]);
   const selectedOrderId = new URLSearchParams(window.location.search).get("order");
+
   useEffect(() => {
-    if (!selectedOrderId) {
-      setSelected(null);
-      return;
-    }
+    if (!selectedOrderId) { setSelected(null); return; }
     const found = orders.find((entry) => entry.order.id === selectedOrderId);
     setSelected(found ?? null);
   }, [orders, selectedOrderId]);
@@ -139,15 +105,8 @@ export default function SellerOrdersPage() {
   if (profileLoading) return <main className="min-h-screen grid place-items-center bg-zinc-50 text-sm font-semibold text-zinc-500">Loading seller orders…</main>;
   if (!profile?.is_seller) return <main className="min-h-screen grid place-items-center bg-zinc-50 px-6 text-center"><div><p className="font-extrabold text-zinc-900">Seller access required</p><button type="button" onClick={() => navigateToPath(SELLER_HUB_PATH)} className="mt-3 text-sm font-bold text-zinc-600 hover:text-zinc-950">Back to Workspace</button></div></main>;
 
-  const openOrder = (bundle: OrderBundle) => {
-    setSelected(bundle);
-    navigateToPath(`${SELLER_ORDERS_PATH}&order=${encodeURIComponent(bundle.order.id)}`);
-  };
-
-  const closeOrder = () => {
-    setSelected(null);
-    navigateToPath(SELLER_ORDERS_PATH);
-  };
+  const openOrder = (bundle: OrderBundle) => { setSelected(bundle); navigateToPath(`${SELLER_ORDERS_PATH}&order=${encodeURIComponent(bundle.order.id)}`); };
+  const closeOrder = () => { setSelected(null); navigateToPath(SELLER_ORDERS_PATH); };
 
   const markAsPendingDelivery = async (bundle: OrderBundle) => {
     try {
@@ -162,9 +121,7 @@ export default function SellerOrdersPage() {
       setSelected(nextBundle);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update delivery status");
-    } finally {
-      setActionLoading(false);
-    }
+    } finally { setActionLoading(false); }
   };
 
   if (selected) {
