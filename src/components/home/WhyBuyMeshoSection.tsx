@@ -1,14 +1,16 @@
 export default function WhyBuyMeshoSection() {
   return (
     <section className="relative left-1/2 -mt-8 w-screen -translate-x-1/2 overflow-hidden bg-[#071b2d] px-4 py-10 text-white sm:py-12 lg:py-14">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-14 -translate-y-1/2 bg-gradient-to-b from-transparent via-[#071b2d]/45 to-[#071b2d] blur-md" />
-      <div className="pointer-events-none absolute left-1/4 top-0 h-56 w-56 rounded-full bg-red-500/10 blur-3xl" aria-hidden="true" />
-      <div className="pointer-events-none absolute bottom-0 right-1/4 h-64 w-64 rounded-full bg-amber-400/10 blur-3xl" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(239,68,68,0.13),transparent_26%),radial-gradient(circle_at_84%_24%,rgba(59,130,246,0.12),transparent_28%),radial-gradient(circle_at_65%_88%,rgba(245,158,11,0.1),transparent_26%),linear-gradient(135deg,rgba(255,255,255,0.025),transparent_40%,rgba(255,255,255,0.015))]" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-16 -translate-y-1/2 bg-gradient-to-b from-transparent via-[#071b2d]/55 to-[#071b2d] blur-md" />
+      <div className="pointer-events-none absolute left-[8%] top-[-8rem] h-72 w-72 rounded-full bg-red-500/10 blur-3xl" aria-hidden="true" />
+      <div className="pointer-events-none absolute right-[10%] top-[-5rem] h-64 w-64 rounded-full bg-sky-500/10 blur-3xl" aria-hidden="true" />
+      <div className="pointer-events-none absolute bottom-[-6rem] left-[44%] h-72 w-72 rounded-full bg-amber-400/10 blur-3xl" aria-hidden="true" />
 
       <div className="relative mx-auto max-w-7xl">
         <div className="flex items-center justify-between gap-4">
           <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/55">Why BuyMesho</p>
-          <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+          <span className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_18px_rgba(239,68,68,0.45)]" />
         </div>
 
         <div className="mt-4 grid gap-5 sm:gap-6 md:mt-6 md:gap-7">
