@@ -8,14 +8,33 @@ import { paymentRepository } from './payment.repository.js';
 import { orderRepository } from '../orders/order.repository.js';
 import { applyVerifiedPayChanguPayment } from './paychangu.flow.js';
 import { findPendingPayChanguWebhook, updatePaymentWebhookEventStatus } from '../../postgresCompat/webhooks.js';
+import { defaultPayChanguCallbackUrl, defaultPayChanguReturnUrl, readPaymentEnv } from './payment.config.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
-export interface ServerPaymentConfig { paychanguEnabled?: boolean; paychanguSecretKey?: string; paychanguWebhookSecret?: string; paychanguBaseUrl?: string; paychanguWebhookUrl?: string; }
+export interface ServerPaymentConfig {
+  paychanguEnabled?: boolean;
+  paychanguSecretKey?: string;
+  paychanguWebhookSecret?: string;
+  paychanguBaseUrl?: string;
+  paychanguWebhookUrl?: string;
+  paychanguCallbackUrl?: string;
+  paychanguReturnUrl?: string;
+}
+
 const REFUND_UNAVAILABLE_MESSAGE='Refunds are not available yet for this payment provider';
-function readEnv(name:string):string|undefined{const value=process.env[name]?.trim();if(!value)return undefined;if(name==='PAYCHANGU_BASE_URL'&&value.includes('api.paychangu.com'))return value.replace('api.paychangu.com','api.paychangu.com');return value;}
+function readEnv(name:string):string|undefined{const value=readPaymentEnv(name);if(!value)return undefined;if(name==='PAYCHANGU_BASE_URL'&&value.includes('api.paychangu.com'))return value.replace('api.paychangu.com','api.paychangu.com');return value;}
 function isTruthyFlag(value:string|undefined):boolean{return value==='1'||value==='true'||value==='yes'||value==='on';}
-function validatePayChanguConfig(config:ServerPaymentConfig):void{if(!config.paychanguEnabled||process.env.NODE_ENV!=='production')return;const missing:string[]=[];if(!config.paychanguSecretKey)missing.push('PAYCHANGU_SECRET_KEY');if(!config.paychanguWebhookSecret)missing.push('PAYCHANGU_WEBHOOK_SECRET');if(!config.paychanguWebhookUrl)missing.push('PAYCHANGU_WEBHOOK_URL');if(missing.length)throw new Error(`Missing required PayChangu environment variables in production: ${missing.join(', ')}`);}
+function validatePayChanguConfig(config:ServerPaymentConfig):void{
+  if(!config.paychanguEnabled||process.env.NODE_ENV!=='production')return;
+  const missing:string[]=[];
+  if(!config.paychanguSecretKey)missing.push('PAYCHANGU_SECRET_KEY');
+  if(!config.paychanguWebhookSecret)missing.push('PAYCHANGU_WEBHOOK_SECRET');
+  if(!config.paychanguWebhookUrl)missing.push('PAYCHANGU_WEBHOOK_URL');
+  if(!config.paychanguCallbackUrl)missing.push('PAYCHANGU_CALLBACK_URL or BACKEND_URL');
+  if(!config.paychanguReturnUrl)missing.push('PAYCHANGU_RETURN_URL or BACKEND_URL');
+  if(missing.length)throw new Error(`Missing required PayChangu environment variables in production: ${missing.join(', ')}`);
+}
 function normalizeCurrency(value:string|undefined):string{return String(value??'').trim().toUpperCase();}
 function normalizeReference(value:string|undefined|null):string{return String(value??'').trim();}
 function stripPayChanguPrefix(value:string):string{return value.replace(/^PAYCHANGU-/i,'');}
@@ -38,18 +57,54 @@ function parsePendingWebhookPayload(payload:string):PaymentVerificationResult|nu
     return {verified:normalizedStatus==='paid',provider:'paychangu',txRef,reference:txRef,status,currency,amount:{amount:Math.round(amountNumber),currency},checkoutUrl:null,rawResponse:parsed};
   }catch{return null;}
 }
-export function createServerPaymentConfigFromEnv():ServerPaymentConfig{const paychanguSecretKey=readEnv('PAYCHANGU_SECRET_KEY'),paychanguWebhookSecret=readEnv('PAYCHANGU_WEBHOOK_SECRET'),paychanguBaseUrl=readEnv('PAYCHANGU_BASE_URL'),paychanguWebhookUrl=readEnv('PAYCHANGU_WEBHOOK_URL');return{paychanguEnabled:isTruthyFlag(readEnv('PAYCHANGU_ENABLED'))||Boolean(paychanguSecretKey)||Boolean(paychanguWebhookSecret)||Boolean(paychanguBaseUrl)||Boolean(paychanguWebhookUrl),paychanguSecretKey,paychanguWebhookSecret,paychanguBaseUrl,paychanguWebhookUrl};}
+
+export function createServerPaymentConfigFromEnv():ServerPaymentConfig{
+  const paychanguSecretKey=readEnv('PAYCHANGU_SECRET_KEY');
+  const paychanguWebhookSecret=readEnv('PAYCHANGU_WEBHOOK_SECRET');
+  const paychanguBaseUrl=readEnv('PAYCHANGU_BASE_URL');
+  const paychanguWebhookUrl=readEnv('PAYCHANGU_WEBHOOK_URL');
+  const paychanguCallbackUrl=defaultPayChanguCallbackUrl();
+  const paychanguReturnUrl=defaultPayChanguReturnUrl();
+  return{
+    paychanguEnabled:isTruthyFlag(readEnv('PAYCHANGU_ENABLED'))||Boolean(paychanguSecretKey)||Boolean(paychanguWebhookSecret)||Boolean(paychanguBaseUrl)||Boolean(paychanguWebhookUrl),
+    paychanguSecretKey,
+    paychanguWebhookSecret,
+    paychanguBaseUrl,
+    paychanguWebhookUrl,
+    paychanguCallbackUrl,
+    paychanguReturnUrl,
+  };
+}
 
 export class ServerPaymentService{
   constructor(private readonly config:ServerPaymentConfig={},private readonly registry=ServerPaymentService.createDefaultRegistry()){validatePayChanguConfig(config);}
-  private resolveConfig():ServerPaymentConfig{const envPayChanguSecretKey=readEnv('PAYCHANGU_SECRET_KEY'),envPayChanguWebhookSecret=readEnv('PAYCHANGU_WEBHOOK_SECRET'),envPayChanguBaseUrl=readEnv('PAYCHANGU_BASE_URL'),envPayChanguWebhookUrl=readEnv('PAYCHANGU_WEBHOOK_URL');return{paychanguSecretKey:envPayChanguSecretKey??this.config.paychanguSecretKey,paychanguWebhookSecret:envPayChanguWebhookSecret??this.config.paychanguWebhookSecret,paychanguBaseUrl:envPayChanguBaseUrl??this.config.paychanguBaseUrl,paychanguWebhookUrl:envPayChanguWebhookUrl??this.config.paychanguWebhookUrl};}
+  private resolveConfig():ServerPaymentConfig{
+    const envPayChanguSecretKey=readEnv('PAYCHANGU_SECRET_KEY');
+    const envPayChanguWebhookSecret=readEnv('PAYCHANGU_WEBHOOK_SECRET');
+    const envPayChanguBaseUrl=readEnv('PAYCHANGU_BASE_URL');
+    const envPayChanguWebhookUrl=readEnv('PAYCHANGU_WEBHOOK_URL');
+    const envPayChanguCallbackUrl=defaultPayChanguCallbackUrl();
+    const envPayChanguReturnUrl=defaultPayChanguReturnUrl();
+    return{
+      paychanguSecretKey:envPayChanguSecretKey??this.config.paychanguSecretKey,
+      paychanguWebhookSecret:envPayChanguWebhookSecret??this.config.paychanguWebhookSecret,
+      paychanguBaseUrl:envPayChanguBaseUrl??this.config.paychanguBaseUrl,
+      paychanguWebhookUrl:envPayChanguWebhookUrl??this.config.paychanguWebhookUrl,
+      paychanguCallbackUrl:envPayChanguCallbackUrl??this.config.paychanguCallbackUrl,
+      paychanguReturnUrl:envPayChanguReturnUrl??this.config.paychanguReturnUrl,
+    };
+  }
   static createDefaultRegistry():PaymentGatewayRegistry{const registry=new PaymentGatewayRegistry();registry.register(paystackProvider);registry.register(flutterwaveProvider);registry.register(paychanguProvider);return registry;}
 
   async createPayment(request:CreatePaymentRequest):Promise<PaymentResult>{
     let result:PaymentResult;
     if(request.provider==='paychangu'){
       const resolvedConfig=this.resolveConfig();
-      result=await paychanguProvider.createPayment(request,{...resolvedConfig,paychanguCallbackUrl:resolvedConfig.paychanguWebhookUrl});
+      result=await paychanguProvider.createPayment(request,{
+        ...resolvedConfig,
+        paychanguCallbackUrl:resolvedConfig.paychanguCallbackUrl,
+        paychanguReturnUrl:resolvedConfig.paychanguReturnUrl,
+      });
     }else{
       result=await this.registry.get(request.provider).createPayment(request);
     }
