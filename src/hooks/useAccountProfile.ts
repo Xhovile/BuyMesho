@@ -141,12 +141,14 @@ export function useAccountProfile() {
             setCachedSellerStatus(firebaseUser.uid, !!loadedProfile.is_seller);
 
             let nextSellerApplicationPending = false;
+            let effectiveProfile = loadedProfile;
             if (!loadedProfile.is_seller) {
               try {
                 const application = await fetchSellerApplicationWithRetry();
                 if (application?.status === "approved") {
                   nextSellerApplicationPending = false;
-                  setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
+                  effectiveProfile = { ...loadedProfile, is_seller: true } as UserProfile;
+                  setProfile(effectiveProfile);
                   setCachedSellerStatus(firebaseUser.uid, true);
                   try {
                     const userRef = doc(firestore, "users", firebaseUser.uid);
@@ -155,11 +157,6 @@ export function useAccountProfile() {
                   } catch (firestoreWriteErr) {
                     console.error("Failed to persist seller status to Firestore", firestoreWriteErr);
                   }
-                  const approvedProfile = { ...loadedProfile, is_seller: true } as UserProfile;
-                  ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
-                    profile: approvedProfile,
-                    sellerApplicationPending: false,
-                  });
                 } else if (application?.status === "pending") {
                   nextSellerApplicationPending = true;
                 }
@@ -170,7 +167,7 @@ export function useAccountProfile() {
 
             setSellerApplicationPending(nextSellerApplicationPending);
             ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
-              profile: loadedProfile,
+              profile: effectiveProfile,
               sellerApplicationPending: nextSellerApplicationPending,
             });
             setError(null);
@@ -284,8 +281,7 @@ export function useAccountProfile() {
           const userRef = doc(firestore, "users", firebaseUser.uid);
           await setDoc(userRef, { is_seller: true }, { merge: true });
           await syncApprovedSellerRecord(profile);
-          const updatedProfile = (prev: UserProfile | null) => (prev ? { ...prev, is_seller: true } : prev);
-          setProfile(updatedProfile);
+          setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
           setCachedSellerStatus(firebaseUser.uid, true);
           setSellerApplicationPending(false);
           const cached = ACCOUNT_PROFILE_CACHE.get(firebaseUser.uid);
