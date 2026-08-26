@@ -55,7 +55,7 @@ export default function ListingStrip({
         <button
           type="button"
           onClick={() => navigateToPath(viewMorePath)}
-          className="inline-flex items-center gap-2 rounded-2xl border border-zinc-950 bg-gradient-to-r from-emerald-600 to-emerald-500 px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-white shadow-md shadow-emerald-500/20 transition-all hover:-translate-y-0.5 hover:from-emerald-500 hover:to-emerald-400 hover:shadow-lg hover:shadow-emerald-500/30 sm:px-4 sm:py-2.5 sm:text-sm sm:font-bold sm:normal-case sm:tracking-normal"
+          className="inline-flex items-center gap-2 rounded-2xl border border-red-950/15 bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-red-900 shadow-sm shadow-zinc-900/10 transition-all hover:-translate-y-0.5 hover:border-red-900/25 hover:shadow-md sm:px-4 sm:py-2.5 sm:text-sm sm:font-bold sm:normal-case sm:tracking-normal"
         >
           <span className="sm:hidden">All</span>
           <span className="hidden sm:inline">Browse all</span>
