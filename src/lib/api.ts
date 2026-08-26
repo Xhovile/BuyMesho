@@ -1,5 +1,6 @@
 import { auth } from "../firebase";
 import { clearSensitiveApiCache } from "./apiCache";
+import { getSellerCache, invalidateSellerCache, setSellerCache } from "./sellerWorkspaceCache";
 
 clearSensitiveApiCache();
 
@@ -88,6 +89,47 @@ function rewriteEventLifecyclePayload(url: string, init: ApiFetchInit): ApiFetch
   return { ...init, body: JSON.stringify(nextPayload) };
 }
 
+function sellerWorkspaceCacheKey(url: string): string | null {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return null;
+
+  if (url === "/api/seller/orders") return "api:orders";
+
+  const sellerMatch = url.match(/^\/api\/sellers\/([^/]+)(\/listings)?$/);
+  const sellerUid = sellerMatch ? sellerMatch[1] : null;
+  if (sellerUid === uid) {
+    return `api:seller:${uid}${sellerMatch && sellerMatch[2] === "/listings" ? ":listings" : ":profile"}`;
+  }
+
+  const userListingsMatch = url.match(/^\/api\/users\/([^/]+)\/listings$/);
+  const userListingsUid = userListingsMatch ? userListingsMatch[1] : null;
+  if (userListingsUid === uid) return `api:seller:${uid}:listings`;
+
+  return null;
+}
+
+function invalidateSellerWorkspaceCache(method: string, url: string) {
+  if (method === "GET" || method === "HEAD") return;
+
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
+
+  if (url === "/api/seller/orders" || url.startsWith("/api/seller/orders/")) {
+    invalidateSellerCache("api:orders");
+  }
+
+  if (url === "/api/listings" || url.startsWith("/api/listings/")) {
+    invalidateSellerCache(`api:seller:${uid}:listings`);
+  }
+
+  const sellerMatch = url.match(/^\/api\/sellers\/([^/]+)/);
+  const sellerUid = sellerMatch ? sellerMatch[1] : null;
+  if (sellerUid === uid) {
+    invalidateSellerCache(`api:seller:${sellerUid}:profile`);
+    invalidateSellerCache(`api:seller:${sellerUid}:listings`);
+  }
+}
+
 async function performApiFetch(url: string, init: ApiFetchInit = {}) {
   const headers: Record<string, string> = { ...(init.headers as Record<string, string> | undefined), ...(await authHeader()) };
   if (init.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
@@ -130,10 +172,16 @@ export async function apiFetch(url: string, init: ApiFetchInit = {}) {
   const retryAttempts = eventInit.retryAttempts ?? (shouldRetrySafeRequest(method) ? DEFAULT_SAFE_RETRY_ATTEMPTS : 1);
   const retryDelayMs = eventInit.retryDelayMs ?? DEFAULT_SAFE_RETRY_DELAY_MS;
   const isAdminMessagesList = method === "GET" && rewrittenUrl.startsWith("/api/admin/messages?") && !rewrittenUrl.includes("/summary");
+  const sellerCacheKey = method === "GET" ? sellerWorkspaceCacheKey(rewrittenUrl) : null;
 
   if (isAdminMessagesList) {
     const cached = adminMessagesResponseCache.get(rewrittenUrl);
     if (cached !== undefined) return cached;
+  }
+
+  if (sellerCacheKey) {
+    const cached = getSellerCache<any>(sellerCacheKey);
+    if (cached !== null) return cached;
   }
 
   let lastError: unknown = null;
@@ -141,6 +189,8 @@ export async function apiFetch(url: string, init: ApiFetchInit = {}) {
     try {
       const result = await performApiFetch(rewrittenUrl, eventInit);
       if (isAdminMessagesList) adminMessagesResponseCache.set(rewrittenUrl, result);
+      if (sellerCacheKey) setSellerCache(sellerCacheKey, result);
+      invalidateSellerWorkspaceCache(method, rewrittenUrl);
       return result;
     } catch (error: any) {
       lastError = error;
