@@ -79,19 +79,22 @@ form.w-full.space-y-6 > button.min-w-\[180px\] {
   width: 100%;
 }
 
-/* Why BuyMesho: turn the three supporting points into visual object cards.
-   This intentionally uses the existing DOM so the section remains content-driven
-   while gaining the same visual-object rhythm as the Library reference. */
+/* Why BuyMesho: create three visible visual-object cards above the supporting copy,
+   matching the tactile composition of the Code / PDF / Image reference. */
 section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div {
   position: relative;
   isolation: isolate;
-  padding-top: 96px;
+  min-height: 190px;
+  padding-top: 102px;
+  overflow: hidden;
+  border-radius: 24px;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
 section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div::before {
   content: "";
   position: absolute;
-  z-index: -1;
+  z-index: 0;
   top: 0;
   left: 0;
   width: min(100%, 230px);
@@ -102,10 +105,17 @@ section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~=
     radial-gradient(circle at 82% 20%, rgba(127, 29, 29, 0.12), transparent 35%),
     linear-gradient(145deg, #ffffff 0%, #f4f4f5 100%);
   box-shadow: 0 16px 32px -22px rgba(0, 0, 0, 0.35);
+  transform-origin: 20% 50%;
+}
+
+section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div > p {
+  position: relative;
+  z-index: 3;
 }
 
 section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div::after {
   position: absolute;
+  z-index: 2;
   top: 18px;
   left: 20px;
   display: grid;
@@ -114,7 +124,7 @@ section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~=
   place-items: center;
   border: 1px solid rgba(127, 29, 29, 0.16);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.84);
+  background: rgba(255, 255, 255, 0.88);
   color: #7f1d1d;
   font-size: 20px;
   font-weight: 900;
@@ -146,10 +156,21 @@ section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~=
   transform: rotate(-0.75deg);
 }
 
+section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div:hover {
+  transform: translateY(-3px);
+  border-color: rgba(127, 29, 29, 0.18);
+  box-shadow: 0 18px 36px -24px rgba(0, 0, 0, 0.4);
+}
+
 @media (max-width: 767px) {
+  section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div {
+    min-height: 0;
+    padding-top: 90px;
+  }
+
   section > div > div > div[class~="md:grid-cols-3"][class~="md:border-t"][class~="md:pt-7"] > div::before {
     width: 100%;
-    height: 66px;
+    height: 64px;
     border-radius: 20px;
   }
 
