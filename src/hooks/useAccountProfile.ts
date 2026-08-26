@@ -8,6 +8,14 @@ import type { UserProfile } from "../types";
 
 const SELLER_STATUS_RETRY_DELAYS_MS = [0, 800, 1800];
 const SELLER_CACHE_KEY_PREFIX = "bm:isSeller:";
+type AccountProfileCacheEntry = {
+  profile: UserProfile;
+  sellerApplicationPending: boolean;
+};
+
+// Session-scoped in-memory cache. Navigation/remounts reuse it; a full browser
+// reload clears it, which is intentional for the seller workspace contract.
+const ACCOUNT_PROFILE_CACHE = new Map<string, AccountProfileCacheEntry>();
 
 function getCachedSellerStatus(uid: string): boolean {
   try {
@@ -77,152 +85,192 @@ export function useAccountProfile() {
     [firebaseUser]
   );
 
-  const loadProfile = useCallback(async () => {
-    if (syncInFlight.current) return;
-    syncInFlight.current = true;
+  const loadProfile = useCallback(
+    async (force = false) => {
+      if (syncInFlight.current) return;
+      syncInFlight.current = true;
 
-    try {
-      if (!firebaseUser) {
-        setProfile(null);
-        setProfileLoading(false);
-        setError(null);
-        return;
-      }
-
-      if (getCachedSellerStatus(firebaseUser.uid)) {
-        setProfile((prev) =>
-          prev
-            ? { ...prev, is_seller: true }
-            : ({
-                uid: firebaseUser.uid,
-                email: firebaseUser.email || "",
-                is_seller: true,
-                is_verified: false,
-                join_date: "",
-              } as UserProfile)
-        );
-      }
-
-      setProfileLoading(true);
       try {
-        let loadedProfile: UserProfile | null = null;
-        try {
-          const serverProfile = await apiFetch("/api/profile");
-          if (serverProfile) {
-            loadedProfile = serverProfile as UserProfile;
-          }
-        } catch (apiErr) {
-          console.warn("GET /api/profile failed, falling back to Firestore", apiErr);
+        if (!firebaseUser) {
+          setProfile(null);
+          setProfileLoading(false);
+          setError(null);
+          return;
         }
 
-        if (loadedProfile) {
-          setProfile(loadedProfile);
-          setCachedSellerStatus(firebaseUser.uid, !!loadedProfile.is_seller);
+        if (!force) {
+          const cached = ACCOUNT_PROFILE_CACHE.get(firebaseUser.uid);
+          if (cached) {
+            setProfile(cached.profile);
+            setSellerApplicationPending(cached.sellerApplicationPending);
+            setCachedSellerStatus(firebaseUser.uid, !!cached.profile.is_seller);
+            setProfileLoading(false);
+            setError(null);
+            return;
+          }
+        }
 
-          if (!loadedProfile.is_seller) {
-            try {
-              const application = await fetchSellerApplicationWithRetry();
-              if (application?.status === "approved") {
-                setSellerApplicationPending(false);
-                setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
-                setCachedSellerStatus(firebaseUser.uid, true);
-                try {
-                  const userRef = doc(firestore, "users", firebaseUser.uid);
-                  await setDoc(userRef, { is_seller: true }, { merge: true });
-                  await syncApprovedSellerRecord(loadedProfile);
-                } catch (firestoreWriteErr) {
-                  console.error("Failed to persist seller status to Firestore", firestoreWriteErr);
+        if (getCachedSellerStatus(firebaseUser.uid)) {
+          setProfile((prev) =>
+            prev
+              ? { ...prev, is_seller: true }
+              : ({
+                  uid: firebaseUser.uid,
+                  email: firebaseUser.email || "",
+                  is_seller: true,
+                  is_verified: false,
+                  join_date: "",
+                } as UserProfile)
+          );
+        }
+
+        setProfileLoading(true);
+        try {
+          let loadedProfile: UserProfile | null = null;
+          try {
+            const serverProfile = await apiFetch("/api/profile");
+            if (serverProfile) {
+              loadedProfile = serverProfile as UserProfile;
+            }
+          } catch (apiErr) {
+            console.warn("GET /api/profile failed, falling back to Firestore", apiErr);
+          }
+
+          if (loadedProfile) {
+            setProfile(loadedProfile);
+            setCachedSellerStatus(firebaseUser.uid, !!loadedProfile.is_seller);
+
+            let nextSellerApplicationPending = false;
+            if (!loadedProfile.is_seller) {
+              try {
+                const application = await fetchSellerApplicationWithRetry();
+                if (application?.status === "approved") {
+                  nextSellerApplicationPending = false;
+                  setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
+                  setCachedSellerStatus(firebaseUser.uid, true);
+                  try {
+                    const userRef = doc(firestore, "users", firebaseUser.uid);
+                    await setDoc(userRef, { is_seller: true }, { merge: true });
+                    await syncApprovedSellerRecord(loadedProfile);
+                  } catch (firestoreWriteErr) {
+                    console.error("Failed to persist seller status to Firestore", firestoreWriteErr);
+                  }
+                  const approvedProfile = { ...loadedProfile, is_seller: true } as UserProfile;
+                  ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
+                    profile: approvedProfile,
+                    sellerApplicationPending: false,
+                  });
+                } else if (application?.status === "pending") {
+                  nextSellerApplicationPending = true;
                 }
-              } else if (application?.status === "pending") {
-                setSellerApplicationPending(true);
-              }
-            } catch {
-              setSellerApplicationPending(true);
-            }
-          }
-          setError(null);
-        } else {
-          const fallbackProfile: UserProfile = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || "",
-            university: UNIVERSITIES[0],
-            is_verified: false,
-            is_seller: false,
-            join_date: new Date().toISOString(),
-          };
-          const userRef = doc(firestore, "users", firebaseUser.uid);
-          const snap = await getDoc(userRef);
-          if (snap.exists()) {
-            const firestoreProfile = snap.data() as UserProfile;
-            setProfile(firestoreProfile);
-            setCachedSellerStatus(firebaseUser.uid, !!firestoreProfile.is_seller);
-          } else {
-            try {
-              await setDoc(userRef, fallbackProfile);
-            } catch (firestoreWriteErr) {
-              console.warn("Firestore profile bootstrap failed, using server fallback", firestoreWriteErr);
-              const token = await firebaseUser.getIdToken(true);
-              const bootstrapRes = await fetch("/api/profile/bootstrap", {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  university: fallbackProfile.university,
-                }),
-              });
-              if (!bootstrapRes.ok) {
-                throw new Error(`Profile bootstrap failed (${bootstrapRes.status})`);
+              } catch {
+                nextSellerApplicationPending = true;
               }
             }
-            setProfile(fallbackProfile);
-          }
-          setError(null);
-        }
-      } catch (err: any) {
-        console.error("Failed to load account profile", err);
-        try {
-          const token = await firebaseUser.getIdToken(true);
-          const bootstrapRes = await fetch("/api/profile/bootstrap", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              university: UNIVERSITIES[0],
-            }),
-          });
 
-          if (!bootstrapRes.ok) {
-            throw new Error(`Profile bootstrap failed (${bootstrapRes.status})`);
-          }
-
-          const bootstrapData = await bootstrapRes.json();
-          if (bootstrapData?.profile) {
-            setProfile(bootstrapData.profile as UserProfile);
+            setSellerApplicationPending(nextSellerApplicationPending);
+            ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
+              profile: loadedProfile,
+              sellerApplicationPending: nextSellerApplicationPending,
+            });
             setError(null);
           } else {
-            setProfile(null);
-            setError(err?.message || "Failed to load profile");
+            const fallbackProfile: UserProfile = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || "",
+              university: UNIVERSITIES[0],
+              is_verified: false,
+              is_seller: false,
+              join_date: new Date().toISOString(),
+            };
+            const userRef = doc(firestore, "users", firebaseUser.uid);
+            const snap = await getDoc(userRef);
+            if (snap.exists()) {
+              const firestoreProfile = snap.data() as UserProfile;
+              setProfile(firestoreProfile);
+              setCachedSellerStatus(firebaseUser.uid, !!firestoreProfile.is_seller);
+              ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
+                profile: firestoreProfile,
+                sellerApplicationPending: false,
+              });
+            } else {
+              try {
+                await setDoc(userRef, fallbackProfile);
+              } catch (firestoreWriteErr) {
+                console.warn("Firestore profile bootstrap failed, using server fallback", firestoreWriteErr);
+                const token = await firebaseUser.getIdToken(true);
+                const bootstrapRes = await fetch("/api/profile/bootstrap", {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    university: fallbackProfile.university,
+                  }),
+                });
+                if (!bootstrapRes.ok) {
+                  throw new Error(`Profile bootstrap failed (${bootstrapRes.status})`);
+                }
+              }
+              setProfile(fallbackProfile);
+              ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
+                profile: fallbackProfile,
+                sellerApplicationPending: false,
+              });
+            }
           }
-        } catch (bootstrapErr: any) {
-          console.error("Profile bootstrap after read failure failed", bootstrapErr);
-          setProfile(null);
-          setError(bootstrapErr?.message || err?.message || "Failed to load profile");
+          setError(null);
+        } catch (err: any) {
+          console.error("Failed to load account profile", err);
+          try {
+            const token = await firebaseUser.getIdToken(true);
+            const bootstrapRes = await fetch("/api/profile/bootstrap", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                university: UNIVERSITIES[0],
+              }),
+            });
+
+            if (!bootstrapRes.ok) {
+              throw new Error(`Profile bootstrap failed (${bootstrapRes.status})`);
+            }
+
+            const bootstrapData = await bootstrapRes.json();
+            if (bootstrapData?.profile) {
+              const bootstrapProfile = bootstrapData.profile as UserProfile;
+              setProfile(bootstrapProfile);
+              ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
+                profile: bootstrapProfile,
+                sellerApplicationPending: false,
+              });
+              setError(null);
+            } else {
+              setProfile(null);
+              setError(err?.message || "Failed to load profile");
+            }
+          } catch (bootstrapErr: any) {
+            console.error("Profile bootstrap after read failure failed", bootstrapErr);
+            setProfile(null);
+            setError(bootstrapErr?.message || err?.message || "Failed to load profile");
+          }
+        } finally {
+          setProfileLoading(false);
         }
       } finally {
-        setProfileLoading(false);
+        syncInFlight.current = false;
       }
-    } finally {
-      syncInFlight.current = false;
-    }
-  }, [firebaseUser, syncApprovedSellerRecord]);
+    },
+    [firebaseUser, syncApprovedSellerRecord]
+  );
 
   useEffect(() => {
     if (authLoading) return;
-    void loadProfile();
+    void loadProfile(false);
   }, [authLoading, loadProfile]);
 
   useEffect(() => {
@@ -236,19 +284,41 @@ export function useAccountProfile() {
           const userRef = doc(firestore, "users", firebaseUser.uid);
           await setDoc(userRef, { is_seller: true }, { merge: true });
           await syncApprovedSellerRecord(profile);
-          setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
+          const updatedProfile = (prev: UserProfile | null) => (prev ? { ...prev, is_seller: true } : prev);
+          setProfile(updatedProfile);
           setCachedSellerStatus(firebaseUser.uid, true);
           setSellerApplicationPending(false);
+          const cached = ACCOUNT_PROFILE_CACHE.get(firebaseUser.uid);
+          if (cached) {
+            ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
+              profile: { ...cached.profile, is_seller: true },
+              sellerApplicationPending: false,
+            });
+          }
           return;
         }
 
         if (sellerApplication?.status === "pending") {
           setSellerApplicationPending(true);
+          const cached = ACCOUNT_PROFILE_CACHE.get(firebaseUser.uid);
+          if (cached) {
+            ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
+              profile: cached.profile,
+              sellerApplicationPending: true,
+            });
+          }
           return;
         }
 
         if (!sellerApplication || sellerApplication?.status === "rejected") {
           setSellerApplicationPending(false);
+          const cached = ACCOUNT_PROFILE_CACHE.get(firebaseUser.uid);
+          if (cached) {
+            ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
+              profile: cached.profile,
+              sellerApplicationPending: false,
+            });
+          }
         }
       } catch (statusErr) {
         console.error("Background seller status sync failed", statusErr);
@@ -284,7 +354,17 @@ export function useAccountProfile() {
     try {
       const userRef = doc(firestore, "users", firebaseUser.uid);
       await setDoc(userRef, updates, { merge: true });
-      setProfile((prev) => (prev ? { ...prev, ...updates } : prev));
+      setProfile((prev) => {
+        const nextProfile = prev ? { ...prev, ...updates } : prev;
+        if (nextProfile && firebaseUser) {
+          const cached = ACCOUNT_PROFILE_CACHE.get(firebaseUser.uid);
+          ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
+            profile: nextProfile,
+            sellerApplicationPending: cached?.sellerApplicationPending ?? false,
+          });
+        }
+        return nextProfile;
+      });
       setError(null);
     } catch (err: any) {
       console.error("Failed to update account profile", err);
@@ -300,7 +380,7 @@ export function useAccountProfile() {
     setProfile,
     profileLoading,
     error,
-    refreshProfile: loadProfile,
+    refreshProfile: () => loadProfile(true),
     updateProfile,
     emailVerified: !!auth.currentUser?.emailVerified,
   };
