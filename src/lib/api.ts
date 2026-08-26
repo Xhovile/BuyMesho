@@ -96,12 +96,14 @@ function sellerWorkspaceCacheKey(url: string): string | null {
   if (url === "/api/seller/orders") return "api:orders";
 
   const sellerMatch = url.match(/^\/api\/sellers\/([^/]+)(\/listings)?$/);
-  if (sellerMatch?.[1] === uid) {
-    return `api:seller:${uid}${sellerMatch[2] === "/listings" ? ":listings" : ":profile"}`;
+  const sellerUid = sellerMatch ? sellerMatch[1] : null;
+  if (sellerUid === uid) {
+    return `api:seller:${uid}${sellerMatch && sellerMatch[2] === "/listings" ? ":listings" : ":profile"}`;
   }
 
   const userListingsMatch = url.match(/^\/api\/users\/([^/]+)\/listings$/);
-  if (userListingsMatch?.[1] === uid) return `api:seller:${uid}:listings`;
+  const userListingsUid = userListingsMatch ? userListingsMatch[1] : null;
+  if (userListingsUid === uid) return `api:seller:${uid}:listings`;
 
   return null;
 }
@@ -109,18 +111,22 @@ function sellerWorkspaceCacheKey(url: string): string | null {
 function invalidateSellerWorkspaceCache(method: string, url: string) {
   if (method === "GET" || method === "HEAD") return;
 
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
+
   if (url === "/api/seller/orders" || url.startsWith("/api/seller/orders/")) {
     invalidateSellerCache("api:orders");
   }
 
   if (url === "/api/listings" || url.startsWith("/api/listings/")) {
-    invalidateSellerCache("api:seller:${uid}:listings".replace("${uid}", auth.currentUser?.uid ?? "anonymous"));
+    invalidateSellerCache(`api:seller:${uid}:listings`);
   }
 
   const sellerMatch = url.match(/^\/api\/sellers\/([^/]+)/);
-  if (sellerMatch?.[1] === auth.currentUser?.uid) {
-    invalidateSellerCache(`api:seller:${sellerMatch[1]}:profile`);
-    invalidateSellerCache(`api:seller:${sellerMatch[1]}:listings`);
+  const sellerUid = sellerMatch ? sellerMatch[1] : null;
+  if (sellerUid === uid) {
+    invalidateSellerCache(`api:seller:${sellerUid}:profile`);
+    invalidateSellerCache(`api:seller:${sellerUid}:listings`);
   }
 }
 
