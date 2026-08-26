@@ -51,7 +51,7 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
   };
 
   return (
-    <section className="relative overflow-hidden border-b border-zinc-200/80 bg-gradient-to-br from-red-900/10 via-zinc-100 to-amber-500/10 px-4 pt-6 pb-5 sm:pt-8 sm:pb-7">
+    <section className="relative left-1/2 w-screen -translate-x-1/2 overflow-hidden border-b border-zinc-200/80 bg-gradient-to-br from-red-900/10 via-zinc-100 to-amber-500/10 px-4 pt-6 pb-5 sm:pt-8 sm:pb-7">
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
         <div className="absolute left-1/4 top-0 h-40 w-40 rounded-full bg-red-900/10 blur-3xl" />
         <div className="absolute bottom-0 right-1/4 h-44 w-44 rounded-full bg-amber-400/10 blur-3xl" />
