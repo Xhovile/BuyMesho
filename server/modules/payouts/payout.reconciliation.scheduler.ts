@@ -1,11 +1,6 @@
 import { getPaymentDb } from '../../postgresCompat.js';
 import { payoutRepository, payoutService } from './payout.service.js';
-
-export type PayoutReconciliationSchedulerConfig = {
-  enabled: boolean;
-  intervalMs: number;
-  batchLimit: number;
-};
+import { PAYOUT_POLICY } from './payout.policy.js';
 
 type ReconcilePayouts = (input: {
   actorType: 'system';
@@ -14,24 +9,23 @@ type ReconcilePayouts = (input: {
 
 type Logger = Pick<Console, 'log' | 'warn' | 'error'>;
 
-const DEFAULT_INTERVAL_MS = 5 * 60 * 1000;
+export type PayoutReconciliationSchedulerConfig = {
+  enabled: boolean;
+  intervalMs: number;
+  batchLimit: number;
+};
+
+const DEFAULT_INTERVAL_MS = PAYOUT_POLICY.automaticRetryIntervalHours * 60 * 60 * 1000;
 const DEFAULT_BATCH_LIMIT = 25;
-const MIN_INTERVAL_MS = 10_000;
+const MIN_INTERVAL_MS = 60 * 1000;
 const MAX_BATCH_LIMIT = 50;
+const RETRY_WINDOW_MS = PAYOUT_POLICY.automaticRetryWindowHours * 60 * 60 * 1000;
 
 function parseBooleanEnv(value: string | undefined, defaultValue: boolean): boolean {
-  if (value === undefined || value.trim() === '') {
-    return defaultValue;
-  }
-
+  if (value === undefined || value.trim() === '') return defaultValue;
   const normalized = value.trim().toLowerCase();
-  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
-    return true;
-  }
-  if (['0', 'false', 'no', 'off'].includes(normalized)) {
-    return false;
-  }
-
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
   return defaultValue;
 }
 
@@ -41,50 +35,71 @@ function parsePositiveIntegerEnv(
   options: { min?: number; max?: number } = {},
 ): number {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed)) {
-    return defaultValue;
-  }
-
+  if (!Number.isFinite(parsed)) return defaultValue;
   const integer = Math.trunc(parsed);
-  if (integer <= 0) {
-    return defaultValue;
-  }
-
+  if (integer <= 0) return defaultValue;
   const min = options.min ?? integer;
   const max = options.max ?? Math.max(integer, min);
   return Math.min(Math.max(integer, min), max);
 }
 
-function isPastSettlementMidnightTPlusOne(referenceAt: string | null | undefined, nowMs = Date.now()): boolean {
-  if (!referenceAt) {
-    return false;
+function parseResponsePayload(value: unknown): Record<string, unknown> | null {
+  if (!value) return null;
+  if (typeof value === 'object') return value as Record<string, unknown>;
+  if (typeof value !== 'string') return null;
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return typeof parsed === 'object' && parsed !== null ? parsed as Record<string, unknown> : null;
+  } catch {
+    return null;
   }
+}
 
-  const referenceDate = new Date(referenceAt);
-  const timestamp = referenceDate.getTime();
-  if (!Number.isFinite(timestamp)) {
-    return false;
-  }
+function hasProviderIdentifier(value: unknown): boolean {
+  const payload = parseResponsePayload(value);
+  if (!payload) return false;
 
-  const catFormatter = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Africa/Blantyre',
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-  });
+  const response = typeof payload.response === 'object' && payload.response !== null
+    ? payload.response as Record<string, unknown>
+    : payload;
+  const data = typeof response.data === 'object' && response.data !== null
+    ? response.data as Record<string, unknown>
+    : response;
+  const transaction = typeof data.transaction === 'object' && data.transaction !== null
+    ? data.transaction as Record<string, unknown>
+    : data;
 
-  const parts = catFormatter.formatToParts(referenceDate);
-  const year = Number(parts.find((part) => part.type === 'year')?.value);
-  const month = Number(parts.find((part) => part.type === 'month')?.value);
-  const day = Number(parts.find((part) => part.type === 'day')?.value);
+  return [
+    transaction.charge_id,
+    transaction.ref_id,
+    transaction.reference,
+    transaction.trans_id,
+    transaction.transaction_id,
+    response.charge_id,
+    response.ref_id,
+    response.reference,
+    response.trans_id,
+    response.transaction_id,
+  ].some((value) => typeof value === 'string' ? value.trim().length > 0 : Number.isFinite(value));
+}
 
-  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-    return false;
-  }
+function providerAccepted(value: unknown): boolean {
+  const payload = parseResponsePayload(value);
+  if (!payload) return false;
+  const httpStatus = Number(payload.httpStatus);
+  const ok = payload.ok === true || (Number.isFinite(httpStatus) && httpStatus >= 200 && httpStatus < 300);
+  return ok && hasProviderIdentifier(payload);
+}
 
-  const settlementAt = Date.UTC(year, month - 1, day + 1, 6, 0, 0, 0);
+function withinRetryWindow(requestedAt: string | null | undefined, nowMs = Date.now()): boolean {
+  if (!requestedAt) return false;
+  const start = new Date(requestedAt).getTime();
+  if (!Number.isFinite(start)) return false;
+  return nowMs >= start && nowMs < start + RETRY_WINDOW_MS;
+}
 
-  return nowMs >= settlementAt;
+function retryDeadline(requestedAt: string): number {
+  return new Date(requestedAt).getTime() + RETRY_WINDOW_MS;
 }
 
 export function getPayoutReconciliationSchedulerConfig(
@@ -116,109 +131,124 @@ export class PayoutReconciliationScheduler {
       this.logger.log('[payout-reconciliation] worker disabled');
       return;
     }
-
-    if (this.timer) {
-      return;
-    }
+    if (this.timer) return;
 
     this.timer = setInterval(() => {
       void this.runOnce();
     }, this.config.intervalMs);
-
     this.timer.unref?.();
+
     this.logger.log(
       `[payout-reconciliation] worker started intervalMs=${this.config.intervalMs} batchLimit=${this.config.batchLimit}`,
     );
   }
 
   stop(): void {
-    if (!this.timer) {
-      return;
-    }
-
+    if (!this.timer) return;
     clearInterval(this.timer);
     this.timer = undefined;
   }
 
-  private async settlePendingSettlementPayouts(limit: number): Promise<number> {
+  private async retryEligiblePayouts(limit: number): Promise<number> {
     const db = getPaymentDb();
     const rows = db.prepare(
-      `SELECT id, seller_id, requested_at, created_at
-       FROM payouts
-       WHERE status = 'pending_settlement'
-       ORDER BY COALESCE(requested_at, created_at) ASC
+      `SELECT
+         p.id,
+         p.seller_id,
+         p.requested_at,
+         p.created_at,
+         p.status,
+         p.provider_status,
+         p.provider_charge_id,
+         p.provider_ref_id,
+         p.provider_transaction_id,
+         (
+           SELECT pa.response_payload
+           FROM payout_attempts pa
+           WHERE pa.payout_id = p.id
+           ORDER BY pa.attempt_no DESC, pa.created_at DESC
+           LIMIT 1
+         ) AS latest_response_payload
+       FROM payouts p
+       WHERE p.status = 'failed'
+         AND p.provider = 'paychangu'
+       ORDER BY COALESCE(p.requested_at, p.created_at) ASC
        LIMIT ?`,
     ).all(limit) as Array<{
       id: string;
       seller_id: string;
       requested_at: string | null;
       created_at: string;
+      status: string;
+      provider_status: string | null;
+      provider_charge_id: string | null;
+      provider_ref_id: string | null;
+      provider_transaction_id: string | null;
+      latest_response_payload: unknown;
     }>;
 
-    let settledCount = 0;
+    let retried = 0;
+    const nowMs = Date.now();
 
     for (const row of rows) {
-      const referenceAt = row.requested_at ?? row.created_at;
-      if (!isPastSettlementMidnightTPlusOne(referenceAt)) {
+      const requestedAt = row.requested_at ?? row.created_at;
+      const accepted = providerAccepted(row.latest_response_payload);
+
+      if (accepted) {
+        // A provider-accepted payout must be tracked/reconciled rather than submitted again.
+        await payoutService.reconcilePayoutStatus({ payoutId: row.id, actorType: 'system' });
         continue;
       }
 
-      const ready = payoutRepository.updateStatus(row.id, 'ready_for_payout', {
-        provider: 'paychangu',
-        providerStatus: 'ready_for_payout',
-      });
-
-      if (!ready) {
+      if (!withinRetryWindow(requestedAt, nowMs)) {
+        payoutRepository.addEvent({
+          payoutId: row.id,
+          sellerId: row.seller_id,
+          eventType: 'payout_retry_window_expired',
+          actorType: 'system',
+          actorId: null,
+          note: 'Automatic payout submission window expired without provider acceptance',
+          payload: {
+            retryWindowStartedAt: requestedAt,
+            retryWindowDeadline: new Date(retryDeadline(requestedAt)).toISOString(),
+            automaticRetryWindowHours: PAYOUT_POLICY.automaticRetryWindowHours,
+          },
+        });
         continue;
       }
 
-      payoutRepository.addEvent({
-        payoutId: row.id,
-        sellerId: row.seller_id,
-        eventType: 'payout_ready_for_payout',
-        actorType: 'system',
-        actorId: null,
-        note: 'Settlement window elapsed; payout is ready for submission',
-        payload: {
-          referenceAt,
-          settledAt: new Date().toISOString(),
-        },
-      });
+      try {
+        const result = await payoutService.executePayout({
+          payoutId: row.id,
+          actorType: 'system',
+        });
+        retried += 1;
 
-      const queued = payoutRepository.updateStatus(row.id, 'queued', {
-        provider: 'paychangu',
-        providerStatus: 'queued',
-      });
-
-      if (!queued) {
-        continue;
+        payoutRepository.addEvent({
+          payoutId: row.id,
+          sellerId: row.seller_id,
+          eventType: 'payout_automatic_retry_attempted',
+          actorType: 'system',
+          actorId: null,
+          note: 'Automatic payout submission retry attempted within 48-hour window',
+          payload: {
+            requestedAt,
+            retryWindowDeadline: new Date(retryDeadline(requestedAt)).toISOString(),
+            attemptNo: result.attempt?.attemptNo ?? null,
+            reasonCode: result.reasonCode,
+            providerAccepted: providerAccepted(result.execution?.rawResponse),
+          },
+        });
+      } catch (error) {
+        this.logger.error(`[payout-reconciliation] automatic retry failed for ${row.id}:`, error);
       }
-
-      payoutRepository.addEvent({
-        payoutId: row.id,
-        sellerId: row.seller_id,
-        eventType: 'payout_queued',
-        actorType: 'system',
-        actorId: null,
-        note: 'Payout queued for provider submission after settlement',
-      });
-
-      await payoutService.executePayout({
-        payoutId: row.id,
-        actorType: 'system',
-      });
-
-      settledCount += 1;
     }
 
-    return settledCount;
+    return retried;
   }
 
   async runOnce(): Promise<void> {
-    if (!this.config.enabled) {
-      return;
-    }
-
+    if (!this.config.enabled) return;
     if (this.running) {
       this.logger.warn('[payout-reconciliation] previous run still active; skipping overlap');
       return;
@@ -226,9 +256,9 @@ export class PayoutReconciliationScheduler {
 
     this.running = true;
     try {
-      const settledCount = await this.settlePendingSettlementPayouts(this.config.batchLimit);
-      if (settledCount > 0) {
-        this.logger.log(`[payout-reconciliation] settlement worker released ${settledCount} payout(s)`);
+      const retriedCount = await this.retryEligiblePayouts(this.config.batchLimit);
+      if (retriedCount > 0) {
+        this.logger.log(`[payout-reconciliation] retried ${retriedCount} payout(s)`);
       }
 
       await this.reconcile({ actorType: 'system', limit: this.config.batchLimit });
