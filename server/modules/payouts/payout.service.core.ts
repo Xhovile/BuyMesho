@@ -54,6 +54,14 @@ export class PayoutService {
   }
 
   async executePayout(input: ExecutePayoutInput) {
+    const current = this.repository.findById(input.payoutId);
+    if (current?.status === 'pending_settlement') {
+      this.repository.updateStatus(input.payoutId, 'queued', {
+        provider: current.provider ?? 'paychangu',
+        providerStatus: 'queued',
+      });
+    }
+
     const { executePayoutFlow } = await import('./payout.service.execution.js');
     return executePayoutFlow(this.repository, input);
   }
