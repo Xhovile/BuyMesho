@@ -1,6 +1,6 @@
 import { getPaymentDb } from '../../postgresCompat.js';
 import { payoutRepository, payoutService } from './payout.service.js';
-import { PAYOUT_POLICY } from './payout.policy.js';
+import { PAYOUT_POLICY, isRetryableFailureCode } from './payout.policy.js';
 
 type ReconcilePayouts = (input: {
   actorType: 'system';
@@ -158,6 +158,7 @@ export class PayoutReconciliationScheduler {
          p.requested_at,
          p.created_at,
          p.status,
+         p.failure_reason,
          (
            SELECT pa.response_payload
            FROM payout_attempts pa
@@ -169,7 +170,17 @@ export class PayoutReconciliationScheduler {
        WHERE p.provider = 'paychangu'
          AND (
            p.status = 'failed'
-           OR (p.status = 'held' AND p.failure_reason = 'balance_insufficient')
+           OR (p.status = 'held' AND p.failure_reason IN (
+             'provider_timeout',
+             'provider_unavailable',
+             'provider_network_error',
+             'provider_rate_limited',
+             'provider_rejected',
+             'provider_authentication_error',
+             'provider_configuration_error',
+             'provider_conflict',
+             'balance_insufficient'
+           ))
          )
        ORDER BY COALESCE(p.requested_at, p.created_at) ASC
        LIMIT ?`,
@@ -179,6 +190,7 @@ export class PayoutReconciliationScheduler {
       requested_at: string | null;
       created_at: string;
       status: string;
+      failure_reason: string | null;
       latest_response_payload: unknown;
     }>;
 
@@ -208,14 +220,17 @@ export class PayoutReconciliationScheduler {
             automaticRetryWindowHours: PAYOUT_POLICY.automaticRetryWindowHours,
           },
         });
-        if (row.status !== 'failed') {
-          payoutRepository.updateStatus(row.id, 'failed', {
-            provider: 'paychangu',
-            providerStatus: 'failed',
-            failureReason: 'automatic_retry_window_expired',
-            failedAt: new Date().toISOString(),
-          });
-        }
+        payoutRepository.updateStatus(row.id, 'failed', {
+          provider: 'paychangu',
+          providerStatus: 'failed',
+          failureReason: 'automatic_retry_window_expired',
+          failedAt: new Date().toISOString(),
+        });
+        continue;
+      }
+
+      const failureCode = row.failure_reason;
+      if (row.status === 'held' && !isRetryableFailureCode(failureCode)) {
         continue;
       }
 
