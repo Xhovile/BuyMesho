@@ -17,7 +17,7 @@ export type PayoutReconciliationSchedulerConfig = {
 
 const DEFAULT_INTERVAL_MS = PAYOUT_POLICY.automaticRetryIntervalHours * 60 * 60 * 1000;
 const DEFAULT_BATCH_LIMIT = 25;
-const MIN_INTERVAL_MS = 60 * 1000;
+const MIN_INTERVAL_MS = 10 * 1000;
 const MAX_BATCH_LIMIT = 50;
 const RETRY_WINDOW_MS = PAYOUT_POLICY.automaticRetryWindowHours * 60 * 60 * 1000;
 
