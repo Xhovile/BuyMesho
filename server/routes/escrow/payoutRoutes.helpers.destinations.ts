@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { getPaymentDb } from '../../postgresCompat.js';
+import { normalizePayChanguMobile } from '../../modules/payouts/payout.mobile-format.js';
 import {
   type DestinationType,
   type SellerPayoutDestinationRecord,
@@ -9,7 +10,6 @@ import {
   encryptSensitiveValue,
   maskValue,
   normalizeAccountNumber,
-  normalizeMobileNumber,
   rowToSellerPayoutDestination,
 } from './payoutRoutes.helpers.core.js';
 
@@ -76,11 +76,11 @@ function normalizeDuplicateFingerprintRow(
   const isDefault = input.isDefault || existing.is_default === 1;
   const targetValue = input.destinationType === 'bank'
     ? normalizeAccountNumber(input.accountNumber ?? decryptSensitiveValue(existing.account_number_encrypted) ?? '')
-    : normalizeMobileNumber(input.mobile ?? decryptSensitiveValue(existing.mobile_encrypted) ?? '');
+    : normalizePayChanguMobile(input.mobile ?? decryptSensitiveValue(existing.mobile_encrypted) ?? '');
   const fingerprint = buildDestinationFingerprint({ sellerId: existing.seller_uid, destinationType: input.destinationType, providerName: input.providerName, providerRefId: input.providerRefId, currency: input.currency, targetValue });
   const accountNumberEncrypted = input.destinationType === 'bank' ? encryptSensitiveValue(normalizeAccountNumber(input.accountNumber ?? decryptSensitiveValue(existing.account_number_encrypted) ?? '')) : null;
-  const mobileEncrypted = input.destinationType === 'mobile_money' ? encryptSensitiveValue(normalizeMobileNumber(input.mobile ?? decryptSensitiveValue(existing.mobile_encrypted) ?? '')) : null;
-  const maskedAccount = input.destinationType === 'bank' ? maskValue(normalizeAccountNumber(input.accountNumber ?? decryptSensitiveValue(existing.account_number_encrypted) ?? '')) : maskValue(normalizeMobileNumber(input.mobile ?? decryptSensitiveValue(existing.mobile_encrypted) ?? ''));
+  const mobileEncrypted = input.destinationType === 'mobile_money' ? encryptSensitiveValue(normalizePayChanguMobile(input.mobile ?? decryptSensitiveValue(existing.mobile_encrypted) ?? '')) : null;
+  const maskedAccount = input.destinationType === 'bank' ? maskValue(normalizeAccountNumber(input.accountNumber ?? decryptSensitiveValue(existing.account_number_encrypted) ?? '')) : maskValue(normalizePayChanguMobile(input.mobile ?? decryptSensitiveValue(existing.mobile_encrypted) ?? ''));
 
   db.transaction(() => {
     if (isDefault) db.prepare('UPDATE seller_payout_accounts SET is_default = 0, updated_at = ? WHERE seller_uid = ? AND id <> ?').run(now, existing.seller_uid, existing.id);
@@ -101,13 +101,13 @@ export function createDestinationRecord(input: { sellerId: string; destinationTy
   const db = getPaymentDb();
   const id = randomUUID();
   const now = new Date().toISOString();
-  const targetValue = input.destinationType === 'bank' ? normalizeAccountNumber(input.accountNumber ?? '') : normalizeMobileNumber(input.mobile ?? '');
+  const targetValue = input.destinationType === 'bank' ? normalizeAccountNumber(input.accountNumber ?? '') : normalizePayChanguMobile(input.mobile ?? '');
   const fingerprint = buildDestinationFingerprint({ sellerId: input.sellerId, destinationType: input.destinationType, providerName: input.providerName, providerRefId: input.providerRefId, currency: input.currency, targetValue });
   const duplicate = findDestinationDuplicate(input.sellerId, fingerprint);
   if (duplicate) return normalizeDuplicateFingerprintRow(duplicate, input);
   const accountNumberEncrypted = input.destinationType === 'bank' ? encryptSensitiveValue(normalizeAccountNumber(input.accountNumber ?? '')) : null;
-  const mobileEncrypted = input.destinationType === 'mobile_money' ? encryptSensitiveValue(normalizeMobileNumber(input.mobile ?? '')) : null;
-  const maskedAccount = input.destinationType === 'bank' ? maskValue(normalizeAccountNumber(input.accountNumber ?? '')) : maskValue(normalizeMobileNumber(input.mobile ?? ''));
+  const mobileEncrypted = input.destinationType === 'mobile_money' ? encryptSensitiveValue(normalizePayChanguMobile(input.mobile ?? '')) : null;
+  const maskedAccount = input.destinationType === 'bank' ? maskValue(normalizeAccountNumber(input.accountNumber ?? '')) : maskValue(normalizePayChanguMobile(input.mobile ?? ''));
 
   try {
     db.transaction(() => {
@@ -138,13 +138,13 @@ export function updateDestinationRecord(existing: SellerPayoutDestinationRow, up
   const accountName = updates.accountName ?? existing.account_name;
   const accountNumber = destinationType === 'bank' ? (updates.accountNumber ?? decryptSensitiveValue(existing.account_number_encrypted) ?? '') : null;
   const mobile = destinationType === 'mobile_money' ? (updates.mobile ?? decryptSensitiveValue(existing.mobile_encrypted) ?? '') : null;
-  const targetValue = destinationType === 'bank' ? normalizeAccountNumber(accountNumber) : normalizeMobileNumber(mobile);
+  const targetValue = destinationType === 'bank' ? normalizeAccountNumber(accountNumber) : normalizePayChanguMobile(mobile);
   const fingerprint = buildDestinationFingerprint({ sellerId: existing.seller_uid, destinationType, providerName, providerRefId, currency, targetValue });
   const duplicate = findDestinationDuplicate(existing.seller_uid, fingerprint, existing.id);
   if (duplicate) return rowToSellerPayoutDestination(duplicate);
   const accountNumberEncrypted = destinationType === 'bank' ? encryptSensitiveValue(normalizeAccountNumber(accountNumber)) : null;
-  const mobileEncrypted = destinationType === 'mobile_money' ? encryptSensitiveValue(normalizeMobileNumber(mobile)) : null;
-  const maskedAccount = destinationType === 'bank' ? maskValue(normalizeAccountNumber(accountNumber)) : maskValue(normalizeMobileNumber(mobile));
+  const mobileEncrypted = destinationType === 'mobile_money' ? encryptSensitiveValue(normalizePayChanguMobile(mobile)) : null;
+  const maskedAccount = destinationType === 'bank' ? maskValue(normalizeAccountNumber(accountNumber)) : maskValue(normalizePayChanguMobile(mobile));
   const isDefault = updates.isDefault ?? existing.is_default === 1;
   const shouldResetVerification = fingerprint !== existing.destination_fingerprint;
 

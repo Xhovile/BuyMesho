@@ -4,9 +4,11 @@ export * from './payoutRoutes.helpers.core.js';
 export {
   addDestinationEvent,
   createDestinationRecord,
-  findDestinationByIdPublic as findDestinationById,
   findDestinationDuplicate,
-  listSellerDestinations,
   updateDestinationRecord,
 } from './payoutRoutes.helpers.destinations.js';
+export {
+  findDestinationByIdPublic as findDestinationById,
+  listSellerDestinations,
+} from './payoutRoutes.helpers.destination-queries.js';
 export { listSellerPayoutOperationalView } from './payoutRoutes.helpers.operational.js';
