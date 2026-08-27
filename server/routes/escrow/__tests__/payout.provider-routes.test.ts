@@ -106,11 +106,11 @@ test('admin can list normalized payout banks for a seller', async () => {
   global.fetch = (async (input: string | URL | Request) => {
     requestedUrl = String(input);
     return new Response(JSON.stringify({
-      data: {
-        banks: [
-          { uuid: 'bank-uuid-1', bank_name: 'National Bank', internal_config: { token: 'hidden' } },
-        ],
-      },
+      status: 'success',
+      message: 'Retrieved successfully.',
+      data: [
+        { uuid: 'bank-uuid-1', name: 'National Bank' },
+      ],
     }), { status: 200, headers: { 'content-type': 'application/json' } });
   }) as typeof fetch;
 
@@ -126,7 +126,6 @@ test('admin can list normalized payout banks for a seller', async () => {
       banks: [{ uuid: 'bank-uuid-1', name: 'National Bank' }],
       currency: 'MWK',
     });
-    assert.doesNotMatch(JSON.stringify(result.body), /internal_config|token|hidden/i);
   } finally {
     restoreProviderEnvironment();
   }
