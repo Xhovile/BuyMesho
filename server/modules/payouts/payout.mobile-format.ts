@@ -15,5 +15,5 @@ export function normalizePayChanguMobile(value: unknown): string {
   if (digits.length === 10 && digits.startsWith('0')) return digits.slice(1);
   if (digits.length === 12 && digits.startsWith('265')) return digits.slice(3);
 
-  throw new Error('mobile must be a valid Malawi number for PayChangu payout');
+  throw new Error('PayChangu mobile payout requires a valid Malawi mobile number with nine digits');
 }
