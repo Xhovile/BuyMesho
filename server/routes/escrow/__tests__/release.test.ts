@@ -80,11 +80,8 @@ function mockPayChanguFetch(): CapturedRequest[] {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     const headers = new Headers(init?.headers);
     const method = init?.method ?? 'GET';
-
     const parsedUrl = new URL(url);
 
-    // Forward any non-PayChangu requests (e.g., calls to the local test server)
-    // to the original fetch implementation so tests can contact the server.
     const host = parsedUrl.hostname || '';
     if (!host.includes('paychangu') && !host.includes('api.paychangu.com')) {
       return originalFetch(input, init);
@@ -109,10 +106,7 @@ function mockPayChanguFetch(): CapturedRequest[] {
       });
     }
 
-    if (
-      method === 'POST' &&
-      parsedUrl.pathname === '/mobile-money/payouts/initialize'
-    ) {
+    if (method === 'POST' && parsedUrl.pathname === '/mobile-money/payouts/initialize') {
       return new Response(JSON.stringify({
         status: 'success',
         data: {
@@ -128,10 +122,7 @@ function mockPayChanguFetch(): CapturedRequest[] {
       });
     }
 
-    if (
-      method === 'POST' &&
-      parsedUrl.pathname === '/direct-charge/payouts/initialize'
-    ) {
+    if (method === 'POST' && parsedUrl.pathname === '/direct-charge/payouts/initialize') {
       return new Response(JSON.stringify({
         status: 'success',
         data: {
@@ -201,7 +192,7 @@ function countPayoutsForOrder(orderId: string): number {
   return row.count;
 }
 
-test('release endpoint creates a pending-settlement payout candidate without immediate PayChangu dispatch', async () => {
+test('release endpoint immediately dispatches a payout to PayChangu', async () => {
   clearReleasePayoutState();
   useDefaultPayChanguEnv();
   const requests = mockPayChanguFetch();
@@ -252,29 +243,6 @@ test('release endpoint creates a pending-settlement payout candidate without imm
         providerStatus?: string | null;
         requestedBy?: string;
       };
-      payoutEligibility?: { eligible?: boolean; reason?: string };
-      payoutDispatch?: {
-        reasonCode?: string | null;
-        reason?: string;
-        nextAction?: string;
-        attempt?: {
-          id?: string;
-          attemptNo?: number;
-          provider?: string;
-          providerChargeId?: string;
-          providerReference?: string;
-          providerTransactionId?: string | null;
-          status?: string;
-        } | null;
-        execution?: {
-          provider?: string;
-          providerChargeId?: string;
-          providerReference?: string;
-          providerTransactionId?: string | null;
-          status?: string;
-          processedAt?: string;
-        } | null;
-      };
     };
 
     const releaseEntry = body.escrow?.entries?.find((entry) => entry.entryType === 'release');
@@ -289,19 +257,25 @@ test('release endpoint creates a pending-settlement payout candidate without imm
     assert.equal(body.payout?.releaseEntryId, releaseEntry?.id, 'payout should link to the release ledger entry');
     assert.equal(body.payout?.amount, 1410, 'payout should use the server-side net payout formula after payout fee');
     assert.equal(body.payout?.currency, 'MWK', 'payout should use the escrow currency');
-    assert.equal(body.payout?.status, 'pending_settlement', 'payout should wait for PayChangu settlement before dispatch');
-    assert.equal(body.payout?.provider, 'paychangu', 'payout should be prepared for PayChangu');
-    assert.equal(body.payout?.providerStatus, null, 'payout should not have provider status before submission');
+    assert.equal(body.payout?.status, 'pending', 'accepted payout should remain pending while PayChangu processes it');
+    assert.equal(body.payout?.provider, 'paychangu', 'payout should be submitted to PayChangu');
+    assert.equal(body.payout?.providerStatus, 'pending', 'provider status should reflect PayChangu pending response');
     assert.equal(body.payout?.requestedBy, 'buyer-release-payout-1', 'payout should record the releasing buyer as requester');
 
-    assert.equal(body.payoutDispatch?.nextAction, 'awaiting_provider', 'dispatch should report awaiting provider');
-    assert.equal(body.payoutDispatch?.reasonCode, null, 'dispatch should not report an error code');
-    assert.equal(body.payoutDispatch?.attempt, null, 'release should not create a provider attempt before settlement');
-    assert.equal(body.payoutDispatch?.execution, null, 'release should not execute provider payout before settlement');
+    assert.equal(requests.length, 2, 'release should check balance and submit one PayChangu payout');
+    assert.equal(requests[0]?.method, 'GET');
+    assert.equal(new URL(requests[0]?.url ?? '').pathname, '/wallet-balance');
+    assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
+    assert.equal(requests[1]?.method, 'POST');
+    assert.equal(new URL(requests[1]?.url ?? '').pathname, '/mobile-money/payouts/initialize');
+    assert.equal(requests[1]?.authorization, 'Bearer test-secret-key');
+    assert.equal(requests[1]?.body.mobile_money_operator_ref_id, 'airtel-money');
+    assert.equal(requests[1]?.body.mobile, '990000000');
+    assert.equal(requests[1]?.body.amount, '1410');
+    assert.ok(String(requests[1]?.body.charge_id ?? '').length > 0, 'payout request should include a charge_id');
 
-    assert.equal(requests.length, 0, 'release should not call PayChangu before settlement');
-    assert.equal(countPayoutsForOrder(releasePayoutOrderId), 1, 'release should persist exactly one payout candidate');
-    assert.equal(countPayoutAttempts(body.payout?.id ?? ''), 0, 'release should not create a payout attempt before settlement');
+    assert.equal(countPayoutsForOrder(releasePayoutOrderId), 1, 'release should persist exactly one payout');
+    assert.equal(countPayoutAttempts(body.payout?.id ?? ''), 1, 'release should create one provider payout attempt');
 
     const savedPayout = payoutRepository.findByEscrowId(body.escrow?.id ?? '');
     assert.equal(savedPayout?.id, body.payout?.id, 'payout should be persisted for the escrow');
@@ -397,7 +371,6 @@ test('release endpoint rejects sellers without releasing escrow or creating payo
     clearReleasePayoutState();
   }
 });
-
 
 test('refund endpoint records a pre-release escrow refund ledger entry and zeroes balance', async () => {
   clearReleasePayoutState();
@@ -514,7 +487,6 @@ test('refund endpoint requires admin and a reason', async () => {
   }
 });
 
-
 test('refund endpoint cancels manual payouts linked to the order escrow before refunding', async () => {
   clearReleasePayoutState();
 
@@ -522,7 +494,7 @@ test('refund endpoint cancels manual payouts linked to the order escrow before r
   const createdOrder = serverOrderService.create({
     id: refundOrderId,
     buyerId: 'buyer-refund-before-release-1',
-    sellerId,
+    sellerId: sellerId,
     source: 'listing',
     status: 'in_escrow',
     currency: 'MWK',
