@@ -1,3 +1,0 @@
-# Payout fix notes
-
-Temporary diagnostic note for the payout investigation. The production 99 MWK payout reached PayChangu and was rejected because the mobile number was not nine digits. The destination record itself is verified/active. The payout adapter currently forwards `input.mobile` unchanged; the destination normalization helper currently stores a Malawi mobile in a 12-digit `265...` form. The fix should normalize the outbound mobile-money payout value to the nine-digit subscriber format expected by PayChangu and add regression tests. Do not modify production payout rows until the code fix is deployed and verified.
