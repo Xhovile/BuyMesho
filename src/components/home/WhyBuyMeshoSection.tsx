@@ -35,17 +35,19 @@ export default function WhyBuyMeshoSection({
     offset: ["start 85%", "end 35%"],
   });
 
-  const card1Y = useTransform(scrollYProgress, [0, 0.32], [cardAnimations[0].distance, 0]);
-  const card2Y = useTransform(scrollYProgress, [0.16, 0.5], [cardAnimations[1].distance, 0]);
-  const card3Y = useTransform(scrollYProgress, [0.32, 0.68], [cardAnimations[2].distance, 0]);
-  const card1Scale = useTransform(scrollYProgress, [0, 0.32], [0.965, 1]);
-  const card2Scale = useTransform(scrollYProgress, [0.16, 0.5], [0.965, 1]);
-  const card3Scale = useTransform(scrollYProgress, [0.32, 0.68], [0.965, 1]);
-  const card1Rotate = useTransform(scrollYProgress, [0, 0.32], [cardAnimations[0].rotate - 1, cardAnimations[0].rotate]);
-  const card2Rotate = useTransform(scrollYProgress, [0.16, 0.5], [cardAnimations[1].rotate - 1, cardAnimations[1].rotate]);
-  const card3Rotate = useTransform(scrollYProgress, [0.32, 0.68], [cardAnimations[2].rotate - 1, cardAnimations[2].rotate]);
-  const sellerCallY = useTransform(scrollYProgress, [0.62, 1], [90, 0]);
-  const sellerCallScale = useTransform(scrollYProgress, [0.62, 1], [0.98, 1]);
+  // Keep the full sequence inside the early/middle part of the scroll range so
+  // it completes sooner on desktop without adding extra scroll handlers.
+  const card1Y = useTransform(scrollYProgress, [0, 0.22], [cardAnimations[0].distance, 0]);
+  const card2Y = useTransform(scrollYProgress, [0.1, 0.38], [cardAnimations[1].distance, 0]);
+  const card3Y = useTransform(scrollYProgress, [0.22, 0.55], [cardAnimations[2].distance, 0]);
+  const card1Scale = useTransform(scrollYProgress, [0, 0.22], [0.97, 1]);
+  const card2Scale = useTransform(scrollYProgress, [0.1, 0.38], [0.97, 1]);
+  const card3Scale = useTransform(scrollYProgress, [0.22, 0.55], [0.97, 1]);
+  const card1Rotate = useTransform(scrollYProgress, [0, 0.22], [cardAnimations[0].rotate - 1, cardAnimations[0].rotate]);
+  const card2Rotate = useTransform(scrollYProgress, [0.1, 0.38], [cardAnimations[1].rotate - 1, cardAnimations[1].rotate]);
+  const card3Rotate = useTransform(scrollYProgress, [0.22, 0.55], [cardAnimations[2].rotate - 1, cardAnimations[2].rotate]);
+  const sellerCallY = useTransform(scrollYProgress, [0.48, 0.75], [80, 0]);
+  const sellerCallScale = useTransform(scrollYProgress, [0.48, 0.75], [0.985, 1]);
 
   return (
     <div ref={flowRef}>
