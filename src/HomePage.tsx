@@ -149,7 +149,7 @@ export default function HomePage() {
     : featuredSections;
 
   return (
-    <div className="min-h-screen bg-zinc-100 pb-20 text-zinc-900">
+    <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <FloatingCartButton isLoggedIn={controller.isLoggedIn} />
       <HomeHeader controller={controller} />
       <HomeMobileDrawer controller={controller} />
