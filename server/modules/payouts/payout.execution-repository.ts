@@ -200,6 +200,10 @@ export async function reserveRetryAttempt(input: {
     if (!currentRow) throw new Error('Payout not found');
     const current = rowToPayout(currentRow);
 
+    if (current.status === 'processing') {
+      throw new Error('Payout is already processing');
+    }
+
     const attemptResult = await client.query<{ max_attempt_no: number }>(
       `SELECT COALESCE(MAX(attempt_no), 0) AS max_attempt_no FROM payout_attempts WHERE payout_id = $1`,
       [input.payoutId],
@@ -209,15 +213,13 @@ export async function reserveRetryAttempt(input: {
     const id = randomUUID();
     const now = new Date().toISOString();
 
-    if (current.status !== 'processing') {
-      await updatePayoutStatus(input.payoutId, 'processing', {
-        provider: input.provider,
-        providerChargeId,
-        providerStatus: 'processing',
-        approvedBy: input.actorType === 'admin' ? input.actorId ?? null : null,
-        sentAt: now,
-      }, client);
-    }
+    await updatePayoutStatus(input.payoutId, 'processing', {
+      provider: input.provider,
+      providerChargeId,
+      providerStatus: 'processing',
+      approvedBy: input.actorType === 'admin' ? input.actorId ?? null : null,
+      sentAt: now,
+    }, client);
 
     await client.query(
       `INSERT INTO payout_attempts
