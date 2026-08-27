@@ -3,7 +3,7 @@ import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import { serverOrderService } from '../../modules/orders/order.service.js';
 import { orderRepository } from '../../modules/orders/order.repository.js';
 import { notifyOrderFulfilled } from '../../modules/notifications/order-fulfilled.notification.js';
-import { payoutRepository, payoutService } from '../../modules/payouts/payout.service.js';
+import { payoutService } from '../../modules/payouts/payout.service.js';
 import { calculatePayoutFormula } from '../../modules/payouts/payout.policy.js';
 import { assertEscrowReleaseReadiness } from '../../modules/escrow/escrow.rules.js';
 import { getPaymentDb } from '../../postgresCompat.js';
@@ -56,31 +56,6 @@ function getRequestedDestinationAccountId(body: unknown): string | null {
   if (typeof candidate !== 'string') return null;
   const trimmed = candidate.trim();
   return trimmed.length > 0 ? trimmed : null;
-}
-
-function hasPastSettlementMidnightTPlusOne(referenceAt: string | null | undefined): boolean {
-  if (!referenceAt) return false;
-
-  const referenceDate = new Date(referenceAt);
-  if (Number.isNaN(referenceDate.getTime())) return false;
-
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Africa/Blantyre',
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-  }).formatToParts(referenceDate);
-
-  const year = Number(parts.find((part) => part.type === 'year')?.value);
-  const month = Number(parts.find((part) => part.type === 'month')?.value);
-  const day = Number(parts.find((part) => part.type === 'day')?.value);
-
-  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-    return false;
-  }
-
-  const settlementAt = Date.UTC(year, month - 1, day + 1, 6, 0, 0, 0);
-  return Date.now() >= settlementAt;
 }
 
 function releaseDebug(stage: string, details?: Record<string, unknown>): void {
@@ -178,7 +153,6 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
 
       const result = await withTransaction(async (client) => {
         releaseDebug('transaction:begin');
-        releaseDebug('releaseToSellerEarningsAsync:start');
         const released = await escrowRepository.releaseToSellerEarningsAsync(
           { orderId, releasedBy: requesterId, reference: releaseReference },
           client,
@@ -191,7 +165,6 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           throw new Error('Escrow release succeeded but payout is not eligible');
         }
 
-        releaseDebug('destinationLookup:start');
         const destination = await resolveVerifiedPayoutDestination(access.order.sellerId, client);
         releaseDebug('destinationLookup:end', { found: Boolean(destination), destinationId: destination?.id });
         if (!destination) {
@@ -217,7 +190,6 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           currency: released.releaseEntry.currency,
         });
 
-        releaseDebug('createEligiblePayoutCandidateAsync:start', { amount: payoutFormula.sellerReceivesAmount });
         const payout = await payoutService.createEligiblePayoutCandidateAsync({
           sellerId: access.order.sellerId,
           orderId,
@@ -244,26 +216,15 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
             releaseEntryId: released.releaseEntry.id,
             destinationAccountId: destination.id,
             requestedDestinationAccountId,
-            settlementReferenceAt: released.releaseEntry.createdAt,
+            payoutRetryWindowStartedAt: released.releaseEntry.createdAt,
           },
         }, client);
-        releaseDebug('createEligiblePayoutCandidateAsync:end', { payoutId: payout.id, status: payout.status });
 
-        const settlementReferenceAt =
-          access.order.paidAt ??
-          access.order.paymentCapturedAt ??
-          access.order.capturedAt ??
-          released.releaseEntry.createdAt;
-        const settlementElapsed = hasPastSettlementMidnightTPlusOne(settlementReferenceAt);
-
-        releaseDebug('setStatusAsync:start', { from: access.order.status, to: 'fulfilled' });
         const orderUpdated = await serverOrderService.setStatusAsync(orderId, 'fulfilled', client);
-        releaseDebug('setStatusAsync:end', { updated: Boolean(orderUpdated) });
         if (!orderUpdated) {
           console.warn(`[escrow] release: order ${orderId} not found when updating status to fulfilled`);
         }
 
-        releaseDebug('transaction:callback:end');
         return {
           escrow: released.escrow,
           payout,
@@ -276,8 +237,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           },
           payoutFormula,
           releaseEntryId: released.releaseEntry.id,
-          settlementReferenceAt,
-          settlementElapsed,
+          releaseTimestamp: released.releaseEntry.createdAt,
         };
       });
 
@@ -287,26 +247,13 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         return res.status(404).json({ error: 'Escrow not found' });
       }
 
-      let executionResult: Awaited<ReturnType<typeof payoutService.executePayout>> | null = null;
-      let finalPayout = result.payout;
+      await payoutService.executePayout({
+        payoutId: result.payout.id,
+        actorType: req.user?.is_admin ? 'admin' : 'system',
+        actorId: requesterId,
+      });
 
-      if (result.settlementElapsed) {
-        const queuedPayout = payoutRepository.updateStatus(result.payout.id, 'queued', {
-          provider: 'paychangu',
-          providerStatus: 'queued',
-        });
-
-        if (queuedPayout) {
-          finalPayout = queuedPayout;
-        }
-
-        executionResult = await payoutService.executePayout({
-          payoutId: result.payout.id,
-          actorType: req.user?.is_admin ? 'admin' : 'system',
-          actorId: requesterId,
-        });
-        finalPayout = executionResult.payout ?? finalPayout;
-      }
+      const finalPayout = payoutService.findById(result.payout.id) ?? result.payout;
 
       if (result.orderUpdated) {
         await notifyOrderFulfilled(result.orderUpdated);
@@ -318,20 +265,19 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         eventType: 'payout_released',
         actorType: req.user?.is_admin ? 'admin' : 'buyer',
         actorId: requesterId,
-        note: 'Escrow release created payout candidate',
+        note: 'Escrow release created and immediately submitted payout candidate',
         payload: {
           escrowId: result.escrow.id,
           releaseEntryId: result.releaseEntryId,
+          releaseTimestamp: result.releaseTimestamp,
           payoutStatus: finalPayout.status,
           payoutAmount: finalPayout.amount,
-          payoutStatusReason: result.settlementElapsed
-            ? executionResult?.reasonCode ?? 'settlement_ready_immediate_dispatch'
-            : 'pending_paychangu_settlement_until_6_am_t_plus_1',
           payoutFormula: result.payoutFormula,
           destinationAccountId: result.destination.id,
           requestedDestinationAccountId: result.requestedDestinationAccountId,
           destinationValidated: true,
-          settlementReferenceAt: result.settlementReferenceAt,
+          automaticRetryWindowHours: 48,
+          automaticRetryIntervalHours: 3,
         },
       });
 
@@ -349,23 +295,6 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           verified: true,
           active: true,
         },
-        payoutDispatch: result.settlementElapsed
-          ? {
-              payout: finalPayout,
-              attempt: executionResult?.attempt ?? null,
-              execution: executionResult?.execution ?? null,
-              reasonCode: executionResult?.reasonCode ?? null,
-              reason: executionResult?.reason ?? 'Payout submitted immediately after the 6 a.m. T+1 settlement window.',
-              nextAction: executionResult?.nextAction ?? 'none',
-            }
-          : {
-              payout: finalPayout,
-              attempt: null,
-              execution: null,
-              reasonCode: null,
-              reason: 'Payout will be submitted after the next 6 a.m. T+1 settlement window.',
-              nextAction: 'awaiting_provider',
-            },
       });
     } catch (error) {
       releaseDebug('route:error', { error: error instanceof Error ? error.message : String(error) });
