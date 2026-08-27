@@ -1,14 +1,6 @@
-import { ArrowRight } from "lucide-react";
+import { navigateToLoginWithReturnPath, navigateToPath, EXPLORE_PATH, MARKET_CHIP_PATHS } from "./lib/appNavigation";
 import { useEffect, useRef, useState } from "react";
 
-import {
-  ABOUT_PATH,
-  EXPLORE_PATH,
-  MARKET_CHIP_PATHS,
-  SIGNUP_PATH,
-  navigateToLoginWithReturnPath,
-  navigateToPath,
-} from "./lib/appNavigation";
 import AppFooter from "./components/AppFooter";
 import FeedbackModal from "./components/FeedbackModal";
 import FloatingCartButton from "./components/FloatingCartButton";
@@ -259,60 +251,12 @@ export default function HomePage() {
           </div>
         </section>
 
-        <WhyBuyMeshoSection />
-
-        <section className="mx-auto max-w-7xl px-4 pt-10 pb-16">
-          <div className="rounded-[2rem] bg-zinc-900 p-6 text-white shadow-xl shadow-zinc-400/20 sm:p-8 lg:p-10">
-            <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Seller call</p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Are you ready to sell?</h2>
-              </div>
-
-              <div className="flex flex-wrap gap-3 lg:justify-end">
-                <button
-                  type="button"
-                  onClick={() => navigateToPath(ABOUT_PATH)}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-extrabold text-white hover:bg-white/10"
-                >
-                  About BuyMesho
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-
-                {controller.isLoggedIn ? (
-                  <button
-                    type="button"
-                    onClick={controller.handleStartSelling}
-                    disabled={controller.isSellerProfileLoading}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {controller.isSellerProfileLoading ? "Loading..." : controller.isSeller ? "List Item" : "Sell"}
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => navigateToLoginWithReturnPath()}
-                      className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-extrabold text-white hover:bg-white/10"
-                    >
-                      Log in
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => navigateToPath(SIGNUP_PATH)}
-                      className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-extrabold text-white hover:bg-white/10"
-                    >
-                      Sign up
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
+        <WhyBuyMeshoSection
+          isLoggedIn={controller.isLoggedIn}
+          isSeller={controller.isSeller}
+          isSellerProfileLoading={controller.isSellerProfileLoading}
+          onStartSelling={controller.handleStartSelling}
+        />
       </main>
 
       <AppFooter />
