@@ -183,7 +183,7 @@ export default function HomePage() {
         ]}
       />
 
-      <main>
+      <main className="overflow-x-clip">
         <HomeHero onBrowseMarket={() => navigateToPath(EXPLORE_PATH)} />
 
         {controller.error ? (
