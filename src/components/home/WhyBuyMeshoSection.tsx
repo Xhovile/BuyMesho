@@ -49,7 +49,7 @@ export default function WhyBuyMeshoSection({
 
   return (
     <div ref={flowRef}>
-      <section className="relative left-1/2 -mt-8 w-screen overflow-hidden bg-[#071b2d] px-4 py-10 text-white sm:py-12 lg:py-14">
+      <section className="relative left-1/2 -mt-8 w-screen -translate-x-1/2 overflow-hidden bg-[#071b2d] px-4 py-10 text-white sm:py-12 lg:py-14">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(239,68,68,0.13),transparent_26%),radial-gradient(circle_at_84%_24%,rgba(59,130,246,0.12),transparent_28%),radial-gradient(circle_at_65%_88%,rgba(245,158,11,0.1),transparent_26%),linear-gradient(135deg,rgba(255,255,255,0.025),transparent_40%,rgba(255,255,255,0.015))]" aria-hidden="true" />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-16 -translate-y-1/2 bg-gradient-to-b from-transparent via-[#071b2d]/55 to-[#071b2d] blur-md" />
         <div className="pointer-events-none absolute left-[8%] top-[-8rem] h-72 w-72 rounded-full bg-red-500/10 blur-3xl" aria-hidden="true" />
