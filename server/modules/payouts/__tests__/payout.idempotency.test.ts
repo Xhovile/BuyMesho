@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import '../payout.schema.js';
 import { PayoutRepository } from '../payout.repository.js';
+import { reserveRetryAttempt } from '../payout.execution-repository.js';
 import { getPaymentDb } from '../../../postgresCompat.js';
 
 const repository = new PayoutRepository();
@@ -14,7 +15,7 @@ function clearState(): void {
   db.prepare('DELETE FROM sellers WHERE uid = ?').run('seller_phase3_idempotency_1');
 }
 
-test('payout cannot be moved to processing twice while a provider attempt is active', () => {
+test('payout cannot be processed twice while a provider attempt is active', async () => {
   clearState();
   const db = getPaymentDb();
 
@@ -49,14 +50,35 @@ test('payout cannot be moved to processing twice while a provider attempt is act
       snapshot: null,
     });
 
-    assert.ok(repository.updateStatus(payout.id, 'processing'));
-    assert.throws(
-      () => repository.updateStatus(payout.id, 'processing'),
-      /Illegal payout state transition: processing -> processing/i,
+    const firstAttempt = await reserveRetryAttempt({
+      payoutId: payout.id,
+      provider: 'paychangu',
+      actorType: 'system',
+      actorId: 'system',
+    });
+
+    assert.equal(firstAttempt.attemptNo, 1);
+    assert.ok(firstAttempt.providerChargeId);
+
+    await assert.rejects(
+      () => reserveRetryAttempt({
+        payoutId: payout.id,
+        provider: 'paychangu',
+        actorType: 'system',
+        actorId: 'system',
+      }),
+      /Payout is already processing/i,
     );
+
+    const attempts = db
+      .prepare('SELECT attempt_no, status FROM payout_attempts WHERE payout_id = ? ORDER BY attempt_no')
+      .all(payout.id) as Array<{ attempt_no: number; status: string }>;
+    assert.equal(attempts.length, 1);
+    assert.deepEqual(attempts[0], { attempt_no: 1, status: 'processing' });
 
     const current = repository.findById(payout.id);
     assert.equal(current?.status, 'processing');
+    assert.equal(current?.providerChargeId, firstAttempt.providerChargeId);
   } finally {
     clearState();
   }
