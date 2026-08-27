@@ -9,7 +9,7 @@ import type { AppLegacyState } from "../hooks/useAppLegacyState";
 
 export default function AppLegacyPage(props: AppLegacyState) {
   return (
-    <div className="min-h-screen pb-20 bg-zinc-100">
+    <div className="min-h-screen bg-zinc-100">
       <Header
         searchValue={props.search}
         onSearch={props.setSearch}
