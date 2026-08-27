@@ -10,7 +10,7 @@ import {
 
 function latestAttemptForPayout(payoutId: string): Record<string, unknown> | undefined {
   return getPaymentDb().prepare(
-    `SELECT id, attempt_no, provider, provider_charge_id, provider_ref_id, provider_transaction_id
+    `SELECT id, attempt_no, provider, provider_charge_id, provider_transaction_id
      FROM payout_attempts
      WHERE payout_id = ?
      ORDER BY attempt_no DESC, created_at DESC
@@ -48,7 +48,6 @@ export async function reconcilePayoutStatusFlow(
   const chargeId =
     (row.provider_charge_id as string | null) ??
     (latestAttempt?.provider_charge_id as string | null) ??
-    (latestAttempt?.provider_ref_id as string | null) ??
     (latestAttempt?.provider_transaction_id as string | null) ??
     null;
 
