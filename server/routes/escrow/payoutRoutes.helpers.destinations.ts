@@ -28,6 +28,20 @@ function findDestinationById(destinationId: string): SellerPayoutDestinationRow 
   return db.prepare('SELECT * FROM seller_payout_accounts WHERE id = ? LIMIT 1').get(destinationId) as SellerPayoutDestinationRow | undefined;
 }
 
+export function findDestinationByIdPublic(destinationId: string): SellerPayoutDestinationRow | undefined {
+  return findDestinationById(destinationId);
+}
+
+export function listSellerDestinations(sellerId: string): SellerPayoutDestinationRecord[] {
+  const db = getPaymentDb();
+  const rows = db.prepare(
+    `SELECT * FROM seller_payout_accounts
+     WHERE seller_uid = ?
+     ORDER BY is_default DESC, created_at DESC`,
+  ).all(sellerId) as SellerPayoutDestinationRow[];
+  return rows.map(rowToSellerPayoutDestination);
+}
+
 export function findDestinationDuplicate(sellerId: string, fingerprint: string, excludeId?: string): SellerPayoutDestinationRow | undefined {
   const db = getPaymentDb();
   const query = excludeId
