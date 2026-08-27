@@ -1,5 +1,5 @@
-import { type ReactNode } from "react";
-import { CreditCard, Webhook, X } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Check, Copy, CreditCard, Webhook, X } from "lucide-react";
 
 export type PaymentRow = {
   id: string;
@@ -156,6 +156,75 @@ function Row({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
+function RawWebhookViewer({ hook }: { hook: WebhookEventRow }) {
+  const [open, setOpen] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+
+  const rawPayload = hook.payload ?? "";
+  const displayedPayload = (() => {
+    if (!rawPayload) return "—";
+    try {
+      return JSON.stringify(JSON.parse(rawPayload), null, 2);
+    } catch {
+      return rawPayload;
+    }
+  })();
+
+  const handleCopy = async () => {
+    if (!rawPayload) return;
+    try {
+      await navigator.clipboard.writeText(rawPayload);
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 1500);
+    } catch {
+      setCopyState("failed");
+      window.setTimeout(() => setCopyState("idle"), 1500);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm">
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-black text-zinc-900">{toText(hook.event_type)}</p>
+        <StatusPill label={Number(hook.signature_valid) === 1 ? "Valid" : "Invalid"} tone={Number(hook.signature_valid) === 1 ? "emerald" : "rose"} />
+      </div>
+      <p className="mt-2 break-all font-mono text-xs text-zinc-500">{toText(hook.reference)}</p>
+      <p className="mt-2 text-xs text-zinc-500">{formatDate(hook.created_at)}</p>
+
+      {rawPayload ? (
+        <div className="mt-3 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
+            <button
+              type="button"
+              onClick={() => setOpen((value) => !value)}
+              aria-expanded={open}
+              className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-200"
+            >
+              <Webhook className="h-3.5 w-3.5 text-zinc-400" />
+              {open ? "Hide raw webhook" : "View raw webhook"}
+            </button>
+            <button
+              type="button"
+              onClick={handleCopy}
+              title="Copy raw webhook JSON"
+              aria-label="Copy raw webhook JSON"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-bold text-zinc-200 transition hover:bg-white/10"
+            >
+              {copyState === "copied" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy"}
+            </button>
+          </div>
+          {open ? (
+            <pre className="max-h-96 overflow-auto whitespace-pre p-4 text-[11px] leading-5 text-zinc-100 [scrollbar-width:thin]">{displayedPayload}</pre>
+          ) : null}
+        </div>
+      ) : (
+        <p className="mt-3 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-500">No raw payload was stored for this webhook event.</p>
+      )}
+    </div>
+  );
+}
+
 export default function AdminPaymentDetailsDrawer({ payment, hooks, onClose }: { payment: PaymentRow; hooks: WebhookEventRow[]; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[90] flex bg-zinc-900/50 backdrop-blur-sm" onClick={onClose}>
@@ -216,16 +285,7 @@ export default function AdminPaymentDetailsDrawer({ payment, hooks, onClose }: {
               <h4 className="text-base font-black">Webhook history for this reference</h4>
             </div>
             <div className="mt-4 space-y-3">
-              {hooks.length ? hooks.map((hook) => (
-                <div key={hook.id} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-black text-zinc-900">{toText(hook.event_type)}</p>
-                    <StatusPill label={Number(hook.signature_valid) === 1 ? "Valid" : "Invalid"} tone={Number(hook.signature_valid) === 1 ? "emerald" : "rose"} />
-                  </div>
-                  <p className="mt-2 break-all font-mono text-xs text-zinc-500">{toText(hook.reference)}</p>
-                  <p className="mt-2 text-xs text-zinc-500">{formatDate(hook.created_at)}</p>
-                </div>
-              )) : <p className="text-sm text-zinc-500">No webhook rows match this reference.</p>}
+              {hooks.length ? hooks.map((hook) => <RawWebhookViewer key={hook.id} hook={hook} />) : <p className="text-sm text-zinc-500">No webhook rows match this reference.</p>}
             </div>
           </section>
         </div>
