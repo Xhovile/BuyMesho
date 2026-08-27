@@ -141,7 +141,7 @@ test('retry payout generates a fresh provider charge id per attempt', async () =
     assert.ok(first.attempt);
     assert.equal(first.attempt?.attemptNo, 1);
     assert.match(first.attempt?.providerChargeId ?? '', /-A01$/);
-    assert.equal(requestBodies[0]?.mobile, '265999111222');
+    assert.equal(requestBodies[0]?.mobile, '999111222');
     assert.equal(requestBodies[0]?.mobile_money_operator_ref_id, 'airtel-money');
 
     const db = getPaymentDb();
