@@ -49,14 +49,33 @@ test('payout cannot be moved to processing twice while a provider attempt is act
       snapshot: null,
     });
 
-    assert.ok(repository.updateStatus(payout.id, 'processing'));
+    const firstAttempt = repository.reserveRetryAttempt({
+      payoutId: payout.id,
+      provider: 'paychangu',
+      actorType: 'system',
+      actorId: 'system',
+    });
+
+    assert.equal(firstAttempt.attemptNo, 1);
+    assert.ok(firstAttempt.providerChargeId);
+
     assert.throws(
-      () => repository.updateStatus(payout.id, 'processing'),
-      /already processing/i,
+      () => repository.reserveRetryAttempt({
+        payoutId: payout.id,
+        provider: 'paychangu',
+        actorType: 'system',
+        actorId: 'system',
+      }),
+      /Illegal payout state transition: processing -> processing/i,
     );
+
+    const attempts = db.prepare('SELECT attempt_no, status FROM payout_attempts WHERE payout_id = ? ORDER BY attempt_no').all(payout.id) as Array<{ attempt_no: number; status: string }>;
+    assert.equal(attempts.length, 1);
+    assert.deepEqual(attempts[0], { attempt_no: 1, status: 'processing' });
 
     const current = repository.findById(payout.id);
     assert.equal(current?.status, 'processing');
+    assert.equal(current?.providerChargeId, firstAttempt.providerChargeId);
   } finally {
     clearState();
   }
