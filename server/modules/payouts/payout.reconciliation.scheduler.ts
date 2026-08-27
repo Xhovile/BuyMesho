@@ -158,10 +158,6 @@ export class PayoutReconciliationScheduler {
          p.requested_at,
          p.created_at,
          p.status,
-         p.provider_status,
-         p.provider_charge_id,
-         p.provider_ref_id,
-         p.provider_transaction_id,
          (
            SELECT pa.response_payload
            FROM payout_attempts pa
@@ -170,8 +166,11 @@ export class PayoutReconciliationScheduler {
            LIMIT 1
          ) AS latest_response_payload
        FROM payouts p
-       WHERE p.status = 'failed'
-         AND p.provider = 'paychangu'
+       WHERE p.provider = 'paychangu'
+         AND (
+           p.status = 'failed'
+           OR (p.status = 'held' AND p.failure_reason = 'balance_insufficient')
+         )
        ORDER BY COALESCE(p.requested_at, p.created_at) ASC
        LIMIT ?`,
     ).all(limit) as Array<{
@@ -180,10 +179,6 @@ export class PayoutReconciliationScheduler {
       requested_at: string | null;
       created_at: string;
       status: string;
-      provider_status: string | null;
-      provider_charge_id: string | null;
-      provider_ref_id: string | null;
-      provider_transaction_id: string | null;
       latest_response_payload: unknown;
     }>;
 
@@ -195,7 +190,6 @@ export class PayoutReconciliationScheduler {
       const accepted = providerAccepted(row.latest_response_payload);
 
       if (accepted) {
-        // A provider-accepted payout must be tracked/reconciled rather than submitted again.
         await payoutService.reconcilePayoutStatus({ payoutId: row.id, actorType: 'system' });
         continue;
       }
@@ -214,6 +208,14 @@ export class PayoutReconciliationScheduler {
             automaticRetryWindowHours: PAYOUT_POLICY.automaticRetryWindowHours,
           },
         });
+        if (row.status !== 'failed') {
+          payoutRepository.updateStatus(row.id, 'failed', {
+            provider: 'paychangu',
+            providerStatus: 'failed',
+            failureReason: 'automatic_retry_window_expired',
+            failedAt: new Date().toISOString(),
+          });
+        }
         continue;
       }
 
