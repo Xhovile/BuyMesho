@@ -10,16 +10,21 @@ export const PAYOUT_POLICY = {
   payChanguCustomerFeeBps: 0,
   reserveCapBps: 600,
   disputeWindowHours: 72,
-  // Allow low-value orders to disburse instead of being held for manual review.
-  // Keep this at 1 (smallest whole-money unit persisted by the current model).
   minimumPayoutAmount: 1,
-  maxRetryCount: 3,
+  // Immediate submission plus retries at 3h, 6h, ... 45h = 16 attempts max.
+  maxRetryCount: 16,
+  automaticRetryIntervalHours: 3,
+  automaticRetryWindowHours: 48,
   launchMode: 'admin_approved' as const,
   retryableFailureCodes: new Set([
     'provider_timeout',
     'provider_unavailable',
     'provider_network_error',
     'provider_rate_limited',
+    'provider_rejected',
+    'provider_authentication_error',
+    'provider_configuration_error',
+    'provider_conflict',
     'balance_insufficient',
   ]),
   nonRetryableFailureCodes: new Set([
@@ -108,9 +113,6 @@ export function calculatePayoutFormula(input: PayoutFormulaInput): PayoutFormula
   const requestedReserveAmount = toFixedMoney(input.reserveAmount ?? 0);
   const reserveAmount = Math.min(requestedReserveAmount, reserveCapAmount);
   const platformFeeAmount = toFixedMoney((grossAmount * PAYOUT_POLICY.platformFeeBps) / 10_000);
-
-  // Customer-paid transaction fees are handled at checkout, not in seller payout math.
-  // Keep this field for compatibility, but it is no longer part of the payout formula.
   const processingFeeAmount = 0;
 
   const amountBeforePayoutFee = Math.max(
@@ -122,8 +124,6 @@ export function calculatePayoutFormula(input: PayoutFormulaInput): PayoutFormula
         manualAdjustmentAmount,
     ),
   );
-  // PayChangu mobile-money transaction fee is withheld from the item total,
-  // alongside BuyMesho's commission, before funds are requested for seller payout.
   const payoutFeeAmount = calculatePayoutFee(grossAmount, input.payoutMethod ?? null);
   const netAmount = Math.max(0, toFixedMoney(amountBeforePayoutFee - payoutFeeAmount));
   const sellerReceivesAmount = netAmount;
