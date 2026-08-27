@@ -1,7 +1,7 @@
-import { type ReactNode } from "react";
-import { CreditCard, Webhook, X } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Check, Copy, Webhook, X } from "lucide-react";
 
-export type PaymentRow = {
+export type AdminPaymentRow = {
   id: string;
   order_id: string;
   provider: string;
@@ -27,7 +27,7 @@ export type PaymentRow = {
   escrow_updated_at: string | null;
 };
 
-export type WebhookEventRow = {
+export type AdminWebhookEventRow = {
   id: number;
   provider: string;
   reference: string | null;
@@ -38,14 +38,6 @@ export type WebhookEventRow = {
 };
 
 type Tone = "zinc" | "emerald" | "amber" | "rose" | "blue";
-type LifecycleState = "done" | "active" | "waiting" | "issue";
-
-type LifecycleStep = {
-  number: number;
-  title: string;
-  detail: string;
-  state: LifecycleState;
-};
 
 const TONE_CLASSES: Record<Tone, string> = {
   zinc: "bg-zinc-100 text-zinc-700 border-zinc-200",
@@ -113,38 +105,8 @@ function escrowTone(status: unknown): Tone {
   return "zinc";
 }
 
-function lifecycleTone(state: LifecycleState): Tone {
-  if (state === "done") return "emerald";
-  if (state === "active") return "blue";
-  if (state === "issue") return "rose";
-  return "zinc";
-}
-
 function StatusPill({ label, tone = "zinc" }: { label: string; tone?: Tone }) {
   return <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${TONE_CLASSES[tone]}`}>{label}</span>;
-}
-
-function buildLifecycleSteps(payment?: PaymentRow | null, hooks: WebhookEventRow[] = []): LifecycleStep[] {
-  const hasPayment = !!payment;
-  const hasCheckout = !!payment?.checkout_url;
-  const hasWebhook = hooks.length > 0;
-  const hasValidWebhook = hooks.some((hook) => Number(hook.signature_valid) === 1);
-  const isPaid = !!payment && (["paid", "captured"].includes(token(payment.payment_status)) || !!payment.paid_at);
-  const isEscrowActive = !!payment && (["in_escrow", "paid"].includes(token(payment.order_status)) || !!payment.escrow_id);
-  const isDelivered = !!payment && token(payment.order_status) === "fulfilled";
-  const isSettled = !!payment && ["released", "refunded"].includes(token(payment.escrow_state));
-  const isDisputed = !!payment && token(payment.escrow_state) === "disputed";
-
-  return [
-    { number: 1, title: "Payment created", detail: hasPayment ? "BuyMesho stored a payment row for this checkout attempt." : "No payment row exists yet.", state: hasPayment ? "done" : "waiting" },
-    { number: 2, title: "Checkout opened", detail: hasCheckout ? "The buyer was sent to the provider checkout URL." : "Waiting for checkout creation.", state: hasCheckout ? "done" : hasPayment ? "active" : "waiting" },
-    { number: 3, title: "Webhook received", detail: hasWebhook ? "PayChangu callback delivery was captured." : "No webhook event has arrived yet.", state: hasWebhook ? "active" : "waiting" },
-    { number: 4, title: "Signature verified", detail: hasValidWebhook ? "At least one webhook signature passed verification." : hasWebhook ? "Webhook arrived, but verification has not passed yet." : "Waiting for a webhook to verify.", state: hasValidWebhook ? "done" : hasWebhook ? "active" : "waiting" },
-    { number: 5, title: "Order confirmed", detail: isPaid ? "The order was marked paid and moved into the confirmed flow." : "The order is still pending confirmation.", state: isPaid ? "done" : "waiting" },
-    { number: 6, title: "Escrow active", detail: isEscrowActive ? "Funds are represented as active escrow for the order." : "Escrow has not started yet.", state: isEscrowActive ? (isDisputed ? "issue" : "active") : "waiting" },
-    { number: 7, title: "Buyer confirmed delivery", detail: isDelivered ? "The order has been marked fulfilled after delivery confirmation." : "Waiting for delivery confirmation.", state: isDelivered ? "done" : "waiting" },
-    { number: 8, title: "Funds released or refunded", detail: isSettled ? (token(payment?.escrow_state) === "released" ? "Funds were released to the seller." : "Funds were refunded to the buyer.") : "Final settlement has not happened yet.", state: token(payment?.escrow_state) === "released" ? "done" : token(payment?.escrow_state) === "refunded" ? "issue" : "waiting" },
-  ];
 }
 
 function Row({ label, value }: { label: string; value: ReactNode }) {
@@ -156,16 +118,95 @@ function Row({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-export default function AdminPaymentDetailsDrawer({ payment, hooks, onClose }: { payment: PaymentRow; hooks: WebhookEventRow[]; onClose: () => void }) {
+function RawWebhookViewer({ hook }: { hook: AdminWebhookEventRow }) {
+  const [open, setOpen] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+
+  const rawPayload = hook.payload ?? "";
+  const displayedPayload = (() => {
+    if (!rawPayload) return "—";
+    try {
+      return JSON.stringify(JSON.parse(rawPayload), null, 2);
+    } catch {
+      return rawPayload;
+    }
+  })();
+
+  const handleCopy = async () => {
+    if (!rawPayload) return;
+    try {
+      await navigator.clipboard.writeText(rawPayload);
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 1500);
+    } catch {
+      setCopyState("failed");
+      window.setTimeout(() => setCopyState("idle"), 1500);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="break-all font-black text-zinc-900">{toText(hook.event_type)}</p>
+          <p className="mt-2 break-all font-mono text-xs text-zinc-500">{toText(hook.reference)}</p>
+          <p className="mt-2 text-xs text-zinc-500">{formatDate(hook.created_at)}</p>
+        </div>
+        <StatusPill label={Number(hook.signature_valid) === 1 ? "Valid" : "Invalid"} tone={Number(hook.signature_valid) === 1 ? "emerald" : "rose"} />
+      </div>
+
+      {rawPayload ? (
+        <div className="mt-3 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
+            <button
+              type="button"
+              onClick={() => setOpen((value) => !value)}
+              aria-expanded={open}
+              className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-200"
+            >
+              <Webhook className="h-3.5 w-3.5 text-zinc-400" />
+              {open ? "Hide raw webhook" : "View raw webhook"}
+            </button>
+            <button
+              type="button"
+              onClick={handleCopy}
+              title="Copy raw webhook JSON"
+              aria-label="Copy raw webhook JSON"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-bold text-zinc-200 transition hover:bg-white/10"
+            >
+              {copyState === "copied" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy"}
+            </button>
+          </div>
+          {open ? (
+            <pre className="max-h-96 overflow-auto whitespace-pre p-4 text-[11px] leading-5 text-zinc-100 [scrollbar-width:thin]">{displayedPayload}</pre>
+          ) : null}
+        </div>
+      ) : (
+        <p className="mt-3 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-500">No raw payload was stored for this webhook event.</p>
+      )}
+    </div>
+  );
+}
+
+export default function AdminPaymentDetailsDrawer({
+  payment,
+  hooks,
+  onClose,
+}: {
+  payment: AdminPaymentRow;
+  hooks: AdminWebhookEventRow[];
+  onClose: () => void;
+}) {
   return (
     <div className="fixed inset-0 z-[90] flex bg-zinc-900/50 backdrop-blur-sm" onClick={onClose}>
-      <aside className="ml-auto h-full w-full max-w-xl overflow-y-auto bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <aside className="ml-auto h-full w-full max-w-xl overflow-y-auto bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="sticky top-0 flex items-center justify-between border-b border-zinc-100 bg-white px-5 py-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Payment detail</p>
             <h3 className="mt-1 text-lg font-black text-zinc-950">{toText(payment.reference)}</h3>
           </div>
-          <button type="button" onClick={onClose} className="rounded-2xl border border-zinc-200 p-2 hover:bg-zinc-50">
+          <button type="button" onClick={onClose} className="rounded-2xl border border-zinc-200 p-2 hover:bg-zinc-50" aria-label="Close payment details">
             <X className="h-5 w-5 text-zinc-500" />
           </button>
         </div>
@@ -189,43 +230,11 @@ export default function AdminPaymentDetailsDrawer({ payment, hooks, onClose }: {
 
           <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              <h4 className="text-base font-black">Lifecycle snapshot</h4>
-            </div>
-            <div className="mt-4 grid gap-3">
-              {buildLifecycleSteps(payment, hooks).map((step) => (
-                <div key={step.number} className={`rounded-2xl border p-4 ${step.state === "done" ? "border-emerald-200 bg-emerald-50/70" : step.state === "active" ? "border-blue-200 bg-blue-50/70" : step.state === "issue" ? "border-rose-200 bg-rose-50/70" : "border-zinc-200 bg-white"}`}>
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/80 font-black text-zinc-900 shadow-sm">{step.number}</div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h5 className="text-sm font-black tracking-tight text-zinc-900">{step.title}</h5>
-                        <StatusPill label={step.state === "done" ? "Done" : step.state === "active" ? "Active" : step.state === "issue" ? "Issue" : "Waiting"} tone={lifecycleTone(step.state)} />
-                      </div>
-                      <p className="mt-2 text-sm leading-relaxed text-zinc-600">{step.detail}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2">
               <Webhook className="h-5 w-5" />
               <h4 className="text-base font-black">Webhook history for this reference</h4>
             </div>
             <div className="mt-4 space-y-3">
-              {hooks.length ? hooks.map((hook) => (
-                <div key={hook.id} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-black text-zinc-900">{toText(hook.event_type)}</p>
-                    <StatusPill label={Number(hook.signature_valid) === 1 ? "Valid" : "Invalid"} tone={Number(hook.signature_valid) === 1 ? "emerald" : "rose"} />
-                  </div>
-                  <p className="mt-2 break-all font-mono text-xs text-zinc-500">{toText(hook.reference)}</p>
-                  <p className="mt-2 text-xs text-zinc-500">{formatDate(hook.created_at)}</p>
-                </div>
-              )) : <p className="text-sm text-zinc-500">No webhook rows match this reference.</p>}
+              {hooks.length ? hooks.map((hook) => <RawWebhookViewer key={hook.id} hook={hook} />) : <p className="text-sm text-zinc-500">No webhook rows match this reference.</p>}
             </div>
           </section>
         </div>
