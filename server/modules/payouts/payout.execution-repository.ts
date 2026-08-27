@@ -7,9 +7,9 @@ import { buildPayChanguPayoutChargeId } from './payout.charge-id.js';
 export type DbExecutor = Pick<PoolClient, 'query'>;
 
 const ALLOWED: Readonly<Record<PayoutStatus, readonly PayoutStatus[]>> = {
-  pending_settlement: ['pending_settlement', 'eligible', 'ready_for_payout', 'held', 'cancelled'],
-  eligible: ['eligible', 'ready_for_payout', 'queued', 'held', 'cancelled'],
-  ready_for_payout: ['ready_for_payout', 'queued', 'held', 'cancelled'],
+  pending_settlement: ['pending_settlement', 'eligible', 'ready_for_payout', 'queued', 'processing', 'held', 'cancelled'],
+  eligible: ['eligible', 'ready_for_payout', 'queued', 'processing', 'held', 'cancelled'],
+  ready_for_payout: ['ready_for_payout', 'queued', 'processing', 'held', 'cancelled'],
   queued: ['queued', 'processing', 'pending', 'paid', 'failed', 'held', 'cancelled'],
   processing: ['processing', 'pending', 'paid', 'failed', 'held', 'cancelled'],
   pending: ['pending', 'processing', 'paid', 'failed', 'held', 'cancelled'],
