@@ -8,6 +8,16 @@ import {
   type ReconcileProviderCallbackInput,
 } from './payout.shared.js';
 
+function latestAttemptForPayout(payoutId: string): Record<string, unknown> | undefined {
+  return getPaymentDb().prepare(
+    `SELECT id, attempt_no, provider, provider_charge_id, provider_ref_id, provider_transaction_id
+     FROM payout_attempts
+     WHERE payout_id = ?
+     ORDER BY attempt_no DESC, created_at DESC
+     LIMIT 1`,
+  ).get(payoutId) as Record<string, unknown> | undefined;
+}
+
 export async function reconcilePayoutStatusFlow(
   repository: PayoutRepository,
   input: {
@@ -25,14 +35,7 @@ export async function reconcilePayoutStatusFlow(
        p.status,
        p.requested_at,
        p.created_at,
-       p.last_attempt_id,
-       (
-         SELECT provider_charge_id
-         FROM payout_attempts pa
-         WHERE pa.payout_id = p.id
-         ORDER BY pa.attempt_no DESC
-         LIMIT 1
-       ) AS latest_attempt_charge_id
+       p.last_attempt_id
      FROM payouts p
      WHERE p.id = ?
      LIMIT 1`,
@@ -40,15 +43,23 @@ export async function reconcilePayoutStatusFlow(
 
   if (!row) throw new Error('Payout not found');
 
-  let chargeId = (row.provider_charge_id as string | null) ?? (row.latest_attempt_charge_id as string | null) ?? null;
+  const latestAttempt = latestAttemptForPayout(input.payoutId);
+  const lastAttemptId = (row.last_attempt_id as string | null) ?? (latestAttempt?.id as string | null) ?? null;
+  const chargeId =
+    (row.provider_charge_id as string | null) ??
+    (latestAttempt?.provider_charge_id as string | null) ??
+    (latestAttempt?.provider_ref_id as string | null) ??
+    (latestAttempt?.provider_transaction_id as string | null) ??
+    null;
+
   if (!chargeId) {
     const legacyAttempt = repository.ensureLegacyAttemptForReconciliation({
       payoutId: input.payoutId,
       actorType: input.actorType ?? 'admin',
       actorId: input.actorId ?? null,
     });
-    chargeId = legacyAttempt.providerReference;
-    if (!chargeId) {
+    const fallbackChargeId = legacyAttempt.providerReference;
+    if (!fallbackChargeId) {
       const payoutStatus = String(row.status ?? '').toLowerCase();
       if (payoutStatus === 'pending_settlement') {
         throw new Error('Payout is awaiting the PayChangu T+1 settlement window and has no provider attempt yet');
@@ -58,6 +69,9 @@ export async function reconcilePayoutStatusFlow(
       }
       throw new Error('Payout has no provider attempt to reconcile');
     }
+    return reconcilePayoutStatusFlow(repository, {
+      ...input,
+    });
   }
 
   const status = await getPayChanguPayoutStatus(chargeId);
@@ -72,6 +86,7 @@ export async function reconcilePayoutStatusFlow(
     providerTransactionId: status.transactionId,
     providerStatus: status.status,
     rawResponse: status.rawResponse,
+    lastAttemptId: lastAttemptId,
     paidAt: nextStatus === 'paid' ? now : null,
     failedAt: nextStatus === 'failed' ? now : null,
     failureReason: nextStatus === 'failed' ? 'provider_status_failed' : null,
@@ -80,15 +95,29 @@ export async function reconcilePayoutStatusFlow(
       : null,
   });
 
-  if (row.last_attempt_id) {
+  if (lastAttemptId) {
     db.prepare(
       `UPDATE payout_attempts
        SET status = ?,
+           provider = COALESCE(provider, ?),
+           provider_charge_id = COALESCE(?, provider_charge_id),
            response_payload = ?,
            completed_at = ?,
            updated_at = ?
        WHERE id = ?`,
-    ).run(nextStatus, JSON.stringify(status.rawResponse ?? {}), now, now, row.last_attempt_id as string);
+    ).run(
+      nextStatus,
+      'paychangu',
+      chargeId,
+      JSON.stringify(status.rawResponse ?? {}),
+      now,
+      now,
+      lastAttemptId,
+    );
+
+    if (!row.last_attempt_id) {
+      db.prepare('UPDATE payouts SET last_attempt_id = ?, updated_at = ? WHERE id = ?').run(lastAttemptId, now, input.payoutId);
+    }
   }
 
   repository.addEvent({
@@ -104,6 +133,7 @@ export async function reconcilePayoutStatusFlow(
       providerTransactionId: status.transactionId,
       status: status.status,
       checkedAt: status.checkedAt,
+      latestAttemptId: lastAttemptId,
     },
   });
 
@@ -130,6 +160,15 @@ export function reconcileProviderCallbackFlow(
   if (!row) return undefined;
 
   const transaction = db.transaction(() => {
+    const latestAttempt = db.prepare(
+      `SELECT id
+       FROM payout_attempts
+       WHERE payout_id = ?
+         AND (? IS NULL OR provider_charge_id = ?)
+       ORDER BY attempt_no DESC, created_at DESC
+       LIMIT 1`,
+    ).get(input.payoutId, input.providerChargeId ?? null, input.providerChargeId ?? null) as { id: string } | undefined;
+
     db.prepare(
       `UPDATE payouts
        SET status = ?,
@@ -138,6 +177,7 @@ export function reconcileProviderCallbackFlow(
            provider_status = COALESCE(?, provider_status),
            provider_ref_id = COALESCE(?, provider_ref_id),
            provider_transaction_id = COALESCE(?, provider_transaction_id),
+           last_attempt_id = COALESCE(?, last_attempt_id),
            raw_response = ?,
            paid_at = CASE WHEN ? = 'paid' THEN ? ELSE paid_at END,
            failed_at = CASE WHEN ? = 'failed' THEN ? ELSE failed_at END,
@@ -150,6 +190,7 @@ export function reconcileProviderCallbackFlow(
       status,
       input.providerReference ?? null,
       input.providerTransactionId ?? null,
+      latestAttempt?.id ?? null,
       rawResponse,
       status,
       now,
@@ -160,15 +201,6 @@ export function reconcileProviderCallbackFlow(
       now,
       input.payoutId,
     );
-
-    const latestAttempt = db.prepare(
-      `SELECT id
-       FROM payout_attempts
-       WHERE payout_id = ?
-         AND (? IS NULL OR provider_charge_id = ?)
-       ORDER BY attempt_no DESC, created_at DESC
-       LIMIT 1`,
-    ).get(input.payoutId, input.providerChargeId ?? null, input.providerChargeId ?? null) as { id: string } | undefined;
 
     if (latestAttempt) {
       db.prepare(
@@ -194,6 +226,7 @@ export function reconcileProviderCallbackFlow(
         providerTransactionId: input.providerTransactionId ?? null,
         providerEventId: input.eventId ?? null,
         status,
+        latestAttemptId: latestAttempt?.id ?? null,
       },
     });
   });
@@ -211,7 +244,10 @@ export async function reconcilePendingPayoutStatusesFlow(
     `SELECT id
      FROM payouts
      WHERE provider = 'paychangu'
-       AND provider_charge_id IS NOT NULL
+       AND (
+         provider_charge_id IS NOT NULL
+         OR EXISTS (SELECT 1 FROM payout_attempts pa WHERE pa.payout_id = payouts.id AND pa.provider_charge_id IS NOT NULL)
+       )
        AND status IN ('queued', 'processing', 'pending', 'held', 'failed')
      ORDER BY updated_at ASC
      LIMIT ?`,
