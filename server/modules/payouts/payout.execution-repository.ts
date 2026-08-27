@@ -226,6 +226,11 @@ export async function reserveRetryAttempt(input: {
       [id,input.payoutId,attemptNo,input.provider,providerChargeId,JSON.stringify({payoutId:input.payoutId,attemptNo}),null,'processing',now,null,now,now],
     );
 
+    await client.query(
+      `UPDATE payouts SET last_attempt_id = $1, updated_at = $2 WHERE id = $3`,
+      [id, now, input.payoutId],
+    );
+
     return { id, attemptNo, providerChargeId, createdAt: now };
   });
 }
@@ -245,17 +250,29 @@ export async function recordAttempt(
   },
   executor?: DbExecutor,
 ): Promise<void> {
-  const run = (client: DbExecutor) => client.query(
-    `UPDATE payout_attempts
-     SET provider=$1, provider_charge_id=$2, request_payload=$3, response_payload=$4,
-         status=$5, failure_reason=$6, sent_at=$7, completed_at=$8, updated_at=$9
-     WHERE id=$10`,
-    [execution.provider, execution.providerChargeId ?? null,
-      JSON.stringify({ attemptNo: execution.attemptNo, providerReference: execution.providerReference ?? null }),
-      JSON.stringify(execution.rawResponse ?? {}), execution.status, execution.failureClass ?? null,
-      execution.processedAt ?? new Date().toISOString(), execution.processedAt ?? new Date().toISOString(),
-      new Date().toISOString(), id],
-  ).then(() => undefined);
+  const run = async (client: DbExecutor) => {
+    const now = new Date().toISOString();
+    const processedAt = execution.processedAt ?? now;
+
+    await client.query(
+      `UPDATE payout_attempts
+       SET provider=$1, provider_charge_id=$2, request_payload=$3, response_payload=$4,
+           status=$5, failure_reason=$6, sent_at=$7, completed_at=$8, updated_at=$9
+       WHERE id=$10`,
+      [execution.provider, execution.providerChargeId ?? null,
+        JSON.stringify({ attemptNo: execution.attemptNo, providerReference: execution.providerReference ?? null, providerTransactionId: execution.providerTransactionId ?? null }),
+        JSON.stringify(execution.rawResponse ?? {}), execution.status, execution.failureClass ?? null,
+        processedAt, processedAt, now, id],
+    );
+
+    await client.query(
+      `UPDATE payouts
+       SET last_attempt_id = $1,
+           updated_at = $2
+       WHERE id = (SELECT payout_id FROM payout_attempts WHERE id = $1)`,
+      [id, now],
+    );
+  };
   if (executor) await run(executor); else await withTransaction(run);
 }
 
