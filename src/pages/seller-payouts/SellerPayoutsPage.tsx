@@ -1,7 +1,7 @@
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import BrandMark from "../../components/BrandMark";
 import ConfirmModal from "../../components/ConfirmModal";
-import ConnectSettingsCard from "../../components/payouts/ConnectSettingsCard";
+// import ConnectSettingsCard from "../../components/payouts/ConnectSettingsCard";
 import { EXPLORE_PATH, navigateToPath } from "../../lib/appNavigation";
 import { getSellerCache } from "../../lib/sellerWorkspaceCache";
 import SellerHubPage from "../../SellerHubPage";
@@ -22,11 +22,11 @@ export default function SellerPayoutsPage() {
     sellerId,
     loading,
     refreshing,
-    connectAccount,
-    connectLoading,
-    connectError,
-    connectDefaultMode,
-    defaultConnectScope,
+    // connectAccount,
+    // connectLoading,
+    // connectError,
+    // connectDefaultMode,
+    // defaultConnectScope,
     notice,
     lastSaveDiagnostic,
     form,
@@ -46,9 +46,9 @@ export default function SellerPayoutsPage() {
     resetForm,
     setRemoveTarget,
     startEdit,
-    handleConnectRefresh,
-    handleConnect,
-    handleDisconnect,
+    // handleConnectRefresh,
+    // handleConnect,
+    // handleDisconnect,
     handleSaveDestination,
     handleMakeDefault,
     handleRemoveDestination,
@@ -81,7 +81,9 @@ export default function SellerPayoutsPage() {
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8">
         <SellerPayoutsHero summary={summary} earningsSummary={earningsSummary} payouts={payouts} canEditSettings={canEditSettings} />
         {notice ? <SellerPayoutsNotice type={notice.type} message={notice.message} details={lastSaveDiagnostic?.reasons} /> : null}
+        {/* PayChangu Connect is hidden until direct seller settlement is ready to enable.
         <ConnectSettingsCard connectAccount={connectAccount} connectLoading={connectLoading} connectError={connectError} connectDefaultMode={connectDefaultMode} defaultConnectScope={defaultConnectScope} onRefresh={() => void handleConnectRefresh()} onConnect={() => void handleConnect()} onDisconnect={() => void handleDisconnect()} />
+        */}
         <SellerPayoutsDestinationsSection form={form} onFormChange={setForm} onSave={handleSaveDestination} onCancel={resetForm} saving={savingDestination} error={destinationFormError} canEditSettings={canEditSettings} isEditing={Boolean(selectedDestinationId)} activeDestinationCount={activeDestinations.length} activeDestinations={activeDestinations} providerOptions={providerOptions} onReplace={startEdit} onRemove={handleRemoveDestination} onMakeDefault={handleMakeDefault} />
         <SellerPayoutsHistorySection payouts={payouts} canViewHistory={canViewHistory} />
       </main>

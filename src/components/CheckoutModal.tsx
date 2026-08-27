@@ -64,14 +64,15 @@ const settlementOptions: Array<{
     route: "escrow",
     label: "Pay and confirm later",
     description: "Funds are held until delivery is confirmed.",
-    buttonClassName: "border-lime-200 bg-lime-500 text-white hover:bg-lime-600",
+    buttonClassName: "border-orange-800 bg-orange-700 text-white shadow-[0_18px_34px_-18px_rgba(154,52,18,0.75)] ring-1 ring-orange-950/10 hover:-translate-y-0.5 hover:bg-orange-800 hover:shadow-[0_22px_42px_-18px_rgba(154,52,18,0.85)]",
   },
-  {
-    route: "connect",
-    label: "Pay directly to seller",
-    description: "Money goes to the seller's connected account.",
-    buttonClassName: "border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800",
-  },
+  // Direct seller payments are hidden until PayChangu Connect is ready to enable.
+  // {
+  //   route: "connect",
+  //   label: "Pay directly to seller",
+  //   description: "Money goes to the seller's connected account.",
+  //   buttonClassName: "border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800",
+  // },
 ];
 
 export default function CheckoutModal({

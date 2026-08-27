@@ -1,3 +1,11 @@
+import { motion } from "motion/react";
+
+const cardAnimations = [
+  { initialX: -28, rotate: -2, hoverRotate: -1 },
+  { initialX: 0, rotate: 2.5, hoverRotate: 1 },
+  { initialX: 28, rotate: -2.5, hoverRotate: -1 },
+];
+
 export default function WhyBuyMeshoSection() {
   return (
     <section className="relative left-1/2 -mt-8 w-screen -translate-x-1/2 overflow-hidden bg-[#071b2d] px-4 py-10 text-white sm:py-12 lg:py-14">
@@ -22,26 +30,47 @@ export default function WhyBuyMeshoSection() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-3 md:gap-0">
-            <article className="relative z-30 -rotate-2 rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white to-red-50 p-5 text-zinc-900 shadow-[0_30px_70px_-24px_rgba(0,0,0,0.72),0_10px_24px_-14px_rgba(127,29,29,0.22)] ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-2 hover:-rotate-1 hover:shadow-[0_38px_80px_-24px_rgba(0,0,0,0.78),0_14px_30px_-14px_rgba(127,29,29,0.24)] sm:p-6 md:min-h-[210px] md:p-6">
+            <motion.article
+              initial={{ opacity: 0, x: cardAnimations[0].initialX, y: 34, rotate: cardAnimations[0].rotate, scale: 0.96 }}
+              whileInView={{ opacity: 1, x: 0, y: 0, rotate: cardAnimations[0].rotate, scale: 1 }}
+              whileHover={{ y: -8, rotate: cardAnimations[0].hoverRotate }}
+              viewport={{ once: true, amount: 0.35 }}
+              transition={{ duration: 0.55, ease: "easeOut" }}
+              className="relative z-30 rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white to-red-50 p-5 text-zinc-900 shadow-[0_30px_70px_-24px_rgba(0,0,0,0.72),0_10px_24px_-14px_rgba(127,29,29,0.22)] ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-[0_38px_80px_-24px_rgba(0,0,0,0.78),0_14px_30px_-14px_rgba(127,29,29,0.24)] sm:p-6 md:min-h-[210px] md:p-6"
+            >
               <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-red-900/50">01 — Access</p>
               <p className="mt-4 text-base leading-7 text-zinc-800 sm:text-lg md:text-[1.05rem] md:leading-7">
                 Everyone can buy on BuyMesho.
               </p>
-            </article>
+            </motion.article>
 
-            <article className="relative z-20 -mt-3 rotate-[2.5deg] rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white to-amber-50 p-5 text-zinc-900 shadow-[0_34px_76px_-24px_rgba(0,0,0,0.74),0_12px_28px_-14px_rgba(180,83,9,0.2)] ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-2 hover:rotate-1 hover:shadow-[0_42px_86px_-24px_rgba(0,0,0,0.8),0_16px_34px_-14px_rgba(180,83,9,0.22)] sm:p-6 md:-ml-5 md:-mt-0 md:min-h-[235px] md:p-6">
+            <motion.article
+              initial={{ opacity: 0, x: cardAnimations[1].initialX, y: 34, rotate: cardAnimations[1].rotate, scale: 0.96 }}
+              whileInView={{ opacity: 1, x: 0, y: 0, rotate: cardAnimations[1].rotate, scale: 1 }}
+              whileHover={{ y: -8, rotate: cardAnimations[1].hoverRotate }}
+              viewport={{ once: true, amount: 0.35 }}
+              transition={{ duration: 0.55, delay: 0.1, ease: "easeOut" }}
+              className="relative z-20 -mt-3 rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white to-amber-50 p-5 text-zinc-900 shadow-[0_34px_76px_-24px_rgba(0,0,0,0.74),0_12px_28px_-14px_rgba(180,83,9,0.2)] ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-[0_42px_86px_-24px_rgba(0,0,0,0.8),0_16px_34px_-14px_rgba(180,83,9,0.22)] sm:p-6 md:-ml-5 md:-mt-0 md:min-h-[235px] md:p-6"
+            >
               <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-amber-800/60">02 — Purpose</p>
               <p className="mt-4 text-base leading-7 text-zinc-800 sm:text-lg md:text-[1.05rem] md:leading-7">
                 Seller restrictions apply only because the platform&apos;s primary goal is to help student entrepreneurs develop and grow.
               </p>
-            </article>
+            </motion.article>
 
-            <article className="relative z-10 -mt-3 -rotate-[2.5deg] rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white to-sky-50 p-5 text-zinc-900 shadow-[0_30px_70px_-24px_rgba(0,0,0,0.72),0_10px_24px_-14px_rgba(14,116,144,0.18)] ring-1 ring-black/5 transition-all duration-200 hover:-translate-y-2 hover:-rotate-1 hover:shadow-[0_38px_80px_-24px_rgba(0,0,0,0.78),0_14px_30px_-14px_rgba(14,116,144,0.2)] sm:p-6 md:-ml-5 md:-mt-0 md:min-h-[210px] md:p-6">
+            <motion.article
+              initial={{ opacity: 0, x: cardAnimations[2].initialX, y: 34, rotate: cardAnimations[2].rotate, scale: 0.96 }}
+              whileInView={{ opacity: 1, x: 0, y: 0, rotate: cardAnimations[2].rotate, scale: 1 }}
+              whileHover={{ y: -8, rotate: cardAnimations[2].hoverRotate }}
+              viewport={{ once: true, amount: 0.35 }}
+              transition={{ duration: 0.55, delay: 0.2, ease: "easeOut" }}
+              className="relative z-10 -mt-3 rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white to-sky-50 p-5 text-zinc-900 shadow-[0_30px_70px_-24px_rgba(0,0,0,0.72),0_10px_24px_-14px_rgba(14,116,144,0.18)] ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-[0_38px_80px_-24px_rgba(0,0,0,0.78),0_14px_30px_-14px_rgba(14,116,144,0.2)] sm:p-6 md:-ml-5 md:-mt-0 md:min-h-[210px] md:p-6"
+            >
               <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-sky-800/60">03 — Structure</p>
               <p className="mt-4 text-base leading-7 text-zinc-800 sm:text-lg md:text-[1.05rem] md:leading-7">
                 List products once, get discovered faster, and build trust through a structured marketplace designed for real commerce.
               </p>
-            </article>
+            </motion.article>
           </div>
         </div>
       </div>
