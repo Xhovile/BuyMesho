@@ -189,7 +189,7 @@ function upsertMeta(name: string, content: string, attribute: "name" | "property
   let el = document.head.querySelector(`meta[${attribute}="${name}"]`) as HTMLMetaElement | null;
   if (!el) {
     el = document.createElement("meta");
-    el.setAttribute("${attribute}", name);
+    el.setAttribute(attribute, name);
     document.head.appendChild(el);
   }
   el.setAttribute("content", content);
