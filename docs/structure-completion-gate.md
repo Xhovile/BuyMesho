@@ -267,7 +267,7 @@ The structure is complete only when every item below is checked.
 - Hold and cancellation paths are defined — **done** (hold path complete; admin `cancel` override action implemented with `admin_cancel` audit event; cancels from `eligible`, `queued`, `failed`, or `held` states).
 
 ### Retry and safety
-- Retry count is limited — **done** (`maxRetryCount = 3`).
+- Retry count is limited — **done** (`maxRetryCount = 16`, corresponding to immediate submission plus 3-hour retries through 45 hours within the 48-hour window).
 - Launch mode is fixed to **Admin-approved** during beta rollout.
 - Retry is idempotent — **partial** (attempt sequencing and unique provider charge IDs exist; concurrent duplicate retry requests are not yet fully deduplicated at route level).
 - Retry is only for technical failure — **done** (retryable failure code list enforced).
