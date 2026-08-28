@@ -88,6 +88,24 @@ export async function startServer() {
   const app = createApp();
   const db: any = runMigrations();
 
+  // Normalize public URLs before serving the SPA so search engines and
+  // browsers receive a real permanent redirect for legacy homepage URLs.
+  app.use((req, res, next) => {
+    const forwardedHost = req.get("x-forwarded-host");
+    const host = (forwardedHost ?? req.get("host") ?? "").split(",")[0].trim().toLowerCase();
+    const isLegacyHost = host === "www.buymesho.app" || host.startsWith("www.buymesho.app:");
+    const isLegacyHomePath = req.path === "/home";
+
+    if (!isLegacyHost && !isLegacyHomePath) {
+      next();
+      return;
+    }
+
+    const targetPath = isLegacyHomePath ? "/" : req.path;
+    const query = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+    res.redirect(308, `https://buymesho.app${targetPath}${query}`);
+  });
+
   // Keep the live payment webhook audit schema compatible with the current
   // webhook persistence layer. This is idempotent and runs on every startup.
   ensurePaymentWebhookEventSchema(db);
