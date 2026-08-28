@@ -130,9 +130,9 @@ function RouteLoader() {
           <img
             src={logoImage}
             alt="BuyMesho"
-            width={64}
-            height={64}
-            className="h-16 w-16 object-contain"
+            width={54}
+            height={54}
+            className="h-[54px] w-[54px] object-contain"
           />
         </div>
       </div>
@@ -189,7 +189,7 @@ function upsertMeta(name: string, content: string, attribute: "name" | "property
   let el = document.head.querySelector(`meta[${attribute}="${name}"]`) as HTMLMetaElement | null;
   if (!el) {
     el = document.createElement("meta");
-    el.setAttribute(attribute, name);
+    el.setAttribute("${attribute}", name);
     document.head.appendChild(el);
   }
   el.setAttribute("content", content);
