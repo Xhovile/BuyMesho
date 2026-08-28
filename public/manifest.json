@@ -1,7 +1,7 @@
 {
-  "name": "BuyMesho — Student Entrepreneurship Marketplace",
+  "name": "BuyMesho — Malawi's Trusted Marketplace",
   "short_name": "BuyMesho",
-  "description": "A localized marketplace for students across Malawian universities to buy and sell products, services, event tickets, and discover listings.",
+  "description": "Malawi's trusted marketplace for discovering and buying products, services, event tickets, and more.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -10,7 +10,7 @@
   "background_color": "#ffffff",
   "theme_color": "#111827",
   "lang": "en",
-  "categories": ["shopping", "business", "education", "lifestyle"],
+  "categories": ["shopping", "business", "lifestyle"],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -41,7 +41,7 @@
     {
       "name": "Explore Marketplace",
       "short_name": "Marketplace",
-      "description": "Browse products, services, and student listings",
+      "description": "Browse products, services, and listings",
       "url": "/",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
