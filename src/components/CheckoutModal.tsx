@@ -332,7 +332,7 @@ export default function CheckoutModal({
                     <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div>
                   )}
 
-                  <div className="space-y-3">
+                  <div className="sticky bottom-0 z-10 space-y-3">
                     {settlementOptions.map((option) => (
                       <button
                         key={option.route}
