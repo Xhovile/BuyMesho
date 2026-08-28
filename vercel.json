@@ -5,6 +5,10 @@
       "dest": "https://buymesho.onrender.com/api/$1"
     },
     {
+      "src": "/reply_Fortunate",
+      "dest": "/reply_Fortunate.html"
+    },
+    {
       "handle": "filesystem"
     },
     {
