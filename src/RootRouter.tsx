@@ -130,9 +130,9 @@ function RouteLoader() {
           <img
             src={logoImage}
             alt="BuyMesho"
-            width={60}
-            height={60}
-            className="h-[60px] w-[60px] object-contain"
+            width={64}
+            height={64}
+            className="h-16 w-16 object-contain"
           />
         </div>
       </div>
@@ -174,9 +174,6 @@ class DebugErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 }
 
 const SEO_BASE_URL = "https://buymesho.app";
-const HOMEPAGE_TITLE = "BuyMesho — Malawi's Secure E-commerce Platform";
-const HOMEPAGE_DESCRIPTION =
-  "BuyMesho is Malawi's secure e-commerce platform for discovering and buying products, services, and tickets from sellers across the country.";
 
 type SeoConfig = {
   title: string;
@@ -210,20 +207,20 @@ function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
     case "/":
     case "/home":
       return {
-        title: HOMEPAGE_TITLE,
-        description: HOMEPAGE_DESCRIPTION,
+        title: "BuyMesho — Student Entrepreneurship Marketplace",
+        description: "Discover listings, deals, sellers, and local events on BuyMesho.",
         canonicalPath: "/",
       };
     case "/signup":
       return {
         title: "Create a BuyMesho Account",
-        description: "Join BuyMesho to buy, sell, and manage your marketplace activity.",
+        description: "Join BuyMesho to buy, sell, and manage your student marketplace activity.",
         canonicalPath: "/signup",
       };
     case "/about":
       return {
-        title: "About BuyMesho — Malawi's Secure E-commerce Platform",
-        description: "Learn what BuyMesho is, who it serves, and how the e-commerce platform works.",
+        title: "About BuyMesho — Student Entrepreneurship Marketplace",
+        description: "Learn what BuyMesho is, who it serves, and how the marketplace works.",
         canonicalPath: "/about",
       };
     case "/explore":
