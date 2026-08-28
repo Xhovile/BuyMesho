@@ -44,22 +44,6 @@
     />
     <meta name="twitter:image" content="https://buymesho.app/Og-image.webp" />
     <meta name="twitter:image:alt" content="BuyMesho — Malawi's Secure E-commerce Platform" />
-
-    <script>
-      (() => {
-        const canonicalHost = "buymesho.app";
-        const isLegacyHost = window.location.hostname === `www.${canonicalHost}`;
-        const isLegacyHomePath = window.location.pathname === "/home";
-
-        if (isLegacyHost || isLegacyHomePath) {
-          const target = new URL(window.location.href);
-          target.hostname = canonicalHost;
-          if (isLegacyHomePath) target.pathname = "/";
-          window.location.replace(target.toString());
-          return;
-        }
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>
