@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import RootRouter from './RootRouter.tsx';
 import { ToastProvider } from './components/Toast.tsx';
 import './index.css';
-import loaderImage from '../photos/LoaderPic.png';
+import logoImage from '../photos/Logo.png';
 
 const nativeFetch = window.fetch.bind(window);
 const APICACHE_PREFIX = '__buymesho_api_cache_v2:';
@@ -138,9 +138,12 @@ function setBrandMetadata() {
   upsertMeta('application-name', 'BuyMesho');
   upsertMeta('theme-color', '#111827');
   upsertMeta('description', "BuyMesho is Malawi's secure e-commerce platform for discovering and buying products, services, and tickets from sellers across the country.");
-  upsertLink('icon', loaderImage, 'image/png');
-  upsertLink('shortcut icon', loaderImage, 'image/png');
-  upsertLink('apple-touch-icon', loaderImage, 'image/png');
+
+  // Use the actual BuyMesho brand logo for browser/PWA identity.
+  // Do not substitute the loading illustration.
+  upsertLink('icon', logoImage, 'image/png');
+  upsertLink('shortcut icon', logoImage, 'image/png');
+  upsertLink('apple-touch-icon', logoImage, 'image/png');
 }
 
 setBrandMetadata();
