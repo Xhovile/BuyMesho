@@ -137,7 +137,7 @@ function upsertLink(rel: string, href: string, type?: string) {
 function setBrandMetadata() {
   upsertMeta('application-name', 'BuyMesho');
   upsertMeta('theme-color', '#111827');
-  upsertMeta('description', 'BuyMesho is a student entrepreneurship marketplace for discovering listings, deals, events, and sellers.');
+  upsertMeta('description', "BuyMesho is Malawi's secure e-commerce platform for discovering and buying products, services, and tickets from sellers across the country.");
   upsertLink('icon', loaderImage, 'image/png');
   upsertLink('shortcut icon', loaderImage, 'image/png');
   upsertLink('apple-touch-icon', loaderImage, 'image/png');
