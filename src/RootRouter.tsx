@@ -130,9 +130,9 @@ function RouteLoader() {
           <img
             src={logoImage}
             alt="BuyMesho"
-            width={54}
-            height={54}
-            className="h-[54px] w-[54px] object-contain"
+            width={60}
+            height={60}
+            className="h-[60px] w-[60px] object-contain"
           />
         </div>
       </div>
