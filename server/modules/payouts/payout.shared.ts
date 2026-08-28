@@ -138,8 +138,9 @@ export type PayoutNextAction =
 
 const PAYOUT_ENCRYPTION_SECRET = process.env.SELLER_PAYOUT_ENCRYPTION_KEY ?? '';
 
-export function isProviderHoldFailure(reasonCode: PayChanguPayoutFailureClass): boolean {
-  return reasonCode !== null;
+// Provider execution failures remain failed so the automatic retry worker can retry them.
+export function isProviderHoldFailure(_reasonCode: PayChanguPayoutFailureClass): boolean {
+  return false;
 }
 
 export function classifyProviderFailureFromError(error: unknown): PayChanguPayoutFailureClass {
@@ -178,10 +179,7 @@ export function exactProviderErrorMessage(rawResponse: unknown): string | null {
       }
     }
 
-    if (!value || typeof value !== 'object') {
-      return null;
-    }
-
+    if (!value || typeof value !== 'object') return null;
     const record = value as Record<string, unknown>;
 
     for (const key of ['message', 'error', 'detail', 'reason', 'rawText']) {
@@ -189,10 +187,7 @@ export function exactProviderErrorMessage(rawResponse: unknown): string | null {
       if (found) return found;
     }
 
-    if (record.response) {
-      return extract(record.response);
-    }
-
+    if (record.response) return extract(record.response);
     return null;
   };
 
@@ -204,26 +199,15 @@ export function providerFailureReason(
   exactMessage?: string | null,
 ): string {
   if (reasonCode === 'provider_rate_limited') {
-    return exactMessage
-      ? `Manual review required: Provider rate-limited: ${exactMessage}`
-      : 'Manual review required: Provider rate-limited';
+    return exactMessage ? `Provider rate-limited: ${exactMessage}` : 'Provider rate-limited';
   }
-
   if (reasonCode === 'provider_timeout') {
-    return exactMessage
-      ? `Manual review required: Provider timeout: ${exactMessage}`
-      : 'Manual review required: Provider timeout';
+    return exactMessage ? `Provider timeout: ${exactMessage}` : 'Provider timeout';
   }
-
   if (reasonCode === 'provider_unavailable') {
-    return exactMessage
-      ? `Manual review required: Provider unavailable: ${exactMessage}`
-      : 'Manual review required: Provider unavailable';
+    return exactMessage ? `Provider unavailable: ${exactMessage}` : 'Provider unavailable';
   }
-
-  return exactMessage
-    ? `Manual review required: ${exactMessage}`
-    : 'Manual review required: Payout failed';
+  return exactMessage ? exactMessage : 'Payout failed at provider';
 }
 
 export function canViewPayoutSettings(context: PayoutPermissionContext): boolean {

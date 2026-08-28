@@ -80,7 +80,7 @@ export async function gateForSubmissionAsync(payoutId: string): Promise<PayoutEx
   const payoutStatus = String(row.status ?? '').toLowerCase();
   if (payoutStatus === 'cancelled') return { allowed: false, reasonCode: 'payout_cancelled', reason: 'Payout is cancelled' };
   if (payoutStatus === 'paid') return { allowed: false, reasonCode: 'manual_review_required', reason: 'Payout is already paid' };
-  if (!['eligible', 'ready_for_payout', 'queued', 'failed', 'pending', 'held'].includes(payoutStatus)) {
+  if (!['eligible', 'ready_for_payout', 'queued', 'failed', 'pending', 'pending_settlement', 'held'].includes(payoutStatus)) {
     return { allowed: false, reasonCode: 'manual_review_required', reason: `Payout in ${payoutStatus} cannot be submitted` };
   }
 

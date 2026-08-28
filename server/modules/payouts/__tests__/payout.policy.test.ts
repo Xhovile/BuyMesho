@@ -22,7 +22,9 @@ test('payout policy freezes the seller-net formula and hard caps reserves', () =
   assert.equal(PAYOUT_POLICY.reserveCapBps, 600);
   assert.equal(PAYOUT_POLICY.disputeWindowHours, 72);
   assert.equal(PAYOUT_POLICY.minimumPayoutAmount, 1);
-  assert.equal(PAYOUT_POLICY.maxRetryCount, 3);
+  assert.equal(PAYOUT_POLICY.maxRetryCount, 16);
+  assert.equal(PAYOUT_POLICY.automaticRetryIntervalHours, 3);
+  assert.equal(PAYOUT_POLICY.automaticRetryWindowHours, 48);
   assert.equal(PAYOUT_POLICY.launchMode, 'admin_approved');
 
   assert.equal(formula.grossAmount, 1500);
@@ -60,6 +62,10 @@ test('payout policy separates retryable and non-retryable failure codes', () => 
   assert.equal(isRetryableFailureCode('provider_unavailable'), true);
   assert.equal(isRetryableFailureCode('provider_network_error'), true);
   assert.equal(isRetryableFailureCode('provider_rate_limited'), true);
+  assert.equal(isRetryableFailureCode('provider_rejected'), true);
+  assert.equal(isRetryableFailureCode('provider_authentication_error'), true);
+  assert.equal(isRetryableFailureCode('provider_configuration_error'), true);
+  assert.equal(isRetryableFailureCode('provider_conflict'), true);
   assert.equal(isRetryableFailureCode('balance_insufficient'), true);
 
   assert.equal(isRetryableFailureCode('order_disputed'), false);

@@ -118,7 +118,7 @@ async function seedPayout(prefix: string, status: 'eligible' | 'failed' = 'eligi
   return { payoutId, sellerId };
 }
 
-test('provider balance lookup timeout holds payout for manual review', async () => {
+test('provider balance lookup timeout remains retryable', async () => {
   const { payoutId } = await seedPayout('balance-timeout');
   const originalFetch = global.fetch;
   const originalSecretKey = process.env.PAYCHANGU_SECRET_KEY;
@@ -147,7 +147,7 @@ test('provider balance lookup timeout holds payout for manual review', async () 
 
     assert.equal(payout.status, 'held');
     assert.equal(payout.failure_reason, 'provider_timeout');
-    assert.match(String(payout.manual_review_reason ?? ''), /manual review/i);
+    assert.equal(payout.manual_review_reason, 'Provider timeout');
     assert.equal(payout.paid_at, null);
 
     const attemptsResult = await query<{ count: string | number }>(
@@ -165,7 +165,7 @@ test('provider balance lookup timeout holds payout for manual review', async () 
   }
 });
 
-test('provider payout submission outage holds payout without writing paid state', async () => {
+test('provider payout submission outage remains retryable without writing paid state', async () => {
   const { payoutId } = await seedPayout('submit-outage', 'failed');
   await query(
     `UPDATE payouts SET failure_reason = 'provider_timeout' WHERE id = $1`,
@@ -194,7 +194,7 @@ test('provider payout submission outage holds payout without writing paid state'
     });
 
     assert.equal(result.reasonCode, 'provider_unavailable');
-    assert.equal(result.nextAction, 'retry_blocked');
+    assert.equal(result.nextAction, 'manual_review');
     assert.ok(result.attempt);
 
     const payoutResult = await query<Record<string, unknown>>(
@@ -204,9 +204,9 @@ test('provider payout submission outage holds payout without writing paid state'
     );
     const payout = payoutResult.rows[0];
 
-    assert.equal(payout.status, 'held');
+    assert.equal(payout.status, 'failed');
     assert.equal(payout.failure_reason, 'provider_unavailable');
-    assert.match(String(payout.manual_review_reason ?? ''), /provider outage|manual review/i);
+    assert.equal(payout.manual_review_reason, null);
     assert.equal(payout.paid_at, null);
     assert.ok(payout.last_attempt_id);
   } finally {
