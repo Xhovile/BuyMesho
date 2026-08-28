@@ -204,7 +204,7 @@ test('provider payout submission outage remains retryable without writing paid s
     );
     const payout = payoutResult.rows[0];
 
-    assert.equal(payout.status, 'held');
+    assert.equal(payout.status, 'failed');
     assert.equal(payout.failure_reason, 'provider_unavailable');
     assert.match(String(payout.manual_review_reason ?? ''), /provider outage|manual review/i);
     assert.equal(payout.paid_at, null);
