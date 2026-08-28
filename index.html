@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>BuyMesho — Malawi's Trusted Marketplace</title>
+    <title>BuyMesho — Malawi's Secure E-commerce Platform</title>
     <meta
       name="description"
-      content="BuyMesho is Malawi's trusted marketplace for discovering and buying products, services, and tickets from sellers across the country."
+      content="BuyMesho is Malawi's secure e-commerce platform for discovering and buying products, services, and tickets from sellers across the country."
     />
     <meta name="application-name" content="BuyMesho" />
     <meta name="theme-color" content="#111827" />
@@ -24,74 +24,40 @@
 
     <!-- Open Graph -->
     <meta property="og:site_name" content="BuyMesho" />
-    <meta property="og:title" content="BuyMesho — Malawi's Trusted Marketplace" />
+    <meta property="og:title" content="BuyMesho — Malawi's Secure E-commerce Platform" />
     <meta
       property="og:description"
-      content="BuyMesho is Malawi's trusted marketplace for discovering and buying products, services, and tickets from sellers across the country."
+      content="BuyMesho is Malawi's secure e-commerce platform for discovering and buying products, services, and tickets from sellers across the country."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://buymesho.app/" />
     <meta property="og:image" content="https://buymesho.app/Og-image.webp" />
-    <meta property="og:image:alt" content="BuyMesho — Malawi's Trusted Marketplace" />
+    <meta property="og:image:alt" content="BuyMesho — Malawi's Secure E-commerce Platform" />
     <meta property="og:locale" content="en_MW" />
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="BuyMesho — Malawi's Trusted Marketplace" />
+    <meta name="twitter:title" content="BuyMesho — Malawi's Secure E-commerce Platform" />
     <meta
       name="twitter:description"
-      content="BuyMesho is Malawi's trusted marketplace for discovering and buying products, services, and tickets from sellers across the country."
+      content="BuyMesho is Malawi's secure e-commerce platform for discovering and buying products, services, and tickets from sellers across the country."
     />
     <meta name="twitter:image" content="https://buymesho.app/Og-image.webp" />
-    <meta name="twitter:image:alt" content="BuyMesho — Malawi's Trusted Marketplace" />
+    <meta name="twitter:image:alt" content="BuyMesho — Malawi's Secure E-commerce Platform" />
 
     <script>
       (() => {
         const canonicalHost = "buymesho.app";
-        const canonicalPath = "/";
         const isLegacyHost = window.location.hostname === `www.${canonicalHost}`;
         const isLegacyHomePath = window.location.pathname === "/home";
 
         if (isLegacyHost || isLegacyHomePath) {
           const target = new URL(window.location.href);
           target.hostname = canonicalHost;
-          if (isLegacyHomePath) target.pathname = canonicalPath;
+          if (isLegacyHomePath) target.pathname = "/";
           window.location.replace(target.toString());
           return;
         }
-
-        if (window.location.pathname !== "/") return;
-
-        const title = "BuyMesho — Malawi's Trusted Marketplace";
-        const description =
-          "BuyMesho is Malawi's trusted marketplace for discovering and buying products, services, and tickets from sellers across the country.";
-
-        const setMeta = (selector, content) => {
-          const element = document.head.querySelector(selector);
-          if (element && element.getAttribute("content") !== content) {
-            element.setAttribute("content", content);
-          }
-        };
-
-        const enforceHomepageSeo = () => {
-          if (document.title !== title) document.title = title;
-          setMeta('meta[name="description"]', description);
-          setMeta('meta[property="og:title"]', title);
-          setMeta('meta[property="og:description"]', description);
-          setMeta('meta[property="og:url"]', "https://buymesho.app/");
-          setMeta('meta[property="og:image:alt"]', title);
-          setMeta('meta[name="twitter:title"]', title);
-          setMeta('meta[name="twitter:description"]', description);
-          setMeta('meta[name="twitter:image:alt"]', title);
-        };
-
-        enforceHomepageSeo();
-        new MutationObserver(enforceHomepageSeo).observe(document.head, {
-          childList: true,
-          subtree: true,
-          attributes: true,
-          attributeFilter: ["content"],
-        });
       })();
     </script>
   </head>
