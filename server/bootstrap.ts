@@ -90,7 +90,15 @@ export async function startServer() {
 
   // Normalize public URLs before serving the SPA so search engines and
   // browsers receive a real permanent redirect for legacy homepage URLs.
+  // IMPORTANT: API requests must never be redirected here. Redirecting an
+  // authenticated API fetch across hosts can strip/alter request credentials.
   app.use((req, res, next) => {
+    const isApiRequest = req.path.startsWith("/api/");
+    if (isApiRequest) {
+      next();
+      return;
+    }
+
     const forwardedHost = req.get("x-forwarded-host");
     const host = (forwardedHost ?? req.get("host") ?? "").split(",")[0].trim().toLowerCase();
     const isLegacyHost = host === "www.buymesho.app" || host.startsWith("www.buymesho.app:");
