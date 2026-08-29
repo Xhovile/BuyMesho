@@ -1,7 +1,7 @@
 import { rateLimit } from "@xhovile/platform/rate-limit/express";
-import type { RequestHandler } from "express";
+import type { Request, RequestHandler } from "express";
 
-function getRequestIdentity(request: Parameters<NonNullable<Parameters<typeof rateLimit>[0]["getUserId"]>>[0]): string {
+function getRequestIdentity(request: Request): string {
   return (
     request.user?.uid ||
     String((request as any).userId ?? "").trim() ||
