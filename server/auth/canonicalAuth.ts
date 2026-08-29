@@ -22,7 +22,11 @@ function getBearerToken(req: Request): string | null {
 
 export async function resolveCanonicalIdentity(req: Request): Promise<CanonicalRequestUser | null> {
   const token = getBearerToken(req);
-  if (!token) return null;
+  if (!token) {
+    console.warn(`[canonicalAuth] missing bearer token method=${req.method} path=${req.originalUrl || req.url}`);
+    return null;
+  }
+
   try {
     const decoded = await verifyIdToken(token, true);
     const uid = decoded.uid;
@@ -32,6 +36,8 @@ export async function resolveCanonicalIdentity(req: Request): Promise<CanonicalR
     const legacyAdmin = !claimRole && !claimAdmin && isConfiguredAdmin({ uid, email });
     const role = claimRole ?? (claimAdmin || legacyAdmin ? "admin" : null);
 
+    console.info(`[canonicalAuth] identity resolved method=${req.method} path=${req.originalUrl || req.url} uid=${uid}`);
+
     return {
       uid,
       email,
@@ -39,7 +45,14 @@ export async function resolveCanonicalIdentity(req: Request): Promise<CanonicalR
       role,
       is_admin: role === "admin",
     };
-  } catch {
+  } catch (error) {
+    const code = typeof (error as { code?: unknown })?.code === "string"
+      ? String((error as { code?: unknown }).code)
+      : "unknown";
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(
+      `[canonicalAuth] identity resolution failed method=${req.method} path=${req.originalUrl || req.url} code=${code} message=${message}`,
+    );
     return null;
   }
 }
