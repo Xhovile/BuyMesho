@@ -74,7 +74,7 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
-                className="mx-auto mt-2 max-w-4xl text-center text-3xl font-black leading-[0.95] tracking-[-0.06em] text-zinc-900 sm:text-4xl lg:text-5xl"
+                className="mx-auto mt-2 max-w-4xl text-center text-4xl font-black leading-[0.92] tracking-[-0.06em] text-zinc-950 sm:text-6xl lg:text-[4.75rem]"
               >
                 Everyone Can Buy On {" "}
                 <span className="text-red-900">Buy</span>
@@ -86,7 +86,7 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.08 }}
-              className="flex justify-center sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 lg:top-[65%]"
+              className="flex justify-center sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 lg:hidden"
             >
               <button
                 type="button"
