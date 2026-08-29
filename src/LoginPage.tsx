@@ -180,6 +180,11 @@ export default function LoginPage() {
     clearTotpVerifiedSessionToken();
 
     try {
+      await apiFetch("/api/auth/check-login-email", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+
       const userCredential = await signInWithEmailAndPassword(auth, email, form.password);
       await finishSuccessfulAuthentication(userCredential.user);
     } catch (err: any) {
@@ -320,8 +325,27 @@ export default function LoginPage() {
           <button type="submit" disabled={loading} className="flex min-w-[180px] items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 font-bold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Log In"}</button>
         </form>
 
-        {passkeysAvailable && <div className="mt-6"><button type="button" onClick={() => void handlePasskeyLogin()} disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-300 bg-white px-5 py-3 font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-60"><Fingerprint className="h-5 w-5" />Use passkey</button></div>}
-        <p className="mt-6 text-center text-xs leading-relaxed text-zinc-500">BuyMesho uses Firebase Authentication for account sign-in.</p>
+        {passkeysAvailable && (
+          <div className="mt-8 w-full">
+            <div className="relative flex items-center justify-center">
+              <div className="absolute inset-x-0 h-px bg-zinc-200" />
+              <span className="relative bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">or</span>
+            </div>
+            <button
+              type="button"
+              onClick={handlePasskeyLogin}
+              disabled={loading || Boolean(authTransition)}
+              className="mt-6 flex w-full items-center justify-center gap-3 rounded-2xl border border-zinc-300 bg-white px-6 py-3.5 font-bold text-zinc-900 transition hover:border-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Fingerprint className="h-5 w-5" />
+              Sign in with passkey
+            </button>
+            <p className="mt-2 text-center text-xs font-medium text-zinc-500">Use your fingerprint, Face ID, device PIN, or security key.</p>
+          </div>
+        )}
+
+        <TotpChallengeModal open={totpChallengeOpen} title="Two-factor verification" message="Your account uses an authenticator app. Enter the current 6-digit code to continue." code={totpChallengeCode} busy={totpChallengeBusy} onCodeChange={setTotpChallengeCode} onSubmit={handleTotpChallengeSubmit} onCancel={handleTotpChallengeCancel} />
+        {feedback && <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} actions={feedback.actions} onClose={closeFeedback} />}
       </AccountPageShell>
     </AuthSessionCheckpoint>
   );
