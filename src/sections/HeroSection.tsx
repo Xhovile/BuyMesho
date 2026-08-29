@@ -86,7 +86,7 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.08 }}
-              className="flex justify-center sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 lg:hidden"
+              className="flex justify-center sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 md:hidden"
             >
               <button
                 type="button"
