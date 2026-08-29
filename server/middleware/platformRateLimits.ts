@@ -1,5 +1,14 @@
 import { rateLimit } from "@xhovile/platform/rate-limit/express";
-import type { RequestHandler } from "express";
+import type { Request, RequestHandler } from "express";
+
+function getRequestIdentity(request: Request): string {
+  return (
+    request.user?.uid ||
+    String((request as any).userId ?? "").trim() ||
+    String((request as any).uid ?? "").trim() ||
+    (request.ip ? `ip:${request.ip}` : "anonymous")
+  );
+}
 
 export const checkoutRateLimit: RequestHandler = rateLimit({
   name: "checkout",
@@ -38,7 +47,7 @@ export const messageSendRateLimit: RequestHandler = rateLimit({
   limit: 30,
   windowMs: 60_000,
   key: "user",
-  getUserId: (request) => request.user?.uid,
+  getUserId: getRequestIdentity,
   storeFailure: "fail-closed",
 });
 
@@ -47,7 +56,7 @@ export const messageReportRateLimit: RequestHandler = rateLimit({
   limit: 10,
   windowMs: 60_000,
   key: "user",
-  getUserId: (request) => request.user?.uid,
+  getUserId: getRequestIdentity,
   storeFailure: "fail-closed",
 });
 
