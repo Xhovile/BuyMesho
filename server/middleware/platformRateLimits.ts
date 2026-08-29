@@ -38,7 +38,7 @@ export const messageSendRateLimit: RequestHandler = rateLimit({
   limit: 30,
   windowMs: 60_000,
   key: "user",
-  getUserId: (request) => request.user?.uid,
+  getUserId: (request) => request.user?.uid || (request as any).userId || (request as any).uid || (request.ip ? `ip:${request.ip}` : "anonymous"),
   storeFailure: "fail-closed",
 });
 
@@ -47,7 +47,7 @@ export const messageReportRateLimit: RequestHandler = rateLimit({
   limit: 10,
   windowMs: 60_000,
   key: "user",
-  getUserId: (request) => request.user?.uid,
+  getUserId: (request) => request.user?.uid || (request as any).userId || (request as any).uid || (request.ip ? `ip:${request.ip}` : "anonymous"),
   storeFailure: "fail-closed",
 });
 

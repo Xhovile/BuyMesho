@@ -11,7 +11,7 @@ export function platformUserRateLimit(name: string, limit: number, windowMs: num
     limit,
     windowMs,
     key: "user",
-    getUserId: (request: Request) => request.user?.uid,
+    getUserId: (request: Request) => request.user?.uid || (request as any).userId || (request as any).uid || (request.ip ? `ip:${request.ip}` : "anonymous"),
     storeFailure: "fail-closed",
   });
 }
@@ -22,7 +22,7 @@ export function platformIpUserRateLimit(name: string, limit: number, windowMs: n
     limit,
     windowMs,
     key: "ip+user",
-    getUserId: (request: Request) => request.user?.uid,
+    getUserId: (request: Request) => request.user?.uid || (request as any).userId || (request as any).uid || (request.ip ? `ip:${request.ip}` : "anonymous"),
     storeFailure: "fail-closed",
   });
 }
