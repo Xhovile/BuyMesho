@@ -8,6 +8,10 @@ type VerifiedRequestUser = { uid: string; email: string | null };
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.emailChangeRoutesInstalled");
 const emailChangeLimiter = platformUserRateLimit("auth.email-change", 5, 15 * 60 * 1000);
 
+function getAppUrl() {
+  return process.env.APP_URL?.trim() || "http://localhost:3000";
+}
+
 async function verifyBearerIdentity(req: Request, res: Response, next: () => void) {
   try {
     const header = req.headers.authorization;
@@ -34,7 +38,8 @@ async function emailChangeHandler(req: Request, res: Response) {
     const firebaseAdmin = getFirebaseAdmin();
     const currentUser = await firebaseAdmin.auth().getUser(user.uid);
     if (currentUser.email?.trim().toLowerCase() !== currentEmail.toLowerCase()) return res.status(409).json({ error: "Your account email changed. Please refresh and try again." });
-    const verificationLink = await firebaseAdmin.auth().generateVerifyAndChangeEmailLink(currentEmail, newEmail, { url: "https://buymesho.app/email-action", handleCodeInApp: false });
+    const actionUrl = `${getAppUrl().replace(/\/$/, "")}/email-action`;
+    const verificationLink = await firebaseAdmin.auth().generateVerifyAndChangeEmailLink(currentEmail, newEmail, { url: actionUrl, handleCodeInApp: false });
     const recipientName = currentUser.displayName?.trim() || currentEmail.split("@")[0] || "there";
     const { text, html } = renderEmailChangeEmail({ recipientName, newEmail, verificationLink });
     await sendEmail({ sender: "transactional", to: { email: newEmail, name: recipientName }, subject: "Confirm your BuyMesho email change", text, html });
