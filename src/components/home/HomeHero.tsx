@@ -1,6 +1,4 @@
-import { ArrowRight, BadgeCheck, Check, Globe2, Users } from "lucide-react";
-
-import { trustPills } from "../../home/home.constants";
+import { ArrowRight, BadgeCheck, Globe2, Users } from "lucide-react";
 
 const heroCards = [
   {
@@ -38,7 +36,7 @@ export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => voi
               Buy. Sell. Online.
             </h1>
 
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
               <button
                 type="button"
                 onClick={onBrowseMarket}
@@ -47,18 +45,6 @@ export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => voi
                 Browse Market
                 <ArrowRight className="h-4 w-4" />
               </button>
-            </div>
-
-            <div className="mt-5 hidden flex-wrap justify-center gap-2 sm:flex">
-              {trustPills.map((item) => (
-                <span
-                  key={item}
-                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200/90 bg-white/95 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-600 shadow-[0_8px_20px_-10px_rgba(0,0,0,0.25)]"
-                >
-                  <Check className="h-3.5 w-3.5 text-red-900" />
-                  {item}
-                </span>
-              ))}
             </div>
           </div>
 
