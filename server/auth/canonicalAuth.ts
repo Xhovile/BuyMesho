@@ -28,7 +28,7 @@ export async function resolveCanonicalIdentity(req: Request): Promise<CanonicalR
   }
 
   try {
-    const decoded = await verifyIdToken(token, true);
+    const decoded = await verifyIdToken(token, false);
     const uid = decoded.uid;
     const email = decoded.email ?? null;
     const claimRole = normalizeUserRole((decoded as any).role);
