@@ -1,5 +1,14 @@
 import { rateLimit } from "@xhovile/platform/rate-limit/express";
-import type { RequestHandler } from "express";
+import type { Request, RequestHandler } from "express";
+
+function getRequestIdentity(request: Request): string {
+  return (
+    request.user?.uid ||
+    String((request as any).userId ?? "").trim() ||
+    String((request as any).uid ?? "").trim() ||
+    (request.ip ? `ip:${request.ip}` : "anonymous")
+  );
+}
 
 export const publicAiRateLimit: RequestHandler = rateLimit({
   name: "ai-public",
@@ -14,6 +23,6 @@ export const authenticatedAiRateLimit: RequestHandler = rateLimit({
   limit: 20,
   windowMs: 60_000,
   key: "user",
-  getUserId: (request) => request.user?.uid || (request as any).userId || (request as any).uid || (request.ip ? `ip:${request.ip}` : "anonymous"),
+  getUserId: getRequestIdentity,
   storeFailure: "fail-closed",
 });
