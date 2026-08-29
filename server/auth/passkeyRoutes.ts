@@ -31,7 +31,7 @@ export function registerPasskeyRoutes(app: Express) {
   const credentialRepository = new BuyMeshoPasskeyCredentialRepository();
   const ceremonyRepository = new BuyMeshoPasskeyCeremonyRepository();
 
-  app.post("/api/auth/passkey/register/options", registerLimiter, requireFirebaseUser, async (req: any, res) => {
+  app.post("/api/auth/passkey/register/options", requireFirebaseUser, registerLimiter, async (req: any, res) => {
     try {
       const uid = getUserUid(req);
       if (!uid) return res.status(401).json({ error: "Authentication required" });
@@ -46,7 +46,7 @@ export function registerPasskeyRoutes(app: Express) {
     }
   });
 
-  app.post("/api/auth/passkey/register/verify", registerLimiter, requireFirebaseUser, async (req: any, res) => {
+  app.post("/api/auth/passkey/register/verify", requireFirebaseUser, registerLimiter, async (req: any, res) => {
     try {
       const uid = getUserUid(req);
       if (!uid) return res.status(401).json({ error: "Authentication required" });
@@ -81,7 +81,7 @@ export function registerPasskeyRoutes(app: Express) {
     } catch (error) { console.error("[passkeys] failed to verify authentication", error); return res.status(401).json({ error: "Passkey sign-in failed" }); }
   });
 
-  app.get("/api/auth/passkey/status", authenticatedPasskeyLimiter, requireFirebaseUser, async (req: any, res) => {
+  app.get("/api/auth/passkey/status", requireFirebaseUser, authenticatedPasskeyLimiter, async (req: any, res) => {
     try {
       const uid = getUserUid(req);
       if (!uid) return res.status(401).json({ error: "Authentication required" });
@@ -90,7 +90,7 @@ export function registerPasskeyRoutes(app: Express) {
     } catch (error) { console.error("[passkeys] failed to load status", error); return res.status(500).json({ error: "Unable to load passkey status" }); }
   });
 
-  app.delete("/api/auth/passkey/:credentialId", authenticatedPasskeyLimiter, requireFirebaseUser, async (req: any, res) => {
+  app.delete("/api/auth/passkey/:credentialId", requireFirebaseUser, authenticatedPasskeyLimiter, async (req: any, res) => {
     try {
       const uid = getUserUid(req); const credentialId = String(req.params.credentialId ?? "").trim();
       if (!uid) return res.status(401).json({ error: "Authentication required" });
