@@ -6,7 +6,6 @@ import {
   reload,
   signOut,
   updatePassword,
-  verifyBeforeUpdateEmail,
   type User,
 } from "firebase/auth";
 import { auth } from "../firebase";
@@ -22,11 +21,6 @@ export type SecurityResult =
 export type PasswordCredentialInput = {
   email: string;
   password: string;
-};
-
-const DEFAULT_ACTION_CODE_SETTINGS = {
-  url: `${window.location.origin}/email-action`,
-  handleCodeInApp: false,
 };
 
 function getErrorMessage(error: any, fallback: string) {
@@ -277,11 +271,19 @@ export async function changeEmailWithVerification(
 
     await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, currentPassword));
 
-    await verifyBeforeUpdateEmail(user, nextEmail, DEFAULT_ACTION_CODE_SETTINGS);
+    const normalizedEmail = nextEmail.trim().toLowerCase();
+    if (!normalizedEmail || normalizedEmail === user.email.trim().toLowerCase()) {
+      return { ok: false, message: "The new email must be different from the current one." };
+    }
+
+    const response = await apiFetch("/api/auth/send-email-change-verification", {
+      method: "POST",
+      body: JSON.stringify({ new_email: normalizedEmail }),
+    });
 
     return {
       ok: true,
-      message: "A verification link was sent to your new email address.",
+      message: response?.message || "A verification link was sent to your new email address.",
     };
   } catch (error: any) {
     return { ok: false, message: getErrorMessage(error, "Failed to change email."), code: error?.code };
