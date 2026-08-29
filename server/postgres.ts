@@ -107,7 +107,7 @@ const connectionString = rawConnectionString && !isPlaceholderDatabaseUrl(rawCon
 const sslMode = process.env.PGSSLMODE?.trim().toLowerCase();
 const sslEnabled = sslMode !== "disable";
 const sslRejectUnauthorized = parseBoolean(process.env.PGSSL_REJECT_UNAUTHORIZED) ?? false;
-const allowMockDatabase = process.env.NODE_ENV === "test" || parseBoolean(process.env.ALLOW_MOCK_DATABASE) === true;
+const allowMockDatabase = process.env.NODE_ENV === "test" || process.env.NODE_ENV !== "production" || parseBoolean(process.env.ALLOW_MOCK_DATABASE) === true;
 
 function loadSslCaCertificate(): string | undefined {
   if (!sslEnabled || !sslRejectUnauthorized) return undefined;
