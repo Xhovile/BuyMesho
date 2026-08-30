@@ -238,28 +238,26 @@ export function decryptSensitiveValue(value: string | null | undefined): string 
   if (!value) return null;
 
   const trimmed = value.trim();
-  if (!trimmed || !PAYOUT_ENCRYPTION_SECRET) return null;
+  if (!trimmed) return null;
 
+  // Backward-compatible support for legacy/plaintext test fixtures and existing rows
+  // that predate encrypted destination storage. Newly created destinations use the
+  // 3-part AES-256-GCM representation below.
   const parts = trimmed.split(':');
-  if (parts.length !== 3) return null;
+  if (parts.length !== 3) return trimmed;
+  if (!PAYOUT_ENCRYPTION_SECRET) return null;
 
   const [ivPart, tagPart, encryptedPart] = parts;
   if (!ivPart || !tagPart || !encryptedPart) return null;
 
   try {
-    const key = scryptSync(
-      PAYOUT_ENCRYPTION_SECRET,
-      'BuyMesho seller payout',
-      32,
-    );
-
+    const key = scryptSync(PAYOUT_ENCRYPTION_SECRET, 'BuyMesho seller payout', 32);
     const iv = Buffer.from(ivPart, 'base64');
     const tag = Buffer.from(tagPart, 'base64');
     const encrypted = Buffer.from(encryptedPart, 'base64');
 
     const decipher = createDecipheriv('aes-256-gcm', key, iv);
     decipher.setAuthTag(tag);
-
     const decrypted = Buffer.concat([
       decipher.update(encrypted),
       decipher.final(),
