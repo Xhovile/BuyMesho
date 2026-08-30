@@ -33,6 +33,7 @@ export async function reconcilePayoutStatusFlow(
        p.seller_id,
        p.provider_charge_id,
        p.status,
+       p.failure_reason,
        p.requested_at,
        p.created_at,
        p.last_attempt_id
@@ -42,6 +43,29 @@ export async function reconcilePayoutStatusFlow(
   ).get(input.payoutId) as Record<string, unknown> | undefined;
 
   if (!row) throw new Error('Payout not found');
+
+  // A PayChangu insufficient-balance rejection is an attempt-level failure,
+  // not a terminal payout failure. Keep the parent payout pending so the
+  // automatic 3-hour retry schedule remains authoritative.
+  if (
+    String(row.status ?? '').toLowerCase() === 'pending' &&
+    String(row.failure_reason ?? '').toLowerCase() === 'balance_insufficient'
+  ) {
+    return {
+      payout: repository.findById(input.payoutId),
+      status: {
+        provider: 'paychangu',
+        chargeId: String(row.provider_charge_id ?? ''),
+        reference: null,
+        transactionId: null,
+        status: 'pending' as const,
+        amount: null,
+        currency: null,
+        rawResponse: {},
+        checkedAt: new Date().toISOString(),
+      },
+    };
+  }
 
   const latestAttempt = latestAttemptForPayout(input.payoutId);
   const lastAttemptId = (row.last_attempt_id as string | null) ?? (latestAttempt?.id as string | null) ?? null;
@@ -170,7 +194,7 @@ export function reconcileProviderCallbackFlow(
     db.prepare(
       `UPDATE payouts
        SET status = ?,
-           provider = COALESCE(provider, 'paychangu'),
+           provider = COALESCE(?, 'paychangu'),
            provider_charge_id = COALESCE(?, provider_charge_id),
            provider_status = COALESCE(?, provider_status),
            provider_ref_id = COALESCE(?, provider_ref_id),
@@ -184,6 +208,7 @@ export function reconcileProviderCallbackFlow(
        WHERE id = ?`,
     ).run(
       status,
+      input.providerChargeId ?? null,
       input.providerChargeId ?? null,
       status,
       input.providerReference ?? null,
@@ -242,6 +267,7 @@ export async function reconcilePendingPayoutStatusesFlow(
     `SELECT id
      FROM payouts
      WHERE provider = 'paychangu'
+       AND NOT (status = 'pending' AND failure_reason = 'balance_insufficient')
        AND (
          provider_charge_id IS NOT NULL
          OR EXISTS (SELECT 1 FROM payout_attempts pa WHERE pa.payout_id = payouts.id AND pa.provider_charge_id IS NOT NULL)
