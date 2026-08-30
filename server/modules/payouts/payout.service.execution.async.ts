@@ -60,6 +60,12 @@ function normalizeText(value: unknown): string | null {
   return text ? text : null;
 }
 
+function isInsufficientBalanceResponse(value: unknown): boolean {
+  if (!value) return false;
+  const text = JSON.stringify(value).toLowerCase();
+  return text.includes('insufficient funds') || text.includes('insufficient balance') || text.includes('not enough funds');
+}
+
 function hydrateDestination(row: Record<string, unknown>): ExecutionDestination {
   return {
     destinationType: normalizeText(row.destination_type ?? row.destinationType),
@@ -321,6 +327,50 @@ export async function executePayoutFlow(
     rawResponse: execution.rawResponse,
     createdAt: reservedAttempt.createdAt,
   };
+
+  const insufficientBalance = execution.status === 'failed' && isInsufficientBalanceResponse(execution.rawResponse);
+
+  if (insufficientBalance) {
+    const exactMessage = exactProviderErrorMessage(execution.rawResponse);
+    const reason = exactMessage ?? 'PayChangu could not initiate the payout because the available balance is insufficient.';
+    const payout = await updatePayoutStatus(input.payoutId, 'pending', {
+      provider: execution.provider,
+      providerChargeId: execution.providerChargeId,
+      providerReference,
+      providerTransactionId: execution.providerTransactionId,
+      providerStatus: execution.status,
+      lastAttemptId: attempt.id,
+      rawResponse: execution.rawResponse,
+      failureReason: 'balance_insufficient',
+      manualReviewReason: null,
+      sentAt: execution.processedAt,
+      failedAt: null,
+    });
+
+    await addPayoutEvent({
+      payoutId: input.payoutId,
+      sellerId: gate.sellerId,
+      eventType: 'payout_attempt_failed_retry_pending',
+      actorType: actor.actorType,
+      actorId: actor.actorId ?? null,
+      note: reason,
+      payload: {
+        attemptNo,
+        providerChargeId: execution.providerChargeId,
+        failureReason: 'balance_insufficient',
+        providerStatus: execution.status,
+      },
+    });
+
+    return {
+      payout,
+      attempt,
+      execution,
+      reasonCode: 'balance_insufficient',
+      reason,
+      nextAction: 'awaiting_provider' as PayoutNextAction,
+    };
+  }
 
   if (execution.status === 'failed' && isProviderHoldFailure(execution.failureClass)) {
     const failureClass: NonNullable<typeof execution.failureClass> = execution.failureClass ?? 'provider_unavailable';
