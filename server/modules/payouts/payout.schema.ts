@@ -187,12 +187,6 @@ function ensurePayoutLifecycleSchema(): void {
   ensureIndex(`CREATE UNIQUE INDEX IF NOT EXISTS idx_payouts_connect_order_unique ON payouts (order_id) WHERE order_id IS NOT NULL AND escrow_id IS NULL`);
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payouts_escrow_id ON payouts (escrow_id)`);
 
-  // The processing-state invariant is enforced in reserveRetryAttempt(), which
-  // locks the payout row before checking its current state and allocating an
-  // attempt number. A row-level trigger cannot distinguish a deliberate
-  // status transition from an unrelated UPDATE on an already-processing row,
-  // so it incorrectly rejects legitimate metadata updates such as setting
-  // last_attempt_id and causes retry execution to fail with P0001.
   db.exec(`DROP TRIGGER IF EXISTS trg_prevent_payout_double_processing ON payouts;`);
   db.exec(`DROP FUNCTION IF EXISTS prevent_payout_double_processing();`);
 
@@ -230,6 +224,49 @@ function ensurePayoutLifecycleSchema(): void {
     BEFORE UPDATE ON seller_payout_accounts
     FOR EACH ROW
     EXECUTE FUNCTION preserve_verified_seller_payout_destination();
+  `);
+
+  // A provider attempt may legitimately fail while the overall payout remains
+  // active. In particular, PayChangu can reject an attempt because the
+  // platform balance is temporarily insufficient. Preserve the failed attempt
+  // record, but keep the parent payout pending until the automatic retry window
+  // expires. The reconciliation scheduler will mark it failed after 48 hours.
+  db.exec(`
+    CREATE OR REPLACE FUNCTION buymesho_normalize_balance_insufficient_payout()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+    DECLARE
+      response_text TEXT;
+    BEGIN
+      response_text := lower(COALESCE(NEW.response_payload, ''));
+
+      IF response_text LIKE '%insufficient funds%'
+         OR response_text LIKE '%insufficient balance%'
+         OR response_text LIKE '%not enough funds%'
+      THEN
+        UPDATE payouts
+        SET status = 'pending',
+            provider_status = 'failed',
+            failure_reason = 'balance_insufficient',
+            manual_review_reason = NULL,
+            failed_at = NULL,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = NEW.payout_id
+          AND status <> 'paid'
+          AND status <> 'cancelled';
+      END IF;
+
+      RETURN NEW;
+    END;
+    $$;
+  `);
+  db.exec(`DROP TRIGGER IF EXISTS trg_buymesho_normalize_balance_insufficient_payout ON payout_attempts;`);
+  db.exec(`
+    CREATE TRIGGER trg_buymesho_normalize_balance_insufficient_payout
+    AFTER INSERT OR UPDATE OF response_payload ON payout_attempts
+    FOR EACH ROW
+    EXECUTE FUNCTION buymesho_normalize_balance_insufficient_payout();
   `);
 
   backfillMissingPayoutDestinations();
