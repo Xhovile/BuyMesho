@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ComponentProps } from "react";
 import { apiFetch } from "./lib/api";
 import PayoutDetailDrawer from "./PayoutDetailDrawer";
@@ -12,7 +12,6 @@ function pickReason(...values: Array<string | null | undefined>) {
 
 function extractProviderMessage(value: unknown): string | null {
   if (!value) return null;
-
   const extract = (input: unknown): string | null => {
     if (typeof input === "string") {
       const trimmed = input.trim();
@@ -24,7 +23,6 @@ function extractProviderMessage(value: unknown): string | null {
         return trimmed;
       }
     }
-
     if (!input || typeof input !== "object") return null;
     const record = input as Record<string, unknown>;
     for (const key of ["message", "error", "detail", "reason"]) {
@@ -34,14 +32,50 @@ function extractProviderMessage(value: unknown): string | null {
     if (record.response) return extract(record.response);
     return null;
   };
-
   return extract(value);
 }
 
+function mergeDefined<T extends Record<string, unknown>>(base: T, override: Partial<T>): T {
+  const merged = { ...base } as T;
+  for (const [key, value] of Object.entries(override)) {
+    if (value !== null && value !== undefined && value !== "") {
+      (merged as Record<string, unknown>)[key] = value;
+    }
+  }
+  return merged;
+}
+
 export default function AdminPayoutDetailDrawer(props: Props) {
-  const { selected } = props;
+  const inputSelected = props.selected;
+  const [detailSelected, setDetailSelected] = useState<Props["selected"] | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Banner | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDetailSelected(null);
+    void apiFetch(`/api/admin/payouts/detail/${encodeURIComponent(inputSelected.id)}`)
+      .then((data) => {
+        if (!cancelled && data && typeof data === "object") {
+          setDetailSelected(data as Props["selected"]);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setDetailSelected(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [inputSelected.id]);
+
+  const selected = useMemo(
+    () =>
+      mergeDefined(
+        inputSelected as unknown as Record<string, unknown>,
+        (detailSelected ?? {}) as unknown as Record<string, unknown>,
+      ) as Props["selected"],
+    [detailSelected, inputSelected],
+  );
 
   const safeVisibleActions = useMemo(
     () => props.visibleActions.filter((action) => action !== "refund_escrow"),
@@ -108,7 +142,6 @@ export default function AdminPayoutDetailDrawer(props: Props) {
   const handleOverride = async (action: Parameters<NonNullable<Props["onOpenOverrideDialog"]>>[0]) => {
     const label = action.replace(/_/g, " ");
     if (!window.confirm(`Apply ${label} to payout ${selected.id}?`)) return;
-
     const reason = pickReason(
       props.sellerControlReason,
       props.destinationReason,
@@ -117,16 +150,10 @@ export default function AdminPayoutDetailDrawer(props: Props) {
       selected.failureReason,
       `Admin ${label}`,
     );
-
     await runAction("Payout updated.", () =>
       apiFetch(`/api/admin/payouts/${encodeURIComponent(selected.id)}/override`, {
         method: "POST",
-        body: JSON.stringify({
-          payoutId: selected.id,
-          sellerId: selected.sellerId,
-          action,
-          reason,
-        }),
+        body: JSON.stringify({ payoutId: selected.id, sellerId: selected.sellerId, action, reason }),
       }),
     );
   };
@@ -136,15 +163,12 @@ export default function AdminPayoutDetailDrawer(props: Props) {
       setNotice({ type: "error", message: "This payout does not have a destination account attached." });
       return;
     }
-
     const status = String(props.destinationStatus ?? selected.destinationVerificationStatus ?? "").trim().toLowerCase();
     if (!["pending", "verified", "failed", "disabled"].includes(status)) {
       setNotice({ type: "error", message: "Choose a valid destination verification status first." });
       return;
     }
-
     const reason = pickReason(props.destinationReason, selected.destinationLastError, `Admin set destination to ${status}`);
-
     await runAction("Destination verification updated.", () =>
       apiFetch(`/api/admin/payouts/destinations/${encodeURIComponent(selected.destinationAccountId as string)}/verification`, {
         method: "POST",
@@ -158,21 +182,16 @@ export default function AdminPayoutDetailDrawer(props: Props) {
       setNotice({ type: "error", message: "This payout does not have a destination account attached." });
       return;
     }
-
     await runAction("Destination approved.", () =>
       apiFetch(`/api/admin/payouts/destinations/${encodeURIComponent(selected.destinationAccountId as string)}/verification`, {
         method: "POST",
-        body: JSON.stringify({
-          status: "verified",
-          reason: pickReason(props.destinationReason, "Destination approved by admin"),
-        }),
+        body: JSON.stringify({ status: "verified", reason: pickReason(props.destinationReason, "Destination approved by admin") }),
       }),
     );
   };
 
   const handleSellerSuspension = async (suspended: boolean) => {
     const reason = pickReason(props.sellerControlReason, selected.manualReviewReason, selected.lastError, suspended ? "Admin suspension" : "Admin unsuspension");
-
     await runAction(suspended ? "Seller payouts suspended." : "Seller payouts unsuspended.", () =>
       apiFetch(`/api/admin/payouts/sellers/${encodeURIComponent(selected.sellerId)}/suspension`, {
         method: "POST",
@@ -187,9 +206,7 @@ export default function AdminPayoutDetailDrawer(props: Props) {
       setNotice({ type: "error", message: "Enter a valid positive adjustment amount." });
       return;
     }
-
     const reason = pickReason(props.adjustmentReason, "Manual payout adjustment");
-
     await runAction("Adjustment created.", () =>
       apiFetch(`/api/admin/payouts/${encodeURIComponent(selected.id)}/adjustments`, {
         method: "POST",
