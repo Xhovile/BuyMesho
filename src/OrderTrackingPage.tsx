@@ -234,6 +234,16 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
     escrowState !== "refunded" &&
     escrowState !== "closed";
 
+  const escrowReleased =
+    escrowState === "released" ||
+    order?.status === "fulfilled" ||
+    order?.status === "closed";
+
+  const escrowUnavailable =
+    !escrowReleased &&
+    ["pending", "pending_payment", "initiated"].includes(paymentStatus.toLowerCase()) &&
+    !canConfirmDelivery;
+
   const handleConfirmDelivery = async () => {
     if (!order) return;
 
@@ -406,6 +416,8 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
                     disputeReason={disputeReason}
                     submitting={submitting}
                     canConfirmDelivery={canConfirmDelivery}
+                    escrowReleased={escrowReleased}
+                    escrowUnavailable={escrowUnavailable}
                     onChangeReason={setDisputeReason}
                     onConfirmDelivery={handleConfirmDelivery}
                     onOpenDispute={handleOpenDisputeForm}
