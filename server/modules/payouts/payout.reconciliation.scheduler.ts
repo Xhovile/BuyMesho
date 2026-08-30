@@ -15,7 +15,9 @@ export type PayoutReconciliationSchedulerConfig = {
   batchLimit: number;
 };
 
-const DEFAULT_INTERVAL_MS = PAYOUT_POLICY.automaticRetryIntervalHours * 60 * 60 * 1000;
+// Poll frequently; actual retry timing is enforced per payout by retryEligibleAt().
+// This avoids tying a payout's 3-hour eligibility window to the worker's startup time.
+const DEFAULT_INTERVAL_MS = 60 * 1000;
 const DEFAULT_BATCH_LIMIT = 25;
 const MIN_INTERVAL_MS = 10 * 1000;
 const MAX_BATCH_LIMIT = 50;
@@ -196,8 +198,18 @@ export class PayoutReconciliationScheduler {
        FROM payouts p
        WHERE p.provider = 'paychangu'
          AND (
-           p.status = 'failed'
-           OR (p.status = 'pending' AND p.failure_reason = 'balance_insufficient')
+           (p.status = 'pending' AND p.failure_reason = 'balance_insufficient')
+           OR (p.status = 'failed' AND p.failure_reason IN (
+             'provider_timeout',
+             'provider_unavailable',
+             'provider_network_error',
+             'provider_rate_limited',
+             'provider_rejected',
+             'provider_authentication_error',
+             'provider_configuration_error',
+             'provider_conflict',
+             'balance_insufficient'
+           ))
            OR (p.status = 'held' AND p.failure_reason IN (
              'provider_timeout',
              'provider_unavailable',
@@ -236,10 +248,8 @@ export class PayoutReconciliationScheduler {
         continue;
       }
 
-      // Older payouts may have been recorded as failed/provider_rejected even
-      // though PayChangu's actual response says the platform balance was
-      // insufficient. Normalize those records back to pending while the
-      // 48-hour retry window is still open. The attempt remains failed.
+      // Legacy provider_rejected records that contain PayChangu's insufficient
+      // balance response remain pending during the 48-hour retry window.
       if (
         withinRetryWindow(requestedAt, nowMs) &&
         isInsufficientBalanceResponse(row.latest_response_payload) &&
