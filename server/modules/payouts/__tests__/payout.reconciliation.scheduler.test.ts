@@ -24,7 +24,7 @@ test('payout reconciliation scheduler reads bounded environment config', () => {
 
   assert.deepEqual(config, {
     enabled: true,
-    intervalMs: 10_000,
+    intervalMs: 30_000,
     batchLimit: 50,
   });
 });
