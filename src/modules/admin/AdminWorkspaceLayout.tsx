@@ -37,7 +37,7 @@ export default function AdminWorkspaceLayout({
             className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Market
+            Back
           </button>
           <div className="flex items-center gap-2">
             {isAuditLog ? <DiagnosticsDrawer /> : null}
