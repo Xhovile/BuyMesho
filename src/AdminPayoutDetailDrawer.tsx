@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ComponentProps, KeyboardEvent } from "react";
+import type { ComponentProps } from "react";
 import { apiFetch } from "./lib/api";
 import PayoutDetailDrawer from "./PayoutDetailDrawer";
 
@@ -97,21 +97,34 @@ export default function AdminPayoutDetailDrawer(props: Props) {
 
   const actionBusyId = busy ? selected.id : props.actionBusyId;
 
-  const handleDrawerKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (!((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a")) return;
+  useEffect(() => {
+    const handleSelectAll = (event: KeyboardEvent) => {
+      if (!((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a")) return;
 
-    event.preventDefault();
-    event.stopPropagation();
+      const target = event.target;
+      if (target instanceof HTMLElement) {
+        const tagName = target.tagName.toLowerCase();
+        if (tagName === "input" || tagName === "textarea" || tagName === "select" || target.isContentEditable) {
+          return;
+        }
+      }
 
-    const root = drawerRef.current;
-    if (!root) return;
+      const root = drawerRef.current;
+      if (!root) return;
 
-    const selection = window.getSelection();
-    const range = document.createRange();
-    range.selectNodeContents(root);
-    selection?.removeAllRanges();
-    selection?.addRange(range);
-  };
+      event.preventDefault();
+      event.stopPropagation();
+
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(root);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    };
+
+    document.addEventListener("keydown", handleSelectAll, true);
+    return () => document.removeEventListener("keydown", handleSelectAll, true);
+  }, []);
 
   const handleCopyDetails = async () => {
     const payload = {
@@ -298,14 +311,7 @@ export default function AdminPayoutDetailDrawer(props: Props) {
         </div>
       ) : null}
 
-      <div
-        ref={drawerRef}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        onKeyDown={handleDrawerKeyDown}
-        className="outline-none"
-      >
+      <div ref={drawerRef} className="outline-none">
         <button
           type="button"
           onClick={() => void handleCopyDetails()}
