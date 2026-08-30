@@ -24,6 +24,34 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
+function extractProviderMessage(value: unknown): string | null {
+  if (!value) return null;
+
+  const extract = (input: unknown): string | null => {
+    if (typeof input === "string") {
+      const trimmed = input.trim();
+      if (!trimmed) return null;
+      try {
+        const parsed = JSON.parse(trimmed);
+        return extract(parsed) ?? trimmed;
+      } catch {
+        return trimmed;
+      }
+    }
+
+    if (!input || typeof input !== "object") return null;
+    const record = input as Record<string, unknown>;
+    for (const key of ["message", "error", "detail", "reason"]) {
+      const candidate = extract(record[key]);
+      if (candidate) return candidate;
+    }
+    if (record.response) return extract(record.response);
+    return null;
+  };
+
+  return extract(value);
+}
+
 export default function PayoutQueueCard({
   row,
   busy,
@@ -43,6 +71,17 @@ export default function PayoutQueueCard({
   };
   const diagnostic = classifyPayoutDiagnostic(row);
   const diagnostics = getPayoutDiagnostics(row);
+  const providerMessage = extractProviderMessage(row.latestAttemptProviderResponse);
+  const providerStatus = row.providerStatus ? formatStatus(row.providerStatus) : null;
+  const latestAttemptLabel = row.latestAttemptNo ? `Attempt #${row.latestAttemptNo}` : null;
+  const latestProviderReference = row.latestAttemptProviderReference ?? row.providerReference;
+  const latestProviderTransactionId = row.latestAttemptProviderTransactionId ?? row.providerTransactionId;
+  const latestUpdate =
+    providerMessage ??
+    row.latestAttemptFailureReason ??
+    row.failureReason ??
+    diagnostic.message ??
+    "No provider update recorded yet.";
 
   return (
     <div className="rounded-[1.75rem] border border-zinc-400 bg-zinc-100 p-4 shadow-sm">
@@ -52,6 +91,16 @@ export default function PayoutQueueCard({
             <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${statusTone(row.status)}`}>
               {formatStatus(row.status)}
             </span>
+            {providerStatus ? (
+              <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-700">
+                PayChangu {providerStatus}
+              </span>
+            ) : null}
+            {latestAttemptLabel ? (
+              <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
+                {latestAttemptLabel}
+              </span>
+            ) : null}
             {row.retryEligible ? (
               <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
                 retry eligible
@@ -71,21 +120,34 @@ export default function PayoutQueueCard({
           <div className="grid gap-2 text-sm text-zinc-700 sm:grid-cols-2 xl:grid-cols-4">
             <Info label="Payout ID" value={row.id} />
             <Info label="Seller" value={rowMeta.sellerBusinessName?.trim() || row.sellerId} />
-            <Info label="Seller ID" value={row.sellerId} />
             <Info label="Order ID" value={row.orderId ?? "—"} />
             <Info label="Amount" value={`${row.currency} ${Number(row.amount).toLocaleString()}`} />
             <Info label="Provider" value={rowMeta.provider ?? "paychangu"} />
             <Info label="Destination" value={row.destinationMaskedAccount ?? "—"} />
+            <Info label="Escrow" value={formatStatus(row.escrowState)} />
             <Info label="Updated" value={rowMeta.updatedAt ? new Date(rowMeta.updatedAt).toLocaleString() : "—"} />
           </div>
 
           <div className="rounded-2xl border border-indigo-100 bg-white px-4 py-3 text-sm text-zinc-700">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">
-              {diagnostic.classification === "none" ? "Payout diagnostic" : "Why blocked"}
-            </p>
-            <p className="mt-1 font-bold text-zinc-950">{diagnostic.message ?? "No actual blocker detected from backend diagnostics."}</p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Latest payout update</p>
+                <p className="mt-1 font-bold text-zinc-950">{latestUpdate}</p>
+              </div>
+              {row.latestAttemptAt ? (
+                <span className="shrink-0 text-xs font-semibold text-zinc-500">{new Date(row.latestAttemptAt).toLocaleString()}</span>
+              ) : null}
+            </div>
+
+            {(latestProviderReference || latestProviderTransactionId) ? (
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {latestProviderReference ? <Info label="Provider reference" value={latestProviderReference} /> : null}
+                {latestProviderTransactionId ? <Info label="Provider transaction" value={latestProviderTransactionId} /> : null}
+              </div>
+            ) : null}
+
             <details className="mt-3">
-              <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Raw diagnostic values</summary>
+              <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Technical diagnostics</summary>
               <dl className="mt-2 grid gap-2 sm:grid-cols-2">
                 {Object.entries(diagnostics).map(([key, value]) => (
                   <div key={key} className="rounded-xl bg-zinc-50 px-2.5 py-2">
@@ -142,7 +204,7 @@ export default function PayoutQueueCard({
             </button>
           ) : null}
 
-           {visibleActions.includes("mark_paid") && row.status === "held" ? (
+          {visibleActions.includes("mark_paid") && row.status === "held" ? (
             <button
               type="button"
               disabled={busy || !canAction(row, "mark_paid")}
@@ -150,7 +212,7 @@ export default function PayoutQueueCard({
               className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
-              Comfirm as Paid
+              Confirm as Paid
             </button>
           ) : null}
 
