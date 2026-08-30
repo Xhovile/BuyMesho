@@ -23,6 +23,7 @@ import { registerSellerApplicationRoutes } from "./sellerApplication.routes.js";
 import { registerSellerAnalyticsRoutes } from "./sellerAnalytics.routes.js";
 import { createPaymentRouter } from "../modules/payments/payment.routes.js";
 import { createPaymentAdminActionRouter } from "../modules/payments/payment.admin.actions.routes.js";
+import { createPaymentAdminPayoutCanonicalRouter } from "../modules/payments/payment.admin.payout.canonical.routes.js";
 import { createPaymentAdminPayoutDisplayRouter } from "../modules/payments/payment.admin.payout.display.routes.js";
 import { createPaymentAdminPayoutRouter } from "../modules/payments/payment.admin.payout.routes.js";
 import { createPaymentAdminRouter } from "../modules/payments/payment.admin.routes.js";
@@ -131,10 +132,6 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerMessageModerationRoutes(app);
   installPostgresMessageSchemaGuard(db);
 
-  // Admin Messages is a dedicated moderation/read-only surface. Being an admin
-  // does not make an account read-only everywhere else; a dual-role seller must
-  // still be able to use Seller Management messaging when they are a participant
-  // in the conversation.
   app.post("/api/messages/:conversationId/messages", requireAuth, (req: any, res, next) => {
     const user = req.user as { uid: string; is_admin?: boolean } | undefined;
     if (!user) return res.status(401).json({ error: "Authentication required" });
@@ -247,6 +244,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   app.post("/api/payments/checkout", requireFirebaseUser, requireListingBuyerDetails);
   app.use("/api/payments", createPaymentRouter(requireFirebaseUser));
   app.use("/api/admin", createPaymentAdminActionRouter(requireAuth));
+  app.use("/api/admin", createPaymentAdminPayoutCanonicalRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminPayoutDisplayRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminPayoutRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminRouter(requireAuth));
