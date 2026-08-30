@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import type { ComponentProps } from "react";
 import { apiFetch } from "./lib/api";
 import PayoutDetailDrawer from "./PayoutDetailDrawer";
-import { classifyPayoutDiagnostic } from "./modules/payouts/diagnostics";
 
 type Props = ComponentProps<typeof PayoutDetailDrawer>;
 type Banner = { type: "success" | "error"; message: string };
@@ -43,10 +42,6 @@ export default function AdminPayoutDetailDrawer(props: Props) {
   const { selected } = props;
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Banner | null>(null);
-
-  const primaryDiagnostic = classifyPayoutDiagnostic(selected);
-  const bannerReason = primaryDiagnostic.message;
-  const bannerLabel = primaryDiagnostic.classification === "none" ? null : primaryDiagnostic.label;
 
   const safeVisibleActions = useMemo(
     () => props.visibleActions.filter((action) => action !== "refund_escrow"),
@@ -210,15 +205,6 @@ export default function AdminPayoutDetailDrawer(props: Props) {
 
   return (
     <>
-      {bannerReason ? (
-        <div className="fixed right-4 top-4 z-[95] w-[min(28rem,calc(100vw-2rem))] rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-2xl">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
-            Primary payout blocker{bannerLabel ? ` · ${bannerLabel}` : ""}
-          </p>
-          <p className="mt-1 break-words font-semibold leading-relaxed">{bannerReason}</p>
-        </div>
-      ) : null}
-
       {notice ? (
         <div
           className={`fixed left-4 top-4 z-[96] w-[min(28rem,calc(100vw-2rem))] rounded-2xl border px-4 py-3 text-sm font-semibold shadow-2xl ${
