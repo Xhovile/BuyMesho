@@ -4,6 +4,8 @@ type DisputeActionsCardProps = {
   disputeReason: string;
   submitting: 'release' | 'dispute' | null;
   canConfirmDelivery: boolean;
+  escrowReleased: boolean;
+  escrowUnavailable: boolean;
   onChangeReason: (value: string) => void;
   onConfirmDelivery: () => void;
   onOpenDispute: () => void;
@@ -13,22 +15,25 @@ export default function DisputeActionsCard({
   disputeReason,
   submitting,
   canConfirmDelivery,
+  escrowReleased,
+  escrowUnavailable,
   onChangeReason,
   onConfirmDelivery,
   onOpenDispute,
 }: DisputeActionsCardProps) {
   const releaseInProgress = submitting === 'release';
-  const releaseCompleted = !canConfirmDelivery && !releaseInProgress;
+  const releaseCompleted = escrowReleased && !releaseInProgress;
+  const releaseDisabled = releaseCompleted || escrowUnavailable || submitting !== null;
 
   return (
     <div className="space-y-3">
       <button
         type="button"
         onClick={onConfirmDelivery}
-        disabled={releaseCompleted || submitting !== null}
-        aria-disabled={releaseCompleted || submitting !== null}
+        disabled={releaseDisabled}
+        aria-disabled={releaseDisabled}
         className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
-          releaseCompleted
+          releaseCompleted || escrowUnavailable
             ? 'border border-zinc-200 bg-zinc-100 text-zinc-500'
             : 'bg-[#7F1D1D] text-white hover:bg-[#991B1B]'
         }`}
@@ -38,7 +43,9 @@ export default function DisputeActionsCard({
           ? 'Submitting escrow…'
           : releaseCompleted
             ? 'Escrow released'
-            : 'Confirm delivery (release escrow)'}
+            : escrowUnavailable
+              ? 'Escrow not available'
+              : 'Confirm delivery (release escrow)'}
       </button>
 
       <div className="rounded-2xl border border-zinc-200 bg-white p-3">
