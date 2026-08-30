@@ -218,5 +218,6 @@ export async function openTicketDispute(ticketId: string, reason: string): Promi
 export async function releaseOrderEscrow(orderId: string): Promise<Record<string, unknown>> {
   return apiFetch(`/api/escrow/${encodeURIComponent(orderId)}/release`, {
     method: "POST",
+    timeoutMs: 40000,
   }) as Promise<Record<string, unknown>>;
 }
