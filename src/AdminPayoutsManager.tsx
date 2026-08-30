@@ -225,8 +225,8 @@ function formatStatus(value: string | null | undefined) {
 
 function csvCell(value: unknown) {
   const text = String(value ?? "");
-  const escaped = text.replace(/"/g, '""');
-  return `"${escaped}"`;
+  const escaped = text.replace(/\"/g, '\"\"');
+  return `\"${escaped}\"`;
 }
 
 function canRefundEscrow(row: PayoutRow, isAdmin: boolean) {
@@ -608,6 +608,7 @@ export default function AdminPayoutsManager() {
       return;
     }
     void loadAdjustments(selected.id);
+  
     setDestinationStatus(selected.destinationVerificationStatus ?? selected.destinationStatus ?? "verified");
     setDestinationReason(selected.destinationLastError ?? selected.lastError ?? selected.latestAttemptFailureReason ?? "");
     setSellerControlReason("");
@@ -686,11 +687,15 @@ export default function AdminPayoutsManager() {
     try {
       await apiFetch(`/api/payouts/${encodeURIComponent(row.sellerId)}/retry`, {
         method: "POST",
-        body: JSON.stringify({ payoutId: row.id }),
+        body: JSON.stringify({
+          payoutId: row.id,
+        }),
       });
       setNotice({ type: "success", message: "Payout retried." });
       await load(pageIndex);
-      if (selectedId) await loadAdjustments(selectedId);
+      if (selectedId) {
+        await loadAdjustments(selectedId);
+      }
     } catch (err) {
       setNotice({ type: "error", message: err instanceof Error ? err.message : "Retry failed." });
     } finally {
@@ -700,25 +705,54 @@ export default function AdminPayoutsManager() {
 
   const handleOpenDialog = (row: PayoutRow, kind: PendingDialog["kind"], action?: OverrideAction) => {
     if (kind === "retry") {
-      setPendingDialog({ kind, row, title: "Retry payout", message: "Create a new attempt for this payout.", confirmLabel: "Retry payout" });
+      setPendingDialog({
+        kind,
+        row,
+        title: "Retry payout",
+        message: "Create a new attempt for this payout.",
+        confirmLabel: "Retry payout",
+      });
       return;
     }
+
     if (kind === "reconcile") {
-      setPendingDialog({ kind, row, title: "Reconcile payout", message: "Re-check the payout against provider status.", confirmLabel: "Reconcile now" });
+      setPendingDialog({
+        kind,
+        row,
+        title: "Reconcile payout",
+        message: "Re-check the payout against provider status.",
+        confirmLabel: "Reconcile now",
+      });
       return;
     }
+
     if (kind === "refund_escrow") {
       setNotice({ type: "error", message: "Refund escrow is not wired in this build." });
       return;
     }
+
     if (kind === "override" && action) {
       setPendingDialog({
         kind,
         row,
         action,
-        title: action === "hold" ? "Hold payout" : action === "mark_paid" ? "Mark payout paid" : action === "mark_failed" ? "Mark payout failed" : "Cancel payout",
+        title:
+          action === "hold"
+            ? "Hold payout"
+            : action === "mark_paid"
+              ? "Mark payout paid"
+              : action === "mark_failed"
+                ? "Mark payout failed"
+                : "Cancel payout",
         message: "This changes the payout state directly.",
-        confirmLabel: action === "hold" ? "Hold payout" : action === "mark_paid" ? "Mark paid" : action === "mark_failed" ? "Mark failed" : "Cancel payout",
+        confirmLabel:
+          action === "hold"
+            ? "Hold payout"
+            : action === "mark_paid"
+              ? "Mark paid"
+              : action === "mark_failed"
+                ? "Mark failed"
+                : "Cancel payout",
         danger: action !== "mark_paid",
       });
     }
@@ -731,19 +765,27 @@ export default function AdminPayoutsManager() {
       if (pendingDialog.kind === "retry") {
         await apiFetch(`/api/payouts/${encodeURIComponent(pendingDialog.row.sellerId)}/retry`, {
           method: "POST",
-          body: JSON.stringify({ payoutId: pendingDialog.row.id }),
+          body: JSON.stringify({
+            payoutId: pendingDialog.row.id,
+          }),
         });
       } else if (pendingDialog.kind === "reconcile") {
         await apiFetch(`/api/admin/payouts/${encodeURIComponent(pendingDialog.row.id)}/reconcile`, { method: "POST" });
       } else if (pendingDialog.kind === "override") {
         await apiFetch(`/api/payouts/${encodeURIComponent(pendingDialog.row.sellerId)}/override`, {
           method: "POST",
-          body: JSON.stringify({ payoutId: pendingDialog.row.id, action: pendingDialog.action, reason: overrideReason }),
+          body: JSON.stringify({
+            payoutId: pendingDialog.row.id,
+            action: pendingDialog.action,
+            reason: overrideReason,
+          }),
         });
       }
       closeActionDialog();
       await load(pageIndex);
-      if (selectedId) await loadAdjustments(selectedId);
+      if (selectedId) {
+        await loadAdjustments(selectedId);
+      }
     } catch (err) {
       setNotice({ type: "error", message: err instanceof Error ? err.message : "Action failed." });
     } finally {
@@ -780,18 +822,56 @@ export default function AdminPayoutsManager() {
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Admin payouts</p>
               <h1 className="mt-1 text-2xl font-black tracking-tight text-zinc-950">Payout queue</h1>
-              <p className="mt-1 text-sm text-zinc-500">Manage payout lifecycle, review exact failure reasons, and reconcile provider state.</p>
+              <p className="mt-1 text-sm text-zinc-500">
+                Manage payout lifecycle, review exact failure reasons, and reconcile provider state.
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={handleRefresh} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"><RefreshCw className="h-4 w-4" />Refresh</button>
-              <button type="button" onClick={handleBulkReconcile} disabled={batchReconciling} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50">{batchReconciling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock3 className="h-4 w-4" />}Reconcile batch</button>
-              <button type="button" onClick={handleExportCsv} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"><Download className="h-4 w-4" />Export CSV</button>
+              <button
+                type="button"
+                onClick={handleRefresh}
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkReconcile}
+                disabled={batchReconciling}
+                className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
+              >
+                {batchReconciling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock3 className="h-4 w-4" />}
+                Reconcile batch
+              </button>
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+              >
+                {"Export CSV"}
+              </button>
             </div>
           </div>
         </div>
 
-        {notice ? <div className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${notice.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-800"}`}>{notice.message}</div> : null}
-        {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{error}</div> : null}
+        {notice ? (
+          <div
+            className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${
+              notice.type === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border-rose-200 bg-rose-50 text-rose-800"
+            }`}
+          >
+            {notice.message}
+          </div>
+        ) : null}
+
+        {error ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">
+            {error}
+          </div>
+        ) : null}
 
         <div className="grid gap-3 md:grid-cols-4">
           <Stat label="Total payouts" value={summary.summary?.totalPayouts ?? 0} />
@@ -801,22 +881,70 @@ export default function AdminPayoutsManager() {
         </div>
 
         <div className="flex flex-wrap gap-3 rounded-[2rem] border border-zinc-200 bg-white p-4 shadow-sm">
-          <FormDropdown label="Status filter" value={statusFilter} options={STATUS_FILTER_OPTIONS} onChange={(value) => setStatusFilter(value as StatusFilter)} placeholder="Filter by status" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search payout, seller, order, provider..." className="min-w-[260px] flex-1 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm outline-none transition focus:border-zinc-400" />
-          <label className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-600"><input type="checkbox" checked={retryEligibleOnly} onChange={(event) => setRetryEligibleOnly(event.target.checked)} className="h-4 w-4 rounded border-zinc-300" />Retry eligible only</label>
+          <FormDropdown
+            label="Status filter"
+            value={statusFilter}
+            options={STATUS_FILTER_OPTIONS}
+            onChange={(value) => setStatusFilter(value as StatusFilter)}
+            placeholder="Filter by status"
+          />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search payout, seller, order, provider..."
+            className="min-w-[260px] flex-1 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm outline-none transition focus:border-zinc-400"
+          />
+          <label className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-600">
+            <input
+              type="checkbox"
+              checked={retryEligibleOnly}
+              onChange={(event) => setRetryEligibleOnly(event.target.checked)}
+              className="h-4 w-4 rounded border-zinc-300"
+            />
+            Retry eligible only
+          </label>
         </div>
 
         <div className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-zinc-200 text-sm">
-              <thead className="bg-zinc-50 text-left text-zinc-500"><tr><th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Status</th><th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Seller</th><th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Amount</th><th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Provider</th><th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Updated</th></tr></thead>
+              <thead className="bg-zinc-50 text-left text-zinc-500">
+                <tr>
+                  <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Status</th>
+                  <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Seller</th>
+                  <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Amount</th>
+                  <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Provider</th>
+                  <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Updated</th>
+                </tr>
+              </thead>
               <tbody className="divide-y divide-zinc-100">
                 {filteredRows.map((row) => (
                   <tr key={row.id} className="cursor-pointer hover:bg-zinc-50" onClick={() => handleOpenDrawer(row.id)}>
-                    <td className="px-4 py-4"><div className="space-y-2"><span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${statusTone(row.status)}`}>{formatStatus(row.status)}</span>{row.status === "held" || row.status === "failed" ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"><div className="font-black text-amber-950">Exact error</div><div className="mt-1 leading-5">{row.lastError ?? row.holdReason ?? row.manualReviewReason ?? row.latestAttemptFailureReason ?? row.failureReason ?? "Awaiting detail"}</div></div> : null}</div></td>
+                    <td className="px-4 py-4">
+                      <div className="space-y-2">
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${statusTone(row.status)}`}>
+                          {formatStatus(row.status)}
+                        </span>
+                        {row.status === "held" || row.status === "failed" ? (
+                          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                            <div className="font-black text-amber-950">Exact error</div>
+                            <div className="mt-1 leading-5">
+                              {row.lastError ?? row.holdReason ?? row.manualReviewReason ?? row.latestAttemptFailureReason ?? row.failureReason ?? "Awaiting detail"}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </td>
                     <td className="px-4 py-4 text-zinc-600">{row.sellerId}</td>
-                    <td className="px-4 py-4 text-zinc-600">{Number(row.amount).toLocaleString()} {row.currency}</td>
-                    <td className="px-4 py-4 text-zinc-600"><div className="space-y-1"><div className="font-semibold text-zinc-900">{row.provider ?? "paychangu"}</div><div className="text-xs text-zinc-500">{row.providerReference ?? row.providerChargeId ?? "—"}</div></div></td>
+                    <td className="px-4 py-4 text-zinc-600">
+                      {Number(row.amount).toLocaleString()} {row.currency}
+                    </td>
+                    <td className="px-4 py-4 text-zinc-600">
+                      <div className="space-y-1">
+                        <div className="font-semibold text-zinc-900">{row.provider ?? "paychangu"}</div>
+                        <div className="text-xs text-zinc-500">{row.providerReference ?? row.providerChargeId ?? "—"}</div>
+                      </div>
+                    </td>
                     <td className="px-4 py-4 text-zinc-600">{toDate(row.updatedAt)}</td>
                   </tr>
                 ))}
@@ -867,7 +995,7 @@ export default function AdminPayoutsManager() {
         />
       ) : null}
 
-      {pendingDialog ? <ActionModal open title={pendingDialog.title} message={pendingDialog.message} confirmLabel={pendingDialog.confirmLabel} danger={pendingDialog.danger} onClose={closeActionDialog} onConfirm={handleConfirmDialog} busy={actionBusyId === pendingDialog.row.id} /> : null}
+      {pendingDialog ? <ActionModal open title={pendingDialog.title} message={pendingDialog.message} confirmLabel={pendingDialog.confirmLabel} danger={pendingDialog.danger} onCancel={closeActionDialog} onConfirm={handleConfirmDialog} loading={actionBusyId === pendingDialog.row.id} /> : null}
     </AdminWorkspaceLayout>
   );
 }
