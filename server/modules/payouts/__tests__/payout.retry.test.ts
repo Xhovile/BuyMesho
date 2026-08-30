@@ -168,7 +168,7 @@ test('retry payout generates a fresh provider charge id per attempt', async () =
   }
 });
 
-test('concurrent retry calls do not reuse the same attempt_no', async () => {
+test('concurrent retry calls allow only one provider submission while the payout is processing', async () => {
   resetState();
   seedPayout();
 
@@ -197,13 +197,22 @@ test('concurrent retry calls do not reuse the same attempt_no', async () => {
   }) as typeof fetch;
 
   try {
-    const [first, second] = await Promise.all([
+    const results = await Promise.allSettled([
       payoutService.executePayout({ payoutId, actorType: 'admin', actorId: 'admin-concurrent-1' }),
       payoutService.executePayout({ payoutId, actorType: 'admin', actorId: 'admin-concurrent-2' }),
     ]);
 
-    assert.ok(first.attempt);
-    assert.ok(second.attempt);
+    const fulfilled = results.filter((result): result is PromiseFulfilledResult<Awaited<ReturnType<typeof payoutService.executePayout>>> => result.status === 'fulfilled');
+    const rejected = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
+
+    assert.equal(fulfilled.length, 1);
+    assert.equal(rejected.length, 1);
+    assert.match(String(rejected[0]?.reason?.message ?? rejected[0]?.reason ?? ''), /already processing/i);
+
+    const winningResult = fulfilled[0]?.value;
+    assert.ok(winningResult?.attempt);
+    assert.equal(winningResult?.attempt?.attemptNo, 1);
+
     const db = getPaymentDb();
     const attempts = db.prepare(
       `SELECT attempt_no
@@ -219,10 +228,10 @@ test('concurrent retry calls do not reuse the same attempt_no', async () => {
        ORDER BY attempt_no ASC`,
     ).all(payoutId) as Array<{ attempt_no: number; count: number }>;
 
-    assert.equal(payoutRequestCount, 2);
-    assert.equal(attempts.length, 2);
-    assert.deepEqual(attempts.map((row) => row.attempt_no), [1, 2]);
-    assert.deepEqual(groupedAttempts.map((row) => row.count), [1, 1]);
+    assert.equal(payoutRequestCount, 1);
+    assert.equal(attempts.length, 1);
+    assert.deepEqual(attempts.map((row) => row.attempt_no), [1]);
+    assert.deepEqual(groupedAttempts.map((row) => row.count), [1]);
   } finally {
     global.fetch = originalFetch;
     restorePayChanguSecretForTest(originalSecretKey);
