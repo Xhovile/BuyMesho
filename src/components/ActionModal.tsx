@@ -8,6 +8,7 @@ type ActionModalProps = {
   confirmLabel: string;
   cancelLabel?: string;
   loading?: boolean;
+  busy?: boolean;
   danger?: boolean;
   inputLabel?: string;
   inputValue?: string;
@@ -16,6 +17,7 @@ type ActionModalProps = {
   onInputChange?: (value: string) => void;
   onConfirm: () => void;
   onCancel: () => void;
+  onClose?: () => void;
 };
 
 export default function ActionModal({
@@ -25,6 +27,7 @@ export default function ActionModal({
   confirmLabel,
   cancelLabel = "Cancel",
   loading = false,
+  busy = false,
   danger = false,
   inputLabel,
   inputValue,
@@ -33,7 +36,11 @@ export default function ActionModal({
   onInputChange,
   onConfirm,
   onCancel,
+  onClose,
 }: ActionModalProps) {
+  const isLoading = loading || busy;
+  const handleCancel = onClose ?? onCancel;
+
   return (
     <AnimatePresence>
       {open ? (
@@ -44,7 +51,7 @@ export default function ActionModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onCancel}
+            onClick={handleCancel}
             className="absolute inset-0 bg-zinc-950/65 backdrop-blur-sm"
           />
 
@@ -65,7 +72,7 @@ export default function ActionModal({
 
               <button
                 type="button"
-                onClick={onCancel}
+                onClick={handleCancel}
                 className="rounded-full p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800"
                 aria-label="Close dialog"
               >
@@ -107,7 +114,7 @@ export default function ActionModal({
             <div className="flex gap-3 border-t border-zinc-100 px-6 py-5">
               <button
                 type="button"
-                onClick={onCancel}
+                onClick={handleCancel}
                 className="flex-1 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-extrabold text-zinc-700 transition-colors hover:bg-zinc-50"
               >
                 {cancelLabel}
@@ -115,14 +122,14 @@ export default function ActionModal({
               <button
                 type="button"
                 onClick={onConfirm}
-                disabled={loading}
+                disabled={isLoading}
                 className={`flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-extrabold transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
                   danger
                     ? "bg-red-600 text-white hover:bg-red-700"
                     : "bg-zinc-900 text-white hover:bg-zinc-800"
                 }`}
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {confirmLabel}
               </button>
             </div>
