@@ -244,7 +244,58 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
       await releaseOrderEscrow(order.id);
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to confirm delivery.");
+      const message = err instanceof Error ? err.message : "";
+      const isClientTimeout = /request timed out after \d+ms/i.test(message);
+
+      if (!isClientTimeout) {
+        setError(message || "Failed to confirm delivery.");
+        setSubmitting(null);
+        return;
+      }
+
+      // The release request was already sent. The client timeout only means
+      // it stopped waiting for the HTTP response, so verify persisted state
+      // before presenting a release failure.
+      const maxChecks = 5;
+      const retryDelayMs = 1500;
+
+      for (let check = 0; check < maxChecks; check += 1) {
+        try {
+          const trimmedReference = effectiveReference?.trim();
+          if (!trimmedReference) break;
+
+          const latest = await fetchOrderByReference(trimmedReference);
+          setBundle(latest);
+
+          const latestEscrowState = String(
+            latest.escrow?.state ?? latest.escrow?.status ?? "",
+          )
+            .trim()
+            .toLowerCase();
+          const latestOrderStatus = String(latest.order?.status ?? "")
+            .trim()
+            .toLowerCase();
+
+          if (
+            latestEscrowState === "released" ||
+            latestOrderStatus === "fulfilled" ||
+            latestOrderStatus === "closed"
+          ) {
+            setError(null);
+            return;
+          }
+        } catch {
+          // Keep the release UI active while status verification is retried.
+        }
+
+        if (check < maxChecks - 1) {
+          await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+        }
+      }
+
+      setError(
+        "Escrow release was submitted, but its final status could not be confirmed yet. Please check the order status before trying again.",
+      );
     } finally {
       setSubmitting(null);
     }
