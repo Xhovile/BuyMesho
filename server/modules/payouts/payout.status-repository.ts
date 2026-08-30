@@ -9,7 +9,7 @@ const PAYOUT_ALLOWED_TRANSITIONS: Readonly<Record<PayoutStatus, readonly PayoutS
   ready_for_payout: ['ready_for_payout', 'queued', 'held', 'cancelled'],
   queued: ['queued', 'processing', 'pending', 'paid', 'failed', 'held', 'cancelled'],
   processing: ['processing', 'pending', 'paid', 'failed', 'held', 'cancelled'],
-  pending: ['pending', 'processing', 'paid', 'failed', 'held', 'cancelled'],
+  pending: ['pending', 'queued', 'processing', 'paid', 'failed', 'held', 'cancelled'],
   held: ['held', 'eligible', 'ready_for_payout', 'queued', 'processing', 'pending', 'paid', 'failed', 'cancelled'],
   paid: ['paid'],
   failed: ['failed', 'eligible', 'ready_for_payout', 'queued', 'processing', 'pending', 'held', 'cancelled'],
@@ -77,6 +77,10 @@ export class PayoutStatusRepository {
       id,
     );
 
+    if (status !== 'paid' && status !== 'cancelled') {
+      db.prepare('UPDATE payouts SET paid_at = NULL, failed_at = NULL, updated_at = ? WHERE id = ?').run(now, id);
+    }
+
     return this.findById(id);
   }
 
@@ -134,7 +138,14 @@ export class PayoutStatusRepository {
       ],
     );
 
-    const row = result.rows[0];
+    if (status !== 'paid' && status !== 'cancelled') {
+      await executor.query(
+        `UPDATE payouts SET paid_at = NULL, failed_at = NULL, updated_at = $2 WHERE id = $1`,
+        [id, now],
+      );
+    }
+
+    const row = (await executor.query<Record<string, unknown>>('SELECT * FROM payouts WHERE id = $1 LIMIT 1', [id])).rows[0] ?? result.rows[0];
     if (!row) return undefined;
     return {
       id: row.id as string,
