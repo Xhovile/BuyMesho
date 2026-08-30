@@ -168,7 +168,16 @@ export async function updatePayoutStatus(
         payoutId,
       ],
     );
-    return result.rows[0] ? rowToPayout(result.rows[0]) : undefined;
+
+    if (status !== 'failed' && status !== 'cancelled') {
+      await client.query(
+        `UPDATE payouts SET failed_at = NULL, updated_at = $2 WHERE id = $1`,
+        [payoutId, now],
+      );
+    }
+
+    const refreshed = await getPayout(payoutId, client);
+    return refreshed ?? (result.rows[0] ? rowToPayout(result.rows[0]) : undefined);
   };
   return executor ? run(executor) : withTransaction(run);
 }
