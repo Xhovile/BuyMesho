@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import type { ComponentProps } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ComponentProps, KeyboardEvent } from "react";
 import { apiFetch } from "./lib/api";
 import PayoutDetailDrawer from "./PayoutDetailDrawer";
 
@@ -50,6 +50,7 @@ export default function AdminPayoutDetailDrawer(props: Props) {
   const [detailSelected, setDetailSelected] = useState<Props["selected"] | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Banner | null>(null);
+  const drawerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,6 +96,69 @@ export default function AdminPayoutDetailDrawer(props: Props) {
   );
 
   const actionBusyId = busy ? selected.id : props.actionBusyId;
+
+  const handleDrawerKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a")) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const root = drawerRef.current;
+    if (!root) return;
+
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(root);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  };
+
+  const handleCopyDetails = async () => {
+    const payload = {
+      payoutId: displaySelected.id,
+      sellerId: displaySelected.sellerId,
+      sellerBusinessName: displaySelected.sellerBusinessName,
+      orderId: displaySelected.orderId,
+      escrowId: displaySelected.escrowId,
+      releaseEntryId: displaySelected.releaseEntryId,
+      amount: displaySelected.amount,
+      currency: displaySelected.currency,
+      status: displaySelected.status,
+      provider: displaySelected.provider,
+      providerStatus: displaySelected.providerStatus,
+      providerChargeId: displaySelected.providerChargeId,
+      providerReference: displaySelected.providerReference,
+      providerTransactionId: displaySelected.providerTransactionId,
+      destinationAccountId: displaySelected.destinationAccountId,
+      destinationMaskedAccount: displaySelected.destinationMaskedAccount,
+      destinationType: displaySelected.destinationType,
+      destinationVerificationStatus: displaySelected.destinationVerificationStatus,
+      destinationActive: displaySelected.destinationActive,
+      destinationLastError: displaySelected.destinationLastError,
+      sellerSuspended: displaySelected.sellerSuspended,
+      failureReason: displaySelected.failureReason,
+      manualReviewReason: displaySelected.manualReviewReason,
+      latestAttemptNo: displaySelected.latestAttemptNo,
+      latestAttemptStatus: displaySelected.latestAttemptStatus,
+      latestAttemptFailureReason: displaySelected.latestAttemptFailureReason,
+      latestAttemptAt: displaySelected.latestAttemptAt,
+      latestAttemptProviderChargeId: displaySelected.latestAttemptProviderChargeId,
+      latestAttemptProviderResponse: displaySelected.latestAttemptProviderResponse,
+      latestWebhookEventType: displaySelected.latestWebhookEventType,
+      latestWebhookEventAt: displaySelected.latestWebhookEventAt,
+      latestAuditEventType: displaySelected.latestAuditEventType,
+      latestAuditEventAt: displaySelected.latestAuditEventAt,
+      retryEligible: displaySelected.retryEligible,
+      retryBlockedReason: displaySelected.retryBlockedReason,
+    };
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+      setNotice({ type: "success", message: "Payout details copied." });
+    } catch {
+      setNotice({ type: "error", message: "Unable to copy payout details." });
+    }
+  };
 
   const runAction = async (successMessage: string, task: () => Promise<unknown>) => {
     setBusy(true);
@@ -234,20 +298,37 @@ export default function AdminPayoutDetailDrawer(props: Props) {
         </div>
       ) : null}
 
-      <PayoutDetailDrawer
-        {...props}
-        selected={displaySelected}
-        visibleActions={safeVisibleActions}
-        actionBusyId={actionBusyId}
-        onOpenRetryDialog={() => void handleRetry()}
-        onOpenOverrideDialog={(action) => void handleOverride(action)}
-        onOpenReconcileDialog={() => void handleReconcile()}
-        onOpenRefundEscrowDialog={() => void handleRefundEscrow()}
-        onUpdateDestinationVerification={() => void handleDestinationVerification()}
-        onApproveDestinationVerification={() => void handleApproveDestinationVerification()}
-        onUpdateSellerSuspension={(suspended) => void handleSellerSuspension(suspended)}
-        onCreateAdjustment={() => void handleCreateAdjustment()}
-      />
+      <div
+        ref={drawerRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        onKeyDown={handleDrawerKeyDown}
+        className="outline-none"
+      >
+        <button
+          type="button"
+          onClick={() => void handleCopyDetails()}
+          className="fixed right-20 top-4 z-[96] rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 shadow-xl hover:bg-zinc-50"
+        >
+          Copy Details
+        </button>
+
+        <PayoutDetailDrawer
+          {...props}
+          selected={displaySelected}
+          visibleActions={safeVisibleActions}
+          actionBusyId={actionBusyId}
+          onOpenRetryDialog={() => void handleRetry()}
+          onOpenOverrideDialog={(action) => void handleOverride(action)}
+          onOpenReconcileDialog={() => void handleReconcile()}
+          onOpenRefundEscrowDialog={() => void handleRefundEscrow()}
+          onUpdateDestinationVerification={() => void handleDestinationVerification()}
+          onApproveDestinationVerification={() => void handleApproveDestinationVerification()}
+          onUpdateSellerSuspension={(suspended) => void handleSellerSuspension(suspended)}
+          onCreateAdjustment={() => void handleCreateAdjustment()}
+        />
+      </div>
     </>
   );
 }
