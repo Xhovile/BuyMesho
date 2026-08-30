@@ -3,7 +3,6 @@ import { CreditCard, ShieldAlert } from 'lucide-react';
 type DisputeActionsCardProps = {
   disputeReason: string;
   submitting: 'release' | 'dispute' | null;
-  canConfirmDelivery: boolean;
   escrowReleased: boolean;
   escrowUnavailable: boolean;
   onChangeReason: (value: string) => void;
@@ -14,7 +13,6 @@ type DisputeActionsCardProps = {
 export default function DisputeActionsCard({
   disputeReason,
   submitting,
-  canConfirmDelivery,
   escrowReleased,
   escrowUnavailable,
   onChangeReason,
