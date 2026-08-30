@@ -19,6 +19,7 @@ const DEFAULT_INTERVAL_MS = PAYOUT_POLICY.automaticRetryIntervalHours * 60 * 60 
 const DEFAULT_BATCH_LIMIT = 25;
 const MIN_INTERVAL_MS = 10 * 1000;
 const MAX_BATCH_LIMIT = 50;
+const RETRY_INTERVAL_MS = PAYOUT_POLICY.automaticRetryIntervalHours * 60 * 60 * 1000;
 const RETRY_WINDOW_MS = PAYOUT_POLICY.automaticRetryWindowHours * 60 * 60 * 1000;
 
 function parseBooleanEnv(value: string | undefined, defaultValue: boolean): boolean {
@@ -102,6 +103,13 @@ function retryDeadline(requestedAt: string): number {
   return new Date(requestedAt).getTime() + RETRY_WINDOW_MS;
 }
 
+function retryEligibleAt(latestAttemptAt: string | null | undefined, requestedAt: string | null | undefined): number | null {
+  const base = latestAttemptAt ?? requestedAt;
+  if (!base) return null;
+  const timestamp = new Date(base).getTime();
+  return Number.isFinite(timestamp) ? timestamp + RETRY_INTERVAL_MS : null;
+}
+
 export function getPayoutReconciliationSchedulerConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): PayoutReconciliationSchedulerConfig {
@@ -160,6 +168,13 @@ export class PayoutReconciliationScheduler {
          p.status,
          p.failure_reason,
          (
+           SELECT pa.created_at
+           FROM payout_attempts pa
+           WHERE pa.payout_id = p.id
+           ORDER BY pa.attempt_no DESC, pa.created_at DESC
+           LIMIT 1
+         ) AS latest_attempt_at,
+         (
            SELECT pa.response_payload
            FROM payout_attempts pa
            WHERE pa.payout_id = p.id
@@ -191,6 +206,7 @@ export class PayoutReconciliationScheduler {
       created_at: string;
       status: string;
       failure_reason: string | null;
+      latest_attempt_at: string | null;
       latest_response_payload: unknown;
     }>;
 
@@ -229,6 +245,11 @@ export class PayoutReconciliationScheduler {
         continue;
       }
 
+      const nextRetryAt = retryEligibleAt(row.latest_attempt_at, requestedAt);
+      if (nextRetryAt !== null && nowMs < nextRetryAt) {
+        continue;
+      }
+
       const failureCode = row.failure_reason;
       if (row.status === 'held' && !isRetryableFailureCode(failureCode)) {
         continue;
@@ -247,9 +268,10 @@ export class PayoutReconciliationScheduler {
           eventType: 'payout_automatic_retry_attempted',
           actorType: 'system',
           actorId: null,
-          note: 'Automatic payout submission retry attempted within 48-hour window',
+          note: 'Automatic payout submission retry attempted after configured retry interval',
           payload: {
             requestedAt,
+            retryEligibleAt: nextRetryAt ? new Date(nextRetryAt).toISOString() : null,
             retryWindowDeadline: new Date(retryDeadline(requestedAt)).toISOString(),
             attemptNo: result.attempt?.attemptNo ?? null,
             reasonCode: result.reasonCode,
