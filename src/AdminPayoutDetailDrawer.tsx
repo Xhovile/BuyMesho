@@ -11,6 +11,34 @@ function pickReason(...values: Array<string | null | undefined>) {
   return values.map((value) => String(value ?? "").trim()).find((value) => value.length > 0) ?? "Admin action";
 }
 
+function extractProviderMessage(value: unknown): string | null {
+  if (!value) return null;
+
+  const extract = (input: unknown): string | null => {
+    if (typeof input === "string") {
+      const trimmed = input.trim();
+      if (!trimmed) return null;
+      try {
+        const parsed = JSON.parse(trimmed);
+        return extract(parsed) ?? trimmed;
+      } catch {
+        return trimmed;
+      }
+    }
+
+    if (!input || typeof input !== "object") return null;
+    const record = input as Record<string, unknown>;
+    for (const key of ["message", "error", "detail", "reason"]) {
+      const candidate = extract(record[key]);
+      if (candidate) return candidate;
+    }
+    if (record.response) return extract(record.response);
+    return null;
+  };
+
+  return extract(value);
+}
+
 export default function AdminPayoutDetailDrawer(props: Props) {
   const { selected } = props;
   const [busy, setBusy] = useState(false);
@@ -23,6 +51,18 @@ export default function AdminPayoutDetailDrawer(props: Props) {
   const safeVisibleActions = useMemo(
     () => props.visibleActions.filter((action) => action !== "refund_escrow"),
     [props.visibleActions],
+  );
+
+  const latestProviderMessage = extractProviderMessage(selected.latestAttemptProviderResponse);
+  const displaySelected = useMemo(
+    () => ({
+      ...selected,
+      latestAttemptFailureReason:
+        latestProviderMessage ?? selected.latestAttemptFailureReason,
+      lastError:
+        selected.lastError ?? latestProviderMessage,
+    }),
+    [latestProviderMessage, selected],
   );
 
   const actionBusyId = busy ? selected.id : props.actionBusyId;
@@ -193,6 +233,7 @@ export default function AdminPayoutDetailDrawer(props: Props) {
 
       <PayoutDetailDrawer
         {...props}
+        selected={displaySelected}
         visibleActions={safeVisibleActions}
         actionBusyId={actionBusyId}
         onOpenRetryDialog={() => void handleRetry()}
