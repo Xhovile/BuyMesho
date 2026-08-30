@@ -16,10 +16,12 @@ export type PayoutReconciliationSchedulerConfig = {
 };
 
 // Poll frequently; actual retry timing is enforced per payout by retryEligibleAt().
-// This avoids tying a payout's 3-hour eligibility window to the worker's startup time.
-const DEFAULT_INTERVAL_MS = 60 * 1000;
+// A five-minute poll interval keeps the worker responsive without turning every
+// payout retry into a frequent database/provider operation. Each payout still
+// waits the full configured retry interval before a provider submission is made.
+const DEFAULT_POLL_INTERVAL_MS = 5 * 60 * 1000;
 const DEFAULT_BATCH_LIMIT = 25;
-const MIN_INTERVAL_MS = 10 * 1000;
+const MIN_INTERVAL_MS = 30 * 1000;
 const MAX_BATCH_LIMIT = 50;
 const RETRY_INTERVAL_MS = PAYOUT_POLICY.automaticRetryIntervalHours * 60 * 60 * 1000;
 const RETRY_WINDOW_MS = PAYOUT_POLICY.automaticRetryWindowHours * 60 * 60 * 1000;
@@ -124,7 +126,7 @@ export function getPayoutReconciliationSchedulerConfig(
 ): PayoutReconciliationSchedulerConfig {
   return {
     enabled: parseBooleanEnv(env.PAYOUT_RECONCILIATION_WORKER_ENABLED, true),
-    intervalMs: parsePositiveIntegerEnv(env.PAYOUT_RECONCILIATION_WORKER_INTERVAL_MS, DEFAULT_INTERVAL_MS, {
+    intervalMs: parsePositiveIntegerEnv(env.PAYOUT_RECONCILIATION_WORKER_INTERVAL_MS, DEFAULT_POLL_INTERVAL_MS, {
       min: MIN_INTERVAL_MS,
     }),
     batchLimit: parsePositiveIntegerEnv(env.PAYOUT_RECONCILIATION_WORKER_BATCH_LIMIT, DEFAULT_BATCH_LIMIT, {
@@ -156,7 +158,7 @@ export class PayoutReconciliationScheduler {
     this.timer.unref?.();
 
     this.logger.log(
-      `[payout-reconciliation] worker started intervalMs=${this.config.intervalMs} batchLimit=${this.config.batchLimit}`,
+      `[payout-reconciliation] worker started pollIntervalMs=${this.config.intervalMs} batchLimit=${this.config.batchLimit} retryIntervalMs=${RETRY_INTERVAL_MS}`,
     );
   }
 
