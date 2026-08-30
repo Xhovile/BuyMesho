@@ -121,12 +121,11 @@ function shapePayout(row: Record<string, unknown>, attempts: Array<Record<string
     retryAllowed: retryEligible,
     retryBlockedReason,
     manualReviewPending: status === 'held',
-    verificationBlockers:
-      [
-        sellerSuspended ? 'Seller payouts are suspended' : null,
-        destinationVerificationStatus !== 'verified' ? 'Destination is not verified' : null,
-        !destinationActive ? 'Destination is inactive' : null,
-      ].filter((value): value is string => Boolean(value)),
+    verificationBlockers: [
+      sellerSuspended ? 'Seller payouts are suspended' : null,
+      destinationVerificationStatus !== 'verified' ? 'Destination is not verified' : null,
+      !destinationActive ? 'Destination is inactive' : null,
+    ].filter((value): value is string => Boolean(value)),
     auditSummary: {
       totalEvents: events.length,
       latestEventType: text(latestAuditEvent?.eventType),
@@ -241,8 +240,8 @@ async function loadRelated(payoutId: string) {
          status,
          failure_reason AS "failureReason",
          provider_charge_id AS "providerChargeId",
-         provider_ref_id AS "providerReference",
-         provider_transaction_id AS "providerTransactionId",
+         NULLIF(request_payload::jsonb ->> 'providerReference', '') AS "providerReference",
+         NULLIF(request_payload::jsonb ->> 'providerTransactionId', '') AS "providerTransactionId",
          response_payload AS "providerResponse",
          created_at AS "createdAt"
        FROM payout_attempts
