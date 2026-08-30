@@ -92,6 +92,13 @@ function providerAccepted(value: unknown): boolean {
   return ok && hasProviderIdentifier(payload);
 }
 
+function isInsufficientBalanceResponse(value: unknown): boolean {
+  const payload = parseResponsePayload(value);
+  if (!payload) return false;
+  const text = JSON.stringify(payload).toLowerCase();
+  return text.includes('insufficient funds') || text.includes('insufficient balance') || text.includes('not enough funds');
+}
+
 function withinRetryWindow(requestedAt: string | null | undefined, nowMs = Date.now()): boolean {
   if (!requestedAt) return false;
   const start = new Date(requestedAt).getTime();
@@ -226,6 +233,25 @@ export class PayoutReconciliationScheduler {
 
       if (accepted) {
         await payoutService.reconcilePayoutStatus({ payoutId: row.id, actorType: 'system' });
+        continue;
+      }
+
+      // Older payouts may have been recorded as failed/provider_rejected even
+      // though PayChangu's actual response says the platform balance was
+      // insufficient. Normalize those records back to pending while the
+      // 48-hour retry window is still open. The attempt remains failed.
+      if (
+        withinRetryWindow(requestedAt, nowMs) &&
+        isInsufficientBalanceResponse(row.latest_response_payload) &&
+        (row.status === 'failed' || row.failure_reason === 'provider_rejected')
+      ) {
+        payoutRepository.updateStatus(row.id, 'pending', {
+          provider: 'paychangu',
+          providerStatus: 'failed',
+          failureReason: 'balance_insufficient',
+          manualReviewReason: null,
+          failedAt: null,
+        });
         continue;
       }
 
