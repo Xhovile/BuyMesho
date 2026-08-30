@@ -168,6 +168,11 @@ export class PayoutReconciliationScheduler {
          p.status,
          p.failure_reason,
          (
+           SELECT COUNT(*)
+           FROM payout_attempts pa
+           WHERE pa.payout_id = p.id
+         ) AS attempt_count,
+         (
            SELECT pa.created_at
            FROM payout_attempts pa
            WHERE pa.payout_id = p.id
@@ -206,6 +211,7 @@ export class PayoutReconciliationScheduler {
       created_at: string;
       status: string;
       failure_reason: string | null;
+      attempt_count: number;
       latest_attempt_at: string | null;
       latest_response_payload: unknown;
     }>;
@@ -219,6 +225,10 @@ export class PayoutReconciliationScheduler {
 
       if (accepted) {
         await payoutService.reconcilePayoutStatus({ payoutId: row.id, actorType: 'system' });
+        continue;
+      }
+
+      if (row.attempt_count >= PAYOUT_POLICY.maxRetryCount) {
         continue;
       }
 
