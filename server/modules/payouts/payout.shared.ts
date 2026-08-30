@@ -236,23 +236,37 @@ export function canApprovePayoutOverride(context: PayoutPermissionContext): bool
 
 export function decryptSensitiveValue(value: string | null | undefined): string | null {
   if (!value) return null;
-  if (!PAYOUT_ENCRYPTION_SECRET) return value;
 
   const trimmed = value.trim();
-  if (!trimmed) return null;
+  if (!trimmed || !PAYOUT_ENCRYPTION_SECRET) return null;
 
-  const [ivPart, encryptedPart] = trimmed.split(':');
-  if (!ivPart || !encryptedPart) return trimmed;
+  const parts = trimmed.split(':');
+  if (parts.length !== 3) return null;
+
+  const [ivPart, tagPart, encryptedPart] = parts;
+  if (!ivPart || !tagPart || !encryptedPart) return null;
 
   try {
-    const key = scryptSync(PAYOUT_ENCRYPTION_SECRET, 'seller-payout-key', 32);
-    const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivPart, 'hex'));
+    const key = scryptSync(
+      PAYOUT_ENCRYPTION_SECRET,
+      'BuyMesho seller payout',
+      32,
+    );
+
+    const iv = Buffer.from(ivPart, 'base64');
+    const tag = Buffer.from(tagPart, 'base64');
+    const encrypted = Buffer.from(encryptedPart, 'base64');
+
+    const decipher = createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(tag);
+
     const decrypted = Buffer.concat([
-      decipher.update(Buffer.from(encryptedPart, 'hex')),
+      decipher.update(encrypted),
       decipher.final(),
     ]).toString('utf8');
+
     return decrypted || null;
   } catch {
-    return trimmed;
+    return null;
   }
 }
