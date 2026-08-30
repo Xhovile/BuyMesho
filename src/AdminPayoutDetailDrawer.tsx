@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ComponentProps } from "react";
 import { apiFetch } from "./lib/api";
 import PayoutDetailDrawer from "./PayoutDetailDrawer";
@@ -96,6 +96,52 @@ export default function AdminPayoutDetailDrawer(props: Props) {
   );
 
   const actionBusyId = busy ? selected.id : props.actionBusyId;
+
+  useLayoutEffect(() => {
+    const root = drawerRef.current;
+    if (!root) return;
+
+    const hiddenSiblings: Array<{ element: HTMLElement; display: string }> = [];
+    const touchedAncestors: Array<{ element: HTMLElement; overflow: string }> = [];
+    let node: HTMLElement | null = root;
+
+    while (node && node !== document.body) {
+      const parent = node.parentElement;
+      if (!parent) break;
+
+      for (const child of Array.from(parent.children)) {
+        if (child === node || !(child instanceof HTMLElement)) continue;
+        hiddenSiblings.push({ element: child, display: child.style.display });
+        child.style.display = "none";
+      }
+
+      if (parent instanceof HTMLElement) {
+        touchedAncestors.push({ element: parent, overflow: parent.style.overflow });
+        parent.style.overflow = "visible";
+      }
+
+      node = parent;
+    }
+
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyBackground = document.body.style.backgroundColor;
+    document.documentElement.style.overflow = "auto";
+    document.body.style.overflow = "auto";
+    document.body.style.backgroundColor = "#f8fafc";
+
+    return () => {
+      hiddenSiblings.forEach(({ element, display }) => {
+        element.style.display = display;
+      });
+      touchedAncestors.reverse().forEach(({ element, overflow }) => {
+        element.style.overflow = overflow;
+      });
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.backgroundColor = previousBodyBackground;
+    };
+  }, []);
 
   useEffect(() => {
     const handleSelectAll = (event: KeyboardEvent) => {
@@ -299,26 +345,61 @@ export default function AdminPayoutDetailDrawer(props: Props) {
 
   return (
     <>
-      {notice ? (
-        <div
-          className={`fixed left-4 top-4 z-[96] w-[min(28rem,calc(100vw-2rem))] rounded-2xl border px-4 py-3 text-sm font-semibold shadow-2xl ${
-            notice.type === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-rose-200 bg-rose-50 text-rose-800"
-          }`}
-        >
-          {notice.message}
-        </div>
-      ) : null}
+      <style>{`
+        [data-admin-payout-workspace] {
+          position: static !important;
+          display: block !important;
+          width: 100% !important;
+          max-width: none !important;
+          min-height: 100vh !important;
+        }
 
-      <div ref={drawerRef} className="outline-none">
-        <button
-          type="button"
-          onClick={() => void handleCopyDetails()}
-          className="fixed right-20 top-4 z-[96] rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 shadow-xl hover:bg-zinc-50"
-        >
-          Copy Details
-        </button>
+        [data-admin-payout-workspace] div[class*="fixed"][class*="inset-0"] {
+          position: static !important;
+          inset: auto !important;
+          display: block !important;
+          width: 100% !important;
+          min-height: 0 !important;
+          background: transparent !important;
+          backdrop-filter: none !important;
+          z-index: auto !important;
+        }
+
+        [data-admin-payout-workspace] div[class*="fixed"][class*="inset-0"] > aside {
+          margin-left: 0 !important;
+          width: 100% !important;
+          max-width: none !important;
+          height: auto !important;
+          min-height: 0 !important;
+          overflow: visible !important;
+          box-shadow: none !important;
+        }
+      `}</style>
+
+      <div ref={drawerRef} data-admin-payout-workspace className="min-h-screen w-full bg-slate-50 outline-none">
+        {notice ? (
+          <div className={`sticky top-0 z-[96] mx-auto w-full max-w-6xl border-b px-4 py-3 text-sm font-semibold ${
+            notice.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-800"
+          }`}>
+            {notice.message}
+          </div>
+        ) : null}
+
+        <div className="sticky top-0 z-[95] border-b border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Payout detail workspace</p>
+              <p className="mt-1 text-sm font-black text-zinc-950">{displaySelected.id}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleCopyDetails()}
+              className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 shadow-sm hover:bg-zinc-50"
+            >
+              Copy Details
+            </button>
+          </div>
+        </div>
 
         <PayoutDetailDrawer
           {...props}
