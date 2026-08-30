@@ -16,6 +16,7 @@ export type SellerPayoutLaunchStatus =
   | 'provider_pending'
   | 'paid'
   | 'held'
+  | 'failed'
   | 'needs_destination_update'
   | 'cancelled';
 
@@ -65,6 +66,10 @@ const LAUNCH_STATUS_META: Record<SellerPayoutLaunchStatus, SellerPayoutLaunchSta
   held: {
     label: 'Held',
     detail: 'The payout is paused while the issue is reviewed.',
+  },
+  failed: {
+    label: 'Failed',
+    detail: 'The provider or payout execution attempt failed.',
   },
   needs_destination_update: {
     label: 'Needs destination update',
@@ -156,11 +161,17 @@ export function getSellerPayoutLaunchStatus(input: SellerPayoutSignalInput): Sel
   const status = String(input.status ?? '').toLowerCase();
   const destinationStatus = String(input.destinationStatus ?? '').toLowerCase();
 
-  if (destinationStatus === 'failed' || input.verificationBlockers?.length) {
+  if (destinationStatus === 'failed') {
     return 'needs_destination_update';
   }
 
-  if (status === 'failed') return 'needs_destination_update';
+  if (status === 'failed') {
+    const failureCode = normalizeReasonCode(input.failureReasonCode);
+    if (failureCode === 'destination_not_verified' || failureCode === 'destination_incomplete') {
+      return 'needs_destination_update';
+    }
+    return 'failed';
+  }
   if (status === 'held') return 'held';
   if (status === 'paid') return 'paid';
   if (status === 'cancelled') return 'cancelled';
@@ -169,6 +180,7 @@ export function getSellerPayoutLaunchStatus(input: SellerPayoutSignalInput): Sel
   if (status === 'processing') return 'sent_to_paychangu';
   if (status === 'pending') return 'provider_pending';
   if (status === 'queued' || input.manualReviewPending) return 'queued_for_admin_review';
+  if (input.verificationBlockers?.length) return 'needs_destination_update';
   return 'eligible';
 }
 
@@ -181,7 +193,7 @@ export function getSellerPayoutStatusLabel(status: string): string {
   if (normalized === 'queued') return 'Queued for admin review';
   if (normalized === 'processing') return 'Sent to provider';
   if (normalized === 'pending') return 'Provider pending';
-  if (normalized === 'failed') return 'Needs destination update';
+  if (normalized === 'failed') return 'Failed';
   return getSellerPayoutLaunchStatusMeta({ status: normalized || 'eligible' }).label;
 }
 
