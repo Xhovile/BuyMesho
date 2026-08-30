@@ -190,6 +190,7 @@ export class PayoutReconciliationScheduler {
        WHERE p.provider = 'paychangu'
          AND (
            p.status = 'failed'
+           OR (p.status = 'pending' AND p.failure_reason = 'balance_insufficient')
            OR (p.status = 'held' AND p.failure_reason IN (
              'provider_timeout',
              'provider_unavailable',
@@ -228,10 +229,6 @@ export class PayoutReconciliationScheduler {
         continue;
       }
 
-      if (row.attempt_count >= PAYOUT_POLICY.maxRetryCount) {
-        continue;
-      }
-
       if (!withinRetryWindow(requestedAt, nowMs)) {
         payoutRepository.addEvent({
           payoutId: row.id,
@@ -244,14 +241,21 @@ export class PayoutReconciliationScheduler {
             retryWindowStartedAt: requestedAt,
             retryWindowDeadline: new Date(retryDeadline(requestedAt)).toISOString(),
             automaticRetryWindowHours: PAYOUT_POLICY.automaticRetryWindowHours,
+            attemptCount: row.attempt_count,
+            failureReason: row.failure_reason,
           },
         });
         payoutRepository.updateStatus(row.id, 'failed', {
           provider: 'paychangu',
           providerStatus: 'failed',
           failureReason: 'automatic_retry_window_expired',
+          manualReviewReason: 'Automatic payout retry window expired after the provider never accepted the payout.',
           failedAt: new Date().toISOString(),
         });
+        continue;
+      }
+
+      if (row.attempt_count >= PAYOUT_POLICY.maxRetryCount) {
         continue;
       }
 
