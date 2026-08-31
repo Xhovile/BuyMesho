@@ -54,6 +54,27 @@ function isBuyerDetailsComplete(details: BuyerDeliveryDetails): boolean {
   );
 }
 
+function checkoutFingerprint(input: {
+  listingId: string;
+  quantity: number;
+  settlementRoute: SettlementRoute;
+  buyerDetails: BuyerDeliveryDetails;
+}): string {
+  return JSON.stringify({
+    listingId: input.listingId,
+    quantity: input.quantity,
+    settlementRoute: input.settlementRoute,
+    buyerDetails: {
+      fullName: input.buyerDetails.fullName.trim(),
+      phone: input.buyerDetails.phone.trim(),
+      addressLine: input.buyerDetails.addressLine.trim(),
+      area: input.buyerDetails.area.trim(),
+      townOrDistrict: input.buyerDetails.townOrDistrict.trim(),
+      landmark: input.buyerDetails.landmark.trim(),
+    },
+  });
+}
+
 const settlementOptions: Array<{
   route: SettlementRoute;
   label: string;
@@ -89,6 +110,7 @@ export default function CheckoutModal({
   const [saveBuyerDetails, setSaveBuyerDetails] = useState(false);
   const [buyerDetailsLoading, setBuyerDetailsLoading] = useState(false);
   const idempotencyKeyRef = useRef<string>("");
+  const idempotencyFingerprintRef = useRef<string>("");
 
   const maxQty = Math.max(
     1,
@@ -110,6 +132,7 @@ export default function CheckoutModal({
       setSaveBuyerDetails(false);
       setBuyerDetailsLoading(false);
       idempotencyKeyRef.current = crypto.randomUUID();
+      idempotencyFingerprintRef.current = "";
     }
   }, [isOpen, buyerName]);
 
@@ -129,6 +152,18 @@ export default function CheckoutModal({
     if (!isBuyerDetailsComplete(buyerDetails)) {
       setError("Complete your delivery details before continuing.");
       return;
+    }
+
+    const fingerprint = checkoutFingerprint({
+      listingId: String(listing.id),
+      quantity,
+      settlementRoute,
+      buyerDetails,
+    });
+
+    if (idempotencyFingerprintRef.current !== fingerprint) {
+      idempotencyKeyRef.current = crypto.randomUUID();
+      idempotencyFingerprintRef.current = fingerprint;
     }
 
     setStep("loading");
