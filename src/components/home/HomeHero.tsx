@@ -33,7 +33,7 @@ export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => voi
         <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12">
           <div className="mx-auto flex max-w-2xl flex-col items-center text-center lg:mx-0 lg:items-center">
             <h1 className="mt-5 text-4xl font-black tracking-[-0.06em] leading-[0.92] text-zinc-950 sm:text-6xl lg:text-[4.75rem]">
-              Buy. Sell. Online.
+              Rodrick
             </h1>
 
             <div className="mt-8 flex flex-wrap justify-center gap-3">
