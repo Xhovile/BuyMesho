@@ -34,7 +34,6 @@ export type PayoutDiagnostics = {
   manualReviewReason?: string | null;
   latestAttemptNo?: number | null;
   latestAttemptStatus?: string | null;
-  latestAttemptFailureReason?: string | null;
   latestAttemptAt?: string | null;
   latestWebhookEventType?: string | null;
   latestWebhookEventAt?: string | null;
@@ -228,13 +227,14 @@ export function classifyPayoutDiagnostic(row: PayoutRow): { classification: Diag
   const destinationStatus = token(d.destinationVerificationStatus);
   const hasDestination = Boolean(clean(d.destinationAccountId));
   const destinationVerified = hasDestination && destinationStatus === "verified" && d.destinationActive !== false;
-  const latestAttemptFailure = clean(d.latestAttemptFailureReason);
   const failureReason = clean(d.failureReason);
   const failureToken = token(d.failureReason);
-  const paidState = status === "paid" || providerStatus === "paid" || attemptStatus === "paid";
+  const latestAttemptFailure = clean(d.latestAttemptFailureReason);
 
-  if (paidState) {
-    return { classification: "none", label: "Provider settlement successful", message: null };
+  // Paid is a terminal success state. Historical failures from earlier attempts are evidence,
+  // not an active blocker, and must never make a completed payout look failed.
+  if (status === "paid" || providerStatus === "paid" || attemptStatus === "paid" || token(d.providerTransactionStatus) === "paid") {
+    return { classification: "none", label: "Payout completed", message: null };
   }
 
   const providerFailure = latestAttemptFailure ?? (
