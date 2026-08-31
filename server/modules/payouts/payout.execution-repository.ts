@@ -209,7 +209,11 @@ export async function reserveRetryAttempt(input: {
     if (!currentRow) throw new Error('Payout not found');
     const current = rowToPayout(currentRow);
 
-    if (current.status === 'processing') {
+    // A concurrent retry may have passed the initial eligibility gate before
+    // another worker acquired this row lock and completed the payout. Treat
+    // both an in-flight and a just-completed concurrent request as duplicates
+    // rather than allowing a second transition attempt such as paid -> processing.
+    if (current.status === 'processing' || current.status === 'paid') {
       throw new Error('Payout is already processing');
     }
 
