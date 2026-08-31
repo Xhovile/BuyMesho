@@ -60,6 +60,14 @@ function normalizeText(value: unknown): string | null {
   return text ? text : null;
 }
 
+function splitRecipientName(value: string | null | undefined): { firstName?: string; lastName?: string } {
+  const normalized = normalizeText(value);
+  if (!normalized) return {};
+  const parts = normalized.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return { firstName: parts[0] };
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
+}
+
 function isInsufficientBalanceResponse(value: unknown): boolean {
   if (!value) return false;
   const text = JSON.stringify(value).toLowerCase();
@@ -293,6 +301,7 @@ export async function executePayoutFlow(
     });
   }
 
+  const recipientName = splitRecipientName(gate.destinationAccountName);
   const execution = await executePayChanguPayout({
     payoutId: input.payoutId,
     sellerId: gate.sellerId,
@@ -307,6 +316,8 @@ export async function executePayoutFlow(
     mobileMoneyOperatorRefId: gate.destinationProviderRefId ?? undefined,
     bankUuid: gate.destinationProviderRefId ?? undefined,
     bankAccountName: gate.destinationAccountName ?? undefined,
+    firstName: recipientName.firstName,
+    lastName: recipientName.lastName,
   });
 
   await recordAttempt(reservedAttempt.id, execution);
