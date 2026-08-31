@@ -34,6 +34,7 @@ export type PayoutDiagnostics = {
   manualReviewReason?: string | null;
   latestAttemptNo?: number | null;
   latestAttemptStatus?: string | null;
+  latestAttemptFailureReason?: string | null;
   latestAttemptAt?: string | null;
   latestWebhookEventType?: string | null;
   latestWebhookEventAt?: string | null;
@@ -88,10 +89,6 @@ function nested(value: unknown, ...paths: string[][]): unknown {
   return null;
 }
 
-function stringAt(value: unknown, ...paths: string[][]): string | null {
-  return clean(nested(value, ...paths));
-}
-
 function numberAt(value: unknown, ...paths: string[][]): number | null {
   const raw = nested(value, ...paths);
   if (typeof raw === "number" && Number.isFinite(raw)) return raw;
@@ -141,6 +138,8 @@ function extractProviderData(value: unknown) {
     null;
 
   return {
+    reference: clean(transaction.ref_id) ?? clean(transaction.reference),
+    transactionId: clean(transaction.trans_id) ?? clean(transaction.transaction_id) ?? clean(transaction.transactionId) ?? clean(transaction.id),
     transactionStatus: clean(transaction.status),
     traceId: clean(transaction.trace_id) ?? clean(transaction.traceId),
     amount: numberAt(transaction, ["amount"]),
@@ -160,6 +159,10 @@ function extractProviderData(value: unknown) {
 export function getPayoutDiagnostics(row: PayoutRow): PayoutDiagnostics {
   const providerResponse = row.latestAttemptProviderResponse ?? null;
   const providerData = extractProviderData(providerResponse);
+  const providerReference = providerData.reference ?? row.providerReference;
+  const providerTransactionId = providerData.transactionId ?? row.providerTransactionId ?? null;
+  const latestAttemptProviderReference = providerData.reference ?? row.latestAttemptProviderReference ?? null;
+  const latestAttemptProviderTransactionId = providerData.transactionId ?? row.latestAttemptProviderTransactionId ?? null;
 
   return (row.diagnostics ?? {
     payoutId: row.id,
@@ -170,8 +173,8 @@ export function getPayoutDiagnostics(row: PayoutRow): PayoutDiagnostics {
     provider: row.provider,
     providerStatus: row.providerStatus,
     providerChargeId: row.providerChargeId,
-    providerReference: row.providerReference,
-    providerTransactionId: row.providerTransactionId,
+    providerReference,
+    providerTransactionId,
     providerResponseReceived: providerResponse !== null && providerResponse !== undefined,
     providerTransactionStatus: providerData.transactionStatus,
     providerTraceId: providerData.traceId,
@@ -204,8 +207,8 @@ export function getPayoutDiagnostics(row: PayoutRow): PayoutDiagnostics {
     retryEligible: row.retryEligible,
     retryBlockedReason: row.retryBlockedReason,
     latestAttemptProviderChargeId: row.latestAttemptProviderChargeId ?? null,
-    latestAttemptProviderReference: row.latestAttemptProviderReference ?? null,
-    latestAttemptProviderTransactionId: row.latestAttemptProviderTransactionId ?? null,
+    latestAttemptProviderReference,
+    latestAttemptProviderTransactionId,
     latestAttemptProviderResponse: providerResponse,
   }) as PayoutDiagnostics;
 }
@@ -230,10 +233,9 @@ export function classifyPayoutDiagnostic(row: PayoutRow): { classification: Diag
   const failureReason = clean(d.failureReason);
   const failureToken = token(d.failureReason);
   const latestAttemptFailure = clean(d.latestAttemptFailureReason);
+  const paidState = status === "paid" || providerStatus === "paid" || attemptStatus === "paid" || token(d.providerTransactionStatus) === "paid";
 
-  // Paid is a terminal success state. Historical failures from earlier attempts are evidence,
-  // not an active blocker, and must never make a completed payout look failed.
-  if (status === "paid" || providerStatus === "paid" || attemptStatus === "paid" || token(d.providerTransactionStatus) === "paid") {
+  if (paidState) {
     return { classification: "none", label: "Payout completed", message: null };
   }
 
