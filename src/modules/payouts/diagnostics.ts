@@ -12,6 +12,19 @@ export type PayoutDiagnostics = {
   providerReference?: string | null;
   providerTransactionId?: string | null;
   providerResponseReceived?: boolean;
+  providerTransactionStatus?: string | null;
+  providerTraceId?: string | null;
+  providerPayoutAmount?: number | null;
+  providerPayoutCurrency?: string | null;
+  providerPayoutMobile?: string | null;
+  providerPayoutMode?: string | null;
+  providerPayoutCreatedAt?: string | null;
+  providerPayoutCompletedAt?: string | null;
+  providerPaymentMethod?: string | null;
+  providerOperatorName?: string | null;
+  providerOperatorRefId?: string | null;
+  providerTransactionCharge?: number | string | null;
+  providerReceiptReference?: string | null;
   destinationAccountId?: string | null;
   destinationVerificationStatus?: string | null;
   destinationActive?: boolean | null;
@@ -52,8 +65,105 @@ function token(value: unknown): string {
   return clean(value)?.toLowerCase() ?? "";
 }
 
+function parseJson(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+function nested(value: unknown, ...paths: string[][]): unknown {
+  for (const path of paths) {
+    let current = parseJson(value);
+    for (const key of path) {
+      if (!current || typeof current !== "object") {
+        current = undefined;
+        break;
+      }
+      current = (current as Record<string, unknown>)[key];
+    }
+    if (current !== undefined && current !== null && current !== "") return current;
+  }
+  return null;
+}
+
+function numberAt(value: unknown, ...paths: string[][]): number | null {
+  const raw = nested(value, ...paths);
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  if (typeof raw === "string" && raw.trim()) {
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function providerTransaction(value: unknown): Record<string, unknown> {
+  const root = parseJson(value);
+  const transaction = nested(
+    root,
+    ["response", "data", "transaction"],
+    ["data", "transaction"],
+    ["transaction"],
+  );
+  return transaction && typeof transaction === "object" && !Array.isArray(transaction)
+    ? transaction as Record<string, unknown>
+    : {};
+}
+
+function extractProviderData(value: unknown) {
+  const transaction = providerTransaction(value);
+  const operator = transaction.mobile_money;
+  const charges = transaction.transaction_charges;
+  const operatorRecord = operator && typeof operator === "object" && !Array.isArray(operator)
+    ? operator as Record<string, unknown>
+    : {};
+  const chargeRecord = charges && typeof charges === "object" && !Array.isArray(charges)
+    ? charges as Record<string, unknown>
+    : {};
+
+  const receiptReference =
+    clean(transaction.destination_reference) ??
+    clean(transaction.destinationReference) ??
+    clean(transaction.operator_reference) ??
+    clean(transaction.operatorReference) ??
+    clean(transaction.operator_transaction_id) ??
+    clean(transaction.operatorTransactionId) ??
+    clean(transaction.receipt_reference) ??
+    clean(transaction.receiptReference) ??
+    clean(transaction.receipt) ??
+    clean(transaction.reference_number) ??
+    clean(transaction.referenceNumber) ??
+    null;
+
+  return {
+    reference: clean(transaction.ref_id) ?? clean(transaction.reference),
+    transactionId: clean(transaction.trans_id) ?? clean(transaction.transaction_id) ?? clean(transaction.transactionId) ?? clean(transaction.id),
+    transactionStatus: clean(transaction.status),
+    traceId: clean(transaction.trace_id) ?? clean(transaction.traceId),
+    amount: numberAt(transaction, ["amount"]),
+    currency: clean(transaction.currency),
+    mobile: clean(transaction.mobile),
+    mode: clean(transaction.mode),
+    createdAt: clean(transaction.created_at) ?? clean(transaction.createdAt),
+    completedAt: clean(transaction.completed_at) ?? clean(transaction.completedAt),
+    paymentMethod: clean(transaction.payment_method) ?? clean(transaction.paymentMethod),
+    operatorName: clean(operatorRecord.name),
+    operatorRefId: clean(operatorRecord.ref_id) ?? clean(operatorRecord.refId),
+    transactionCharge: clean(chargeRecord.amount) ?? numberAt(chargeRecord, ["amount"]),
+    receiptReference,
+  };
+}
+
 export function getPayoutDiagnostics(row: PayoutRow): PayoutDiagnostics {
   const providerResponse = row.latestAttemptProviderResponse ?? null;
+  const providerData = extractProviderData(providerResponse);
+  const providerReference = providerData.reference ?? row.providerReference;
+  const providerTransactionId = providerData.transactionId ?? row.providerTransactionId ?? null;
+  const latestAttemptProviderReference = providerData.reference ?? row.latestAttemptProviderReference ?? null;
+  const latestAttemptProviderTransactionId = providerData.transactionId ?? row.latestAttemptProviderTransactionId ?? null;
+
   return (row.diagnostics ?? {
     payoutId: row.id,
     sellerId: row.sellerId,
@@ -63,9 +173,22 @@ export function getPayoutDiagnostics(row: PayoutRow): PayoutDiagnostics {
     provider: row.provider,
     providerStatus: row.providerStatus,
     providerChargeId: row.providerChargeId,
-    providerReference: row.providerReference,
-    providerTransactionId: row.providerTransactionId,
+    providerReference,
+    providerTransactionId,
     providerResponseReceived: providerResponse !== null && providerResponse !== undefined,
+    providerTransactionStatus: providerData.transactionStatus,
+    providerTraceId: providerData.traceId,
+    providerPayoutAmount: providerData.amount,
+    providerPayoutCurrency: providerData.currency,
+    providerPayoutMobile: providerData.mobile,
+    providerPayoutMode: providerData.mode,
+    providerPayoutCreatedAt: providerData.createdAt,
+    providerPayoutCompletedAt: providerData.completedAt,
+    providerPaymentMethod: providerData.paymentMethod,
+    providerOperatorName: providerData.operatorName,
+    providerOperatorRefId: providerData.operatorRefId,
+    providerTransactionCharge: providerData.transactionCharge,
+    providerReceiptReference: providerData.receiptReference,
     destinationAccountId: row.destinationAccountId,
     destinationVerificationStatus: row.destinationVerificationStatus,
     destinationActive: row.destinationActive,
@@ -84,8 +207,8 @@ export function getPayoutDiagnostics(row: PayoutRow): PayoutDiagnostics {
     retryEligible: row.retryEligible,
     retryBlockedReason: row.retryBlockedReason,
     latestAttemptProviderChargeId: row.latestAttemptProviderChargeId ?? null,
-    latestAttemptProviderReference: row.latestAttemptProviderReference ?? null,
-    latestAttemptProviderTransactionId: row.latestAttemptProviderTransactionId ?? null,
+    latestAttemptProviderReference,
+    latestAttemptProviderTransactionId,
     latestAttemptProviderResponse: providerResponse,
   }) as PayoutDiagnostics;
 }
@@ -101,15 +224,21 @@ export type DiagnosticClassification =
 
 export function classifyPayoutDiagnostic(row: PayoutRow): { classification: DiagnosticClassification; message: string | null; label: string } {
   const d = getPayoutDiagnostics(row);
-  const status = token((row.currentState ?? d.status));
+  const status = token(row.currentState ?? d.status);
   const providerStatus = token(d.providerStatus);
   const attemptStatus = token(d.latestAttemptStatus);
   const destinationStatus = token(d.destinationVerificationStatus);
   const hasDestination = Boolean(clean(d.destinationAccountId));
   const destinationVerified = hasDestination && destinationStatus === "verified" && d.destinationActive !== false;
-  const latestAttemptFailure = clean(d.latestAttemptFailureReason);
   const failureReason = clean(d.failureReason);
   const failureToken = token(d.failureReason);
+  const latestAttemptFailure = clean(d.latestAttemptFailureReason);
+  const paidState = status === "paid" || providerStatus === "paid" || attemptStatus === "paid" || token(d.providerTransactionStatus) === "paid";
+
+  if (paidState) {
+    return { classification: "none", label: "Payout completed", message: null };
+  }
+
   const providerFailure = latestAttemptFailure ?? (
     failureReason && !sellerFailureReasons.has(failureToken) && !destinationFailureReasons.has(failureToken) && !reconciliationFailureReasons.has(failureToken)
       ? failureReason
