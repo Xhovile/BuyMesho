@@ -151,6 +151,120 @@ export default function PayoutDetailDrawer({
 
   return (
     <div className="min-h-screen w-full bg-zinc-50 text-zinc-950">
+      <style>{`
+        @media (max-width: 639px) {
+          [data-admin-payout-workspace] > div[class*="z-[95]"] {
+            display: none !important;
+          }
+
+          [data-admin-payout-workspace] {
+            width: 100% !important;
+            min-height: 100vh !important;
+          }
+
+          header {
+            position: relative !important;
+            padding: 0.75rem 0.75rem 1rem !important;
+          }
+
+          header > div {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 0.75rem !important;
+            align-items: stretch !important;
+          }
+
+          header > div > div:first-child {
+            display: contents !important;
+          }
+
+          header > div > div:first-child > div:first-child {
+            order: 3;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 0.5rem !important;
+            margin: 0 !important;
+          }
+
+          header > div > div:first-child > div:first-child > span {
+            width: 100% !important;
+            min-width: 0 !important;
+            justify-content: flex-start !important;
+            border-radius: 1rem !important;
+            padding: 0.7rem 0.9rem !important;
+            font-size: 0.8rem !important;
+          }
+
+          header > div > div:first-child > div:nth-child(2) {
+            order: 1;
+            margin: 0 !important;
+            gap: 0.6rem !important;
+          }
+
+          header > div > div:nth-child(2) {
+            order: 2;
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 0.5rem !important;
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+
+          header > div > div:nth-child(2) > button {
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 2.9rem !important;
+            justify-content: center !important;
+            gap: 0.35rem !important;
+            padding: 0.55rem 0.35rem !important;
+            font-size: 0.76rem !important;
+            white-space: nowrap !important;
+          }
+
+          header > div > div:nth-child(2) > button svg {
+            width: 0.95rem !important;
+            height: 0.95rem !important;
+            flex: 0 0 auto !important;
+          }
+
+          main {
+            width: 100% !important;
+            max-width: none !important;
+            padding: 0 0 1rem !important;
+          }
+
+          main > div {
+            gap: 1rem !important;
+          }
+
+          main > div > div,
+          main > div > aside {
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+
+          main section,
+          main details {
+            border-radius: 0 !important;
+            border-left-width: 0 !important;
+            border-right-width: 0 !important;
+          }
+
+          main section > div,
+          main details > summary,
+          main details > div {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+          }
+
+          main section > div > div.grid,
+          main section > div > div.space-y-4,
+          main section > div > div.space-y-2 {
+            min-width: 0 !important;
+          }
+        }
+      `}</style>
+
       <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-4">
           <div className="min-w-0">
