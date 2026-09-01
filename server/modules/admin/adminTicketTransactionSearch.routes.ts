@@ -2,7 +2,7 @@ import express, { type RequestHandler } from "express";
 import { hasAdminAccess } from "../../auth/adminAccess.js";
 import type { PgCompatDatabase } from "../../db.js";
 import { getEventTransactionByTicketId } from "../events/eventTransactionService.js";
-import { findEventTicketIdentity } from "../events/eventTicketIdentity.js";
+import { findEventTicketIdentity } from "../events/eventTransactionIdentity.js";
 
 export function createAdminTicketTransactionSearchRouter(params: {
   requireAuth: RequestHandler;
