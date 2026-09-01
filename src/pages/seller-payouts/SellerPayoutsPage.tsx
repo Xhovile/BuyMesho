@@ -79,7 +79,7 @@ export default function SellerPayoutsPage() {
         </div>
       </header>
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8">
-        <SellerPayoutsHero summary={summary} earningsSummary={earningsSummary} payouts={payouts} canEditSettings={canEditSettings} />
+        <SellerPayoutsHero summary={summary} earningsSummary={earningsSummary} canEditSettings={canEditSettings} />
         {notice ? <SellerPayoutsNotice type={notice.type} message={notice.message} details={lastSaveDiagnostic?.reasons} /> : null}
         {/* PayChangu Connect is hidden until direct seller settlement is ready to enable.
         <ConnectSettingsCard connectAccount={connectAccount} connectLoading={connectLoading} connectError={connectError} connectDefaultMode={connectDefaultMode} defaultConnectScope={defaultConnectScope} onRefresh={() => void handleConnectRefresh()} onConnect={() => void handleConnect()} onDisconnect={() => void handleDisconnect()} />
