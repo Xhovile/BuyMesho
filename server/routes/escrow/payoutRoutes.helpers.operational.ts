@@ -1,6 +1,15 @@
 import { getPaymentDb } from '../../postgresCompat.js';
 import { PAYOUT_POLICY, isRetryableFailureCode } from '../../modules/payouts/payout.policy.js';
 
+function resolvePayoutMethod(destinationType: unknown, providerRefId: unknown, providerName: unknown) {
+  if (destinationType === 'bank') return 'bank_transfer' as const;
+
+  const provider = `${String(providerRefId ?? '')} ${String(providerName ?? '')}`;
+  if (/tnm|mpamba/i.test(provider)) return 'tnm_mpamba' as const;
+  if (/airtel/i.test(provider)) return 'airtel_money' as const;
+  return null;
+}
+
 export function listSellerPayoutOperationalView(sellerId: string) {
   const db = getPaymentDb();
   const rows = db.prepare(`
@@ -29,6 +38,9 @@ export function listSellerPayoutOperationalView(sellerId: string) {
       p.requested_at,
       p.created_at,
       p.updated_at,
+      spa.destination_type,
+      spa.provider_ref_id,
+      spa.provider_name,
       spa.verification_status AS destination_verification_status,
       spa.is_active AS destination_is_active,
       (
@@ -56,6 +68,7 @@ export function listSellerPayoutOperationalView(sellerId: string) {
     else if (destinationStatus !== 'verified') verificationBlockers.push('Destination pending verification');
 
     const retryAllowed = status === 'failed' && retryCount < PAYOUT_POLICY.maxRetryCount && isRetryableFailureCode(failureReason);
+    const payoutMethod = resolvePayoutMethod(row.destination_type, row.provider_ref_id, row.provider_name);
 
     return {
       id: row.id,
@@ -72,6 +85,7 @@ export function listSellerPayoutOperationalView(sellerId: string) {
       payoutFeeAmount: row.payout_fee_amount,
       sellerReceivesAmount: row.seller_receives_amount,
       netAmount: row.net_amount,
+      payoutMethod,
       status,
       provider: row.provider,
       providerChargeId: row.provider_charge_id,
