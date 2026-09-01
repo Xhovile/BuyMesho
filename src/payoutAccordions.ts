@@ -30,6 +30,11 @@ function installStyles() {
       border-width: 1px !important;
       border-left-width: 1px !important;
       border-right-width: 1px !important;
+      margin-top: 0.75rem !important;
+    }
+
+    [data-payout-accordion] + [data-payout-accordion] {
+      margin-top: 0.75rem !important;
     }
 
     [data-payout-accordion] > :first-child {
@@ -41,6 +46,8 @@ function installStyles() {
       cursor: pointer;
       user-select: none;
       border-radius: 1rem !important;
+      padding-top: 0.8rem !important;
+      padding-bottom: 0.8rem !important;
     }
 
     [data-payout-accordion] > :first-child::after {
