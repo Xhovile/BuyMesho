@@ -79,6 +79,11 @@ form.w-full.space-y-6 > button.min-w-\[180px\] {
   width: 100%;
 }
 
+/* Payout action card: use a premium black border against the white surface. */
+body [data-admin-payout-workspace] header > div > div:nth-child(2) {
+  border-color: #09090b !important;
+}
+
 @keyframes buymesho-loader-spin {
   to {
     transform: rotate(360deg);

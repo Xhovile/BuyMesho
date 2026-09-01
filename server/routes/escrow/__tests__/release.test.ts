@@ -255,7 +255,7 @@ test('release endpoint immediately dispatches a payout to PayChangu', async () =
     assert.equal(body.payout?.orderId, releasePayoutOrderId, 'payout should link to the order');
     assert.equal(body.payout?.escrowId, body.escrow?.id, 'payout should link to the escrow');
     assert.equal(body.payout?.releaseEntryId, releaseEntry?.id, 'payout should link to the release ledger entry');
-    assert.equal(body.payout?.amount, 1410, 'payout should use the server-side net payout formula after payout fee');
+    assert.equal(body.payout?.amount, 1428, 'payout should use the server-side net payout formula after Airtel payout fee');
     assert.equal(body.payout?.currency, 'MWK', 'payout should use the escrow currency');
     assert.equal(body.payout?.status, 'pending', 'accepted payout should remain pending while PayChangu processes it');
     assert.equal(body.payout?.provider, 'paychangu', 'payout should be submitted to PayChangu');
@@ -271,7 +271,7 @@ test('release endpoint immediately dispatches a payout to PayChangu', async () =
     assert.equal(requests[1]?.authorization, 'Bearer test-secret-key');
     assert.equal(requests[1]?.body.mobile_money_operator_ref_id, 'airtel-money');
     assert.equal(requests[1]?.body.mobile, '990000000');
-    assert.equal(requests[1]?.body.amount, '1410');
+    assert.equal(requests[1]?.body.amount, '1428');
     assert.ok(String(requests[1]?.body.charge_id ?? '').length > 0, 'payout request should include a charge_id');
 
     assert.equal(countPayoutsForOrder(releasePayoutOrderId), 1, 'release should persist exactly one payout');
@@ -305,9 +305,9 @@ test('release endpoint immediately dispatches a payout to PayChangu', async () =
     assert.equal(formulaRow.reserve_amount, 0, 'payout should persist the reserve formula amount');
     assert.equal(formulaRow.reserve_cap_amount, 90, 'payout should persist the reserve cap formula amount');
     assert.equal(formulaRow.manual_adjustment_amount, 0, 'payout should persist the manual adjustment formula amount');
-    assert.equal(formulaRow.payout_fee_amount, 45, 'payout should persist the PayChangu transfer fee estimate');
-    assert.equal(formulaRow.seller_receives_amount, 1410, 'payout should persist the seller amount after payout fee estimate');
-    assert.equal(formulaRow.net_amount, 1410, 'payout should persist the net formula amount after payout fee');
+    assert.equal(formulaRow.payout_fee_amount, 27, 'payout should persist the Airtel payout fee estimate');
+    assert.equal(formulaRow.seller_receives_amount, 1428, 'payout should persist the seller amount after payout fee estimate');
+    assert.equal(formulaRow.net_amount, 1428, 'payout should persist the net formula amount after payout fee');
     assert.deepEqual(JSON.parse(formulaRow.formula_snapshot ?? '{}'), {
       grossAmount: 1500,
       platformFeeAmount: 45,
@@ -315,9 +315,9 @@ test('release endpoint immediately dispatches a payout to PayChangu', async () =
       reserveAmount: 0,
       reserveCapAmount: 90,
       manualAdjustmentAmount: 0,
-      payoutFeeAmount: 45,
-      sellerReceivesAmount: 1410,
-      netAmount: 1410,
+      payoutFeeAmount: 27,
+      sellerReceivesAmount: 1428,
+      netAmount: 1428,
       currency: 'MWK',
     });
     assert.equal(orderRepository.findById(releasePayoutOrderId)?.status, 'fulfilled', 'release should fulfill the order');

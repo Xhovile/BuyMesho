@@ -29,7 +29,7 @@ type SummaryCard = {
 };
 
 type SummaryNotice = {
-  tone: "red" | "amber" | "emerald";
+  tone: "amber" | "emerald";
   title: string;
   message: string;
   icon: LucideIcon;
@@ -81,16 +81,6 @@ const CARDS: SummaryCard[] = [
 ];
 
 function getSummaryNotice(summary: SellerEarningsSummaryModel): SummaryNotice | null {
-  if (summary.hasFailedPayout) {
-    return {
-      tone: "red",
-      title: "Failed payout needs action",
-      message:
-        "One or more payouts failed. Review your payout destination or retry after admin guidance.",
-      icon: AlertTriangle,
-    };
-  }
-
   if (summary.hasHeldPayout) {
     return {
       tone: "amber",
@@ -150,11 +140,9 @@ export default function SellerEarningsSummary({
       {notice ? (
         <div
           className={`mt-4 flex items-start gap-3 rounded-[1.5rem] border p-4 ${
-            notice.tone === "red"
-              ? "border-red-200 bg-red-50 text-red-900"
-              : notice.tone === "amber"
-                ? "border-amber-200 bg-amber-50 text-amber-900"
-                : "border-emerald-200 bg-emerald-50 text-emerald-900"
+            notice.tone === "amber"
+              ? "border-amber-200 bg-amber-50 text-amber-900"
+              : "border-emerald-200 bg-emerald-50 text-emerald-900"
           }`}
         >
           <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/80">
