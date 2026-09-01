@@ -1,11 +1,11 @@
 export const PAYOUT_POLICY = {
   platformFeeBps: 300,
   payoutFeeBps: {
-    airtel_money: 300,
-    tnm_mpamba: 300,
-    bank_transfer: 300,
+    airtel_money: 180,
+    tnm_mpamba: 150,
+    bank_transfer: 170,
   },
-  bankPayoutFlatFeeAmount: 0,
+  bankPayoutFlatFeeAmount: 700,
   buyerFeeBps: 0,
   payChanguCustomerFeeBps: 0,
   reserveCapBps: 600,
