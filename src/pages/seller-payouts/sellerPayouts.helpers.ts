@@ -3,6 +3,7 @@ import type {
   PayoutDestination,
   PayoutDestinationFormState,
   PayoutDestinationPayload,
+  PayoutMethod,
   PayoutRecord,
 } from "../../modules/payouts/types";
 
@@ -90,17 +91,39 @@ export function payoutMathBreakdown(payout: PayoutRecord) {
     payChanguFeeAmount,
     reserveAmount,
     sellerReceivesAmount,
+    payoutMethod: payout.payoutMethod ?? null,
     hasFormula: payout.grossAmount !== null && payout.grossAmount !== undefined,
   };
 }
 
+function payoutMethodLabel(method: PayoutMethod | null) {
+  if (method === "airtel_money") return "Airtel Money";
+  if (method === "tnm_mpamba") return "TNM Mpamba";
+  if (method === "bank_transfer") return "bank transfer";
+  return "payout";
+}
+
+function payoutFeeRateLabel(method: PayoutMethod | null) {
+  if (method === "airtel_money") return "1.8%";
+  if (method === "tnm_mpamba") return "1.5%";
+  if (method === "bank_transfer") return "1.7% + MWK 700";
+  return null;
+}
+
 export function payoutFeeNote(payout: PayoutRecord) {
-  const { payChanguFeeAmount, currency } = payoutMathBreakdown(payout);
+  const { payChanguFeeAmount, currency, payoutMethod } = payoutMathBreakdown(payout);
+  const methodLabel = payoutMethodLabel(payoutMethod);
+  const rateLabel = payoutFeeRateLabel(payoutMethod);
+
   if (payChanguFeeAmount > 0) {
-    return `PayChangu mobile money transaction fee (3%): -${money(payChanguFeeAmount, currency)}`;
+    return rateLabel
+      ? `PayChangu ${methodLabel} payout fee (${rateLabel}): -${money(payChanguFeeAmount, currency)}`
+      : `PayChangu payout fee: -${money(payChanguFeeAmount, currency)}`;
   }
 
-  return "PayChangu mobile money transaction fee is shown once the payout formula is available.";
+  return rateLabel
+    ? `PayChangu ${methodLabel} payout fee (${rateLabel}) is included in the seller payout calculation.`
+    : "PayChangu payout fee is shown once the payout formula is available.";
 }
 
 export function formatDate(value: string | null) {
