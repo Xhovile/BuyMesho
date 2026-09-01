@@ -1,9 +1,10 @@
-const TARGET_TITLES = new Set([
+const ACCORDION_TITLES = new Set([
   "Adjustments",
   "Seller payout access",
   "Destination verification",
 ]);
 
+const DIAGNOSTIC_TITLE = "More diagnostic detail";
 const STYLE_ID = "buymesho-payout-accordion-styles";
 
 function installStyles() {
@@ -20,6 +21,7 @@ function installStyles() {
       gap: 1rem;
       cursor: pointer;
       user-select: none;
+      border-radius: 1rem !important;
     }
 
     [data-payout-accordion] > :first-child::after {
@@ -47,19 +49,30 @@ function installStyles() {
     [data-payout-accordion] > :first-child:focus-visible {
       outline: 2px solid currentColor;
       outline-offset: -2px;
-      border-radius: 0.75rem;
+      border-radius: 1rem !important;
+    }
+
+    [data-payout-diagnostic] > summary {
+      cursor: default !important;
+      user-select: text !important;
+      pointer-events: none !important;
+      list-style: none !important;
+    }
+
+    [data-payout-diagnostic] > summary::-webkit-details-marker {
+      display: none;
     }
   `;
   document.head.appendChild(style);
 }
 
-function getTitle(section: Element) {
+function getPanelTitle(section: Element) {
   return section.querySelector(":scope > :first-child h2")?.textContent?.trim() ?? "";
 }
 
-function enhance(section: HTMLElement) {
+function enhanceAccordion(section: HTMLElement) {
   if (section.dataset.payoutAccordion === "true") return;
-  if (!TARGET_TITLES.has(getTitle(section))) return;
+  if (!ACCORDION_TITLES.has(getPanelTitle(section))) return;
   if (section.children.length < 2) return;
 
   const header = section.firstElementChild as HTMLElement | null;
@@ -70,6 +83,7 @@ function enhance(section: HTMLElement) {
   header.setAttribute("role", "button");
   header.setAttribute("tabindex", "0");
   header.setAttribute("aria-expanded", "true");
+  header.style.borderRadius = "1rem";
 
   const toggle = () => {
     const open = section.dataset.payoutOpen !== "true";
@@ -86,10 +100,36 @@ function enhance(section: HTMLElement) {
   });
 }
 
+function lockDiagnosticOpen(details: HTMLDetailsElement) {
+  const title = details.querySelector(":scope > summary")?.textContent?.trim();
+  if (title !== DIAGNOSTIC_TITLE) return;
+  if (details.dataset.payoutDiagnostic === "true") {
+    details.open = true;
+    return;
+  }
+
+  details.dataset.payoutDiagnostic = "true";
+  details.open = true;
+  const summary = details.querySelector(":scope > summary");
+  summary?.setAttribute("aria-expanded", "true");
+  summary?.setAttribute("role", "heading");
+  summary?.addEventListener("click", (event) => event.preventDefault());
+  summary?.addEventListener("keydown", (event) => {
+    event.preventDefault();
+    details.open = true;
+  });
+}
+
 function scan() {
-  document.querySelectorAll<HTMLElement>(
-    '[data-admin-payout-workspace] section'
-  ).forEach(enhance);
+  document
+    .querySelectorAll<HTMLElement>("[data-admin-payout-workspace] section")
+    .forEach((section) => {
+      enhanceAccordion(section);
+    });
+
+  document
+    .querySelectorAll<HTMLDetailsElement>("[data-admin-payout-workspace] details")
+    .forEach(lockDiagnosticOpen);
 }
 
 function init() {
