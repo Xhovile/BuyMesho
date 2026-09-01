@@ -139,6 +139,93 @@ export default function PayoutDetailDrawer({
           display: none !important;
         }
 
+        /* Desktop: mirror the mobile hierarchy without the 3-column wrap. */
+        @media (min-width: 640px) {
+          header {
+            position: relative !important;
+            padding: 1rem 1.5rem 1.25rem !important;
+          }
+
+          header > div {
+            position: relative !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 0.9rem !important;
+            align-items: stretch !important;
+          }
+
+          header > div > div:first-child {
+            display: contents !important;
+          }
+
+          header > div > div:first-child > div:first-child {
+            order: 3;
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 0.75rem !important;
+            margin: 0 !important;
+            width: 100% !important;
+          }
+
+          header > div > div:first-child > div:first-child > span {
+            width: 100% !important;
+            min-width: 0 !important;
+            justify-content: flex-start !important;
+            padding: 0.75rem 1rem !important;
+          }
+
+          header > div > div:first-child > div:nth-child(2) {
+            order: 1;
+            position: relative !important;
+            width: 100% !important;
+            min-height: 3.25rem !important;
+            margin: 0 !important;
+            padding-right: 3.5rem !important;
+          }
+
+          header > div > div:first-child > div:nth-child(2) > button {
+            position: absolute !important;
+            top: 0 !important;
+            right: 0 !important;
+            z-index: 40 !important;
+            border-radius: 9999px !important;
+            padding: 0.65rem !important;
+            background: white !important;
+            box-shadow: 0 8px 20px rgba(24, 24, 27, 0.12) !important;
+          }
+
+          header > div > div:nth-child(2) {
+            order: 2;
+            display: grid !important;
+            grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+            gap: 0.75rem !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            padding: 0.9rem !important;
+            border: 1.5px solid #ef4444 !important;
+            border-radius: 1.5rem !important;
+            background: white !important;
+            box-shadow: 0 12px 28px rgba(24, 24, 27, 0.10) !important;
+          }
+
+          header > div > div:nth-child(2) > button {
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 3rem !important;
+            justify-content: center !important;
+            gap: 0.45rem !important;
+            padding: 0.65rem 0.55rem !important;
+            font-size: 0.85rem !important;
+            white-space: nowrap !important;
+          }
+
+          header > div > div:nth-child(2) > button svg {
+            width: 1rem !important;
+            height: 1rem !important;
+            flex: 0 0 auto !important;
+          }
+        }
+
         @media (max-width: 639px) {
           [data-admin-payout-workspace] {
             width: 100% !important;
@@ -298,7 +385,7 @@ export default function PayoutDetailDrawer({
           </div>
           <aside className="min-w-0 space-y-6 xl:sticky xl:top-24 xl:self-start">
             <Panel title="Destination verification"><div className="space-y-4"><Value label="Destination account" value={selected.destinationAccountId ?? "—"} mono /><Value label="Current status" value={formatStatus(selected.destinationVerificationStatus)} />{selected.destinationLastError ? <Value label="Last error" value={selected.destinationLastError} /> : null}{canApproveDestination ? <button type="button" onClick={onApproveDestinationVerification} disabled={busy} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-emerald-900/20 transition-[box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:bg-emerald-800 hover:shadow-md active:translate-y-0 disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}Approve as verified</button> : null}<div className="grid gap-3"><FormDropdown label="Set status" value={destinationStatus} options={destinationStatusOptions} onChange={onDestinationStatusChange} placeholder="Select status" searchPlaceholder="Search status..." disabled={!selected.destinationAccountId || busy} /><input value={destinationReason} onChange={(event) => onDestinationReasonChange(event.target.value)} placeholder="Reason" className="w-full rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm" disabled={!selected.destinationAccountId || busy} /><button type="button" onClick={onUpdateDestinationVerification} disabled={!selected.destinationAccountId || busy} className="rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-zinc-300/50 transition-[box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-md active:translate-y-0 disabled:opacity-50 disabled:shadow-none">Update destination</button></div></div></Panel>
-            <Panel title="Seller payout access"><div className="space-y-4"><Value label="Current state" value={selected.sellerSuspended ? "Suspended" : "Active"} /><input value={sellerControlReason} onChange={(event) => onSellerControlReasonChange(event.target.value)} placeholder="Reason" className="w-full rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm" disabled={busy} /><div className="grid grid-cols-2 gap-2"><button type="button" onClick={() => onUpdateSellerSuspension(true)} disabled={busy} className="rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white" >Suspend</button><button type="button" onClick={() => onUpdateSellerSuspension(false)} disabled={busy} className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 disabled:opacity-50">Unsuspend</button></div></div></Panel>
+            <Panel title="Seller payout access"><div className="space-y-4"><Value label="Current state" value={selected.sellerSuspended ? "Suspended" : "Active"} /><input value={sellerControlReason} onChange={(event) => onSellerControlReasonChange(event.target.value)} placeholder="Reason" className="w-full rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm" disabled={busy} /><div className="grid grid-cols-2 gap-2"><button type="button" onClick={() => onUpdateSellerSuspension(true)} disabled={busy} className="rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white">Suspend</button><button type="button" onClick={() => onUpdateSellerSuspension(false)} disabled={busy} className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 disabled:opacity-50">Unsuspend</button></div></div></Panel>
             {canRefundEscrow ? <Panel title="Escrow"><div className="space-y-4"><div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1"><Value label="Order" value={selected.orderId ?? "—"} mono /><Value label="Escrow" value={selected.escrowId ?? "—"} mono /><Value label="State" value={formatStatus(selected.escrowState)} /></div><button type="button" onClick={onOpenRefundEscrowDialog} disabled={busy} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-300 bg-white px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50"><CircleAlert className="h-4 w-4" />Record refund</button></div></Panel> : null}
             <Panel title="Adjustments"><div className="space-y-4"><div className="grid grid-cols-2 gap-4"><Value label="Gross" value={`${selected.currency} ${Number(selected.grossAmount ?? 0).toLocaleString()}`} /><Value label="Net" value={`${selected.currency} ${Number(selected.netAmount ?? selected.amount).toLocaleString()}`} /></div><button type="button" onClick={onReloadAdjustments} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700">Refresh adjustments</button><div className="grid gap-3"><FormDropdown label="Type" value={adjustmentType} options={adjustmentTypeOptions} onChange={(value) => onAdjustmentTypeChange(value as "processing_fee" | "manual_adjustment")} placeholder="Select type" searchPlaceholder="Search type..." disabled={busy} /><input value={adjustmentAmount} onChange={(event) => onAdjustmentAmountChange(event.target.value)} placeholder="Amount" className="w-full rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm" disabled={busy} /><input value={adjustmentReason} onChange={(event) => onAdjustmentReasonChange(event.target.value)} placeholder="Reason" className="w-full rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm" disabled={busy} /><input value={adjustmentProviderRef} onChange={(event) => onAdjustmentProviderRefChange(event.target.value)} placeholder="Provider reference (optional)" className="w-full rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm" disabled={busy} /><button type="button" onClick={onCreateAdjustment} disabled={busy} className="rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white">Save adjustment</button></div><div className="space-y-2">{adjustmentsLoading ? <div className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-600"><Loader2 className="h-4 w-4 animate-spin" />Loading adjustments...</div> : adjustments.length === 0 ? <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-600">No adjustments recorded.</div> : adjustments.map((adjustment) => <div key={adjustment.id} className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3"><p className="text-sm font-bold text-zinc-950">{adjustment.adjustmentType.replace(/_/g, " ")} · {adjustment.currency} {Number(adjustment.amount).toLocaleString()}</p><p className="mt-1 text-sm text-zinc-700">{adjustment.reason}</p><p className="mt-1 text-xs text-zinc-500">{toDate(adjustment.createdAt)} · {adjustment.actorType}</p></div>)}</div></div></Panel>
           </aside>
