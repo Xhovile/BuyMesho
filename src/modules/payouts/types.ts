@@ -1,4 +1,5 @@
 export type DestinationType = "mobile_money" | "bank";
+export type PayoutMethod = "airtel_money" | "tnm_mpamba" | "bank_transfer";
 
 export type PayoutStatus =
   | "eligible"
@@ -60,6 +61,7 @@ export type PayoutRecord = {
   payoutFeeAmount?: number | null;
   sellerReceivesAmount?: number | null;
   netAmount?: number | null;
+  payoutMethod?: PayoutMethod | null;
   status: PayoutStatus;
   provider: string | null;
   providerChargeId: string | null;
