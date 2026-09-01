@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import RootRouter from './RootRouter.tsx';
 import { ToastProvider } from './components/Toast.tsx';
 import './index.css';
+import './payoutAccordions.ts';
 import logoImage from '../photos/Logo.png';
 
 const nativeFetch = window.fetch.bind(window);
