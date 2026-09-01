@@ -5,7 +5,18 @@ const ACCORDION_TITLES = new Set([
 ]);
 
 const DIAGNOSTIC_TITLE = "More diagnostic detail";
+const SILENCED_VALUE_LABELS = new Set([
+  "Release entry",
+  "Requested by",
+  "Escrow ID",
+  "Provider reference",
+  "Provider charge",
+  "Provider transaction",
+  "Latest webhook",
+  "Latest audit",
+]);
 const STYLE_ID = "buymesho-payout-accordion-styles";
+const SILENCED_CLASS = "buymesho-payout-silenced-value";
 
 function installStyles() {
   if (document.getElementById(STYLE_ID)) return;
@@ -70,6 +81,10 @@ function installStyles() {
     [data-payout-diagnostic] > summary::-webkit-details-marker {
       display: none;
     }
+
+    .${SILENCED_CLASS} {
+      display: none !important;
+    }
   `;
   document.head.appendChild(style);
 }
@@ -128,6 +143,19 @@ function lockDiagnosticOpen(details: HTMLDetailsElement) {
   });
 }
 
+function silenceInternalValues() {
+  document
+    .querySelectorAll<HTMLElement>("[data-admin-payout-workspace] p")
+    .forEach((label) => {
+      const text = label.textContent?.trim() ?? "";
+      if (!SILENCED_VALUE_LABELS.has(text)) return;
+      const valueBlock = label.parentElement;
+      if (!valueBlock) return;
+      valueBlock.classList.add(SILENCED_CLASS);
+      label.setAttribute("aria-hidden", "true");
+    });
+}
+
 function scan() {
   document
     .querySelectorAll<HTMLElement>("[data-admin-payout-workspace] section")
@@ -138,6 +166,8 @@ function scan() {
   document
     .querySelectorAll<HTMLDetailsElement>("[data-admin-payout-workspace] details")
     .forEach(lockDiagnosticOpen);
+
+  silenceInternalValues();
 }
 
 function init() {
