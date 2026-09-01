@@ -95,7 +95,7 @@ export default function SellerPayoutsHistorySection({
                   <span>-{money(payoutMath.platformFeeAmount, payoutMath.currency)}</span>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <span>PayChangu transaction fee (3%)</span>
+                  <span>PayChangu payout fee</span>
                   <span>-{money(payoutMath.payChanguFeeAmount, payoutMath.currency)}</span>
                 </div>
                 {payoutMath.reserveAmount > 0 ? (
