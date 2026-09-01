@@ -7,8 +7,6 @@ import AdminPaymentsToolbar from "./adminPayments/AdminPaymentsToolbar";
 import AdminPaymentsTable from "./adminPayments/AdminPaymentsTable";
 import AdminWebhooksTable from "./adminPayments/AdminWebhooksTable";
 import {
-  paymentMatchesSearch,
-  webhookMatchesSearch,
   sortPayments,
   sortWebhooks,
   type PaymentRow,
@@ -24,6 +22,27 @@ type LifecycleStep = {
   label: string;
   active: boolean;
   note: string;
+};
+
+type InvestigationResponse = {
+  query: string;
+  payments: PaymentRow[];
+  webhooks: WebhookEventRow[];
+  tickets?: Array<{
+    ticketId: unknown;
+    ticketCode?: unknown;
+    eventId?: unknown;
+    eventTitle?: unknown;
+    orderId?: unknown;
+    sellerId?: unknown;
+  }>;
+  sellers?: Array<{ sellerId: unknown }>;
+  counts?: {
+    payments?: number;
+    webhooks?: number;
+    tickets?: number;
+    sellers?: number;
+  };
 };
 
 function LifecycleNode({ label, active, note }: LifecycleStep) {
@@ -50,10 +69,9 @@ export default function AdminPaymentsPage() {
   const [webhookSortMode, setWebhookSortMode] = useState<WebhookSortMode>("recent");
   const [searchQuery, setSearchQuery] = useState("");
   const [submittedSearchQuery, setSubmittedSearchQuery] = useState("");
-  const [ticketLookup, setTicketLookup] = useState<any>(null);
-  const [ticketLookupLoading, setTicketLookupLoading] = useState(false);
-  const [ticketLookupError, setTicketLookupError] = useState<string | null>(null);
-  const [ticketPayments, setTicketPayments] = useState<PaymentRow[]>([]);
+  const [investigation, setInvestigation] = useState<InvestigationResponse | null>(null);
+  const [investigationLoading, setInvestigationLoading] = useState(false);
+  const [investigationError, setInvestigationError] = useState<string | null>(null);
 
   const load = async () => {
     setError(null);
@@ -117,53 +135,39 @@ export default function AdminPaymentsPage() {
   const sortedPayments = useMemo(() => sortPayments(payments, paymentSortMode), [payments, paymentSortMode]);
   const sortedWebhookEvents = useMemo(() => sortWebhooks(webhookEvents, webhookSortMode), [webhookEvents, webhookSortMode]);
 
-  const matchingPayments = useMemo(() => {
-    if (!submittedSearchQuery) return sortedPayments;
-    const baseMatches = sortedPayments.filter((payment) => paymentMatchesSearch(payment, submittedSearchQuery));
-    const fallbackMatches = ticketPayments.filter((payment) => !baseMatches.some((match) => match.id === payment.id));
-    return sortPayments([...baseMatches, ...fallbackMatches], paymentSortMode);
-  }, [sortedPayments, ticketPayments, submittedSearchQuery, paymentSortMode]);
+  const matchingPayments = useMemo(
+    () => submittedSearchQuery
+      ? sortPayments(investigation?.payments ?? [], paymentSortMode)
+      : sortedPayments,
+    [investigation, submittedSearchQuery, sortedPayments, paymentSortMode],
+  );
 
-  const matchingWebhooks = useMemo(() => {
-    if (!submittedSearchQuery) return sortedWebhookEvents;
-    const matches = sortedWebhookEvents.filter((event) => webhookMatchesSearch(event, submittedSearchQuery));
-
-    if (matchingPayments.length === 0) return matches;
-    const references = new Set(matchingPayments.flatMap((payment) => [payment.reference, payment.provider_reference]).filter(Boolean).map(String));
-    const related = sortedWebhookEvents.filter((event) => event.reference && references.has(String(event.reference)));
-    const combined = [...matches, ...related.filter((event) => !matches.some((match) => match.id === event.id))];
-    return sortWebhooks(combined, webhookSortMode);
-  }, [sortedWebhookEvents, submittedSearchQuery, matchingPayments, webhookSortMode]);
+  const matchingWebhooks = useMemo(
+    () => submittedSearchQuery
+      ? sortWebhooks(investigation?.webhooks ?? [], webhookSortMode)
+      : sortedWebhookEvents,
+    [investigation, submittedSearchQuery, sortedWebhookEvents, webhookSortMode],
+  );
 
   const handleSearch = async () => {
     const query = searchQuery.trim();
     setSubmittedSearchQuery(query);
-    setActiveTab("payments");
-    setTicketLookup(null);
-    setTicketPayments([]);
-    setTicketLookupError(null);
+    setInvestigationError(null);
+    setInvestigation(null);
     if (!query) return;
 
-    const localPaymentMatch = payments.some((payment) => paymentMatchesSearch(payment, query));
-    const localWebhookMatch = webhookEvents.some((event) => webhookMatchesSearch(event, query));
-    if (localPaymentMatch || localWebhookMatch) return;
-
-    // Preserve the existing Ticket ID lookup as a fallback for identifiers not present in the loaded datasets.
-    setTicketLookupLoading(true);
+    setInvestigationLoading(true);
     try {
-      const [identityResponse, paymentsResponse] = await Promise.all([
-        apiFetch(`/api/admin/ticket-search?ticketId=${encodeURIComponent(query)}`),
-        apiFetch(`/api/admin/ticket-payments?ticketId=${encodeURIComponent(query)}`),
-      ]);
-      setTicketLookup(identityResponse);
-      const rows = (paymentsResponse as { payments?: PaymentRow[] })?.payments;
-      setTicketPayments(Array.isArray(rows) ? rows : []);
+      const response = await apiFetch(`/api/admin/payment-investigation?q=${encodeURIComponent(query)}`);
+      setInvestigation(response as InvestigationResponse);
     } catch (err: unknown) {
-      setTicketLookupError(err instanceof Error ? err.message : "Investigation search did not find a matching Ticket ID.");
+      setInvestigationError(err instanceof Error ? err.message : "Failed to investigate payments and webhooks.");
     } finally {
-      setTicketLookupLoading(false);
+      setInvestigationLoading(false);
     }
   };
+
+  const investigationCounts = investigation?.counts;
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -195,6 +199,8 @@ export default function AdminPaymentsPage() {
         />
 
         {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
+        {investigationError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{investigationError}</div> : null}
+        {investigationLoading ? <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600"><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Investigating transactions…</div> : null}
 
         {latestPayment ? (
           <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
@@ -206,23 +212,22 @@ export default function AdminPaymentsPage() {
 
         <AdminPayoutQueue />
 
-        {ticketLookupLoading ? <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600"><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Checking legacy Ticket ID lookup…</div> : null}
-        {ticketLookupError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{ticketLookupError}</div> : null}
-        {ticketLookup && submittedSearchQuery && ticketPayments.length > 0 ? (
+        {submittedSearchQuery && investigation ? (
           <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              <span className="font-black text-zinc-950">Ticket: {submittedSearchQuery}</span>
-              <span className="text-zinc-500">{ticketPayments.length} payment record(s)</span>
-              {ticketLookup?.identity?.eventId ? <span className="text-zinc-500">Event: {String(ticketLookup.identity.eventId)}</span> : null}
-              {ticketLookup?.identity?.status ? <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{String(ticketLookup.identity.status)}</span> : null}
+              <span className="font-black text-zinc-950">Investigation: {submittedSearchQuery}</span>
+              <span className="text-zinc-500">{investigationCounts?.payments ?? investigation.payments.length} payment(s)</span>
+              <span className="text-zinc-500">{investigationCounts?.webhooks ?? investigation.webhooks.length} webhook(s)</span>
+              {investigationCounts?.tickets ? <span className="text-zinc-500">{investigationCounts.tickets} ticket(s)</span> : null}
+              {investigationCounts?.sellers ? <span className="text-zinc-500">{investigationCounts.sellers} seller(s)</span> : null}
             </div>
           </section>
         ) : null}
 
         {activeTab === "payments" ? (
-          <AdminPaymentsTable payments={matchingPayments} loading={loading} searchActive={Boolean(submittedSearchQuery)} />
+          <AdminPaymentsTable payments={matchingPayments} loading={loading || investigationLoading} searchActive={Boolean(submittedSearchQuery)} />
         ) : (
-          <AdminWebhooksTable events={matchingWebhooks} loading={loading} searchActive={Boolean(submittedSearchQuery)} />
+          <AdminWebhooksTable events={matchingWebhooks} loading={loading || investigationLoading} searchActive={Boolean(submittedSearchQuery)} />
         )}
 
         <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
