@@ -3,6 +3,7 @@ import { ArrowLeft, CircleAlert, CreditCard, ShieldCheck, Loader2, RefreshCw } f
 import { apiFetch } from "./lib/api";
 import { navigateToAdmin } from "./lib/appNavigation";
 import AdminPayoutQueue from "./AdminPayoutQueue";
+import AdminPaymentDetailsDrawer from "./AdminPaymentDetailsDrawer";
 import AdminPaymentsToolbar from "./adminPayments/AdminPaymentsToolbar";
 import AdminPaymentsTable from "./adminPayments/AdminPaymentsTable";
 import AdminWebhooksTable from "./adminPayments/AdminWebhooksTable";
@@ -72,6 +73,7 @@ export default function AdminPaymentsPage() {
   const [investigation, setInvestigation] = useState<InvestigationResponse | null>(null);
   const [investigationLoading, setInvestigationLoading] = useState(false);
   const [investigationError, setInvestigationError] = useState<string | null>(null);
+  const [selectedReference, setSelectedReference] = useState<string | null>(null);
 
   const load = async () => {
     setError(null);
@@ -97,6 +99,15 @@ export default function AdminPaymentsPage() {
     void load();
   }, []);
 
+  useEffect(() => {
+    if (!selectedReference) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedReference(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedReference]);
+
   const stats = useMemo(() => ({
     totalPayments: summary?.summary?.total_payments ?? payments.length,
     verifiedPayments: summary?.summary?.verified_payments ?? payments.filter((p) => Number(p.verified) === 1).length,
@@ -107,7 +118,16 @@ export default function AdminPaymentsPage() {
     invalidWebhooks: summary?.webhookSummary?.invalid_webhooks ?? webhookEvents.filter((e) => Number(e.signature_valid) === 0).length,
   }), [payments, webhookEvents, summary]);
 
-  const latestPayment = payments[0] ?? null;
+  const latestPayment = useMemo(() => {
+    return [...payments].sort((a, b) => Date.parse(b.updated_at || b.created_at || "") - Date.parse(a.updated_at || a.created_at || ""))[0] ?? null;
+  }, [payments]);
+
+  const selectedPayment = selectedReference
+    ? payments.find((payment) => payment.reference === selectedReference) ?? null
+    : null;
+  const selectedHooks = selectedReference
+    ? webhookEvents.filter((event) => event.reference === selectedReference)
+    : [];
 
   const lifecycle = useMemo<LifecycleStep[]>(() => {
     if (!latestPayment) return [];
@@ -154,6 +174,7 @@ export default function AdminPaymentsPage() {
     setSubmittedSearchQuery(query);
     setInvestigationError(null);
     setInvestigation(null);
+    setSelectedReference(null);
     if (!query) return;
 
     setInvestigationLoading(true);
@@ -225,7 +246,12 @@ export default function AdminPaymentsPage() {
         ) : null}
 
         {activeTab === "payments" ? (
-          <AdminPaymentsTable payments={matchingPayments} loading={loading || investigationLoading} searchActive={Boolean(submittedSearchQuery)} />
+          <AdminPaymentsTable
+            payments={matchingPayments}
+            loading={loading || investigationLoading}
+            searchActive={Boolean(submittedSearchQuery)}
+            onSelectPayment={(payment) => setSelectedReference(payment.reference)}
+          />
         ) : (
           <AdminWebhooksTable events={matchingWebhooks} loading={loading || investigationLoading} searchActive={Boolean(submittedSearchQuery)} />
         )}
@@ -241,6 +267,14 @@ export default function AdminPaymentsPage() {
           </div>
         </section>
       </main>
+
+      {selectedPayment ? (
+        <AdminPaymentDetailsDrawer
+          payment={selectedPayment}
+          hooks={selectedHooks}
+          onClose={() => setSelectedReference(null)}
+        />
+      ) : null}
     </div>
   );
 }
