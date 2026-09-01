@@ -37,10 +37,11 @@ test('payout policy freezes the seller-net formula and hard caps reserves', () =
   assert.equal(formula.reserveAmount, 90, 'reserve must be capped at 6% of gross');
   assert.equal(formula.manualAdjustmentAmount, 20);
 
-  // 1500 - 45 - 90 - 20 = 1345 before provider fees; 3% PayChangu fee is deducted from gross.
-  assert.equal(formula.payoutFeeAmount, 45, 'PayChangu payout fee must be 3% of gross');
-  assert.equal(formula.netAmount, 1300, 'seller net payout must deduct commission and PayChangu transaction fee');
-  assert.equal(formula.sellerReceivesAmount, 1300, 'seller receives the net payout after payout transfer fee');
+  // Bank transfer fee = 1.7% of gross + MK700 flat fee.
+  // 1500 - 45 - 90 - 20 - 726 = 619.
+  assert.equal(formula.payoutFeeAmount, 726, 'bank-transfer payout fee must use the configured percentage plus flat fee');
+  assert.equal(formula.netAmount, 619, 'seller net payout must deduct commission, reserve, adjustment, and payout fee');
+  assert.equal(formula.sellerReceivesAmount, 619, 'seller receives the calculated net payout');
   assert.equal(formula.currency, 'MWK');
 });
 
