@@ -1,17 +1,14 @@
 import SellerEarningsSummary from "../../../components/payouts/SellerEarningsSummary";
-import PayoutTimeline from "../../../components/payouts/PayoutTimeline";
 import type { SellerEarningsSummary as SellerEarningsSummaryModel } from "../../../modules/payouts/summary";
-import type { PayoutRecord, PayoutSummary } from "../../../modules/payouts/types";
+import type { PayoutSummary } from "../../../modules/payouts/types";
 
 export default function SellerPayoutsHero({
   summary,
   earningsSummary,
-  payouts,
   canEditSettings,
 }: {
   summary: PayoutSummary;
   earningsSummary: SellerEarningsSummaryModel;
-  payouts: PayoutRecord[];
   canEditSettings: boolean;
 }) {
   return (
@@ -45,10 +42,6 @@ export default function SellerPayoutsHero({
         <div className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-3 shadow-sm lg:min-w-[520px]">
           <SellerEarningsSummary summary={earningsSummary} compact />
         </div>
-      </div>
-
-      <div className="mt-5">
-        <PayoutTimeline payouts={payouts} />
       </div>
     </section>
   );
