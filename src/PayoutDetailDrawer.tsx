@@ -152,11 +152,11 @@ export default function PayoutDetailDrawer({
   return (
     <div className="min-h-screen w-full bg-zinc-50 text-zinc-950">
       <style>{`
-        @media (max-width: 639px) {
-          [data-admin-payout-workspace] > div[class*="z-[95]"] {
-            display: none !important;
-          }
+        [data-admin-payout-workspace] > div[class*="z-[95]"] {
+          display: none !important;
+        }
 
+        @media (max-width: 639px) {
           [data-admin-payout-workspace] {
             width: 100% !important;
             min-height: 100vh !important;
@@ -392,24 +392,14 @@ export default function PayoutDetailDrawer({
                 <Value label="Destination account" value={selected.destinationAccountId ?? "—"} mono />
                 <Value label="Current status" value={formatStatus(selected.destinationVerificationStatus)} />
                 {selected.destinationLastError ? <Value label="Last error" value={selected.destinationLastError} /> : null}
-
                 {canApproveDestination ? (
                   <button type="button" onClick={onApproveDestinationVerification} disabled={busy} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-50">
                     {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                     Approve as verified
                   </button>
                 ) : null}
-
                 <div className="grid gap-3">
-                  <FormDropdown
-                    label="Set status"
-                    value={destinationStatus}
-                    options={destinationStatusOptions}
-                    onChange={onDestinationStatusChange}
-                    placeholder="Select status"
-                    searchPlaceholder="Search status..."
-                    disabled={!selected.destinationAccountId || busy}
-                  />
+                  <FormDropdown label="Set status" value={destinationStatus} options={destinationStatusOptions} onChange={onDestinationStatusChange} placeholder="Select status" searchPlaceholder="Search status..." disabled={!selected.destinationAccountId || busy} />
                   <input value={destinationReason} onChange={(event) => onDestinationReasonChange(event.target.value)} placeholder="Reason" className="w-full rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm" disabled={!selected.destinationAccountId || busy} />
                   <button type="button" onClick={onUpdateDestinationVerification} disabled={!selected.destinationAccountId || busy} className="rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50">Update destination</button>
                 </div>
@@ -451,15 +441,7 @@ export default function PayoutDetailDrawer({
                 </div>
                 <button type="button" onClick={onReloadAdjustments} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50">Refresh adjustments</button>
                 <div className="grid gap-3">
-                  <FormDropdown
-                    label="Type"
-                    value={adjustmentType}
-                    options={adjustmentTypeOptions}
-                    onChange={(value) => onAdjustmentTypeChange(value as "processing_fee" | "manual_adjustment")}
-                    placeholder="Select type"
-                    searchPlaceholder="Search type..."
-                    disabled={busy}
-                  />
+                  <FormDropdown label="Type" value={adjustmentType} options={adjustmentTypeOptions} onChange={(value) => onAdjustmentTypeChange(value as "processing_fee" | "manual_adjustment")} placeholder="Select type" searchPlaceholder="Search type..." disabled={busy} />
                   <input value={adjustmentAmount} onChange={(event) => onAdjustmentAmountChange(event.target.value)} placeholder="Amount" className="w-full rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm" disabled={busy} />
                   <input value={adjustmentReason} onChange={(event) => onAdjustmentReasonChange(event.target.value)} placeholder="Reason" className="w-full rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm" disabled={busy} />
                   <input value={adjustmentProviderRef} onChange={(event) => onAdjustmentProviderRefChange(event.target.value)} placeholder="Provider reference (optional)" className="w-full rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm" disabled={busy} />
