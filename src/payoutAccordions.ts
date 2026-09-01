@@ -13,6 +13,14 @@ function installStyles() {
   const style = document.createElement("style");
   style.id = STYLE_ID;
   style.textContent = `
+    [data-payout-accordion] {
+      border-radius: 1.5rem !important;
+      overflow: hidden;
+      border-width: 1px !important;
+      border-left-width: 1px !important;
+      border-right-width: 1px !important;
+    }
+
     [data-payout-accordion] > :first-child {
       position: relative;
       display: flex !important;
@@ -79,10 +87,10 @@ function enhanceAccordion(section: HTMLElement) {
   if (!header) return;
 
   section.dataset.payoutAccordion = "true";
-  section.dataset.payoutOpen = "true";
+  section.dataset.payoutOpen = "false";
   header.setAttribute("role", "button");
   header.setAttribute("tabindex", "0");
-  header.setAttribute("aria-expanded", "true");
+  header.setAttribute("aria-expanded", "false");
   header.style.borderRadius = "1rem";
 
   const toggle = () => {
