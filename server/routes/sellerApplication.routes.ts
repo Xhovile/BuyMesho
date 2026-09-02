@@ -8,16 +8,29 @@ type SellerType = "student" | "public" | "business";
 type IdentityDocumentType = "national_id" | "passport";
 type LaybyAudience = "students" | "everyone";
 
+function normalizeStudentOfferCategories(value: unknown): string[] {
+  let parsedValue = value;
+
+  if (typeof parsedValue === "string") {
+    try {
+      parsedValue = JSON.parse(parsedValue);
+    } catch {
+      return [];
+    }
+  }
+
+  if (!Array.isArray(parsedValue)) return [];
+
+  return parsedValue
+    .filter((category: unknown): category is string => typeof category === "string")
+    .map((category: string) => category.trim())
+    .filter((category: string) => category.length > 0);
+}
+
 function normalizeSellerApplication(row: any) {
   if (!row) return null;
-  let studentOfferCategories: string[] = [];
-  try {
-    studentOfferCategories = Array.isArray(row.student_offer_categories)
-      ? row.student_offer_categories
-      : JSON.parse(row.student_offer_categories || "[]");
-  } catch {
-    studentOfferCategories = [];
-  }
+  const studentOfferCategories = normalizeStudentOfferCategories(row.student_offer_categories);
+
   return {
     id: row.id ?? null,
     applicant_uid: row.applicant_uid ?? null,
