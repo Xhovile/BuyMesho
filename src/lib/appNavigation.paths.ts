@@ -60,24 +60,9 @@ export const DISPUTES_PATH = "/payments/disputes";
 export const BUYER_PAYMENTS_PATH = "/buyer-payments";
 export const CART_PATH = "/cart";
 export const ORDER_TRACKING_BASE_PATH = "/orders";
-export const MARKET_CHIP_PATHS: Record<HeaderChip, string> = {
-  All: EXPLORE_PATH,
-  Deals: `${EXPLORE_PATH}/deals`,
-  Events: `${EXPLORE_PATH}/events`,
-  Wholesale: `${EXPLORE_PATH}/wholesale`,
-  Gadgets: EXPLORE_PATH,
-  Fashion: EXPLORE_PATH,
-  Food: EXPLORE_PATH,
-  Academics: EXPLORE_PATH,
-  Beauty: EXPLORE_PATH,
-  Sellers: `${EXPLORE_PATH}/sellers`,
-  "Lay-by": `${EXPLORE_PATH}/lay-by`,
-  Accommodation: `${EXPLORE_PATH}/accommodation`,
-  Lending: `${EXPLORE_PATH}/lending`,
-  Innovation: `${EXPLORE_PATH}/innovation`,
-};
+export const MARKET_CHIP_PATHS: Record<HeaderChip, string> = { All: EXPLORE_PATH, Deals: `${EXPLORE_PATH}/deals`, "Lay-by": `${EXPLORE_PATH}/lay-by`, Events: `${EXPLORE_PATH}/events`, Wholesale: `${EXPLORE_PATH}/wholesale`, Sellers: `${EXPLORE_PATH}/sellers`, Innovation: `${EXPLORE_PATH}/innovation`, Accommodation: `${EXPLORE_PATH}/accommodation`, Lending: `${EXPLORE_PATH}/lending` };
 export const APP_HISTORY_STATE_KEY = "__buymesho";
 export const AUTH_RETURN_PATH_STORAGE_KEY = "__buymesho_auth_return_path";
 export const markAppHistoryState = () => ({ [APP_HISTORY_STATE_KEY]: true });
-export const isAppHistoryState = () => { if (typeof window === "undefined") return false; const state=window.history.state; return !!(state&&typeof state==="object"&&(state as Record<string,unknown>)[APP_HISTORY_STATE_KEY]); };
+export const isAppHistoryState = () => { if (typeof window === "undefined") return false; const state=window.history.state; return !!(state&&typeof state === "object"&&(state as Record<string,unknown>)[APP_HISTORY_STATE_KEY]); };
 export const sanitizeInternalReturnPath=(value:string|null|undefined)=>{ if(!value)return null; if(!value.startsWith("/")||value.startsWith("//"))return null; return value; };
