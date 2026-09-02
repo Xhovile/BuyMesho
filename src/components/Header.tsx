@@ -424,7 +424,7 @@ export default function Header({
             </div>
           </div>
 
-          <HeaderChips selectedChip={selectedChip} onChipChange={onChipChange} />
+          <HeaderChips selectedChip={selectedChip} isAdmin={isAdmin} onChipChange={onChipChange} />
         </div>
       </nav>
 
