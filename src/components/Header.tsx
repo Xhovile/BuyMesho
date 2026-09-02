@@ -27,6 +27,7 @@ import {
 import type { HeaderChip } from "../constants";
 import BrandMark from "./BrandMark";
 import FeedbackModal from "./FeedbackModal";
+import AppFooter from "./AppFooter";
 import { auth } from "../firebase";
 import { fetchInbox } from "../lib/messages";
 import { useIsAdmin } from "../hooks/useIsAdmin";
@@ -184,6 +185,8 @@ export default function Header({
 
   const pathname = typeof window === "undefined" ? HOME_PATH : window.location.pathname;
   const isMarketRoute = pathname === EXPLORE_PATH || pathname.startsWith(`${EXPLORE_PATH}/`);
+  const isCategoryRoute = pathname === "/category";
+  const showDesktopHomeButton = isMarketRoute || isCategoryRoute;
   const primaryDrawerPath = isMarketRoute ? HOME_PATH : EXPLORE_PATH;
   const primaryDrawerLabel = isMarketRoute ? "Home" : "Market";
 
@@ -291,7 +294,7 @@ export default function Header({
                 <BrandMark subtitle={headerSubtitle} />
 
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {isMarketRoute ? (
+                  {showDesktopHomeButton ? (
                     <button
                       type="button"
                       onClick={() => navigateToPath(HOME_PATH)}
@@ -478,6 +481,8 @@ export default function Header({
           },
         ]}
       />
+
+      {isCategoryRoute ? <AppFooter /> : null}
     </>
   );
 }
