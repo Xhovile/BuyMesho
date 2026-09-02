@@ -115,11 +115,11 @@ export default function AiIcon({ className = "w-5 h-5", size }: Props) {
         className="w-full h-full"
       >
         <defs>
-          {/* Deep BuyMesho red */}
-          <linearGradient id="redGlass" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#8F1528" />
-            <stop offset="45%" stopColor="#B51F35" />
-            <stop offset="100%" stopColor="#650D1D" />
+          {/* Dark outer frame */}
+          <linearGradient id="darkFrame" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#050505" />
+            <stop offset="45%" stopColor="#161616" />
+            <stop offset="100%" stopColor="#000000" />
           </linearGradient>
 
           {/* Soft depth */}
@@ -128,13 +128,13 @@ export default function AiIcon({ className = "w-5 h-5", size }: Props) {
               dx="0"
               dy="4"
               stdDeviation="4"
-              floodColor="#5C0B19"
+              floodColor="#000000"
               floodOpacity=".28"
             />
           </filter>
         </defs>
 
-        {/* Outer frame: border only, leaving the gap beneath it transparent */}
+        {/* Outer frame: thick dark border */}
         <rect
           x="7"
           y="7"
@@ -142,7 +142,7 @@ export default function AiIcon({ className = "w-5 h-5", size }: Props) {
           height="86"
           rx="23"
           fill="none"
-          stroke="url(#redGlass)"
+          stroke="url(#darkFrame)"
           strokeWidth="5"
           filter="url(#shadow)"
         />
@@ -159,7 +159,7 @@ export default function AiIcon({ className = "w-5 h-5", size }: Props) {
           strokeWidth="2"
         />
 
-        {/* Red inner rim */}
+        {/* Dark inner rim */}
         <rect
           x="18"
           y="18"
@@ -167,8 +167,8 @@ export default function AiIcon({ className = "w-5 h-5", size }: Props) {
           height="64"
           rx="15"
           fill="none"
-          stroke="#8F1528"
-          strokeOpacity=".55"
+          stroke="#111111"
+          strokeOpacity=".72"
           strokeWidth="2"
         />
 
