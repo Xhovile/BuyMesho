@@ -1,5 +1,6 @@
-import { cloneElement, useEffect, useMemo, useState, type ReactElement, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Header from "./Header";
+import CategoryPage from "../CategoryPage";
 import { useAccountProfile } from "../hooks/useAccountProfile";
 import { useAuthUser } from "../hooks/useAuthUser";
 import type { HeaderChip } from "../constants";
@@ -43,18 +44,6 @@ function isPersistentMarketplacePath(pathname: string, search: string) {
 function getCategoryChip(search: string): HeaderChip {
   const category = new URLSearchParams(search).get("category") || "phones";
   return CATEGORY_CHIP_BY_KEY[category] || "Gadgets";
-}
-
-function getContentKey(pathname: string, search: string) {
-  if (pathname === "/category") {
-    return `category:${new URLSearchParams(search).get("category") || "phones"}`;
-  }
-
-  if (pathname === EXPLORE_PATH || pathname.startsWith(`${EXPLORE_PATH}/`)) {
-    return `explore:${pathname}`;
-  }
-
-  return "marketplace";
 }
 
 export default function MarketplaceShell({ children }: MarketplaceShellProps) {
@@ -116,10 +105,7 @@ export default function MarketplaceShell({ children }: MarketplaceShellProps) {
     navigateToPath(BECOME_SELLER_PATH);
   };
 
-  const contentKey = getContentKey(location.pathname, location.search);
-  const keyedChildren = isMarketplace && isReactElement(children)
-    ? cloneElement(children, { key: contentKey })
-    : children;
+  const isCategoryRoute = location.pathname === "/category" && isMarketplace;
 
   return (
     <div className={isMarketplace ? "min-h-screen buymesho-marketplace-shell" : "min-h-screen"}>
@@ -146,12 +132,8 @@ export default function MarketplaceShell({ children }: MarketplaceShellProps) {
       ) : null}
 
       <div className={isMarketplace ? "buymesho-marketplace-route-content" : undefined}>
-        {keyedChildren}
+        {isCategoryRoute ? <CategoryPage key={location.search} /> : children}
       </div>
     </div>
   );
-}
-
-function isReactElement(value: ReactNode): value is ReactElement {
-  return !!value && typeof value === "object" && "type" in value && "props" in value;
 }
