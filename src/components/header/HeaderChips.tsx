@@ -6,12 +6,19 @@ const CHIP_SCROLL_STORAGE_KEY = "__buymesho_header_chip_scroll_left";
 
 type HeaderChipsProps = {
   selectedChip: HeaderChip;
+  isAdmin?: boolean;
   onChipChange?: (chip: HeaderChip) => void;
 };
 
-export default function HeaderChips({ selectedChip, onChipChange }: HeaderChipsProps) {
+export default function HeaderChips({ selectedChip, isAdmin = false, onChipChange }: HeaderChipsProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const restoreRafRef = useRef<number | null>(null);
+
+  const visibleChips = isAdmin
+    ? QUICK_CHIPS
+    : QUICK_CHIPS.filter(
+        (chip) => chip !== "Accommodation" && chip !== "Innovation" && chip !== "Lending"
+      );
 
   const persistScrollPosition = () => {
     const el = scrollRef.current;
@@ -51,7 +58,7 @@ export default function HeaderChips({ selectedChip, onChipChange }: HeaderChipsP
         restoreRafRef.current = null;
       }
     };
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -83,7 +90,7 @@ export default function HeaderChips({ selectedChip, onChipChange }: HeaderChipsP
       inline: "nearest",
     });
     persistScrollPosition();
-  }, [selectedChip]);
+  }, [selectedChip, isAdmin]);
 
   return (
     <div className="px-3 py-1.5 bg-zinc-100 border-t border-zinc-200">
@@ -93,7 +100,7 @@ export default function HeaderChips({ selectedChip, onChipChange }: HeaderChipsP
           className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
           <div className="flex min-w-max items-center gap-4 pb-0.5">
-            {QUICK_CHIPS.map((chip) => {
+            {visibleChips.map((chip) => {
               const isActive = chip === selectedChip;
               return (
                 <button
