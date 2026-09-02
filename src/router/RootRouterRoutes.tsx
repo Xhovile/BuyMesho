@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import {
+  ADMIN_TRANSACTION_INSPECTOR_PATH,
   DISPUTES_PATH,
   EVENTS_CREATE_PATH,
   EVENTS_MANAGE_PATH,
@@ -119,7 +120,7 @@ export default function RootRouterRoutes({
         <TransactionJsonPage />
       ) : route === "listing_details" ? (
         <ListingDetailsPage />
-      ) : isOrderDisputePath ? (
+      ) : locationPath.startsWith("/orders/") && locationPath.endsWith("/dispute") ? (
         <OrderDisputePage />
       ) : isOrderTrackingPath ? (
         <OrderTrackingPage />
@@ -203,7 +204,7 @@ export default function RootRouterRoutes({
         <AdminEventModerationPage />
       ) : route === "admin_payments" ? (
         <AdminPaymentsPage />
-      ) : route === "admin_transaction_inspector" || locationPath === "/admin/transaction-inspector" ? (
+      ) : route === "admin_transaction_inspector" || locationPath === ADMIN_TRANSACTION_INSPECTOR_PATH ? (
         <TransactionInspectorPage />
       ) : route === "admin_payouts" ? (
         <AdminPayoutsManager />
