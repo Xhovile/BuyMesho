@@ -1,5 +1,4 @@
 import {
-  MARKET_CATEGORY_TO_API_CATEGORY,
   type HeaderChip,
 } from "../constants";
 import {
@@ -36,6 +35,14 @@ export const getExploreStateFromLocation = (location:Pick<Location,"search">):Ex
   hideSoldOut:parseBooleanParam(params.get("hideSoldOut")), page:parsePositiveIntegerParam(params.get("page"),DEFAULT_EXPLORE_QUERY_STATE.page), specFilters:parseSpecFiltersParam(params.get("specFilters")),
 }; };
 
+const CATEGORY_CHIP_TO_KEY: Partial<Record<HeaderChip, string>> = {
+  Gadgets: "phones",
+  Fashion: "fashion",
+  Food: "food",
+  Academics: "books",
+  Beauty: "beauty",
+};
+
 export const getMarketChipFromPath=(pathname:string):HeaderChip=>{ if(pathname===MARKET_CHIP_PATHS.Deals)return"Deals"; if(pathname===MARKET_CHIP_PATHS["Lay-by"])return"Lay-by"; if(pathname===MARKET_CHIP_PATHS.Events)return"Events"; if(pathname===MARKET_CHIP_PATHS.Wholesale)return"Wholesale"; if(pathname===MARKET_CHIP_PATHS.Sellers)return"Sellers"; if(pathname===MARKET_CHIP_PATHS.Innovation)return"Innovation"; if(pathname===MARKET_CHIP_PATHS.Accommodation)return"Accommodation"; if(pathname===MARKET_CHIP_PATHS.Lending)return"Lending"; return"All"; };
 export const getMarketChipFromLocation=(location:Pick<Location,"pathname">):HeaderChip=>getMarketChipFromPath(location.pathname);
 export const getMarketPathFromLocation=(pathname:string)=>pathname===EXPLORE_PATH||pathname.startsWith(`${EXPLORE_PATH}/`)?pathname:EXPLORE_PATH;
@@ -48,15 +55,15 @@ export const pushExploreStateInUrl=(state:Partial<ExploreQueryState>)=>syncExplo
 export const navigateToMarketChip=(chip:HeaderChip)=>{
   if(typeof window==="undefined")return;
 
-  const category = MARKET_CATEGORY_TO_API_CATEGORY[chip];
-  if (category) {
+  const categoryKey = CATEGORY_CHIP_TO_KEY[chip];
+  if (categoryKey) {
     const url = new URL(window.location.href);
-    url.pathname = EXPLORE_PATH;
+    url.pathname = "/category";
+    url.searchParams.set("category", categoryKey);
     url.searchParams.delete("listing");
     url.searchParams.delete("image");
     url.searchParams.delete("uid");
     url.searchParams.delete("id");
-    writeExploreStateToUrl(url, { category, page: 1 });
     pushUrl(url);
     return;
   }
