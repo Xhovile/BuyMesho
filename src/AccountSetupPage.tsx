@@ -28,6 +28,9 @@ type FormState = {
 };
 
 type FeedbackState = { open: boolean; type: "success" | "error" | "info"; title: string; message: string } | null;
+type SignupProfileDraft = { firstName?: string; surname?: string; otherNames?: string };
+
+const SIGNUP_PROFILE_DRAFT_KEY = "__buymesho_signup_profile_draft";
 
 const emptyForm: FormState = {
   firstName: "", surname: "", otherNames: "", userType: "", phone: "", university: "", campus: "",
@@ -36,6 +39,17 @@ const emptyForm: FormState = {
 
 function normalize(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function readSignupDraft(): SignupProfileDraft {
+  try {
+    const raw = sessionStorage.getItem(SIGNUP_PROFILE_DRAFT_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as SignupProfileDraft;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
 }
 
 export default function AccountSetupPage() {
@@ -47,15 +61,17 @@ export default function AccountSetupPage() {
 
   useEffect(() => {
     if (authLoading || !firebaseUser) return;
+    const signupDraft = readSignupDraft();
     void apiFetch("/api/profile")
       .then((profile: UserProfile) => {
-        const firstName = normalize(profile?.first_name);
-        const surname = normalize(profile?.surname);
+        const firstName = normalize(profile?.first_name) || normalize(signupDraft.firstName);
+        const surname = normalize(profile?.surname) || normalize(signupDraft.surname);
+        const otherNames = normalize(profile?.other_names) || normalize(signupDraft.otherNames);
         setForm({
           ...emptyForm,
           firstName,
           surname,
-          otherNames: normalize(profile?.other_names),
+          otherNames,
           userType: profile?.user_type === "student" || profile?.user_type === "public" ? profile.user_type : "",
           phone: normalize(profile?.phone),
           university: normalize(profile?.university),
@@ -70,7 +86,15 @@ export default function AccountSetupPage() {
           profilePicture: normalize(profile?.profile_picture),
         });
       })
-      .catch(() => setFeedback({ open: true, type: "error", title: "Could not load your profile", message: "Please refresh the page and try again." }))
+      .catch(() => {
+        setForm((prev) => ({
+          ...prev,
+          firstName: prev.firstName || normalize(signupDraft.firstName),
+          surname: prev.surname || normalize(signupDraft.surname),
+          otherNames: prev.otherNames || normalize(signupDraft.otherNames),
+        }));
+        setFeedback({ open: true, type: "error", title: "Could not load your profile", message: "Your signup details are still available. Please complete the remaining fields and try again." });
+      })
       .finally(() => setLoading(false));
   }, [authLoading, firebaseUser]);
 
@@ -132,6 +156,7 @@ export default function AccountSetupPage() {
         }),
       });
 
+      try { sessionStorage.removeItem(SIGNUP_PROFILE_DRAFT_KEY); } catch { /* Ignore storage errors. */ }
       navigateToPath(consumeAuthReturnPath(HOME_PATH), { replace: true });
     } catch (error: any) {
       setFeedback({ open: true, type: "error", title: "Could not save your profile", message: error?.message || "Please check your details and try again." });
