@@ -13,8 +13,6 @@ type AccountProfileCacheEntry = {
   sellerApplicationPending: boolean;
 };
 
-// Session-scoped in-memory cache. Navigation/remounts reuse it; a full browser
-// reload clears it, which is intentional for the seller workspace contract.
 const ACCOUNT_PROFILE_CACHE = new Map<string, AccountProfileCacheEntry>();
 
 function getCachedSellerStatus(uid: string): boolean {
@@ -27,31 +25,23 @@ function getCachedSellerStatus(uid: string): boolean {
 
 function setCachedSellerStatus(uid: string, isSeller: boolean): void {
   try {
-    if (isSeller) {
-      localStorage.setItem(SELLER_CACHE_KEY_PREFIX + uid, "1");
-    } else {
-      localStorage.removeItem(SELLER_CACHE_KEY_PREFIX + uid);
-    }
+    if (isSeller) localStorage.setItem(SELLER_CACHE_KEY_PREFIX + uid, "1");
+    else localStorage.removeItem(SELLER_CACHE_KEY_PREFIX + uid);
   } catch {
-    // Ignore storage errors (e.g. private browsing with full quota).
+    // Ignore storage errors.
   }
 }
 
 async function fetchSellerApplicationWithRetry() {
   let lastError: unknown = null;
-
   for (const delayMs of SELLER_STATUS_RETRY_DELAYS_MS) {
-    if (delayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-
+    if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
     try {
       return await apiFetch("/api/profile/seller-application");
     } catch (error) {
       lastError = error;
     }
   }
-
   throw lastError;
 }
 
@@ -66,9 +56,7 @@ export function useAccountProfile() {
   const syncApprovedSellerRecord = useCallback(
     async (baseProfile?: Partial<UserProfile> | null) => {
       if (!firebaseUser) return;
-
       const profileForSync = baseProfile ?? null;
-
       await apiFetch("/api/sellers", {
         method: "POST",
         body: JSON.stringify({
@@ -89,7 +77,6 @@ export function useAccountProfile() {
     async (force = false) => {
       if (syncInFlight.current) return;
       syncInFlight.current = true;
-
       try {
         if (!firebaseUser) {
           setProfile(null);
@@ -100,7 +87,7 @@ export function useAccountProfile() {
 
         if (!force) {
           const cached = ACCOUNT_PROFILE_CACHE.get(firebaseUser.uid);
-          if (cached) {
+          if (cached && cached.profile.profile_setup_complete) {
             setProfile(cached.profile);
             setSellerApplicationPending(cached.sellerApplicationPending);
             setCachedSellerStatus(firebaseUser.uid, !!cached.profile.is_seller);
@@ -129,9 +116,7 @@ export function useAccountProfile() {
           let loadedProfile: UserProfile | null = null;
           try {
             const serverProfile = await apiFetch("/api/profile");
-            if (serverProfile) {
-              loadedProfile = serverProfile as UserProfile;
-            }
+            if (serverProfile) loadedProfile = serverProfile as UserProfile;
           } catch (apiErr) {
             console.warn("GET /api/profile failed, falling back to Firestore", apiErr);
           }
@@ -175,10 +160,10 @@ export function useAccountProfile() {
             const fallbackProfile: UserProfile = {
               uid: firebaseUser.uid,
               email: firebaseUser.email || "",
-              university: UNIVERSITIES[0],
               is_verified: false,
               is_seller: false,
               join_date: new Date().toISOString(),
+              profile_setup_complete: false,
             };
             const userRef = doc(firestore, "users", firebaseUser.uid);
             const snap = await getDoc(userRef);
@@ -202,13 +187,9 @@ export function useAccountProfile() {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
                   },
-                  body: JSON.stringify({
-                    university: fallbackProfile.university,
-                  }),
+                  body: JSON.stringify({}),
                 });
-                if (!bootstrapRes.ok) {
-                  throw new Error(`Profile bootstrap failed (${bootstrapRes.status})`);
-                }
+                if (!bootstrapRes.ok) throw new Error(`Profile bootstrap failed (${bootstrapRes.status})`);
               }
               setProfile(fallbackProfile);
               ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
@@ -228,15 +209,9 @@ export function useAccountProfile() {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({
-                university: UNIVERSITIES[0],
-              }),
+              body: JSON.stringify({}),
             });
-
-            if (!bootstrapRes.ok) {
-              throw new Error(`Profile bootstrap failed (${bootstrapRes.status})`);
-            }
-
+            if (!bootstrapRes.ok) throw new Error(`Profile bootstrap failed (${bootstrapRes.status})`);
             const bootstrapData = await bootstrapRes.json();
             if (bootstrapData?.profile) {
               const bootstrapProfile = bootstrapData.profile as UserProfile;
@@ -272,11 +247,9 @@ export function useAccountProfile() {
 
   useEffect(() => {
     if (authLoading || !firebaseUser || profile?.is_seller || !sellerApplicationPending) return;
-
     const syncApprovedSellerStatus = async () => {
       try {
         const sellerApplication = await fetchSellerApplicationWithRetry();
-
         if (sellerApplication?.status === "approved") {
           const userRef = doc(firestore, "users", firebaseUser.uid);
           await setDoc(userRef, { is_seller: true }, { merge: true });
@@ -285,36 +258,19 @@ export function useAccountProfile() {
           setCachedSellerStatus(firebaseUser.uid, true);
           setSellerApplicationPending(false);
           const cached = ACCOUNT_PROFILE_CACHE.get(firebaseUser.uid);
-          if (cached) {
-            ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
-              profile: { ...cached.profile, is_seller: true },
-              sellerApplicationPending: false,
-            });
-          }
+          if (cached) ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, { profile: { ...cached.profile, is_seller: true }, sellerApplicationPending: false });
           return;
         }
-
         if (sellerApplication?.status === "pending") {
           setSellerApplicationPending(true);
           const cached = ACCOUNT_PROFILE_CACHE.get(firebaseUser.uid);
-          if (cached) {
-            ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
-              profile: cached.profile,
-              sellerApplicationPending: true,
-            });
-          }
+          if (cached) ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, { profile: cached.profile, sellerApplicationPending: true });
           return;
         }
-
         if (!sellerApplication || sellerApplication?.status === "rejected") {
           setSellerApplicationPending(false);
           const cached = ACCOUNT_PROFILE_CACHE.get(firebaseUser.uid);
-          if (cached) {
-            ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, {
-              profile: cached.profile,
-              sellerApplicationPending: false,
-            });
-          }
+          if (cached) ACCOUNT_PROFILE_CACHE.set(firebaseUser.uid, { profile: cached.profile, sellerApplicationPending: false });
         }
       } catch (statusErr) {
         console.error("Background seller status sync failed", statusErr);
@@ -322,31 +278,19 @@ export function useAccountProfile() {
     };
 
     void syncApprovedSellerStatus();
-
-    const handleFocusSync = () => {
-      void syncApprovedSellerStatus();
-    };
-
+    const handleFocusSync = () => void syncApprovedSellerStatus();
     window.addEventListener("focus", handleFocusSync);
     window.addEventListener("popstate", handleFocusSync);
-    const syncInterval = sellerApplicationPending
-      ? window.setInterval(() => {
-          void syncApprovedSellerStatus();
-        }, 15000)
-      : null;
-
+    const syncInterval = sellerApplicationPending ? window.setInterval(() => void syncApprovedSellerStatus(), 15000) : null;
     return () => {
       window.removeEventListener("focus", handleFocusSync);
       window.removeEventListener("popstate", handleFocusSync);
-      if (syncInterval) {
-        window.clearInterval(syncInterval);
-      }
+      if (syncInterval) window.clearInterval(syncInterval);
     };
   }, [authLoading, firebaseUser, profile, profile?.is_seller, sellerApplicationPending, syncApprovedSellerRecord]);
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!firebaseUser) return;
-
     try {
       const userRef = doc(firestore, "users", firebaseUser.uid);
       await setDoc(userRef, updates, { merge: true });

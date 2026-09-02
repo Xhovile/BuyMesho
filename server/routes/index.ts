@@ -200,7 +200,31 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
       }
       const firebaseUser = req.user?.firebaseUser ?? req.firebaseUser ?? null;
       const email = profile?.email ?? seller?.email ?? firebaseUser?.email ?? "";
-      return res.json({ uid, email, display_name: profile?.display_name ?? profile?.displayName ?? null, university: profile?.university ?? seller?.university ?? null, phone: profile?.phone ?? null, profile_picture: profile?.profile_picture ?? profile?.photoURL ?? null, bio: profile?.bio ?? seller?.bio ?? null, business_name: profile?.business_name ?? seller?.business_name ?? null, business_logo: profile?.business_logo ?? seller?.business_logo ?? null, is_verified: !!(profile?.is_verified ?? seller?.is_verified), is_seller: !!(profile?.is_seller ?? seller?.is_seller), join_date: profile?.join_date ?? seller?.join_date ?? null, buyer_details: profile?.buyer_details ?? null });
+      return res.json({
+        uid,
+        email,
+        display_name: profile?.display_name ?? profile?.displayName ?? null,
+        first_name: profile?.first_name ?? null,
+        surname: profile?.surname ?? null,
+        other_names: profile?.other_names ?? null,
+        full_name: profile?.full_name ?? profile?.display_name ?? null,
+        user_type: profile?.user_type ?? null,
+        phone: profile?.phone ?? null,
+        university: profile?.university ?? seller?.university ?? null,
+        campus: profile?.campus ?? null,
+        student_id: profile?.student_id ?? null,
+        student_number: profile?.student_number ?? null,
+        student_email: profile?.student_email ?? null,
+        profile_setup_complete: !!profile?.profile_setup_complete,
+        profile_picture: profile?.profile_picture ?? profile?.photoURL ?? null,
+        bio: profile?.bio ?? seller?.bio ?? null,
+        business_name: profile?.business_name ?? seller?.business_name ?? null,
+        business_logo: profile?.business_logo ?? seller?.business_logo ?? null,
+        is_verified: !!(profile?.is_verified ?? seller?.is_verified),
+        is_seller: !!(profile?.is_seller ?? seller?.is_seller),
+        join_date: profile?.join_date ?? seller?.join_date ?? null,
+        buyer_details: profile?.buyer_details ?? null,
+      });
     } catch (error) {
       console.error("Failed to load profile", error);
       return res.status(500).json({ error: "Failed to load profile" });
