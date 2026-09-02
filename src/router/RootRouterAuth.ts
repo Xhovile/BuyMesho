@@ -34,6 +34,7 @@ export function useRootRouterAuthGuard({
       "settings",
       "edit_profile",
       "edit_account",
+      "account_setup",
       "become_seller",
       "change_password",
       "change_email",
