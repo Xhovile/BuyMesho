@@ -28,6 +28,7 @@ import {
 } from "./lib/appNavigation";
 import type { HeaderChip } from "./constants";
 import Header from "./components/Header";
+import AppFooter from "./components/AppFooter";
 import { getListingSubcategories } from "./listingSchemas/registry";
 import ListingCard from "./components/ListingCard";
 import FormDropdown from "./components/FormDropdown";
@@ -497,6 +498,8 @@ export default function CategoryPage() {
           </div>
         </section>
       </main>
+
+      <AppFooter />
 
       <FeedbackModal
         open={authGuardOpen}
