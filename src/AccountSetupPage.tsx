@@ -5,7 +5,7 @@ import FormDropdown from "./components/FormDropdown";
 import FeedbackModal from "./components/FeedbackModal";
 import { UNIVERSITIES } from "./constants";
 import { apiFetch } from "./lib/api";
-import { navigateToPath } from "./lib/appNavigation";
+import { consumeAuthReturnPath, HOME_PATH, navigateToPath } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import type { UserProfile, UserType } from "./types";
 
@@ -132,7 +132,7 @@ export default function AccountSetupPage() {
         }),
       });
 
-      navigateToPath("/", { replace: true });
+      navigateToPath(consumeAuthReturnPath(HOME_PATH), { replace: true });
     } catch (error: any) {
       setFeedback({ open: true, type: "error", title: "Could not save your profile", message: error?.message || "Please check your details and try again." });
     } finally {
