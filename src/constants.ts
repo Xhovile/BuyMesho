@@ -53,11 +53,3 @@ export const QUICK_CHIPS = [
 ] as const;
 
 export type HeaderChip = (typeof QUICK_CHIPS)[number];
-
-export const MARKET_CATEGORY_TO_API_CATEGORY: Partial<Record<HeaderChip, string>> = {
-  Gadgets: "Electronics & Gadgets",
-  Fashion: "Fashion & Clothing",
-  Food: "Food & Snacks",
-  Academics: "Academic Services",
-  Beauty: "Beauty & Personal Care",
-};
