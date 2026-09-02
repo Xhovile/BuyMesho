@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from "react";
-import { getAppRouteFromLocation, type AppRoute } from "./lib/appNavigation";
+import { getAppRouteFromLocation, type AppRoute, EXPLORE_PATH } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { RouteLoader } from "./router/RootRouterGlobalUI";
 import RootRouterGlobalUI from "./router/RootRouterGlobalUI";
@@ -32,9 +32,18 @@ export default function RootRouter() {
     locationSearch,
   });
 
+  const isExploreChipRoute =
+    locationPath === EXPLORE_PATH || locationPath.startsWith(`${EXPLORE_PATH}/`);
+
   return (
     <>
-      <Suspense fallback={<RouteLoader />}>
+      <Suspense
+        fallback={
+          <div className={isExploreChipRoute ? "-translate-y-4" : undefined}>
+            <RouteLoader />
+          </div>
+        }
+      >
         <RootRouterRoutes
           route={route}
           locationPath={locationPath}
