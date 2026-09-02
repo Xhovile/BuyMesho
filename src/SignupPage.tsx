@@ -1,11 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
 import FeedbackModal from "./components/FeedbackModal";
 import AccountPageShell from "./components/AccountPageShell";
 import AuthSessionCheckpoint from "./components/AuthSessionCheckpoint";
-import { auth, db as firestore } from "./firebase";
+import { auth } from "./firebase";
 import { apiFetch } from "./lib/api";
 import { navigateToLogin, navigateToPath } from "./lib/appNavigation";
 import type { UserProfile } from "./types";
@@ -27,13 +26,17 @@ const buildFullName = ({ firstName, surname, otherNames }: Pick<NameForm, "first
   [firstName, otherNames, surname].map((value) => value.trim()).filter(Boolean).join(" ");
 
 const bootstrapProfile = async (profile: UserProfile) => {
-  try {
-    await setDoc(doc(firestore, "users", profile.uid), profile, { merge: true });
-    return;
-  } catch (profileErr) {
-    console.warn("Direct Firestore profile bootstrap failed; trying server bootstrap.", profileErr);
-  }
-  await apiFetch("/api/profile/bootstrap", { method: "POST", body: JSON.stringify({ email: profile.email }) });
+  await apiFetch("/api/account", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      first_name: profile.first_name,
+      surname: profile.surname,
+      other_names: profile.other_names,
+      full_name: profile.full_name,
+      profile_setup_complete: false,
+    }),
+  });
 };
 
 export default function SignupPage() {
@@ -135,7 +138,7 @@ export default function SignupPage() {
             <div className="mt-3 space-y-2"><div className="h-1.5 overflow-hidden rounded-full bg-zinc-200"><div className={`h-full rounded-full transition-all ${strength <= 1 ? "w-1/4 bg-red-500" : strength === 2 ? "w-2/4 bg-amber-500" : strength === 3 ? "w-3/4 bg-blue-500" : "w-full bg-emerald-500"}`} /></div><div className="flex items-center justify-between gap-3 text-xs font-medium text-zinc-500"><span>Password strength</span><span>{getPasswordStrengthLabel(strength)}</span></div><p className="text-xs text-zinc-500">{getPasswordTip(passwordChecks)}</p></div>
           </div>
 
-          <div><label className="mb-2 block text-sm font-medium text-zinc-600">Confirm password</label><div className="relative"><input required type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" value={form.confirmPassword} onChange={(e) => setField("confirmPassword", e.target.value)} className={`${fieldClass} pr-10`} /><button type="button" onClick={() => setShowConfirmPassword((prev) => !prev)} className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 hover:text-zinc-800" aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}>{showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button></div>{form.confirmPassword.length > 0 && <p className={`mt-2 text-sm ${passwordsMatch ? "text-emerald-600" : "text-red-600"}`}>{passwordsMatch ? "Passwords match" : "Passwords do not match"}</p>}</div>
+          <div><label className="mb-2 block text-sm font-medium text-zinc-600">Confirm password</label><div className="relative"><input required type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" value={form.confirmPassword} onChange={(e) => setField("confirmPassword", e.target.value)} className={`${fieldClass} pr-10`} /><button type="button" onClick={() => setShowConfirmPassword((prev) => !prev)} className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 hover:text-zinc-800" aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}>{showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="w-5 h-5" />}</button></div>{form.confirmPassword.length > 0 && <p className={`mt-2 text-sm ${passwordsMatch ? "text-emerald-600" : "text-red-600"}`}>{passwordsMatch ? "Passwords match" : "Passwords do not match"}</p>}</div>
 
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">Student, public-user, delivery, and other marketplace information is collected after email verification.</div>
 
