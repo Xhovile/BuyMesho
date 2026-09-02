@@ -1,11 +1,10 @@
-import { ReactElement, ReactNode, useEffect, useMemo, useState } from "react";
+import { cloneElement, ReactElement, ReactNode, useEffect, useMemo, useState } from "react";
 import Header from "./Header";
 import { useAccountProfile } from "../hooks/useAccountProfile";
 import { useAuthUser } from "../hooks/useAuthUser";
 import type { HeaderChip } from "../constants";
 import {
   BECOME_SELLER_PATH,
-  CREATE_PATH,
   EVENTS_CREATE_PATH,
   EVENTS_MANAGE_PATH,
   EVENTS_PATH,
@@ -32,7 +31,7 @@ const CATEGORY_CHIP_BY_KEY: Record<string, HeaderChip> = {
 
 function isPersistentMarketplacePath(pathname: string, search: string) {
   if (pathname === "/category") return true;
-  if (!pathname.startsWith(`${EXPLORE_PATH}`)) return false;
+  if (!(pathname === EXPLORE_PATH || pathname.startsWith(`${EXPLORE_PATH}/`))) return false;
 
   const params = new URLSearchParams(search);
   if (pathname === EVENTS_PATH && params.has("event")) return false;
@@ -51,7 +50,7 @@ function getContentKey(pathname: string, search: string) {
     return `category:${new URLSearchParams(search).get("category") || "phones"}`;
   }
 
-  if (pathname.startsWith(`${EXPLORE_PATH}`)) {
+  if (pathname === EXPLORE_PATH || pathname.startsWith(`${EXPLORE_PATH}/`)) {
     return `explore:${pathname}`;
   }
 
@@ -98,7 +97,9 @@ export default function MarketplaceShell({ children }: MarketplaceShellProps) {
   const handleSearch = (value: string) => {
     setSearchValue(value);
 
-    if (!location.pathname.startsWith(`${EXPLORE_PATH}`)) return;
+    if (!location.pathname.startsWith(`${EXPLORE_PATH}/`) && location.pathname !== EXPLORE_PATH) {
+      return;
+    }
 
     replaceExploreStateInUrl({
       search: value.trim(),
@@ -116,9 +117,8 @@ export default function MarketplaceShell({ children }: MarketplaceShellProps) {
   };
 
   const contentKey = getContentKey(location.pathname, location.search);
-  const persistentChildren = children as ReactElement;
-  const keyedChildren = isMarketplace
-    ? <>{Object.assign({}, persistentChildren, { key: contentKey })}</>
+  const keyedChildren = isMarketplace && isReactElement(children)
+    ? cloneElement(children, { key: contentKey })
     : children;
 
   return (
@@ -150,4 +150,8 @@ export default function MarketplaceShell({ children }: MarketplaceShellProps) {
       </div>
     </div>
   );
+}
+
+function isReactElement(value: ReactNode): value is ReactElement {
+  return !!value && typeof value === "object" && "type" in value && "props" in value;
 }
