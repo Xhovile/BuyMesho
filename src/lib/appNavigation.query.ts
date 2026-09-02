@@ -1,4 +1,7 @@
-import type { HeaderChip } from "../constants";
+import {
+  MARKET_CATEGORY_TO_API_CATEGORY,
+  type HeaderChip,
+} from "../constants";
 import {
   ABOUT_PATH, ADMIN_AUDIT_PATH, ADMIN_BALANCE_PATH, ADMIN_MODERATION_QUEUE_PATH, ADMIN_PATH,
   ADMIN_MESSAGES_PATH, ADMIN_PAYOUT_DESTINATIONS_PATH, ADMIN_PAYOUTS_PATH, ADMIN_PAYMENTS_PATH, ADMIN_REPORTS_PATH,
@@ -20,6 +23,25 @@ export type ExploreQueryState = {
 
 const EXPLORE_QUERY_KEYS = ["search","university","category","subcategory","itemType","status","condition","sortBy","minPrice","maxPrice","hideSoldOut","page","specFilters"] as const;
 const DEFAULT_EXPLORE_QUERY_STATE: ExploreQueryState = { search:"", university:"", category:"", subcategory:"", itemType:"", status:"", condition:"", sortBy:"newest", minPrice:"", maxPrice:"", hideSoldOut:false, page:1, specFilters:{} };
+
+const HOME_CATEGORY_TO_API_CATEGORY: Record<string, string> = {
+  phones: "Electronics & Gadgets",
+  fashion: "Fashion & Clothing",
+  books: "Academic Services",
+  food: "Food & Snacks",
+  beauty: "Beauty & Personal Care",
+};
+
+const getCategoryChipFromValue = (category: string | null): HeaderChip | null => {
+  if (!category) return null;
+
+  for (const [chip, apiCategory] of Object.entries(MARKET_CATEGORY_TO_API_CATEGORY)) {
+    if (apiCategory === category) return chip as HeaderChip;
+  }
+
+  return null;
+};
+
 const parsePositiveIntegerParam = (value:string|null,fallback:number) => { if(!value)return fallback; const parsed=Number(value); return Number.isInteger(parsed)&&parsed>=1?parsed:fallback; };
 const parseBooleanParam = (value:string|null) => value === "1" || value === "true";
 const parseSpecFiltersParam = (value:string|null) => { if(!value)return {}; try { const parsed=JSON.parse(value); return parsed&&typeof parsed==="object"&&!Array.isArray(parsed)?parsed as Record<string,string|string[]|boolean>:{}; } catch{return {};} };
@@ -34,15 +56,45 @@ export const getExploreStateFromLocation = (location:Pick<Location,"search">):Ex
 }; };
 
 export const getMarketChipFromPath=(pathname:string):HeaderChip=>{ if(pathname===MARKET_CHIP_PATHS.Deals)return"Deals"; if(pathname===MARKET_CHIP_PATHS["Lay-by"])return"Lay-by"; if(pathname===MARKET_CHIP_PATHS.Events)return"Events"; if(pathname===MARKET_CHIP_PATHS.Wholesale)return"Wholesale"; if(pathname===MARKET_CHIP_PATHS.Sellers)return"Sellers"; if(pathname===MARKET_CHIP_PATHS.Innovation)return"Innovation"; if(pathname===MARKET_CHIP_PATHS.Accommodation)return"Accommodation"; if(pathname===MARKET_CHIP_PATHS.Lending)return"Lending"; return"All"; };
-export const getMarketChipFromLocation=(location:Pick<Location,"pathname">):HeaderChip=>getMarketChipFromPath(location.pathname);
+
+export const getMarketChipFromLocation=(location:Pick<Location,"pathname"|"search">):HeaderChip=>{
+  const chip = getMarketChipFromPath(location.pathname);
+  if (chip !== "All" || location.pathname !== EXPLORE_PATH) return chip;
+
+  return getCategoryChipFromValue(new URLSearchParams(location.search).get("category")) ?? "All";
+};
+
 export const getMarketPathFromLocation=(pathname:string)=>pathname===EXPLORE_PATH||pathname.startsWith(`${EXPLORE_PATH}/`)?pathname:EXPLORE_PATH;
 export const writeExploreStateToUrl=(url:URL,state:Partial<ExploreQueryState>)=>{ EXPLORE_QUERY_KEYS.forEach(key=>url.searchParams.delete(key)); if(state.search)url.searchParams.set("search",state.search); if(state.university)url.searchParams.set("university",state.university); if(state.category)url.searchParams.set("category",state.category); if(state.subcategory)url.searchParams.set("subcategory",state.subcategory); if(state.itemType)url.searchParams.set("itemType",state.itemType); if(state.status)url.searchParams.set("status",state.status); if(state.condition)url.searchParams.set("condition",state.condition); if(state.sortBy&&state.sortBy!=="newest")url.searchParams.set("sortBy",state.sortBy); if(state.minPrice)url.searchParams.set("minPrice",state.minPrice); if(state.maxPrice)url.searchParams.set("maxPrice",state.maxPrice); if(state.hideSoldOut)url.searchParams.set("hideSoldOut","1"); if(state.page&&state.page>1)url.searchParams.set("page",String(state.page)); if(state.specFilters&&Object.keys(state.specFilters).length>0)url.searchParams.set("specFilters",JSON.stringify(state.specFilters)); };
 const pushUrl=(url:URL,replace=false)=>{ if(replace)window.history.replaceState({__buymesho:true},"",url.toString()); else window.history.pushState({__buymesho:true},"",url.toString()); window.dispatchEvent(new PopStateEvent("popstate")); window.scrollTo({top:0,behavior:"smooth"}); };
 const syncExploreStateInUrl=(state:Partial<ExploreQueryState>,mode:"replace"|"push"="replace")=>{ const url=new URL(window.location.href); url.pathname=getMarketPathFromLocation(window.location.pathname); url.searchParams.delete("listing"); url.searchParams.delete("image"); url.searchParams.delete("uid"); url.searchParams.delete("id"); writeExploreStateToUrl(url,state); pushUrl(url,mode==="replace"); };
 export const replaceExploreStateInUrl=(state:Partial<ExploreQueryState>)=>syncExploreStateInUrl(state,"replace");
 export const pushExploreStateInUrl=(state:Partial<ExploreQueryState>)=>syncExploreStateInUrl(state,"push");
-export const navigateToMarketChip=(chip:HeaderChip)=>{if(typeof window==="undefined")return; const url=new URL(window.location.href); url.pathname=MARKET_CHIP_PATHS[chip]; url.searchParams.delete("listing"); url.searchParams.delete("image"); url.searchParams.delete("uid"); url.searchParams.delete("id"); pushUrl(url);};
-export const navigateToExploreWithCategory=(category:string)=>{if(typeof window==="undefined")return; const url=new URL(window.location.href); url.pathname="/category"; url.searchParams.set("category",category); url.searchParams.delete("listing"); url.searchParams.delete("image"); url.searchParams.delete("uid"); url.searchParams.delete("id"); pushUrl(url);};
+
+export const navigateToMarketChip=(chip:HeaderChip)=>{
+  if(typeof window==="undefined")return;
+
+  const category = MARKET_CATEGORY_TO_API_CATEGORY[chip];
+  if (category) {
+    syncExploreStateInUrl({ category, page: 1 }, "push");
+    return;
+  }
+
+  const url=new URL(window.location.href);
+  url.pathname=MARKET_CHIP_PATHS[chip];
+  url.searchParams.delete("listing");
+  url.searchParams.delete("image");
+  url.searchParams.delete("uid");
+  url.searchParams.delete("id");
+  pushUrl(url);
+};
+
+export const navigateToExploreWithCategory=(category:string)=>{
+  if(typeof window==="undefined")return;
+
+  const apiCategory = HOME_CATEGORY_TO_API_CATEGORY[category] ?? category;
+  syncExploreStateInUrl({ category: apiCategory, page: 1 }, "push");
+};
 
 export const getAppRouteFromLocation=(location:Pick<Location,"pathname"|"search">):AppRoute=>{ const params=new URLSearchParams(location.search);
   if(location.pathname===MESSAGES_PATH)return"messages"; if(location.pathname===LISTING_PATH&&params.has("listing"))return"listing_details"; if(location.pathname===EDIT_PATH&&params.has("id"))return"edit";
