@@ -39,7 +39,7 @@ export default function RootRouter() {
     <>
       <Suspense
         fallback={
-          <div className={isExploreChipRoute ? "-translate-y-4" : undefined}>
+          <div className={isExploreChipRoute ? "-translate-y-10" : undefined}>
             <RouteLoader />
           </div>
         }
