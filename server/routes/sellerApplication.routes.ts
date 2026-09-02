@@ -76,7 +76,7 @@ function isApplicationPayload(body: any) {
   return typeof body?.full_legal_name === "string" || typeof body?.seller_type === "string" || typeof body?.identity_document_url === "string";
 }
 
-const STUDENT_OFFER_CATEGORIES = new Set([
+const STUDENT_OFFER_CATEGORIES = new Set<string>([
   "Phones & Accessories",
   "Laptops",
   "Stationery",
@@ -144,8 +144,8 @@ export function registerSellerApplicationRoutes(app: Express, deps: SellerApplic
       const providesDelivery = req.body?.provides_delivery === true;
       const offersDeals = req.body?.offers_deals === true;
       const participatesStudentOffers = req.body?.participates_student_offers === true;
-      const studentOfferCategories = Array.isArray(req.body?.student_offer_categories)
-        ? [...new Set(req.body.student_offer_categories.filter((value: unknown): value is string => typeof value === "string").map((value: string) => value.trim()).filter(Boolean))]
+      const studentOfferCategories: string[] = Array.isArray(req.body?.student_offer_categories)
+        ? [...new Set(req.body.student_offer_categories.filter((value: unknown): value is string => typeof value === "string").map((value: string) => value.trim()).filter((value: string) => value.length > 0))]
         : [];
       const studentOfferPercentage = Number(req.body?.student_offer_percentage);
       const agreedToRules = req.body?.agreed_to_rules === true || req.body?.agreed_to_rules === 1 || req.body?.agreed_to_rules === "1";
@@ -162,7 +162,7 @@ export function registerSellerApplicationRoutes(app: Express, deps: SellerApplic
       if (sellerType === "business" && !businessRegistrationDocumentUrl) return res.status(400).json({ error: "Business applicants must provide proof of business registration." });
       if (offersLayby && laybyAudience && !["students", "everyone"].includes(laybyAudience)) return res.status(400).json({ error: "Please select who can use your lay-by service." });
       if (participatesStudentOffers && studentOfferCategories.length < 2) return res.status(400).json({ error: "Select at least two student-related categories for the Student Offer Program." });
-      if (participatesStudentOffers && studentOfferCategories.some((category) => !STUDENT_OFFER_CATEGORIES.has(category))) return res.status(400).json({ error: "One or more Student Offer categories are invalid." });
+      if (participatesStudentOffers && studentOfferCategories.some((category: string) => !STUDENT_OFFER_CATEGORIES.has(category))) return res.status(400).json({ error: "One or more Student Offer categories are invalid." });
       if (participatesStudentOffers && (![5, 10, 15, 20, 25].includes(studentOfferPercentage))) return res.status(400).json({ error: "Select a supported Student Offer percentage." });
       if (!agreedToRules) return res.status(400).json({ error: "You must agree to the seller rules before submitting." });
 
