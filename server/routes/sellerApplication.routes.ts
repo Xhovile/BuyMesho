@@ -6,9 +6,18 @@ export type SellerApplicationRouteDeps = { db: any };
 type SellerApplicationStatus = "pending" | "approved" | "rejected";
 type SellerType = "student" | "public" | "business";
 type IdentityDocumentType = "national_id" | "passport";
+type LaybyAudience = "students" | "everyone";
 
 function normalizeSellerApplication(row: any) {
   if (!row) return null;
+  let studentOfferCategories: string[] = [];
+  try {
+    studentOfferCategories = Array.isArray(row.student_offer_categories)
+      ? row.student_offer_categories
+      : JSON.parse(row.student_offer_categories || "[]");
+  } catch {
+    studentOfferCategories = [];
+  }
   return {
     id: row.id ?? null,
     applicant_uid: row.applicant_uid ?? null,
@@ -26,12 +35,18 @@ function normalizeSellerApplication(row: any) {
     student_id_document_url: row.student_id_document_url ?? null,
     business_registration_document_url: row.business_registration_document_url ?? null,
     offers_layby: !!row.offers_layby,
+    layby_audience: row.layby_audience ?? null,
     offers_financing: !!row.offers_financing,
     provides_delivery: !!row.provides_delivery,
+    offers_deals: !!row.offers_deals,
+    participates_student_offers: !!row.participates_student_offers,
+    student_offer_categories: studentOfferCategories,
+    student_offer_percentage: row.student_offer_percentage ?? null,
     agreed_to_rules: !!row.agreed_to_rules,
     status: (row.status ?? "pending") as SellerApplicationStatus,
     reviewed_at: row.reviewed_at ?? null,
     review_notes: row.review_notes ?? null,
+    reviewed_by_uid: row.reviewed_by_uid ?? null,
     created_at: row.created_at ?? null,
     updated_at: row.updated_at ?? null,
   };
@@ -46,8 +61,13 @@ function ensureSellerApplicationSchema(db: any) {
     ALTER TABLE seller_applications ADD COLUMN IF NOT EXISTS student_id_document_url TEXT;
     ALTER TABLE seller_applications ADD COLUMN IF NOT EXISTS business_registration_document_url TEXT;
     ALTER TABLE seller_applications ADD COLUMN IF NOT EXISTS offers_layby INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE seller_applications ADD COLUMN IF NOT EXISTS layby_audience TEXT;
     ALTER TABLE seller_applications ADD COLUMN IF NOT EXISTS offers_financing INTEGER NOT NULL DEFAULT 0;
     ALTER TABLE seller_applications ADD COLUMN IF NOT EXISTS provides_delivery INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE seller_applications ADD COLUMN IF NOT EXISTS offers_deals INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE seller_applications ADD COLUMN IF NOT EXISTS participates_student_offers INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE seller_applications ADD COLUMN IF NOT EXISTS student_offer_categories TEXT NOT NULL DEFAULT '[]';
+    ALTER TABLE seller_applications ADD COLUMN IF NOT EXISTS student_offer_percentage INTEGER;
     UPDATE seller_applications SET seller_type = applicant_type WHERE seller_type IS NULL;
   `);
 }
@@ -55,6 +75,22 @@ function ensureSellerApplicationSchema(db: any) {
 function isApplicationPayload(body: any) {
   return typeof body?.full_legal_name === "string" || typeof body?.seller_type === "string" || typeof body?.identity_document_url === "string";
 }
+
+const STUDENT_OFFER_CATEGORIES = new Set([
+  "Phones & Accessories",
+  "Laptops",
+  "Stationery",
+  "Clothes",
+  "Accommodation",
+  "Food",
+  "Transport",
+  "Printing",
+  "Internet / Data",
+  "Beauty Services",
+  "Electronics",
+  "Agricultural Products",
+  "Financial Services",
+]);
 
 export function registerSellerApplicationRoutes(app: Express, deps: SellerApplicationRouteDeps) {
   const { db } = deps;
@@ -103,8 +139,15 @@ export function registerSellerApplicationRoutes(app: Express, deps: SellerApplic
       const studentIdDocumentUrl = typeof req.body?.student_id_document_url === "string" ? req.body.student_id_document_url.trim() : "";
       const businessRegistrationDocumentUrl = typeof req.body?.business_registration_document_url === "string" ? req.body.business_registration_document_url.trim() : "";
       const offersLayby = req.body?.offers_layby === true;
+      const laybyAudience = typeof req.body?.layby_audience === "string" ? req.body.layby_audience.trim() as LaybyAudience : null;
       const offersFinancing = req.body?.offers_financing === true;
       const providesDelivery = req.body?.provides_delivery === true;
+      const offersDeals = req.body?.offers_deals === true;
+      const participatesStudentOffers = req.body?.participates_student_offers === true;
+      const studentOfferCategories = Array.isArray(req.body?.student_offer_categories)
+        ? [...new Set(req.body.student_offer_categories.filter((value: unknown): value is string => typeof value === "string").map((value: string) => value.trim()).filter(Boolean))]
+        : [];
+      const studentOfferPercentage = Number(req.body?.student_offer_percentage);
       const agreedToRules = req.body?.agreed_to_rules === true || req.body?.agreed_to_rules === 1 || req.body?.agreed_to_rules === "1";
 
       if (!["student", "public", "business"].includes(sellerType)) return res.status(400).json({ error: "Please select a valid seller type." });
@@ -117,6 +160,10 @@ export function registerSellerApplicationRoutes(app: Express, deps: SellerApplic
       if (!identityDocumentUrl) return res.status(400).json({ error: "National ID or Passport is required." });
       if (sellerType === "student" && (!institution || !studentNumber || !studentIdDocumentUrl)) return res.status(400).json({ error: "Student sellers must provide institution, student number, and Student ID." });
       if (sellerType === "business" && !businessRegistrationDocumentUrl) return res.status(400).json({ error: "Business applicants must provide proof of business registration." });
+      if (offersLayby && laybyAudience && !["students", "everyone"].includes(laybyAudience)) return res.status(400).json({ error: "Please select who can use your lay-by service." });
+      if (participatesStudentOffers && studentOfferCategories.length < 2) return res.status(400).json({ error: "Select at least two student-related categories for the Student Offer Program." });
+      if (participatesStudentOffers && studentOfferCategories.some((category) => !STUDENT_OFFER_CATEGORIES.has(category))) return res.status(400).json({ error: "One or more Student Offer categories are invalid." });
+      if (participatesStudentOffers && (![5, 10, 15, 20, 25].includes(studentOfferPercentage))) return res.status(400).json({ error: "Select a supported Student Offer percentage." });
       if (!agreedToRules) return res.status(400).json({ error: "You must agree to the seller rules before submitting." });
 
       db.prepare(`
@@ -137,14 +184,18 @@ export function registerSellerApplicationRoutes(app: Express, deps: SellerApplic
           reason_for_applying, proof_document_url, agreed_to_rules, status, reviewed_at, updated_at,
           seller_type, student_number, identity_document_type, identity_document_url,
           student_id_document_url, business_registration_document_url, offers_layby,
-          offers_financing, provides_delivery
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, 'pending', NULL, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          layby_audience, offers_financing, provides_delivery, offers_deals,
+          participates_student_offers, student_offer_categories, student_offer_percentage
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, 'pending', NULL, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         uid, email, fullLegalName, institution || '', sellerType, studentNumber || '', whatsappNumber,
         businessName, whatToSell, businessDescription, identityDocumentUrl, agreedToRules ? 1 : 0,
         sellerType, studentNumber || null, identityDocumentType, identityDocumentUrl,
         studentIdDocumentUrl || null, businessRegistrationDocumentUrl || null,
-        offersLayby ? 1 : 0, offersFinancing ? 1 : 0, providesDelivery ? 1 : 0,
+        offersLayby ? 1 : 0, offersLayby ? laybyAudience : null, offersFinancing ? 1 : 0,
+        providesDelivery ? 1 : 0, offersDeals ? 1 : 0, participatesStudentOffers ? 1 : 0,
+        JSON.stringify(participatesStudentOffers ? studentOfferCategories : []),
+        participatesStudentOffers ? studentOfferPercentage : null,
       );
 
       const applicationRow = db.prepare(`SELECT * FROM seller_applications WHERE applicant_uid = ? ORDER BY id DESC LIMIT 1`).get(uid);
