@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 
 type Props = {
   className?: string;
@@ -42,6 +42,31 @@ export function shouldHideLauncher() {
   return false;
 }
 
+function syncCategoryLauncherButton() {
+  if (typeof document === "undefined") return;
+
+  const button = document.querySelector(
+    'button[aria-label="Open BuyMesho AI Assistant"]'
+  ) as HTMLButtonElement | null;
+
+  if (!button) return;
+
+  // Category pages can be rendered directly from Explore/MarketplaceShell,
+  // bypassing RootRouter. In that path, make the launcher use the exact same
+  // visual shell as the canonical RootRouter launcher.
+  button.className =
+    "p-0 transition-transform hover:scale-110 active:scale-95 cursor-pointer block drop-shadow-md";
+  button.title = "Open BuyMesho AI";
+  button.setAttribute("aria-label", "BuyMesho AI");
+
+  const iconHost = button.querySelector('[aria-label="AI"]') as HTMLElement | null;
+  if (iconHost) {
+    iconHost.className = "inline-flex items-center justify-center shrink-0 w-12 h-12";
+    iconHost.style.removeProperty("width");
+    iconHost.style.removeProperty("height");
+  }
+}
+
 export default function AiIcon({ className = "w-5 h-5", size }: Props) {
   const [hidden, setHidden] = useState(() => shouldHideLauncher());
 
@@ -49,6 +74,7 @@ export default function AiIcon({ className = "w-5 h-5", size }: Props) {
     const updateVisibility = () => {
       const nextHidden = shouldHideLauncher();
       setHidden((current) => (current === nextHidden ? current : nextHidden));
+      syncCategoryLauncherButton();
     };
 
     window.addEventListener("popstate", updateVisibility);
@@ -67,6 +93,10 @@ export default function AiIcon({ className = "w-5 h-5", size }: Props) {
       observer.disconnect();
     };
   }, []);
+
+  useLayoutEffect(() => {
+    syncCategoryLauncherButton();
+  });
 
   if (hidden) return null;
 
