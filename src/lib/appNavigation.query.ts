@@ -68,8 +68,11 @@ export const navigateToMarketChip=(chip:HeaderChip)=>{
     return;
   }
 
+  const marketPath = MARKET_CHIP_PATHS[chip];
+  if (!marketPath) return;
+
   const url=new URL(window.location.href);
-  url.pathname=MARKET_CHIP_PATHS[chip];
+  url.pathname=marketPath;
   url.searchParams.delete("listing");
   url.searchParams.delete("image");
   url.searchParams.delete("uid");
