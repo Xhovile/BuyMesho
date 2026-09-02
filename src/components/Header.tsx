@@ -27,7 +27,6 @@ import {
 import type { HeaderChip } from "../constants";
 import BrandMark from "./BrandMark";
 import FeedbackModal from "./FeedbackModal";
-import AppFooter from "./AppFooter";
 import { auth } from "../firebase";
 import { fetchInbox } from "../lib/messages";
 import { useIsAdmin } from "../hooks/useIsAdmin";
@@ -481,8 +480,6 @@ export default function Header({
           },
         ]}
       />
-
-      {isCategoryRoute ? <AppFooter /> : null}
     </>
   );
 }
