@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type ElementType } from "react";
 import {
-  ArrowLeft,
   ArrowRight,
   ChevronDown,
   Loader2,
@@ -22,7 +21,12 @@ import {
   navigateToListingDetails,
   navigateToPath,
   navigateToSellerProfile,
+  navigateToProfile,
+  navigateToMarketChip,
+  pushExploreStateInUrl,
 } from "./lib/appNavigation";
+import type { HeaderChip } from "./constants";
+import Header from "./components/Header";
 import { getListingSubcategories } from "./listingSchemas/registry";
 import ListingCard from "./components/ListingCard";
 import FormDropdown from "./components/FormDropdown";
@@ -111,6 +115,14 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
   },
 };
 
+const CATEGORY_CHIP_BY_KEY: Record<CategoryKey, HeaderChip> = {
+  phones: "Gadgets",
+  fashion: "Fashion",
+  books: "Academics",
+  food: "Food",
+  beauty: "Beauty",
+};
+
 const DEFAULT_SORT_BY = "Newest first";
 const DEFAULT_CAMPUS = "All campuses";
 const DEFAULT_SUBCATEGORY = "All subcategories";
@@ -119,6 +131,7 @@ const DEFAULT_SUBCATEGORY_NORMALIZED = DEFAULT_SUBCATEGORY.trim().toLowerCase();
 
 export default function CategoryPage() {
   const { firebaseUser, profile, profileLoading } = useAccountProfile();
+  const [headerSearch, setHeaderSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<ListingPreview[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -150,6 +163,7 @@ export default function CategoryPage() {
   }, []);
 
   const config = CATEGORY_CONFIG[categoryKey];
+  const activeCategoryChip = CATEGORY_CHIP_BY_KEY[categoryKey];
 
   useEffect(() => {
     let cancelled = false;
@@ -287,29 +301,29 @@ export default function CategoryPage() {
     navigateToPath(BECOME_SELLER_PATH);
   };
 
+  const handleHeaderSearch = (value: string) => {
+    const nextSearch = value.trim();
+    setHeaderSearch(value);
+    pushExploreStateInUrl({
+      search: nextSearch,
+      category: config.apiCategory,
+      page: 1,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="border-b border-zinc-200 bg-white/90 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => navigateToPath("/")}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Home
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigateToExplore()}
-            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
-          >
-            Market
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-      </header>
+      <Header
+        searchValue={headerSearch}
+        onSearch={handleHeaderSearch}
+        onAddListing={handleSellClick}
+        onProfileClick={navigateToProfile}
+        userProfile={profile}
+        firebaseUser={firebaseUser}
+        activeChip={activeCategoryChip}
+        subtitle={activeCategoryChip.toLowerCase()}
+        onChipChange={navigateToMarketChip}
+      />
 
       <main>
         <section className={`bg-gradient-to-br ${config.accent} border-b border-zinc-200`}>
