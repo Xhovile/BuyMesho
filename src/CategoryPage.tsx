@@ -29,6 +29,7 @@ import {
 import type { HeaderChip } from "./constants";
 import Header from "./components/Header";
 import AppFooter from "./components/AppFooter";
+import FloatingCartButton from "./components/FloatingCartButton";
 import { getListingSubcategories } from "./listingSchemas/registry";
 import ListingCard from "./components/ListingCard";
 import FormDropdown from "./components/FormDropdown";
@@ -500,6 +501,8 @@ export default function CategoryPage() {
       </main>
 
       <AppFooter />
+
+      <FloatingCartButton isLoggedIn={!!firebaseUser} />
 
       <FeedbackModal
         open={authGuardOpen}
