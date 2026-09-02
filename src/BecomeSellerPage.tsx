@@ -48,7 +48,6 @@ export default function BecomeSellerPage() {
     businessName: "",
     whatToSell: "",
     businessDescription: "",
-    reasonForApplying: "",
     proofDocumentUrl: "",
     agreedToRules: false,
   });
@@ -133,7 +132,6 @@ export default function BecomeSellerPage() {
           business_name: form.businessName,
           what_to_sell: form.whatToSell,
           business_description: form.businessDescription,
-          reason_for_applying: form.reasonForApplying,
           proof_document_url: form.proofDocumentUrl,
           agreed_to_rules: form.agreedToRules,
         }),
@@ -268,10 +266,6 @@ export default function BecomeSellerPage() {
           <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Description</label>
             <textarea required value={form.businessDescription} onChange={(e) => setForm((prev) => ({ ...prev, businessDescription: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none h-24 resize-none" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Reason for Applying</label>
-            <textarea required value={form.reasonForApplying} onChange={(e) => setForm((prev) => ({ ...prev, reasonForApplying: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none h-24 resize-none" />
           </div>
           <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Proof Document</label>
