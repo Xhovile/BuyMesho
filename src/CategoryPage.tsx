@@ -3,6 +3,7 @@ import {
   ArrowRight,
   ChevronDown,
   Loader2,
+  Plus,
   ShoppingBag,
   Smartphone,
   BookOpen,
@@ -328,19 +329,11 @@ export default function CategoryPage() {
       <main>
         <section className={`bg-gradient-to-br ${config.accent} border-b border-zinc-200`}>
           <div className="max-w-7xl mx-auto px-4 py-8 sm:py-10">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-500"
-            >
-              Category landing page
-            </motion.div>
-
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
-              className="mt-5 text-4xl sm:text-5xl font-black tracking-[-0.05em] leading-[0.95]"
+              className="text-4xl sm:text-5xl font-black tracking-[-0.05em] leading-[0.95]"
             >
               {config.title}
             </motion.h1>
@@ -368,18 +361,10 @@ export default function CategoryPage() {
                 type="button"
                 onClick={handleSellClick}
                 disabled={profileLoading}
-                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(0,0,0,0.45)] transition-all hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_20px_40px_-14px_rgba(0,0,0,0.5)] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Sell
-                <Store className="w-4 h-4" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => navigateToPath("/")}
-                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
-              >
-                Back to homepage
+                <Plus className="w-4 h-4" />
+                {firebaseUser && profile?.is_seller ? "List Item" : "Sell"}
               </button>
             </div>
           </div>
@@ -519,7 +504,7 @@ export default function CategoryPage() {
         title="Login required"
         message="Log in to continue."
         onClose={() => setAuthGuardOpen(false)}
-        actions={[
+        actions=[
           {
             label: "Log in",
             onClick: () => {
@@ -532,7 +517,7 @@ export default function CategoryPage() {
             onClick: () => setAuthGuardOpen(false),
             variant: "secondary",
           },
-        ]}
+        ]
       />
     </div>
   );
