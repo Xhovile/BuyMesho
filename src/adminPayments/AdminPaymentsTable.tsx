@@ -24,10 +24,12 @@ export default function AdminPaymentsTable({
   payments,
   loading,
   searchActive,
+  onSelectPayment,
 }: {
   payments: PaymentRow[];
   loading: boolean;
   searchActive: boolean;
+  onSelectPayment: (payment: PaymentRow) => void;
 }) {
   return (
     <section className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
@@ -57,15 +59,20 @@ export default function AdminPaymentsTable({
             </thead>
             <tbody>
               {payments.map((payment) => (
-                <tr key={payment.id} className="cursor-pointer border-t border-zinc-100 hover:bg-zinc-50">
+                <tr key={payment.id} className="cursor-pointer border-t border-zinc-100 hover:bg-zinc-50" onClick={() => onSelectPayment(payment)}>
                   <td className="p-4">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Payment ID</p>
-                    <p className="mt-1 break-all font-mono text-xs font-semibold">{payment.id}</p>
-                    <div className="mt-2">
-                      <StatusPill label={payment.payment_status} tone={getPaymentTone(payment.payment_status)} />
-                    </div>
-                    <div className="mt-2 text-xs text-zinc-500">{payment.method}</div>
-                    <div className="mt-1 text-[11px] text-zinc-400">Verified: {Number(payment.verified) === 1 ? "yes" : "no"}</div>
+                    <button
+                      type="button"
+                      className="w-full text-left focus:outline-none"
+                      onClick={(event) => { event.stopPropagation(); onSelectPayment(payment); }}
+                      aria-label={`Open payment ${payment.reference}`}
+                    >
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Payment ID</p>
+                      <p className="mt-1 break-all font-mono text-xs font-semibold">{payment.id}</p>
+                      <div className="mt-2"><StatusPill label={payment.payment_status} tone={getPaymentTone(payment.payment_status)} /></div>
+                      <div className="mt-2 text-xs text-zinc-500">{payment.method}</div>
+                      <div className="mt-1 text-[11px] text-zinc-400">Verified: {Number(payment.verified) === 1 ? "yes" : "no"}</div>
+                    </button>
                   </td>
                   <td className="p-4">
                     <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">BuyMesho reference</p>
