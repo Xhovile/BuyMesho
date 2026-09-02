@@ -29,6 +29,10 @@ import {
 import type { HeaderChip } from "./constants";
 import Header from "./components/Header";
 import AppFooter from "./components/AppFooter";
+import FloatingCartButton from "./components/FloatingCartButton";
+import ScrollToTopFab from "./components/ScrollToTopFab";
+import AiIcon from "./components/ai/AiIcon";
+import BuyMeshoCopilotDrawer from "./components/ai/BuyMeshoCopilotDrawer";
 import { getListingSubcategories } from "./listingSchemas/registry";
 import ListingCard from "./components/ListingCard";
 import FormDropdown from "./components/FormDropdown";
@@ -142,6 +146,8 @@ export default function CategoryPage() {
   const [subcategory, setSubcategory] = useState(DEFAULT_SUBCATEGORY);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [copilotOpen, setCopilotOpen] = useState(false);
   const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() =>
     readHiddenSellerUids()
   );
@@ -205,6 +211,15 @@ export default function CategoryPage() {
     };
 
     return subscribeToHiddenCollectionsChanges(syncHiddenCollections);
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => setShowScrollTop(window.scrollY > 300);
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const hiddenSellerSet = useMemo(
@@ -500,6 +515,36 @@ export default function CategoryPage() {
       </main>
 
       <AppFooter />
+
+      <FloatingCartButton isLoggedIn={!!firebaseUser} />
+
+      {!copilotOpen ? (
+        <div className="fixed bottom-5 right-5 z-[99] sm:bottom-5 sm:right-6">
+          <button
+            type="button"
+            onClick={() => setCopilotOpen(true)}
+            className="block cursor-pointer p-0 drop-shadow-md transition-transform hover:scale-110 active:scale-95"
+            title="Open BuyMesho AI"
+            aria-label="BuyMesho AI"
+          >
+            <AiIcon className="h-12 w-12" />
+          </button>
+        </div>
+      ) : null}
+
+      <BuyMeshoCopilotDrawer
+        isOpen={copilotOpen}
+        onClose={() => setCopilotOpen(false)}
+        onSelectListing={(id) => {
+          setCopilotOpen(false);
+          navigateToListingDetails(id, 0);
+        }}
+      />
+
+      <ScrollToTopFab
+        show={showScrollTop}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      />
 
       <FeedbackModal
         open={authGuardOpen}
