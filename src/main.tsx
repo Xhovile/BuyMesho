@@ -1,6 +1,7 @@
 import { Component, StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import RootRouter from './RootRouter.tsx';
+import MarketplaceShell from './components/MarketplaceShell';
 import { ToastProvider } from './components/Toast.tsx';
 import './index.css';
 import './payoutAccordions.ts';
@@ -282,7 +283,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AppErrorBoundary>
       <ToastProvider>
-        <RootRouter />
+        <MarketplaceShell>
+          <RootRouter />
+        </MarketplaceShell>
       </ToastProvider>
     </AppErrorBoundary>
   </StrictMode>,
