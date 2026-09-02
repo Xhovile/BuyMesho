@@ -504,7 +504,7 @@ export default function CategoryPage() {
         title="Login required"
         message="Log in to continue."
         onClose={() => setAuthGuardOpen(false)}
-        actions=[
+        actions={[
           {
             label: "Log in",
             onClick: () => {
@@ -517,7 +517,7 @@ export default function CategoryPage() {
             onClick: () => setAuthGuardOpen(false),
             variant: "secondary",
           },
-        ]
+        ]}
       />
     </div>
   );
