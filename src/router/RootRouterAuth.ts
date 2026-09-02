@@ -19,6 +19,8 @@ type RootRouterAuthGuardProps = {
   locationSearch: string;
 };
 
+const SIGNUP_JUST_CREATED_KEY = "__buymesho_signup_just_created";
+
 export function useRootRouterAuthGuard({
   authLoading,
   firebaseUser,
@@ -70,9 +72,7 @@ export function useRootRouterAuthGuard({
 
     if (!firebaseUser) {
       if (route === "verify_email") navigateToPath(LOGIN_PATH);
-      if (protectedRoutes.includes(route) || requiresAuth) {
-        navigateToLoginWithReturnPath(`${locationPath}${locationSearch}`);
-      }
+      if (protectedRoutes.includes(route) || requiresAuth) navigateToLoginWithReturnPath(`${locationPath}${locationSearch}`);
       return;
     }
 
@@ -81,6 +81,10 @@ export function useRootRouterAuthGuard({
       return;
     }
 
-    if (route === "verify_email") navigateToPath(HOME_PATH);
+    if (route === "verify_email") {
+      const isFreshSignup = sessionStorage.getItem(SIGNUP_JUST_CREATED_KEY) === "1";
+      if (isFreshSignup) navigateToPath("/account/setup");
+      else navigateToPath(HOME_PATH);
+    }
   }, [authLoading, firebaseUser, route, locationPath, locationSearch]);
 }
