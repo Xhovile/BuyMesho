@@ -65,6 +65,7 @@ const SellersDirectoryPage = lazy(() => import("../SellersDirectoryPage"));
 const SignupPage = lazy(() => import("../SignupPage"));
 const TermsPage = lazy(() => import("../components/TermsPage"));
 const VerifyEmailPage = lazy(() => import("../VerifyEmailPage"));
+const AccountSetupPage = lazy(() => import("../AccountSetupPage"));
 const PaymentReturnPage = lazy(() => import("../PaymentReturnPage"));
 const ConnectCallbackPage = lazy(() => import("../ConnectCallbackPage"));
 const PaymentsHubPage = lazy(() => import("../PaymentsHubPage"));
@@ -160,6 +161,8 @@ export default function RootRouterRoutes({
         <ProfilePage />
       ) : route === "verify_email" ? (
         <VerifyEmailPage />
+      ) : route === "account_setup" ? (
+        <AccountSetupPage />
       ) : route === "edit_profile" ? (
         <EditProfilePage />
       ) : route === "edit_account" ? (
