@@ -68,6 +68,23 @@ export default function HeaderChips({ selectedChip, onChipChange }: HeaderChipsP
     };
   }, []);
 
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const activeButton = el.querySelector<HTMLButtonElement>(
+      `[data-header-chip="${CSS.escape(selectedChip)}"]`
+    );
+    if (!activeButton) return;
+
+    activeButton.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "nearest",
+    });
+    persistScrollPosition();
+  }, [selectedChip]);
+
   return (
     <div className="px-3 py-1.5 bg-zinc-100 border-t border-zinc-200">
       <div className="mx-auto max-w-7xl">
@@ -82,6 +99,7 @@ export default function HeaderChips({ selectedChip, onChipChange }: HeaderChipsP
                 <button
                   key={chip}
                   type="button"
+                  data-header-chip={chip}
                   onPointerDown={persistScrollPosition}
                   onClick={() => {
                     persistScrollPosition();
