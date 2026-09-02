@@ -1,6 +1,7 @@
 import { UNIVERSITIES } from "./constants";
 
 export type University = (typeof UNIVERSITIES)[number];
+export type UserType = "student" | "public";
 
 export type Category =
   | "Food & Snacks"
@@ -86,12 +87,21 @@ export interface UserProfile {
   is_seller: boolean;
   is_verified: boolean;
   join_date: string;
+  first_name?: string | null;
+  surname?: string | null;
+  other_names?: string | null;
+  full_name?: string | null;
+  phone?: string | null;
+  user_type?: UserType | null;
+  profile_setup_complete?: boolean;
   business_name?: string | null;
   business_description?: string | null;
   business_logo?: string | null;
-  phone?: string | null;
   university?: string | null;
   campus?: string | null;
+  student_id?: string | null;
+  student_number?: string | null;
+  student_email?: string | null;
   buyer_details?: BuyerDeliveryDetails | null;
   profile_visibility?: VisibilitySetting;
   seller_visibility?: VisibilitySetting;
