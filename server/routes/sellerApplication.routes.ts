@@ -38,8 +38,7 @@ function normalizeSellerProfile(row: any) {
 function isApplicationPayload(body: any) {
   return (
     typeof body?.full_legal_name === "string" ||
-    typeof body?.proof_document_url === "string" ||
-    typeof body?.reason_for_applying === "string"
+    typeof body?.proof_document_url === "string"
   );
 }
 
@@ -87,7 +86,6 @@ export function registerSellerApplicationRoutes(app: Express, deps: SellerApplic
         const businessName = typeof req.body?.business_name === "string" ? req.body.business_name.trim() : "";
         const whatToSell = typeof req.body?.what_to_sell === "string" ? req.body.what_to_sell.trim() : "";
         const businessDescription = typeof req.body?.business_description === "string" ? req.body.business_description.trim() : "";
-        const reasonForApplying = typeof req.body?.reason_for_applying === "string" ? req.body.reason_for_applying.trim() : "";
         const proofDocumentUrl = typeof req.body?.proof_document_url === "string" ? req.body.proof_document_url.trim() : "";
         const agreedToRules = req.body?.agreed_to_rules === true || req.body?.agreed_to_rules === 1 || req.body?.agreed_to_rules === "1";
 
@@ -99,7 +97,6 @@ export function registerSellerApplicationRoutes(app: Express, deps: SellerApplic
           ["business_name", businessName],
           ["what_to_sell", whatToSell],
           ["business_description", businessDescription],
-          ["reason_for_applying", reasonForApplying],
           ["proof_document_url", proofDocumentUrl],
         ].filter(([, value]) => !value);
 
@@ -175,7 +172,7 @@ export function registerSellerApplicationRoutes(app: Express, deps: SellerApplic
           businessName,
           whatToSell,
           businessDescription,
-          reasonForApplying,
+          "",
           proofDocumentUrl,
           agreedToRules ? 1 : 0,
         );
