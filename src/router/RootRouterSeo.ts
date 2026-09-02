@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { AppRoute } from "../lib/appNavigation";
 import loaderImage from "../../photos/LoaderPic.png";
 
@@ -37,109 +38,42 @@ function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
   switch (pathname) {
     case "/":
     case "/home":
-      return {
-        title: HOMEPAGE_TITLE,
-        description: HOMEPAGE_DESCRIPTION,
-        canonicalPath: "/",
-      };
+      return { title: HOMEPAGE_TITLE, description: HOMEPAGE_DESCRIPTION, canonicalPath: "/" };
     case "/signup":
-      return {
-        title: "Create a BuyMesho Account",
-        description: "Join BuyMesho to buy, sell, and manage your marketplace activity.",
-        canonicalPath: "/signup",
-      };
+      return { title: "Create a BuyMesho Account", description: "Join BuyMesho to buy, sell, and manage your marketplace activity.", canonicalPath: "/signup" };
     case "/about":
-      return {
-        title: "About BuyMesho — Malawi's Secure E-commerce Platform",
-        description: "Learn what BuyMesho is, who it serves, and how the e-commerce platform works.",
-        canonicalPath: "/about",
-      };
+      return { title: "About BuyMesho — Malawi's Secure E-commerce Platform", description: "Learn what BuyMesho is, who it serves, and how the e-commerce platform works.", canonicalPath: "/about" };
     case "/explore":
-      return {
-        title: "Explore BuyMesho Marketplace",
-        description: "Browse listings, deals, sellers, events, and more on BuyMesho.",
-        canonicalPath: "/explore",
-      };
+      return { title: "Explore BuyMesho Marketplace", description: "Browse listings, deals, sellers, events, and more on BuyMesho.", canonicalPath: "/explore" };
     case "/explore/deals":
-      return {
-        title: "BuyMesho Deals",
-        description: "Find current deals and value listings on BuyMesho.",
-        canonicalPath: "/explore/deals",
-      };
+      return { title: "BuyMesho Deals", description: "Find current deals and value listings on BuyMesho.", canonicalPath: "/explore/deals" };
     case "/explore/lay-by":
-      return {
-        title: "BuyMesho Lay-by",
-        description: "Browse lay-by friendly listings on BuyMesho.",
-        canonicalPath: "/explore/lay-by",
-      };
+      return { title: "BuyMesho Lay-by", description: "Browse lay-by friendly listings on BuyMesho.", canonicalPath: "/explore/lay-by" };
     case "/explore/events":
-      return {
-        title: "BuyMesho Events",
-        description: "Discover public events and event listings on BuyMesho.",
-        canonicalPath: "/explore/events",
-      };
+      return { title: "BuyMesho Events", description: "Discover public events and event listings on BuyMesho.", canonicalPath: "/explore/events" };
     case "/tickets":
-      return {
-        title: "BuyMesho Tickets",
-        description: "View your event tickets, download PDFs, and share passes on WhatsApp.",
-        canonicalPath: "/tickets",
-      };
+      return { title: "BuyMesho Tickets", description: "View your event tickets, download PDFs, and share passes on WhatsApp.", canonicalPath: "/tickets" };
     case "/explore/wholesale":
-      return {
-        title: "BuyMesho Wholesale",
-        description: "Browse wholesale listings and supplier options on BuyMesho.",
-        canonicalPath: "/explore/wholesale",
-      };
+      return { title: "BuyMesho Wholesale", description: "Browse wholesale listings and supplier options on BuyMesho.", canonicalPath: "/explore/wholesale" };
     case "/explore/sellers":
-      return {
-        title: "BuyMesho Sellers",
-        description: "Browse seller profiles on BuyMesho.",
-        canonicalPath: "/explore/sellers",
-      };
+      return { title: "BuyMesho Sellers", description: "Browse seller profiles on BuyMesho.", canonicalPath: "/explore/sellers" };
     case "/explore/lending":
-      return {
-        title: "BuyMesho Lending",
-        description: "Lending on BuyMesho is coming soon.",
-        canonicalPath: "/explore/lending",
-        noindex: true,
-      };
+      return { title: "BuyMesho Lending", description: "Lending on BuyMesho is coming soon.", canonicalPath: "/explore/lending", noindex: true };
     case "/privacy":
-      return {
-        title: "BuyMesho Privacy Policy",
-        description: "Read the BuyMesho privacy policy.",
-        canonicalPath: "/privacy",
-      };
+      return { title: "BuyMesho Privacy Policy", description: "Read the BuyMesho privacy policy.", canonicalPath: "/privacy" };
     case "/terms":
-      return {
-        title: "BuyMesho Terms of Service",
-        description: "Read the BuyMesho terms of service.",
-        canonicalPath: "/terms",
-      };
+      return { title: "BuyMesho Terms of Service", description: "Read the BuyMesho terms of service.", canonicalPath: "/terms" };
     case "/safety":
-      return {
-        title: "BuyMesho Safety Tips",
-        description: "Read safety tips for using BuyMesho.",
-        canonicalPath: "/safety",
-      };
+      return { title: "BuyMesho Safety Tips", description: "Read safety tips for using BuyMesho.", canonicalPath: "/safety" };
     case "/transaction-json":
-      return {
-        title: "Transaction JSON — BuyMesho",
-        description: "Deep-link JSON view for transaction debugging.",
-        canonicalPath: "/transaction-json",
-        noindex: true,
-      };
+      return { title: "Transaction JSON — BuyMesho", description: "Deep-link JSON view for transaction debugging.", canonicalPath: "/transaction-json", noindex: true };
     default:
-      return {
-        title: "BuyMesho",
-        description: "BuyMesho marketplace.",
-        canonicalPath: pathname || "/",
-        noindex: true,
-      };
+      return { title: "BuyMesho", description: "BuyMesho marketplace.", canonicalPath: pathname || "/", noindex: true };
   }
 }
 
 export function useRootRouterSeo(locationPath: string, route: AppRoute) {
-  React.useEffect(() => {
+  useEffect(() => {
     const seo = buildSeoConfig(locationPath, route);
     document.title = seo.title;
     upsertMeta("description", seo.description);
