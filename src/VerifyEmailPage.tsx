@@ -7,21 +7,9 @@ import { auth } from "./firebase";
 import { consumeAuthReturnPath, HOME_PATH, navigateToLogin, navigateToPath } from "./lib/appNavigation";
 import { refreshEmailVerificationState, resendVerificationEmail } from "./lib/security";
 import { useAuthUser } from "./hooks/useAuthUser";
-import { apiFetch } from "./lib/api";
 
-type FeedbackAction = {
-  label: string;
-  onClick: () => void;
-  variant?: "primary" | "secondary";
-};
-
-type FeedbackState = {
-  open: boolean;
-  type: "success" | "error" | "info";
-  title: string;
-  message: string;
-  actions?: FeedbackAction[];
-} | null;
+type FeedbackAction = { label: string; onClick: () => void; variant?: "primary" | "secondary" };
+type FeedbackState = { open: boolean; type: "success" | "error" | "info"; title: string; message: string; actions?: FeedbackAction[] } | null;
 
 const RESEND_COOLDOWN_SECONDS = 45;
 const VERIFICATION_POLL_INTERVAL_MS = 4000;
@@ -38,12 +26,10 @@ export default function VerifyEmailPage() {
   const redirectAfterVerification = async () => {
     const isFreshSignup = sessionStorage.getItem(SIGNUP_JUST_CREATED_KEY) === "1";
     sessionStorage.removeItem(SIGNUP_JUST_CREATED_KEY);
-
     if (isFreshSignup) {
       navigateToPath("/account/setup", { replace: true });
       return;
     }
-
     navigateToPath(consumeAuthReturnPath(HOME_PATH), { replace: true });
   };
 
@@ -53,29 +39,19 @@ export default function VerifyEmailPage() {
       navigateToLogin();
       return;
     }
-    if (emailVerified) {
-      void redirectAfterVerification();
-    }
+    if (emailVerified) void redirectAfterVerification();
   }, [authLoading, firebaseUser, emailVerified]);
 
   useEffect(() => {
     if (!firebaseUser || authLoading || emailVerified) return;
-
     let cancelled = false;
-
     const checkVerification = async () => {
       const verified = await refreshEmailVerificationState();
       if (cancelled) return;
-      if (verified) {
-        void redirectAfterVerification();
-      }
+      if (verified) void redirectAfterVerification();
     };
-
     void checkVerification();
-    const interval = window.setInterval(() => {
-      void checkVerification();
-    }, VERIFICATION_POLL_INTERVAL_MS);
-
+    const interval = window.setInterval(() => { void checkVerification(); }, VERIFICATION_POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
       window.clearInterval(interval);
@@ -84,18 +60,11 @@ export default function VerifyEmailPage() {
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
-    const timer = window.setInterval(() => {
-      setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
-    }, 1000);
+    const timer = window.setInterval(() => setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1)), 1000);
     return () => window.clearInterval(timer);
   }, [resendCooldown]);
 
-  const showFeedback = (
-    type: "success" | "error" | "info",
-    title: string,
-    message: string,
-    actions?: FeedbackAction[]
-  ) => setFeedback({ open: true, type, title, message, actions });
+  const showFeedback = (type: "success" | "error" | "info", title: string, message: string, actions?: FeedbackAction[]) => setFeedback({ open: true, type, title, message, actions });
 
   const handleResend = async () => {
     if (!firebaseUser || busy || resendCooldown > 0) return;
@@ -108,9 +77,7 @@ export default function VerifyEmailPage() {
         return;
       }
       showFeedback("error", "Could not resend", result.message);
-      if ("code" in result && (result.code === "auth/too-many-requests" || result.message.toLowerCase().includes("too many attempts"))) {
-        setResendCooldown(RESEND_COOLDOWN_SECONDS);
-      }
+      if ("code" in result && (result.code === "auth/too-many-requests" || result.message.toLowerCase().includes("too many attempts"))) setResendCooldown(RESEND_COOLDOWN_SECONDS);
     } finally {
       setBusy(false);
     }
@@ -128,50 +95,18 @@ export default function VerifyEmailPage() {
   };
 
   return (
-    <AccountPageShell
-      eyebrow="Account"
-      title="Verify your email"
-      description="Your account is ready, but access stays locked until your email address is verified."
-      backLabel="Back"
-    >
+    <AccountPageShell eyebrow="Account" title="Verify your email" description="Your account is ready, but access stays locked until your email address is verified." backLabel="Back">
       <div className="space-y-6 w-full">
-        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
-          <div className="flex items-start gap-3">
-            <ShieldAlert className="w-5 h-5 mt-0.5 shrink-0" />
-            <div>
-              <p className="font-bold">Verification required</p>
-              <p className="mt-2 text-sm leading-relaxed text-amber-800">Open the BuyMesho verification email and confirm your address. This page will continue automatically once verification is detected.</p>
-            </div>
-          </div>
-        </div>
-
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 text-amber-900"><div className="flex items-start gap-3"><ShieldAlert className="w-5 h-5 mt-0.5 shrink-0" /><div><p className="font-bold">Verification required</p><p className="mt-2 text-sm leading-relaxed text-amber-800">Open the BuyMesho verification email and confirm your address. This page will continue automatically once verification is detected.</p></div></div></div>
         <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm space-y-5">
-          <div className="flex items-center gap-3">
-            <MailCheck className="w-5 h-5 text-zinc-700" />
-            <div className="min-w-0">
-              <p className="font-bold text-zinc-900 truncate">{firebaseUser?.email || "Email not available"}</p>
-              <p className="text-sm text-zinc-500">Check your inbox and spam folder if needed.</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-            <Loader2 className="w-5 h-5 animate-spin text-zinc-700 shrink-0" />
-            <div><p className="text-sm font-bold text-zinc-900">Waiting for verification…</p></div>
-          </div>
-
+          <div className="flex items-center gap-3"><MailCheck className="w-5 h-5 text-zinc-700" /><div className="min-w-0"><p className="font-bold text-zinc-900 truncate">{firebaseUser?.email || "Email not available"}</p><p className="text-sm text-zinc-500">Check your inbox and spam folder if needed.</p></div></div>
+          <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3"><Loader2 className="w-5 h-5 animate-spin text-zinc-700 shrink-0" /><div><p className="text-sm font-bold text-zinc-900">Waiting for verification…</p></div></div>
           <div className="flex flex-wrap gap-3">
-            <button type="button" onClick={handleResend} disabled={busy || !firebaseUser || resendCooldown > 0} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60">
-              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend verification email"}
-            </button>
-            <button type="button" onClick={handleLogout} disabled={busy} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60">
-              <LogOut className="w-4 h-4" />
-              Log out
-            </button>
+            <button type="button" onClick={handleResend} disabled={busy || !firebaseUser || resendCooldown > 0} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60">{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}{resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend verification email"}</button>
+            <button type="button" onClick={handleLogout} disabled={busy} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"><LogOut className="w-4 h-4" />Log out</button>
           </div>
         </div>
       </div>
-
       {feedback && <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} actions={feedback.actions} onClose={() => setFeedback(null)} />}
     </AccountPageShell>
   );
