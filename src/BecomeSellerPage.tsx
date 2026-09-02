@@ -9,49 +9,45 @@ import { resolveUniversity } from "./lib/university";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import type { University } from "./types";
 
-type FeedbackState = {
-  open: boolean;
-  type: "success" | "error" | "info";
-  title: string;
-  message: string;
-} | null;
-
+type FeedbackState = { open: boolean; type: "success" | "error" | "info"; title: string; message: string } | null;
 type SellerApplicationStatus = "pending" | "approved" | "rejected";
+type SellerApplication = { status: SellerApplicationStatus; reviewed_at?: string | null; review_notes?: string | null };
+type SellerType = "student" | "public" | "business";
+type IdentityDocumentType = "national_id" | "passport";
 
-type SellerApplication = {
-  status: SellerApplicationStatus;
-  reviewed_at?: string | null;
-  review_notes?: string | null;
-};
+const SELLER_TYPES: Array<{ value: SellerType; label: string; description: string }> = [
+  { value: "student", label: "Student seller", description: "I am applying as a student." },
+  { value: "public", label: "Public / Non-student", description: "I am applying as an individual outside the student category." },
+  { value: "business", label: "Business / Organisation", description: "I am representing a registered business or organisation." },
+];
 
-// PostgreSQL's CURRENT_TIMESTAMP returns 'YYYY-MM-DD HH:MM:SS' (space separator, no timezone).
-// Replace the space with 'T' and append 'Z' so all browsers parse it correctly as UTC ISO-8601.
-// If the string already contains 'T' it is treated as ISO-8601 and returned as-is.
-function parsePostgreSQLDate(ts: string): Date {
-  const iso = ts.includes("T") ? ts : ts.replace(" ", "T") + "Z";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) {
-    console.warn("parsePostgreSQLDate: unexpected timestamp format:", ts);
-    return new Date(ts);
-  }
-  return d;
+function parseDate(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value.includes("T") ? value : value.replace(" ", "T") + "Z");
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 export default function BecomeSellerPage() {
   const { firebaseUser, authLoading, profile, profileLoading, setProfile, updateProfile } = useAccountProfile();
+  const [sellerType, setSellerType] = useState<SellerType>("public");
+  const [identityDocumentType, setIdentityDocumentType] = useState<IdentityDocumentType>("national_id");
   const [form, setForm] = useState({
     fullLegalName: "",
     institution: resolveUniversity(),
-    applicantType: "student",
-    institutionIdNumber: "",
+    studentNumber: "",
     whatsappNumber: "",
     businessName: "",
     whatToSell: "",
     businessDescription: "",
-    proofDocumentUrl: "",
+    nationalOrPassportUrl: "",
+    studentIdUrl: "",
+    businessRegistrationUrl: "",
+    offersLayby: false,
+    offersFinancing: false,
+    providesDelivery: false,
     agreedToRules: false,
   });
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [application, setApplication] = useState<SellerApplication | null>(null);
   const [showReapplyForm, setShowReapplyForm] = useState(false);
@@ -61,9 +57,13 @@ export default function BecomeSellerPage() {
     if (!profile) return;
     setForm((prev) => ({
       ...prev,
+      fullLegalName: profile.full_name || profile.display_name || prev.fullLegalName,
       institution: resolveUniversity(profile.university),
-      businessName: profile.business_name || "",
+      studentNumber: profile.student_number || prev.studentNumber,
+      whatsappNumber: profile.phone || prev.whatsappNumber,
+      businessName: profile.business_name || prev.businessName,
     }));
+    if (profile.user_type === "student") setSellerType("student");
   }, [profile]);
 
   useEffect(() => {
@@ -71,20 +71,10 @@ export default function BecomeSellerPage() {
       if (!firebaseUser || profile?.is_seller) return;
       try {
         const data = await apiFetch("/api/profile/seller-application");
-        if (data?.status === "pending" || data?.status === "approved" || data?.status === "rejected") {
-          if (data.status === "approved" && !profile?.is_seller) {
-            setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
-            try {
-              await updateProfile({ is_seller: true });
-            } catch (syncErr) {
-              console.error("Failed to sync approved seller profile from become-seller page", syncErr);
-            }
-          }
+        if (["pending", "approved", "rejected"].includes(data?.status)) {
           setApplication(data as SellerApplication);
           setShowReapplyForm(false);
-        } else {
-          setApplication(null);
-        }
+        } else setApplication(null);
       } catch {
         setApplication(null);
       }
@@ -92,210 +82,119 @@ export default function BecomeSellerPage() {
     void loadStatus();
   }, [firebaseUser, profile?.is_seller]);
 
-  const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
-    setFeedback({ open: true, type, title, message });
-  };
+  const showFeedback = (type: FeedbackState["type"], title: string, message: string) => setFeedback({ open: true, type, title, message });
 
-  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
+  const uploadDocument = async (key: "nationalOrPassportUrl" | "studentIdUrl" | "businessRegistrationUrl", file: File) => {
+    setUploading(key);
     try {
       const formData = new FormData();
       formData.append("image", file);
-      const res = await fetch("/api/upload/", { method: "POST", body: formData });
-      const text = await res.text();
+      const response = await fetch("/api/upload/", { method: "POST", body: formData });
+      const text = await response.text();
       const data = text ? JSON.parse(text) : null;
-      if (!res.ok) throw new Error(data?.error || "Upload failed");
-      setForm((prev) => ({ ...prev, proofDocumentUrl: data.url }));
-    } catch (err: any) {
-      showFeedback("error", "Upload failed", err?.message || "We could not upload the proof document.");
+      if (!response.ok || !data?.url) throw new Error(data?.error || "Upload failed");
+      setForm((prev) => ({ ...prev, [key]: data.url }));
+    } catch (error: any) {
+      showFeedback("error", "Upload failed", error?.message || "We could not upload this document.");
     } finally {
-      setUploading(false);
-      e.target.value = "";
+      setUploading(null);
     }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleFileChange = (key: "nationalOrPassportUrl" | "studentIdUrl" | "businessRegistrationUrl") => async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) await uploadDocument(key, file);
+    event.target.value = "";
+  };
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
     if (!firebaseUser || !profile) return;
+    if (!form.nationalOrPassportUrl) {
+      showFeedback("error", "Identity document required", sellerType === "student" ? "Students must submit a National ID or Passport." : "Please submit a National ID or Passport.");
+      return;
+    }
+    if (sellerType === "student" && !form.studentIdUrl) {
+      showFeedback("error", "Student ID required", "Student sellers must submit their Student ID.");
+      return;
+    }
+    if (sellerType === "business" && !form.businessRegistrationUrl) {
+      showFeedback("error", "Business document required", "Business applicants must submit proof of business registration.");
+      return;
+    }
     setSaving(true);
     try {
       const submitted = await apiFetch("/api/profile/become-seller", {
         method: "POST",
         body: JSON.stringify({
+          seller_type: sellerType,
           full_legal_name: form.fullLegalName,
-          institution: form.institution,
-          applicant_type: form.applicantType,
-          institution_id_number: form.institutionIdNumber,
+          institution: sellerType === "student" ? form.institution : null,
+          student_number: sellerType === "student" ? form.studentNumber : null,
           whatsapp_number: form.whatsappNumber,
           business_name: form.businessName,
           what_to_sell: form.whatToSell,
           business_description: form.businessDescription,
-          proof_document_url: form.proofDocumentUrl,
+          identity_document_type: identityDocumentType,
+          identity_document_url: form.nationalOrPassportUrl,
+          student_id_document_url: sellerType === "student" ? form.studentIdUrl : null,
+          business_registration_document_url: sellerType === "business" ? form.businessRegistrationUrl : null,
+          offers_layby: form.offersLayby,
+          offers_financing: form.offersFinancing,
+          provides_delivery: form.providesDelivery,
           agreed_to_rules: form.agreedToRules,
+          whatToSell: form.whatToSell,
         }),
       });
-      const nextApplication = submitted?.application;
-      if (nextApplication?.status) {
-        setApplication(nextApplication as SellerApplication);
-      }
+      setApplication(submitted?.application || { status: "pending" });
       setShowReapplyForm(false);
       showFeedback("success", "Application submitted", "Your application is pending manual review.");
       navigateToPath("/profile");
-    } catch (err: any) {
-      showFeedback("error", "Application failed", err?.message || "We could not submit your seller application.");
+    } catch (error: any) {
+      showFeedback("error", "Application failed", error?.message || "We could not submit your seller application.");
     } finally {
       setSaving(false);
     }
   };
 
-  return (
-    <AccountPageShell
-      eyebrow="Seller"
-      title="Become a seller"
-      description="Apply for seller status so you can post listings with stronger legitimacy and review control."
-      backLabel="Back to Profile"
-      onBack={() => navigateToPath("/profile")}
-    >
-      {authLoading || profileLoading ? (
-        <div className="p-8 text-sm text-zinc-500">Loading seller application…</div>
-      ) : !firebaseUser ? (
-        <div className="p-8 text-sm text-zinc-500">Login required.</div>
-      ) : !profile ? (
-        <div className="p-8 space-y-3 text-sm text-zinc-500">
-          <p>Your account setup is not complete. Please create your account details before applying to become a seller.</p>
-          <button
-            type="button"
-            onClick={() => navigateToPath("/edit-account")}
-            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
-          >
-            Complete account setup
-          </button>
-        </div>
-      ) : profile.is_seller ? (
-        <div className="p-8 text-sm text-zinc-500">Your account is already a seller account.</div>
-      ) : application?.status === "pending" ? (
-        <div className="p-8 space-y-3 text-sm text-zinc-600">
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <p className="font-bold text-amber-800">Application pending review</p>
-            <p className="mt-1 text-amber-800">You already applied to become a seller. We are still reviewing your application.</p>
-            <p className="mt-2">
-              Reviewed date:{" "}
-              <span className="font-medium">
-                {application.reviewed_at ? parsePostgreSQLDate(application.reviewed_at).toLocaleString() : "Not reviewed yet"}
-              </span>
-            </p>
-            {application.review_notes ? (
-              <p className="mt-1">Review note: <span className="font-medium">{application.review_notes}</span></p>
-            ) : null}
-          </div>
-        </div>
-      ) : application?.status === "approved" ? (
-        <div className="p-8 space-y-3 text-sm text-zinc-600">
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-            <p className="font-bold text-emerald-800">Application approved</p>
-            <p className="mt-1 text-emerald-800">
-              Your seller application has been approved. If seller tools are not visible yet, refresh the page.
-            </p>
-            <p className="mt-2">
-              Reviewed date:{" "}
-              <span className="font-medium">
-                {application.reviewed_at ? parsePostgreSQLDate(application.reviewed_at).toLocaleString() : "Approved"}
-              </span>
-            </p>
-            {application.review_notes ? (
-              <p className="mt-1">Review note: <span className="font-medium">{application.review_notes}</span></p>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            onClick={() => navigateToPath("/profile")}
-            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
-          >
-            Back to profile
-          </button>
-        </div>
-      ) : application?.status === "rejected" && !showReapplyForm ? (
-        <div className="p-8 space-y-3 text-sm text-zinc-600">
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
-            <p className="font-bold text-rose-800">Application rejected</p>
-            <p className="mt-1 text-rose-800">Your previous seller application was not approved.</p>
-            <p className="mt-2">
-              Reviewed date:{" "}
-              <span className="font-medium">
-                {application.reviewed_at ? parsePostgreSQLDate(application.reviewed_at).toLocaleString() : "Not available"}
-              </span>
-            </p>
-            {application.review_notes ? (
-              <p className="mt-1">Review note: <span className="font-medium">{application.review_notes}</span></p>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowReapplyForm(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
-          >
-            Reapply
-          </button>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="p-8 space-y-5 w-full">
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Full Legal Name</label>
-            <input required type="text" value={form.fullLegalName} onChange={(e) => setForm((prev) => ({ ...prev, fullLegalName: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none" />
-          </div>
-          <FormDropdown label="Institution" value={form.institution} options={UNIVERSITIES} onChange={(value) => setForm((prev) => ({ ...prev, institution: value as University }))} />
-          <FormDropdown label="Applicant Type" value={form.applicantType} options={["student", "staff", "registered_business"]} onChange={(value) => setForm((prev) => ({ ...prev, applicantType: value }))} />
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Institution ID / Registration Number</label>
-            <input required type="text" value={form.institutionIdNumber} onChange={(e) => setForm((prev) => ({ ...prev, institutionIdNumber: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">WhatsApp Number</label>
-            <input required type="text" placeholder="265..." value={form.whatsappNumber} onChange={(e) => setForm((prev) => ({ ...prev, whatsappNumber: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Name</label>
-            <input required type="text" value={form.businessName} onChange={(e) => setForm((prev) => ({ ...prev, businessName: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">What Do You Want to Sell?</label>
-            <input required type="text" value={form.whatToSell} onChange={(e) => setForm((prev) => ({ ...prev, whatToSell: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Description</label>
-            <textarea required value={form.businessDescription} onChange={(e) => setForm((prev) => ({ ...prev, businessDescription: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none h-24 resize-none" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Proof Document</label>
-            <input id="seller-proof-upload" type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-            <label htmlFor="seller-proof-upload" className="inline-flex px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-sm font-bold cursor-pointer">
-              {uploading ? "Uploading..." : form.proofDocumentUrl ? "Replace Proof" : "Upload Proof"}
-            </label>
-          </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-            <p className="font-bold mb-1">Application flow: submitted → pending review → approved/rejected.</p>
-            <p>False information can lead to rejection, suspension, or account removal.</p>
-          </div>
-          <label className="flex items-start gap-2 text-sm text-zinc-600">
-            <input type="checkbox" checked={form.agreedToRules} onChange={(e) => setForm((prev) => ({ ...prev, agreedToRules: e.target.checked }))} className="mt-1" />
-            <span>I agree to seller rules and prohibited-items policy.</span>
-          </label>
-          <button type="submit" disabled={saving || uploading || !form.proofDocumentUrl || !form.agreedToRules} className="bg-zinc-900 text-white py-3 px-6 rounded-xl font-bold hover:bg-zinc-800 disabled:opacity-50">
-            {saving ? "Submitting..." : "Submit Seller Application"}
-          </button>
-          {application && (
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700 space-y-1">
-              <p>Current application status: <span className="font-bold capitalize">{application.status}</span></p>
-              <p>Reviewed date: <span className="font-medium">{application.reviewed_at ? parsePostgreSQLDate(application.reviewed_at).toLocaleString() : "Not reviewed yet"}</span></p>
-              {application.review_notes ? <p>Review note: <span className="font-medium">{application.review_notes}</span></p> : null}
-            </div>
-          )}
-        </form>
-      )}
+  const documentButton = (key: "nationalOrPassportUrl" | "studentIdUrl" | "businessRegistrationUrl", label: string, hint: string) => (
+    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+      <p className="text-sm font-bold text-zinc-900">{label}</p>
+      <p className="mt-1 text-xs text-zinc-500">{hint}</p>
+      <input id={`seller-${key}`} type="file" accept="image/*,.pdf" onChange={handleFileChange(key)} className="hidden" />
+      <label htmlFor={`seller-${key}`} className="mt-3 inline-flex cursor-pointer rounded-xl bg-white border border-zinc-200 px-4 py-2 text-sm font-bold hover:bg-zinc-100">
+        {uploading === key ? "Uploading..." : form[key] ? "Replace document" : "Upload document"}
+      </label>
+      {form[key] ? <p className="mt-2 text-xs font-semibold text-emerald-700">Document uploaded</p> : null}
+    </div>
+  );
 
-      {feedback && <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} onClose={() => setFeedback(null)} />}
+  return (
+    <AccountPageShell eyebrow="Seller" title="Become a seller" description="Apply for seller status with the verification information relevant to you." backLabel="Back to Profile" onBack={() => navigateToPath("/profile")}>
+      {authLoading || profileLoading ? <div className="p-8 text-sm text-zinc-500">Loading seller application…</div>
+        : !firebaseUser ? <div className="p-8 text-sm text-zinc-500">Login required.</div>
+        : !profile ? <div className="p-8 text-sm text-zinc-500">Please complete your BuyMesho account first.</div>
+        : profile.is_seller ? <div className="p-8 text-sm text-zinc-500">Your account is already a seller account.</div>
+        : application?.status === "pending" ? <div className="p-8 space-y-3 text-sm text-zinc-600"><div className="rounded-2xl border border-amber-200 bg-amber-50 p-5"><p className="font-bold text-amber-800">Application pending review</p><p className="mt-1 text-amber-800">BuyMesho is reviewing your seller application.</p><p className="mt-2">Submitted: {parseDate(application.reviewed_at)?.toLocaleString() || "Pending review"}</p></div></div>
+        : application?.status === "approved" ? <div className="p-8 space-y-3 text-sm text-zinc-600"><div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><p className="font-bold text-emerald-800">Application approved</p><p className="mt-1 text-emerald-800">Your seller account is active.</p></div><button type="button" onClick={() => navigateToPath("/profile")} className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white">Back to profile</button></div>
+        : application?.status === "rejected" && !showReapplyForm ? <div className="p-8 space-y-3 text-sm text-zinc-600"><div className="rounded-2xl border border-rose-200 bg-rose-50 p-5"><p className="font-bold text-rose-800">Application rejected</p><p className="mt-1 text-rose-800">Your previous application was not approved.</p>{application.review_notes ? <p className="mt-2">Review note: {application.review_notes}</p> : null}</div><button type="button" onClick={() => setShowReapplyForm(true)} className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white">Reapply</button></div>
+        : <form onSubmit={handleSubmit} className="p-8 space-y-7 w-full">
+          <section className="space-y-3"><div><p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">1. Seller type</p><h2 className="mt-1 text-xl font-black text-zinc-900">How are you applying?</h2></div>{SELLER_TYPES.map((item) => <button key={item.value} type="button" onClick={() => setSellerType(item.value)} className={`w-full rounded-2xl border p-4 text-left transition ${sellerType === item.value ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white hover:bg-zinc-50"}`}><p className="font-extrabold">{item.label}</p><p className={`mt-1 text-xs ${sellerType === item.value ? "text-zinc-300" : "text-zinc-500"}`}>{item.description}</p></button>)}</section>
+
+          <section className="space-y-4"><div><p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">2. Identity</p><h2 className="mt-1 text-xl font-black text-zinc-900">Verify who you are</h2></div><input required value={form.fullLegalName} onChange={(e) => setForm((p) => ({ ...p, fullLegalName: e.target.value }))} placeholder="Full legal name" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3" /><input required value={form.whatsappNumber} onChange={(e) => setForm((p) => ({ ...p, whatsappNumber: e.target.value }))} placeholder="WhatsApp / phone number" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3" />
+            <div className="grid grid-cols-2 gap-3"><button type="button" onClick={() => setIdentityDocumentType("national_id")} className={`rounded-xl border p-3 text-sm font-bold ${identityDocumentType === "national_id" ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white"}`}>National ID</button><button type="button" onClick={() => setIdentityDocumentType("passport")} className={`rounded-xl border p-3 text-sm font-bold ${identityDocumentType === "passport" ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white"}`}>Passport</button></div>
+            {documentButton("nationalOrPassportUrl", identityDocumentType === "national_id" ? "National ID" : "Passport", "Required for every seller applicant.")}
+            {sellerType === "student" ? <>{documentButton("studentIdUrl", "Student ID", "Required for student sellers.")}<FormDropdown label="Institution" value={form.institution} options={UNIVERSITIES} onChange={(value) => setForm((p) => ({ ...p, institution: value as University }))}/><input required value={form.studentNumber} onChange={(e) => setForm((p) => ({ ...p, studentNumber: e.target.value }))} placeholder="Student number" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3" /></> : null}
+            {sellerType === "business" ? documentButton("businessRegistrationUrl", "Business registration / certificate", "Required for business or organisation applicants.") : null}
+          </section>
+
+          <section className="space-y-4"><div><p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">3. Seller information</p><h2 className="mt-1 text-xl font-black text-zinc-900">Tell us what you sell</h2></div><input required value={form.businessName} onChange={(e) => setForm((p) => ({ ...p, businessName: e.target.value }))} placeholder="Seller / business name" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3" /><input required value={form.whatToSell} onChange={(e) => setForm((p) => ({ ...p, whatToSell: e.target.value }))} placeholder="What products or services do you sell?" className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3" /><textarea required value={form.businessDescription} onChange={(e) => setForm((p) => ({ ...p, businessDescription: e.target.value }))} placeholder="Brief description of your products or services" className="w-full h-24 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 resize-none" /></section>
+
+          <section className="space-y-4"><div><p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">4. Seller capabilities</p><h2 className="mt-1 text-xl font-black text-zinc-900">What services do you offer?</h2></div><label className="flex gap-3 items-start"><input type="checkbox" checked={form.offersLayby} onChange={(e) => setForm((p) => ({ ...p, offersLayby: e.target.checked }))} className="mt-1"/><span><b>Lay-by</b><span className="block text-xs text-zinc-500">I offer lay-by arrangements.</span></span></label><label className="flex gap-3 items-start"><input type="checkbox" checked={form.offersFinancing} onChange={(e) => setForm((p) => ({ ...p, offersFinancing: e.target.checked }))} className="mt-1"/><span><b>Financing / Loans</b><span className="block text-xs text-zinc-500">I offer financing or loan services.</span></span></label><label className="flex gap-3 items-start"><input type="checkbox" checked={form.providesDelivery} onChange={(e) => setForm((p) => ({ ...p, providesDelivery: e.target.checked }))} className="mt-1"/><span><b>Delivery</b><span className="block text-xs text-zinc-500">I provide delivery for my orders.</span></span></label></section>
+
+          <section className="space-y-4"><div><p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">5. Marketplace commitments</p><h2 className="mt-1 text-xl font-black text-zinc-900">Before submitting</h2></div><div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600"><p>By applying, you agree to provide authentic products/services, avoid scams and misleading listings, provide accurate information, and follow BuyMesho marketplace rules.</p><p className="mt-2">Seller fees: <b>3% commission on successful sales</b>, plus applicable payment-processing fees.</p></div><label className="flex gap-3 items-start text-sm"><input required type="checkbox" checked={form.agreedToRules} onChange={(e) => setForm((p) => ({ ...p, agreedToRules: e.target.checked }))} className="mt-1"/><span>I agree to BuyMesho's seller rules and marketplace commitments.</span></label><button type="submit" disabled={saving || !!uploading} className="w-full rounded-xl bg-zinc-900 py-3 text-sm font-extrabold text-white disabled:opacity-50">{saving ? "Submitting..." : "Submit Seller Application"}</button></section>
+        </form>}
+      {feedback ? <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} onClose={() => setFeedback(null)} /> : null}
     </AccountPageShell>
   );
 }
