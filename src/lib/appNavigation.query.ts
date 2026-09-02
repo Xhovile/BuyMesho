@@ -1,4 +1,7 @@
-import type { HeaderChip } from "../constants";
+import {
+  MARKET_CATEGORY_TO_API_CATEGORY,
+  type HeaderChip,
+} from "../constants";
 import {
   ABOUT_PATH, ADMIN_AUDIT_PATH, ADMIN_BALANCE_PATH, ADMIN_MODERATION_QUEUE_PATH, ADMIN_PATH,
   ADMIN_MESSAGES_PATH, ADMIN_PAYOUT_DESTINATIONS_PATH, ADMIN_PAYOUTS_PATH, ADMIN_PAYMENTS_PATH, ADMIN_REPORTS_PATH,
@@ -41,7 +44,32 @@ const pushUrl=(url:URL,replace=false)=>{ if(replace)window.history.replaceState(
 const syncExploreStateInUrl=(state:Partial<ExploreQueryState>,mode:"replace"|"push"="replace")=>{ const url=new URL(window.location.href); url.pathname=getMarketPathFromLocation(window.location.pathname); url.searchParams.delete("listing"); url.searchParams.delete("image"); url.searchParams.delete("uid"); url.searchParams.delete("id"); writeExploreStateToUrl(url,state); pushUrl(url,mode==="replace"); };
 export const replaceExploreStateInUrl=(state:Partial<ExploreQueryState>)=>syncExploreStateInUrl(state,"replace");
 export const pushExploreStateInUrl=(state:Partial<ExploreQueryState>)=>syncExploreStateInUrl(state,"push");
-export const navigateToMarketChip=(chip:HeaderChip)=>{if(typeof window==="undefined")return; const url=new URL(window.location.href); url.pathname=MARKET_CHIP_PATHS[chip]; url.searchParams.delete("listing"); url.searchParams.delete("image"); url.searchParams.delete("uid"); url.searchParams.delete("id"); pushUrl(url);};
+
+export const navigateToMarketChip=(chip:HeaderChip)=>{
+  if(typeof window==="undefined")return;
+
+  const category = MARKET_CATEGORY_TO_API_CATEGORY[chip];
+  if (category) {
+    const url = new URL(window.location.href);
+    url.pathname = EXPLORE_PATH;
+    url.searchParams.delete("listing");
+    url.searchParams.delete("image");
+    url.searchParams.delete("uid");
+    url.searchParams.delete("id");
+    writeExploreStateToUrl(url, { category, page: 1 });
+    pushUrl(url);
+    return;
+  }
+
+  const url=new URL(window.location.href);
+  url.pathname=MARKET_CHIP_PATHS[chip];
+  url.searchParams.delete("listing");
+  url.searchParams.delete("image");
+  url.searchParams.delete("uid");
+  url.searchParams.delete("id");
+  pushUrl(url);
+};
+
 export const navigateToExploreWithCategory=(category:string)=>{if(typeof window==="undefined")return; const url=new URL(window.location.href); url.pathname="/category"; url.searchParams.set("category",category); url.searchParams.delete("listing"); url.searchParams.delete("image"); url.searchParams.delete("uid"); url.searchParams.delete("id"); pushUrl(url);};
 
 export const getAppRouteFromLocation=(location:Pick<Location,"pathname"|"search">):AppRoute=>{ const params=new URLSearchParams(location.search);
