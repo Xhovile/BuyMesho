@@ -64,7 +64,14 @@ export const navigateToMarketChip=(chip:HeaderChip)=>{
     url.searchParams.delete("image");
     url.searchParams.delete("uid");
     url.searchParams.delete("id");
-    pushUrl(url);
+
+    try {
+      window.sessionStorage.removeItem("__buymesho_header_chip_scroll_left");
+    } catch {
+      // Ignore storage failures.
+    }
+
+    window.location.assign(url.toString());
     return;
   }
 
