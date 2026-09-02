@@ -150,8 +150,12 @@ export function registerSellerApplicationRoutes(app: Express, deps: SellerApplic
       const providesDelivery = req.body?.provides_delivery === true;
       const offersDeals = req.body?.offers_deals === true;
       const participatesStudentOffers = req.body?.participates_student_offers === true;
-      const studentOfferCategories: string[] = Array.isArray(req.body?.student_offer_categories)
-        ? [...new Set(req.body.student_offer_categories.filter((value: unknown): value is string => typeof value === "string").map((value: string) => value.trim()).filter((value: string) => value.length > 0))]
+      const rawStudentOfferCategories: unknown = req.body?.student_offer_categories;
+      const studentOfferCategories: string[] = Array.isArray(rawStudentOfferCategories)
+        ? rawStudentOfferCategories
+            .filter((value: unknown): value is string => typeof value === "string")
+            .map((value: string) => value.trim())
+            .filter((value: string) => value.length > 0)
         : [];
       const studentOfferPercentage = Number(req.body?.student_offer_percentage);
       const agreedToRules = req.body?.agreed_to_rules === true || req.body?.agreed_to_rules === 1 || req.body?.agreed_to_rules === "1";
