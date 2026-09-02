@@ -7,6 +7,7 @@ import { auth } from "./firebase";
 import { consumeAuthReturnPath, HOME_PATH, navigateToLogin, navigateToPath } from "./lib/appNavigation";
 import { refreshEmailVerificationState, resendVerificationEmail } from "./lib/security";
 import { useAuthUser } from "./hooks/useAuthUser";
+import { apiFetch } from "./lib/api";
 
 type FeedbackAction = {
   label: string;
@@ -34,8 +35,15 @@ export default function VerifyEmailPage() {
 
   const emailVerified = firebaseUser?.emailVerified ?? false;
 
-  const redirectAfterVerification = () => {
+  const redirectAfterVerification = async () => {
+    const isFreshSignup = sessionStorage.getItem(SIGNUP_JUST_CREATED_KEY) === "1";
     sessionStorage.removeItem(SIGNUP_JUST_CREATED_KEY);
+
+    if (isFreshSignup) {
+      navigateToPath("/account/setup", { replace: true });
+      return;
+    }
+
     navigateToPath(consumeAuthReturnPath(HOME_PATH), { replace: true });
   };
 
@@ -46,7 +54,7 @@ export default function VerifyEmailPage() {
       return;
     }
     if (emailVerified) {
-      redirectAfterVerification();
+      void redirectAfterVerification();
     }
   }, [authLoading, firebaseUser, emailVerified]);
 
@@ -59,7 +67,7 @@ export default function VerifyEmailPage() {
       const verified = await refreshEmailVerificationState();
       if (cancelled) return;
       if (verified) {
-        redirectAfterVerification();
+        void redirectAfterVerification();
       }
     };
 
@@ -132,9 +140,7 @@ export default function VerifyEmailPage() {
             <ShieldAlert className="w-5 h-5 mt-0.5 shrink-0" />
             <div>
               <p className="font-bold">Verification required</p>
-              <p className="mt-2 text-sm leading-relaxed text-amber-800">
-                Open the BuyMesho verification email and confirm your address. This page will continue automatically once verification is detected.
-              </p>
+              <p className="mt-2 text-sm leading-relaxed text-amber-800">Open the BuyMesho verification email and confirm your address. This page will continue automatically once verification is detected.</p>
             </div>
           </div>
         </div>
@@ -150,28 +156,15 @@ export default function VerifyEmailPage() {
 
           <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
             <Loader2 className="w-5 h-5 animate-spin text-zinc-700 shrink-0" />
-            <div>
-              <p className="text-sm font-bold text-zinc-900">Waiting for verification…</p>
-            </div>
+            <div><p className="text-sm font-bold text-zinc-900">Waiting for verification…</p></div>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={busy || !firebaseUser || resendCooldown > 0}
-              className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            <button type="button" onClick={handleResend} disabled={busy || !firebaseUser || resendCooldown > 0} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60">
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend verification email"}
             </button>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={busy}
-              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            <button type="button" onClick={handleLogout} disabled={busy} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60">
               <LogOut className="w-4 h-4" />
               Log out
             </button>
@@ -179,16 +172,7 @@ export default function VerifyEmailPage() {
         </div>
       </div>
 
-      {feedback && (
-        <FeedbackModal
-          open={feedback.open}
-          type={feedback.type}
-          title={feedback.title}
-          message={feedback.message}
-          actions={feedback.actions}
-          onClose={() => setFeedback(null)}
-        />
-      )}
+      {feedback && <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} actions={feedback.actions} onClose={() => setFeedback(null)} />}
     </AccountPageShell>
   );
 }
