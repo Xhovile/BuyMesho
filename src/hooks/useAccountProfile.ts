@@ -87,7 +87,7 @@ export function useAccountProfile() {
 
         if (!force) {
           const cached = ACCOUNT_PROFILE_CACHE.get(firebaseUser.uid);
-          if (cached) {
+          if (cached && cached.profile.profile_setup_complete) {
             setProfile(cached.profile);
             setSellerApplicationPending(cached.sellerApplicationPending);
             setCachedSellerStatus(firebaseUser.uid, !!cached.profile.is_seller);
