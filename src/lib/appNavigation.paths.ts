@@ -64,5 +64,5 @@ export const MARKET_CHIP_PATHS: Record<HeaderChip, string> = { All: EXPLORE_PATH
 export const APP_HISTORY_STATE_KEY = "__buymesho";
 export const AUTH_RETURN_PATH_STORAGE_KEY = "__buymesho_auth_return_path";
 export const markAppHistoryState = () => ({ [APP_HISTORY_STATE_KEY]: true });
-export const isAppHistoryState = () => { if (typeof window === "undefined") return false; const state=window.history.state; return !!(state&&typeof state === "object"&&(state as Record<string,unknown>)[APP_HISTORY_STATE_KEY]); };
+export const isAppHistoryState = () => { if (typeof window === "undefined") return false; const state=window.history.state; return !!(state&&typeof state==="object"&&(state as Record<string,unknown>)[APP_HISTORY_STATE_KEY]); };
 export const sanitizeInternalReturnPath=(value:string|null|undefined)=>{ if(!value)return null; if(!value.startsWith("/")||value.startsWith("//"))return null; return value; };
