@@ -16,6 +16,7 @@ type PasswordChecks = { hasMinLength: boolean; hasLowercase: boolean; hasUpperca
 
 const PASSWORD_REQUIREMENTS_MESSAGE = "Use at least 8 characters with lowercase, uppercase, and a symbol (e.g. #, @, /).";
 const SIGNUP_JUST_CREATED_KEY = "__buymesho_signup_just_created";
+const SIGNUP_PROFILE_DRAFT_KEY = "__buymesho_signup_profile_draft";
 const getPasswordChecks = (password: string): PasswordChecks => ({ hasMinLength: password.length >= 8, hasLowercase: /[a-z]/.test(password), hasUppercase: /[A-Z]/.test(password), hasSpecial: /[^A-Za-z0-9]/.test(password) });
 const getPasswordStrength = (checks: PasswordChecks) => Number(checks.hasMinLength) + Number(checks.hasLowercase) + Number(checks.hasUppercase) + Number(checks.hasSpecial);
 const getPasswordStrengthLabel = (strength: number) => strength <= 1 ? "Weak" : strength === 2 ? "Fair" : strength === 3 ? "Strong" : "Very strong";
@@ -89,6 +90,11 @@ export default function SignupPage() {
       };
 
       try { await bootstrapProfile(profile); } catch (profileErr) { console.warn("Profile bootstrap failed after account creation.", profileErr); }
+      try {
+        sessionStorage.setItem(SIGNUP_PROFILE_DRAFT_KEY, JSON.stringify({ firstName, surname, otherNames: form.otherNames.trim(), email }));
+      } catch (draftErr) {
+        console.warn("Could not save signup profile draft.", draftErr);
+      }
       try { await apiFetch("/api/auth/send-verification-email", { method: "POST", body: JSON.stringify({ display_name: fullName }) }); } catch (emailErr) { console.error("Custom verification email failed", emailErr); }
 
       sessionStorage.setItem(SIGNUP_JUST_CREATED_KEY, "1");
