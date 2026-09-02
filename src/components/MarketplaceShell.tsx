@@ -106,9 +106,19 @@ export default function MarketplaceShell({ children }: MarketplaceShellProps) {
   };
 
   const isCategoryRoute = location.pathname === "/category" && isMarketplace;
+  const isExploreChipRoute = isMarketplace &&
+    (location.pathname === EXPLORE_PATH || location.pathname.startsWith(`${EXPLORE_PATH}/`));
 
   return (
-    <div className={isMarketplace ? "min-h-screen buymesho-marketplace-shell" : "min-h-screen"}>
+    <div
+      className={
+        isExploreChipRoute
+          ? "min-h-screen buymesho-marketplace-shell buymesho-explore-chip-shell"
+          : isMarketplace
+            ? "min-h-screen buymesho-marketplace-shell"
+            : "min-h-screen"
+      }
+    >
       {isMarketplace ? (
         <>
           <Header
@@ -126,6 +136,12 @@ export default function MarketplaceShell({ children }: MarketplaceShellProps) {
           <style>{`
             .buymesho-marketplace-shell .buymesho-marketplace-route-content > .min-h-screen > nav {
               display: none !important;
+            }
+
+            .buymesho-explore-chip-shell
+              .buymesho-marketplace-route-content
+              [aria-label="Loading BuyMesho"] {
+              transform: translateY(-2rem);
             }
           `}</style>
         </>
