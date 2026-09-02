@@ -5,8 +5,15 @@ import { postgresDb as db } from "../db.js";
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.accountRoutesInstalled");
 
+type UserType = "student" | "public";
+
 function normalizeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeNullable(value: unknown): string | null {
+  const normalized = normalizeString(value);
+  return normalized || null;
 }
 
 export function registerAccountRoutes(app: Express) {
@@ -16,8 +23,31 @@ export function registerAccountRoutes(app: Express) {
     const uid = String(req.user?.uid ?? "").trim();
     if (!uid) return res.status(401).json({ error: "Authentication required" });
 
-    const university = normalizeString(req.body?.university);
+    const firstName = normalizeString(req.body?.first_name);
+    const surname = normalizeString(req.body?.surname);
+    const otherNames = normalizeNullable(req.body?.other_names);
+    const fullName = normalizeString(req.body?.full_name) || [firstName, otherNames, surname].filter(Boolean).join(" ");
+    const userType = normalizeString(req.body?.user_type);
+    const phone = normalizeString(req.body?.phone);
+    const university = normalizeNullable(req.body?.university);
+    const campus = normalizeNullable(req.body?.campus);
+    const studentId = normalizeNullable(req.body?.student_id);
+    const studentNumber = normalizeNullable(req.body?.student_number);
+    const studentEmail = normalizeNullable(req.body?.student_email);
     const profilePicture = normalizeString(req.body?.profile_picture);
+    const profileSetupComplete = req.body?.profile_setup_complete === true;
+    const buyerDetails = req.body?.buyer_details && typeof req.body.buyer_details === "object" ? req.body.buyer_details : null;
+
+    if (userType && userType !== "student" && userType !== "public") {
+      return res.status(400).json({ error: "Invalid user type" });
+    }
+    if (!firstName || !surname) {
+      return res.status(400).json({ error: "First name and surname are required" });
+    }
+    if (userType === "student" && (!university || !studentNumber || !studentEmail)) {
+      return res.status(400).json({ error: "Institution, student number, and student email are required for student accounts" });
+    }
+
     const hasBusinessFields =
       Object.prototype.hasOwnProperty.call(req.body ?? {}, "business_name") ||
       Object.prototype.hasOwnProperty.call(req.body ?? {}, "business_logo") ||
@@ -28,14 +58,42 @@ export function registerAccountRoutes(app: Express) {
 
     try {
       const firebaseAdmin = getFirebaseAdmin();
-      await firebaseAdmin.firestore().collection("users").doc(uid).set(
-        {
-          ...(university ? { university } : {}),
-          profile_picture: profilePicture || null,
-          updated_at: new Date().toISOString(),
-        },
-        { merge: true },
-      );
+      const profileData: Record<string, unknown> = {
+        ...(firstName ? { first_name: firstName } : {}),
+        ...(surname ? { surname } : {}),
+        other_names: otherNames,
+        full_name: fullName || null,
+        ...(phone ? { phone } : {}),
+        ...(userType ? { user_type: userType as UserType } : {}),
+        ...(userType === "student" ? {
+          university,
+          campus,
+          student_id: studentId,
+          student_number: studentNumber,
+          student_email: studentEmail,
+        } : userType === "public" ? {
+          university: null,
+          campus: null,
+          student_id: null,
+          student_number: null,
+          student_email: null,
+        } : {}),
+        profile_picture: profilePicture || null,
+        ...(profileSetupComplete ? { profile_setup_complete: true } : {}),
+        ...(buyerDetails ? {
+          buyer_details: {
+            fullName: normalizeString(buyerDetails.fullName) || fullName || null,
+            phone: normalizeString(buyerDetails.phone) || phone || "",
+            addressLine: normalizeString(buyerDetails.addressLine),
+            area: normalizeString(buyerDetails.area),
+            townOrDistrict: normalizeString(buyerDetails.townOrDistrict),
+            landmark: normalizeString(buyerDetails.landmark),
+          },
+        } : {}),
+        updated_at: new Date().toISOString(),
+      };
+
+      await firebaseAdmin.firestore().collection("users").doc(uid).set(profileData, { merge: true });
 
       if (university || hasBusinessFields) {
         try {
@@ -88,8 +146,20 @@ export function registerAccountRoutes(app: Express) {
         profile: {
           uid,
           email: seller?.email ?? req.user?.email ?? "",
+          first_name: firstName || null,
+          surname: surname || null,
+          other_names: otherNames,
+          full_name: fullName || null,
+          phone: phone || null,
+          user_type: userType || null,
           university: university || seller?.university || null,
+          campus: campus || null,
+          student_id: studentId,
+          student_number: studentNumber,
+          student_email: studentEmail,
           profile_picture: profilePicture || null,
+          profile_setup_complete: profileSetupComplete,
+          buyer_details: buyerDetails,
           business_name: seller?.business_name ?? null,
           business_logo: seller?.business_logo ?? null,
           bio: seller?.bio ?? null,
