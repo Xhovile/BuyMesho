@@ -2,10 +2,7 @@ import type { Express } from "express";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { hasAdminAccess } from "../auth/adminAccess.js";
 
-export type SellerApplicationRouteDeps = {
-  db: any;
-};
-
+export type SellerApplicationRouteDeps = { db: any };
 type SellerApplicationStatus = "pending" | "approved" | "rejected";
 type SellerType = "student" | "public" | "business";
 type IdentityDocumentType = "national_id" | "passport";
@@ -74,16 +71,10 @@ export function registerSellerApplicationRoutes(app: Express, deps: SellerApplic
     }
   });
 
-  // Registered before the admin moderation router, so the admin review page can receive
-  // the complete current application model, including conditional verification documents.
   app.get("/api/admin/seller-applications", requireAuth, (req, res) => {
     if (!hasAdminAccess(req.user)) return res.status(403).json({ error: "Forbidden: admin access required" });
     try {
-      const rows = db.prepare(`
-        SELECT *
-        FROM seller_applications
-        ORDER BY created_at DESC
-      `).all();
+      const rows = db.prepare(`SELECT * FROM seller_applications ORDER BY created_at DESC`).all();
       return res.json(rows.map(normalizeSellerApplication));
     } catch (error) {
       console.error("Admin seller applications fetch error", error);
@@ -94,91 +85,70 @@ export function registerSellerApplicationRoutes(app: Express, deps: SellerApplic
   app.post("/api/profile/become-seller", requireAuth, async (req, res) => {
     const uid = req.user!.uid;
     const email = req.user?.email || req.body?.email || "";
-
     try {
-      if (isApplicationPayload(req.body)) {
-        const sellerType = typeof req.body?.seller_type === "string" ? req.body.seller_type.trim() as SellerType : "";
-        const fullLegalName = typeof req.body?.full_legal_name === "string" ? req.body.full_legal_name.trim() : "";
-        const institution = typeof req.body?.institution === "string" ? req.body.institution.trim() : "";
-        const studentNumber = typeof req.body?.student_number === "string" ? req.body.student_number.trim() : "";
-        const whatsappNumber = typeof req.body?.whatsapp_number === "string" ? req.body.whatsapp_number.trim() : "";
-        const businessName = typeof req.body?.business_name === "string" ? req.body.business_name.trim() : "";
-        const whatToSell = typeof req.body?.what_to_sell === "string" ? req.body.what_to_sell.trim() : "";
-        const businessDescription = typeof req.body?.business_description === "string" ? req.body.business_description.trim() : "";
-        const identityDocumentType = typeof req.body?.identity_document_type === "string" ? req.body.identity_document_type.trim() as IdentityDocumentType : "";
-        const identityDocumentUrl = typeof req.body?.identity_document_url === "string" ? req.body.identity_document_url.trim() : "";
-        const studentIdDocumentUrl = typeof req.body?.student_id_document_url === "string" ? req.body.student_id_document_url.trim() : "";
-        const businessRegistrationDocumentUrl = typeof req.body?.business_registration_document_url === "string" ? req.body.business_registration_document_url.trim() : "";
-        const offersLayby = req.body?.offers_layby === true;
-        const offersFinancing = req.body?.offers_financing === true;
-        const providesDelivery = req.body?.provides_delivery === true;
-        const agreedToRules = req.body?.agreed_to_rules === true || req.body?.agreed_to_rules === 1 || req.body?.agreed_to_rules === "1";
-
-        if (!["student", "public", "business"].includes(sellerType)) return res.status(400).json({ error: "Please select a valid seller type." });
-        if (!fullLegalName) return res.status(400).json({ error: "Full legal name is required." });
-        if (!whatsappNumber) return res.status(400).json({ error: "Phone / WhatsApp number is required." });
-        if (!businessName) return res.status(400).json({ error: "Seller / business name is required." });
-        if (!whatToSell) return res.status(400).json({ error: "Please state what products or services you sell." });
-        if (!businessDescription) return res.status(400).json({ error: "A brief description of your products or services is required." });
-        if (!["national_id", "passport"].includes(identityDocumentType)) return res.status(400).json({ error: "Please select National ID or Passport." });
-        if (!identityDocumentUrl) return res.status(400).json({ error: "National ID or Passport is required." });
-        if (sellerType === "student" && (!institution || !studentNumber || !studentIdDocumentUrl)) return res.status(400).json({ error: "Student sellers must provide institution, student number, and Student ID." });
-        if (sellerType === "business" && !businessRegistrationDocumentUrl) return res.status(400).json({ error: "Business applicants must provide proof of business registration." });
-        if (!agreedToRules) return res.status(400).json({ error: "You must agree to the seller rules before submitting." });
-
-        // Keep legacy columns populated for backward compatibility. The new application
-        // contract uses the explicit fields above; reason_for_applying is no longer collected.
-        db.prepare(`
-          INSERT INTO sellers (uid, email, business_name, university, bio, is_verified, is_seller)
-          VALUES (?, ?, ?, ?, ?, ?, 0)
-          ON CONFLICT(uid) DO UPDATE SET
-            email = excluded.email,
-            business_name = COALESCE(excluded.business_name, sellers.business_name),
-            university = CASE WHEN excluded.university IS NULL OR excluded.university = '' THEN sellers.university ELSE excluded.university END,
-            bio = COALESCE(excluded.bio, sellers.bio),
-            is_verified = CASE WHEN excluded.is_verified = 1 THEN 1 ELSE sellers.is_verified END
-        `).run(uid, email, businessName, institution || null, businessDescription, req.user?.email_verified ? 1 : 0);
-
-        db.prepare(`
-          INSERT INTO seller_applications (
-            applicant_uid, applicant_email, full_legal_name, institution, applicant_type,
-            institution_id_number, whatsapp_number, business_name, what_to_sell, business_description,
-            reason_for_applying, proof_document_url, agreed_to_rules, status, reviewed_at, updated_at,
-            seller_type, student_number, identity_document_type, identity_document_url,
-            student_id_document_url, business_registration_document_url, offers_layby,
-            offers_financing, provides_delivery
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, 'pending', NULL, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          uid, email, fullLegalName, institution || '', sellerType, studentNumber || '', whatsappNumber,
-          businessName, whatToSell, businessDescription, identityDocumentUrl, agreedToRules ? 1 : 0,
-          sellerType, studentNumber || null, identityDocumentType, identityDocumentUrl,
-          studentIdDocumentUrl || null, businessRegistrationDocumentUrl || null,
-          offersLayby ? 1 : 0, offersFinancing ? 1 : 0, providesDelivery ? 1 : 0,
-        );
-
-        const applicationRow = db.prepare(`SELECT * FROM seller_applications WHERE applicant_uid = ? ORDER BY id DESC LIMIT 1`).get(uid);
-        return res.json({ application: normalizeSellerApplication(applicationRow) });
+      if (!isApplicationPayload(req.body)) {
+        return res.status(410).json({ error: "Direct seller activation is no longer available. Please submit a seller application." });
       }
 
-      // Legacy direct seller activation path is preserved for existing integrations.
+      const sellerType = typeof req.body?.seller_type === "string" ? req.body.seller_type.trim() as SellerType : "";
+      const fullLegalName = typeof req.body?.full_legal_name === "string" ? req.body.full_legal_name.trim() : "";
+      const institution = typeof req.body?.institution === "string" ? req.body.institution.trim() : "";
+      const studentNumber = typeof req.body?.student_number === "string" ? req.body.student_number.trim() : "";
+      const whatsappNumber = typeof req.body?.whatsapp_number === "string" ? req.body.whatsapp_number.trim() : "";
       const businessName = typeof req.body?.business_name === "string" ? req.body.business_name.trim() : "";
-      const university = typeof req.body?.university === "string" ? req.body.university.trim() : "";
-      const bio = typeof req.body?.bio === "string" ? req.body.bio.trim() : "";
+      const whatToSell = typeof req.body?.what_to_sell === "string" ? req.body.what_to_sell.trim() : "";
+      const businessDescription = typeof req.body?.business_description === "string" ? req.body.business_description.trim() : "";
+      const identityDocumentType = typeof req.body?.identity_document_type === "string" ? req.body.identity_document_type.trim() as IdentityDocumentType : "";
+      const identityDocumentUrl = typeof req.body?.identity_document_url === "string" ? req.body.identity_document_url.trim() : "";
+      const studentIdDocumentUrl = typeof req.body?.student_id_document_url === "string" ? req.body.student_id_document_url.trim() : "";
+      const businessRegistrationDocumentUrl = typeof req.body?.business_registration_document_url === "string" ? req.body.business_registration_document_url.trim() : "";
+      const offersLayby = req.body?.offers_layby === true;
+      const offersFinancing = req.body?.offers_financing === true;
+      const providesDelivery = req.body?.provides_delivery === true;
+      const agreedToRules = req.body?.agreed_to_rules === true || req.body?.agreed_to_rules === 1 || req.body?.agreed_to_rules === "1";
+
+      if (!["student", "public", "business"].includes(sellerType)) return res.status(400).json({ error: "Please select a valid seller type." });
+      if (!fullLegalName) return res.status(400).json({ error: "Full legal name is required." });
+      if (!whatsappNumber) return res.status(400).json({ error: "Phone / WhatsApp number is required." });
+      if (!businessName) return res.status(400).json({ error: "Seller / business name is required." });
+      if (!whatToSell) return res.status(400).json({ error: "Please state what products or services you sell." });
+      if (!businessDescription) return res.status(400).json({ error: "A brief description of your products or services is required." });
+      if (!["national_id", "passport"].includes(identityDocumentType)) return res.status(400).json({ error: "Please select National ID or Passport." });
+      if (!identityDocumentUrl) return res.status(400).json({ error: "National ID or Passport is required." });
+      if (sellerType === "student" && (!institution || !studentNumber || !studentIdDocumentUrl)) return res.status(400).json({ error: "Student sellers must provide institution, student number, and Student ID." });
+      if (sellerType === "business" && !businessRegistrationDocumentUrl) return res.status(400).json({ error: "Business applicants must provide proof of business registration." });
+      if (!agreedToRules) return res.status(400).json({ error: "You must agree to the seller rules before submitting." });
 
       db.prepare(`
         INSERT INTO sellers (uid, email, business_name, university, bio, is_verified, is_seller)
-        VALUES (?, ?, ?, ?, ?, ?, 1)
+        VALUES (?, ?, ?, ?, ?, ?, 0)
         ON CONFLICT(uid) DO UPDATE SET
           email = excluded.email,
           business_name = COALESCE(excluded.business_name, sellers.business_name),
-          university = COALESCE(excluded.university, sellers.university),
+          university = CASE WHEN excluded.university IS NULL OR excluded.university = '' THEN sellers.university ELSE excluded.university END,
           bio = COALESCE(excluded.bio, sellers.bio),
-          is_verified = CASE WHEN excluded.is_verified = 1 THEN 1 ELSE sellers.is_verified END,
-          is_seller = 1
-      `).run(uid, email, businessName || null, university || null, bio || null, req.user?.email_verified ? 1 : 0);
+          is_verified = CASE WHEN excluded.is_verified = 1 THEN 1 ELSE sellers.is_verified END
+      `).run(uid, email, businessName, institution || null, businessDescription, req.user?.email_verified ? 1 : 0);
 
-      const profileRow = db.prepare(`SELECT uid, business_name, business_logo, university, bio, is_verified, is_seller, join_date, profile_views FROM sellers WHERE uid = ? LIMIT 1`).get(uid);
-      return res.json({ profile: normalizeSellerApplication(profileRow) });
+      db.prepare(`
+        INSERT INTO seller_applications (
+          applicant_uid, applicant_email, full_legal_name, institution, applicant_type,
+          institution_id_number, whatsapp_number, business_name, what_to_sell, business_description,
+          reason_for_applying, proof_document_url, agreed_to_rules, status, reviewed_at, updated_at,
+          seller_type, student_number, identity_document_type, identity_document_url,
+          student_id_document_url, business_registration_document_url, offers_layby,
+          offers_financing, provides_delivery
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, 'pending', NULL, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        uid, email, fullLegalName, institution || '', sellerType, studentNumber || '', whatsappNumber,
+        businessName, whatToSell, businessDescription, identityDocumentUrl, agreedToRules ? 1 : 0,
+        sellerType, studentNumber || null, identityDocumentType, identityDocumentUrl,
+        studentIdDocumentUrl || null, businessRegistrationDocumentUrl || null,
+        offersLayby ? 1 : 0, offersFinancing ? 1 : 0, providesDelivery ? 1 : 0,
+      );
+
+      const applicationRow = db.prepare(`SELECT * FROM seller_applications WHERE applicant_uid = ? ORDER BY id DESC LIMIT 1`).get(uid);
+      return res.json({ application: normalizeSellerApplication(applicationRow) });
     } catch (error) {
       console.error("Failed to create seller application", error);
       return res.status(500).json({ error: "Failed to submit seller application" });
