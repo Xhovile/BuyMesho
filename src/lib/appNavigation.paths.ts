@@ -60,7 +60,7 @@ export const DISPUTES_PATH = "/payments/disputes";
 export const BUYER_PAYMENTS_PATH = "/buyer-payments";
 export const CART_PATH = "/cart";
 export const ORDER_TRACKING_BASE_PATH = "/orders";
-export const MARKET_CHIP_PATHS: Record<HeaderChip, string> = { All: EXPLORE_PATH, Deals: `${EXPLORE_PATH}/deals`, "Lay-by": `${EXPLORE_PATH}/lay-by`, Events: `${EXPLORE_PATH}/events`, Wholesale: `${EXPLORE_PATH}/wholesale`, Sellers: `${EXPLORE_PATH}/sellers`, Innovation: `${EXPLORE_PATH}/innovation`, Accommodation: `${EXPLORE_PATH}/accommodation`, Lending: `${EXPLORE_PATH}/lending` };
+export const MARKET_CHIP_PATHS: Partial<Record<HeaderChip, string>> = { All: EXPLORE_PATH, Deals: `${EXPLORE_PATH}/deals`, "Lay-by": `${EXPLORE_PATH}/lay-by`, Events: `${EXPLORE_PATH}/events`, Wholesale: `${EXPLORE_PATH}/wholesale`, Sellers: `${EXPLORE_PATH}/sellers`, Innovation: `${EXPLORE_PATH}/innovation`, Accommodation: `${EXPLORE_PATH}/accommodation`, Lending: `${EXPLORE_PATH}/lending` };
 export const APP_HISTORY_STATE_KEY = "__buymesho";
 export const AUTH_RETURN_PATH_STORAGE_KEY = "__buymesho_auth_return_path";
 export const markAppHistoryState = () => ({ [APP_HISTORY_STATE_KEY]: true });
