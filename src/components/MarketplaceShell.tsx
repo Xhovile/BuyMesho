@@ -123,60 +123,15 @@ export default function MarketplaceShell({ children }: MarketplaceShellProps) {
             onChipChange={navigateToMarketChip}
           />
 
-          {isCategoryRoute ? (
-            <style>{`
-              .buymesho-category-route .buymesho-category-hero-badge {
-                display: none !important;
-              }
-
-              .buymesho-category-route .buymesho-category-home-button {
-                display: none !important;
-              }
-
-              .buymesho-category-route .buymesho-category-sell-button {
-                display: inline-flex !important;
-                align-items: center;
-                justify-content: center;
-                gap: 0.5rem;
-                border: 0;
-                border-radius: 1rem;
-                background: rgb(24 24 27);
-                padding: 0.75rem 1.25rem;
-                font-size: 0.875rem;
-                font-weight: 800;
-                line-height: 1.25rem;
-                color: white;
-                box-shadow: 0 16px 32px -14px rgba(0,0,0,0.45);
-                transition: transform 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
-              }
-
-              .buymesho-category-route .buymesho-category-sell-button:hover {
-                transform: translateY(-2px);
-                background: rgb(39 39 42);
-                box-shadow: 0 20px 40px -14px rgba(0,0,0,0.5);
-              }
-
-              .buymesho-category-route .buymesho-category-sell-button:active {
-                transform: translateY(0);
-              }
-
-              .buymesho-category-route .buymesho-category-sell-button svg {
-                display: none;
-              }
-
-              .buymesho-category-route .buymesho-category-sell-button::before {
-                content: "+";
-                display: inline-block;
-                font-size: 1.125rem;
-                font-weight: 400;
-                line-height: 1;
-              }
-            `}</style>
-          ) : null}
+          <style>{`
+            .buymesho-marketplace-shell .buymesho-marketplace-route-content > .min-h-screen > nav {
+              display: none !important;
+            }
+          `}</style>
         </>
       ) : null}
 
-      <div className={`${isMarketplace ? "buymesho-marketplace-route-content" : ""}${isCategoryRoute ? " buymesho-category-route" : ""}`}>
+      <div className={isMarketplace ? "buymesho-marketplace-route-content" : undefined}>
         {isCategoryRoute ? <CategoryPage key={location.search} /> : children}
       </div>
     </div>
