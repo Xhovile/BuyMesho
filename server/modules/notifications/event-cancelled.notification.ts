@@ -16,19 +16,31 @@ type EventCancelledInput = {
   eventUrl?: string;
 };
 
-export async function notifyEventCancelled(input: EventCancelledInput, deps: { send?: typeof sendEmail } = {}): Promise<boolean> {
+type NotificationDependencies = {
+  send?: typeof sendEmail;
+  claim?: (key: string) => boolean;
+  markSent?: (key: string) => void;
+  release?: (key: string) => void;
+};
+
+export async function notifyEventCancelled(input: EventCancelledInput, deps: NotificationDependencies = {}): Promise<boolean> {
   const email = input.email.trim();
   const eventId = input.eventId.trim();
-  if (!email || !eventId || !input.eventTitle.trim()) return false;
+  const eventTitle = input.eventTitle.trim();
+  if (!email || !eventId || !eventTitle) return false;
 
   const dedupeKey = `${eventId}:${email.toLowerCase()}`;
-  if (!claimEmailNotification("event_cancelled", dedupeKey)) return false;
+  const claim = deps.claim ?? ((key: string) => claimEmailNotification("event_cancelled", key));
+  const markSent = deps.markSent ?? ((key: string) => markEmailNotificationSent("event_cancelled", key));
+  const release = deps.release ?? ((key: string) => releaseEmailNotification("event_cancelled", key));
+
+  if (!claim(dedupeKey)) return false;
 
   try {
     const eventUrl = input.eventUrl?.trim() || `https://buymesho.app/events/${encodeURIComponent(eventId)}`;
     const { text, html } = renderEventCancelledEmail({
       recipientName: input.recipientName?.trim() || "there",
-      eventTitle: input.eventTitle.trim(),
+      eventTitle,
       eventDate: input.eventDate ?? null,
       startTime: input.startTime ?? null,
       venue: input.venue ?? null,
@@ -41,15 +53,15 @@ export async function notifyEventCancelled(input: EventCancelledInput, deps: { s
     await (deps.send ?? sendEmail)({
       sender: "transactional",
       to: { email, name: input.recipientName?.trim() || "there" },
-      subject: `Event cancelled: ${input.eventTitle.trim()}`,
+      subject: `Event cancelled: ${eventTitle}`,
       text,
       html,
     });
 
-    markEmailNotificationSent("event_cancelled", dedupeKey);
+    markSent(dedupeKey);
     return true;
   } catch (error) {
-    releaseEmailNotification("event_cancelled", dedupeKey);
+    release(dedupeKey);
     throw error;
   }
 }
