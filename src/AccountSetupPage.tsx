@@ -18,7 +18,6 @@ type FormState = {
   university: string;
   campus: string;
   studentId: string;
-  studentNumber: string;
   studentEmail: string;
   addressLine: string;
   area: string;
@@ -34,7 +33,7 @@ const SIGNUP_PROFILE_DRAFT_KEY = "__buymesho_signup_profile_draft";
 
 const emptyForm: FormState = {
   firstName: "", surname: "", otherNames: "", userType: "", phone: "", university: "", campus: "",
-  studentId: "", studentNumber: "", studentEmail: "", addressLine: "", area: "", townOrDistrict: "", landmark: "", profilePicture: "",
+  studentId: "", studentEmail: "", addressLine: "", area: "", townOrDistrict: "", landmark: "", profilePicture: "",
 };
 
 function normalize(value: unknown): string {
@@ -77,13 +76,12 @@ export default function AccountSetupPage() {
           university: normalize(profile?.university),
           campus: normalize(profile?.campus),
           studentId: normalize(profile?.student_id),
-          studentNumber: normalize(profile?.student_number),
           studentEmail: normalize(profile?.student_email),
           addressLine: normalize(profile?.buyer_details?.addressLine),
           area: normalize(profile?.buyer_details?.area),
           townOrDistrict: normalize(profile?.buyer_details?.townOrDistrict),
           landmark: normalize(profile?.buyer_details?.landmark),
-          profilePicture: normalize(profile?.profile_picture),
+          profilePicture: normalize(profile?.profile_picture) || normalize(firebaseUser.photoURL),
         });
       })
       .catch(() => {
@@ -92,6 +90,7 @@ export default function AccountSetupPage() {
           firstName: prev.firstName || normalize(signupDraft.firstName),
           surname: prev.surname || normalize(signupDraft.surname),
           otherNames: prev.otherNames || normalize(signupDraft.otherNames),
+          profilePicture: prev.profilePicture || normalize(firebaseUser.photoURL),
         }));
         setFeedback({ open: true, type: "error", title: "Could not load your profile", message: "Your signup details are still available. Please complete the remaining fields and try again." });
       })
@@ -118,8 +117,8 @@ export default function AccountSetupPage() {
       setFeedback({ open: true, type: "error", title: "Delivery location required", message: "Enter your town or district so BuyMesho can understand your delivery area." });
       return;
     }
-    if (isStudent && (!form.university.trim() || !form.studentNumber.trim() || !form.studentEmail.trim())) {
-      setFeedback({ open: true, type: "error", title: "Student information required", message: "Students must provide their institution, student number, and student email." });
+    if (isStudent && (!form.university.trim() || !form.studentId.trim() || !form.studentEmail.trim())) {
+      setFeedback({ open: true, type: "error", title: "Student information required", message: "Students must provide their institution, Student ID, and student email." });
       return;
     }
 
@@ -147,8 +146,7 @@ export default function AccountSetupPage() {
           user_type: form.userType,
           university: isStudent ? form.university.trim() : null,
           campus: isStudent ? form.campus.trim() || null : null,
-          student_id: isStudent ? form.studentId.trim() || null : null,
-          student_number: isStudent ? form.studentNumber.trim() : null,
+          student_id: isStudent ? form.studentId.trim() : null,
           student_email: isStudent ? form.studentEmail.trim() : null,
           profile_picture: form.profilePicture.trim() || null,
           buyer_details: buyerDetails,
@@ -183,6 +181,7 @@ export default function AccountSetupPage() {
               <label><span className="mb-2 block text-sm font-medium text-zinc-600">Surname</span><input required autoComplete="family-name" value={form.surname} onChange={(e) => setField("surname", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
               <label className="sm:col-span-2"><span className="mb-2 block text-sm font-medium text-zinc-600">Other names <span className="text-zinc-400">(optional)</span></span><input autoComplete="additional-name" value={form.otherNames} onChange={(e) => setField("otherNames", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
               <label><span className="mb-2 block text-sm font-medium text-zinc-600">Phone number</span><input required autoComplete="tel" value={form.phone} onChange={(e) => setField("phone", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
+              {form.profilePicture ? <div className="flex items-center gap-3 sm:justify-end"><img src={form.profilePicture} alt="Profile" className="h-12 w-12 rounded-full object-cover border border-zinc-200" /><div><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Profile photo</p><p className="text-xs text-zinc-500">Imported from your sign-in profile.</p></div></div> : null}
             </div>
           </section>
 
@@ -203,10 +202,7 @@ export default function AccountSetupPage() {
               <div className="space-y-5">
                 <FormDropdown label="Institution / University" value={form.university} options={UNIVERSITIES} onChange={(value) => setField("university", value)} />
                 <label className="block"><span className="mb-2 block text-sm font-medium text-zinc-600">Campus <span className="text-zinc-400">(optional)</span></span><input value={form.campus} onChange={(e) => setField("campus", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label><span className="mb-2 block text-sm font-medium text-zinc-600">Student number</span><input required={isStudent} value={form.studentNumber} onChange={(e) => setField("studentNumber", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
-                  <label><span className="mb-2 block text-sm font-medium text-zinc-600">Student ID <span className="text-zinc-400">(optional)</span></span><input value={form.studentId} onChange={(e) => setField("studentId", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
-                </div>
+                <label className="block"><span className="mb-2 block text-sm font-medium text-zinc-600">Student ID</span><input required={isStudent} value={form.studentId} onChange={(e) => setField("studentId", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
                 <label className="block"><span className="mb-2 block text-sm font-medium text-zinc-600">Student email</span><input required={isStudent} type="email" value={form.studentEmail} onChange={(e) => setField("studentEmail", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
               </div>
             </section>
@@ -221,10 +217,11 @@ export default function AccountSetupPage() {
             </div>
           </section>
 
-          <div className="sticky bottom-4 z-20 pt-2"><div className="rounded-[1.5rem] border border-white/80 bg-white/95 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.14)] backdrop-blur"><button type="submit" disabled={saving || !form.userType} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60">{saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Finish setup"}</button></div></div>
+          <div className="sticky bottom-4 z-20 pt-2"><div className="rounded-[1.5rem] border border-white/80 bg-white/95 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.14)] backdrop-blur"><button type="submit" disabled={saving || !form.userType} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50">{saving ? "Saving..." : "Finish setup"}</button></div></div>
         </form>
       )}
-      {feedback && <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} onClose={() => setFeedback(null)} />}
+
+      {feedback ? <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} onClose={() => setFeedback(null)} /> : null}
     </AccountPageShell>
   );
 }
