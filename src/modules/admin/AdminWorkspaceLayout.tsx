@@ -24,7 +24,6 @@ export default function AdminWorkspaceLayout({
   const isAuditLog = pathname.includes("audit-log") || pathname.includes("audit");
   const showEventTicketSearch =
     pathname === "/admin/events" ||
-    pathname === "/admin/payments" ||
     pathname === "/admin/transaction-inspector";
 
   return (
