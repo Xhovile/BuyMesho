@@ -17,7 +17,6 @@ export default function SellerPayoutsPage() {
   const view = new URLSearchParams(window.location.search).get("view");
 
   const {
-    firebaseUser,
     profileLoading,
     isSeller,
     sellerId,
@@ -58,17 +57,18 @@ export default function SellerPayoutsPage() {
   } = useSellerPayoutsPage();
 
   const hasCachedPayoutData = Boolean(sellerId && getSellerCache(`payouts:${sellerId}`));
+  const isAuthenticated = Boolean(sellerId);
 
-  if (!firebaseUser && !profileLoading) {
+  if (!isAuthenticated && !profileLoading) {
     return <SellerPayoutsAccessGate loading={false} isSeller={false} isAuthenticated={false} onBack={() => navigateToPath(EXPLORE_PATH)} />;
   }
 
   if (profileLoading || (loading && !hasCachedPayoutData)) {
-    return <SellerPayoutsAccessGate loading={profileLoading || loading} isSeller={isSeller} isAuthenticated={Boolean(firebaseUser)} onBack={() => navigateToPath(EXPLORE_PATH)} />;
+    return <SellerPayoutsAccessGate loading={profileLoading || loading} isSeller={isSeller} isAuthenticated={isAuthenticated} onBack={() => navigateToPath(EXPLORE_PATH)} />;
   }
 
   if (!isSeller) {
-    return <SellerPayoutsAccessGate loading={false} isSeller={false} isAuthenticated={Boolean(firebaseUser)} onBack={() => navigateToPath(EXPLORE_PATH)} />;
+    return <SellerPayoutsAccessGate loading={false} isSeller={false} isAuthenticated={isAuthenticated} onBack={() => navigateToPath(EXPLORE_PATH)} />;
   }
 
   if (!view || view === "hub") return <SellerHubPage />;
