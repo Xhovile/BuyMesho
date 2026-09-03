@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { query, withTransaction } from '../../postgres.js';
 import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import { serverOrderService } from '../../modules/orders/order.service.js';
+import { notifyOrderDisputed } from '../../modules/notifications/order-disputed.notification.js';
 import { assertAllowedDisputeTransition, type DisputeStatus } from './disputeState.js';
 import {
   assertOrderAccessAsync,
@@ -101,6 +102,27 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
 
         return { created: true, dispute: created };
       });
+
+      if (result.created) {
+        try {
+          const orderResult = await query<{ buyer_id?: string; seller_id?: string }>(
+            'SELECT buyer_id, seller_id FROM orders WHERE id = $1 LIMIT 1',
+            [resolvedOrderId],
+          );
+          const order = orderResult.rows[0];
+          if (order?.buyer_id && order.seller_id) {
+            await notifyOrderDisputed({
+              orderId: resolvedOrderId,
+              disputeId: String(result.dispute.id),
+              buyerId: String(order.buyer_id),
+              sellerId: String(order.seller_id),
+              reason: String(result.dispute.reason ?? reason.trim()),
+            });
+          }
+        } catch (emailError) {
+          console.warn('Failed to send disputed-order notification:', emailError);
+        }
+      }
 
       return res.status(result.created ? 201 : 200).json({
         id: result.dispute.id,

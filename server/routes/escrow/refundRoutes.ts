@@ -2,6 +2,7 @@ import express, { type RequestHandler } from 'express';
 import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import { orderRepository } from '../../modules/orders/order.repository.js';
 import { serverOrderService } from '../../modules/orders/order.service.js';
+import { notifyOrderRefunded } from '../../modules/notifications/order-refunded.notification.js';
 import { getPaymentDb } from '../../postgresCompat.js';
 import { escrowActionLimiter, jsonError } from './shared.js';
 
@@ -56,6 +57,16 @@ export function createRefundRouter(requireAuth: RequestHandler): express.Router 
       if (!refund) return res.status(404).json({ error: 'Escrow not found' });
 
       const updatedOrder = serverOrderService.setStatus(req.params.orderId, 'refunded');
+
+      try {
+        await notifyOrderRefunded({
+          order: updatedOrder ?? order,
+          reason,
+        });
+      } catch (emailError) {
+        console.warn('Failed to send refunded-order notification:', emailError);
+      }
+
       return res.status(200).json({
         escrow: refund.escrow,
         refundEntry: refund.refundEntry,
