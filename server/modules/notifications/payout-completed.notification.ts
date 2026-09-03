@@ -15,14 +15,29 @@ type PayoutCompletedInput = {
   status: string;
 };
 
-export async function notifyPayoutCompleted(input: PayoutCompletedInput, deps: { send?: Send } = {}) {
+type NotificationDependencies = {
+  send?: Send;
+  notificationKey?: string;
+  claim?: (key: string) => boolean;
+  markSent?: (key: string) => void;
+  release?: (key: string) => void;
+};
+
+export async function notifyPayoutCompleted(
+  input: PayoutCompletedInput,
+  deps: NotificationDependencies = {},
+): Promise<boolean> {
   if (input.status !== "paid") return false;
 
   const email = input.email.trim();
   if (!email || !input.payoutId.trim()) return false;
 
-  const dedupeKey = `${input.payoutId.trim()}:${email.toLowerCase()}`;
-  if (!claimEmailNotification("payout_completed", dedupeKey)) return false;
+  const key = deps.notificationKey ?? `${input.payoutId.trim()}:${email.toLowerCase()}`;
+  const claim = deps.claim ?? ((dedupeKey: string) => claimEmailNotification("payout_completed", dedupeKey));
+  const markSent = deps.markSent ?? ((dedupeKey: string) => markEmailNotificationSent("payout_completed", dedupeKey));
+  const release = deps.release ?? ((dedupeKey: string) => releaseEmailNotification("payout_completed", dedupeKey));
+
+  if (!claim(key)) return false;
 
   try {
     const { text, html } = renderPayoutCompletedEmail({
@@ -38,10 +53,10 @@ export async function notifyPayoutCompleted(input: PayoutCompletedInput, deps: {
       html,
     });
 
-    markEmailNotificationSent("payout_completed", dedupeKey);
+    markSent(key);
     return true;
   } catch (error) {
-    releaseEmailNotification("payout_completed", dedupeKey);
+    release(key);
     throw error;
   }
 }
