@@ -42,7 +42,7 @@ test("rejected seller application notification suppresses duplicates and release
   let releaseCount = 0;
   let shouldFail = true;
 
-  const deps = {
+  const deps: Parameters<typeof notifySellerApplicationRejected>[1] = {
     claim: (key: string) => {
       if (claimed.has(key)) return false;
       claimed.add(key);
@@ -53,7 +53,7 @@ test("rejected seller application notification suppresses duplicates and release
       claimed.delete(key);
       releaseCount += 1;
     },
-    send: async (message: Record<string, unknown>) => {
+    send: async (message) => {
       emailCalls.push(message);
       if (shouldFail) {
         shouldFail = false;
