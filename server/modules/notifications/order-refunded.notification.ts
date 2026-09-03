@@ -12,6 +12,13 @@ import {
 type RecipientRole = "buyer" | "seller";
 type SendEmail = typeof sendEmail;
 
+type DeliveryDependencies = {
+  send?: SendEmail;
+  claim?: (notificationType: string, dedupeKey: string) => boolean;
+  markSent?: (notificationType: string, dedupeKey: string) => void;
+  release?: (notificationType: string, dedupeKey: string) => void;
+};
+
 export type OrderRefundedInput = {
   order: StoredOrder;
   reason: string;
@@ -33,7 +40,7 @@ async function getSellerBusinessName(sellerUid: string): Promise<string | null> 
 async function sendOrderRefundedEmail(
   input: OrderRefundedInput,
   role: RecipientRole,
-  dependencies: { send?: SendEmail } = {},
+  dependencies: DeliveryDependencies,
 ): Promise<boolean> {
   const { order } = input;
   const recipientId = role === "buyer" ? order.buyerId : order.sellerId;
@@ -43,16 +50,15 @@ async function sendOrderRefundedEmail(
 
   const sellerBusinessName = (await getSellerBusinessName(order.sellerId)) || "BuyMesho seller";
   const buyerName = order.buyerDetails?.fullName?.trim() || "BuyMesho customer";
-  const recipientName = role === "buyer"
-    ? buyerName
-    : sellerBusinessName;
-  const counterpartyName = role === "buyer"
-    ? sellerBusinessName
-    : buyerName;
+  const recipientName = role === "buyer" ? buyerName : sellerBusinessName;
+  const counterpartyName = role === "buyer" ? sellerBusinessName : buyerName;
   const actionUrl = `https://buymesho.app/orders/${encodeURIComponent(order.id)}`;
   const dedupeKey = `${order.id}:${role}`;
-  const claim = dependenciesClaim(role, dedupeKey);
-  if (!claim()) return false;
+  const claim = dependencies.claim ?? claimEmailNotification;
+  const markSent = dependencies.markSent ?? markEmailNotificationSent;
+  const release = dependencies.release ?? releaseEmailNotification;
+
+  if (!claim("order_refunded", dedupeKey)) return false;
 
   try {
     const { text, html } = renderOrderRefundedEmail({
@@ -73,21 +79,17 @@ async function sendOrderRefundedEmail(
       text,
       html,
     });
-    markEmailNotificationSent("order_refunded", dedupeKey);
+    markSent("order_refunded", dedupeKey);
     return true;
   } catch (error) {
-    releaseEmailNotification("order_refunded", dedupeKey);
+    release("order_refunded", dedupeKey);
     throw error;
   }
 }
 
-function dependenciesClaim(_role: RecipientRole, dedupeKey: string): () => boolean {
-  return () => claimEmailNotification("order_refunded", dedupeKey);
-}
-
 export async function notifyOrderRefunded(
   input: OrderRefundedInput,
-  dependencies: { send?: SendEmail } = {},
+  dependencies: DeliveryDependencies = {},
 ): Promise<void> {
   await Promise.allSettled([
     sendOrderRefundedEmail(input, "buyer", dependencies),
