@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { notifyTicketDelivery, notifyTicketPurchaseConfirmation } from "../event-ticket.notification.js";
 import { notifyPayoutCompleted } from "../payout-completed.notification.js";
+import { notifyEventCancelled } from "../event-cancelled.notification.js";
 
 const ticket = { email: "buyer@example.com", buyerName: "Ada Buyer", eventName: "Campus Concert", ticketType: "VIP", quantity: 1, orderReference: "ord-event-1", amount: 5000, currency: "MWK", eventDate: "2026-10-01", startTime: "18:00", venue: "Main Hall", location: "Campus", ticketId: "ticket-1", accessUrl: "https://buymesho.app/orders/ord-event-1", orderStatus: "paid" };
 
@@ -207,4 +208,59 @@ test("payout completed email does not send for non-paid statuses", async () => {
     assert.equal(await notifyPayoutCompleted({ ...input, status }, deps), false);
   }
   assert.equal(messages.length, 0);
+});
+
+test("event cancellation notification sends once with only the recipient's tickets", async () => {
+  const messages: any[] = [];
+  const deps = notificationDeps(messages);
+  const input = {
+    email: "buyer@example.com",
+    recipientName: "Ada Buyer",
+    eventId: "event-9",
+    eventTitle: "Campus Concert",
+    eventDate: "2026-10-01",
+    startTime: "18:00",
+    venue: "Main Hall",
+    location: "Campus",
+    reason: "The organizer cancelled the event.",
+    tickets: [
+      { ticketId: "ticket-1", ticketType: "VIP" },
+      { ticketId: "ticket-2", ticketType: "General" },
+    ],
+  };
+
+  assert.equal(await notifyEventCancelled(input, deps), true);
+  assert.equal(await notifyEventCancelled(input, deps), false);
+  assert.equal(messages.length, 1);
+  assert.equal(messages[0].sender, "transactional");
+  assert.deepEqual(messages[0].to, { email: "buyer@example.com", name: "Ada Buyer" });
+  assert.equal(messages[0].subject, "Event cancelled: Campus Concert");
+  assert.match(messages[0].text, /event-9|Campus Concert/);
+  assert.match(messages[0].text, /ticket-1/);
+  assert.match(messages[0].text, /ticket-2/);
+  assert.match(messages[0].text, /The organizer cancelled the event/);
+});
+
+test("event cancellation notification releases the claim when delivery fails so the recipient can be retried", async () => {
+  const claimed = new Set<string>();
+  let attempts = 0;
+  const deps = {
+    claim: (key: string) => {
+      if (claimed.has(key)) return false;
+      claimed.add(key);
+      return true;
+    },
+    markSent: () => undefined,
+    release: (key: string) => claimed.delete(key),
+    send: async () => {
+      attempts += 1;
+      if (attempts === 1) throw new Error("temporary provider failure");
+      return { messageId: "cancellation-retry-success" };
+    },
+  };
+  const input = { email: "buyer@example.com", recipientName: "Ada Buyer", eventId: "event-10", eventTitle: "Campus Concert", tickets: [{ ticketId: "ticket-3", ticketType: "VIP" }] };
+
+  await assert.rejects(() => notifyEventCancelled(input, deps), /temporary provider failure/);
+  assert.equal(await notifyEventCancelled(input, deps), true);
+  assert.equal(attempts, 2);
 });
