@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { paychanguProvider } from '../paychangu.provider.js';
 import { clearPaymentState, createApp, mockPayChanguFetch, seedOrder, seedStoredPayment, countEscrowsForOrder } from './paychangu.test.helpers.js';
-import { orderRepository, paymentRepository } from './paychangu.test.helpers.js';
+import { escrowRepository, orderRepository, paymentRepository } from './paychangu.test.helpers.js';
 
 test('provider: PayChangu initialization formats object validation messages for buyers', async () => {
   const originalFetch = global.fetch;
@@ -47,7 +47,40 @@ test('integration: PayChangu verification rejects overpaid payments', async () =
     assert.match(verifyResult.failureReason ?? '', /exactly match order total/i);
     assert.equal(orderRepository.findById('order_overpaid_1')?.status, 'pending_payment');
     assert.equal(paymentRepository.findByReference('txref-overpaid-1')?.verified, false);
+    assert.equal(paymentRepository.findByReference('txref-overpaid-1')?.status, 'pending');
     assert.equal(countEscrowsForOrder('order_overpaid_1'), 0);
+    assert.equal(escrowRepository.findByOrderId('order_overpaid_1'), undefined);
+  } finally {
+    global.fetch = originalFetch;
+    server.close();
+    clearPaymentState();
+  }
+});
+
+test('integration: PayChangu verification settles an exact payment into escrow using the order total', async () => {
+  clearPaymentState();
+  const app = createApp();
+  const originalFetch = global.fetch;
+  global.fetch = mockPayChanguFetch(originalFetch, 'txref-exact-amount-1', 'success', 1000, 'MWK');
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
+  const server = app.listen(0);
+  const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  try {
+    seedOrder('order_exact_amount_1', 'txref-exact-amount-1');
+    seedStoredPayment('order_exact_amount_1', 'txref-exact-amount-1');
+
+    const verifyRes = await fetch(`${base}/api/payments/paychangu/verify/txref-exact-amount-1`);
+    assert.equal(verifyRes.status, 200);
+    const verifyResult = await verifyRes.json() as { verified?: boolean };
+    assert.equal(verifyResult.verified, true);
+    assert.equal(orderRepository.findById('order_exact_amount_1')?.status, 'in_escrow');
+    assert.equal(paymentRepository.findByReference('txref-exact-amount-1')?.verified, true);
+    assert.equal(paymentRepository.findByReference('txref-exact-amount-1')?.status, 'captured');
+    assert.equal(countEscrowsForOrder('order_exact_amount_1'), 1);
+    const escrow = escrowRepository.findByOrderId('order_exact_amount_1');
+    assert.ok(escrow);
+    assert.equal(escrow.balanceAmount, 1000);
+    assert.equal(escrow.balanceCurrency, 'MWK');
   } finally {
     global.fetch = originalFetch;
     server.close();
@@ -80,7 +113,9 @@ test('integration: PayChangu verification rejects underpaid, wrong-currency, and
       assert.match(verifyResult.failureReason ?? '', scenario.expectedReason);
       assert.equal(orderRepository.findById(orderId)?.status, 'pending_payment');
       assert.equal(countEscrowsForOrder(orderId), 0);
+      assert.equal(escrowRepository.findByOrderId(orderId), undefined);
       assert.equal(paymentRepository.findByReference(scenario.reference)?.verified, false);
+      assert.equal(paymentRepository.findByReference(scenario.reference)?.status, 'pending');
     } finally {
       global.fetch = originalFetch;
       server.close();
