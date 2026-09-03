@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import { createServer as createViteServer, type ViteDevServer } from "vite";
 import { createApp } from "./app.js";
 import { runMigrations } from "./db/migrations/index.js";
+import { postgresDb } from "./db.js";
 import { ensurePaymentWebhookEventSchema } from "./modules/payments/payment.webhook.schema.js";
 import { registerRoutes } from "./routes/index.js";
 import { registerMarketplaceRoutes } from "./routes/marketplace.routes.js";
@@ -86,7 +87,8 @@ async function serveSpaShell(req: express.Request, res: express.Response, vite: 
 
 export async function startServer() {
   const app = createApp();
-  const db: any = runMigrations();
+  runMigrations();
+  const db = postgresDb;
 
   // Normalize public URLs before serving the SPA so search engines and
   // browsers receive a real permanent redirect for legacy homepage URLs.
@@ -158,6 +160,14 @@ export async function startServer() {
   // Temporary Validator diagnostic endpoint. It is registered immediately
   // after registerRoutes() so the live Render process can prove that this
   // backend is the process serving the Validator API.
+  app.get("/api/validator/health", (_req, res) => {
+    res.status(200).json({
+      ok: true,
+      service: "buymesho-validator-api",
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   app.get("/api/validator/health", (_req, res) => {
     res.status(200).json({
       ok: true,
