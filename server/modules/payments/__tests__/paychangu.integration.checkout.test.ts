@@ -129,3 +129,74 @@ test('integration: PayChangu-prefixed references activate escrow after verificat
     clearPaymentState();
   }
 });
+
+test('integration: refunded escrow cannot be released afterward', async () => {
+  clearPaymentState();
+  const app = createApp();
+  const server = app.listen(0);
+  const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  try {
+    seedOrder('order_refund_release_guard_1', 'txref-refund-release-1', 'in_escrow');
+
+    const refundResponse = await fetch(`${base}/api/escrow/order_refund_release_guard_1/refund`, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer admin',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ reason: 'Regression test refund' }),
+    });
+    assert.equal(refundResponse.status, 200);
+    assert.equal(orderRepository.findById('order_refund_release_guard_1')?.status, 'refunded');
+    assert.equal(refs.escrowRepository.findByOrderId('order_refund_release_guard_1')?.state, 'refunded');
+
+    const releaseResponse = await fetch(`${base}/api/escrow/order_refund_release_guard_1/release`, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer admin',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ reference: 'release-after-refund-regression' }),
+    });
+    assert.notEqual(releaseResponse.status, 200);
+    assert.equal(refs.escrowRepository.findByOrderId('order_refund_release_guard_1')?.state, 'refunded');
+  } finally {
+    server.close();
+    clearPaymentState();
+  }
+});
+
+test('integration: released escrow cannot be refunded afterward', async () => {
+  clearPaymentState();
+  const app = createApp();
+  const server = app.listen(0);
+  const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  try {
+    seedOrder('order_release_refund_guard_1', 'txref-release-refund-1', 'in_escrow');
+
+    const releaseResponse = await fetch(`${base}/api/escrow/order_release_refund_guard_1/release`, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer admin',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ reference: 'release-before-refund-regression' }),
+    });
+    assert.equal(releaseResponse.status, 200);
+    assert.equal(refs.escrowRepository.findByOrderId('order_release_refund_guard_1')?.state, 'released');
+
+    const refundResponse = await fetch(`${base}/api/escrow/order_release_refund_guard_1/refund`, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer admin',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ reason: 'Refund after release regression' }),
+    });
+    assert.notEqual(refundResponse.status, 200);
+    assert.equal(refs.escrowRepository.findByOrderId('order_release_refund_guard_1')?.state, 'released');
+  } finally {
+    server.close();
+    clearPaymentState();
+  }
+});
