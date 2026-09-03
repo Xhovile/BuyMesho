@@ -189,6 +189,7 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
       ON passkey_ceremonies(expires_at);
   `);
 
+  ensureColumn(db, "sellers", "business_name", "TEXT");
   ensureColumn(db, "payments", "status", "TEXT NOT NULL DEFAULT 'pending'");
   ensureColumn(db, "payments", "verified", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "payments", "verification", "TEXT");
