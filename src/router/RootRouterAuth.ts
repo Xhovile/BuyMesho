@@ -20,6 +20,7 @@ type RootRouterAuthGuardProps = {
 };
 
 const SIGNUP_JUST_CREATED_KEY = "__buymesho_signup_just_created";
+const SELLER_AUTH_HANDOFF_ROUTES: AppRoute[] = ["seller_dashboard", "seller_payouts", "my_listings"];
 
 export function useRootRouterAuthGuard({
   authLoading,
@@ -72,7 +73,9 @@ export function useRootRouterAuthGuard({
 
     if (!firebaseUser) {
       if (route === "verify_email") navigateToPath(LOGIN_PATH);
-      if (protectedRoutes.includes(route) || requiresAuth) navigateToLoginWithReturnPath(`${locationPath}${locationSearch}`);
+      if ((protectedRoutes.includes(route) || requiresAuth) && !SELLER_AUTH_HANDOFF_ROUTES.includes(route)) {
+        navigateToLoginWithReturnPath(`${locationPath}${locationSearch}`);
+      }
       return;
     }
 
