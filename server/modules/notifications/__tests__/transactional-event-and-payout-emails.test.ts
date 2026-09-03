@@ -138,16 +138,73 @@ test("issued ticket delivery will not send before the order is successful", asyn
   assert.equal(messages.length, 0);
 });
 
-test("payout completed email sends only when the authoritative payout status is paid", async () => {
+test("payout completed email sends only to the seller when the authoritative payout status is paid", async () => {
   const messages: any[] = [];
   const input = { email: "seller@example.com", sellerName: "Ada's Shop", amount: 1250, currency: "MWK", payoutId: "payout-1", orderReference: "ord-1", completedAt: "2026-10-01T12:00:00Z", status: "paid" };
-  assert.equal(await notifyPayoutCompleted(input, { send: async message => { messages.push(message); return { messageId: "3" }; } }), true);
+  const deps = notificationDeps(messages);
+
+  assert.equal(await notifyPayoutCompleted(input, deps), true);
+  assert.equal(messages.length, 1);
   assert.equal(messages[0].sender, "transactional");
   assert.deepEqual(messages[0].to, { email: "seller@example.com", name: "Ada's Shop" });
   assert.equal(messages[0].subject, "Your BuyMesho payout has been completed");
   assert.match(messages[0].text, /payout-1/);
   assert.match(messages[0].text, /1,250.00 MWK/);
+
+  assert.equal(await notifyPayoutCompleted(input, deps), false);
+  assert.equal(messages.length, 1);
+});
+
+test("payout completed notification releases the claim when delivery fails so the seller can be retried", async () => {
+  let attempts = 0;
+  const deps = {
+    claim: (() => {
+      let claimed = false;
+      return () => {
+        if (claimed) return false;
+        claimed = true;
+        return true;
+      };
+    })(),
+    markSent: () => undefined,
+    release: (() => {
+      let releaseClaim = false;
+      return () => {
+        releaseClaim = true;
+      };
+    })(),
+    send: async () => {
+      attempts += 1;
+      if (attempts === 1) throw new Error("temporary provider failure");
+      return { messageId: "payout-retry-success" };
+    },
+  };
+
+  const input = { email: "seller@example.com", sellerName: "Ada's Shop", amount: 1250, currency: "MWK", payoutId: "payout-2", orderReference: "ord-2", completedAt: "2026-10-01T12:00:00Z", status: "paid" };
+  let claimed = false;
+  const retryDeps = {
+    claim: (key: string) => {
+      if (claimed) return false;
+      claimed = true;
+      return true;
+    },
+    markSent: () => undefined,
+    release: () => { claimed = false; },
+    send: deps.send,
+  };
+
+  await assert.rejects(() => notifyPayoutCompleted(input, retryDeps), /temporary provider failure/);
+  assert.equal(await notifyPayoutCompleted(input, retryDeps), true);
+  assert.equal(attempts, 2);
+});
+
+test("payout completed email does not send for non-paid statuses", async () => {
+  const messages: any[] = [];
+  const input = { email: "seller@example.com", sellerName: "Ada's Shop", amount: 1250, currency: "MWK", payoutId: "payout-3", orderReference: "ord-3", completedAt: "2026-10-01T12:00:00Z", status: "paid" };
+  const deps = notificationDeps(messages);
+
   for (const status of ["pending", "processing", "failed"]) {
-    assert.equal(await notifyPayoutCompleted({ ...input, status }, { send: async () => { throw new Error("must not send"); } }), false);
+    assert.equal(await notifyPayoutCompleted({ ...input, status }, deps), false);
   }
+  assert.equal(messages.length, 0);
 });
