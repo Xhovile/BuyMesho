@@ -53,7 +53,21 @@ function emitEventTicketNotifications(order:ReturnType<typeof orderRepository.fi
   }));
   const firstTicket=ticketRows.find(ticket=>ticket.email);
   if(firstTicket){
-    void notifyTicketPurchaseConfirmation({...firstTicket,quantity:ticketRows.length}).catch(error=>console.warn('[notification] ticket_purchase email delivery failed',error));
+    void notifyTicketPurchaseConfirmation({
+      ...firstTicket,
+      quantity:ticketRows.length,
+      tickets:ticketRows.map(ticket=>({
+        ticketId:ticket.ticketId,
+        ticketType:ticket.ticketType,
+        holderName:ticket.buyerName,
+        holderEmail:ticket.email,
+        eventName:ticket.eventName,
+        eventDate:ticket.eventDate,
+        startTime:ticket.startTime,
+        venue:ticket.venue,
+        location:ticket.location,
+      })),
+    }).catch(error=>console.warn('[notification] ticket_purchase email delivery failed',error));
   }
   for(const ticket of ticketRows){
     if(!ticket.email)continue;
