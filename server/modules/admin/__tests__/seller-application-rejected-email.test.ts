@@ -117,8 +117,8 @@ test("rejecting a pending seller application invokes the rejection email once", 
   const db = {
     prepare: (sql: string) => ({
       get: () => {
-        if (/SELECT \\*\\s+FROM seller_applications/i.test(sql)) return application;
-        if (/SELECT\\s+id,\\s+status,/i.test(sql)) return {
+        if (/SELECT \*\s+FROM seller_applications/i.test(sql)) return application;
+        if (/SELECT\s+id,\s+status,/i.test(sql)) return {
           id: application.id,
           status: application.status,
           review_notes: "Please provide clearer information.",
@@ -126,7 +126,7 @@ test("rejecting a pending seller application invokes the rejection email once", 
         return undefined;
       },
       run: (...params: unknown[]) => {
-        if (/UPDATE seller_applications\\s+SET/i.test(sql)) {
+        if (/UPDATE seller_applications\s+SET/i.test(sql)) {
           application.status = params[0] as string;
         }
         return undefined;
