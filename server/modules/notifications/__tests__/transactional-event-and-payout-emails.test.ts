@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { notifyTicketDelivery, notifyTicketPurchaseConfirmation } from "../event-ticket.notification.js";
 import { notifyPayoutCompleted } from "../payout-completed.notification.js";
+import { notifyEventCancelled } from "../event-cancelled.notification.js";
 
 const ticket = { email: "buyer@example.com", buyerName: "Ada Buyer", eventName: "Campus Concert", ticketType: "VIP", quantity: 1, orderReference: "ord-event-1", amount: 5000, currency: "MWK", eventDate: "2026-10-01", startTime: "18:00", venue: "Main Hall", location: "Campus", ticketId: "ticket-1", accessUrl: "https://buymesho.app/orders/ord-event-1", orderStatus: "paid" };
 
@@ -138,16 +139,128 @@ test("issued ticket delivery will not send before the order is successful", asyn
   assert.equal(messages.length, 0);
 });
 
-test("payout completed email sends only when the authoritative payout status is paid", async () => {
+test("payout completed email sends only to the seller when the authoritative payout status is paid", async () => {
   const messages: any[] = [];
   const input = { email: "seller@example.com", sellerName: "Ada's Shop", amount: 1250, currency: "MWK", payoutId: "payout-1", orderReference: "ord-1", completedAt: "2026-10-01T12:00:00Z", status: "paid" };
-  assert.equal(await notifyPayoutCompleted(input, { send: async message => { messages.push(message); return { messageId: "3" }; } }), true);
+  const deps = notificationDeps(messages);
+
+  assert.equal(await notifyPayoutCompleted(input, deps), true);
+  assert.equal(messages.length, 1);
   assert.equal(messages[0].sender, "transactional");
   assert.deepEqual(messages[0].to, { email: "seller@example.com", name: "Ada's Shop" });
   assert.equal(messages[0].subject, "Your BuyMesho payout has been completed");
   assert.match(messages[0].text, /payout-1/);
   assert.match(messages[0].text, /1,250.00 MWK/);
+
+  assert.equal(await notifyPayoutCompleted(input, deps), false);
+  assert.equal(messages.length, 1);
+});
+
+test("payout completed notification releases the claim when delivery fails so the seller can be retried", async () => {
+  let attempts = 0;
+  const deps = {
+    claim: (() => {
+      let claimed = false;
+      return () => {
+        if (claimed) return false;
+        claimed = true;
+        return true;
+      };
+    })(),
+    markSent: () => undefined,
+    release: (() => {
+      let releaseClaim = false;
+      return () => {
+        releaseClaim = true;
+      };
+    })(),
+    send: async () => {
+      attempts += 1;
+      if (attempts === 1) throw new Error("temporary provider failure");
+      return { messageId: "payout-retry-success" };
+    },
+  };
+
+  const input = { email: "seller@example.com", sellerName: "Ada's Shop", amount: 1250, currency: "MWK", payoutId: "payout-2", orderReference: "ord-2", completedAt: "2026-10-01T12:00:00Z", status: "paid" };
+  let claimed = false;
+  const retryDeps = {
+    claim: (key: string) => {
+      if (claimed) return false;
+      claimed = true;
+      return true;
+    },
+    markSent: () => undefined,
+    release: () => { claimed = false; },
+    send: deps.send,
+  };
+
+  await assert.rejects(() => notifyPayoutCompleted(input, retryDeps), /temporary provider failure/);
+  assert.equal(await notifyPayoutCompleted(input, retryDeps), true);
+  assert.equal(attempts, 2);
+});
+
+test("payout completed email does not send for non-paid statuses", async () => {
+  const messages: any[] = [];
+  const input = { email: "seller@example.com", sellerName: "Ada's Shop", amount: 1250, currency: "MWK", payoutId: "payout-3", orderReference: "ord-3", completedAt: "2026-10-01T12:00:00Z", status: "paid" };
+  const deps = notificationDeps(messages);
+
   for (const status of ["pending", "processing", "failed"]) {
-    assert.equal(await notifyPayoutCompleted({ ...input, status }, { send: async () => { throw new Error("must not send"); } }), false);
+    assert.equal(await notifyPayoutCompleted({ ...input, status }, deps), false);
   }
+  assert.equal(messages.length, 0);
+});
+
+test("event cancellation notification sends once with only the recipient's tickets", async () => {
+  const messages: any[] = [];
+  const deps = notificationDeps(messages);
+  const input = {
+    email: "buyer@example.com",
+    recipientName: "Ada Buyer",
+    eventId: "event-9",
+    eventTitle: "Campus Concert",
+    eventDate: "2026-10-01",
+    startTime: "18:00",
+    venue: "Main Hall",
+    location: "Campus",
+    reason: "The organizer cancelled the event.",
+    tickets: [
+      { ticketId: "ticket-1", ticketType: "VIP" },
+      { ticketId: "ticket-2", ticketType: "General" },
+    ],
+  };
+
+  assert.equal(await notifyEventCancelled(input, deps), true);
+  assert.equal(await notifyEventCancelled(input, deps), false);
+  assert.equal(messages.length, 1);
+  assert.equal(messages[0].sender, "transactional");
+  assert.deepEqual(messages[0].to, { email: "buyer@example.com", name: "Ada Buyer" });
+  assert.equal(messages[0].subject, "Event cancelled: Campus Concert");
+  assert.match(messages[0].text, /event-9|Campus Concert/);
+  assert.match(messages[0].text, /ticket-1/);
+  assert.match(messages[0].text, /ticket-2/);
+  assert.match(messages[0].text, /The organizer cancelled the event/);
+});
+
+test("event cancellation notification releases the claim when delivery fails so the recipient can be retried", async () => {
+  const claimed = new Set<string>();
+  let attempts = 0;
+  const deps = {
+    claim: (key: string) => {
+      if (claimed.has(key)) return false;
+      claimed.add(key);
+      return true;
+    },
+    markSent: () => undefined,
+    release: (key: string) => claimed.delete(key),
+    send: async () => {
+      attempts += 1;
+      if (attempts === 1) throw new Error("temporary provider failure");
+      return { messageId: "cancellation-retry-success" };
+    },
+  };
+  const input = { email: "buyer@example.com", recipientName: "Ada Buyer", eventId: "event-10", eventTitle: "Campus Concert", tickets: [{ ticketId: "ticket-3", ticketType: "VIP" }] };
+
+  await assert.rejects(() => notifyEventCancelled(input, deps), /temporary provider failure/);
+  assert.equal(await notifyEventCancelled(input, deps), true);
+  assert.equal(attempts, 2);
 });
