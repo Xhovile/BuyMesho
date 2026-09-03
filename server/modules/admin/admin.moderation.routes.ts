@@ -4,6 +4,7 @@ import { getFirebaseAdmin } from "../../auth/firebaseAdmin.js";
 import { hasAdminAccess } from "../../auth/adminAccess.js";
 import { adminApiLimiter } from "./admin.rateLimit.js";
 import { ADMIN_ACTION_TYPES, ADMIN_TARGET_TYPES, type AdminActionType, type AdminTargetType } from "../../../src/modules/admin/shared/adminAuditTypes.js";
+import { notifySellerApplicationApproved } from "../notifications/seller-application-approved.notification.js";
 
 type AsyncRouteHandler = (
   req: Request,
@@ -17,6 +18,25 @@ const withAsyncRoute = (handler: AsyncRouteHandler) => {
   };
 };
 
+async function syncApprovedSellerToFirestore(application: {
+  applicant_uid: string;
+  business_name?: string | null;
+  institution?: string | null;
+}): Promise<void> {
+  await getFirebaseAdmin()
+    .firestore()
+    .collection("users")
+    .doc(application.applicant_uid)
+    .set(
+      {
+        is_seller: true,
+        business_name: application.business_name ?? null,
+        university: application.institution ?? null,
+      },
+      { merge: true }
+    );
+}
+
 export function createAdminModerationRouter(params: {
   requireAuth: RequestHandler;
   db: PgCompatDatabase;
@@ -28,9 +48,17 @@ export function createAdminModerationRouter(params: {
     target_id?: string | null;
     details?: unknown;
   }) => void;
+  notifySellerApplicationApproved?: typeof notifySellerApplicationApproved;
+  syncApprovedSellerToFirestore?: typeof syncApprovedSellerToFirestore;
 }): express.Router {
   const router = express.Router();
-  const { requireAuth, db, logAdminAction } = params;
+  const {
+    requireAuth,
+    db,
+    logAdminAction,
+    notifySellerApplicationApproved: sendSellerApplicationApprovedEmail = notifySellerApplicationApproved,
+    syncApprovedSellerToFirestore: syncSellerToFirestore = syncApprovedSellerToFirestore,
+  } = params;
 
   router.get("/reports", adminApiLimiter, requireAuth, (req, res) => {
     if (!hasAdminAccess(req.user)) {
@@ -281,24 +309,22 @@ export function createAdminModerationRouter(params: {
         );
 
         try {
-          const firebaseAdmin = getFirebaseAdmin();
-          await firebaseAdmin
-            .firestore()
-            .collection("users")
-            .doc(application.applicant_uid)
-            .set(
-              {
-                is_seller: true,
-                business_name: application.business_name ?? null,
-                university: application.institution ?? null,
-              },
-              { merge: true }
-            );
+          await syncSellerToFirestore(application);
         } catch (firestoreSyncError) {
           console.warn(
             "Failed to sync approved seller status to Firestore:",
             firestoreSyncError
           );
+        }
+
+        try {
+          await sendSellerApplicationApprovedEmail({
+            applicantEmail: application.applicant_email,
+            fullLegalName: application.full_legal_name,
+            businessName: application.business_name,
+          });
+        } catch (emailError) {
+          console.warn("Failed to send approved seller application email:", emailError);
         }
       }
 
