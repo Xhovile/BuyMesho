@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
-import express, { type RequestHandler } from "express";
+import express from "express";
 import { createAdminEventModerationRouter } from "../admin.events.routes.js";
 
 type EventRow = Record<string, unknown> & {
@@ -69,10 +69,6 @@ function makeDb(event: EventRow, ticketRows: Array<Record<string, unknown>>) {
 async function startServer(router: ReturnType<typeof createAdminEventModerationRouter>) {
   const app = express();
   app.use(express.json());
-  const requireAuth: RequestHandler = (req, _res, next) => {
-    req.user = { uid: "admin-uid", email: "admin@example.com", is_admin: true };
-    next();
-  };
   app.use("/api/admin", router);
   const server = app.listen(0);
   await once(server, "listening");
@@ -80,7 +76,6 @@ async function startServer(router: ReturnType<typeof createAdminEventModerationR
   return {
     server,
     url: `http://127.0.0.1:${port}/api/admin/events/42/status`,
-    requireAuth,
   };
 }
 
@@ -101,7 +96,7 @@ test("cancelling an event emails each distinct ticket-holder recipient with only
   const notifications: Array<Record<string, unknown>> = [];
 
   const router = createAdminEventModerationRouter({
-    requireAuth: (req, res, next) => {
+    requireAuth: (req, _res, next) => {
       req.user = { uid: "admin-uid", email: "admin@example.com", is_admin: true };
       next();
     },
