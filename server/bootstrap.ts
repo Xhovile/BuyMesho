@@ -168,14 +168,6 @@ export async function startServer() {
     });
   });
 
-  app.get("/api/validator/health", (_req, res) => {
-    res.status(200).json({
-      ok: true,
-      service: "buymesho-validator-api",
-      timestamp: new Date().toISOString(),
-    });
-  });
-
   console.log("[Validator] registerRoutes() completed; health endpoint registered.");
 
   registerMarketplaceRoutes(app, { db });
