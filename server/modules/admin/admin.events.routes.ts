@@ -2,6 +2,7 @@ import type { PgCompatDatabase } from "../../db.js";
 import express, { type RequestHandler } from "express";
 import { hasAdminAccess } from "../../auth/adminAccess.js";
 import { adminApiLimiter } from "./admin.rateLimit.js";
+import { notifyEventCancelled } from "../notifications/event-cancelled.notification.js";
 import {
   ADMIN_ACTION_TYPES,
   ADMIN_TARGET_TYPES,
@@ -396,13 +397,69 @@ function safeLoadPurchaseRecords(db: PgCompatDatabase, event: EventRow) {
           LIMIT 50
         `
       )
-      .all(`%"eventId":${event.id}%`, `%"event_id":${event.id}%`, `%${event.event_title}%`) as Array<Record<string, unknown>>;
+      .all(`%\"eventId\":${event.id}%`, `%\"event_id\":${event.id}%`, `%${event.event_title}%`) as Array<Record<string, unknown>>;
 
     purchaseRecords.push(...rows);
   } catch {
     // Some deployments may not have order/payment tables for event tickets yet.
   }
   return purchaseRecords;
+}
+
+async function notifyCancelledEventTicketHolders(db: PgCompatDatabase, event: EventRow, reason: string): Promise<void> {
+  const rows = db
+    .prepare(
+      `
+        SELECT id, ticket_type, holder_name, holder_email
+        FROM event_tickets
+        WHERE event_id = ?
+          AND TRIM(COALESCE(holder_email, '')) <> ''
+          AND status NOT IN ('Cancelled', 'Refunded')
+        ORDER BY holder_email ASC, id ASC
+      `
+    )
+    .all(event.id) as Array<{
+      id: string;
+      ticket_type: string;
+      holder_name: string | null;
+      holder_email: string | null;
+    }>;
+
+  const recipients = new Map<string, { email: string; recipientName: string; tickets: Array<{ ticketId: string; ticketType: string }> }>();
+  for (const row of rows) {
+    const email = normalizeString(row.holder_email).toLowerCase();
+    if (!email) continue;
+    const existing = recipients.get(email) ?? {
+      email,
+      recipientName: normalizeString(row.holder_name) || "there",
+      tickets: [],
+    };
+    existing.tickets.push({ ticketId: String(row.id), ticketType: normalizeString(row.ticket_type) || "Event Ticket" });
+    recipients.set(email, existing);
+  }
+
+  for (const recipient of recipients.values()) {
+    try {
+      await notifyEventCancelled({
+        email: recipient.email,
+        recipientName: recipient.recipientName,
+        eventId: String(event.id),
+        eventTitle: event.event_title,
+        eventDate: event.event_date,
+        startTime: event.start_time,
+        venue: event.venue,
+        location: event.location,
+        reason: reason || null,
+        tickets: recipient.tickets,
+      });
+    } catch (error) {
+      console.warn("[notification] event cancellation email delivery failed", {
+        eventId: event.id,
+        email: recipient.email,
+        error,
+      });
+    }
+  }
 }
 
 export function createAdminEventModerationRouter(params: {
@@ -541,6 +598,8 @@ export function createAdminEventModerationRouter(params: {
         return res.status(404).json({ error: "Event not found" });
       }
 
+      const wasCancelled = event.status === "cancelled";
+
       db.prepare(
         `
           UPDATE events
@@ -569,6 +628,10 @@ export function createAdminEventModerationRouter(params: {
           creator_uid: event.creator_uid,
         },
       });
+
+      if (status === "cancelled" && !wasCancelled) {
+        void notifyCancelledEventTicketHolders(db, event, reason);
+      }
 
       const updatedEvent = db.prepare(`SELECT * FROM events WHERE id = ? LIMIT 1`).get(eventId) as EventRow | undefined;
       return res.json({ success: true, event: updatedEvent ? serializeEventRow(updatedEvent) : null });
