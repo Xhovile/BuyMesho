@@ -44,6 +44,9 @@ async function ensureGoogleAccountProfile(user: User) {
         surname,
         other_names: otherNames || null,
         full_name: fullName,
+        profile_picture: typeof existing?.profile_picture === "string" && existing.profile_picture.trim()
+          ? existing.profile_picture
+          : user.photoURL || null,
         profile_setup_complete: false,
       }),
     });

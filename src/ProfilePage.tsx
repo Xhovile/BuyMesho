@@ -1,13 +1,13 @@
 import { useState } from "react";
 import {
   AlertTriangle,
+  ChevronRight,
   Loader2,
+  Lock,
   LogOut,
   Settings,
   ShieldCheck,
   User,
-  Lock,
-  ChevronRight,
 } from "lucide-react";
 import { signOut } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
@@ -66,63 +66,248 @@ export default function ProfilePage() {
       ) : !firebaseUser ? (
         <div className="p-10 text-center">
           <h2 className="text-2xl font-black tracking-tight text-zinc-900">Login required</h2>
-          <p className="mt-3 text-sm text-zinc-500">You need to log in before opening your profile page.</p>
-          <button type="button" onClick={() => navigateToPath("/login")} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800">Go to Login</button>
+          <p className="mt-3 text-sm text-zinc-500">
+            You need to log in before opening your profile page.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigateToPath("/login")}
+            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+          >
+            Go to Login
+          </button>
         </div>
       ) : !profile ? (
         <div className="p-10 text-center">
           <h2 className="text-2xl font-black tracking-tight text-zinc-900">Complete profile setup</h2>
-          <p className="mt-3 text-sm text-zinc-500">Your account exists but we could not find your profile details. Create your BuyMesho profile to continue.</p>
-          <button type="button" onClick={() => navigateToPath("/account/setup")} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800">Complete profile</button>
+          <p className="mt-3 text-sm text-zinc-500">
+            Your account exists but we could not find your profile details. Create your BuyMesho
+            profile to continue.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigateToPath("/account/setup")}
+            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+          >
+            Complete profile
+          </button>
         </div>
       ) : (
         <div>
           <div className="flex items-center gap-4 bg-zinc-50 border-b border-zinc-100 px-6 py-5">
             <div className="w-20 h-20 rounded-full bg-white overflow-hidden border border-zinc-200 shadow-sm flex items-center justify-center flex-shrink-0">
-              {avatarUrl ? <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" /> : <User className="w-8 h-8 text-zinc-400" />}
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-8 h-8 text-zinc-400" />
+              )}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-black tracking-tight text-zinc-900 truncate">{displayName}</h2>
+                <h2 className="text-2xl font-black tracking-tight text-zinc-900 truncate">
+                  {displayName}
+                </h2>
                 {profile.is_verified && <ShieldCheck className="w-5 h-5 text-blue-500 shrink-0" />}
               </div>
               <p className="text-sm text-zinc-500 truncate">{profile.email}</p>
-              <p className="text-sm text-zinc-500">{profile.user_type === "student" ? `Student • ${profile.university || "Institution not set"}` : "Public / Non-Student user"}</p>
+              <p className="text-sm text-zinc-500">
+                {profile.user_type === "student"
+                  ? `Student • ${profile.university || "Institution not set"}`
+                  : "Public / Non-Student user"}
+              </p>
             </div>
           </div>
 
           <div className="p-6 sm:p-8 space-y-6">
             {!emailVerified && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm">
-                <div className="flex items-start gap-3"><AlertTriangle className="w-5 h-5 mt-0.5" /><div><p className="font-bold">Verify your email to unlock full account access.</p><div className="mt-3 flex flex-wrap gap-3"><button type="button" onClick={async () => { if (!firebaseUser) return; try { await apiFetch("/api/auth/resend-verification-email", { method: "POST", body: JSON.stringify({ display_name: displayName }) }); showFeedback("success", "Verification email resent", "Check your inbox for the new verification email."); } catch (err: any) { showFeedback("error", "Resend failed", err?.message || "We could not resend the verification email."); } }} className="px-4 py-2 rounded-xl bg-white border border-amber-200 text-sm font-bold hover:bg-amber-100">Resend verification email</button></div></div></div>
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 mt-0.5" />
+                  <div>
+                    <p className="font-bold">Verify your email to unlock full account access.</p>
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!firebaseUser) return;
+                          try {
+                            await apiFetch("/api/auth/resend-verification-email", {
+                              method: "POST",
+                              body: JSON.stringify({ display_name: displayName }),
+                            });
+                            showFeedback(
+                              "success",
+                              "Verification email resent",
+                              "Check your inbox for the new verification email."
+                            );
+                          } catch (err: any) {
+                            showFeedback(
+                              "error",
+                              "Resend failed",
+                              err?.message || "We could not resend the verification email."
+                            );
+                          }
+                        }}
+                        className="px-4 py-2 rounded-xl bg-white border border-amber-200 text-sm font-bold hover:bg-amber-100"
+                      >
+                        Resend verification email
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
             {!profile.profile_setup_complete && (
               <section className="rounded-3xl border border-zinc-200 bg-white shadow-sm p-5">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">Profile setup</p>
-                <h3 className="mt-2 text-lg font-black text-zinc-900">Complete your BuyMesho profile</h3>
-                <p className="mt-1 text-sm text-zinc-500">Choose Student or Public / Non-Student and add the information you want BuyMesho to use for your marketplace experience.</p>
-                <button type="button" onClick={() => navigateToPath("/account/setup")} disabled={!emailVerified} className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50">Complete profile</button>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
+                  Profile setup
+                </p>
+                <h3 className="mt-2 text-lg font-black text-zinc-900">
+                  Complete your BuyMesho profile
+                </h3>
+                <p className="mt-1 text-sm text-zinc-500">
+                  Choose Student or Public / Non-Student and add the information you want BuyMesho
+                  to use for your marketplace experience.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigateToPath("/account/setup")}
+                  disabled={!emailVerified}
+                  className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Complete profile
+                </button>
               </section>
             )}
 
             <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-              <div className="border-b border-zinc-100 px-5 py-3 bg-zinc-50/80"><p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">Account</p></div>
+              <div className="border-b border-zinc-100 px-5 py-3 bg-zinc-50/80">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">Account</p>
+              </div>
               <div className="divide-y divide-zinc-100">
-                <button type="button" onClick={() => navigateToPath("/settings")} className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"><span className="flex items-center gap-3 min-w-0"><span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0"><Settings className="w-5 h-5 text-zinc-700" /></span><span className="min-w-0"><span className="block font-bold text-zinc-900">Settings</span><span className="hidden md:block text-sm text-zinc-500">Open account settings.</span></span></span><ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" /></button>
-                <button type="button" onClick={() => navigateToPath("/change-password")} disabled={profileActionsDisabled} className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-50"><span className="flex items-center gap-3 min-w-0"><span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0"><Lock className="w-5 h-5 text-zinc-700" /></span><span className="min-w-0"><span className="block font-bold text-zinc-900">Change Password</span><span className="hidden md:block text-sm text-zinc-500">Update your account password securely.</span></span></span><ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" /></button>
+                <button
+                  type="button"
+                  onClick={() => navigateToPath("/account/setup")}
+                  disabled={profileActionsDisabled}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-50"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                      <User className="w-5 h-5 text-zinc-700" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-zinc-900">Edit Account</span>
+                      <span className="hidden md:block text-sm text-zinc-500">
+                        Update identity, user type, student details, and delivery information.
+                      </span>
+                    </span>
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
+                </button>
+
+                {profile.is_seller ? (
+                  <button
+                    type="button"
+                    onClick={() => navigateToPath("/edit-profile")}
+                    disabled={profileActionsDisabled}
+                    className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-50"
+                  >
+                    <span className="flex items-center gap-3 min-w-0">
+                      <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                        <User className="w-5 h-5 text-zinc-700" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block font-bold text-zinc-900">Edit Seller Profile</span>
+                        <span className="hidden md:block text-sm text-zinc-500">
+                          Update your seller profile.
+                        </span>
+                      </span>
+                    </span>
+                    <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
+                  </button>
+                ) : null}
               </div>
             </section>
 
-            <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm"><div className="border-b border-zinc-100 px-5 py-3 bg-zinc-50/80"><p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">Account profile</p></div><div className="divide-y divide-zinc-100"><button type="button" onClick={() => navigateToPath("/account/setup")} disabled={profileActionsDisabled} className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-50"><span className="flex items-center gap-3 min-w-0"><span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0"><User className="w-5 h-5 text-zinc-700" /></span><span className="min-w-0"><span className="block font-bold text-zinc-900">Edit account profile</span><span className="hidden md:block text-sm text-zinc-500">Update identity, user type, student details, and delivery information.</span></span></span><ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" /></button></div></section>
+            <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+              <div className="border-b border-zinc-100 px-5 py-3 bg-zinc-50/80">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">Set Up</p>
+              </div>
+              <div className="divide-y divide-zinc-100">
+                <button
+                  type="button"
+                  onClick={() => navigateToPath("/settings")}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                      <Settings className="w-5 h-5 text-zinc-700" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-zinc-900">Settings</span>
+                      <span className="hidden md:block text-sm text-zinc-500">Open account settings.</span>
+                    </span>
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
+                </button>
 
-            <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm"><div className="border-b border-zinc-100 px-5 py-3 bg-zinc-50/80"><p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">Selling</p></div><div className="divide-y divide-zinc-100"><button type="button" onClick={() => navigateToPath(profile.is_seller ? "/edit-profile" : "/become-seller")} disabled={profileActionsDisabled} className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-50"><span className="flex items-center gap-3 min-w-0"><span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0"><User className="w-5 h-5 text-zinc-700" /></span><span className="min-w-0"><span className="block font-bold text-zinc-900">{profile.is_seller ? "Edit Seller Profile" : "Become a Seller"}</span><span className="hidden md:block text-sm text-zinc-500">{profile.is_seller ? "Update your seller profile." : "Apply to sell on BuyMesho."}</span></span></span><ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" /></button></div></section>
+                <button
+                  type="button"
+                  onClick={() => navigateToPath("/change-password")}
+                  disabled={profileActionsDisabled}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-50"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                      <Lock className="w-5 h-5 text-zinc-700" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-zinc-900">Change Password</span>
+                      <span className="hidden md:block text-sm text-zinc-500">
+                        Update your account password securely.
+                      </span>
+                    </span>
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
+                </button>
+              </div>
+            </section>
 
-            <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm"><div className="border-b border-zinc-100 px-5 py-3 bg-zinc-50/80"><p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">Security</p></div><div className="divide-y divide-zinc-100"><button type="button" onClick={handleLogout} className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"><span className="flex items-center gap-3 min-w-0"><span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0"><LogOut className="w-5 h-5 text-zinc-700" /></span><span className="min-w-0"><span className="block font-bold text-zinc-900">Log Out</span><span className="hidden md:block text-sm text-zinc-500">Sign out of this device.</span></span></span><ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" /></button></div></section>
+            <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+              <div className="border-b border-zinc-100 px-5 py-3 bg-zinc-50/80">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">Security</p>
+              </div>
+              <div className="divide-y divide-zinc-100">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                      <LogOut className="w-5 h-5 text-zinc-700" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-zinc-900">Log Out</span>
+                      <span className="hidden md:block text-sm text-zinc-500">Sign out of this device.</span>
+                    </span>
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
+                </button>
+              </div>
+            </section>
           </div>
 
-          {feedback && <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} onClose={() => setFeedback(null)} />}
+          {feedback && (
+            <FeedbackModal
+              open={feedback.open}
+              type={feedback.type}
+              title={feedback.title}
+              message={feedback.message}
+              onClose={() => setFeedback(null)}
+            />
+          )}
         </div>
       )}
     </AccountPageShell>

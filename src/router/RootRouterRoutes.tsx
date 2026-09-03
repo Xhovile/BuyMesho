@@ -36,7 +36,6 @@ const ChangeEmailPage = lazy(() => import("../ChangeEmailPage"));
 const ChangePasswordPage = lazy(() => import("../ChangePasswordPage"));
 const CategoryPage = lazy(() => import("../CategoryPage"));
 const CreateListingPage = lazy(() => import("../CreateListingPage"));
-const EditAccountPage = lazy(() => import("../EditAccountPage"));
 const EditListingPage = lazy(() => import("../EditListingPage"));
 const EditProfilePage = lazy(() => import("../EditProfilePage"));
 const EmailActionPage = lazy(() => import("../EmailActionPage"));
@@ -168,7 +167,7 @@ export default function RootRouterRoutes({ route, locationPath, locationSearch, 
       ) : route === "edit_profile" ? (
         <EditProfilePage />
       ) : route === "edit_account" ? (
-        <EditAccountPage />
+        <AccountSetupPage />
       ) : route === "settings" ? (
         <SettingsPage />
       ) : route === "privacy" ? (
