@@ -11,12 +11,15 @@ import {
 
 type RecipientRole = "buyer" | "seller";
 type SendEmail = typeof sendEmail;
+type FirebaseUser = { email?: string | null; displayName?: string | null };
 
 type DeliveryDependencies = {
   send?: SendEmail;
   claim?: (notificationType: string, dedupeKey: string) => boolean;
   markSent?: (notificationType: string, dedupeKey: string) => void;
   release?: (notificationType: string, dedupeKey: string) => void;
+  lookupUser?: (uid: string) => Promise<FirebaseUser>;
+  lookupSellerBusinessName?: (uid: string) => Promise<string | null>;
 };
 
 export type OrderRefundedInput = {
@@ -44,11 +47,13 @@ async function sendOrderRefundedEmail(
 ): Promise<boolean> {
   const { order } = input;
   const recipientId = role === "buyer" ? order.buyerId : order.sellerId;
-  const userRecord = await getFirebaseAdmin().auth().getUser(recipientId);
+  const lookupUser = dependencies.lookupUser ?? (async (uid: string) => getFirebaseAdmin().auth().getUser(uid));
+  const userRecord = await lookupUser(recipientId);
   const email = userRecord.email?.trim();
   if (!email) return false;
 
-  const sellerBusinessName = (await getSellerBusinessName(order.sellerId)) || "BuyMesho seller";
+  const lookupSellerBusinessName = dependencies.lookupSellerBusinessName ?? getSellerBusinessName;
+  const sellerBusinessName = (await lookupSellerBusinessName(order.sellerId)) || "BuyMesho seller";
   const buyerName = order.buyerDetails?.fullName?.trim() || "BuyMesho customer";
   const recipientName = role === "buyer" ? buyerName : sellerBusinessName;
   const counterpartyName = role === "buyer" ? sellerBusinessName : buyerName;
