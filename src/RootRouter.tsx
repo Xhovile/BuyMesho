@@ -1,9 +1,10 @@
 import { Suspense, useEffect, useState } from "react";
 import { getAppRouteFromLocation, type AppRoute, EXPLORE_PATH } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
+import { getCachedHeaderCapabilities } from "./lib/headerCapabilities";
 import { RouteLoader } from "./router/RootRouterGlobalUI";
 import RootRouterGlobalUI from "./router/RootRouterGlobalUI";
-import RootRouterRoutes from "./router/RootRouterRoutes";
+import RootRouterRoutes, { prefetchWorkspaceRoutes } from "./router/RootRouterRoutes";
 import { useRootRouterAuthGuard } from "./router/RootRouterAuth";
 import { useRootRouterSeo } from "./router/RootRouterSeo";
 
@@ -23,6 +24,31 @@ export default function RootRouter() {
     return () => window.removeEventListener("popstate", handleRouteChange);
   }, []);
 
+  useEffect(() => {
+    if (authLoading || !firebaseUser) return;
+
+    const prefetch = () => {
+      const cached = getCachedHeaderCapabilities(firebaseUser.uid);
+      prefetchWorkspaceRoutes({
+        isAdmin: cached?.isAdmin === true,
+        isSeller: cached?.isSeller === true,
+      });
+    };
+
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    if (typeof idleWindow.requestIdleCallback === "function") {
+      const idleId = idleWindow.requestIdleCallback(prefetch, { timeout: 2500 });
+      return () => idleWindow.cancelIdleCallback?.(idleId);
+    }
+
+    const timeoutId = window.setTimeout(prefetch, 300);
+    return () => window.clearTimeout(timeoutId);
+  }, [authLoading, firebaseUser]);
+
   useRootRouterSeo(locationPath, route);
   useRootRouterAuthGuard({
     authLoading,
@@ -32,8 +58,7 @@ export default function RootRouter() {
     locationSearch,
   });
 
-  const isExploreChipRoute =
-    locationPath === EXPLORE_PATH || locationPath.startsWith(`${EXPLORE_PATH}/`);
+  const isExploreChipRoute = locationPath === EXPLORE_PATH || locationPath.startsWith(`${EXPLORE_PATH}/`);
 
   return (
     <>
