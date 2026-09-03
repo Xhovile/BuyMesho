@@ -69,9 +69,31 @@ function emitEventTicketNotifications(order:ReturnType<typeof orderRepository.fi
       })),
     }).catch(error=>console.warn('[notification] ticket_purchase email delivery failed',error));
   }
+
+  const ticketsByEmail=new Map<string, typeof ticketRows>();
   for(const ticket of ticketRows){
     if(!ticket.email)continue;
-    void notifyTicketDelivery(ticket).catch(error=>console.warn('[notification] ticket_delivery email delivery failed',error));
+    const existing=ticketsByEmail.get(ticket.email);
+    if(existing)existing.push(ticket);else ticketsByEmail.set(ticket.email,[ticket]);
+  }
+
+  for(const recipientTickets of ticketsByEmail.values()){
+    const first=recipientTickets[0];
+    void notifyTicketDelivery({
+      ...first,
+      quantity:recipientTickets.length,
+      tickets:recipientTickets.map(ticket=>({
+        ticketId:ticket.ticketId,
+        ticketType:ticket.ticketType,
+        holderName:ticket.buyerName,
+        holderEmail:ticket.email,
+        eventName:ticket.eventName,
+        eventDate:ticket.eventDate,
+        startTime:ticket.startTime,
+        venue:ticket.venue,
+        location:ticket.location,
+      })),
+    }).catch(error=>console.warn('[notification] ticket_delivery email delivery failed',error));
   }
 }
 function findActiveVerifiedDestination(sellerId:string):{id:string;destination_type:string|null}|undefined{return getPaymentDb().prepare(`SELECT id,destination_type FROM seller_payout_accounts WHERE seller_uid=? AND is_active=1 AND verification_status='verified' ORDER BY is_default DESC,verified_at DESC,created_at DESC LIMIT 1`).get(sellerId) as {id:string;destination_type:string|null}|undefined;}
