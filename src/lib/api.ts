@@ -1,26 +1,45 @@
 import { auth } from "../firebase";
 import { clearSensitiveApiCache } from "./apiCache";
 import { getSellerCache, invalidateSellerCache, setSellerCache } from "./sellerWorkspaceCache";
+import { onAuthStateChanged } from "firebase/auth";
 
 clearSensitiveApiCache();
 
-async function authHeader() {
+// Firebase restores persisted authentication asynchronously after the app starts.
+// Resolve this once so API calls made during that window never race auth.currentUser.
+const initialAuthState = new Promise<void>((resolve) => {
+  let settled = false;
+  const unsubscribe = onAuthStateChanged(auth, () => {
+    if (settled) return;
+    settled = true;
+    unsubscribe();
+    resolve();
+  });
+});
+
+async function authHeader(forceRefresh = false) {
+  await initialAuthState;
+
   const user = auth.currentUser;
   if (!user) return {} as Record<string, string>;
 
-  let token = "";
   try {
-    token = await user.getIdToken();
-  } catch {
-    try {
-      token = await user.getIdToken(true);
-    } catch (err) {
-      console.warn("Failed to retrieve ID token:", err);
+    const token = await user.getIdToken(forceRefresh);
+    if (token) return { Authorization: `Bearer ${token}` };
+  } catch (error) {
+    if (!forceRefresh) {
+      try {
+        const token = await user.getIdToken(true);
+        if (token) return { Authorization: `Bearer ${token}` };
+      } catch (refreshError) {
+        console.warn("Failed to retrieve refreshed ID token:", refreshError);
+      }
+    } else {
+      console.warn("Failed to refresh Firebase ID token:", error);
     }
   }
 
-  if (!token) return {} as Record<string, string>;
-  return { Authorization: `Bearer ${token}` };
+  return {} as Record<string, string>;
 }
 
 const API_FETCH_TIMEOUT_MS = 15000;
@@ -130,8 +149,8 @@ function invalidateSellerWorkspaceCache(method: string, url: string) {
   }
 }
 
-async function performApiFetch(url: string, init: ApiFetchInit = {}) {
-  const headers: Record<string, string> = { ...(init.headers as Record<string, string> | undefined), ...(await authHeader()) };
+async function performApiFetch(url: string, init: ApiFetchInit = {}, forceRefreshToken = false) {
+  const headers: Record<string, string> = { ...(init.headers as Record<string, string> | undefined), ...(await authHeader(forceRefreshToken)) };
   if (init.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
 
   const { controller, wasCallerAborted } = createCombinedAbortSignal(init.signal);
@@ -195,10 +214,22 @@ export async function apiFetch(url: string, init: ApiFetchInit = {}) {
     } catch (error: any) {
       lastError = error;
       const status = typeof error?.status === "number" ? error.status : null;
+
+      // Authentication failures are recoverable when Firebase still has a signed-in
+      // user. Refresh the ID token and retry the exact request once, including POSTs
+      // such as reconcile/retry/refund. A genuine second 401 is still surfaced.
+      if (status === 401 && auth.currentUser) {
+        try {
+          return await performApiFetch(rewrittenUrl, eventInit, true);
+        } catch (refreshError) {
+          lastError = refreshError;
+        }
+      }
+
       const retryableStatus = status !== null && RETRYABLE_STATUS_CODES.has(status);
       const retryableError = error?.name === "AbortError" || /Request timed out/i.test(String(error?.message || "")) || /fetch/i.test(String(error?.message || ""));
       const canRetry = attempt < retryAttempts && shouldRetrySafeRequest(method) && (retryableStatus || retryableError);
-      if (!canRetry) throw error;
+      if (!canRetry) throw lastError instanceof Error ? lastError : error;
       await sleep(retryDelayMs * attempt);
     }
   }

@@ -75,6 +75,13 @@ const EventDetailsPage = lazy(() => import("../EventDetailsPage"));
 const EventsCreatePage = lazy(() => import("../EventsCreatePage"));
 const EventCreatorDashboardPage = lazy(() => import("../EventCreatorDashboardPage"));
 
+export function prefetchWorkspaceRoutes({ isAdmin, isSeller }: { isAdmin: boolean; isSeller: boolean }) {
+  const imports: Array<Promise<unknown>> = [];
+  if (isAdmin) imports.push(import("../AdminModerationQueuePage"));
+  if (isSeller) imports.push(import("../SellerPayoutsPage"));
+  if (imports.length) void Promise.allSettled(imports);
+}
+
 type RootRouterRoutesProps = {
   route: AppRoute;
   locationPath: string;
@@ -82,12 +89,7 @@ type RootRouterRoutesProps = {
   firebaseUser: { emailVerified?: boolean } | null;
 };
 
-export default function RootRouterRoutes({
-  route,
-  locationPath,
-  locationSearch,
-  firebaseUser,
-}: RootRouterRoutesProps) {
+export default function RootRouterRoutes({ route, locationPath, locationSearch, firebaseUser }: RootRouterRoutesProps) {
   const threadConversationId = new URLSearchParams(locationSearch).get("conversation");
   const isMessageThread = route === "messages" && !!threadConversationId;
   const isAdminMessageThread = route === "admin_messages" && !!threadConversationId;

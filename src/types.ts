@@ -91,6 +91,7 @@ export interface UserProfile {
   surname?: string | null;
   other_names?: string | null;
   full_name?: string | null;
+  display_name?: string | null;
   phone?: string | null;
   user_type?: UserType | null;
   profile_setup_complete?: boolean;

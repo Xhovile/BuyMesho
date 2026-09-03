@@ -4,6 +4,7 @@ import { initPaymentSchema } from "../../postgresCompat/schema.js";
 import { ensurePayoutLifecycleSchema } from "../../modules/payouts/payout.schema.js";
 import { backfillEventTickets } from "../../modules/orders/eventTicketProjection.js";
 import { ensureEventOwnershipIntegrityMigration } from "./20260819_event_ownership_integrity.js";
+import { ensureSellerOrdersIndexesMigration } from "./20260903_seller_orders_indexes.js";
 
 function ensureExtraTables() {
   postgresDb.exec(`
@@ -215,8 +216,8 @@ export function runMigrations() {
   ensurePayoutLifecycleSchema();
   initPaymentSchema(postgresDb);
   ensureEventTicketStatsSchema();
+  ensureSellerOrdersIndexesMigration();
   backfillOrderPaidAtFromPayments();
   backfillFulfilledAtFromUpdatedAt();
   backfillEventTickets();
-  return postgresDb;
 }

@@ -74,6 +74,11 @@ function isInsufficientBalanceResponse(value: unknown): boolean {
   return text.includes('insufficient funds') || text.includes('insufficient balance') || text.includes('not enough funds');
 }
 
+function isConcurrentPayoutTransitionError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /Concurrent payout state transition detected/i.test(message);
+}
+
 function hydrateDestination(row: Record<string, unknown>): ExecutionDestination {
   return {
     destinationType: normalizeText(row.destination_type ?? row.destinationType),
@@ -238,11 +243,18 @@ export async function executePayoutFlow(
     };
   }
 
-  await updatePayoutStatus(input.payoutId, 'queued', {
-    provider: gate.provider,
-    providerStatus: 'queued',
-    approvedBy: actor.actorType === 'admin' ? actor.actorId ?? null : null,
-  });
+  try {
+    await updatePayoutStatus(input.payoutId, 'queued', {
+      provider: gate.provider,
+      providerStatus: 'queued',
+      approvedBy: actor.actorType === 'admin' ? actor.actorId ?? null : null,
+    });
+  } catch (error) {
+    if (isConcurrentPayoutTransitionError(error)) {
+      throw new Error('Payout is already processing');
+    }
+    throw error;
+  }
   await addPayoutEvent({
     payoutId: input.payoutId,
     sellerId: gate.sellerId,
