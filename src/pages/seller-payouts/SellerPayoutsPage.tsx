@@ -64,7 +64,7 @@ export default function SellerPayoutsPage() {
   }
 
   if (profileLoading || (loading && !hasCachedPayoutData)) {
-    return <SellerPayoutsAccessGate loading profileSeller={false} isSeller={isSeller} isAuthenticated={Boolean(firebaseUser)} onBack={() => navigateToPath(EXPLORE_PATH)} />;
+    return <SellerPayoutsAccessGate loading={profileLoading || loading} isSeller={isSeller} isAuthenticated={Boolean(firebaseUser)} onBack={() => navigateToPath(EXPLORE_PATH)} />;
   }
 
   if (!isSeller) {
