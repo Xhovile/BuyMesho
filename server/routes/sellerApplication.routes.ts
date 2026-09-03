@@ -196,7 +196,12 @@ export function registerSellerApplicationRoutes(app: Express, deps: SellerApplic
           student_id_document_url, business_registration_document_url, offers_layby,
           layby_audience, offers_financing, provides_delivery, offers_deals,
           participates_student_offers, student_offer_categories, student_offer_percentage
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, 'pending', NULL, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+          '', ?, ?, 'pending', NULL, CURRENT_TIMESTAMP,
+          ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?, ?
+        )
       `).run(
         uid, email, fullLegalName, institution || '', sellerType, studentNumber || '', whatsappNumber,
         businessName, whatToSell, businessDescription, identityDocumentUrl, agreedToRules ? 1 : 0,
