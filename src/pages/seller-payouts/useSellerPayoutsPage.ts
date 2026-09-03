@@ -378,6 +378,7 @@ export function useSellerPayoutsPage() {
   }, [loadData]);
 
   return {
+    firebaseUser,
     profileLoading,
     isSeller,
     sellerId,
