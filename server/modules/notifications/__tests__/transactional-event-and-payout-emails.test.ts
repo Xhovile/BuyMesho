@@ -3,12 +3,10 @@ import test from "node:test";
 import { notifyTicketDelivery, notifyTicketPurchaseConfirmation } from "../event-ticket.notification.js";
 import { notifyPayoutCompleted } from "../payout-completed.notification.js";
 
-const ticket = { email: "buyer@example.com", buyerName: "Ada Buyer", eventName: "Campus Concert", ticketType: "VIP", quantity: 2, orderReference: "ord-event-1", amount: 5000, currency: "MWK", eventDate: "2026-10-01", startTime: "18:00", venue: "Main Hall", location: "Campus", ticketId: "ticket-1", accessUrl: "https://buymesho.app/orders/ord-event-1", orderStatus: "paid" };
+const ticket = { email: "buyer@example.com", buyerName: "Ada Buyer", eventName: "Campus Concert", ticketType: "VIP", quantity: 1, orderReference: "ord-event-1", amount: 5000, currency: "MWK", eventDate: "2026-10-01", startTime: "18:00", venue: "Main Hall", location: "Campus", ticketId: "ticket-1", accessUrl: "https://buymesho.app/orders/ord-event-1", orderStatus: "paid" };
 
-test("ticket purchase confirmation sends only once for the order and only for a successful order", async () => {
-  const messages: any[] = [];
-  const claimed = new Set<string>();
-  const deps = {
+function purchaseDeps(messages: any[], claimed = new Set<string>()) {
+  return {
     claim: (key: string) => {
       if (claimed.has(key)) return false;
       claimed.add(key);
@@ -18,9 +16,14 @@ test("ticket purchase confirmation sends only once for the order and only for a 
     release: (key: string) => claimed.delete(key),
     send: async (message: any) => {
       messages.push(message);
-      return { messageId: "1" };
+      return { messageId: String(messages.length) };
     },
   };
+}
+
+test("ticket purchase confirmation sends only once for the order and only for a successful order", async () => {
+  const messages: any[] = [];
+  const deps = purchaseDeps(messages);
 
   assert.equal(await notifyTicketPurchaseConfirmation(ticket, deps), true);
   assert.equal(await notifyTicketPurchaseConfirmation(ticket, deps), false);
@@ -30,7 +33,31 @@ test("ticket purchase confirmation sends only once for the order and only for a 
   assert.equal(messages[0].subject, "Your BuyMesho ticket purchase is confirmed");
   assert.match(messages[0].text, /Campus Concert/);
   assert.match(messages[0].text, /ord-event-1/);
+  assert.match(messages[0].text, /Quantity: 1/);
   assert.equal(await notifyTicketPurchaseConfirmation({ ...ticket, orderStatus: "pending_payment" }, deps), false);
+});
+
+test("ticket purchase confirmation supports multiple tickets in one order", async () => {
+  const messages: any[] = [];
+  const tickets = [
+    { ticketId: "ticket-1", ticketType: "VIP", holderName: "Ada Buyer", holderEmail: "buyer@example.com" },
+    { ticketId: "ticket-2", ticketType: "VIP", holderName: "John Buyer", holderEmail: "john@example.com" },
+  ];
+  const deps = purchaseDeps(messages);
+
+  assert.equal(
+    await notifyTicketPurchaseConfirmation(
+      { ...ticket, quantity: tickets.length, tickets },
+      deps,
+    ),
+    true,
+  );
+  assert.equal(messages.length, 1);
+  assert.match(messages[0].text, /Quantity: 2/);
+  assert.match(messages[0].text, /ticket-1/);
+  assert.match(messages[0].text, /ticket-2/);
+  assert.match(messages[0].text, /Holder: Ada Buyer/);
+  assert.match(messages[0].text, /Holder: John Buyer/);
 });
 
 test("ticket purchase confirmation releases the claim when delivery fails so a retry can succeed", async () => {
