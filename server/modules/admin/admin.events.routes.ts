@@ -406,7 +406,7 @@ function safeLoadPurchaseRecords(db: PgCompatDatabase, event: EventRow) {
   return purchaseRecords;
 }
 
-async function notifyCancelledEventTicketHolders(db: PgCompatDatabase, event: EventRow, reason: string): Promise<void> {
+async function notifyCancelledEventTicketHolders(db: PgCompatDatabase, event: EventRow, reason: string, sendNotification: typeof notifyEventCancelled): Promise<void> {
   const rows = db
     .prepare(
       `
@@ -440,7 +440,7 @@ async function notifyCancelledEventTicketHolders(db: PgCompatDatabase, event: Ev
 
   for (const recipient of recipients.values()) {
     try {
-      await notifyEventCancelled({
+      await sendNotification({
         email: recipient.email,
         recipientName: recipient.recipientName,
         eventId: String(event.id),
@@ -466,9 +466,10 @@ export function createAdminEventModerationRouter(params: {
   requireAuth: RequestHandler;
   db: PgCompatDatabase;
   logAdminAction: LogAdminAction;
+  notifyEventCancelled?: typeof notifyEventCancelled;
 }): express.Router {
   const router = express.Router();
-  const { requireAuth, db, logAdminAction } = params;
+  const { requireAuth, db, logAdminAction, notifyEventCancelled: sendEventCancelledNotification = notifyEventCancelled } = params;
 
   ensureAdminEventSchema(db);
 
@@ -598,8 +599,6 @@ export function createAdminEventModerationRouter(params: {
         return res.status(404).json({ error: "Event not found" });
       }
 
-      const wasCancelled = event.status === "cancelled";
-
       db.prepare(
         `
           UPDATE events
@@ -629,8 +628,13 @@ export function createAdminEventModerationRouter(params: {
         },
       });
 
-      if (status === "cancelled" && !wasCancelled) {
-        void notifyCancelledEventTicketHolders(db, event, reason);
+      if (status === "cancelled") {
+        void notifyCancelledEventTicketHolders(db, event, reason, sendEventCancelledNotification).catch((error) => {
+          console.warn("[notification] event cancellation fan-out failed", {
+            eventId: event.id,
+            error,
+          });
+        });
       }
 
       const updatedEvent = db.prepare(`SELECT * FROM events WHERE id = ? LIMIT 1`).get(eventId) as EventRow | undefined;
