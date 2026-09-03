@@ -18,7 +18,7 @@ export async function notifySellerApplicationApproved(
 
   const recipientName = application.fullLegalName?.trim() || "there";
   const businessName = application.businessName?.trim() || "your business";
-  const sellerDashboardUrl = "https://buymesho.app/seller";
+  const sellerDashboardUrl = "https://buymesho.app/seller/payouts?view=hub";
   const { text, html } = renderSellerApplicationApprovedEmail({
     recipientName,
     businessName,
