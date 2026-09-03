@@ -1,7 +1,82 @@
 import { sendEmail } from "../email/email.service.js";
-import { renderTicketDeliveryEmail, renderTicketPurchaseConfirmationEmail, type EventTicketEmailData } from "../email/templates/event-ticket.js";
+import {
+  renderTicketDeliveryEmail,
+  renderTicketPurchaseConfirmationEmail,
+  type EventTicketEmailData,
+} from "../email/templates/event-ticket.js";
+import {
+  claimEmailNotification,
+  markEmailNotificationSent,
+  releaseEmailNotification,
+} from "./email-delivery.repository.js";
+
 type Send = typeof sendEmail;
-export type TicketEmailInput = EventTicketEmailData & { email:string; orderStatus:string };
-async function deliver(input:TicketEmailInput, subject:string, render:(data:EventTicketEmailData)=>{text:string;html:string}, send:Send){if(input.orderStatus!=="paid"&&input.orderStatus!=="in_escrow")return false;const {text,html}=render(input);await send({sender:"transactional",to:{email:input.email,name:input.buyerName},subject,text,html});return true;}
-export function notifyTicketPurchaseConfirmation(input:TicketEmailInput,deps:{send?:Send}={}){return deliver(input,"Your BuyMesho ticket purchase is confirmed",renderTicketPurchaseConfirmationEmail,deps.send??sendEmail);}
-export function notifyTicketDelivery(input:TicketEmailInput,deps:{send?:Send}={}){return deliver(input,"Your BuyMesho event ticket is ready",renderTicketDeliveryEmail,deps.send??sendEmail);}
+export type TicketEmailInput = EventTicketEmailData & { email: string; orderStatus: string };
+
+type PurchaseDependencies = {
+  send?: Send;
+  notificationKey?: string;
+  claim?: (key: string) => boolean;
+  markSent?: (key: string) => void;
+  release?: (key: string) => void;
+};
+
+export async function notifyTicketPurchaseConfirmation(
+  input: TicketEmailInput,
+  deps: PurchaseDependencies = {},
+): Promise<boolean> {
+  if (input.orderStatus !== "paid" && input.orderStatus !== "in_escrow") return false;
+
+  const key = deps.notificationKey ?? input.orderReference;
+  const claim = deps.claim ?? ((dedupeKey: string) => claimEmailNotification("ticket_purchase_confirmation", dedupeKey));
+  const markSent = deps.markSent ?? ((dedupeKey: string) => markEmailNotificationSent("ticket_purchase_confirmation", dedupeKey));
+  const release = deps.release ?? ((dedupeKey: string) => releaseEmailNotification("ticket_purchase_confirmation", dedupeKey));
+
+  if (!claim(key)) return false;
+
+  try {
+    const { text, html } = renderTicketPurchaseConfirmationEmail(input);
+    await (deps.send ?? sendEmail)({
+      sender: "transactional",
+      to: { email: input.email, name: input.buyerName },
+      subject: "Your BuyMesho ticket purchase is confirmed",
+      text,
+      html,
+    });
+    markSent(key);
+    return true;
+  } catch (error) {
+    release(key);
+    throw error;
+  }
+}
+
+export function notifyTicketDelivery(
+  input: TicketEmailInput,
+  deps: { send?: Send } = {},
+): Promise<boolean> {
+  return deliverTicketNotification(
+    input,
+    "Your BuyMesho event ticket is ready",
+    renderTicketDeliveryEmail,
+    deps.send ?? sendEmail,
+  );
+}
+
+async function deliverTicketNotification(
+  input: TicketEmailInput,
+  subject: string,
+  render: (data: EventTicketEmailData) => { text: string; html: string },
+  send: Send,
+): Promise<boolean> {
+  if (input.orderStatus !== "paid" && input.orderStatus !== "in_escrow") return false;
+  const { text, html } = render(input);
+  await send({
+    sender: "transactional",
+    to: { email: input.email, name: input.buyerName },
+    subject,
+    text,
+    html,
+  });
+  return true;
+}
