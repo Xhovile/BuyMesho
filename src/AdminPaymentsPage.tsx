@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { CircleAlert, CreditCard, Loader2, ShieldCheck } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
-import AdminPayoutQueue from "./AdminPayoutQueue";
 import AdminPaymentDetailsDrawer from "./AdminPaymentDetailsDrawer";
 import AdminPaymentsToolbar from "./adminPayments/AdminPaymentsToolbar";
 import AdminPaymentsTable from "./adminPayments/AdminPaymentsTable";
@@ -321,8 +320,6 @@ export default function AdminPaymentsPage() {
           <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">{lifecycle.map((step) => <LifecycleNode key={step.number} {...step} />)}</div>
         </section>
       ) : null}
-
-      <AdminPayoutQueue />
 
       {submittedSearchQuery && investigation ? (
         <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
