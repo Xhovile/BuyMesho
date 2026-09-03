@@ -5,10 +5,19 @@ export type HeaderCapabilities = {
 };
 
 const CACHE_KEY_PREFIX = "bm:header-capabilities:";
+const SELLER_CACHE_KEY_PREFIX = "bm:isSeller:";
 const CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30;
 
 function cacheKey(uid: string): string {
   return `${CACHE_KEY_PREFIX}${uid}`;
+}
+
+function getLegacySellerCache(uid: string): boolean {
+  try {
+    return window.localStorage.getItem(`${SELLER_CACHE_KEY_PREFIX}${uid}`) === "1";
+  } catch {
+    return false;
+  }
 }
 
 export function getCachedHeaderCapabilities(uid: string): HeaderCapabilities | null {
@@ -16,14 +25,21 @@ export function getCachedHeaderCapabilities(uid: string): HeaderCapabilities | n
 
   try {
     const raw = window.localStorage.getItem(cacheKey(uid));
-    if (!raw) return null;
+    if (!raw) {
+      const legacyIsSeller = getLegacySellerCache(uid);
+      return legacyIsSeller ? { isSeller: true, isAdmin: false, updatedAt: 0 } : null;
+    }
 
     const parsed = JSON.parse(raw) as Partial<HeaderCapabilities> | null;
     if (!parsed || typeof parsed !== "object") return null;
     if (typeof parsed.isSeller !== "boolean" || typeof parsed.isAdmin !== "boolean" || typeof parsed.updatedAt !== "number") return null;
-    if (Date.now() - parsed.updatedAt > CACHE_MAX_AGE_MS) return null;
+    if (parsed.updatedAt !== 0 && Date.now() - parsed.updatedAt > CACHE_MAX_AGE_MS) return null;
 
-    return { isSeller: parsed.isSeller, isAdmin: parsed.isAdmin, updatedAt: parsed.updatedAt };
+    return {
+      isSeller: parsed.isSeller || getLegacySellerCache(uid),
+      isAdmin: parsed.isAdmin,
+      updatedAt: parsed.updatedAt,
+    };
   } catch {
     return null;
   }
