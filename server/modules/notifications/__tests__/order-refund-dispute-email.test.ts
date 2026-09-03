@@ -27,12 +27,12 @@ const order = {
   updatedAt: "2026-09-03T00:00:00.000Z",
 } as StoredOrder;
 
-function makeDependencies(failFirstSend = false) {
+function makeDependencies(failFirstCall = false) {
   const claimed = new Set<string>();
   const sent = new Set<string>();
   const released: string[] = [];
   const messages: Array<Record<string, unknown>> = [];
-  let shouldFail = failFirstSend;
+  let sendsRemainingToFail = failFirstCall ? 2 : 0;
 
   return {
     claimed,
@@ -55,8 +55,8 @@ function makeDependencies(failFirstSend = false) {
     lookupSellerBusinessName: async () => "Ada's Shop",
     send: async (message: Record<string, unknown>) => {
       messages.push(message);
-      if (shouldFail) {
-        shouldFail = false;
+      if (sendsRemainingToFail > 0) {
+        sendsRemainingToFail -= 1;
         throw new Error("provider unavailable");
       }
       return { messageId: "brevo-message-id" };
