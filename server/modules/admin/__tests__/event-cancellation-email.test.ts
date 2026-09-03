@@ -53,7 +53,13 @@ function makeDb(event: EventRow, ticketRows: Array<Record<string, unknown>>) {
         return undefined;
       },
       all: (..._params: unknown[]) => {
-        if (/SELECT id, ticket_type, holder_name, holder_email/i.test(sql)) return ticketRows;
+        if (/SELECT id, ticket_type, holder_name, holder_email/i.test(sql)) {
+          return ticketRows.filter((row) => {
+            const email = typeof row.holder_email === "string" ? row.holder_email.trim() : "";
+            const status = String(row.status ?? "");
+            return email !== "" && status !== "Cancelled" && status !== "Refunded";
+          });
+        }
         return [];
       },
       run: (...params: unknown[]) => {
