@@ -5,6 +5,7 @@ import { hasAdminAccess } from "../../auth/adminAccess.js";
 import { adminApiLimiter } from "./admin.rateLimit.js";
 import { ADMIN_ACTION_TYPES, ADMIN_TARGET_TYPES, type AdminActionType, type AdminTargetType } from "../../../src/modules/admin/shared/adminAuditTypes.js";
 import { notifySellerApplicationApproved } from "../notifications/seller-application-approved.notification.js";
+import { notifySellerApplicationRejected } from "../notifications/seller-application-rejected.notification.js";
 
 type AsyncRouteHandler = (
   req: Request,
@@ -49,6 +50,7 @@ export function createAdminModerationRouter(params: {
     details?: unknown;
   }) => void;
   notifySellerApplicationApproved?: typeof notifySellerApplicationApproved;
+  notifySellerApplicationRejected?: typeof notifySellerApplicationRejected;
   syncApprovedSellerToFirestore?: typeof syncApprovedSellerToFirestore;
 }): express.Router {
   const router = express.Router();
@@ -57,6 +59,7 @@ export function createAdminModerationRouter(params: {
     db,
     logAdminAction,
     notifySellerApplicationApproved: sendSellerApplicationApprovedEmail = notifySellerApplicationApproved,
+    notifySellerApplicationRejected: sendSellerApplicationRejectedEmail = notifySellerApplicationRejected,
     syncApprovedSellerToFirestore: syncSellerToFirestore = syncApprovedSellerToFirestore,
   } = params;
 
@@ -325,6 +328,20 @@ export function createAdminModerationRouter(params: {
           });
         } catch (emailError) {
           console.warn("Failed to send approved seller application email:", emailError);
+        }
+      }
+
+      if (status === "rejected") {
+        try {
+          await sendSellerApplicationRejectedEmail({
+            applicationId: id,
+            applicantEmail: application.applicant_email,
+            fullLegalName: application.full_legal_name,
+            businessName: application.business_name,
+            reviewNotes: normalizedReviewNotes,
+          });
+        } catch (emailError) {
+          console.warn("Failed to send rejected seller application email:", emailError);
         }
       }
 
