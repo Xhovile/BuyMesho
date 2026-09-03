@@ -268,3 +268,27 @@ test('integration: reversed webhook refunds captured escrow according to domain 
     clearPaymentState();
   }
 });
+
+test('integration: refunded escrow cannot be released afterward', async () => {
+  clearPaymentState();
+  try {
+    seedOrder('order_refund_release_guard_1', 'txref-refund-release-guard-1', 'in_escrow');
+    const refundResult = escrowRepository.refundHeldBalance({
+      orderId: 'order_refund_release_guard_1',
+      refundedBy: 'admin-test',
+      note: 'Regression test refund',
+      reference: 'escrow-refund:order_refund_release_guard_1',
+    });
+    assert.ok(refundResult);
+    assert.equal(refundResult.escrow.state, 'refunded');
+    assert.throws(() => escrowRepository.releaseHeldBalance({
+      orderId: 'order_refund_release_guard_1',
+      releasedBy: 'admin-test',
+      note: 'Release after refund should fail',
+      reference: 'escrow-release:order_refund_release_guard_1',
+    }));
+    assert.equal(escrowRepository.findByOrderId('order_refund_release_guard_1')?.state, 'refunded');
+  } finally {
+    clearPaymentState();
+  }
+});
