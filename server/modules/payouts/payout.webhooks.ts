@@ -3,6 +3,7 @@ import { createHash } from "crypto";
 import { paychanguProvider, normalizePaychanguStatus } from "../payments/paychangu.provider.js";
 import { getPaymentDb } from "../../postgresCompat.js";
 import { findPaymentWebhookDuplicate, insertPaymentWebhookEvent, recordPaymentWebhookDuplicateAttempt, updatePaymentWebhookEventStatus } from "../../postgresCompat/webhooks.js";
+import { notifyPayoutCompleted } from "../notifications/payout-completed.notification.js";
 
 type PayoutWebhookContext = { signature?: string | undefined; payload: string | Buffer | Record<string, unknown> };
 type ParsedWebhookPayload = { rawPayload: string; parsedPayload: Record<string, unknown> | null };
@@ -75,6 +76,7 @@ async function handlePaychanguWebhookInternal(context:PayoutWebhookContext):Prom
   const latestAttempt=db.prepare(`SELECT id FROM payout_attempts WHERE payout_id=? ORDER BY attempt_no DESC,created_at DESC LIMIT 1`).get(resolvedPayoutId) as {id?:string}|undefined;
   if(latestAttempt?.id)db.prepare(`UPDATE payout_attempts SET status=?,response_payload=?,completed_at=COALESCE(completed_at,?),updated_at=? WHERE id=?`).run(payoutState,rawPayload,now,now,latestAttempt.id);
   db.prepare(`INSERT INTO payout_events (payout_id,seller_id,event_type,actor_type,actor_id,note,payload,created_at) VALUES (?,?,?,'system',NULL,?,?,?)`).run(resolvedPayoutId,resolvedSellerId,payoutState==='paid'?'payout_reconciled':payoutState==='failed'?'payout_webhook_failed':'payout_webhook_pending',payoutState==='paid'?'PayChangu payout webhook confirmed payout completion':payoutState==='failed'?'PayChangu payout webhook reported payout failure':'PayChangu payout webhook reported pending payout status',rawPayload,now);
+  if(payoutState==='paid'){const seller=db.prepare(`SELECT email,business_name FROM sellers WHERE uid=? LIMIT 1`).get(resolvedSellerId) as {email?:string;business_name?:string}|undefined;const email=seller?.email?.trim();if(email)void notifyPayoutCompleted({email,sellerName:seller?.business_name?.trim()||'there',amount:payoutAmount,currency:payoutCurrency,payoutId:resolvedPayoutId,orderReference:String(payoutRow.order_id??'').trim()||null,completedAt:now,status:payoutState}).catch(error=>console.warn('[notification] payout_completed email delivery failed',error));}
   updatePaymentWebhookEventStatus(inserted.id,'processed',{processedAt:now,signatureValid:true});
   return{ok:true,status:'processed',payoutId:resolvedPayoutId};
 }
