@@ -10,12 +10,15 @@ import {
 
 type RecipientRole = "buyer" | "seller";
 type SendEmail = typeof sendEmail;
+type FirebaseUser = { email?: string | null; displayName?: string | null };
 
 type DeliveryDependencies = {
   send?: SendEmail;
   claim?: (notificationType: string, dedupeKey: string) => boolean;
   markSent?: (notificationType: string, dedupeKey: string) => void;
   release?: (notificationType: string, dedupeKey: string) => void;
+  lookupUser?: (uid: string) => Promise<FirebaseUser>;
+  lookupSellerBusinessName?: (uid: string) => Promise<string | null>;
 };
 
 export type OrderDisputedInput = {
@@ -26,7 +29,7 @@ export type OrderDisputedInput = {
   reason: string;
 };
 
-async function getUserEmail(uid: string) {
+async function getUserEmail(uid: string): Promise<FirebaseUser> {
   const user = await getFirebaseAdmin().auth().getUser(uid);
   return { email: user.email?.trim() || "", displayName: user.displayName?.trim() || "" };
 }
@@ -50,13 +53,14 @@ async function sendOrderDisputedEmail(
   dependencies: DeliveryDependencies,
 ): Promise<boolean> {
   const recipientId = role === "buyer" ? input.buyerId : input.sellerId;
-  const recipient = await getUserEmail(recipientId);
-  if (!recipient.email) return false;
+  const lookupUser = dependencies.lookupUser ?? getUserEmail;
+  const recipient = await lookupUser(recipientId);
+  const email = recipient.email?.trim() || "";
+  if (!email) return false;
 
-  const sellerBusinessName = (await getSellerBusinessName(input.sellerId)) || "BuyMesho seller";
-  const buyerName = role === "buyer"
-    ? recipient.displayName || "there"
-    : "BuyMesho customer";
+  const lookupSellerBusinessName = dependencies.lookupSellerBusinessName ?? getSellerBusinessName;
+  const sellerBusinessName = (await lookupSellerBusinessName(input.sellerId)) || "BuyMesho seller";
+  const buyerName = role === "buyer" ? recipient.displayName?.trim() || "there" : "BuyMesho customer";
   const recipientName = role === "buyer" ? buyerName : sellerBusinessName;
   const counterpartyName = role === "buyer" ? sellerBusinessName : buyerName;
   const actionUrl = `https://buymesho.app/orders/${encodeURIComponent(input.orderId)}`;
@@ -79,7 +83,7 @@ async function sendOrderDisputedEmail(
 
     await (dependencies.send ?? sendEmail)({
       sender: "notifications",
-      to: { email: recipient.email, name: recipientName },
+      to: { email, name: recipientName },
       subject: "BuyMesho order dispute opened",
       text,
       html,
