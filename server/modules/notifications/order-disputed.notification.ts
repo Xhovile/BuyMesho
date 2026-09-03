@@ -11,6 +11,13 @@ import {
 type RecipientRole = "buyer" | "seller";
 type SendEmail = typeof sendEmail;
 
+type DeliveryDependencies = {
+  send?: SendEmail;
+  claim?: (notificationType: string, dedupeKey: string) => boolean;
+  markSent?: (notificationType: string, dedupeKey: string) => void;
+  release?: (notificationType: string, dedupeKey: string) => void;
+};
+
 export type OrderDisputedInput = {
   orderId: string;
   disputeId: string;
@@ -40,26 +47,25 @@ async function getSellerBusinessName(sellerUid: string): Promise<string | null> 
 async function sendOrderDisputedEmail(
   input: OrderDisputedInput,
   role: RecipientRole,
-  dependencies: { send?: SendEmail } = {},
+  dependencies: DeliveryDependencies,
 ): Promise<boolean> {
   const recipientId = role === "buyer" ? input.buyerId : input.sellerId;
   const recipient = await getUserEmail(recipientId);
   if (!recipient.email) return false;
 
   const sellerBusinessName = (await getSellerBusinessName(input.sellerId)) || "BuyMesho seller";
-  const buyerName = recipientId === input.buyerId && recipient.displayName
-    ? recipient.displayName
-    : "BuyMesho customer";
-  const recipientName = role === "buyer"
+  const buyerName = role === "buyer"
     ? recipient.displayName || "there"
-    : sellerBusinessName;
-  const counterpartyName = role === "buyer"
-    ? sellerBusinessName
-    : buyerName;
+    : "BuyMesho customer";
+  const recipientName = role === "buyer" ? buyerName : sellerBusinessName;
+  const counterpartyName = role === "buyer" ? sellerBusinessName : buyerName;
   const actionUrl = `https://buymesho.app/orders/${encodeURIComponent(input.orderId)}`;
   const dedupeKey = `${input.disputeId}:${role}`;
+  const claim = dependencies.claim ?? claimEmailNotification;
+  const markSent = dependencies.markSent ?? markEmailNotificationSent;
+  const release = dependencies.release ?? releaseEmailNotification;
 
-  if (!claimEmailNotification("order_disputed", dedupeKey)) return false;
+  if (!claim("order_disputed", dedupeKey)) return false;
 
   try {
     const { text, html } = renderOrderDisputedEmail({
@@ -78,17 +84,17 @@ async function sendOrderDisputedEmail(
       text,
       html,
     });
-    markEmailNotificationSent("order_disputed", dedupeKey);
+    markSent("order_disputed", dedupeKey);
     return true;
   } catch (error) {
-    releaseEmailNotification("order_disputed", dedupeKey);
+    release("order_disputed", dedupeKey);
     throw error;
   }
 }
 
 export async function notifyOrderDisputed(
   input: OrderDisputedInput,
-  dependencies: { send?: SendEmail } = {},
+  dependencies: DeliveryDependencies = {},
 ): Promise<void> {
   await Promise.allSettled([
     sendOrderDisputedEmail(input, "buyer", dependencies),
