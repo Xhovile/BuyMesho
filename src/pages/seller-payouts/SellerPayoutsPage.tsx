@@ -1,7 +1,6 @@
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import BrandMark from "../../components/BrandMark";
 import ConfirmModal from "../../components/ConfirmModal";
-// import ConnectSettingsCard from "../../components/payouts/ConnectSettingsCard";
 import { EXPLORE_PATH, navigateToPath } from "../../lib/appNavigation";
 import { getSellerCache } from "../../lib/sellerWorkspaceCache";
 import SellerHubPage from "../../SellerHubPage";
@@ -13,20 +12,27 @@ import SellerPayoutsHistorySection from "./components/SellerPayoutsHistorySectio
 import SellerPayoutsNotice from "./components/SellerPayoutsNotice";
 import { useSellerPayoutsPage } from "./useSellerPayoutsPage";
 
+/**
+ * The seller hub and seller orders are independent surfaces. Do not mount the
+ * payout-management hook for them: that hook performs six authenticated API
+ * reads and was unnecessarily blocking the workspace shell from rendering.
+ */
 export default function SellerPayoutsPage() {
   const view = new URLSearchParams(window.location.search).get("view");
 
+  if (!view || view === "hub") return <SellerHubPage />;
+  if (view === "orders") return <SellerOrdersPage />;
+
+  return <SellerPayoutsManageView />;
+}
+
+function SellerPayoutsManageView() {
   const {
     profileLoading,
     isSeller,
     sellerId,
     loading,
     refreshing,
-    // connectAccount,
-    // connectLoading,
-    // connectError,
-    // connectDefaultMode,
-    // defaultConnectScope,
     notice,
     lastSaveDiagnostic,
     form,
@@ -46,9 +52,6 @@ export default function SellerPayoutsPage() {
     resetForm,
     setRemoveTarget,
     startEdit,
-    // handleConnectRefresh,
-    // handleConnect,
-    // handleDisconnect,
     handleSaveDestination,
     handleMakeDefault,
     handleRemoveDestination,
@@ -71,9 +74,6 @@ export default function SellerPayoutsPage() {
     return <SellerPayoutsAccessGate loading={false} isSeller={false} isAuthenticated={isAuthenticated} onBack={() => navigateToPath(EXPLORE_PATH)} />;
   }
 
-  if (!view || view === "hub") return <SellerHubPage />;
-  if (view === "orders") return <SellerOrdersPage />;
-
   const providerOptions = [...providerMetadata.mobileMoneyOperators, ...providerMetadata.banks];
 
   return (
@@ -90,9 +90,6 @@ export default function SellerPayoutsPage() {
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8">
         <SellerPayoutsHero summary={summary} earningsSummary={earningsSummary} canEditSettings={canEditSettings} />
         {notice ? <SellerPayoutsNotice type={notice.type} message={notice.message} details={lastSaveDiagnostic?.reasons} /> : null}
-        {/* PayChangu Connect is hidden until direct seller settlement is ready to enable.
-        <ConnectSettingsCard connectAccount={connectAccount} connectLoading={connectLoading} connectError={connectError} connectDefaultMode={connectDefaultMode} defaultConnectScope={defaultConnectScope} onRefresh={() => void handleConnectRefresh()} onConnect={() => void handleConnect()} onDisconnect={() => void handleDisconnect()} />
-        */}
         <SellerPayoutsDestinationsSection form={form} onFormChange={setForm} onSave={handleSaveDestination} onCancel={resetForm} saving={savingDestination} error={destinationFormError} canEditSettings={canEditSettings} isEditing={Boolean(selectedDestinationId)} activeDestinationCount={activeDestinations.length} activeDestinations={activeDestinations} providerOptions={providerOptions} onReplace={startEdit} onRemove={handleRemoveDestination} onMakeDefault={handleMakeDefault} />
         <SellerPayoutsHistorySection payouts={payouts} canViewHistory={canViewHistory} />
       </main>
