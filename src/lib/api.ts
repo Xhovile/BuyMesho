@@ -19,10 +19,8 @@ const initialAuthState = new Promise<void>((resolve) => {
 
 async function authHeader(forceRefresh = false) {
   await initialAuthState;
-
   const user = auth.currentUser;
   if (!user) return {} as Record<string, string>;
-
   try {
     const token = await user.getIdToken(forceRefresh);
     if (token) return { Authorization: `Bearer ${token}` };
@@ -38,7 +36,6 @@ async function authHeader(forceRefresh = false) {
       console.warn("Failed to refresh Firebase ID token:", error);
     }
   }
-
   return {} as Record<string, string>;
 }
 
@@ -61,7 +58,10 @@ function formatApiErrorMessage(value: unknown): string | null {
     const record = value as Record<string, unknown>;
     const directMessage = formatApiErrorMessage(record.message ?? record.error ?? record.detail ?? record.reason);
     if (directMessage) return directMessage;
-    const parts = Object.entries(record).map(([key, nested]) => { const nestedMessage = formatApiErrorMessage(nested); return nestedMessage ? `${key}: ${nestedMessage}` : null; }).filter((item): item is string => Boolean(item));
+    const parts = Object.entries(record).map(([key, nested]) => {
+      const nestedMessage = formatApiErrorMessage(nested);
+      return nestedMessage ? `${key}: ${nestedMessage}` : null;
+    }).filter((item): item is string => Boolean(item));
     return parts.length > 0 ? parts.join("; ") : null;
   }
   return null;
@@ -91,7 +91,7 @@ function rewriteLegacyPayoutRoute(url: string, init: ApiFetchInit): { url: strin
   const match = url.match(/^\/api\/payouts\/([^/]+)\/(retry|override)$/);
   if (!match) return { url, init };
   const payload = typeof init.body === "string" ? (() => { try { return JSON.parse(init.body) as Record<string, unknown>; } catch { return null; } })() : null;
-  const payoutId = typeof payload?.payoutId === "string" ? payload.payoutId.trim() : "";
+  const payoutId = typeof payload?.payoutId === "string' ? payload.payoutId.trim() : "";
   if (!payoutId) return { url, init };
   return { url: `/api/admin/payouts/${encodeURIComponent(payoutId)}/${match[2]}`, init };
 }
@@ -111,36 +111,23 @@ function rewriteEventLifecyclePayload(url: string, init: ApiFetchInit): ApiFetch
 function sellerWorkspaceCacheKey(url: string): string | null {
   const uid = auth.currentUser?.uid;
   if (!uid) return null;
-
+  if (url === "/api/seller/workspace-summary") return "workspace-summary";
   if (url === "/api/seller/orders") return "api:orders";
-
   const sellerMatch = url.match(/^\/api\/sellers\/([^/]+)(\/listings)?$/);
   const sellerUid = sellerMatch ? sellerMatch[1] : null;
-  if (sellerUid === uid) {
-    return `api:seller:${uid}${sellerMatch && sellerMatch[2] === "/listings" ? ":listings" : ":profile"}`;
-  }
-
+  if (sellerUid === uid) return `api:seller:${uid}${sellerMatch && sellerMatch[2] === "/listings" ? ":listings" : ":profile"}`;
   const userListingsMatch = url.match(/^\/api\/users\/([^/]+)\/listings$/);
   const userListingsUid = userListingsMatch ? userListingsMatch[1] : null;
   if (userListingsUid === uid) return `api:seller:${uid}:listings`;
-
   return null;
 }
 
 function invalidateSellerWorkspaceCache(method: string, url: string) {
   if (method === "GET" || method === "HEAD") return;
-
   const uid = auth.currentUser?.uid;
   if (!uid) return;
-
-  if (url === "/api/seller/orders" || url.startsWith("/api/seller/orders/")) {
-    invalidateSellerCache("api:orders");
-  }
-
-  if (url === "/api/listings" || url.startsWith("/api/listings/")) {
-    invalidateSellerCache(`api:seller:${uid}:listings`);
-  }
-
+  if (url === "/api/seller/orders" || url.startsWith("/api/seller/orders/")) invalidateSellerCache("api:orders");
+  if (url === "/api/listings" || url.startsWith("/api/listings/")) invalidateSellerCache(`api:seller:${uid}:listings`);
   const sellerMatch = url.match(/^\/api\/sellers\/([^/]+)/);
   const sellerUid = sellerMatch ? sellerMatch[1] : null;
   if (sellerUid === uid) {
@@ -152,12 +139,10 @@ function invalidateSellerWorkspaceCache(method: string, url: string) {
 async function performApiFetch(url: string, init: ApiFetchInit = {}, forceRefreshToken = false) {
   const headers: Record<string, string> = { ...(init.headers as Record<string, string> | undefined), ...(await authHeader(forceRefreshToken)) };
   if (init.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
-
   const { controller, wasCallerAborted } = createCombinedAbortSignal(init.signal);
   let timedOut = false;
   const timeoutMs = init.timeoutMs ?? API_FETCH_TIMEOUT_MS;
   const timeoutId = setTimeout(() => { timedOut = true; controller.abort(new Error(`Request timed out after ${timeoutMs}ms.`)); }, timeoutMs);
-
   let res: Response;
   try {
     res = await fetch(url, { ...init, headers, credentials: "same-origin", signal: controller.signal });
@@ -169,7 +154,6 @@ async function performApiFetch(url: string, init: ApiFetchInit = {}, forceRefres
     }
     throw error;
   } finally { clearTimeout(timeoutId); }
-
   if (!res.ok) {
     let body: any = null;
     try { body = await res.json(); } catch {}
@@ -179,7 +163,6 @@ async function performApiFetch(url: string, init: ApiFetchInit = {}, forceRefres
     if (typeof body?.code === "string" && body.code.trim()) error.code = body.code.trim();
     throw error;
   }
-
   const text = await res.text();
   return text ? JSON.parse(text) : null;
 }
@@ -192,17 +175,14 @@ export async function apiFetch(url: string, init: ApiFetchInit = {}) {
   const retryDelayMs = eventInit.retryDelayMs ?? DEFAULT_SAFE_RETRY_DELAY_MS;
   const isAdminMessagesList = method === "GET" && rewrittenUrl.startsWith("/api/admin/messages?") && !rewrittenUrl.includes("/summary");
   const sellerCacheKey = method === "GET" ? sellerWorkspaceCacheKey(rewrittenUrl) : null;
-
   if (isAdminMessagesList) {
     const cached = adminMessagesResponseCache.get(rewrittenUrl);
     if (cached !== undefined) return cached;
   }
-
   if (sellerCacheKey) {
     const cached = getSellerCache<any>(sellerCacheKey);
     if (cached !== null) return cached;
   }
-
   let lastError: unknown = null;
   for (let attempt = 1; attempt <= retryAttempts; attempt += 1) {
     try {
@@ -214,10 +194,6 @@ export async function apiFetch(url: string, init: ApiFetchInit = {}) {
     } catch (error: any) {
       lastError = error;
       const status = typeof error?.status === "number" ? error.status : null;
-
-      // Authentication failures are recoverable when Firebase still has a signed-in
-      // user. Refresh the ID token and retry the exact request once, including POSTs
-      // such as reconcile/retry/refund. A genuine second 401 is still surfaced.
       if (status === 401 && auth.currentUser) {
         try {
           return await performApiFetch(rewrittenUrl, eventInit, true);
@@ -225,7 +201,6 @@ export async function apiFetch(url: string, init: ApiFetchInit = {}) {
           lastError = refreshError;
         }
       }
-
       const retryableStatus = status !== null && RETRYABLE_STATUS_CODES.has(status);
       const retryableError = error?.name === "AbortError" || /Request timed out/i.test(String(error?.message || "")) || /fetch/i.test(String(error?.message || ""));
       const canRetry = attempt < retryAttempts && shouldRetrySafeRequest(method) && (retryableStatus || retryableError);
