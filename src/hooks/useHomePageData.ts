@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../lib/api";
-import { API_CACHE_TTL_MS, isCachedApiResponseFresh, readCachedApiJson } from "../lib/apiCache";
+import { readCachedApiJson } from "../lib/apiCache";
 import { useAuthUser } from "./useAuthUser";
 
 export type HomePreviewListing = {
@@ -47,8 +47,8 @@ export type HomeFeaturedSection = {
 const NEWEST_LISTINGS_URL = "/api/listings?sortBy=newest&pageSize=6";
 const FEATURED_LISTINGS_URL = "/api/listings?sortBy=popular&pageSize=6";
 const CATEGORY_SECTION_LIMIT = 4;
-const CATEGORY_SECTION_FETCH_DELAY_MS = 250;
 const SHARED_API_CACHE_PREFIX = "__buymesho_api_cache_v2:";
+const FORCE_NETWORK_HEADER = "x-buymesho-force-network";
 
 function normalize(v?: string | null) {
   return v?.toLowerCase().trim() || "";
@@ -158,57 +158,30 @@ function readHomeSnapshot(featuredSections: HomeFeaturedSection[], campus: strin
     featured.length > 0 ||
     Object.values(sectionMap).some((items) => items.length > 0);
 
-  if (!hasAnyListings) {
-    return {
-      hasCache: false,
-      ...buildRankedSnapshot(campus, featuredSections, [], [], sectionMap),
-    };
-  }
-
   return {
-    hasCache: true,
+    hasAnyListings,
+    primaryHasCache: newest.length > 0 || featured.length > 0,
     ...buildRankedSnapshot(campus, featuredSections, newest, featured, sectionMap),
   };
 }
 
-async function fetchListings(path: string, signal?: AbortSignal) {
-  const data = await apiFetch(path, { signal });
+async function fetchListings(path: string, signal?: AbortSignal, forceNetwork = false) {
+  const data = await apiFetch(path, {
+    signal,
+    headers: forceNetwork ? { [FORCE_NETWORK_HEADER]: "1" } : undefined,
+  });
   return Array.isArray(data?.items) ? (data.items as HomePreviewListing[]) : [];
 }
 
-function hasFreshHomeCache(featuredSections: HomeFeaturedSection[]) {
-  const urls = [
-    NEWEST_LISTINGS_URL,
-    FEATURED_LISTINGS_URL,
-    ...featuredSections.map((section) => buildSectionUrl(section)),
-  ];
-
-  return urls.every((url) => isCachedApiResponseFresh(url, API_CACHE_TTL_MS));
-}
-
-export function invalidateHomepageCache() {
-  if (typeof window === "undefined") return;
-
-  try {
-    for (let index = localStorage.length - 1; index >= 0; index -= 1) {
-      const key = localStorage.key(index);
-      if (!key || !key.startsWith(SHARED_API_CACHE_PREFIX)) continue;
-      if (key.includes("/api/listings")) {
-        localStorage.removeItem(key);
-      }
-    }
-  } catch {
-    // Ignore cache invalidation failures.
+function createInitialSectionLoading(
+  featuredSections: HomeFeaturedSection[],
+  sectionListings: Record<string, HomePreviewListing[]>,
+) {
+  const state: Record<string, boolean> = {};
+  for (const section of featuredSections) {
+    state[section.key] = !(sectionListings[section.key]?.length);
   }
-}
-
-function createAbortError() {
-  if (typeof DOMException !== "undefined") {
-    return new DOMException("Aborted", "AbortError");
-  }
-  const error = new Error("Aborted");
-  error.name = "AbortError";
-  return error;
+  return state;
 }
 
 function isAbortLikeError(error: unknown) {
@@ -234,12 +207,9 @@ function isAbortLikeError(error: unknown) {
 
 export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
   const { user, loading: authLoading } = useAuthUser();
+  const initialSnapshot = readHomeSnapshot(featuredSections, "");
 
   const [campus, setCampus] = useState("");
-  const initialSnapshot = readHomeSnapshot(featuredSections, "");
-  const [recommendedListings, setRecommendedListings] = useState<HomePreviewListing[]>(
-    () => initialSnapshot.recommendedListings,
-  );
   const [newestListings, setNewestListings] = useState<HomePreviewListing[]>(
     () => initialSnapshot.newestListings,
   );
@@ -249,12 +219,30 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
   const [sectionListings, setSectionListings] = useState<Record<string, HomePreviewListing[]>>(
     () => initialSnapshot.sectionListings,
   );
+  const [sectionLoading, setSectionLoading] = useState<Record<string, boolean>>(() =>
+    createInitialSectionLoading(featuredSections, initialSnapshot.sectionListings),
+  );
   const [eventsListings, setEventsListings] = useState<HomeEventPreview[]>([]);
-  const [eventsLoading, setEventsLoading] = useState(true);
-  const [loading, setLoading] = useState(() => !initialSnapshot.hasCache);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsLoaded, setEventsLoaded] = useState(false);
+  const [loading, setLoading] = useState(() => !initialSnapshot.primaryHasCache);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+  const sectionRequestsRef = useRef(new Map<string, AbortController>());
+  const eventsRequestRef = useRef<AbortController | null>(null);
+  const primarySuccessfulRef = useRef(false);
 
-  // Get campus
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      for (const controller of sectionRequestsRef.current.values()) controller.abort();
+      sectionRequestsRef.current.clear();
+      eventsRequestRef.current?.abort();
+      eventsRequestRef.current = null;
+    };
+  }, []);
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -264,123 +252,142 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
     }
 
     apiFetch("/api/profile")
-      .then((p) => setCampus(p?.university || ""))
-      .catch(() => setCampus(""));
+      .then((p) => {
+        if (mountedRef.current) setCampus(p?.university || "");
+      })
+      .catch(() => {
+        if (mountedRef.current) setCampus("");
+      });
   }, [user, authLoading]);
 
-  // Load + rank
   useEffect(() => {
-    const controller = new AbortController();
+    const newestController = new AbortController();
+    const featuredController = new AbortController();
+    let finished = 0;
+    let successful = false;
 
-    const load = async () => {
-      const cachedSnapshot = readHomeSnapshot(featuredSections, campus);
-      if (cachedSnapshot.hasCache) {
-        setRecommendedListings(cachedSnapshot.recommendedListings);
-        setNewestListings(cachedSnapshot.newestListings);
-        setFeaturedListings(cachedSnapshot.featuredListings);
-        setSectionListings(cachedSnapshot.sectionListings);
+    setError(null);
+
+    const settlePrimary = (kind: "newest" | "featured", items: HomePreviewListing[]) => {
+      if (!mountedRef.current) return;
+
+      if (kind === "newest") {
+        setNewestListings(items);
+      } else {
+        setFeaturedListings(items);
       }
 
-      const shouldRefresh = !hasFreshHomeCache(featuredSections);
-      if (!shouldRefresh) {
+      finished += 1;
+      if (items.length > 0) {
+        successful = true;
+        primarySuccessfulRef.current = true;
         setLoading(false);
         setError(null);
-        return;
-      }
-
-      if (!cachedSnapshot.hasCache) {
-        setLoading(true);
-      } else {
+      } else if (finished === 2 && !successful && !initialSnapshot.primaryHasCache) {
         setLoading(false);
+        setError("Unable to load homepage listings. Please try again.");
       }
+    };
 
-      setError(null);
-
-      try {
-        const [newestResult, featuredResult] = await Promise.allSettled([
-          fetchListings(NEWEST_LISTINGS_URL, controller.signal),
-          fetchListings(FEATURED_LISTINGS_URL, controller.signal),
-        ]);
-
-        const newest = newestResult.status === "fulfilled" ? newestResult.value : [];
-        const featured = featuredResult.status === "fulfilled" ? featuredResult.value : [];
-
-        const sectionPairs = await Promise.allSettled(
-          featuredSections.map(async (section) => {
-            const items = await fetchListings(buildSectionUrl(section), controller.signal);
-            return { key: section.key, items };
-          })
-        );
-
-        const sections: Record<string, HomePreviewListing[]> = {};
-        for (const section of featuredSections) {
-          sections[section.key] = cachedSnapshot.sectionListings[section.key] || [];
-        }
-        for (const result of sectionPairs) {
-          if (result.status === "fulfilled") {
-            sections[result.value.key] = result.value.items;
-          }
-        }
-
-        const snapshot = buildRankedSnapshot(campus, featuredSections, newest, featured, sections);
-        setRecommendedListings(snapshot.recommendedListings);
-        setNewestListings(snapshot.newestListings);
-        setFeaturedListings(snapshot.featuredListings);
-        setSectionListings(snapshot.sectionListings);
-
-        const loadedSomething =
-          snapshot.recommendedListings.length > 0 ||
-          snapshot.newestListings.length > 0 ||
-          snapshot.featuredListings.length > 0 ||
-          Object.values(snapshot.sectionListings).some((items) => items.length > 0);
-
-        if (!loadedSomething && !cachedSnapshot.hasCache) {
-          setError("Unable to load homepage listings. Please try again.");
-        } else {
-          setError(null);
-        }
-      } catch (e: unknown) {
-        if (controller.signal.aborted || isAbortLikeError(e)) {
-          return;
-        }
-        if (!cachedSnapshot.hasCache) {
-          setError("Unable to load homepage listings. Please try again.");
-        }
-      } finally {
-        if (!controller.signal.aborted) {
+    void fetchListings(NEWEST_LISTINGS_URL, newestController.signal, true)
+      .then((items) => settlePrimary("newest", items))
+      .catch((e) => {
+        if (!mountedRef.current || isAbortLikeError(e)) return;
+        finished += 1;
+        if (finished === 2 && !successful && !initialSnapshot.primaryHasCache) {
           setLoading(false);
+          setError("Unable to load homepage listings. Please try again.");
         }
-      }
+      });
+
+    void fetchListings(FEATURED_LISTINGS_URL, featuredController.signal, true)
+      .then((items) => settlePrimary("featured", items))
+      .catch((e) => {
+        if (!mountedRef.current || isAbortLikeError(e)) return;
+        finished += 1;
+        if (finished === 2 && !successful && !initialSnapshot.primaryHasCache) {
+          setLoading(false);
+          setError("Unable to load homepage listings. Please try again.");
+        }
+      });
+
+    return () => {
+      newestController.abort();
+      featuredController.abort();
     };
-
-    void load();
-    return () => controller.abort();
-  }, [campus, featuredSections]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadEvents = async () => {
-      try {
-        setEventsLoading(true);
-        const response = await apiFetch("/api/events", { signal: controller.signal });
-        if (controller.signal.aborted) return;
-        const items = Array.isArray(response?.items) ? (response.items as HomeEventPreview[]) : [];
-        setEventsListings(items.slice(0, 6));
-      } catch (e: unknown) {
-        if (!controller.signal.aborted && !isAbortLikeError(e)) {
-          setEventsListings([]);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setEventsLoading(false);
-        }
-      }
-    };
-
-    void loadEvents();
-    return () => controller.abort();
   }, []);
+
+  const loadSection = useCallback(
+    async (sectionKey: string) => {
+      const section = featuredSections.find((candidate) => candidate.key === sectionKey);
+      if (!section || sectionRequestsRef.current.has(sectionKey)) return;
+
+      const controller = new AbortController();
+      sectionRequestsRef.current.set(sectionKey, controller);
+
+      const url = buildSectionUrl(section);
+      const cachedItems = readListingsFromCache(url);
+      if (cachedItems.length > 0) {
+        setSectionListings((current) => ({ ...current, [sectionKey]: cachedItems }));
+        setSectionLoading((current) => ({ ...current, [sectionKey]: false }));
+      } else {
+        setSectionLoading((current) => ({ ...current, [sectionKey]: true }));
+      }
+
+      try {
+        const items = await fetchListings(url, controller.signal, true);
+        if (!mountedRef.current) return;
+        setSectionListings((current) => ({ ...current, [sectionKey]: items }));
+        setSectionLoading((current) => ({ ...current, [sectionKey]: false }));
+      } catch (e) {
+        if (!mountedRef.current || isAbortLikeError(e)) return;
+        setSectionLoading((current) => ({ ...current, [sectionKey]: false }));
+      } finally {
+        sectionRequestsRef.current.delete(sectionKey);
+      }
+    },
+    [featuredSections],
+  );
+
+  const loadEvents = useCallback(async () => {
+    if (eventsLoaded || eventsRequestRef.current) return;
+
+    const controller = new AbortController();
+    eventsRequestRef.current = controller;
+    setEventsLoading(true);
+
+    try {
+      const response = await apiFetch("/api/events", {
+        signal: controller.signal,
+        headers: { [FORCE_NETWORK_HEADER]: "1" },
+      });
+      if (!mountedRef.current || controller.signal.aborted) return;
+      const items = Array.isArray(response?.items)
+        ? (response.items as HomeEventPreview[])
+        : [];
+      setEventsListings(items.slice(0, 6));
+      setEventsLoaded(true);
+    } catch (e) {
+      if (!mountedRef.current || isAbortLikeError(e)) return;
+      setEventsListings([]);
+      setEventsLoaded(true);
+    } finally {
+      if (mountedRef.current) setEventsLoading(false);
+      if (eventsRequestRef.current === controller) eventsRequestRef.current = null;
+    }
+  }, [eventsLoaded]);
+
+  const recommendedListings = useMemo(
+    () =>
+      buildRankedSnapshot(
+        campus,
+        featuredSections,
+        newestListings,
+        featuredListings,
+        sectionListings,
+      ).recommendedListings,
+    [campus, featuredSections, newestListings, featuredListings, sectionListings],
+  );
 
   const dealListings = useMemo(
     () =>
@@ -388,7 +395,7 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
         if (item.listing_mode === "deal") return true;
         return Boolean(item.original_price && Number(item.original_price) > Number(item.price));
       }),
-    [recommendedListings]
+    [recommendedListings],
   );
 
   return {
@@ -399,7 +406,26 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
     newestListings,
     featuredListings,
     sectionListings,
-    loading,
+    sectionLoading,
+    loading: loading && !primarySuccessfulRef.current,
     error,
+    loadSection,
+    loadEvents,
   };
+}
+
+export function invalidateHomepageCache() {
+  if (typeof window === "undefined") return;
+
+  try {
+    for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+      const key = localStorage.key(index);
+      if (!key || !key.startsWith(SHARED_API_CACHE_PREFIX)) continue;
+      if (key.includes("/api/listings")) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch {
+    // Ignore cache invalidation failures.
+  }
 }
