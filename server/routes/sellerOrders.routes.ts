@@ -132,7 +132,7 @@ export function createSellerOrdersRouter(requireAuth: RequestHandler): express.R
           d.id AS dispute_id,
           d.escrow_id AS dispute_escrow_id,
           d.opened_by AS dispute_opened_by,
-          d.state AS dispute_state,
+          d.status AS dispute_state,
           d.reason AS dispute_reason,
           d.details AS dispute_details,
           d.resolution AS dispute_resolution,
