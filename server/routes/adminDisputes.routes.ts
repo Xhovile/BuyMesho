@@ -177,5 +177,87 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
     } catch (error) { return res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to apply dispute decision' }); }
   });
 
+  router.post('/refunds/:refundRequestId/execute', requireAuth, async (req: any, res) => {
+    try {
+      if (req.user?.is_admin !== true) return res.status(403).json({ error: 'Admin access required' });
+      const refundRequestId = clean(req.params.refundRequestId);
+      const note = clean(req.body?.note);
+      if (!note) return res.status(400).json({ error: 'Execution note is required' });
+
+      const result = await withTransaction(async (client) => {
+        const refundResult = await client.query<Record<string, unknown>>(
+          `SELECT rr.*, dc.status AS case_status, dc.id AS case_id, o.status AS order_status,
+                  o.buyer_id AS order_buyer_id, o.seller_id AS order_seller_id,
+                  o.total_currency AS order_currency, e.state AS escrow_state,
+                  e.balance_amount AS escrow_balance_amount, e.balance_currency AS escrow_balance_currency
+           FROM refund_requests rr
+           INNER JOIN dispute_cases dc ON dc.id = rr.dispute_case_id
+           INNER JOIN orders o ON o.id = rr.order_id
+           LEFT JOIN escrows e ON e.order_id = rr.order_id
+           WHERE rr.id = $1
+           LIMIT 1
+           FOR UPDATE`,
+          [refundRequestId],
+        );
+        const refund = refundResult.rows[0];
+        if (!refund) throw new Error('Refund request not found');
+        if (String(refund.status) === 'refunded') return { duplicate: true, refund };
+        if (String(refund.status) !== 'approved') throw new Error(`Refund request is ${refund.status}; only approved refunds can be executed.`);
+        if (!['open', 'under_review'].includes(String(refund.case_status))) throw new Error(`Dispute case is ${refund.case_status}; execution is no longer available.`);
+        if (!['funded', 'held', 'disputed'].includes(String(refund.escrow_state))) throw new Error(`Escrow is ${refund.escrow_state}; held-funds execution is unavailable.`);
+
+        const requestedAmount = Number(refund.amount_requested ?? 0);
+        const escrowBalance = Number(refund.escrow_balance_amount ?? 0);
+        if (!(requestedAmount > 0)) throw new Error('Refund amount must be positive.');
+        if (Math.abs(requestedAmount - escrowBalance) > 0.000001) throw new Error('The current execution path supports full held-balance refunds only; partial refund execution requires a dedicated financial path.');
+
+        const existingTransaction = await client.query<Record<string, unknown>>(
+          `SELECT * FROM refund_transactions WHERE refund_request_id = $1 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
+          [refundRequestId],
+        );
+        if (existingTransaction.rows[0]) {
+          const transaction = existingTransaction.rows[0];
+          if (String(transaction.status) === 'refunded') return { duplicate: true, refund, transaction };
+        }
+
+        assertRefundTransition('approved', 'processing', 'financial_workflow');
+        await client.query(`UPDATE refund_requests SET status='processing', latest_status_at=$1, updated_at=$1 WHERE id=$2`, [new Date().toISOString(), refundRequestId]);
+
+        const escrowRefund = await escrowRepository.refundHeldBalanceAsync({
+          orderId: String(refund.order_id),
+          refundedBy: String(req.user.uid),
+          reference: `refund-execution:${refundRequestId}`,
+          note,
+        }, client);
+        if (!escrowRefund) throw new Error('Escrow refund could not be executed.');
+
+        const now = new Date().toISOString();
+        const transactionId = `internal-refund:${refundRequestId}`;
+        const refundTransactionId = `rft_${randomUUID()}`;
+        await client.query(
+          `INSERT INTO refund_transactions (
+             id, refund_request_id, order_id, buyer_id, seller_id, amount, currency, destination,
+             payment_method, provider, transaction_id, status, executed_by, executed_at,
+             supporting_evidence, metadata, created_at, updated_at
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'buymesho_escrow',$10,'refunded',$11,$12,$13,$14,$12,$12)`,
+          [refundTransactionId, refundRequestId, refund.order_id, refund.order_buyer_id, refund.order_seller_id, requestedAmount, refund.escrow_balance_currency ?? refund.order_currency ?? 'MWK', refund.refund_destination ?? null, refund.payment_method ?? null, transactionId, req.user.uid, now, refund.evidence ?? '[]', JSON.stringify({ note, escrowRefundEntryId: escrowRefund.refundEntry.id })],
+        );
+        assertRefundTransition('processing', 'refunded', 'financial_workflow');
+        await client.query(`UPDATE refund_requests SET status='refunded', refund_transaction_id=$1, latest_status_at=$2, updated_at=$2 WHERE id=$3`, [refundTransactionId, now, refundRequestId]);
+        if (refund.latest_attempt_id) {
+          await client.query(`UPDATE dispute_attempts SET status='resolved', decision='refund_executed', resolution_note=$1, resolved_by=$2, resolved_at=$3, updated_at=$3 WHERE id=$4`, [note, req.user.uid, now, refund.latest_attempt_id]);
+        }
+        await client.query(`UPDATE dispute_cases SET status='resolved', outcome='refund_executed', resolved_at=$1, updated_at=$1 WHERE id=$2`, [now, refund.case_id]);
+        await client.query(`UPDATE orders SET status='refunded', updated_at=$1 WHERE id=$2`, [now, refund.order_id]);
+        await client.query(`INSERT INTO audit_events (id,entity_type,entity_id,event_type,performed_by,timestamp,previous_state,new_state,metadata) VALUES ($1,'dispute_case',$2,'refund_financially_executed',$3,$4,'under_review','resolved',$5)`, [`aud_${randomUUID()}`, refund.case_id, req.user.uid, now, JSON.stringify({ orderId: refund.order_id, refundRequestId, refundTransactionId, amount: requestedAmount, note, executionMode: 'internal_escrow' })]);
+        return { duplicate: false, refund, refundTransactionId, transactionId, amount: requestedAmount };
+      });
+
+      return res.status(result.duplicate ? 200 : 201).json({ ...result, message: result.duplicate ? 'Refund was already executed.' : 'Refund executed and recorded successfully.' });
+    } catch (error) {
+      return res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to execute refund' });
+    }
+  });
+
   return router;
 }
