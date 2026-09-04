@@ -123,17 +123,7 @@ function DisputesPageContent() {
       await apiFetch("/api/disputes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: order.id,
-          ticketId,
-          requestType,
-          requestedResolution: resolution,
-          reason: reason.trim(),
-          amountRequested: numericAmount,
-          paymentMethod: paymentMethod || undefined,
-          refundDestination: refundDestination.trim() || undefined,
-          evidence: evidence.split("\n").map((line) => line.trim()).filter(Boolean),
-        }),
+        body: JSON.stringify({ orderId: order.id, ticketId, requestType, requestedResolution: resolution, reason: reason.trim(), amountRequested: numericAmount, paymentMethod: paymentMethod || undefined, refundDestination: refundDestination.trim() || undefined, evidence: evidence.split("\n").map((line) => line.trim()).filter(Boolean) }),
       });
       setSubmitted(true);
       await loadCases();
@@ -172,9 +162,7 @@ function DisputesPageContent() {
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4"><span className="text-xs font-bold uppercase tracking-wide text-zinc-500">Status</span><p className="mt-1 font-semibold">{order.status}</p></div>
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4"><span className="text-xs font-bold uppercase tracking-wide text-zinc-500">Total</span><p className="mt-1 font-semibold">{currency} {totalAmount.toLocaleString()}</p></div>
               </div>
-
               {paidOut ? <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950"><div className="flex items-center gap-2 font-black"><AlertTriangle className="h-4 w-4" /> Payment has already been released</div><p className="mt-2 leading-6">You can still report the issue. A post-payout request does not guarantee a refund; the seller may need to resolve it with you and BuyMesho may intervene where appropriate.</p></div> : null}
-
               {submitted ? <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-950"><p className="font-black">Dispute received.</p><p className="mt-1 leading-6">Your request has been recorded and can now be tracked from this page.</p></div> : (
                 <form onSubmit={submitDispute} className="mt-5 space-y-4">
                   <FormDropdown label="What happened?" value={requestType} onChange={setRequestType} placeholder="Select the issue" options={REQUEST_TYPES} searchable={false} disabled={submitting} />
