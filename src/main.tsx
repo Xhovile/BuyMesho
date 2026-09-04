@@ -10,6 +10,7 @@ import logoImage from '../photos/Logo.png';
 const nativeFetch = window.fetch.bind(window);
 const APICACHE_PREFIX = '__buymesho_api_cache_v2:';
 const APICACHE_TTL_MS = 5 * 60 * 1000;
+const FORCE_NETWORK_HEADER = 'x-buymesho-force-network';
 
 type CachedResponse = {
   status: number;
@@ -171,6 +172,9 @@ const customFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = getUrl(input);
   const urlString = url.toString();
   const method = getMethod(input, init);
+  const requestHeaders = new Headers(init?.headers);
+  const forceNetwork = requestHeaders.get(FORCE_NETWORK_HEADER) === '1';
+  requestHeaders.delete(FORCE_NETWORK_HEADER);
 
   if (url.origin === window.location.origin && method !== 'GET') {
     if (
@@ -192,7 +196,7 @@ const customFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     }
   }
 
-  if (isCacheableGet(url, method)) {
+  if (isCacheableGet(url, method) && !forceNetwork) {
     const cached = readCachedResponse(url);
     if (cached) {
       return new Response(cached.body, {
@@ -203,7 +207,11 @@ const customFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     }
   }
 
-  const response = await nativeFetch(input as RequestInfo, init);
+  const nextInit = {
+    ...(init || {}),
+    headers: requestHeaders,
+  };
+  const response = await nativeFetch(input as RequestInfo, nextInit);
 
   if (isCacheableGet(url, method) && response.ok) {
     try {
