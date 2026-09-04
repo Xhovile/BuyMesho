@@ -1,4 +1,3 @@
-import { getFirebaseAdmin } from "../../auth/firebaseAdmin.js";
 import { query } from "../../postgres.js";
 import { sendEmail } from "../email/email.service.js";
 import { renderOrderDisputedEmail } from "../email/templates/order-disputed.js";
@@ -7,6 +6,7 @@ import {
   markEmailNotificationSent,
   releaseEmailNotification,
 } from "./email-delivery.repository.js";
+import { resolveNotificationRecipient } from "./email-recipient.js";
 
 type RecipientRole = "buyer" | "seller";
 type SendEmail = typeof sendEmail;
@@ -29,11 +29,6 @@ export type OrderDisputedInput = {
   reason: string;
 };
 
-async function getUserEmail(uid: string): Promise<FirebaseUser> {
-  const user = await getFirebaseAdmin().auth().getUser(uid);
-  return { email: user.email?.trim() || "", displayName: user.displayName?.trim() || "" };
-}
-
 async function getSellerBusinessName(sellerUid: string): Promise<string | null> {
   try {
     const result = await query<{ business_name?: string | null }>(
@@ -53,8 +48,9 @@ async function sendOrderDisputedEmail(
   dependencies: DeliveryDependencies,
 ): Promise<boolean> {
   const recipientId = role === "buyer" ? input.buyerId : input.sellerId;
-  const lookupUser = dependencies.lookupUser ?? getUserEmail;
-  const recipient = await lookupUser(recipientId);
+  const recipient = await resolveNotificationRecipient(recipientId, {
+    lookupUser: dependencies.lookupUser,
+  });
   const email = recipient.email?.trim() || "";
   if (!email) return false;
 
