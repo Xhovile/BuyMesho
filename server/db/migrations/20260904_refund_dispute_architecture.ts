@@ -108,11 +108,25 @@ export function ensureRefundDisputeArchitectureMigration(): void {
       metadata TEXT NOT NULL DEFAULT '{}'
     );
 
+    -- The production database has used both `state` and `status` for the
+    -- legacy disputes table across schema generations. Normalize the table
+    -- before reading legacy history so startup is safe on either version.
+    ALTER TABLE disputes ADD COLUMN IF NOT EXISTS status TEXT;
+    ALTER TABLE disputes ADD COLUMN IF NOT EXISTS resolution TEXT;
+    ALTER TABLE disputes ADD COLUMN IF NOT EXISTS case_id TEXT;
+    ALTER TABLE disputes ADD COLUMN IF NOT EXISTS window_ends_at TIMESTAMPTZ;
+
+    UPDATE disputes
+    SET status = COALESCE(NULLIF(status, ''), state, 'open')
+    WHERE status IS NULL OR status = '';
+
+    UPDATE disputes
+    SET resolution = details
+    WHERE resolution IS NULL AND details IS NOT NULL;
+
     ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS requested_resolution TEXT;
     ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS latest_status_at TIMESTAMPTZ;
     ALTER TABLE dispute_attempts ADD COLUMN IF NOT EXISTS requested_resolution TEXT;
-    ALTER TABLE disputes ADD COLUMN IF NOT EXISTS case_id TEXT;
-    ALTER TABLE disputes ADD COLUMN IF NOT EXISTS window_ends_at TIMESTAMPTZ;
 
     CREATE INDEX IF NOT EXISTS idx_refund_requests_order_created_at
       ON refund_requests (order_id, created_at DESC);
