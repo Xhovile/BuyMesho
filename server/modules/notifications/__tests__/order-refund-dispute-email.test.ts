@@ -64,7 +64,15 @@ function makeDependencies(failFirstCall = false) {
   };
 }
 
-test("refund notification sends one email per recipient and suppresses duplicates", async () => {
+function expectedSellerOrderUrl(orderId: string) {
+  return `https://buymesho.app/seller/payouts?view=orders&order=${encodeURIComponent(orderId)}`;
+}
+
+function expectedBuyerOrderUrl(orderId: string) {
+  return `https://buymesho.app/orders/${encodeURIComponent(orderId)}`;
+}
+
+test("refund notification sends one email per recipient and uses role-correct order links", async () => {
   const deps = makeDependencies();
 
   await notifyOrderRefunded({ order, reason: "Refund approved by BuyMesho" }, deps);
@@ -78,6 +86,10 @@ test("refund notification sends one email per recipient and suppresses duplicate
       { email: "seller@example.com", name: "Ada's Shop" },
     ],
   );
+  assert.equal(String(deps.messages[0].text).includes(expectedBuyerOrderUrl(order.id)), true);
+  assert.equal(String(deps.messages[0].html).includes(expectedBuyerOrderUrl(order.id)), true);
+  assert.equal(String(deps.messages[1].text).includes(expectedSellerOrderUrl(order.id)), true);
+  assert.equal(String(deps.messages[1].html).includes(expectedSellerOrderUrl(order.id)), true);
   assert.equal(deps.sent.size, 2);
 });
 
@@ -93,7 +105,7 @@ test("refund notification releases failed claims so the recipients can be retrie
   assert.equal(deps.sent.size, 2);
 });
 
-test("dispute notification sends one email per recipient and suppresses duplicates by dispute id", async () => {
+test("dispute notification sends one email per recipient and uses role-correct order links", async () => {
   const deps = makeDependencies();
   const input = {
     orderId: "order-42",
@@ -110,6 +122,10 @@ test("dispute notification sends one email per recipient and suppresses duplicat
   assert.equal(deps.sent.size, 2);
   assert.match(String(deps.messages[0].text), /not as described/);
   assert.match(String(deps.messages[1].html), /not as described/);
+  assert.equal(String(deps.messages[0].text).includes(expectedBuyerOrderUrl(input.orderId)), true);
+  assert.equal(String(deps.messages[0].html).includes(expectedBuyerOrderUrl(input.orderId)), true);
+  assert.equal(String(deps.messages[1].text).includes(expectedSellerOrderUrl(input.orderId)), true);
+  assert.equal(String(deps.messages[1].html).includes(expectedSellerOrderUrl(input.orderId)), true);
 });
 
 test("dispute notification retries after provider failure", async () => {
