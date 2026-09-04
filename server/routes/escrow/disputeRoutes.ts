@@ -2,7 +2,6 @@ import express, { type RequestHandler } from 'express';
 import { randomUUID } from 'crypto';
 import { query, withTransaction } from '../../postgres.js';
 import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
-import { notifyOrderDisputed } from '../../modules/notifications/order-disputed.notification.js';
 import { notifyDisputeWorkflowEvent } from '../../modules/notifications/dispute-workflow.notification.js';
 import { assertAllowedDisputeTransition, type DisputeStatus } from './disputeState.js';
 import { ensureDisputeWorkflowFoundation } from '../../db/migrations/20260904_dispute_workflow_foundation.js';
