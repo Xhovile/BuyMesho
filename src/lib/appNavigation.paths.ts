@@ -1,7 +1,7 @@
 import type { HeaderChip } from "../constants";
 
 export type AppRoute =
-  | "home" | "about" | "category" | "explore" | "saved" | "hidden" | "settings" | "privacy" | "terms" | "safety" | "report" | "seller" | "seller_dashboard" | "seller_hub" | "seller_orders" | "seller_payouts" | "listing_details" | "messages" | "create" | "edit" | "login" | "signup" | "forgot_password" | "profile" | "verify_email" | "account_setup" | "edit_profile" | "edit_account" | "become_seller" | "change_password" | "change_email" | "email_action" | "my_listings" | "event_creator_dashboard" | "event_creator_overview" | "tickets" | "admin" | "admin_events" | "admin_payments" | "admin_transaction_inspector" | "admin_payouts" | "admin_payout_destinations" | "admin_reports" | "admin_seller_applications" | "admin_moderation_queue" | "admin_audit" | "admin_balance" | "admin_setup" | "admin_messages" | "payment_return";
+  | "home" | "about" | "category" | "explore" | "saved" | "hidden" | "settings" | "privacy" | "terms" | "safety" | "report" | "seller" | "seller_dashboard" | "seller_hub" | "seller_orders" | "seller_payouts" | "listing_details" | "messages" | "create" | "edit" | "login" | "signup" | "forgot_password" | "profile" | "verify_email" | "account_setup" | "edit_profile" | "edit_account" | "become_seller" | "change_password" | "change_email" | "email_action" | "my_listings" | "event_creator_dashboard" | "event_creator_overview" | "tickets" | "admin" | "admin_events" | "admin_payments" | "admin_transaction_inspector" | "admin_payouts" | "admin_payout_destinations" | "admin_reports" | "admin_seller_applications" | "admin_moderation_queue" | "admin_audit" | "admin_balance" | "admin_setup" | "admin_messages" | "admin_disputes" | "payment_return";
 export const ADMIN_PAYOUT_DESTINATIONS_PATH = "/admin/payouts/destinations";
 export const ADMIN_EVENTS_PATH = "/admin/events";
 export const HOME_PATH = "/";
@@ -54,6 +54,7 @@ export const ADMIN_MODERATION_QUEUE_PATH = "/admin/moderation-queue";
 export const ADMIN_AUDIT_PATH = "/admin/audit";
 export const ADMIN_BALANCE_PATH = "/admin/balance";
 export const ADMIN_SETUP_PATH = "/admin/setup";
+export const ADMIN_DISPUTES_PATH = "/admin/disputes";
 export const PAYMENT_RETURN_PATH = "/payment/return";
 export const PAYMENTS_HUB_PATH = "/payments";
 export const TRACK_ORDER_PATH = "/payments/track-order";
@@ -62,20 +63,7 @@ export const BUYER_PAYMENTS_PATH = "/buyer-payments";
 export const CART_PATH = "/cart";
 export const ORDER_TRACKING_BASE_PATH = "/orders";
 export const MARKET_CHIP_PATHS: Partial<Record<HeaderChip, string>> = {
-  All: EXPLORE_PATH,
-  Deals: `${EXPLORE_PATH}/deals`,
-  "Lay-by": `${EXPLORE_PATH}/lay-by`,
-  Events: `${EXPLORE_PATH}/events`,
-  Wholesale: `${EXPLORE_PATH}/wholesale`,
-  Gadgets: "/category?category=phones",
-  Fashion: "/category?category=fashion",
-  Food: "/category?category=food",
-  Academics: "/category?category=books",
-  Beauty: "/category?category=beauty",
-  Sellers: `${EXPLORE_PATH}/sellers`,
-  Innovation: `${EXPLORE_PATH}/innovation`,
-  Accommodation: `${EXPLORE_PATH}/accommodation`,
-  Lending: `${EXPLORE_PATH}/lending`,
+  All: EXPLORE_PATH, Deals: `${EXPLORE_PATH}/deals`, "Lay-by": `${EXPLORE_PATH}/lay-by`, Events: `${EXPLORE_PATH}/events`, Wholesale: `${EXPLORE_PATH}/wholesale`, Gadgets: "/category?category=phones", Fashion: "/category?category=fashion", Food: "/category?category=food", Academics: "/category?category=books", Beauty: "/category?category=beauty", Sellers: `${EXPLORE_PATH}/sellers`, Innovation: `${EXPLORE_PATH}/innovation`, Accommodation: `${EXPLORE_PATH}/accommodation`, Lending: `${EXPLORE_PATH}/lending`,
 };
 export const APP_HISTORY_STATE_KEY = "__buymesho";
 export const AUTH_RETURN_PATH_STORAGE_KEY = "__buymesho_auth_return_path";
