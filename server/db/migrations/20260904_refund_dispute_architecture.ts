@@ -109,8 +109,6 @@ export function ensureRefundDisputeArchitectureMigration(): void {
       metadata TEXT NOT NULL DEFAULT '{}'
     );
 
-    -- Legacy disputes has existed with both state/status and with different
-    -- optional fields. Normalize the full compatibility surface first.
     ALTER TABLE disputes ADD COLUMN IF NOT EXISTS state TEXT;
     ALTER TABLE disputes ADD COLUMN IF NOT EXISTS status TEXT;
     ALTER TABLE disputes ADD COLUMN IF NOT EXISTS resolution TEXT;
@@ -128,19 +126,19 @@ export function ensureRefundDisputeArchitectureMigration(): void {
     ALTER TABLE disputes ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;
 
     UPDATE disputes
-    SET status = COALESCE(NULLIF(status, ''), NULLIF(state, ''), 'open')
-    WHERE status IS NULL OR status = '';
+    SET status = COALESCE(NULLIF(status::text, ''), NULLIF(state::text, ''), 'open')
+    WHERE status IS NULL OR status::text = '';
 
     UPDATE disputes
-    SET resolution = details
+    SET resolution = details::text
     WHERE resolution IS NULL AND details IS NOT NULL;
 
     UPDATE disputes
-    SET created_at = COALESCE(created_at, CURRENT_TIMESTAMP)
+    SET created_at = COALESCE(NULLIF(created_at::text, '')::timestamptz, CURRENT_TIMESTAMP)
     WHERE created_at IS NULL;
 
     UPDATE disputes
-    SET updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP)
+    SET updated_at = COALESCE(NULLIF(updated_at::text, '')::timestamptz, NULLIF(created_at::text, '')::timestamptz, CURRENT_TIMESTAMP)
     WHERE updated_at IS NULL;
 
     UPDATE disputes
@@ -148,8 +146,8 @@ export function ensureRefundDisputeArchitectureMigration(): void {
     WHERE amount_requested IS NULL;
 
     UPDATE disputes
-    SET evidence = COALESCE(NULLIF(evidence, ''), '[]')
-    WHERE evidence IS NULL OR evidence = '';
+    SET evidence = COALESCE(NULLIF(evidence::text, ''), '[]')
+    WHERE evidence IS NULL OR evidence::text = '';
 
     ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS requested_resolution TEXT;
     ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS latest_status_at TIMESTAMPTZ;
@@ -195,7 +193,6 @@ export function ensureRefundDisputeArchitectureMigration(): void {
       ON audit_events (event_type, timestamp DESC);
   `);
 
-  // Preserve existing dispute history in the canonical case model.
   postgresDb.exec(`
     INSERT INTO dispute_cases (
       id, order_id, buyer_id, seller_id, opened_by, status, outcome,
@@ -206,21 +203,21 @@ export function ensureRefundDisputeArchitectureMigration(): void {
       o.id,
       o.buyer_id,
       o.seller_id,
-      COALESCE(NULLIF(d.opened_by, ''), o.buyer_id),
-      COALESCE(NULLIF(d.status, ''), 'open'),
+      COALESCE(NULLIF(d.opened_by::text, ''), o.buyer_id),
+      COALESCE(NULLIF(d.status::text, ''), 'open'),
       CASE
-        WHEN lower(COALESCE(d.status, 'open')) IN ('resolved', 'accepted', 'closed')
+        WHEN lower(COALESCE(d.status::text, 'open')) IN ('resolved', 'accepted', 'closed')
           THEN CASE
-            WHEN NULLIF(d.resolution, '') IS NOT NULL THEN 'resolved'
+            WHEN NULLIF(d.resolution::text, '') IS NOT NULL THEN 'resolved'
             ELSE 'closed'
           END
         ELSE NULL
       END,
       d.id,
-      COALESCE(d.created_at, CURRENT_TIMESTAMP),
-      d.resolved_at,
-      COALESCE(d.created_at, CURRENT_TIMESTAMP),
-      COALESCE(d.updated_at, d.created_at, CURRENT_TIMESTAMP)
+      NULLIF(d.created_at::text, '')::timestamptz,
+      NULLIF(d.resolved_at::text, '')::timestamptz,
+      COALESCE(NULLIF(d.created_at::text, '')::timestamptz, CURRENT_TIMESTAMP),
+      COALESCE(NULLIF(d.updated_at::text, '')::timestamptz, NULLIF(d.created_at::text, '')::timestamptz, CURRENT_TIMESTAMP)
     FROM disputes d
     INNER JOIN orders o ON o.id = d.order_id
     WHERE NOT EXISTS (
@@ -239,36 +236,36 @@ export function ensureRefundDisputeArchitectureMigration(): void {
       'attempt_' || d.id,
       'case_' || d.id,
       o.id,
-      COALESCE(NULLIF(d.request_type, ''), 'legacy_dispute'),
+      COALESCE(NULLIF(d.request_type::text, ''), 'legacy_dispute'),
       CASE
-        WHEN lower(COALESCE(d.request_type, '')) IN ('refund', 'return_and_refund')
+        WHEN lower(COALESCE(d.request_type::text, '')) IN ('refund', 'return_and_refund')
           THEN 'refund'
-        WHEN lower(COALESCE(d.request_type, '')) = 'return'
+        WHEN lower(COALESCE(d.request_type::text, '')) = 'return'
           THEN 'return'
-        WHEN NULLIF(d.resolution, '') IS NOT NULL
-          THEN d.resolution
+        WHEN NULLIF(d.resolution::text, '') IS NOT NULL
+          THEN d.resolution::text
         ELSE NULL
       END,
-      COALESCE(NULLIF(d.reason, ''), 'Legacy dispute'),
+      COALESCE(NULLIF(d.reason::text, ''), 'Legacy dispute'),
       COALESCE(d.amount_requested, 0),
-      COALESCE(NULLIF(d.evidence, ''), '[]'),
-      COALESCE(NULLIF(d.opened_by, ''), o.buyer_id),
+      COALESCE(NULLIF(d.evidence::text, ''), '[]'),
+      COALESCE(NULLIF(d.opened_by::text, ''), o.buyer_id),
       CASE
-        WHEN lower(COALESCE(d.status, 'open')) = 'rejected' THEN 'rejected'
-        WHEN lower(COALESCE(d.status, 'open')) IN ('resolved', 'accepted', 'closed') THEN 'resolved'
+        WHEN lower(COALESCE(d.status::text, 'open')) = 'rejected' THEN 'rejected'
+        WHEN lower(COALESCE(d.status::text, 'open')) IN ('resolved', 'accepted', 'closed') THEN 'resolved'
         ELSE 'open'
       END,
       CASE
-        WHEN lower(COALESCE(d.status, 'open')) = 'rejected' THEN 'reject'
-        WHEN lower(COALESCE(d.status, 'open')) IN ('resolved', 'accepted', 'closed') THEN 'accept'
+        WHEN lower(COALESCE(d.status::text, 'open')) = 'rejected' THEN 'reject'
+        WHEN lower(COALESCE(d.status::text, 'open')) IN ('resolved', 'accepted', 'closed') THEN 'accept'
         ELSE NULL
       END,
-      NULLIF(d.resolution, ''),
+      NULLIF(d.resolution::text, ''),
       d.resolved_by,
-      d.resolved_at,
-      d.window_ends_at,
-      COALESCE(d.created_at, CURRENT_TIMESTAMP),
-      COALESCE(d.updated_at, d.created_at, CURRENT_TIMESTAMP)
+      NULLIF(d.resolved_at::text, '')::timestamptz,
+      NULLIF(d.window_ends_at::text, '')::timestamptz,
+      COALESCE(NULLIF(d.created_at::text, '')::timestamptz, CURRENT_TIMESTAMP),
+      COALESCE(NULLIF(d.updated_at::text, '')::timestamptz, NULLIF(d.created_at::text, '')::timestamptz, CURRENT_TIMESTAMP)
     FROM disputes d
     INNER JOIN orders o ON o.id = d.order_id
     WHERE NOT EXISTS (
