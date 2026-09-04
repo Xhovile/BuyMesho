@@ -98,6 +98,58 @@ function DeferredHomeSkeleton() {
   );
 }
 
+type DeferredCategorySectionProps = {
+  section: (typeof featuredSections)[number];
+  listings: Array<{
+    id: number | string;
+    name: string;
+    price: number | string;
+    description?: string | null;
+    photos?: string[];
+  }>;
+  loading: boolean;
+  onLoad: (sectionKey: string) => Promise<void>;
+};
+
+function DeferredCategorySection({ section, listings, loading, onLoad }: DeferredCategorySectionProps) {
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const target = sectionRef.current;
+    if (!target) return;
+
+    if (typeof IntersectionObserver === "undefined") {
+      void onLoad(section.key);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        void onLoad(section.key);
+        observer.disconnect();
+      },
+      { root: null, rootMargin: "500px 0px", threshold: 0.01 },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [onLoad, section.key]);
+
+  return (
+    <div ref={sectionRef}>
+      <CategorySection
+        title={section.title}
+        description={section.description}
+        categoryKey={section.key}
+        listings={listings}
+        loading={loading}
+      />
+    </div>
+  );
+}
+
 export default function HomePage() {
   const controller = useHomePageController();
   const deferredAnchorRef = useRef<HTMLDivElement | null>(null);
@@ -120,6 +172,7 @@ export default function HomePage() {
 
     if (typeof IntersectionObserver === "undefined") {
       setShowDeferredContent(true);
+      void controller.loadEvents();
       return;
     }
 
@@ -128,6 +181,7 @@ export default function HomePage() {
         const entry = entries[0];
         if (entry?.isIntersecting) {
           setShowDeferredContent(true);
+          void controller.loadEvents();
           observer.disconnect();
         }
       },
@@ -136,7 +190,7 @@ export default function HomePage() {
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [showDeferredContent]);
+  }, [controller, showDeferredContent]);
 
   const mobileFeaturedKeys = new Set<string>([
     HOME_CATEGORY_KEYS.phones,
@@ -203,13 +257,12 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 gap-4">
             {visibleFeaturedSections.map((section) => (
-              <CategorySection
+              <DeferredCategorySection
                 key={section.key}
-                title={section.title}
-                description={section.description}
-                categoryKey={section.key}
+                section={section}
                 listings={controller.filteredSectionListings[section.key] || []}
-                loading={controller.loading}
+                loading={controller.sectionLoading[section.key] ?? true}
+                onLoad={controller.loadSection}
               />
             ))}
           </div>
