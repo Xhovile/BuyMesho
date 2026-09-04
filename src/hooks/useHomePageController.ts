@@ -77,6 +77,9 @@ export type HomePageController = {
   filteredFeaturedListings: SectionListing[];
   filteredNewestListings: SectionListing[];
   filteredSectionListings: Record<string, SectionListing[]>;
+  sectionLoading: Record<string, boolean>;
+  loadSection: (sectionKey: string) => Promise<void>;
+  loadEvents: () => Promise<void>;
 };
 
 export function useHomePageController(): HomePageController {
@@ -104,8 +107,11 @@ export function useHomePageController(): HomePageController {
     newestListings,
     featuredListings,
     sectionListings,
+    sectionLoading,
     loading,
     error,
+    loadSection,
+    loadEvents,
   } = useHomePageData(featuredSections);
 
   useEffect(() => {
@@ -359,5 +365,8 @@ export function useHomePageController(): HomePageController {
     filteredFeaturedListings,
     filteredNewestListings,
     filteredSectionListings,
+    sectionLoading,
+    loadSection,
+    loadEvents,
   };
 }
