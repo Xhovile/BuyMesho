@@ -17,6 +17,7 @@ export function ensureRefundDisputeArchitectureMigration(): void {
       item_id TEXT,
       dispute_case_id TEXT,
       request_type TEXT NOT NULL,
+      requested_resolution TEXT,
       reason TEXT NOT NULL,
       amount_requested DOUBLE PRECISION NOT NULL DEFAULT 0,
       currency TEXT NOT NULL DEFAULT 'MWK',
@@ -31,6 +32,7 @@ export function ensureRefundDisputeArchitectureMigration(): void {
       admin_decision TEXT,
       refund_transaction_id TEXT,
       status TEXT NOT NULL DEFAULT 'requested',
+      latest_status_at TIMESTAMPTZ,
       submitted_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
       window_ends_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -79,6 +81,7 @@ export function ensureRefundDisputeArchitectureMigration(): void {
       case_id TEXT NOT NULL,
       order_id TEXT NOT NULL,
       request_type TEXT NOT NULL,
+      requested_resolution TEXT,
       reason TEXT NOT NULL,
       amount_requested DOUBLE PRECISION NOT NULL DEFAULT 0,
       evidence TEXT NOT NULL DEFAULT '[]',
@@ -105,6 +108,9 @@ export function ensureRefundDisputeArchitectureMigration(): void {
       metadata TEXT NOT NULL DEFAULT '{}'
     );
 
+    ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS requested_resolution TEXT;
+    ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS latest_status_at TIMESTAMPTZ;
+    ALTER TABLE dispute_attempts ADD COLUMN IF NOT EXISTS requested_resolution TEXT;
     ALTER TABLE disputes ADD COLUMN IF NOT EXISTS case_id TEXT;
     ALTER TABLE disputes ADD COLUMN IF NOT EXISTS window_ends_at TIMESTAMPTZ;
 
@@ -153,64 +159,31 @@ export function ensureRefundDisputeArchitectureMigration(): void {
   // until the later workflow migration phases switch them to the canonical tables.
   postgresDb.exec(`
     INSERT INTO dispute_cases (
-      id,
-      order_id,
-      buyer_id,
-      seller_id,
-      opened_by,
-      status,
-      outcome,
-      legacy_dispute_id,
-      opened_at,
-      resolved_at,
-      created_at,
-      updated_at
+      id, order_id, buyer_id, seller_id, opened_by, status, outcome,
+      legacy_dispute_id, opened_at, resolved_at, created_at, updated_at
     )
     SELECT
-      'case_' || d.id,
-      o.id,
-      o.buyer_id,
-      o.seller_id,
+      'case_' || d.id, o.id, o.buyer_id, o.seller_id,
       COALESCE(NULLIF(d.opened_by, ''), o.buyer_id),
       CASE
         WHEN lower(COALESCE(d.state, 'open')) = 'resolved' THEN 'resolved'
         WHEN lower(COALESCE(d.state, 'open')) = 'rejected' THEN 'rejected'
         ELSE 'open'
       END,
-      d.resolution,
-      d.id,
-      COALESCE(d.created_at, CURRENT_TIMESTAMP),
-      d.resolved_at,
-      COALESCE(d.created_at, CURRENT_TIMESTAMP),
-      COALESCE(d.updated_at, CURRENT_TIMESTAMP)
+      d.resolution, d.id, COALESCE(d.created_at, CURRENT_TIMESTAMP), d.resolved_at,
+      COALESCE(d.created_at, CURRENT_TIMESTAMP), COALESCE(d.updated_at, CURRENT_TIMESTAMP)
     FROM disputes d
     INNER JOIN orders o ON o.id = d.order_id
     WHERE NOT EXISTS (
-      SELECT 1
-      FROM dispute_cases dc
-      WHERE dc.legacy_dispute_id = d.id
+      SELECT 1 FROM dispute_cases dc WHERE dc.legacy_dispute_id = d.id
     );
 
     INSERT INTO dispute_attempts (
-      id,
-      case_id,
-      order_id,
-      request_type,
-      reason,
-      submitted_by,
-      status,
-      decision,
-      resolution_note,
-      resolved_by,
-      resolved_at,
-      created_at,
-      updated_at
+      id, case_id, order_id, request_type, reason, submitted_by, status,
+      decision, resolution_note, resolved_by, resolved_at, created_at, updated_at
     )
     SELECT
-      'attempt_' || d.id || '_1',
-      dc.id,
-      d.order_id,
-      'exceptional_dispute',
+      'attempt_' || d.id || '_1', dc.id, d.order_id, 'exceptional_dispute',
       COALESCE(NULLIF(d.reason, ''), 'Existing dispute'),
       COALESCE(NULLIF(d.opened_by, ''), o.buyer_id),
       CASE
@@ -218,19 +191,13 @@ export function ensureRefundDisputeArchitectureMigration(): void {
         WHEN lower(COALESCE(d.state, 'open')) = 'rejected' THEN 'rejected'
         ELSE 'open'
       END,
-      d.resolution,
-      d.details,
-      d.resolved_by,
-      d.resolved_at,
-      COALESCE(d.created_at, CURRENT_TIMESTAMP),
-      COALESCE(d.updated_at, CURRENT_TIMESTAMP)
+      d.resolution, d.details, d.resolved_by, d.resolved_at,
+      COALESCE(d.created_at, CURRENT_TIMESTAMP), COALESCE(d.updated_at, CURRENT_TIMESTAMP)
     FROM disputes d
     INNER JOIN orders o ON o.id = d.order_id
     INNER JOIN dispute_cases dc ON dc.legacy_dispute_id = d.id
     WHERE NOT EXISTS (
-      SELECT 1
-      FROM dispute_attempts da
-      WHERE da.case_id = dc.id
+      SELECT 1 FROM dispute_attempts da WHERE da.case_id = dc.id
     );
 
     UPDATE disputes d
