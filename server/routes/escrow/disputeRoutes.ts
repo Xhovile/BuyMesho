@@ -86,7 +86,6 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       const requestedResolution = normalizeRequestedResolution(body.requestedResolution);
       const amountRequested = Number(body.amountRequested ?? 0);
       const evidence = cleanEvidence(body.evidence);
-
       if (!Number.isFinite(amountRequested) || amountRequested < 0) {
         return res.status(400).json({ error: 'amountRequested must be a non-negative number' });
       }
@@ -134,42 +133,26 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
                payout_state_snapshot, evidence, buyer_comments, status, submitted_at, window_ends_at, created_at, updated_at)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'requested',$19,$20,$19,$19)`,
             [
-              refundRequestId,
-              orderId,
-              String(order.buyer_id),
-              String(order.seller_id),
-              resolvedTicketId,
-              caseId,
-              requestType,
-              requestedResolution,
-              reason,
-              amountRequested,
-              String(order.total_currency ?? 'MWK'),
+              refundRequestId, orderId, String(order.buyer_id), String(order.seller_id), resolvedTicketId, caseId,
+              requestType, requestedResolution, reason, amountRequested, String(order.total_currency ?? 'MWK'),
               typeof body.paymentMethod === 'string' ? body.paymentMethod.trim() || null : null,
               typeof body.refundDestination === 'string' ? body.refundDestination.trim() || null : null,
-              String(order.status ?? 'pending'),
-              null,
-              null,
-              JSON.stringify(evidence),
-              reason,
-              nowIso,
-              windowEndsAt,
+              String(order.status ?? 'pending'), null, null, JSON.stringify(evidence), reason, nowIso, windowEndsAt,
             ],
           );
         }
 
-        // Keep the existing disputes table synchronized for the current seller/admin UI until those phases migrate.
+        // Preserve the legacy record until the seller/admin surfaces migrate in later phases.
         const legacyResult = await client.query<Record<string, unknown>>(
           `SELECT id FROM disputes WHERE order_id = $1 AND status = 'open' ORDER BY created_at ASC LIMIT 1`,
           [orderId],
         );
-        const legacyId = String(legacyResult.rows[0]?.id ?? `legacy_${randomUUID()}`);
         if (!legacyResult.rows[0]) {
           const escrow = await escrowRepository.findByOrderIdAsync(orderId, client);
           await client.query(
             `INSERT INTO disputes (id, order_id, ticket_id, escrow_id, opened_by, reason, status, case_id, window_ends_at, created_at, updated_at)
              VALUES ($1,$2,$3,$4,$5,$6,'open',$7,$8,$9,$9)`,
-            [legacyId, orderId, resolvedTicketId, escrow?.id ?? null, openedBy, reason, caseId, windowEndsAt, nowIso],
+            [`legacy_${randomUUID()}`, orderId, resolvedTicketId, escrow?.id ?? null, openedBy, reason, caseId, windowEndsAt, nowIso],
           );
         }
 
@@ -177,15 +160,12 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
           `INSERT INTO audit_events (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata)
            VALUES ($1,'dispute_case',$2,'dispute_submitted',$3,$4,NULL,'open',$5)`,
           [
-            `audit_${randomUUID()}`,
-            caseId,
-            openedBy,
-            nowIso,
+            `audit_${randomUUID()}`, caseId, openedBy, nowIso,
             JSON.stringify({ attemptId, refundRequestId, orderId, ticketId: resolvedTicketId, requestType, requestedResolution }),
           ],
         );
 
-        return { caseId, attemptId, refundRequestId, legacyId, windowEndsAt };
+        return { caseId, attemptId, refundRequestId, windowEndsAt };
       });
 
       try {
