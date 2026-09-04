@@ -40,6 +40,7 @@ export type DisputeWorkflowNotificationInput = {
   amount?: number | null;
   currency?: string | null;
   transactionId?: string | null;
+  recipients?: RecipientRole[];
 };
 
 const EVENT_COPY: Record<DisputeWorkflowEvent, { subject: string; buyer: string; seller: string }> = {
@@ -114,8 +115,6 @@ export async function notifyDisputeWorkflowEvent(
   input: DisputeWorkflowNotificationInput,
   dependencies: DeliveryDependencies = {},
 ): Promise<void> {
-  await Promise.allSettled([
-    sendToRole(input, "buyer", dependencies),
-    sendToRole(input, "seller", dependencies),
-  ]);
+  const recipients = input.recipients?.length ? input.recipients : ["buyer", "seller"];
+  await Promise.allSettled(recipients.map((role) => sendToRole(input, role, dependencies)));
 }
