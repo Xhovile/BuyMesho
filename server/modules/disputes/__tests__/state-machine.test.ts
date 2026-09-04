@@ -4,11 +4,20 @@ import {
   assertDisputeAttemptTransition,
   assertDisputeCaseTransition,
   assertEscrowTransition,
+  assertOrderTransition,
   assertRefundTransition,
   transitionMovesMoney,
   ESCROW_TRANSITION_TABLE,
+  ORDER_TRANSITION_TABLE,
   REFUND_TRANSITION_TABLE,
 } from '../state-machine.js';
+
+test('order state machine keeps dispute out of transaction truth', () => {
+  assert.doesNotThrow(() => assertOrderTransition('processing', 'shipped', 'seller'));
+  assert.doesNotThrow(() => assertOrderTransition('shipped', 'delivered', 'system'));
+  assert.doesNotThrow(() => assertOrderTransition('delivered', 'completed', 'buyer'));
+  assert.throws(() => assertOrderTransition('delivered', 'processing', 'system'), /Illegal state transition/);
+});
 
 test('refund workflow separates approval from money movement', () => {
   assert.doesNotThrow(() => assertRefundTransition('under_review', 'approved', 'admin'));
@@ -44,16 +53,16 @@ test('dispute attempts have the same independent review lifecycle', () => {
   assert.throws(() => assertDisputeAttemptTransition('rejected', 'under_review', 'admin'), /Illegal state transition/);
 });
 
-test('escrow dispute review does not itself move money', () => {
-  assert.doesNotThrow(() => assertEscrowTransition('held', 'disputed', 'system'));
-  assert.doesNotThrow(() => assertEscrowTransition('disputed', 'held', 'admin'));
-  assert.equal(transitionMovesMoney(ESCROW_TRANSITION_TABLE, 'held', 'disputed'), false);
+test('canonical escrow review state never uses disputed as financial truth', () => {
+  assert.doesNotThrow(() => assertEscrowTransition('held', 'releasable', 'system'));
+  assert.doesNotThrow(() => assertEscrowTransition('held', 'refunding', 'financial_workflow'));
+  assert.equal(transitionMovesMoney(ESCROW_TRANSITION_TABLE, 'held', 'releasable'), false);
+  assert.equal(transitionMovesMoney(ESCROW_TRANSITION_TABLE, 'held', 'refunding'), true);
+  assert.throws(() => assertEscrowTransition('held', 'released', 'buyer'), /cannot perform/);
 });
 
 test('escrow financial exits are explicit', () => {
-  assert.doesNotThrow(() => assertEscrowTransition('held', 'released', 'financial_workflow'));
-  assert.doesNotThrow(() => assertEscrowTransition('held', 'refunded', 'financial_workflow'));
-  assert.doesNotThrow(() => assertEscrowTransition('disputed', 'released', 'system'));
-  assert.doesNotThrow(() => assertEscrowTransition('disputed', 'refunded', 'system'));
+  assert.doesNotThrow(() => assertEscrowTransition('releasable', 'released', 'financial_workflow'));
+  assert.doesNotThrow(() => assertEscrowTransition('refunding', 'refunded', 'financial_workflow'));
   assert.throws(() => assertEscrowTransition('released', 'refunded', 'financial_workflow'), /Illegal state transition/);
 });
