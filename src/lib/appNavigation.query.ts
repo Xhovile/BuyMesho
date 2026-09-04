@@ -1,8 +1,6 @@
+import { type HeaderChip } from "../constants";
 import {
-  type HeaderChip,
-} from "../constants";
-import {
-  ABOUT_PATH, ACCOUNT_SETUP_PATH, ADMIN_AUDIT_PATH, ADMIN_BALANCE_PATH, ADMIN_MODERATION_QUEUE_PATH, ADMIN_PATH,
+  ABOUT_PATH, ACCOUNT_SETUP_PATH, ADMIN_AUDIT_PATH, ADMIN_BALANCE_PATH, ADMIN_DISPUTES_PATH, ADMIN_MODERATION_QUEUE_PATH, ADMIN_PATH,
   ADMIN_MESSAGES_PATH, ADMIN_PAYOUT_DESTINATIONS_PATH, ADMIN_PAYOUTS_PATH, ADMIN_PAYMENTS_PATH, ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH, ADMIN_SETUP_PATH, ADMIN_TRANSACTION_INSPECTOR_PATH,
   BECOME_SELLER_PATH, CHANGE_EMAIL_PATH, CHANGE_PASSWORD_PATH, CREATE_PATH, EDIT_ACCOUNT_PATH,
@@ -34,7 +32,6 @@ export const getExploreStateFromLocation = (location:Pick<Location,"search">):Ex
   minPrice:params.get("minPrice")||DEFAULT_EXPLORE_QUERY_STATE.minPrice, maxPrice:params.get("maxPrice")||DEFAULT_EXPLORE_QUERY_STATE.maxPrice,
   hideSoldOut:parseBooleanParam(params.get("hideSoldOut")), page:parsePositiveIntegerParam(params.get("page"),DEFAULT_EXPLORE_QUERY_STATE.page), specFilters:parseSpecFiltersParam(params.get("specFilters")),
 }; };
-
 export const getMarketChipFromPath=(pathname:string):HeaderChip=>{ if(pathname===MARKET_CHIP_PATHS.Deals)return"Deals"; if(pathname===MARKET_CHIP_PATHS["Lay-by"])return"Lay-by"; if(pathname===MARKET_CHIP_PATHS.Events)return"Events"; if(pathname===MARKET_CHIP_PATHS.Wholesale)return"Wholesale"; if(pathname===MARKET_CHIP_PATHS.Sellers)return"Sellers"; if(pathname===MARKET_CHIP_PATHS.Innovation)return"Innovation"; if(pathname===MARKET_CHIP_PATHS.Accommodation)return"Accommodation"; if(pathname===MARKET_CHIP_PATHS.Lending)return"Lending"; return"All"; };
 export const getMarketChipFromLocation=(location:Pick<Location,"pathname">):HeaderChip=>getMarketChipFromPath(location.pathname);
 export const getMarketPathFromLocation=(pathname:string)=>pathname===EXPLORE_PATH||pathname.startsWith(`${EXPLORE_PATH}/`)?pathname:EXPLORE_PATH;
@@ -43,29 +40,13 @@ const pushUrl=(url:URL,replace=false)=>{ if(replace)window.history.replaceState(
 const syncExploreStateInUrl=(state:Partial<ExploreQueryState>,mode:"replace"|"push"="replace")=>{ const url=new URL(window.location.href); url.pathname=getMarketPathFromLocation(window.location.pathname); url.searchParams.delete("listing"); url.searchParams.delete("image"); url.searchParams.delete("uid"); url.searchParams.delete("id"); writeExploreStateToUrl(url,state); pushUrl(url,mode==="replace"); };
 export const replaceExploreStateInUrl=(state:Partial<ExploreQueryState>)=>syncExploreStateInUrl(state,"replace");
 export const pushExploreStateInUrl=(state:Partial<ExploreQueryState>)=>syncExploreStateInUrl(state,"push");
-
-export const navigateToMarketChip=(chip:HeaderChip)=>{
-  if(typeof window==="undefined")return;
-  const marketPath = MARKET_CHIP_PATHS[chip];
-  if (!marketPath) return;
-  const target = new URL(marketPath, window.location.origin);
-  const url = new URL(window.location.href);
-  url.pathname = target.pathname;
-  url.search = target.search;
-  url.searchParams.delete("listing");
-  url.searchParams.delete("image");
-  url.searchParams.delete("uid");
-  url.searchParams.delete("id");
-  pushUrl(url);
-};
-
+export const navigateToMarketChip=(chip:HeaderChip)=>{ if(typeof window==="undefined")return; const marketPath=MARKET_CHIP_PATHS[chip]; if(!marketPath)return; const target=new URL(marketPath,window.location.origin); const url=new URL(window.location.href); url.pathname=target.pathname; url.search=target.search; url.searchParams.delete("listing"); url.searchParams.delete("image"); url.searchParams.delete("uid"); url.searchParams.delete("id"); pushUrl(url); };
 export const navigateToExploreWithCategory=(category:string)=>{if(typeof window==="undefined")return; const url=new URL(window.location.href); url.pathname="/category"; url.searchParams.set("category",category); url.searchParams.delete("listing"); url.searchParams.delete("image"); url.searchParams.delete("uid"); url.searchParams.delete("id"); pushUrl(url);};
-
 export const getAppRouteFromLocation=(location:Pick<Location,"pathname"|"search">):AppRoute=>{ const params=new URLSearchParams(location.search);
   if(location.pathname===MESSAGES_PATH)return"messages"; if(location.pathname===LISTING_PATH&&params.has("listing"))return"listing_details"; if(location.pathname===EDIT_PATH&&params.has("id"))return"edit";
   if(location.pathname==="/category"&&params.has("category"))return"category"; if(location.pathname===CREATE_PATH)return"create"; if(location.pathname===LOGIN_PATH)return"login"; if(location.pathname===SIGNUP_PATH)return"signup";
   if(location.pathname===FORGOT_PASSWORD_PATH)return"forgot_password"; if(location.pathname===PROFILE_PATH)return"profile"; if(location.pathname===VERIFY_EMAIL_PATH)return"verify_email"; if(location.pathname===ACCOUNT_SETUP_PATH)return"account_setup"; if(location.pathname===EDIT_PROFILE_PATH)return"edit_profile";
   if(location.pathname===EDIT_ACCOUNT_PATH)return"edit_account"; if(location.pathname===BECOME_SELLER_PATH)return"become_seller"; if(location.pathname===CHANGE_PASSWORD_PATH)return"change_password"; if(location.pathname===CHANGE_EMAIL_PATH)return"change_email"; if(location.pathname===EMAIL_ACTION_PATH)return"email_action"; if(location.pathname===MY_LISTINGS_PATH)return"my_listings";
   if(location.pathname===SELLER_ORDERS_PATH)return"seller_orders"; if(location.pathname===SELLER_PAYOUTS_PATH)return"seller_payouts"; if(location.pathname===SELLER_DASHBOARD_PATH)return"seller_dashboard"; if(location.pathname===EVENTS_DASHBOARD_PATH)return"event_creator_overview"; if(location.pathname===TICKETS_PATH)return"tickets";
-  if(location.pathname===ADMIN_PATH)return"admin"; if(location.pathname===ADMIN_MESSAGES_PATH)return"admin_messages"; if(location.pathname===ADMIN_EVENTS_PATH)return"admin_events"; if(location.pathname===ADMIN_PAYMENTS_PATH)return"admin_payments"; if(location.pathname===ADMIN_TRANSACTION_INSPECTOR_PATH)return"admin_transaction_inspector"; if(location.pathname===ADMIN_PAYOUTS_PATH)return"admin_payouts"; if(location.pathname===ADMIN_REPORTS_PATH)return"admin_reports"; if(location.pathname===ADMIN_SELLER_APPLICATIONS_PATH)return"admin_seller_applications"; if(location.pathname===ADMIN_MODERATION_QUEUE_PATH)return"admin_moderation_queue"; if(location.pathname===ADMIN_AUDIT_PATH)return"admin_audit"; if(location.pathname===ADMIN_SETUP_PATH)return"admin_setup"; if(location.pathname===ADMIN_BALANCE_PATH)return"admin_balance"; if(location.pathname===PAYMENT_RETURN_PATH)return"payment_return";
-  if(location.pathname===SELLER_PATH&&params.has("uid"))return"seller"; if(location.pathname===ABOUT_PATH)return"about"; if(location.pathname===PRIVACY_PATH)return"privacy"; if(location.pathname===TERMS_PATH)return"terms"; if(location.pathname===SAFETY_PATH)return"safety"; if(location.pathname===REPORT_PATH)return"report"; if(location.pathname===SETTINGS_PATH)return"settings"; if(location.pathname===SAVED_PATH)return"saved"; if(location.pathname===HIDDEN_PATH)return"hidden"; if(location.pathname===EXPLORE_PATH||location.pathname.startsWith(`${EXPLORE_PATH}/`))return"explore"; if(location.pathname===ADMIN_PAYOUT_DESTINATIONS_PATH)return"admin_payout_destinations"; return"home"; };
+  if(location.pathname===ADMIN_PATH)return"admin"; if(location.pathname===ADMIN_MESSAGES_PATH)return"admin_messages"; if(location.pathname===ADMIN_EVENTS_PATH)return"admin_events"; if(location.pathname===ADMIN_PAYMENTS_PATH)return"admin_payments"; if(location.pathname===ADMIN_TRANSACTION_INSPECTOR_PATH)return"admin_transaction_inspector"; if(location.pathname===ADMIN_PAYOUTS_PATH)return"admin_payouts"; if(location.pathname===ADMIN_REPORTS_PATH)return"admin_reports"; if(location.pathname===ADMIN_SELLER_APPLICATIONS_PATH)return"admin_seller_applications"; if(location.pathname===ADMIN_MODERATION_QUEUE_PATH)return"admin_moderation_queue"; if(location.pathname===ADMIN_AUDIT_PATH)return"admin_audit"; if(location.pathname===ADMIN_SETUP_PATH)return"admin_setup"; if(location.pathname===ADMIN_BALANCE_PATH)return"admin_balance"; if(location.pathname===ADMIN_PAYOUT_DESTINATIONS_PATH)return"admin_payout_destinations"; if(location.pathname===ADMIN_DISPUTES_PATH)return"admin_disputes"; if(location.pathname===PAYMENT_RETURN_PATH)return"payment_return";
+  if(location.pathname===SELLER_PATH&&params.has("uid"))return"seller"; if(location.pathname===ABOUT_PATH)return"about"; if(location.pathname===PRIVACY_PATH)return"privacy"; if(location.pathname===TERMS_PATH)return"terms"; if(location.pathname===SAFETY_PATH)return"safety"; if(location.pathname===REPORT_PATH)return"report"; if(location.pathname===SETTINGS_PATH)return"settings"; if(location.pathname===SAVED_PATH)return"saved"; if(location.pathname===HIDDEN_PATH)return"hidden"; if(location.pathname===EXPLORE_PATH||location.pathname.startsWith(`${EXPLORE_PATH}/`))return"explore"; return"home"; };
