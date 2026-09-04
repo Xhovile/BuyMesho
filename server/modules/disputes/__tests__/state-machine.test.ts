@@ -58,7 +58,7 @@ test('canonical escrow review state never uses disputed as financial truth', () 
   assert.doesNotThrow(() => assertEscrowTransition('held', 'refunding', 'financial_workflow'));
   assert.equal(transitionMovesMoney(ESCROW_TRANSITION_TABLE, 'held', 'releasable'), false);
   assert.equal(transitionMovesMoney(ESCROW_TRANSITION_TABLE, 'held', 'refunding'), true);
-  assert.throws(() => assertEscrowTransition('held', 'released', 'buyer'), /cannot perform/);
+  assert.throws(() => assertEscrowTransition('held', 'released', 'buyer'), /Illegal state transition/);
 });
 
 test('escrow financial exits are explicit', () => {
