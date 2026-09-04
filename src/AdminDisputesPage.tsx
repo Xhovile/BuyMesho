@@ -2,6 +2,7 @@ import { AlertTriangle, CheckCircle2, ChevronRight, Clock3, FileText, RefreshCw,
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
+import { apiFetch } from "./lib/api";
 
 type CaseRow = {
   id: string; order_id: string; buyer_id: string; seller_id: string; status: string; outcome?: string | null;
@@ -19,7 +20,10 @@ type Detail = { case: Record<string, any>; attempts: Record<string, any>[]; refu
 const money = (amount: unknown, currency: unknown) => `${Number(amount ?? 0).toLocaleString()} ${String(currency ?? "MWK")}`;
 const date = (value: unknown) => value ? new Date(String(value)).toLocaleString() : "—";
 const label = (value: unknown) => String(value ?? "—").replaceAll("_", " ");
-async function api(path: string, init?: RequestInit) { const response = await fetch(path, { credentials: "include", headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) }, ...init }); const payload = await response.json().catch(() => ({})); if (!response.ok) throw new Error(payload?.error || "Request failed"); return payload; }
+
+async function api(path: string, init?: RequestInit) {
+  return apiFetch(path, init);
+}
 
 export default function AdminDisputesPage() {
   const [status, setStatus] = useState("active"); const [cases, setCases] = useState<CaseRow[]>([]); const [selectedId, setSelectedId] = useState<string | null>(null); const [detail, setDetail] = useState<Detail | null>(null); const [note, setNote] = useState(""); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
