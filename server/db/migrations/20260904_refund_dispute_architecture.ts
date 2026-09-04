@@ -166,8 +166,8 @@ export function ensureRefundDisputeArchitectureMigration(): void {
       'case_' || d.id, o.id, o.buyer_id, o.seller_id,
       COALESCE(NULLIF(d.opened_by, ''), o.buyer_id),
       CASE
-        WHEN lower(COALESCE(d.state, 'open')) = 'resolved' THEN 'resolved'
-        WHEN lower(COALESCE(d.state, 'open')) = 'rejected' THEN 'rejected'
+        WHEN lower(COALESCE(d.status, 'open')) = 'resolved' THEN 'resolved'
+        WHEN lower(COALESCE(d.status, 'open')) = 'rejected' THEN 'rejected'
         ELSE 'open'
       END,
       d.resolution, d.id, COALESCE(d.created_at, CURRENT_TIMESTAMP), d.resolved_at,
@@ -187,8 +187,8 @@ export function ensureRefundDisputeArchitectureMigration(): void {
       COALESCE(NULLIF(d.reason, ''), 'Existing dispute'),
       COALESCE(NULLIF(d.opened_by, ''), o.buyer_id),
       CASE
-        WHEN lower(COALESCE(d.state, 'open')) = 'resolved' THEN 'resolved'
-        WHEN lower(COALESCE(d.state, 'open')) = 'rejected' THEN 'rejected'
+        WHEN lower(COALESCE(d.status, 'open')) = 'resolved' THEN 'resolved'
+        WHEN lower(COALESCE(d.status, 'open')) = 'rejected' THEN 'rejected'
         ELSE 'open'
       END,
       d.resolution, d.details, d.resolved_by, d.resolved_at,
