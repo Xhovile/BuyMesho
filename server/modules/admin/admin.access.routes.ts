@@ -3,6 +3,7 @@ import { hasAdminAccess } from "../../auth/adminAccess.js";
 import { adminApiLimiter } from "./admin.rateLimit.js";
 import { postgresDb as db } from "../../db.js";
 import { createAdminMessagesRouter } from "../../routes/adminMessages.routes.js";
+import { createAdminDisputesRouter } from "../../routes/adminDisputes.routes.js";
 
 export function createAdminAccessRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
@@ -15,6 +16,10 @@ export function createAdminAccessRouter(requireAuth: RequestHandler): express.Ro
     return res.json({ isAdmin: true });
   });
 
+  // Mount disputes inside the already-mounted /api/admin router as a
+  // compatibility path. This guarantees /api/admin/disputes is registered
+  // before any broader admin routers can intercept the request.
+  router.use("/disputes", createAdminDisputesRouter(requireAuth));
   router.use(createAdminMessagesRouter({ requireAuth, db }));
 
   return router;
