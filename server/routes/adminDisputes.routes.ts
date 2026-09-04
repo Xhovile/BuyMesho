@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { query, withTransaction } from '../postgres.js';
 import { escrowRepository } from '../modules/escrow/escrow.repository.js';
 import { assertDisputeAttemptTransition, assertDisputeCaseTransition, assertRefundTransition } from '../modules/disputes/state-machine.js';
+import { notifyDisputeWorkflowEvent } from '../modules/notifications/dispute-workflow.notification.js';
 import { ensureRefundDisputeArchitectureMigration } from '../db/migrations/20260904_refund_dispute_architecture.js';
 
 function clean(value: unknown): string { return typeof value === 'string' ? value.trim() : ''; }
@@ -119,6 +120,11 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
         }
         await client.query(`INSERT INTO audit_events (id,entity_type,entity_id,event_type,performed_by,timestamp,previous_state,new_state,metadata) VALUES ($1,'dispute_case',$2,'admin_review_started',$3,$4,$5,'under_review',$6)`, [`aud_${randomUUID()}`, caseId, req.user.uid, now, String(current.status), JSON.stringify({ orderId: current.order_id })]);
       });
+      try {
+        await notifyDisputeWorkflowEvent({ caseId, orderId: String(current.order_id), buyerId: String(current.buyer_id), sellerId: String(current.seller_id), event: 'under_review' });
+      } catch (notificationError) {
+        console.warn('Failed to send dispute-under-review notification:', notificationError);
+      }
       return res.json(await loadCase(caseId));
     } catch (error) { return res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to start dispute review' }); }
   });
@@ -148,6 +154,11 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
           if (current.latest_attempt_id) await client.query(`UPDATE dispute_attempts SET decision='refund_approved', resolution_note=$1, updated_at=$2 WHERE id=$3`, [note, now, current.latest_attempt_id]);
           await client.query(`INSERT INTO audit_events (id,entity_type,entity_id,event_type,performed_by,timestamp,previous_state,new_state,metadata) VALUES ($1,'dispute_case',$2,'admin_refund_approved',$3,$4,'under_review','under_review',$5)`, [`aud_${randomUUID()}`, caseId, req.user.uid, now, JSON.stringify({ orderId: current.order_id, note, financialExecutionRequired: true })]);
         });
+        try {
+          await notifyDisputeWorkflowEvent({ caseId, orderId: String(current.order_id), buyerId: String(current.buyer_id), sellerId: String(current.seller_id), event: 'approved', note, amount: Number(current.refund_requested_amount ?? 0), currency: String(current.refund_currency ?? current.total_currency ?? 'MWK') });
+        } catch (notificationError) {
+          console.warn('Failed to send refund-approved notification:', notificationError);
+        }
         return res.json({ case: await loadCase(caseId), message: 'Refund approved. Financial execution remains a separate workflow.' });
       }
 
@@ -160,6 +171,12 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
           await client.query(`UPDATE dispute_cases SET status='resolved', outcome='seller_refund_accepted', resolved_at=$1, updated_at=$1 WHERE id=$2`, [now, caseId]);
           await client.query(`INSERT INTO audit_events (id,entity_type,entity_id,event_type,performed_by,timestamp,previous_state,new_state,metadata) VALUES ($1,'dispute_case',$2,'seller_refund_accepted',$3,$4,'under_review','resolved',$5)`, [`aud_${randomUUID()}`, caseId, req.user.uid, now, JSON.stringify({ orderId: current.order_id, refundTransactionId: current.refund_transaction_row_id })]);
         });
+        try {
+          await notifyDisputeWorkflowEvent({ caseId, orderId: String(current.order_id), buyerId: String(current.buyer_id), sellerId: String(current.seller_id), event: 'seller_refund_recorded', note, amount: Number(current.refunded_amount ?? 0), currency: String(current.refunded_currency ?? current.total_currency ?? 'MWK'), transactionId: String(current.refunded_transaction_id ?? '') || null });
+          await notifyDisputeWorkflowEvent({ caseId, orderId: String(current.order_id), buyerId: String(current.buyer_id), sellerId: String(current.seller_id), event: 'seller_wins', note, recipients: ['seller'] });
+        } catch (notificationError) {
+          console.warn('Failed to send seller-refund resolution notifications:', notificationError);
+        }
         return res.json({ case: await loadCase(caseId) });
       }
 
@@ -173,6 +190,12 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
         await client.query(`UPDATE dispute_cases SET status='rejected', outcome='rejected', resolved_at=$1, updated_at=$1 WHERE id=$2`, [now, caseId]);
         await client.query(`INSERT INTO audit_events (id,entity_type,entity_id,event_type,performed_by,timestamp,previous_state,new_state,metadata) VALUES ($1,'dispute_case',$2,'admin_dispute_rejected',$3,$4,'under_review','rejected',$5)`, [`aud_${randomUUID()}`, caseId, req.user.uid, now, JSON.stringify({ orderId: current.order_id, note })]);
       });
+      try {
+        await notifyDisputeWorkflowEvent({ caseId, orderId: String(current.order_id), buyerId: String(current.buyer_id), sellerId: String(current.seller_id), event: 'rejected', note, recipients: ['buyer'] });
+        await notifyDisputeWorkflowEvent({ caseId, orderId: String(current.order_id), buyerId: String(current.buyer_id), sellerId: String(current.seller_id), event: 'seller_wins', note, recipients: ['seller'] });
+      } catch (notificationError) {
+        console.warn('Failed to send rejection notifications:', notificationError);
+      }
       return res.json({ case: await loadCase(caseId) });
     } catch (error) { return res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to apply dispute decision' }); }
   });
@@ -250,6 +273,14 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
         return { duplicate: false, refund, refundTransactionId, transactionId, amount: requestedAmount };
       });
 
+      if (!result.duplicate) {
+        try {
+          await notifyDisputeWorkflowEvent({ caseId: String(result.refund.case_id), orderId: String(result.refund.order_id), buyerId: String(result.refund.order_buyer_id), sellerId: String(result.refund.order_seller_id), event: 'refund_processing', note, amount: Number(result.amount), currency: String(result.refund.escrow_balance_currency ?? result.refund.order_currency ?? 'MWK'), transactionId: String(result.transactionId) });
+          await notifyDisputeWorkflowEvent({ caseId: String(result.refund.case_id), orderId: String(result.refund.order_id), buyerId: String(result.refund.order_buyer_id), sellerId: String(result.refund.order_seller_id), event: 'refund_completed', note, amount: Number(result.amount), currency: String(result.refund.escrow_balance_currency ?? result.refund.order_currency ?? 'MWK'), transactionId: String(result.transactionId) });
+        } catch (notificationError) {
+          console.warn('Failed to send refund execution notifications:', notificationError);
+        }
+      }
       return res.status(result.duplicate ? 200 : 201).json({ ...result, message: result.duplicate ? 'Refund was already executed.' : 'Refund executed and recorded successfully.' });
     } catch (error) {
       return res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to execute refund' });
