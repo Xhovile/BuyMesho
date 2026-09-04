@@ -1,6 +1,7 @@
 import express, { type RequestHandler } from 'express';
 import { randomUUID } from 'node:crypto';
 import { query, withTransaction } from '../postgres.js';
+import { notifyDisputeWorkflowEvent } from '../modules/notifications/dispute-workflow.notification.js';
 
 const ALLOWED_REFUND_METHODS = new Set(['mobile_money', 'bank_transfer', 'cash', 'other']);
 function clean(value: unknown, fallback = ''): string { return typeof value === 'string' ? value.trim() : fallback; }
@@ -33,15 +34,22 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
       const result = await withTransaction(async (client) => {
         const caseResult = await client.query<Record<string, unknown>>(`SELECT * FROM dispute_cases WHERE order_id = $1 AND seller_id = $2 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [orderId, sellerId]); const caseRow = caseResult.rows[0]; if (!caseRow) throw new Error('No dispute case found for this order'); if (!['open', 'under_review'].includes(String(caseRow.status))) throw new Error('This dispute is no longer active');
         const attemptResult = await client.query<Record<string, unknown>>(`SELECT * FROM dispute_attempts WHERE case_id = $1 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [caseRow.id]); const attempt = attemptResult.rows[0];
-        const existingTransaction = await client.query<Record<string, unknown>>(`SELECT * FROM refund_transactions WHERE order_id = $1 AND transaction_id = $2 LIMIT 1`, [orderId, transactionId]); if (existingTransaction.rows[0]) return { duplicate: true, transaction: existingTransaction.rows[0], caseId: caseRow.id };
+        const existingTransaction = await client.query<Record<string, unknown>>(`SELECT * FROM refund_transactions WHERE order_id = $1 AND transaction_id = $2 LIMIT 1`, [orderId, transactionId]); if (existingTransaction.rows[0]) return { duplicate: true, transaction: existingTransaction.rows[0], caseId: caseRow.id, buyerId: String(caseRow.buyer_id), sellerId, currency: String(order.currency ?? 'MWK') };
         const refundRequestResult = await client.query<Record<string, unknown>>(`SELECT * FROM refund_requests WHERE order_id = $1 AND seller_id = $2 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [orderId, sellerId]); const refundRequest = refundRequestResult.rows[0]; const now = new Date().toISOString(); const refundTransactionId = `rft_${randomUUID()}`;
         await client.query(`INSERT INTO refund_transactions (id, refund_request_id, order_id, buyer_id, seller_id, amount, currency, destination, payment_method, provider, transaction_id, status, executed_by, executed_at, supporting_evidence, metadata, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'seller_reported',$10,'refunded',$5,$11,$12,$13::jsonb,$11,$11)`, [refundTransactionId, refundRequest?.id ?? null, orderId, order.buyer_id, sellerId, amount, order.currency ?? 'MWK', destination || null, refundMethod, transactionId, refundDate, JSON.stringify(evidence), JSON.stringify({ refund_transaction_id: transactionId, note })]);
         if (refundRequest) await client.query(`UPDATE refund_requests SET refund_transaction_id = $1, seller_response = $2, updated_at = $3 WHERE id = $4`, [refundTransactionId, note || `Seller reported a refund on ${refundDate}.`, now, refundRequest.id]);
         if (attempt) await client.query(`UPDATE dispute_attempts SET decision = COALESCE(decision, 'seller_refund_reported'), resolution_note = $1, updated_at = $2 WHERE id = $3`, [note || `Seller reported a refund using transaction ${transactionId}.`, now, attempt.id]);
         await client.query(`INSERT INTO audit_events (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata) VALUES ($1,'dispute_case',$2,'seller_refund_recorded',$3,$4,$5,$5,$6::jsonb)`, [`aud_${randomUUID()}`, caseRow.id, sellerId, now, String(caseRow.status), JSON.stringify({ orderId, refundTransactionId, transactionId, amount, refundMethod, refundDate })]);
-        return { duplicate: false, transaction: { id: refundTransactionId, orderId, amount, currency: order.currency ?? 'MWK', paymentMethod: refundMethod, transactionId, refundDate, status: 'refunded' as const }, caseId: caseRow.id };
+        return { duplicate: false, transaction: { id: refundTransactionId, orderId, amount, currency: order.currency ?? 'MWK', paymentMethod: refundMethod, transactionId, refundDate, status: 'refunded' as const }, caseId: caseRow.id, buyerId: String(caseRow.buyer_id), sellerId, currency: String(order.currency ?? 'MWK') };
       });
-      return res.status(result.duplicate ? 200 : 201).json({ ...result, message: result.duplicate ? 'This seller refund was already recorded.' : 'Seller refund recorded. The dispute remains available for formal review and decision.' });
+      if (!result.duplicate) {
+        try {
+          await notifyDisputeWorkflowEvent({ caseId: String(result.caseId), orderId, buyerId: String(result.buyerId), sellerId: String(result.sellerId), event: 'seller_refund_recorded', note: note || `Seller reported a refund on ${refundDate}.`, amount, currency: String(result.currency), transactionId });
+        } catch (notificationError) {
+          console.warn('Failed to send seller-refund notification:', notificationError);
+        }
+      }
+      return res.status(result.duplicate ? 200 : 201).json({ duplicate: result.duplicate, transaction: result.transaction, caseId: result.caseId, message: result.duplicate ? 'This seller refund was already recorded.' : 'Seller refund recorded. The dispute remains available for formal review and decision.' });
     } catch (error) { return res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to record seller refund' }); }
   });
   return router;
