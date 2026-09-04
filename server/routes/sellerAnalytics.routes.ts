@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { createSellerDisputeResolutionRouter } from "./sellerDisputeResolution.routes.js";
 
 export type SellerAnalyticsRouteDeps = {
   db: any;
@@ -10,6 +11,8 @@ export function registerSellerAnalyticsRoutes(
   deps: SellerAnalyticsRouteDeps,
 ) {
   const { db } = deps;
+
+  app.use("/api/seller/disputes", createSellerDisputeResolutionRouter(requireAuth));
 
   app.get("/api/seller/dashboard", requireAuth, (req, res) => {
     const uid = String(req.user?.uid ?? "").trim();
