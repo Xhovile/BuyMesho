@@ -1,8 +1,8 @@
-import { getFirebaseAdmin } from "../../auth/firebaseAdmin.js";
 import { query } from "../../postgres.js";
 import { sendEmail } from "../email/email.service.js";
 import { renderOrderPaidEmail } from "../email/templates/order-paid.js";
 import type { StoredOrder } from "../orders/order.repository.js";
+import { resolveNotificationRecipient } from "./email-recipient.js";
 
 type RecipientRole = "buyer" | "seller";
 
@@ -22,7 +22,7 @@ async function getSellerBusinessName(sellerUid: string): Promise<string | null> 
 
 async function sendOrderPaidEmail(order: StoredOrder, role: RecipientRole): Promise<void> {
   const recipientId = role === "buyer" ? order.buyerId : order.sellerId;
-  const userRecord = await getFirebaseAdmin().auth().getUser(recipientId);
+  const userRecord = await resolveNotificationRecipient(recipientId);
   const email = userRecord.email?.trim();
   if (!email) return;
 
