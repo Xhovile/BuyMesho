@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import {
+  ADMIN_DISPUTES_PATH,
   ADMIN_TRANSACTION_INSPECTOR_PATH,
   DISPUTES_PATH,
   EVENTS_CREATE_PATH,
@@ -13,6 +14,7 @@ import {
 
 const App = lazy(() => import("../App.new"));
 const AdminHubPage = lazy(() => import("../AdminHubPage"));
+const AdminDisputesPage = lazy(() => import("../AdminDisputesPage"));
 const AdminMessagesPage = lazy(() => import("../AdminMessagesPage"));
 const AdminMessageThreadPage = lazy(() => import("../AdminMessageThreadPage"));
 const AdminPaymentsPage = lazy(() => import("../AdminPaymentsConsole"));
@@ -82,12 +84,7 @@ export function prefetchWorkspaceRoutes({ isAdmin, isSeller }: { isAdmin: boolea
   if (imports.length) void Promise.allSettled(imports);
 }
 
-type RootRouterRoutesProps = {
-  route: AppRoute;
-  locationPath: string;
-  locationSearch: string;
-  firebaseUser: { emailVerified?: boolean } | null;
-};
+type RootRouterRoutesProps = { route: AppRoute; locationPath: string; locationSearch: string; firebaseUser: { emailVerified?: boolean } | null; };
 
 export default function RootRouterRoutes({ route, locationPath, locationSearch, firebaseUser }: RootRouterRoutesProps) {
   const threadConversationId = new URLSearchParams(locationSearch).get("conversation");
@@ -102,137 +99,72 @@ export default function RootRouterRoutes({ route, locationPath, locationSearch, 
 
   return (
     <>
-      {isEventsCreatePath ? (
-        <EventsCreatePage />
-      ) : isEventsManagePath ? (
-        <EventCreatorDashboardPage />
-      ) : isEventDetailsPath ? (
-        <EventDetailsPage />
-      ) : isEventsDirectoryPath ? (
-        <EventsDirectoryPage />
-      ) : locationPath === "/explore/lay-by" || locationPath === "/explore/accommodation" || locationPath === "/explore/innovation" || locationPath === "/explore/lending" ? (
-        <MarketComingSoonPage />
-      ) : locationPath === "/explore/sellers" ? (
-        <SellersDirectoryPage />
-      ) : locationPath.startsWith("/market/coming-soon") ? (
-        <MarketComingSoonPage />
-      ) : locationPath === "/connect/callback" ? (
-        <ConnectCallbackPage />
-      ) : locationPath === "/transaction-json" ? (
-        <TransactionJsonPage />
-      ) : route === "listing_details" ? (
-        <ListingDetailsPage />
-      ) : locationPath.startsWith("/orders/") && locationPath.endsWith("/dispute") ? (
-        <OrderDisputePage />
-      ) : isOrderTrackingPath ? (
-        <OrderTrackingPage />
-      ) : locationPath === TRACK_ORDER_PATH ? (
-        <TrackOrderPage />
-      ) : locationPath === DISPUTES_PATH ? (
-        <DisputesPage />
-      ) : locationPath === "/buyer-payments" ? (
-        <BuyerPaymentsPage />
-      ) : locationPath === "/tickets" ? (
-        <TicketsPage />
-      ) : locationPath === "/cart" ? (
-        <CartPage />
-      ) : locationPath === "/payments" ? (
-        <PaymentsHubPage />
-      ) : locationPath === "/payments/return" ? (
-        <PaymentReturnPage />
-      ) : locationPath === "/payments/track-order" ? (
-        <TrackOrderPage />
-      ) : route === "about" ? (
-        <AboutPage />
-      ) : route === "category" ? (
-        <CategoryPage />
-      ) : route === "explore" ? (
-        <App />
-      ) : route === "saved" ? (
-        <SavedPage />
-      ) : route === "hidden" ? (
-        <HiddenCollectionsPage />
-      ) : route === "login" ? (
-        <LoginPage />
-      ) : route === "signup" ? (
-        <SignupPage />
-      ) : route === "forgot_password" ? (
-        <ForgotPasswordPage />
-      ) : route === "profile" ? (
-        <ProfilePage />
-      ) : route === "verify_email" ? (
-        <VerifyEmailPage />
-      ) : route === "account_setup" ? (
-        <AccountSetupPage />
-      ) : route === "edit_profile" ? (
-        <EditProfilePage />
-      ) : route === "edit_account" ? (
-        <AccountSetupPage />
-      ) : route === "settings" ? (
-        <SettingsPage />
-      ) : route === "privacy" ? (
-        <PrivacyPolicyPage onBack={() => navigateToPath(HOME_PATH)} />
-      ) : route === "terms" ? (
-        <TermsPage onBack={() => navigateToPath(HOME_PATH)} />
-      ) : route === "safety" ? (
-        <SafetyTipsPage onBack={() => navigateToPath(HOME_PATH)} />
-      ) : route === "report" ? (
-        <ReportProblemPage onBack={() => navigateToPath(HOME_PATH)} isLoggedIn={!!firebaseUser} />
-      ) : route === "seller" ? (
-        <SellerProfilePage />
-      ) : route === "seller_dashboard" ? (
-        <SellerDashboardPage />
-      ) : route === "seller_payouts" ? (
-        <SellerPayoutsPage />
-      ) : route === "my_listings" ? (
-        <MyListingsPage />
-      ) : route === "messages" ? (
-        isMessageThread ? <MessageThreadPage /> : <MessagesInboxPage />
-      ) : route === "create" ? (
-        <CreateListingPage />
-      ) : route === "edit" ? (
-        <EditListingPage />
-      ) : route === "email_action" ? (
-        <EmailActionPage />
-      ) : route === "change_password" ? (
-        <ChangePasswordPage />
-      ) : route === "change_email" ? (
-        <ChangeEmailPage />
-      ) : route === "become_seller" ? (
-        <BecomeSellerPage />
-      ) : route === "admin" ? (
-        <AdminHubPage />
-      ) : route === "admin_messages" ? (
-        isAdminMessageThread ? <AdminMessageThreadPage /> : <AdminMessagesPage />
-      ) : route === "admin_events" ? (
-        <AdminEventModerationPage />
-      ) : route === "admin_payments" ? (
-        <AdminPaymentsPage />
-      ) : route === "admin_transaction_inspector" || locationPath === ADMIN_TRANSACTION_INSPECTOR_PATH ? (
-        <TransactionInspectorPage />
-      ) : route === "admin_payouts" ? (
-        <AdminPayoutsManager />
-      ) : route === "admin_reports" ? (
-        <AdminReportsPage />
-      ) : route === "admin_seller_applications" ? (
-        <AdminSellerApplicationsPage />
-      ) : route === "admin_moderation_queue" ? (
-        <AdminModerationQueuePage />
-      ) : route === "admin_audit" ? (
-        <AdminAuditLogPage />
-      ) : route === "admin_balance" ? (
-        <AdminBalancePage />
-      ) : route === "admin_setup" ? (
-        <AdminSetupPage />
-      ) : route === "admin_payout_destinations" ? (
-        <AdminPayoutDestinationRequestsPage />
-      ) : route === "payment_return" ? (
-        <PaymentReturnPage />
-      ) : route === "event_creator_dashboard" || route === "event_creator_overview" ? (
-        <EventCreatorDashboardPage />
-      ) : (
-        <HomePage />
-      )}
+      {isEventsCreatePath ? <EventsCreatePage />
+      : isEventsManagePath ? <EventCreatorDashboardPage />
+      : isEventDetailsPath ? <EventDetailsPage />
+      : isEventsDirectoryPath ? <EventsDirectoryPage />
+      : locationPath === "/explore/lay-by" || locationPath === "/explore/accommodation" || locationPath === "/explore/innovation" || locationPath === "/explore/lending" ? <MarketComingSoonPage />
+      : locationPath === "/explore/sellers" ? <SellersDirectoryPage />
+      : locationPath.startsWith("/market/coming-soon") ? <MarketComingSoonPage />
+      : locationPath === "/connect/callback" ? <ConnectCallbackPage />
+      : locationPath === "/transaction-json" ? <TransactionJsonPage />
+      : route === "listing_details" ? <ListingDetailsPage />
+      : isOrderDisputePath ? <OrderDisputePage />
+      : isOrderTrackingPath ? <OrderTrackingPage />
+      : locationPath === TRACK_ORDER_PATH ? <TrackOrderPage />
+      : locationPath === DISPUTES_PATH ? <DisputesPage />
+      : locationPath === "/buyer-payments" ? <BuyerPaymentsPage />
+      : locationPath === "/tickets" ? <TicketsPage />
+      : locationPath === "/cart" ? <CartPage />
+      : locationPath === "/payments" ? <PaymentsHubPage />
+      : locationPath === "/payments/return" ? <PaymentReturnPage />
+      : locationPath === "/payments/track-order" ? <TrackOrderPage />
+      : route === "about" ? <AboutPage />
+      : route === "category" ? <CategoryPage />
+      : route === "explore" ? <App />
+      : route === "saved" ? <SavedPage />
+      : route === "hidden" ? <HiddenCollectionsPage />
+      : route === "login" ? <LoginPage />
+      : route === "signup" ? <SignupPage />
+      : route === "forgot_password" ? <ForgotPasswordPage />
+      : route === "profile" ? <ProfilePage />
+      : route === "verify_email" ? <VerifyEmailPage />
+      : route === "account_setup" ? <AccountSetupPage />
+      : route === "edit_profile" ? <EditProfilePage />
+      : route === "edit_account" ? <AccountSetupPage />
+      : route === "settings" ? <SettingsPage />
+      : route === "privacy" ? <PrivacyPolicyPage onBack={() => navigateToPath(HOME_PATH)} />
+      : route === "terms" ? <TermsPage onBack={() => navigateToPath(HOME_PATH)} />
+      : route === "safety" ? <SafetyTipsPage onBack={() => navigateToPath(HOME_PATH)} />
+      : route === "report" ? <ReportProblemPage onBack={() => navigateToPath(HOME_PATH)} isLoggedIn={!!firebaseUser} />
+      : route === "seller" ? <SellerProfilePage />
+      : route === "seller_dashboard" ? <SellerDashboardPage />
+      : route === "seller_payouts" ? <SellerPayoutsPage />
+      : route === "my_listings" ? <MyListingsPage />
+      : route === "messages" ? (isMessageThread ? <MessageThreadPage /> : <MessagesInboxPage />)
+      : route === "create" ? <CreateListingPage />
+      : route === "edit" ? <EditListingPage />
+      : route === "email_action" ? <EmailActionPage />
+      : route === "change_password" ? <ChangePasswordPage />
+      : route === "change_email" ? <ChangeEmailPage />
+      : route === "become_seller" ? <BecomeSellerPage />
+      : route === "admin" ? <AdminHubPage />
+      : route === "admin_disputes" || locationPath === ADMIN_DISPUTES_PATH ? <AdminDisputesPage />
+      : route === "admin_messages" ? (isAdminMessageThread ? <AdminMessageThreadPage /> : <AdminMessagesPage />)
+      : route === "admin_events" ? <AdminEventModerationPage />
+      : route === "admin_payments" ? <AdminPaymentsPage />
+      : route === "admin_transaction_inspector" || locationPath === ADMIN_TRANSACTION_INSPECTOR_PATH ? <TransactionInspectorPage />
+      : route === "admin_payouts" ? <AdminPayoutsManager />
+      : route === "admin_reports" ? <AdminReportsPage />
+      : route === "admin_seller_applications" ? <AdminSellerApplicationsPage />
+      : route === "admin_moderation_queue" ? <AdminModerationQueuePage />
+      : route === "admin_audit" ? <AdminAuditLogPage />
+      : route === "admin_balance" ? <AdminBalancePage />
+      : route === "admin_setup" ? <AdminSetupPage />
+      : route === "admin_payout_destinations" ? <AdminPayoutDestinationRequestsPage />
+      : route === "payment_return" ? <PaymentReturnPage />
+      : route === "event_creator_dashboard" || route === "event_creator_overview" ? <EventCreatorDashboardPage />
+      : <HomePage />}
     </>
   );
 }
