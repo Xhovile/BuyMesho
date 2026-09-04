@@ -57,7 +57,9 @@ async function sendOrderRefundedEmail(
   const buyerName = order.buyerDetails?.fullName?.trim() || "BuyMesho customer";
   const recipientName = role === "buyer" ? buyerName : sellerBusinessName;
   const counterpartyName = role === "buyer" ? sellerBusinessName : buyerName;
-  const actionUrl = `https://buymesho.app/orders/${encodeURIComponent(order.id)}`;
+  const actionUrl = role === "seller"
+    ? `https://buymesho.app/seller/payouts?view=orders&order=${encodeURIComponent(order.id)}`
+    : `https://buymesho.app/orders/${encodeURIComponent(order.id)}`;
   const dedupeKey = `${order.id}:${role}`;
   const claim = dependencies.claim ?? claimEmailNotification;
   const markSent = dependencies.markSent ?? markEmailNotificationSent;
