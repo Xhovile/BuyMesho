@@ -25,28 +25,16 @@ function normalizeRequestedResolution(value: unknown): 'refund' | 'return' | 're
 
 function normalizeRequestType(value: unknown): string {
   const normalized = String(value ?? '').trim().toLowerCase();
-  const allowed = new Set([
-    'buyer_cancellation',
-    'seller_failed_to_fulfill',
-    'product_item_problem',
-    'delivery_failure',
-    'payment_platform_error',
-    'exceptional_dispute',
-  ]);
+  const allowed = new Set(['buyer_cancellation','seller_failed_to_fulfill','product_item_problem','delivery_failure','payment_platform_error','exceptional_dispute']);
   return allowed.has(normalized) ? normalized : 'exceptional_dispute';
 }
 
 function cleanEvidence(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map((item) => item.trim()).slice(0, 20)
-    : [];
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map((item) => item.trim()).slice(0, 20) : [];
 }
 
 async function resolveTicketToOrder(ticketId: string): Promise<{ ticketId: string; orderId: string } | null> {
-  const result = await query<{ id?: string; order_id?: string }>(
-    `SELECT id, order_id FROM event_tickets WHERE id = $1 OR code = $1 LIMIT 1`,
-    [ticketId],
-  );
+  const result = await query<{ id?: string; order_id?: string }>(`SELECT id, order_id FROM event_tickets WHERE id = $1 OR code = $1 LIMIT 1`, [ticketId]);
   const row = result.rows[0];
   if (!row?.id || !row.order_id) return null;
   return { ticketId: String(row.id), orderId: String(row.order_id) };
@@ -62,9 +50,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       const requestedOrderId = typeof body.orderId === 'string' ? body.orderId.trim() : '';
       const requestedTicketId = typeof body.ticketId === 'string' ? body.ticketId.trim() : '';
       const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
-      if ((!requestedOrderId && !requestedTicketId) || !reason) {
-        return res.status(400).json({ error: 'ticketId or orderId, and reason are required' });
-      }
+      if ((!requestedOrderId && !requestedTicketId) || !reason) return res.status(400).json({ error: 'ticketId or orderId, and reason are required' });
 
       let resolvedTicketId: string | null = null;
       let orderId = requestedOrderId;
@@ -86,94 +72,46 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       const requestedResolution = normalizeRequestedResolution(body.requestedResolution);
       const amountRequested = Number(body.amountRequested ?? 0);
       const evidence = cleanEvidence(body.evidence);
-      if (!Number.isFinite(amountRequested) || amountRequested < 0) {
-        return res.status(400).json({ error: 'amountRequested must be a non-negative number' });
-      }
+      if (!Number.isFinite(amountRequested) || amountRequested < 0) return res.status(400).json({ error: 'amountRequested must be a non-negative number' });
 
       const result = await withTransaction(async (client) => {
-        const orderResult = await client.query<Record<string, unknown>>(
-          `SELECT id, buyer_id, seller_id, status, escrow_id, total_currency FROM orders WHERE id = $1 LIMIT 1`,
-          [orderId],
-        );
+        const orderResult = await client.query<Record<string, unknown>>(`SELECT id, buyer_id, seller_id, status, escrow_id, total_currency FROM orders WHERE id = $1 LIMIT 1`, [orderId]);
         const order = orderResult.rows[0];
         if (!order) throw new Error('Order not found');
 
-        const caseResult = await client.query<Record<string, unknown>>(
-          `SELECT * FROM dispute_cases WHERE order_id = $1 AND status IN ('open','under_review') ORDER BY created_at ASC LIMIT 1`,
-          [orderId],
-        );
+        const caseResult = await client.query<Record<string, unknown>>(`SELECT * FROM dispute_cases WHERE order_id = $1 AND status IN ('open','under_review') ORDER BY created_at ASC LIMIT 1`, [orderId]);
         const existingCase = caseResult.rows[0];
         const caseId = existingCase?.id ? String(existingCase.id) : `case_${randomUUID()}`;
 
         if (!existingCase) {
-          await client.query(
-            `INSERT INTO dispute_cases (id, order_id, buyer_id, seller_id, opened_by, status, opened_at, window_ends_at, created_at, updated_at)
-             VALUES ($1,$2,$3,$4,$5,'open',$6,$7,$6,$6)`,
-            [caseId, orderId, String(order.buyer_id), String(order.seller_id), openedBy, nowIso, windowEndsAt],
-          );
+          await client.query(`INSERT INTO dispute_cases (id, order_id, buyer_id, seller_id, opened_by, status, opened_at, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,'open',$6,$7,$6,$6)`, [caseId, orderId, String(order.buyer_id), String(order.seller_id), openedBy, nowIso, windowEndsAt]);
         } else if (windowEndsAt && !existingCase.window_ends_at) {
           await client.query(`UPDATE dispute_cases SET window_ends_at=$1, updated_at=$2 WHERE id=$3`, [windowEndsAt, nowIso, caseId]);
         }
 
         const attemptId = `attempt_${randomUUID()}`;
-        await client.query(
-          `INSERT INTO dispute_attempts
-             (id, case_id, order_id, request_type, requested_resolution, reason, amount_requested, evidence, submitted_by, status, window_ends_at, created_at, updated_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'open',$10,$11,$11)`,
-          [attemptId, caseId, orderId, requestType, requestedResolution, reason, amountRequested, JSON.stringify(evidence), openedBy, windowEndsAt, nowIso],
-        );
+        await client.query(`INSERT INTO dispute_attempts (id, case_id, order_id, request_type, requested_resolution, reason, amount_requested, evidence, submitted_by, status, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'open',$10,$11,$11)`, [attemptId, caseId, orderId, requestType, requestedResolution, reason, amountRequested, JSON.stringify(evidence), openedBy, windowEndsAt, nowIso]);
 
         let refundRequestId: string | null = null;
         if (requestedResolution === 'refund' || requestedResolution === 'return_and_refund') {
           refundRequestId = `refund_${randomUUID()}`;
-          await client.query(
-            `INSERT INTO refund_requests
-              (id, order_id, buyer_id, seller_id, item_id, dispute_case_id, request_type, requested_resolution, reason,
-               amount_requested, currency, payment_method, refund_destination, order_state_snapshot, escrow_state_snapshot,
-               payout_state_snapshot, evidence, buyer_comments, status, submitted_at, window_ends_at, created_at, updated_at)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'requested',$19,$20,$19,$19)`,
-            [
-              refundRequestId, orderId, String(order.buyer_id), String(order.seller_id), resolvedTicketId, caseId,
-              requestType, requestedResolution, reason, amountRequested, String(order.total_currency ?? 'MWK'),
-              typeof body.paymentMethod === 'string' ? body.paymentMethod.trim() || null : null,
-              typeof body.refundDestination === 'string' ? body.refundDestination.trim() || null : null,
-              String(order.status ?? 'pending'), null, null, JSON.stringify(evidence), reason, nowIso, windowEndsAt,
-            ],
-          );
+          await client.query(`INSERT INTO refund_requests (id, order_id, buyer_id, seller_id, item_id, dispute_case_id, request_type, requested_resolution, reason, amount_requested, currency, payment_method, refund_destination, order_state_snapshot, escrow_state_snapshot, payout_state_snapshot, evidence, buyer_comments, status, submitted_at, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'requested',$19,$20,$19,$19)`, [refundRequestId, orderId, String(order.buyer_id), String(order.seller_id), resolvedTicketId, caseId, requestType, requestedResolution, reason, amountRequested, String(order.total_currency ?? 'MWK'), typeof body.paymentMethod === 'string' ? body.paymentMethod.trim() || null : null, typeof body.refundDestination === 'string' ? body.refundDestination.trim() || null : null, String(order.status ?? 'pending'), null, null, JSON.stringify(evidence), reason, nowIso, windowEndsAt]);
         }
 
-        // Preserve the legacy record until the seller/admin surfaces migrate in later phases.
-        const legacyResult = await client.query<Record<string, unknown>>(
-          `SELECT id FROM disputes WHERE order_id = $1 AND status = 'open' ORDER BY created_at ASC LIMIT 1`,
-          [orderId],
-        );
+        const legacyResult = await client.query<Record<string, unknown>>(`SELECT id FROM disputes WHERE order_id = $1 AND status = 'open' ORDER BY created_at ASC LIMIT 1`, [orderId]);
         if (!legacyResult.rows[0]) {
           const escrow = await escrowRepository.findByOrderIdAsync(orderId, client);
-          await client.query(
-            `INSERT INTO disputes (id, order_id, ticket_id, escrow_id, opened_by, reason, status, case_id, window_ends_at, created_at, updated_at)
-             VALUES ($1,$2,$3,$4,$5,$6,'open',$7,$8,$9,$9)`,
-            [`legacy_${randomUUID()}`, orderId, resolvedTicketId, escrow?.id ?? null, openedBy, reason, caseId, windowEndsAt, nowIso],
-          );
+          await client.query(`INSERT INTO disputes (id, order_id, ticket_id, escrow_id, opened_by, reason, status, case_id, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,'open',$7,$8,$9,$9)`, [`legacy_${randomUUID()}`, orderId, resolvedTicketId, escrow?.id ?? null, openedBy, reason, caseId, windowEndsAt, nowIso]);
         }
 
-        await client.query(
-          `INSERT INTO audit_events (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata)
-           VALUES ($1,'dispute_case',$2,'dispute_submitted',$3,$4,NULL,'open',$5)`,
-          [
-            `audit_${randomUUID()}`, caseId, openedBy, nowIso,
-            JSON.stringify({ attemptId, refundRequestId, orderId, ticketId: resolvedTicketId, requestType, requestedResolution }),
-          ],
-        );
-
+        await client.query(`INSERT INTO audit_events (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata) VALUES ($1,'dispute_case',$2,'dispute_submitted',$3,$4,NULL,'open',$5)`, [`audit_${randomUUID()}`, caseId, openedBy, nowIso, JSON.stringify({ attemptId, refundRequestId, orderId, ticketId: resolvedTicketId, requestType, requestedResolution })]);
         return { caseId, attemptId, refundRequestId, windowEndsAt };
       });
 
       try {
         const orderResult = await query<{ buyer_id?: string; seller_id?: string }>('SELECT buyer_id, seller_id FROM orders WHERE id = $1 LIMIT 1', [orderId]);
         const order = orderResult.rows[0];
-        if (order?.buyer_id && order.seller_id) {
-          await notifyOrderDisputed({ orderId, disputeId: result.caseId, buyerId: String(order.buyer_id), sellerId: String(order.seller_id), reason });
-        }
+        if (order?.buyer_id && order.seller_id) await notifyOrderDisputed({ orderId, disputeId: result.caseId, buyerId: String(order.buyer_id), sellerId: String(order.seller_id), reason });
       } catch (notificationError) {
         console.warn('Failed to send disputed-order notification:', notificationError);
       }
@@ -186,18 +124,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
 
   router.get('/me', disputeLimiter, requireAuth, async (req, res) => {
     try {
-      const result = await query<Record<string, unknown>>(
-        `SELECT dc.*, da.id AS latest_attempt_id, da.request_type AS latest_request_type,
-                da.requested_resolution AS latest_requested_resolution, da.reason AS latest_reason,
-                da.status AS latest_attempt_status, da.created_at AS latest_attempt_created_at
-         FROM dispute_cases dc
-         LEFT JOIN LATERAL (
-           SELECT * FROM dispute_attempts WHERE case_id = dc.id ORDER BY created_at DESC LIMIT 1
-         ) da ON true
-         WHERE dc.buyer_id = $1
-         ORDER BY dc.updated_at DESC`,
-        [req.user!.uid],
-      );
+      const result = await query<Record<string, unknown>>(`SELECT dc.*, da.id AS latest_attempt_id, da.request_type AS latest_request_type, da.requested_resolution AS latest_requested_resolution, da.reason AS latest_reason, da.status AS latest_attempt_status, da.created_at AS latest_attempt_created_at FROM dispute_cases dc LEFT JOIN LATERAL (SELECT * FROM dispute_attempts WHERE case_id = dc.id ORDER BY created_at DESC LIMIT 1) da ON true WHERE dc.buyer_id = $1 ORDER BY dc.updated_at DESC`, [req.user!.uid]);
       return res.status(200).json(result.rows);
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to fetch disputes'));
@@ -210,11 +137,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       if (!ticket) return res.status(404).json({ error: 'Event ticket not found' });
       const access = await assertOrderAccessAsync(req, ticket.orderId);
       if ('error' in access) return res.status(access.error.status).json(access.error.body);
-      const result = await query<Record<string, unknown>>(
-        `SELECT * FROM disputes WHERE ticket_id = $1 OR (ticket_id IS NULL AND order_id = $2)
-         ORDER BY CASE WHEN ticket_id = $1 THEN 0 ELSE 1 END, created_at DESC LIMIT 1`,
-        [ticket.ticketId, ticket.orderId],
-      );
+      const result = await query<Record<string, unknown>>(`SELECT * FROM disputes WHERE ticket_id = $1 OR (ticket_id IS NULL AND order_id = $2) ORDER BY CASE WHEN ticket_id = $1 THEN 0 ELSE 1 END, created_at DESC LIMIT 1`, [ticket.ticketId, ticket.orderId]);
       const dispute = result.rows[0];
       if (!dispute) return res.status(404).json({ error: 'No dispute found for this ticket' });
       return res.status(200).json(dispute);
