@@ -115,6 +115,6 @@ export async function notifyDisputeWorkflowEvent(
   input: DisputeWorkflowNotificationInput,
   dependencies: DeliveryDependencies = {},
 ): Promise<void> {
-  const recipients = input.recipients?.length ? input.recipients : ["buyer", "seller"];
+  const recipients: RecipientRole[] = input.recipients?.length ? input.recipients : ["buyer", "seller"];
   await Promise.allSettled(recipients.map((role) => sendToRole(input, role, dependencies)));
 }
