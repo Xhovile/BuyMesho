@@ -58,6 +58,33 @@ export function createRefundRouter(requireAuth: RequestHandler): express.Router 
 
       const updatedOrder = serverOrderService.setStatus(req.params.orderId, 'refunded');
 
+      let resolvedDispute: Record<string, unknown> | null = null;
+      if (order.status === 'disputed') {
+        const db = getPaymentDb();
+        const dispute = db.prepare(
+          `SELECT id
+           FROM disputes
+           WHERE order_id = ?
+             AND status = 'open'
+           ORDER BY created_at DESC
+           LIMIT 1`,
+        ).get(req.params.orderId) as { id?: string } | undefined;
+
+        if (dispute?.id) {
+          const resolvedAt = new Date().toISOString();
+          db.prepare(
+            `UPDATE disputes
+             SET status = 'resolved',
+                 resolved_by = ?,
+                 resolution_note = ?,
+                 updated_at = ?,
+                 resolved_at = ?
+             WHERE id = ?`,
+          ).run(req.user.uid, reason, resolvedAt, resolvedAt, dispute.id);
+          resolvedDispute = db.prepare('SELECT * FROM disputes WHERE id = ?').get(dispute.id) as Record<string, unknown>;
+        }
+      }
+
       try {
         await notifyOrderRefunded({
           order: updatedOrder ?? order,
@@ -71,6 +98,7 @@ export function createRefundRouter(requireAuth: RequestHandler): express.Router 
         escrow: refund.escrow,
         refundEntry: refund.refundEntry,
         cancelledPayouts,
+        dispute: resolvedDispute,
         order: updatedOrder ?? order,
       });
     } catch (error) {
