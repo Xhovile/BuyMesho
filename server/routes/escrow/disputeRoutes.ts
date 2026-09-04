@@ -191,21 +191,47 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         return res.status(400).json({ error: 'status must be "resolved" or "rejected"' });
       }
 
-      const existingResult = await query<{ status?: string }>(
-        'SELECT status FROM disputes WHERE id = $1',
+      const disputeResult = await query<Record<string, unknown>>(
+        'SELECT * FROM disputes WHERE id = $1 LIMIT 1',
         [req.params.id],
       );
-      const existing = existingResult.rows[0];
+      const existing = disputeResult.rows[0];
       if (!existing) return res.status(404).json({ error: 'Dispute not found' });
 
       assertAllowedDisputeTransition(existing.status as DisputeStatus, status as DisputeStatus);
 
+      const orderId = String(existing.order_id ?? '').trim();
+      if (!orderId) return res.status(400).json({ error: 'Dispute is not attached to an order' });
+
+      const orderResult = await query<{ status?: string }>(
+        'SELECT status FROM orders WHERE id = $1 LIMIT 1',
+        [orderId],
+      );
+      const order = orderResult.rows[0];
+      const escrow = await escrowRepository.findByOrderIdAsync(orderId);
+
+      if (!resolutionNote?.trim()) {
+        return res.status(400).json({ error: 'resolutionNote is required when resolving a dispute' });
+      }
+
+      if (status === 'resolved' && !(order?.status === 'refunded' && escrow?.state === 'refunded')) {
+        return res.status(409).json({ error: 'Resolve the dispute through the escrow refund action first.' });
+      }
+
+      if (status === 'rejected' && !(order?.status === 'fulfilled' && escrow?.state === 'released')) {
+        return res.status(409).json({ error: 'Reject the dispute only after escrow has been released to the seller.' });
+      }
+
       const now = new Date().toISOString();
       await query(
         `UPDATE disputes
-         SET status = $1, resolved_by = $2, resolution_note = $3, updated_at = $4
+         SET status = $1,
+             resolved_by = $2,
+             resolution_note = $3,
+             updated_at = $4,
+             resolved_at = $4
          WHERE id = $5`,
-        [status, req.user.uid, resolutionNote ?? null, now, req.params.id],
+        [status, req.user.uid, resolutionNote.trim(), now, req.params.id],
       );
 
       const updatedResult = await query<Record<string, unknown>>(
