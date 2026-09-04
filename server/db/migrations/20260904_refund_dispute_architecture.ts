@@ -109,7 +109,7 @@ export function ensureRefundDisputeArchitectureMigration(): void {
     );
 
     -- The legacy disputes table has existed in two compatible shapes:
-    -- older databases used `state`, newer ones use `status`. Add both legacy
+    -- older databases used state, newer ones use status. Add both legacy
     -- fields before normalization so this migration can run on either shape.
     ALTER TABLE disputes ADD COLUMN IF NOT EXISTS state TEXT;
     ALTER TABLE disputes ADD COLUMN IF NOT EXISTS status TEXT;
@@ -178,45 +178,35 @@ export function ensureRefundDisputeArchitectureMigration(): void {
     SELECT
       'case_' || d.id, o.id, o.buyer_id, o.seller_id,
       COALESCE(NULLIF(d.opened_by, ''), o.buyer_id),
+      COALESCE(NULLIF(d.status, ''), 'open'),
       CASE
-        WHEN lower(COALESCE(d.status, 'open')) = 'resolved' THEN 'resolved'
-        WHEN lower(COALESCE(d.status, 'open')) = 'rejected' THEN 'rejected'
-        ELSE 'open'
+        WHEN COALESCE(NULLIF(d.status, ''), '') IN ('resolved', 'accepted', 'closed') THEN
+          CASE WHEN NULLIF(d.resolution, '') IS NOT NULL THEN 'resolved' ELSE 'closed' END
+        ELSE NULL
       END,
-      d.resolution, d.id, COALESCE(d.created_at, CURRENT_TIMESTAMP), d.resolved_at,
-      COALESCE(d.created_at, CURRENT_TIMESTAMP), COALESCE(d.updated_at, CURRENT_TIMESTAMP)
+      d.id, d.created_at, NULL, d.created_at, d.updated_at
     FROM disputes d
-    INNER JOIN orders o ON o.id = d.order_id
+    JOIN orders o ON o.id = d.order_id
     WHERE NOT EXISTS (
-      SELECT 1 FROM dispute_cases dc WHERE dc.legacy_dispute_id = d.id
+      SELECT 1 FROM dispute_cases existing WHERE existing.legacy_dispute_id = d.id
     );
 
     INSERT INTO dispute_attempts (
-      id, case_id, order_id, request_type, reason, submitted_by, status,
-      decision, resolution_note, resolved_by, resolved_at, created_at, updated_at
+      id, case_id, order_id, request_type, requested_resolution, reason,
+      amount_requested, evidence, submitted_by, status, resolution_note,
+      resolved_at, window_ends_at, created_at, updated_at
     )
     SELECT
-      'attempt_' || d.id || '_1', dc.id, d.order_id, 'exceptional_dispute',
-      COALESCE(NULLIF(d.reason, ''), 'Existing dispute'),
-      COALESCE(NULLIF(d.opened_by, ''), o.buyer_id),
-      CASE
-        WHEN lower(COALESCE(d.status, 'open')) = 'resolved' THEN 'resolved'
-        WHEN lower(COALESCE(d.status, 'open')) = 'rejected' THEN 'rejected'
-        ELSE 'open'
-      END,
-      d.resolution, d.details, d.resolved_by, d.resolved_at,
-      COALESCE(d.created_at, CURRENT_TIMESTAMP), COALESCE(d.updated_at, CURRENT_TIMESTAMP)
+      'attempt_' || d.id, 'case_' || d.id, o.id,
+      'legacy_dispute', NULLIF(d.resolution, ''),
+      COALESCE(NULLIF(d.reason, ''), 'Legacy dispute'),
+      0, '[]', COALESCE(NULLIF(d.opened_by, ''), o.buyer_id),
+      COALESCE(NULLIF(d.status, ''), 'open'), NULLIF(d.resolution, ''),
+      NULL, d.window_ends_at, d.created_at, d.updated_at
     FROM disputes d
-    INNER JOIN orders o ON o.id = d.order_id
-    INNER JOIN dispute_cases dc ON dc.legacy_dispute_id = d.id
+    JOIN orders o ON o.id = d.order_id
     WHERE NOT EXISTS (
-      SELECT 1 FROM dispute_attempts da WHERE da.case_id = dc.id
+      SELECT 1 FROM dispute_attempts existing WHERE existing.id = 'attempt_' || d.id
     );
-
-    UPDATE disputes d
-    SET case_id = dc.id
-    FROM dispute_cases dc
-    WHERE dc.legacy_dispute_id = d.id
-      AND (d.case_id IS NULL OR d.case_id <> dc.id);
   `);
 }
