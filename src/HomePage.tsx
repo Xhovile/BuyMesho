@@ -190,7 +190,7 @@ export default function HomePage() {
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [controller, showDeferredContent]);
+  }, [controller.loadEvents, showDeferredContent]);
 
   const mobileFeaturedKeys = new Set<string>([
     HOME_CATEGORY_KEYS.phones,
