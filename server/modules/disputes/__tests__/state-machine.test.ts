@@ -6,6 +6,7 @@ import {
   assertEscrowTransition,
   assertRefundTransition,
   transitionMovesMoney,
+  ESCROW_TRANSITION_TABLE,
   REFUND_TRANSITION_TABLE,
 } from '../state-machine.js';
 
@@ -46,13 +47,7 @@ test('dispute attempts have the same independent review lifecycle', () => {
 test('escrow dispute review does not itself move money', () => {
   assert.doesNotThrow(() => assertEscrowTransition('held', 'disputed', 'system'));
   assert.doesNotThrow(() => assertEscrowTransition('disputed', 'held', 'admin'));
-  assert.equal(transitionMovesMoney(
-    new Map([
-      ['held->disputed', { from: 'held', to: 'disputed', actors: ['system'], movesMoney: false, description: '' }],
-    ]),
-    'held',
-    'disputed',
-  ), false);
+  assert.equal(transitionMovesMoney(ESCROW_TRANSITION_TABLE, 'held', 'disputed'), false);
 });
 
 test('escrow financial exits are explicit', () => {
