@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { query, withTransaction } from '../../postgres.js';
 import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import { notifyOrderDisputed } from '../../modules/notifications/order-disputed.notification.js';
+import { notifyDisputeWorkflowEvent } from '../../modules/notifications/dispute-workflow.notification.js';
 import { assertAllowedDisputeTransition, type DisputeStatus } from './disputeState.js';
 import { ensureDisputeWorkflowFoundation } from '../../db/migrations/20260904_dispute_workflow_foundation.js';
 import { assertOrderAccessAsync, disputeLimiter, jsonError } from './shared.js';
@@ -92,17 +93,15 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
           await client.query(`INSERT INTO disputes (id, order_id, ticket_id, escrow_id, opened_by, reason, status, case_id, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,'open',$7,$8,$9,$9)`, [`legacy_${randomUUID()}`, orderId, resolvedTicketId, escrow?.id ?? null, openedBy, reason, caseId, windowEndsAt, nowIso]);
         }
         await client.query(`INSERT INTO audit_events (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata) VALUES ($1,'dispute_case',$2,'dispute_submitted',$3,$4,NULL,'open',$5)`, [`audit_${randomUUID()}`, caseId, openedBy, nowIso, JSON.stringify({ attemptId, refundRequestId, orderId, ticketId: resolvedTicketId, requestType, requestedResolution })]);
-        return { caseId, attemptId, refundRequestId, windowEndsAt };
+        return { caseId, attemptId, refundRequestId, windowEndsAt, buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK') };
       });
 
       try {
-        const orderResult = await query<{ buyer_id?: string; seller_id?: string }>('SELECT buyer_id, seller_id FROM orders WHERE id = $1 LIMIT 1', [orderId]);
-        const order = orderResult.rows[0];
-        if (order?.buyer_id && order.seller_id) await notifyOrderDisputed({ orderId, disputeId: result.caseId, buyerId: String(order.buyer_id), sellerId: String(order.seller_id), reason });
+        await notifyDisputeWorkflowEvent({ caseId: result.caseId, orderId, buyerId: result.buyerId, sellerId: result.sellerId, event: 'submitted', note: reason, amount: amountRequested, currency: result.currency });
       } catch (notificationError) {
-        console.warn('Failed to send disputed-order notification:', notificationError);
+        console.warn('Failed to send dispute submission notification:', notificationError);
       }
-      return res.status(201).json({ ...result, orderId, ticketId: resolvedTicketId, requestType, requestedResolution, status: 'open' });
+      return res.status(201).json({ caseId: result.caseId, attemptId: result.attemptId, refundRequestId: result.refundRequestId, windowEndsAt: result.windowEndsAt, orderId, ticketId: resolvedTicketId, requestType, requestedResolution, status: 'open' });
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to open dispute'));
     }
