@@ -127,6 +127,34 @@ const SELLER_ORDER_SELECT = `
 
 export function createSellerOrdersRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
+
+  router.get('/workspace-summary', requireAuth, async (req: any, res) => {
+    try {
+      const sellerUid = String(req.user?.uid ?? '').trim();
+      if (!sellerUid) return res.status(401).json({ error: 'Authentication required' });
+      const result = await query<{ order_attention_count: number; message_unread_count: number }>(
+        `SELECT
+           (SELECT COUNT(*)
+              FROM orders o
+             WHERE o.seller_id = $1
+               AND o.status NOT IN ('draft', 'pending_payment', 'fulfilled', 'closed')
+               AND COALESCE(o.delivery_status, 'action_required') = 'action_required') AS order_attention_count,
+           (SELECT COALESCE(SUM(c.seller_unread_count), 0)
+              FROM conversations c
+             WHERE c.seller_uid = $1
+               AND c.listing_id IS NOT NULL) AS message_unread_count`,
+        [sellerUid],
+      );
+      const row = result.rows[0] ?? { order_attention_count: 0, message_unread_count: 0 };
+      return res.json({
+        orderAttentionCount: Number(row.order_attention_count ?? 0),
+        messageUnreadCount: Number(row.message_unread_count ?? 0),
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to load seller workspace summary' });
+    }
+  });
+
   router.get('', requireAuth, async (req: any, res) => {
     try {
       const sellerUid = String(req.user?.uid ?? '').trim(); if (!sellerUid) return res.status(401).json({ error: 'Authentication required' });
