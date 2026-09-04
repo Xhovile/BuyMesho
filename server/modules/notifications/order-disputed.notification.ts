@@ -63,7 +63,9 @@ async function sendOrderDisputedEmail(
   const buyerName = role === "buyer" ? recipient.displayName?.trim() || "there" : "BuyMesho customer";
   const recipientName = role === "buyer" ? buyerName : sellerBusinessName;
   const counterpartyName = role === "buyer" ? sellerBusinessName : buyerName;
-  const actionUrl = `https://buymesho.app/orders/${encodeURIComponent(input.orderId)}`;
+  const actionUrl = role === "seller"
+    ? `https://buymesho.app/seller/payouts?view=orders&order=${encodeURIComponent(input.orderId)}`
+    : `https://buymesho.app/orders/${encodeURIComponent(input.orderId)}`;
   const dedupeKey = `${input.disputeId}:${role}`;
   const claim = dependencies.claim ?? claimEmailNotification;
   const markSent = dependencies.markSent ?? markEmailNotificationSent;
