@@ -5,6 +5,7 @@ import { ensurePayoutLifecycleSchema } from "../../modules/payouts/payout.schema
 import { backfillEventTickets } from "../../modules/orders/eventTicketProjection.js";
 import { ensureEventOwnershipIntegrityMigration } from "./20260819_event_ownership_integrity.js";
 import { ensureSellerOrdersIndexesMigration } from "./20260903_seller_orders_indexes.js";
+import { ensureRefundDisputeArchitectureMigration } from "./20260904_refund_dispute_architecture.js";
 
 function ensureExtraTables() {
   postgresDb.exec(`
@@ -13,7 +14,7 @@ function ensureExtraTables() {
     CREATE TABLE IF NOT EXISTS reports (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, type TEXT NOT NULL DEFAULT 'listing', listing_id BIGINT, subject TEXT, reason TEXT NOT NULL, details TEXT, reporter_uid TEXT, reporter_email TEXT, status TEXT NOT NULL DEFAULT 'open', created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS event_creators (uid TEXT PRIMARY KEY, email TEXT NOT NULL, display_name TEXT NOT NULL, organization_name TEXT NOT NULL, organization_type TEXT NOT NULL, contact_whatsapp TEXT, event_types TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'approved', active_until TIMESTAMPTZ, approved_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS event_creator_applications (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, applicant_uid TEXT NOT NULL, applicant_email TEXT, display_name TEXT NOT NULL, organization_name TEXT NOT NULL, organization_type TEXT NOT NULL, contact_whatsapp TEXT, event_types TEXT NOT NULL, reason TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'approved', reviewed_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
-    CREATE TABLE IF NOT EXISTS events (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, creator_uid TEXT, event_type TEXT NOT NULL, event_title TEXT NOT NULL, organizer_name TEXT NOT NULL, event_date TEXT NOT NULL, start_time TEXT NOT NULL, end_time TEXT, venue TEXT NOT NULL, location TEXT NOT NULL, ticket_mode TEXT NOT NULL, ticket_price DOUBLE PRECISION, ticket_link TEXT, description TEXT NOT NULL, contact_whatsapp TEXT, poster_alt TEXT, spec_values TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'published', publication_status TEXT NOT NULL DEFAULT 'published', publication_mode TEXT NOT NULL DEFAULT 'immediate', publication_at TIMESTAMPTZ, runtime_mode TEXT NOT NULL DEFAULT 'automatic', deleted_at TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS events (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, creator_uid TEXT, event_type TEXT NOT NULL, event_title TEXT NOT NULL, organizer_name TEXT NOT NULL, event_date TEXT NOT NULL, start_time TEXT NOT NULL, end_time TEXT, venue TEXT NOT NULL, location TEXT NOT NULL, ticket_mode TEXT NOT NULL, ticket_price DOUBLE PRECISION, ticket_link TEXT, description TEXT NOT NULL, contact_whatsapp TEXT, poster_alt TEXT, spec_values TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'published', publication_status TEXT NOT NULL DEFAULT 'published', publication_mode TEXT NOT NULL DEFAULT 'immediate', publication_at TIMESTAMPTZ, runtime_mode TEXT NOT NULL DEFAULT 'automatic', deleted_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS event_activity (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, event_id BIGINT NOT NULL, actor_uid TEXT, activity_type TEXT NOT NULL, metadata TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE);
   `);
 }
@@ -217,6 +218,7 @@ export function runMigrations() {
   initPaymentSchema(postgresDb);
   ensureEventTicketStatsSchema();
   ensureSellerOrdersIndexesMigration();
+  ensureRefundDisputeArchitectureMigration();
   backfillOrderPaidAtFromPayments();
   backfillFulfilledAtFromUpdatedAt();
   backfillEventTickets();
