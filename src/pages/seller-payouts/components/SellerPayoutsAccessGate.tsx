@@ -1,5 +1,7 @@
-import { ArrowLeft, Loader2, LogIn, ShieldCheck, Store, UserPlus } from "lucide-react";
-import { navigateToLoginWithReturnPath, navigateToSignupWithReturnPath } from "../../../lib/appNavigation";
+import { ArrowLeft, Loader2, LogIn, LogOut, ShieldCheck, Store } from "lucide-react";
+import { signOut } from "firebase/auth";
+import { auth } from "../../../firebase";
+import { navigateToLoginWithReturnPath } from "../../../lib/appNavigation";
 
 export default function SellerPayoutsAccessGate({
   loading,
@@ -27,6 +29,11 @@ export default function SellerPayoutsAccessGate({
 
   const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
+  const handleUseAnotherAccount = async () => {
+    await signOut(auth);
+    navigateToLoginWithReturnPath(currentPath);
+  };
+
   return (
     <div className="min-h-screen bg-[#f5f6f8] px-4 py-8 text-zinc-900 sm:py-12">
       <div className="mx-auto flex min-h-[70vh] max-w-xl items-center justify-center">
@@ -40,7 +47,7 @@ export default function SellerPayoutsAccessGate({
           <p className="mt-3 max-w-lg text-sm leading-6 text-zinc-600">
             {isAuthenticated
               ? "This workspace is available to approved sellers. Once your seller account is active, your Orders, Payouts and Settings will appear here."
-              : "This link is for a seller workspace. Log in to your BuyMesho account, or create an account to continue."}
+              : "This link is for a seller workspace. Log in to your BuyMesho account to continue."}
           </p>
 
           <div className="mt-6 flex items-start gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
@@ -53,25 +60,24 @@ export default function SellerPayoutsAccessGate({
           </div>
 
           {!isAuthenticated ? (
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => navigateToLoginWithReturnPath(currentPath)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3.5 text-sm font-extrabold text-white transition-colors hover:bg-zinc-800"
-              >
-                <LogIn className="h-4 w-4" />
-                Log In
-              </button>
-              <button
-                type="button"
-                onClick={() => navigateToSignupWithReturnPath(currentPath)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3.5 text-sm font-extrabold text-zinc-800 transition-colors hover:bg-zinc-50"
-              >
-                <UserPlus className="h-4 w-4" />
-                Create Account
-              </button>
-            </div>
-          ) : null}
+            <button
+              type="button"
+              onClick={() => navigateToLoginWithReturnPath(currentPath)}
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3.5 text-sm font-extrabold text-white transition-colors hover:bg-zinc-800"
+            >
+              <LogIn className="h-4 w-4" />
+              Log In
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void handleUseAnotherAccount()}
+              className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3.5 text-sm font-extrabold text-white transition-colors hover:bg-zinc-800"
+            >
+              <LogOut className="h-4 w-4" />
+              Use Another Account
+            </button>
+          )}
 
           <button
             type="button"
@@ -79,7 +85,7 @@ export default function SellerPayoutsAccessGate({
             className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3.5 text-sm font-extrabold text-zinc-700 transition-colors hover:bg-zinc-50"
           >
             <ArrowLeft className="h-4 w-4" />
-            {isAuthenticated ? "Back to Seller Dashboard" : "Back to BuyMesho"}
+            Back to BuyMesho
           </button>
         </div>
       </div>
