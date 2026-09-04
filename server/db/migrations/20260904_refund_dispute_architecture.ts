@@ -108,16 +108,17 @@ export function ensureRefundDisputeArchitectureMigration(): void {
       metadata TEXT NOT NULL DEFAULT '{}'
     );
 
-    -- The production database has used both `state` and `status` for the
-    -- legacy disputes table across schema generations. Normalize the table
-    -- before reading legacy history so startup is safe on either version.
+    -- The legacy disputes table has existed in two compatible shapes:
+    -- older databases used `state`, newer ones use `status`. Add both legacy
+    -- fields before normalization so this migration can run on either shape.
+    ALTER TABLE disputes ADD COLUMN IF NOT EXISTS state TEXT;
     ALTER TABLE disputes ADD COLUMN IF NOT EXISTS status TEXT;
     ALTER TABLE disputes ADD COLUMN IF NOT EXISTS resolution TEXT;
     ALTER TABLE disputes ADD COLUMN IF NOT EXISTS case_id TEXT;
     ALTER TABLE disputes ADD COLUMN IF NOT EXISTS window_ends_at TIMESTAMPTZ;
 
     UPDATE disputes
-    SET status = COALESCE(NULLIF(status, ''), state, 'open')
+    SET status = COALESCE(NULLIF(status, ''), NULLIF(state, ''), 'open')
     WHERE status IS NULL OR status = '';
 
     UPDATE disputes
@@ -169,8 +170,6 @@ export function ensureRefundDisputeArchitectureMigration(): void {
   `);
 
   // Preserve existing dispute history in the new permanent case/attempt model.
-  // This is intentionally additive: current routes can continue using `disputes`
-  // until the later workflow migration phases switch them to the canonical tables.
   postgresDb.exec(`
     INSERT INTO dispute_cases (
       id, order_id, buyer_id, seller_id, opened_by, status, outcome,
