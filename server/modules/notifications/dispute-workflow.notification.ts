@@ -43,56 +43,16 @@ export type DisputeWorkflowNotificationInput = {
 };
 
 const EVENT_COPY: Record<DisputeWorkflowEvent, { subject: string; buyer: string; seller: string }> = {
-  submitted: {
-    subject: "BuyMesho dispute submitted",
-    buyer: "Your dispute has been received. BuyMesho will review the case and notify you of the next step.",
-    seller: "A dispute has been opened for your order. Please review the case and respond where required.",
-  },
-  under_review: {
-    subject: "BuyMesho dispute under review",
-    buyer: "Your dispute is now under formal review by BuyMesho.",
-    seller: "The dispute for your order is now under formal review by BuyMesho.",
-  },
-  more_information_requested: {
-    subject: "BuyMesho needs more information",
-    buyer: "More information is required to review your dispute. Please check the case for the requested details.",
-    seller: "More information is required regarding the dispute for your order. Please check the case for the requested details.",
-  },
-  rejected: {
-    subject: "BuyMesho dispute decision",
-    buyer: "Your dispute was not approved. Review the case details for the decision and next step.",
-    seller: "The dispute was rejected and the transaction can continue.",
-  },
-  approved: {
-    subject: "BuyMesho refund approved",
-    buyer: "Your refund has been approved. Approval authorizes the refund workflow; it does not by itself mean the money has been returned yet.",
-    seller: "A refund has been approved for the disputed order. The financial refund step is separate from the approval decision.",
-  },
-  refund_processing: {
-    subject: "BuyMesho refund processing",
-    buyer: "Your refund is being processed.",
-    seller: "The refund for the disputed order is being processed.",
-  },
-  refund_completed: {
-    subject: "BuyMesho refund completed",
-    buyer: "Your refund has been processed successfully.",
-    seller: "The refund for the disputed order has been processed successfully.",
-  },
-  seller_wins: {
-    subject: "BuyMesho dispute resolved in seller's favor",
-    buyer: "The dispute was resolved in the seller's favor. Review the case details for the decision and next step.",
-    seller: "The dispute was resolved in your favor and the transaction can continue.",
-  },
-  buyer_wins: {
-    subject: "BuyMesho dispute resolved in buyer's favor",
-    buyer: "The dispute was resolved in your favor.",
-    seller: "The dispute was resolved in the buyer's favor. Review the case details for the decision and next step.",
-  },
-  seller_refund_recorded: {
-    subject: "BuyMesho seller refund recorded",
-    buyer: "Your refund transaction has been recorded from the seller.",
-    seller: "Your refund transaction for the disputed order has been recorded.",
-  },
+  submitted: { subject: "BuyMesho dispute submitted", buyer: "Your dispute has been received. BuyMesho will review the case and notify you of the next step.", seller: "A dispute has been opened for your order. Please review the case and respond where required." },
+  under_review: { subject: "BuyMesho dispute under review", buyer: "Your dispute is now under formal review by BuyMesho.", seller: "The dispute for your order is now under formal review by BuyMesho." },
+  more_information_requested: { subject: "BuyMesho needs more information", buyer: "More information is required to review your dispute. Please check the case for the requested details.", seller: "More information is required regarding the dispute for your order. Please check the case for the requested details." },
+  rejected: { subject: "BuyMesho dispute decision", buyer: "Your dispute was not approved. Review the case details for the decision and next step.", seller: "The dispute was rejected and the transaction can continue." },
+  approved: { subject: "BuyMesho refund approved", buyer: "Your refund has been approved. Approval authorizes the refund workflow; it does not by itself mean the money has been returned yet.", seller: "A refund has been approved for the disputed order. The financial refund step is separate from the approval decision." },
+  refund_processing: { subject: "BuyMesho refund processing", buyer: "Your refund is being processed.", seller: "The refund for the disputed order is being processed." },
+  refund_completed: { subject: "BuyMesho refund completed", buyer: "Your refund has been processed successfully.", seller: "The refund for the disputed order has been processed successfully." },
+  seller_wins: { subject: "BuyMesho dispute resolved in seller's favor", buyer: "The dispute was resolved in the seller's favor. Review the case details for the decision and next step.", seller: "The dispute was resolved in your favor and the transaction can continue." },
+  buyer_wins: { subject: "BuyMesho dispute resolved in buyer's favor", buyer: "The dispute was resolved in your favor.", seller: "The dispute was resolved in the buyer's favor. Review the case details for the decision and next step." },
+  seller_refund_recorded: { subject: "BuyMesho seller refund recorded", buyer: "Your refund transaction has been recorded from the seller.", seller: "Your refund transaction for the disputed order has been recorded." },
 };
 
 function escapeHtml(value: string): string {
@@ -115,12 +75,14 @@ async function sendToRole(
   const email = recipient.email.trim();
   if (!email) return false;
 
-  const copy = EVENT_COPY[input.event][role];
+  const eventCopy = EVENT_COPY[input.event];
+  const copy = eventCopy[role];
   const dedupeKey = `${input.caseId}:${input.event}:${role}:${input.transactionId ?? ""}`;
+  const notificationType = `dispute_${input.event}`;
   const claim = dependencies.claim ?? claimEmailNotification;
   const markSent = dependencies.markSent ?? markEmailNotificationSent;
   const release = dependencies.release ?? releaseEmailNotification;
-  if (!claim(`dispute_${input.event}`, dedupeKey)) return false;
+  if (!claim(notificationType, dedupeKey)) return false;
 
   const recipientName = recipient.displayName.trim() || (role === "seller" ? "BuyMesho seller" : "there");
   const details = [
@@ -136,14 +98,14 @@ async function sendToRole(
     await (dependencies.send ?? sendEmail)({
       sender: "notifications",
       to: { email, name: recipientName },
-      subject: copy.subject,
+      subject: eventCopy.subject,
       text,
       html,
     });
-    markSent(`dispute_${input.event}`, dedupeKey);
+    markSent(notificationType, dedupeKey);
     return true;
   } catch (error) {
-    release(`dispute_${input.event}`, dedupeKey);
+    release(notificationType, dedupeKey);
     throw error;
   }
 }
