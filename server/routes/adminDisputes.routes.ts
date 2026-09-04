@@ -215,13 +215,11 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
           `SELECT * FROM refund_transactions WHERE refund_request_id = $1 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
           [refundRequestId],
         );
-        if (existingTransaction.rows[0]) {
-          const transaction = existingTransaction.rows[0];
-          if (String(transaction.status) === 'refunded') return { duplicate: true, refund, transaction };
-        }
+        if (existingTransaction.rows[0] && String(existingTransaction.rows[0].status) === 'refunded') return { duplicate: true, refund, transaction: existingTransaction.rows[0] };
 
         assertRefundTransition('approved', 'processing', 'financial_workflow');
-        await client.query(`UPDATE refund_requests SET status='processing', latest_status_at=$1, updated_at=$1 WHERE id=$2`, [new Date().toISOString(), refundRequestId]);
+        const processingAt = new Date().toISOString();
+        await client.query(`UPDATE refund_requests SET status='processing', latest_status_at=$1, updated_at=$1 WHERE id=$2`, [processingAt, refundRequestId]);
 
         const escrowRefund = await escrowRepository.refundHeldBalanceAsync({
           orderId: String(refund.order_id),
@@ -234,6 +232,7 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
         const now = new Date().toISOString();
         const transactionId = `internal-refund:${refundRequestId}`;
         const refundTransactionId = `rft_${randomUUID()}`;
+        const latestAttempt = await client.query<{ id: string }>(`SELECT id FROM dispute_attempts WHERE case_id = $1 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [refund.case_id]);
         await client.query(
           `INSERT INTO refund_transactions (
              id, refund_request_id, order_id, buyer_id, seller_id, amount, currency, destination,
@@ -244,9 +243,7 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
         );
         assertRefundTransition('processing', 'refunded', 'financial_workflow');
         await client.query(`UPDATE refund_requests SET status='refunded', refund_transaction_id=$1, latest_status_at=$2, updated_at=$2 WHERE id=$3`, [refundTransactionId, now, refundRequestId]);
-        if (refund.latest_attempt_id) {
-          await client.query(`UPDATE dispute_attempts SET status='resolved', decision='refund_executed', resolution_note=$1, resolved_by=$2, resolved_at=$3, updated_at=$3 WHERE id=$4`, [note, req.user.uid, now, refund.latest_attempt_id]);
-        }
+        if (latestAttempt.rows[0]) await client.query(`UPDATE dispute_attempts SET status='resolved', decision='refund_executed', resolution_note=$1, resolved_by=$2, resolved_at=$3, updated_at=$3 WHERE id=$4`, [note, req.user.uid, now, latestAttempt.rows[0].id]);
         await client.query(`UPDATE dispute_cases SET status='resolved', outcome='refund_executed', resolved_at=$1, updated_at=$1 WHERE id=$2`, [now, refund.case_id]);
         await client.query(`UPDATE orders SET status='refunded', updated_at=$1 WHERE id=$2`, [now, refund.order_id]);
         await client.query(`INSERT INTO audit_events (id,entity_type,entity_id,event_type,performed_by,timestamp,previous_state,new_state,metadata) VALUES ($1,'dispute_case',$2,'refund_financially_executed',$3,$4,'under_review','resolved',$5)`, [`aud_${randomUUID()}`, refund.case_id, req.user.uid, now, JSON.stringify({ orderId: refund.order_id, refundRequestId, refundTransactionId, amount: requestedAmount, note, executionMode: 'internal_escrow' })]);
