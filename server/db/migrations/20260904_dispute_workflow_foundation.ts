@@ -1,5 +1,6 @@
 import { postgresDb } from "../../db.js";
 
+/** Phase 3 foundation fields for the consolidated buyer dispute workflow. */
 export function ensureDisputeWorkflowFoundation(): void {
   postgresDb.exec(`
     ALTER TABLE dispute_attempts
