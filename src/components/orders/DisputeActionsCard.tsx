@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react';
 import { CreditCard, ShieldAlert } from 'lucide-react';
+
+import { fetchOrderByReference, type OrderBundle } from '../../lib/orderApi';
 
 type DisputeActionsCardProps = {
   disputeReason: string;
@@ -22,6 +25,30 @@ function disputeStatusLabel(status: string | null | undefined): string {
   return 'Submitted';
 }
 
+function getReferenceFromUrl(): string | null {
+  if (typeof window === 'undefined') return null;
+  const segments = window.location.pathname.split('/').filter(Boolean);
+  return segments[1] ? decodeURIComponent(segments[1]) : null;
+}
+
+function disputeIsLocked(bundle: OrderBundle | null): boolean {
+  if (!bundle?.dispute) return false;
+
+  const status = String(bundle.dispute.status ?? '').trim().toLowerCase();
+  const orderStatus = String(bundle.order?.status ?? '').trim().toLowerCase();
+  const escrowState = String(
+    bundle.escrow?.state ?? bundle.escrow?.status ?? '',
+  ).trim().toLowerCase();
+
+  if (orderStatus === 'refunded' || escrowState === 'refunded') return true;
+  return status !== 'resolved' && status !== 'rejected';
+}
+
+function getDisputeStatus(bundle: OrderBundle | null): string | null {
+  const status = bundle?.dispute?.status;
+  return typeof status === 'string' ? status : null;
+}
+
 export default function DisputeActionsCard({
   disputeReason,
   submitting,
@@ -34,12 +61,36 @@ export default function DisputeActionsCard({
   onConfirmDelivery,
   onOpenDispute,
 }: DisputeActionsCardProps) {
+  const [remoteBundle, setRemoteBundle] = useState<OrderBundle | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const reference = getReferenceFromUrl();
+    if (!reference) return undefined;
+
+    void fetchOrderByReference(reference)
+      .then((data) => {
+        if (!cancelled) setRemoteBundle(data);
+      })
+      .catch(() => {
+        // The parent order page remains the source of truth when this
+        // secondary dispute-status lookup is unavailable.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [submitting]);
+
+  const remoteLocked = disputeIsLocked(remoteBundle);
+  const effectiveOrderDisputed = orderDisputed || remoteLocked;
+  const effectiveDisputeStatus = disputeStatus || getDisputeStatus(remoteBundle);
   const releaseInProgress = submitting === 'release';
   const releaseCompleted = escrowReleased && !releaseInProgress;
-  const releaseDisabled = releaseCompleted || !canConfirmDelivery || escrowUnavailable || orderDisputed || submitting !== null;
+  const releaseDisabled = releaseCompleted || !canConfirmDelivery || escrowUnavailable || effectiveOrderDisputed || submitting !== null;
 
-  if (orderDisputed) {
-    const statusLabel = disputeStatusLabel(disputeStatus);
+  if (effectiveOrderDisputed) {
+    const statusLabel = disputeStatusLabel(effectiveDisputeStatus);
     return (
       <div className="space-y-3">
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
