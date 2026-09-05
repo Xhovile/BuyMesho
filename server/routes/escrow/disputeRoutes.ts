@@ -71,14 +71,41 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         const orderResult = await client.query<Record<string, unknown>>(`SELECT id, buyer_id, seller_id, status, escrow_id, total_currency FROM orders WHERE id = $1 LIMIT 1`, [orderId]);
         const order = orderResult.rows[0];
         if (!order) throw new Error('Order not found');
+
         const caseResult = await client.query<Record<string, unknown>>(`SELECT * FROM dispute_cases WHERE order_id = $1 AND status IN ('open','under_review') ORDER BY created_at ASC LIMIT 1`, [orderId]);
         const existingCase = caseResult.rows[0];
-        const caseId = existingCase?.id ? String(existingCase.id) : `case_${randomUUID()}`;
-        if (!existingCase) {
-          await client.query(`INSERT INTO dispute_cases (id, order_id, buyer_id, seller_id, opened_by, status, opened_at, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,'open',$6,$7,$6,$6)`, [caseId, orderId, String(order.buyer_id), String(order.seller_id), openedBy, nowIso, windowEndsAt]);
-        } else if (windowEndsAt && !existingCase.window_ends_at) {
-          await client.query(`UPDATE dispute_cases SET window_ends_at=$1, updated_at=$2 WHERE id=$3`, [windowEndsAt, nowIso, caseId]);
+        if (existingCase) {
+          return {
+            duplicate: true,
+            caseId: String(existingCase.id),
+            attemptId: existingCase.latest_attempt_id ? String(existingCase.latest_attempt_id) : null,
+            refundRequestId: null,
+            windowEndsAt: existingCase.window_ends_at ? String(existingCase.window_ends_at) : null,
+            buyerId: String(order.buyer_id),
+            sellerId: String(order.seller_id),
+            currency: String(order.total_currency ?? 'MWK'),
+            status: String(existingCase.status ?? 'open'),
+          };
         }
+
+        const legacyCaseResult = await client.query<Record<string, unknown>>(`SELECT * FROM disputes WHERE order_id = $1 AND status IN ('open','under_review') ORDER BY created_at ASC LIMIT 1`, [orderId]);
+        const existingLegacyCase = legacyCaseResult.rows[0];
+        if (existingLegacyCase) {
+          return {
+            duplicate: true,
+            caseId: String(existingLegacyCase.case_id ?? existingLegacyCase.id),
+            attemptId: null,
+            refundRequestId: null,
+            windowEndsAt: existingLegacyCase.window_ends_at ? String(existingLegacyCase.window_ends_at) : null,
+            buyerId: String(order.buyer_id),
+            sellerId: String(order.seller_id),
+            currency: String(order.total_currency ?? 'MWK'),
+            status: String(existingLegacyCase.status ?? 'open'),
+          };
+        }
+
+        const caseId = `case_${randomUUID()}`;
+        await client.query(`INSERT INTO dispute_cases (id, order_id, buyer_id, seller_id, opened_by, status, opened_at, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,'open',$6,$7,$6,$6)`, [caseId, orderId, String(order.buyer_id), String(order.seller_id), openedBy, nowIso, windowEndsAt]);
         const attemptId = `attempt_${randomUUID()}`;
         await client.query(`INSERT INTO dispute_attempts (id, case_id, order_id, request_type, requested_resolution, reason, amount_requested, evidence, submitted_by, status, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'open',$10,$11,$11)`, [attemptId, caseId, orderId, requestType, requestedResolution, reason, amountRequested, JSON.stringify(evidence), openedBy, windowEndsAt, nowIso]);
         let refundRequestId: string | null = null;
@@ -92,8 +119,19 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
           await client.query(`INSERT INTO disputes (id, order_id, ticket_id, escrow_id, opened_by, reason, status, case_id, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,'open',$7,$8,$9,$9)`, [`legacy_${randomUUID()}`, orderId, resolvedTicketId, escrow?.id ?? null, openedBy, reason, caseId, windowEndsAt, nowIso]);
         }
         await client.query(`INSERT INTO audit_events (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata) VALUES ($1,'dispute_case',$2,'dispute_submitted',$3,$4,NULL,'open',$5)`, [`audit_${randomUUID()}`, caseId, openedBy, nowIso, JSON.stringify({ attemptId, refundRequestId, orderId, ticketId: resolvedTicketId, requestType, requestedResolution })]);
-        return { caseId, attemptId, refundRequestId, windowEndsAt, buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK') };
+        return { duplicate: false, caseId, attemptId, refundRequestId, windowEndsAt, buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: 'open' };
       });
+
+      if (result.duplicate) {
+        return res.status(409).json({
+          error: 'This order already has an active dispute. Please wait for the current dispute to be resolved before submitting another one.',
+          code: 'ACTIVE_DISPUTE_EXISTS',
+          caseId: result.caseId,
+          status: result.status,
+          windowEndsAt: result.windowEndsAt,
+          orderId,
+        });
+      }
 
       try {
         await notifyDisputeWorkflowEvent({ caseId: result.caseId, orderId, buyerId: result.buyerId, sellerId: result.sellerId, event: 'submitted', note: reason, amount: amountRequested, currency: result.currency });
