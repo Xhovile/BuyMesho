@@ -51,7 +51,7 @@ async function sendOrderFulfilledEmail(order: StoredOrder, role: RecipientRole):
   await sendEmail({
     sender: "notifications",
     to: { email, name: recipientName },
-    subject: "BuyMesho Order Completion Confirmation",
+    subject: "BuyMesho Order Delivered Confirmation",
     text,
     html,
   });
