@@ -24,7 +24,9 @@ export function ensureDisputeWindowsMigration(): void {
     WHERE delivery_period_days IS NULL OR delivery_period_days < 1;
 
     UPDATE orders o
-    SET delivery_deadline = COALESCE(o.paid_at, o.placed_at, o.created_at) + (o.delivery_period_days || ' days')::interval
+    SET delivery_deadline =
+      COALESCE(o.paid_at, o.placed_at, o.created_at)::timestamptz
+      + make_interval(days => o.delivery_period_days)
     WHERE o.delivery_deadline IS NULL
       AND COALESCE(o.paid_at, o.placed_at, o.created_at) IS NOT NULL
       AND EXISTS (
