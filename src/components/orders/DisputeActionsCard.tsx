@@ -15,6 +15,7 @@ type DisputeActionsCardProps = {
   disputeStatus?: string | null;
   escrowReleased: boolean;
   escrowUnavailable: boolean;
+  deliveryPeriodDays?: number | null;
   eligibility: DisputeEligibility;
   onConfirmDelivery: () => void;
   onOpenDispute: () => void;
@@ -43,6 +44,7 @@ export default function DisputeActionsCard({
   disputeStatus = null,
   escrowReleased,
   escrowUnavailable,
+  deliveryPeriodDays = null,
   eligibility,
   onConfirmDelivery,
   onOpenDispute,
@@ -72,22 +74,14 @@ export default function DisputeActionsCard({
     );
   }
 
-  const deliveryDays = '—';
+  const deliveryDaysLabel = deliveryPeriodDays && deliveryPeriodDays > 0 ? `${deliveryPeriodDays} day${deliveryPeriodDays === 1 ? '' : 's'}` : 'the stated delivery period';
   const deliveryDeadline = formatDate(eligibility.eligibleAt);
   const disputeStart = formatDate(eligibility.eligibleAt);
   const disputeEnd = formatDate(eligibility.windowEndsAt);
 
   return (
     <div className="space-y-4">
-      <button
-        type="button"
-        onClick={onConfirmDelivery}
-        disabled={releaseDisabled}
-        aria-disabled={releaseDisabled}
-        className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
-          releaseCompleted || escrowUnavailable || !canConfirmDelivery ? 'border border-zinc-200 bg-zinc-100 text-zinc-500' : 'bg-[#7F1D1D] text-white hover:bg-[#991B1B]'
-        }`}
-      >
+      <button type="button" onClick={onConfirmDelivery} disabled={releaseDisabled} aria-disabled={releaseDisabled} className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${releaseCompleted || escrowUnavailable || !canConfirmDelivery ? 'border border-zinc-200 bg-zinc-100 text-zinc-500' : 'bg-[#7F1D1D] text-white hover:bg-[#991B1B]'}`}>
         <CreditCard className="h-4 w-4" />
         {releaseInProgress ? 'Submitting escrow…' : releaseCompleted ? 'Escrow released' : escrowUnavailable ? 'Escrow not available' : !canConfirmDelivery ? 'Delivery confirmation unavailable' : 'Confirm delivery (release escrow)'}
       </button>
@@ -98,9 +92,7 @@ export default function DisputeActionsCard({
         {eligibility.phase === 'delivery' ? (
           <>
             <p className="mt-2 text-sm font-bold text-zinc-900">Delivery in progress</p>
-            <p className="mt-1 text-sm leading-6 text-zinc-600">
-              Seller delivery window: {deliveryDeadline ? `ends ${deliveryDeadline}` : `${deliveryDays} days`}.
-            </p>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">Delivery window: {deliveryDaysLabel}{deliveryDeadline ? ` · ends ${deliveryDeadline}` : ''}.</p>
             <p className="mt-1 text-sm leading-6 text-zinc-600">Escrow dispute: Available after the delivery period ends if delivery has not been confirmed.</p>
           </>
         ) : eligibility.phase === 'escrow' ? (
@@ -127,12 +119,7 @@ export default function DisputeActionsCard({
         ) : null}
 
         {eligibility.eligible ? (
-          <button
-            type="button"
-            onClick={onOpenDispute}
-            disabled={submitting !== null}
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
+          <button type="button" onClick={onOpenDispute} disabled={submitting !== null} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60">
             <ShieldAlert className="h-4 w-4" />
             Open Dispute
           </button>
