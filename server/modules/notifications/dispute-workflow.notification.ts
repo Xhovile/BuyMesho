@@ -2,7 +2,7 @@ import { sendEmail } from "../email/email.service.js";
 import { claimEmailNotification, markEmailNotificationSent, releaseEmailNotification } from "./email-delivery.repository.js";
 import { resolveNotificationRecipient } from "./email-recipient.js";
 
-export type DisputeWorkflowEvent = "submitted" | "under_review" | "more_information_requested" | "rejected" | "approved" | "refund_processing" | "refund_completed" | "seller_wins" | "buyer_wins" | "seller_refund_recorded";
+export type DisputeWorkflowEvent = "submitted" | "under_review" | "more_information_requested" | "rejected" | "approved" | "refund_processing" | "refund_completed" | "seller_wins" | "buyer_wins" | "seller_refund_recorded" | "seller_replacement_recorded" | "seller_dispute_rejected";
 type RecipientRole = "buyer" | "seller";
 type SendEmail = typeof sendEmail;
 type FirebaseUser = { email?: string | null; displayName?: string | null };
@@ -21,6 +21,8 @@ const EVENT_COPY: Record<DisputeWorkflowEvent, { subject: string; buyer: string;
   seller_wins: { subject: "BuyMesho dispute resolved in seller's favor", buyer: "The dispute was resolved in the seller's favor. Review the case details for the decision and next step.", seller: "The dispute was resolved in your favor and the transaction can continue." },
   buyer_wins: { subject: "BuyMesho dispute resolved in buyer's favor", buyer: "The dispute was resolved in your favor.", seller: "The dispute was resolved in the buyer's favor. Review the case details for the decision and next step." },
   seller_refund_recorded: { subject: "BuyMesho seller refund recorded", buyer: "The seller has submitted refund details for your disputed order. The same details are now available in your BuyMesho Disputes page.", seller: "Your refund transaction for the disputed order has been recorded." },
+  seller_replacement_recorded: { subject: "BuyMesho seller replacement submitted", buyer: "The seller has chosen to send another item to resolve your disputed order. Review the seller's explanation in your BuyMesho Disputes page.", seller: "Your replacement resolution for the disputed order has been recorded." },
+  seller_dispute_rejected: { subject: "BuyMesho seller disputed-order response", buyer: "The seller has rejected your dispute. Review the seller's explanation in your BuyMesho Disputes page or contact BuyMesho Admin for assistance.", seller: "Your rejection response for the disputed order has been recorded." },
 };
 function escapeHtml(value: string): string { return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;"); }
 function actionUrl(role: RecipientRole, orderId: string): string { return role === "seller" ? `https://buymesho.app/seller/payouts?view=orders&order=${encodeURIComponent(orderId)}` : `https://buymesho.app/disputes?reference=${encodeURIComponent(orderId)}`; }
@@ -31,7 +33,7 @@ async function sendToRole(input: DisputeWorkflowNotificationInput, role: Recipie
   const eventCopy = EVENT_COPY[input.event]; const copy = eventCopy[role]; const dedupeKey = `${input.caseId}:${input.event}:${role}:${input.transactionId ?? ""}`; const notificationType = `dispute_${input.event}`;
   const claim = dependencies.claim ?? claimEmailNotification; const markSent = dependencies.markSent ?? markEmailNotificationSent; const release = dependencies.release ?? releaseEmailNotification; if (!claim(notificationType, dedupeKey)) return false;
   const recipientName = recipient.displayName.trim() || (role === "seller" ? "BuyMesho seller" : "there");
-  const details = [`Order: ${input.orderId}`, input.amount != null ? `Refund amount: ${input.amount} ${input.currency ?? ""}`.trim() : "", input.refundMethod ? `Refund method: ${input.refundMethod}` : "", input.transactionId ? `Transaction ID: ${input.transactionId}` : "", input.refundDate ? `Refund date: ${input.refundDate}` : "", input.destination ? `Refund destination: ${input.destination}` : "", input.note?.trim() ? `Seller note: ${input.note.trim()}` : ""].filter(Boolean).join("\n");
+  const details = [`Order: ${input.orderId}`, input.amount != null ? `Refund amount: ${input.amount} ${input.currency ?? ""}`.trim() : "", input.refundMethod ? `Refund method: ${input.refundMethod}` : "", input.transactionId ? `Transaction ID: ${input.transactionId}` : "", input.refundDate ? `Refund date: ${input.refundDate}` : "", input.destination ? `Refund destination: ${input.destination}` : "", input.note?.trim() ? `${input.event === "seller_refund_recorded" ? "Seller note" : "Seller explanation"}: ${input.note.trim()}` : ""].filter(Boolean).join("\n");
   const text = `Hello ${recipientName},\n\n${copy}\n\n${details}\n\nView the dispute: ${actionUrl(role, input.orderId)}\n\nBuyMesho Notifications`;
   const html = `<p>Hello ${escapeHtml(recipientName)},</p><p>${escapeHtml(copy)}</p><p>${escapeHtml(details).replace(/\n/g, "<br />")}</p><p><a href="${escapeHtml(actionUrl(role, input.orderId))}">View the dispute</a></p><p>BuyMesho Notifications</p>`;
   try { await (dependencies.send ?? sendEmail)({ sender: "notifications", to: { email, name: recipientName }, subject: eventCopy.subject, text, html }); markSent(notificationType, dedupeKey); return true; } catch (error) { release(notificationType, dedupeKey); throw error; }
