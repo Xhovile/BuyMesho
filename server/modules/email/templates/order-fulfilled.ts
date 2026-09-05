@@ -52,7 +52,7 @@ export function renderOrderFulfilledEmail(params: {
 
   const buyerHtml = `
     <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111827; max-width: 620px;">
-      <h2 style="margin: 0 0 16px;">BuyMesho Order Completion Confirmation</h2>
+      <h2 style="margin: 0 0 16px;">BuyMesho Order Delivered Confirmation</h2>
       <p style="margin: 0 0 12px;">Hello ${recipientName},</p>
       <p style="margin: 0 0 16px;">
         You have successfully confirmed delivery of your order. It was a pleasure doing business with you.
@@ -76,7 +76,7 @@ export function renderOrderFulfilledEmail(params: {
 
   const sellerHtml = `
     <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111827; max-width: 620px;">
-      <h2 style="margin: 0 0 16px;">BuyMesho Order Completion Confirmation</h2>
+      <h2 style="margin: 0 0 16px;">BuyMesho Order Delivered Confirmation</h2>
       <p style="margin: 0 0 12px;">Hello ${recipientName},</p>
       <p style="margin: 0 0 16px;">
         <strong>${counterpartyName || "The buyer"}</strong> has confirmed delivery of the order. Please check the Seller Payouts page for information about the transaction and payout status.
