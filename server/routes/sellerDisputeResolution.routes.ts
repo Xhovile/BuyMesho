@@ -13,14 +13,30 @@ async function loadSellerOrder(orderId: string, sellerId: string) {
 
 export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
+  // Active escrow disputes are owned by the buyer and BuyMesho/Admin. The
+  // seller is an observer, so this legacy action is explicitly unavailable.
   router.post('/:orderId/dispute/contact-buyer', requireAuth, async (req: any, res) => {
     try {
       const sellerId = clean(req.user?.uid); const orderId = clean(req.params.orderId);
       if (!sellerId) return res.status(401).json({ error: 'Authentication required' }); if (!orderId) return res.status(400).json({ error: 'Order id is required' });
       const order = await loadSellerOrder(orderId, sellerId); if (!order) return res.status(404).json({ error: 'Seller order not found' });
-      const dispute = await query<Record<string, unknown>>(`SELECT id, buyer_id, status, order_id FROM dispute_cases WHERE order_id = $1 AND seller_id = $2 ORDER BY created_at DESC LIMIT 1`, [orderId, sellerId]);
-      const caseRow = dispute.rows[0]; if (!caseRow) return res.status(404).json({ error: 'No dispute case found for this order' }); if (!['open', 'under_review'].includes(String(caseRow.status))) return res.status(409).json({ error: 'This dispute is no longer active' });
-      return res.json({ available: true, conversationTarget: String(caseRow.buyer_id), disputeCaseId: String(caseRow.id), orderId, message: 'Buyer contact is available for this dispute. Use the existing BuyMesho conversation flow to communicate with the buyer.' });
+      const dispute = await query<Record<string, unknown>>(`SELECT id, status FROM dispute_cases WHERE order_id = $1 AND seller_id = $2 ORDER BY created_at DESC LIMIT 1`, [orderId, sellerId]);
+      const caseRow = dispute.rows[0]; if (!caseRow) return res.status(404).json({ error: 'No dispute case found for this order' });
+      const disputeStatus = String(caseRow.status ?? '').trim().toLowerCase();
+      if (['open', 'under_review'].includes(disputeStatus)) {
+        return res.status(409).json({
+          error: 'Seller is an observer while this escrow dispute is being handled by BuyMesho and the buyer.',
+          code: 'SELLER_DISPUTE_OBSERVER_ONLY',
+          disputeCaseId: String(caseRow.id),
+          orderId,
+        });
+      }
+      return res.status(409).json({
+        error: 'Buyer contact is not available from the seller dispute workspace.',
+        code: 'SELLER_DISPUTE_CONTACT_UNAVAILABLE',
+        disputeCaseId: String(caseRow.id),
+        orderId,
+      });
     } catch (error) { return res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to prepare buyer contact' }); }
   });
   router.post('/:orderId/dispute/confirm-refunded', requireAuth, async (req: any, res) => {
