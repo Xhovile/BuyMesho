@@ -7,6 +7,18 @@ import { notifyAdminSellerRefundRecorded, notifyAdminSellerResolutionRecorded } 
 
 const ALLOWED_REFUND_METHODS = new Set(['mobile_money', 'bank_transfer', 'cash', 'other']);
 const ALLOWED_SELLER_RESOLUTIONS = new Set(['replacement', 'rejected']);
+const SETTLED_SELLER_OUTCOMES = new Set([
+  'refunded',
+  'returned',
+  'seller_refund_confirmed',
+  'seller_refund_accepted',
+  'return',
+  'return_and_refund',
+  'seller_replacement_confirmed',
+  'seller_replacement_committed',
+  'seller_rejected',
+  'seller_dispute_rejected',
+]);
 function clean(value: unknown, fallback = ''): string { return typeof value === 'string' ? value.trim() : fallback; }
 function requireNonEmpty(value: unknown, field: string): string { const result = clean(value); if (!result) throw new Error(`${field} is required`); return result; }
 async function loadSellerOrder(orderId: string, sellerId: string) {
@@ -29,7 +41,7 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
       const sellerId = clean(req.user?.uid); const orderId = clean(req.params.orderId); if (!sellerId) return res.status(401).json({ error: 'Authentication required' }); if (!orderId) return res.status(400).json({ error: 'Order id is required' });
       const order = await loadSellerOrder(orderId, sellerId); if (!order) return res.status(404).json({ error: 'Seller order not found' });
       const dispute = await query<Record<string, unknown>>(`SELECT id, status, outcome, buyer_id FROM dispute_cases WHERE order_id = $1 AND seller_id = $2 ORDER BY created_at DESC LIMIT 1`, [orderId, sellerId]); const caseRow = dispute.rows[0]; if (!caseRow) return res.status(404).json({ error: 'No dispute case found for this order' });
-      const disputeStatus = clean(caseRow.status).toLowerCase(); if (['resolved', 'closed'].includes(disputeStatus) || ['refunded', 'returned', 'seller_refund_confirmed', 'seller_refund_accepted', 'return', 'return_and_refund'].includes(clean(caseRow.outcome).toLowerCase())) return res.status(409).json({ error: 'Dispute already settled.', code: 'DISPUTE_ALREADY_SETTLED', orderId, disputeCaseId: String(caseRow.id) });
+      const disputeStatus = clean(caseRow.status).toLowerCase(); const disputeOutcome = clean(caseRow.outcome).toLowerCase(); if (['resolved', 'closed'].includes(disputeStatus) || SETTLED_SELLER_OUTCOMES.has(disputeOutcome)) return res.status(409).json({ error: 'Dispute already settled.', code: 'DISPUTE_ALREADY_SETTLED', orderId, disputeCaseId: String(caseRow.id) });
       if (!['open', 'under_review', 'awaiting_response'].includes(disputeStatus)) return res.status(409).json({ error: 'Buyer contact is not available for this dispute state.', code: 'SELLER_DISPUTE_CONTACT_UNAVAILABLE', orderId, disputeCaseId: String(caseRow.id) });
       ensureOrderConversationTable(); let conversation = messageDb.prepare(`SELECT * FROM conversations WHERE order_id = ? AND buyer_uid = ? AND seller_uid = ? LIMIT 1`).get(orderId, String(caseRow.buyer_id), sellerId) as { id: number } | undefined;
       if (!conversation) { const created = messageDb.prepare(`INSERT INTO conversations (listing_id,event_id,order_id,buyer_uid,seller_uid,last_message_preview,last_message_at,buyer_unread_count,seller_unread_count,updated_at) VALUES (NULL,NULL,?,?,?,NULL,NULL,0,0,CURRENT_TIMESTAMP)`).run(orderId, String(caseRow.buyer_id), sellerId); conversation = { id: Number(created.lastInsertRowid) }; }
@@ -58,13 +70,13 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
         const caseResult = await client.query<Record<string, unknown>>(`SELECT * FROM dispute_cases WHERE order_id = $1 AND seller_id = $2 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [orderId, sellerId]);
         const dispute = caseResult.rows[0]; if (!dispute) throw new Error('No dispute case found for this order');
         const disputeStatus = clean(dispute.status).toLowerCase(); const disputeOutcome = clean(dispute.outcome).toLowerCase();
-        if (['resolved', 'closed'].includes(disputeStatus) || ['refunded', 'returned', 'seller_refund_confirmed', 'seller_refund_accepted', 'replacement', 'seller_replacement_confirmed'].includes(disputeOutcome)) throw new Error('Dispute already settled.');
+        if (['resolved', 'closed'].includes(disputeStatus) || SETTLED_SELLER_OUTCOMES.has(disputeOutcome)) throw new Error('Dispute already settled.');
         if (!['open', 'under_review', 'awaiting_response'].includes(disputeStatus)) throw new Error('This dispute is not available for seller resolution.');
         const attemptResult = await client.query<Record<string, unknown>>(`SELECT * FROM dispute_attempts WHERE case_id = $1 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [dispute.id]);
         const attempt = attemptResult.rows[0]; const now = new Date().toISOString(); const outcome = resolution === 'replacement' ? 'seller_replacement_confirmed' : 'seller_rejected';
         if (attempt) await client.query(`UPDATE dispute_attempts SET status='resolved', decision=$1, resolution_note=$2, resolved_by=$3, resolved_at=$4, updated_at=$4 WHERE id=$5`, [outcome, reason, sellerId, now, attempt.id]);
         await client.query(`UPDATE dispute_cases SET status='resolved', outcome=$1, resolved_at=$2, updated_at=$2 WHERE id=$3`, [outcome, now, dispute.id]);
-        await client.query(`UPDATE disputes SET status='resolved', state='resolved', resolution=$1, resolved_by=$2, resolved_at=$3, updated_at=$3 WHERE order_id=$4 AND status IN ('open','under_review')`, [reason, sellerId, now, orderId]);
+        await client.query(`UPDATE disputes SET status='resolved', state='resolved', resolution=$1, resolved_by=$2, resolved_at=$3, updated_at=$3 WHERE order_id=$4 AND status IN ('open','under_review','awaiting_response')`, [reason, sellerId, now, orderId]);
         await client.query(`INSERT INTO audit_events (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata) VALUES ($1,'dispute_case',$2,$3,$4,$5,$6,'resolved',$7)`, [`aud_${randomUUID()}`, dispute.id, resolution === 'replacement' ? 'seller_replacement_confirmed' : 'seller_dispute_rejected', sellerId, now, disputeStatus, JSON.stringify({ orderId, resolution, reason, outcome })]);
         return { caseId: String(dispute.id), buyerId: String(order.buyer_id), sellerId, currency: String(order.total_currency ?? 'MWK'), orderId, resolution, reason, outcome };
       });
@@ -85,15 +97,15 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
       const transactionId = requireNonEmpty(req.body?.transactionId, 'Transaction ID'); const refundDate = requireNonEmpty(req.body?.refundDate, 'Refund date'); const note = clean(req.body?.note); const evidence = Array.isArray(req.body?.evidence) ? req.body.evidence.filter((item: unknown): item is string => typeof item === 'string').map((item: string) => item.trim()).filter(Boolean).slice(0, 20) : []; const destination = clean(req.body?.destination);
       const result = await withTransaction(async (client) => {
         const caseResult = await client.query<Record<string, unknown>>(`SELECT * FROM dispute_cases WHERE order_id = $1 AND seller_id = $2 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [orderId, sellerId]); const caseRow = caseResult.rows[0]; if (!caseRow) throw new Error('No dispute case found for this order'); const caseStatus = clean(caseRow.status).toLowerCase(); const caseOutcome = clean(caseRow.outcome).toLowerCase();
-        if (['resolved', 'closed'].includes(caseStatus) || ['refunded', 'returned', 'seller_refund_confirmed', 'seller_refund_accepted'].includes(caseOutcome)) throw new Error('Dispute already settled.'); if (!['open', 'under_review'].includes(caseStatus)) throw new Error('This dispute is not available for seller refund confirmation');
+        if (['resolved', 'closed'].includes(caseStatus) || SETTLED_SELLER_OUTCOMES.has(caseOutcome)) throw new Error('Dispute already settled.'); if (!['open', 'under_review'].includes(caseStatus)) throw new Error('This dispute is not available for seller refund confirmation');
         const attemptResult = await client.query<Record<string, unknown>>(`SELECT * FROM dispute_attempts WHERE case_id = $1 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [caseRow.id]); const attempt = attemptResult.rows[0];
         const existingTransaction = await client.query<Record<string, unknown>>(`SELECT * FROM refund_transactions WHERE order_id = $1 AND transaction_id = $2 LIMIT 1`, [orderId, transactionId]); if (existingTransaction.rows[0]) return { duplicate: true, transaction: existingTransaction.rows[0], caseId: caseRow.id, buyerId: String(caseRow.buyer_id), sellerId, currency: String(order.total_currency ?? 'MWK') };
-        const refundRequestResult = await client.query<Record<string, unknown>>(`SELECT * FROM refund_requests WHERE order_id = $1 AND seller_id = $2 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [orderId, sellerId]); const refundRequest = refundRequestResult.rows[0]; const now = new Date().toISOString(); const refundTransactionId = `rft_${randomUUID()}`;
+        const refundRequestResult = await client.query<Record<string, unknown>>(`SELECT * FROM refund_requests WHERE order_id = $1 AND seller_id = $2 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`); const refundRequest = refundRequestResult.rows[0]; const now = new Date().toISOString(); const refundTransactionId = `rft_${randomUUID()}`;
         await client.query(`INSERT INTO refund_transactions (id, refund_request_id, order_id, buyer_id, seller_id, amount, currency, destination, payment_method, provider, transaction_id, status, executed_by, executed_at, supporting_evidence, metadata, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'seller_reported',$10,'refunded',$5,$11,$12,$13,$14,$11,$11)`, [refundTransactionId, refundRequest?.id ?? null, orderId, order.buyer_id, sellerId, amount, order.total_currency ?? 'MWK', destination || null, refundMethod, transactionId, refundDate, JSON.stringify(evidence), JSON.stringify({ refund_transaction_id: transactionId, note })]);
         if (refundRequest) await client.query(`UPDATE refund_requests SET refund_transaction_id = $1, seller_response = $2, status = 'refunded', latest_status_at = $3, updated_at = $3 WHERE id = $4`, [refundTransactionId, note || `Seller confirmed a refund on ${refundDate}.`, now, refundRequest.id]);
         if (attempt) await client.query(`UPDATE dispute_attempts SET status='resolved', decision='seller_refund_confirmed', resolution_note=$1, resolved_by=$2, resolved_at=$3, updated_at=$3 WHERE id=$4`, [note || `Seller confirmed a refund using transaction ${transactionId}.`, sellerId, now, attempt.id]);
         await client.query(`UPDATE dispute_cases SET status='resolved', outcome='seller_refund_confirmed', resolved_at=$1, updated_at=$1 WHERE id=$2`, [now, caseRow.id]);
-        await client.query(`UPDATE disputes SET status='resolved', state='resolved', resolution=$1, resolved_by=$2, resolved_at=$3, updated_at=$3 WHERE order_id=$4 AND status IN ('open','under_review')`, [note || `Seller confirmed a refund on ${refundDate}.`, sellerId, now, orderId]);
+        await client.query(`UPDATE disputes SET status='resolved', state='resolved', resolution=$1, resolved_by=$2, resolved_at=$3, updated_at=$3 WHERE order_id=$4 AND status IN ('open','under_review','awaiting_response')`, [note || `Seller confirmed a refund on ${refundDate}.`, sellerId, now, orderId]);
         await client.query(`INSERT INTO audit_events (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata) VALUES ($1,'dispute_case',$2,'seller_refund_confirmed',$3,$4,$5,'resolved',$6)`, [`aud_${randomUUID()}`, caseRow.id, sellerId, now, caseStatus, JSON.stringify({ orderId, refundTransactionId, transactionId, amount, refundMethod, refundDate, outcome: 'seller_refund_confirmed' })]);
         return { duplicate: false, transaction: { id: refundTransactionId, orderId, amount, currency: order.total_currency ?? 'MWK', paymentMethod: refundMethod, transactionId, refundDate, destination: destination || null, status: 'refunded' as const }, caseId: caseRow.id, buyerId: String(caseRow.buyer_id), sellerId, currency: String(order.total_currency ?? 'MWK') };
       });
