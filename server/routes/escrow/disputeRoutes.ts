@@ -98,7 +98,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         }
 
         const escrow = await escrowRepository.findByOrderIdAsync(orderId, client);
-        const escrowState = String(escrow?.state ?? escrow?.status ?? '').trim().toLowerCase();
+        const escrowState = String(escrow?.state ?? '').trim().toLowerCase();
         const orderStatus = String(order.status ?? '').trim().toLowerCase();
         const released = escrowState === 'released' || ['fulfilled', 'closed'].includes(orderStatus);
 
@@ -107,7 +107,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         let phase: 'delivery' | 'escrow' | 'post_delivery' = 'escrow';
 
         if (released) {
-          const deliveredAt = parseDate(order.fulfilled_at) ?? (escrowState === 'released' ? parseDate(escrow?.updatedAt ?? escrow?.updated_at) : null);
+          const deliveredAt = parseDate(order.fulfilled_at) ?? (escrowState === 'released' ? parseDate(escrow?.updatedAt) : null);
           if (!deliveredAt) {
             return { duplicate: false, settled: false, timingError: 'DELIVERY_TIMESTAMP_UNAVAILABLE', caseId: null, attemptId: null, refundRequestId: null, windowEndsAt: null, eligibleAt: null, phase: 'post_delivery', buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: orderStatus };
           }
@@ -148,6 +148,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       if (result.timingError === 'DISPUTE_WINDOW_NOT_OPEN') return res.status(409).json({ error: 'The delivery period has not ended yet. An escrow dispute becomes available after the delivery deadline if delivery has not been confirmed.', code: 'DISPUTE_WINDOW_NOT_OPEN', phase: result.phase, eligibleAt: result.eligibleAt, windowEndsAt: null, orderId });
       if (result.timingError === 'DISPUTE_PERIOD_EXPIRED') return res.status(409).json({ error: 'The 30-day post-delivery dispute period has expired. This order can no longer be disputed.', code: 'DISPUTE_PERIOD_EXPIRED', phase: result.phase, eligibleAt: result.eligibleAt, windowEndsAt: result.windowEndsAt, orderId });
       if (result.timingError === 'DELIVERY_TIMESTAMP_UNAVAILABLE') return res.status(409).json({ error: 'This order cannot be disputed because the confirmed-delivery timestamp is unavailable.', code: 'DELIVERY_TIMESTAMP_UNAVAILABLE', phase: result.phase, orderId });
+      if (!result.caseId) return res.status(500).json({ error: 'Dispute was created without a case id.' });
 
       try {
         await notifyDisputeWorkflowEvent({ caseId: result.caseId, orderId, buyerId: result.buyerId, sellerId: result.sellerId, event: 'submitted', note: reason, amount: amountRequested, currency: result.currency });
