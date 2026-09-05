@@ -3,9 +3,10 @@ import { randomUUID } from 'node:crypto';
 import { query, withTransaction } from '../postgres.js';
 import { postgresDb as messageDb } from '../db.js';
 import { notifyDisputeWorkflowEvent } from '../modules/notifications/dispute-workflow.notification.js';
-import { notifyAdminSellerRefundRecorded } from '../modules/notifications/admin-dispute.notification.js';
+import { notifyAdminSellerRefundRecorded, notifyAdminSellerResolutionRecorded } from '../modules/notifications/admin-dispute.notification.js';
 
 const ALLOWED_REFUND_METHODS = new Set(['mobile_money', 'bank_transfer', 'cash', 'other']);
+const ALLOWED_SELLER_RESOLUTIONS = new Set(['replacement', 'rejected']);
 function clean(value: unknown, fallback = ''): string { return typeof value === 'string' ? value.trim() : fallback; }
 function requireNonEmpty(value: unknown, field: string): string { const result = clean(value); if (!result) throw new Error(`${field} is required`); return result; }
 async function loadSellerOrder(orderId: string, sellerId: string) {
@@ -35,6 +36,46 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
       return res.status(200).json({ conversationId: Number(conversation.id), conversationTarget: `/messages?conversation=${encodeURIComponent(String(conversation.id))}`, orderId, disputeCaseId: String(caseRow.id) });
     } catch (error) { return res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to prepare buyer contact' }); }
   });
+
+  router.post('/:orderId/dispute/resolve', requireAuth, async (req: any, res) => {
+    try {
+      const sellerId = clean(req.user?.uid); const orderId = clean(req.params.orderId); const resolution = clean(req.body?.resolution).toLowerCase(); const reason = clean(req.body?.reason);
+      if (!sellerId) return res.status(401).json({ error: 'Authentication required' });
+      if (!orderId) return res.status(400).json({ error: 'Order id is required' });
+      if (!ALLOWED_SELLER_RESOLUTIONS.has(resolution)) return res.status(400).json({ error: 'Unsupported seller resolution' });
+      if (clean(req.body?.paymentStatus).toLowerCase() !== 'paid') {
+        const order = await loadSellerOrder(orderId, sellerId);
+        if (!order) return res.status(404).json({ error: 'Seller order not found' });
+        if (!['paid', 'captured'].includes(clean(order.payment_status).toLowerCase()) || !['paid'].includes(clean(order.payout_status).toLowerCase())) return res.status(409).json({ error: 'Seller dispute resolution is available only for a paid order after seller payout.' });
+      }
+      if (reason.length < 10) return res.status(400).json({ error: 'Please provide at least 10 characters explaining this resolution.' });
+      if (reason.length > 2000) return res.status(400).json({ error: 'Resolution explanation cannot exceed 2000 characters.' });
+
+      const result = await withTransaction(async (client) => {
+        const orderResult = await client.query<Record<string, unknown>>(`SELECT id, buyer_id, seller_id, total_currency, status FROM orders WHERE id = $1 AND seller_id = $2 LIMIT 1`, [orderId, sellerId]);
+        const order = orderResult.rows[0]; if (!order) throw new Error('Seller order not found');
+        if (clean(order.status).toLowerCase() !== 'paid') throw new Error('Seller dispute resolution is available only while the order is paid.');
+        const caseResult = await client.query<Record<string, unknown>>(`SELECT * FROM dispute_cases WHERE order_id = $1 AND seller_id = $2 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [orderId, sellerId]);
+        const dispute = caseResult.rows[0]; if (!dispute) throw new Error('No dispute case found for this order');
+        const disputeStatus = clean(dispute.status).toLowerCase(); const disputeOutcome = clean(dispute.outcome).toLowerCase();
+        if (['resolved', 'closed'].includes(disputeStatus) || ['refunded', 'returned', 'seller_refund_confirmed', 'seller_refund_accepted', 'replacement', 'seller_replacement_confirmed'].includes(disputeOutcome)) throw new Error('Dispute already settled.');
+        if (!['open', 'under_review', 'awaiting_response'].includes(disputeStatus)) throw new Error('This dispute is not available for seller resolution.');
+        const attemptResult = await client.query<Record<string, unknown>>(`SELECT * FROM dispute_attempts WHERE case_id = $1 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [dispute.id]);
+        const attempt = attemptResult.rows[0]; const now = new Date().toISOString(); const outcome = resolution === 'replacement' ? 'seller_replacement_confirmed' : 'seller_rejected';
+        if (attempt) await client.query(`UPDATE dispute_attempts SET status='resolved', decision=$1, resolution_note=$2, resolved_by=$3, resolved_at=$4, updated_at=$4 WHERE id=$5`, [outcome, reason, sellerId, now, attempt.id]);
+        await client.query(`UPDATE dispute_cases SET status='resolved', outcome=$1, resolved_at=$2, updated_at=$2 WHERE id=$3`, [outcome, now, dispute.id]);
+        await client.query(`UPDATE disputes SET status='resolved', state='resolved', resolution=$1, resolved_by=$2, resolved_at=$3, updated_at=$3 WHERE order_id=$4 AND status IN ('open','under_review')`, [reason, sellerId, now, orderId]);
+        await client.query(`INSERT INTO audit_events (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata) VALUES ($1,'dispute_case',$2,$3,$4,$5,$6,'resolved',$7)`, [`aud_${randomUUID()}`, dispute.id, resolution === 'replacement' ? 'seller_replacement_confirmed' : 'seller_dispute_rejected', sellerId, now, disputeStatus, JSON.stringify({ orderId, resolution, reason, outcome })]);
+        return { caseId: String(dispute.id), buyerId: String(order.buyer_id), sellerId, currency: String(order.total_currency ?? 'MWK'), orderId, resolution, reason, outcome };
+      });
+      try { await notifyDisputeWorkflowEvent({ caseId: result.caseId, orderId: result.orderId, buyerId: result.buyerId, sellerId: result.sellerId, event: result.resolution === 'replacement' ? 'seller_replacement_recorded' : 'seller_dispute_rejected', note: result.reason, currency: result.currency, recipients: ['buyer', 'seller'] }); } catch (notificationError) { console.warn('Failed to send seller resolution notification:', notificationError); }
+      try { await notifyAdminSellerResolutionRecorded({ caseId: result.caseId, orderId: result.orderId, buyerId: result.buyerId, sellerId: result.sellerId, resolution: result.resolution as 'replacement' | 'rejected', reason: result.reason }); } catch (notificationError) { console.warn('Failed to send admin seller-resolution notification:', notificationError); }
+      return res.status(201).json({ caseId: result.caseId, status: 'resolved', outcome: result.outcome, resolution: result.resolution, reason: result.reason, message: result.resolution === 'replacement' ? 'Replacement resolution recorded and the dispute is now settled.' : 'Dispute rejection recorded and the dispute is now settled.' });
+    } catch (error) {
+      return res.status(error instanceof Error && error.message === 'Dispute already settled.' ? 409 : 400).json({ error: error instanceof Error ? error.message : 'Failed to submit seller resolution', ...(error instanceof Error && error.message === 'Dispute already settled.' ? { code: 'DISPUTE_ALREADY_SETTLED' } : {}) });
+    }
+  });
+
   router.post('/:orderId/dispute/confirm-refunded', requireAuth, async (req: any, res) => {
     try {
       const sellerId = clean(req.user?.uid); const orderId = clean(req.params.orderId); if (!sellerId) return res.status(401).json({ error: 'Authentication required' }); if (!orderId) return res.status(400).json({ error: 'Order id is required' });
