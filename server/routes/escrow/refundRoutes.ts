@@ -12,7 +12,8 @@ export function createRefundRouter(requireAuth: RequestHandler): express.Router 
 
   router.post('/:orderId/refund', escrowActionLimiter, requireAuth, async (req, res) => {
     try {
-      if (req.user?.is_admin !== true) {
+      const adminUid = req.user?.uid;
+      if (req.user?.is_admin !== true || !adminUid) {
         return res.status(403).json({ error: 'Only an admin can refund escrow' });
       }
 
@@ -55,7 +56,7 @@ export function createRefundRouter(requireAuth: RequestHandler): express.Router 
 
       const refund = escrowRepository.refundHeldBalance({
         orderId,
-        refundedBy: req.user.uid,
+        refundedBy: adminUid,
         note: reason,
         reference: `escrow-refund:${orderId}`,
       });
@@ -100,7 +101,7 @@ export function createRefundRouter(requireAuth: RequestHandler): express.Router 
                    resolved_at = $3,
                    updated_at = $3
                WHERE id = $4`,
-              [reason, req.user.uid, resolvedAt, attempt.id],
+              [reason, adminUid, resolvedAt, attempt.id],
             );
           }
 
@@ -134,7 +135,7 @@ export function createRefundRouter(requireAuth: RequestHandler): express.Router 
                  updated_at = $3
              WHERE order_id = $4
                AND status IN ('open', 'under_review')`,
-            [reason, req.user.uid, resolvedAt, orderId],
+            [reason, adminUid, resolvedAt, orderId],
           );
 
           await client.query(
@@ -144,7 +145,7 @@ export function createRefundRouter(requireAuth: RequestHandler): express.Router 
             [
               `audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
               String(caseRow.id),
-              req.user.uid,
+              adminUid,
               resolvedAt,
               String(caseRow.status ?? 'open'),
               JSON.stringify({ orderId, outcome: 'refunded', reason, source: 'admin_payments' }),
@@ -174,7 +175,7 @@ export function createRefundRouter(requireAuth: RequestHandler): express.Router 
                  resolved_at = ?,
                  updated_at = ?
              WHERE id = ?`,
-          ).run(reason, req.user.uid, resolvedAt, resolvedAt, legacy.id);
+          ).run(reason, adminUid, resolvedAt, resolvedAt, legacy.id);
         }
       } catch (legacyError) {
         console.warn('Admin refund completed but legacy dispute settlement sync failed:', legacyError);
