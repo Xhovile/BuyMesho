@@ -78,6 +78,7 @@ export default function DisputeActionsCard({
   const deliveryDeadline = formatDate(eligibility.eligibleAt);
   const disputeStart = formatDate(eligibility.eligibleAt);
   const disputeEnd = formatDate(eligibility.windowEndsAt);
+  const disputeLocked = !eligibility.eligible;
 
   return (
     <div className="space-y-4">
@@ -118,12 +119,23 @@ export default function DisputeActionsCard({
           </>
         ) : null}
 
-        {eligibility.eligible ? (
+        {disputeLocked ? (
+          <button
+            type="button"
+            aria-disabled="true"
+            title={eligibility.reason || 'This dispute is not available yet.'}
+            onClick={() => undefined}
+            className="mt-4 inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-sm font-bold text-zinc-400 opacity-80"
+          >
+            <ShieldAlert className="h-4 w-4" />
+            Open Dispute
+          </button>
+        ) : (
           <button type="button" onClick={onOpenDispute} disabled={submitting !== null} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60">
             <ShieldAlert className="h-4 w-4" />
             Open Dispute
           </button>
-        ) : null}
+        )}
       </div>
     </div>
   );
