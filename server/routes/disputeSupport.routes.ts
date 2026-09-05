@@ -29,7 +29,7 @@ export function createDisputeSupportRouter(requireAuth: RequestHandler): express
         const caseResult = await client.query<Record<string, unknown>>(`SELECT * FROM dispute_cases WHERE id = $1 AND buyer_id = $2 LIMIT 1 FOR UPDATE`, [caseId, buyerId]);
         const dispute = caseResult.rows[0]; if (!dispute) throw new Error("Dispute not found");
         const status = clean(dispute.status).toLowerCase(); const outcome = clean(dispute.outcome).toLowerCase();
-        if (!["resolved", "closed"].includes(status) || !["seller_refund_confirmed", "seller_refund_accepted", "refunded", "returned", "return", "return_and_refund", "refund_executed"].includes(outcome)) throw new Error("Admin support becomes available after the dispute has a final resolution.");
+        if (!["resolved", "closed"].includes(status) || !["seller_refund_confirmed", "seller_refund_accepted", "seller_replacement_confirmed", "seller_rejected", "refunded", "returned", "return", "return_and_refund", "refund_executed"].includes(outcome)) throw new Error("Admin support becomes available after the dispute has a final resolution.");
         const existing = await client.query<Record<string, unknown>>(`SELECT * FROM support_requests WHERE dispute_case_id = $1 AND status IN ('open','in_progress') LIMIT 1 FOR UPDATE`, [caseId]);
         if (existing.rows[0]) return { duplicate: true, request: existing.rows[0], dispute };
         const id = `support_${randomUUID()}`; const now = new Date().toISOString();
