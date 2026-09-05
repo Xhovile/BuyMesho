@@ -84,6 +84,31 @@ body [data-admin-payout-workspace] header > div > div:nth-child(2) {
   border-color: #09090b !important;
 }
 
+/* Active escrow disputes are Admin-owned. The seller is an observer only.
+   The existing legacy action panel is visually replaced until the component
+   is refactored into the same explicit observer-state markup. */
+main .bg-sky-50:has(button) > * {
+  display: none !important;
+}
+
+main .bg-sky-50:has(button)::before {
+  content: "Dispute under BuyMesho review";
+  display: block;
+  color: #082f49;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 800;
+}
+
+main .bg-sky-50:has(button)::after {
+  content: "The buyer’s dispute is being handled by BuyMesho. Funds remain in escrow while the case is reviewed.";
+  display: block;
+  margin-top: 0.375rem;
+  color: rgba(7, 89, 133, 0.8);
+  font-size: 0.875rem;
+  line-height: 1.5rem;
+}
+
 @keyframes buymesho-loader-spin {
   to {
     transform: rotate(360deg);
