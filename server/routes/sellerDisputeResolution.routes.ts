@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { query, withTransaction } from '../postgres.js';
 import { postgresDb as messageDb } from '../db.js';
 import { notifyDisputeWorkflowEvent } from '../modules/notifications/dispute-workflow.notification.js';
+import { notifyAdminSellerRefundRecorded } from '../modules/notifications/admin-dispute.notification.js';
 
 const ALLOWED_REFUND_METHODS = new Set(['mobile_money', 'bank_transfer', 'cash', 'other']);
 function clean(value: unknown, fallback = ''): string { return typeof value === 'string' ? value.trim() : fallback; }
@@ -53,9 +54,12 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
         await client.query(`UPDATE dispute_cases SET status='resolved', outcome='seller_refund_confirmed', resolved_at=$1, updated_at=$1 WHERE id=$2`, [now, caseRow.id]);
         await client.query(`UPDATE disputes SET status='resolved', state='resolved', resolution=$1, resolved_by=$2, resolved_at=$3, updated_at=$3 WHERE order_id=$4 AND status IN ('open','under_review')`, [note || `Seller confirmed a refund on ${refundDate}.`, sellerId, now, orderId]);
         await client.query(`INSERT INTO audit_events (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata) VALUES ($1,'dispute_case',$2,'seller_refund_confirmed',$3,$4,$5,'resolved',$6)`, [`aud_${randomUUID()}`, caseRow.id, sellerId, now, caseStatus, JSON.stringify({ orderId, refundTransactionId, transactionId, amount, refundMethod, refundDate, outcome: 'seller_refund_confirmed' })]);
-        return { duplicate: false, transaction: { id: refundTransactionId, orderId, amount, currency: order.total_currency ?? 'MWK', paymentMethod: refundMethod, transactionId, refundDate, status: 'refunded' as const }, caseId: caseRow.id, buyerId: String(caseRow.buyer_id), sellerId, currency: String(order.total_currency ?? 'MWK') };
+        return { duplicate: false, transaction: { id: refundTransactionId, orderId, amount, currency: order.total_currency ?? 'MWK', paymentMethod: refundMethod, transactionId, refundDate, destination: destination || null, status: 'refunded' as const }, caseId: caseRow.id, buyerId: String(caseRow.buyer_id), sellerId, currency: String(order.total_currency ?? 'MWK') };
       });
-      if (!result.duplicate) { try { await notifyDisputeWorkflowEvent({ caseId: String(result.caseId), orderId, buyerId: String(result.buyerId), sellerId: String(result.sellerId), event: 'seller_refund_recorded', note: note || `Seller confirmed a refund on ${refundDate}.`, amount, currency: String(result.currency), transactionId }); } catch (notificationError) { console.warn('Failed to send seller-refund notification:', notificationError); } }
+      if (!result.duplicate) {
+        try { await notifyDisputeWorkflowEvent({ caseId: String(result.caseId), orderId, buyerId: String(result.buyerId), sellerId: String(result.sellerId), event: 'seller_refund_recorded', note: note || null, amount, currency: String(result.currency), transactionId, refundMethod, refundDate, destination, recipients: ['buyer', 'seller'] }); } catch (notificationError) { console.warn('Failed to send seller-refund notification:', notificationError); }
+        try { await notifyAdminSellerRefundRecorded({ caseId: String(result.caseId), orderId, buyerId: String(result.buyerId), sellerId, amount, currency: String(result.currency), refundMethod, transactionId, refundDate, destination, note }); } catch (notificationError) { console.warn('Failed to send admin seller-refund notification:', notificationError); }
+      }
       return res.status(result.duplicate ? 200 : 201).json({ duplicate: result.duplicate, transaction: result.transaction, caseId: result.caseId, status: 'resolved', outcome: 'seller_refund_confirmed', message: result.duplicate ? 'This seller refund was already recorded.' : 'Seller refund recorded and the dispute is now settled.' });
     } catch (error) { return res.status(error instanceof Error && error.message === 'Dispute already settled.' ? 409 : 400).json({ error: error instanceof Error ? error.message : 'Failed to record seller refund', ...(error instanceof Error && error.message === 'Dispute already settled.' ? { code: 'DISPUTE_ALREADY_SETTLED' } : {}) }); }
   });
