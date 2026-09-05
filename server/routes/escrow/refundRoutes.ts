@@ -23,6 +23,9 @@ export function createRefundRouter(requireAuth: RequestHandler): express.Router 
 
       const escrow = escrowRepository.findByOrderId(req.params.orderId);
       if (!escrow) return res.status(404).json({ error: 'Escrow not found' });
+      if (escrow.state !== 'disputed') {
+        return res.status(409).json({ error: 'Admin escrow refunds are available only for disputed orders.', code: 'REFUND_REQUIRES_DISPUTE' });
+      }
 
       const cancelPayouts = getPaymentDb().transaction(() => {
         const db = getPaymentDb();
