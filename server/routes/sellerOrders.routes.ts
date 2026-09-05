@@ -138,7 +138,23 @@ export function createSellerOrdersRouter(requireAuth: RequestHandler): express.R
               FROM orders o
              WHERE o.seller_id = $1
                AND o.status NOT IN ('draft', 'pending_payment', 'fulfilled', 'closed')
-               AND COALESCE(o.delivery_status, 'action_required') = 'action_required') AS order_attention_count,
+               AND (
+                 COALESCE(o.delivery_status, 'action_required') = 'action_required'
+                 OR EXISTS (
+                   SELECT 1
+                     FROM dispute_cases dc
+                    WHERE dc.order_id = o.id
+                      AND dc.seller_id = $1
+                      AND dc.status IN ('open', 'under_review', 'awaiting_response')
+                 )
+                 OR EXISTS (
+                   SELECT 1
+                     FROM refund_requests rr
+                    WHERE rr.order_id = o.id
+                      AND rr.seller_id = $1
+                      AND rr.status IN ('requested', 'under_review', 'processing', 'approved')
+                 )
+               )) AS order_attention_count,
            (SELECT COALESCE(SUM(c.seller_unread_count), 0)
               FROM conversations c
              WHERE c.seller_uid = $1
