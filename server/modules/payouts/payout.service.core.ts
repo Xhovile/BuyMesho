@@ -1,6 +1,8 @@
 import { createRequire } from 'node:module';
 import { payoutRepository, type PayoutTransitionRepository } from './payout.transition-repository.js';
 import { applyAdminOverrideAtomic } from './payout.admin-override.atomic.js';
+import { query } from '../../postgres.js';
+import { notifyPayoutCompleted } from '../notifications/payout-completed.notification.js';
 import type { PoolClient } from 'pg';
 import {
   type CreateConnectPayoutInput,
@@ -16,6 +18,32 @@ const require = createRequire(import.meta.url);
 function payoutDebug(stage: string, details?: Record<string, unknown>): void {
   if (process.env.NODE_ENV !== 'test') return;
   console.error(`[payout-debug] ${stage}`, details ?? {});
+}
+
+async function notifySellerOfPaidPayout(payout: PayoutRecord | undefined): Promise<void> {
+  if (!payout || payout.status !== 'paid') return;
+
+  try {
+    const result = await query<{ email?: string | null; business_name?: string | null }>(
+      'SELECT email, business_name FROM sellers WHERE uid = $1 LIMIT 1',
+      [payout.sellerId],
+    );
+    const email = result.rows[0]?.email?.trim();
+    if (!email) return;
+
+    await notifyPayoutCompleted({
+      email,
+      sellerName: result.rows[0]?.business_name?.trim() || 'there',
+      amount: Number(payout.amount ?? 0),
+      currency: payout.currency || 'MWK',
+      payoutId: payout.id,
+      orderReference: payout.orderId,
+      completedAt: payout.updatedAt || new Date().toISOString(),
+      status: payout.status,
+    });
+  } catch (error) {
+    console.warn('[notification] payout_completed email delivery failed', error);
+  }
 }
 
 export class PayoutService {
@@ -55,7 +83,11 @@ export class PayoutService {
 
   async executePayout(input: ExecutePayoutInput) {
     const { executePayoutFlow } = await import('./payout.service.execution.js');
-    return executePayoutFlow(this.repository, input);
+    const result = await executePayoutFlow(this.repository, input);
+    if (result.payout?.status === 'paid') {
+      await notifySellerOfPaidPayout(result.payout);
+    }
+    return result;
   }
 
   async getProviderBalance(currency = 'MWK') {
@@ -87,12 +119,16 @@ export class PayoutService {
   }
 
   markPaid(payoutId: string, actorId: string, note?: string): PayoutRecord | undefined {
-    return applyAdminOverrideAtomic(this.repository, {
+    const payout = applyAdminOverrideAtomic(this.repository, {
       payoutId,
       action: 'mark_paid',
       actorId,
       reason: note,
     });
+    if (payout?.status === 'paid') {
+      void notifySellerOfPaidPayout(payout);
+    }
+    return payout;
   }
 
   markFailed(payoutId: string, actorId: string, reason: string): PayoutRecord | undefined {
@@ -120,7 +156,11 @@ export class PayoutService {
     reason?: string | null;
     sellerId?: string | null;
   }): PayoutRecord | undefined {
-    return applyAdminOverrideAtomic(this.repository, input);
+    const payout = applyAdminOverrideAtomic(this.repository, input);
+    if (input.action === 'mark_paid' && payout?.status === 'paid') {
+      void notifySellerOfPaidPayout(payout);
+    }
+    return payout;
   }
 
   processPayout(request: PayoutRequest) {
