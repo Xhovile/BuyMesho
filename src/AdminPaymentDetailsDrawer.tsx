@@ -229,11 +229,9 @@ function RawWebhookViewer({ hook }: { hook: WebhookEventRow }) {
 function canRefund(payment: PaymentRow): boolean {
   const orderState = token(payment.order_status);
   const escrowState = token(payment.escrow_state);
-  const refundableOrderStates = new Set(["paid", "in_escrow", "fulfilled", "disputed"]);
-  const refundableEscrowStates = new Set(["funded", "held", "disputed"]);
   return Boolean(payment.escrow_id)
-    && refundableOrderStates.has(orderState)
-    && refundableEscrowStates.has(escrowState)
+    && orderState === "paid"
+    && escrowState === "disputed"
     && Number(payment.balance_amount ?? 0) > 0;
 }
 
