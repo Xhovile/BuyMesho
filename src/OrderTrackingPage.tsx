@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExternalLink, Loader2, Truck } from "lucide-react";
 
-import {
-  navigateToOrderDispute,
-  navigateToPath,
-} from "./lib/appNavigation";
+import { navigateToPath } from "./lib/appNavigation";
 import {
   fetchOrderByReference,
-  openOrderDispute,
+  getOrderDisputeEligibility,
   releaseOrderEscrow,
   type OrderBundle,
 } from "./lib/orderApi";
@@ -123,8 +120,7 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
   const [bundle, setBundle] = useState<OrderBundle | null>(initialBundle);
   const [loading, setLoading] = useState(() => !initialBundle);
   const [error, setError] = useState<string | null>(null);
-  const [disputeReason, setDisputeReason] = useState("");
-  const [submitting, setSubmitting] = useState<"release" | "dispute" | null>(null);
+  const [submitting, setSubmitting] = useState<"release" | null>(null);
 
   const effectiveReference = reference ?? getReferenceFromUrl();
 
@@ -183,7 +179,6 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
   const firstItem = order?.items?.[0] ?? null;
   const firstItemTitle = firstItem?.title ?? "—";
   const mixedHasEvent = flowType === "mixed_checkout";
-  const firstListingId = order?.items?.find((item) => item?.listingId)?.listingId ?? null;
 
   const activeIndex = useMemo(() => {
     if (!order) return 0;
@@ -216,7 +211,7 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
       ? bundle.payment.paidAt
       : typeof bundle?.payment?.paid_at === "string"
         ? bundle.payment.paid_at
-        : null;
+        : order?.paidAt ?? null;
 
   const escrowUpdatedAt =
     typeof bundle?.escrow?.updatedAt === "string"
@@ -244,6 +239,11 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
     ["pending", "pending_payment", "initiated"].includes(paymentStatus.toLowerCase()) &&
     !canConfirmDelivery;
 
+  const disputeEligibility = useMemo(
+    () => (bundle ? getOrderDisputeEligibility(bundle) : { eligible: false, phase: "active" as const, eligibleAt: null, windowEndsAt: null, reason: "" }),
+    [bundle],
+  );
+
   const handleConfirmDelivery = async () => {
     if (!order) return;
 
@@ -263,9 +263,6 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
         return;
       }
 
-      // The release request was already sent. The client timeout only means
-      // it stopped waiting for the HTTP response, so verify persisted state
-      // before presenting a release failure.
       const maxChecks = 5;
       const retryDelayMs = 1500;
 
@@ -277,25 +274,15 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
           const latest = await fetchOrderByReference(trimmedReference);
           setBundle(latest);
 
-          const latestEscrowState = String(
-            latest.escrow?.state ?? latest.escrow?.status ?? "",
-          )
-            .trim()
-            .toLowerCase();
-          const latestOrderStatus = String(latest.order?.status ?? "")
-            .trim()
-            .toLowerCase();
+          const latestEscrowState = String(latest.escrow?.state ?? latest.escrow?.status ?? "").trim().toLowerCase();
+          const latestOrderStatus = String(latest.order?.status ?? "").trim().toLowerCase();
 
-          if (
-            latestEscrowState === "released" ||
-            latestOrderStatus === "fulfilled" ||
-            latestOrderStatus === "closed"
-          ) {
+          if (latestEscrowState === "released" || latestOrderStatus === "fulfilled" || latestOrderStatus === "closed") {
             setError(null);
             return;
           }
         } catch {
-          // Keep the release UI active while status verification is retried.
+          // Keep verifying persisted release state.
         }
 
         if (check < maxChecks - 1) {
@@ -303,34 +290,15 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
         }
       }
 
-      setError(
-        "Escrow release was submitted, but its final status could not be confirmed yet. Please check the order status before trying again.",
-      );
+      setError("Escrow release was submitted, but its final status could not be confirmed yet. Please check the order status before trying again.");
     } finally {
       setSubmitting(null);
     }
   };
 
-  const handleOpenDisputeForm = async () => {
-    if (!order) return;
-
-    if (!disputeReason.trim()) {
-      setError("Please provide a dispute reason.");
-      return;
-    }
-
-    try {
-      setSubmitting("dispute");
-      setError(null);
-
-      await openOrderDispute(order.id, disputeReason.trim());
-      setDisputeReason("");
-      await reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit dispute.");
-    } finally {
-      setSubmitting(null);
-    }
+  const handleOpenDispute = () => {
+    if (!order || !disputeEligibility.eligible) return;
+    navigateToPath(`/disputes?reference=${encodeURIComponent(order.id)}`);
   };
 
   return (
@@ -351,22 +319,14 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
         </div>
 
         {loading ? (
-          <div className="mt-6 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm leading-6 text-zinc-600">
-            Loading order details…
-          </div>
+          <div className="mt-6 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm leading-6 text-zinc-600">Loading order details…</div>
         ) : error ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
-            {error}
-          </div>
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">{error}</div>
         ) : order ? (
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="space-y-6">
               <EscrowProtectionCard
-                state={{
-                  orderStatus: order.status,
-                  paymentStatus,
-                  escrowState,
-                }}
+                state={{ orderStatus: order.status, paymentStatus, escrowState }}
                 paidAt={paidAt}
                 escrowUpdatedAt={escrowUpdatedAt}
                 viewer={isSellerViewer ? "seller" : "buyer"}
@@ -380,11 +340,7 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
                       <h2 className="text-xl font-black tracking-tight text-zinc-950">This order includes an event ticket</h2>
                       <p className="mt-1 text-sm text-zinc-600">Open Tickets for ticket details.</p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => navigateToPath(`/tickets?reference=${encodeURIComponent(effectiveReference ?? "")}`)}
-                      className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
-                    >
+                    <button type="button" onClick={() => navigateToPath(`/tickets?reference=${encodeURIComponent(effectiveReference ?? "")}`)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800">
                       <ExternalLink className="h-4 w-4" />
                       Open tickets
                     </button>
@@ -396,31 +352,19 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
             </div>
 
             <div className="space-y-6">
-              <OrderDetailsCard
-                reference={effectiveReference}
-                firstItemTitle={firstItemTitle}
-                items={order.items}
-                paymentStatus={paymentStatus}
-                orderStatus={order.status}
-                escrowState={escrowState}
-                orderId={order.id}
-                totalCurrency={totalCurrency}
-                totalAmount={totalAmount}
-                sellerPayout={null}
-              />
+              <OrderDetailsCard reference={effectiveReference} firstItemTitle={firstItemTitle} items={order.items} paymentStatus={paymentStatus} orderStatus={order.status} escrowState={escrowState} orderId={order.id} totalCurrency={totalCurrency} totalAmount={totalAmount} sellerPayout={null} />
 
               <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
                 <h2 className="text-lg font-black text-zinc-950">Delivery and dispute</h2>
                 <div className="mt-4">
                   <DisputeActionsCard
-                    disputeReason={disputeReason}
                     submitting={submitting}
                     canConfirmDelivery={canConfirmDelivery}
                     escrowReleased={escrowReleased}
                     escrowUnavailable={escrowUnavailable}
-                    onChangeReason={setDisputeReason}
+                    eligibility={disputeEligibility}
                     onConfirmDelivery={handleConfirmDelivery}
-                    onOpenDispute={handleOpenDisputeForm}
+                    onOpenDispute={handleOpenDispute}
                   />
                 </div>
               </div>
