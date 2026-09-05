@@ -4,7 +4,7 @@ import { orderRepository } from '../../modules/orders/order.repository.js';
 import { serverOrderService } from '../../modules/orders/order.service.js';
 import { notifyOrderRefunded } from '../../modules/notifications/order-refunded.notification.js';
 import { getPaymentDb } from '../../postgresCompat.js';
-import { query, withTransaction } from '../../postgres.js';
+import { withTransaction } from '../../postgres.js';
 import { escrowActionLimiter, jsonError } from './shared.js';
 
 export function createRefundRouter(requireAuth: RequestHandler): express.Router {
