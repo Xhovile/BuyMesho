@@ -19,6 +19,14 @@ export async function notifyAdminSellerRefundRecorded(input: {
   await sendAdminMail("BuyMesho seller refund submitted", `A seller refund has been submitted for a disputed BuyMesho order.\n\n${details}\n\nReview the dispute in Admin Reports.`, `<p>A seller refund has been submitted for a disputed BuyMesho order.</p><p>${escapeHtml(details).replace(/\n/g, "<br />")}</p><p>Review the dispute in Admin Reports.</p>`, `${input.caseId}:seller_refund_admin:${input.transactionId}`);
 }
 
+export async function notifyAdminSellerResolutionRecorded(input: {
+  caseId: string; orderId: string; buyerId: string; sellerId: string; resolution: "replacement" | "rejected"; reason: string;
+}): Promise<void> {
+  const label = input.resolution === "replacement" ? "Send another item" : "Reject";
+  const details = [`Order: ${input.orderId}`, `Dispute case: ${input.caseId}`, `Buyer: ${input.buyerId}`, `Seller: ${input.sellerId}`, `Seller resolution: ${label}`, `Seller explanation: ${input.reason}`].join("\n");
+  await sendAdminMail("BuyMesho seller dispute resolution submitted", `A seller has submitted a resolution for a disputed BuyMesho order.\n\n${details}\n\nReview the dispute in Admin Reports.`, `<p>A seller has submitted a resolution for a disputed BuyMesho order.</p><p>${escapeHtml(details).replace(/\n/g, "<br />")}</p><p>Review the dispute in Admin Reports.</p>`, `${input.caseId}:seller_resolution_admin:${input.resolution}`);
+}
+
 export async function notifyAdminSupportRequest(input: { requestId: string; caseId: string; orderId: string; buyerId: string; sellerId: string; reason: string }): Promise<void> {
   const details = [`Support request: ${input.requestId}`, `Order: ${input.orderId}`, `Dispute case: ${input.caseId}`, `Buyer: ${input.buyerId}`, `Seller: ${input.sellerId}`, `Reason: ${input.reason}`].join("\n");
   await sendAdminMail("BuyMesho buyer requested admin assistance", `A buyer has requested admin assistance after a dispute resolution.\n\n${details}\n\nReview the request in the admin dispute workspace.`, `<p>A buyer has requested admin assistance after a dispute resolution.</p><p>${escapeHtml(details).replace(/\n/g, "<br />")}</p><p>Review the request in the admin dispute workspace.</p>`, `${input.requestId}:support_admin`);
