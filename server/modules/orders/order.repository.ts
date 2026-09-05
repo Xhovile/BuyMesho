@@ -39,18 +39,20 @@ function getListingDeliveryPeriod(db: any, items: StoredOrder['items']): number 
     .filter((id) => Number.isInteger(id) && id > 0);
 
   if (listingIds.length === 0) return DEFAULT_DELIVERY_PERIOD_DAYS;
-
   const placeholders = listingIds.map(() => '?').join(',');
   const rows = db.prepare(`SELECT delivery_period_days FROM listings WHERE id IN (${placeholders})`).all(...listingIds) as Array<{ delivery_period_days?: number }>;
   const periods = rows.map((row) => toPositiveInteger(row.delivery_period_days)).filter((value) => value > 0);
   return periods.length ? Math.max(...periods) : DEFAULT_DELIVERY_PERIOD_DAYS;
 }
 
-function hydrateDeliveryWindow(db: any, order: StoredOrder): StoredOrder {
-  const deliveryPeriodDays = toPositiveInteger(order.deliveryPeriodDays);
-  const existingDeadline = order.deliveryDeadline ?? null;
+function hydrateDeliveryWindow(db: any, order: StoredOrder, deriveFromListings = false): StoredOrder {
+  const existing = deriveFromListings ? null : {
+    deliveryPeriodDays: order.deliveryPeriodDays ?? null,
+    deliveryDeadline: order.deliveryDeadline ?? null,
+  };
+  const deliveryPeriodDays = existing?.deliveryPeriodDays ? toPositiveInteger(existing.deliveryPeriodDays) : getListingDeliveryPeriod(db, order.items);
   const base = order.paidAt ?? order.placedAt ?? order.createdAt ?? null;
-  const deliveryDeadline = existingDeadline ?? (
+  const deliveryDeadline = existing?.deliveryDeadline ?? (
     base ? new Date(new Date(base).getTime() + deliveryPeriodDays * 24 * 60 * 60 * 1000).toISOString() : null
   );
   return { ...order, deliveryPeriodDays, deliveryDeadline };
@@ -60,6 +62,8 @@ function rowToOrder(row: Record<string, unknown>): StoredOrder {
   const items = parseStoredItems(row.items);
   const status = row.status as StoredOrder['status'];
   const deliveryStatus = status === 'fulfilled' || status === 'closed' ? 'delivered' : ((row.delivery_status as StoredOrder['deliveryStatus']) ?? 'action_required');
+  let buyerDetails: StoredOrder['buyerDetails'] = null;
+  try { buyerDetails = row.buyer_details ? typeof row.buyer_details === 'string' ? JSON.parse(row.buyer_details) as StoredOrder['buyerDetails'] : row.buyer_details as StoredOrder['buyerDetails'] : null; } catch { buyerDetails = null; }
   return {
     id: row.id as string, buyerId: row.buyer_id as string, sellerId: row.seller_id as string,
     source: row.source as StoredOrder['source'], status, deliveryStatus, currency: row.currency as string,
@@ -72,18 +76,12 @@ function rowToOrder(row: Record<string, unknown>): StoredOrder {
     checkoutRequestHash: (row.checkout_request_hash as string | null) ?? null,
     paymentCapturedAt: (row.paid_at as string | null) ?? null,
     capturedAt: (row.paid_at as string | null) ?? null,
-    escrowId: (row.escrow_id as string | null) ?? null,
-    items,
-    buyerDetails: (() => {
-      try { return row.buyer_details ? typeof row.buyer_details === 'string' ? JSON.parse(row.buyer_details) as StoredOrder['buyerDetails'] : row.buyer_details as StoredOrder['buyerDetails'] : null; } catch { return null; }
-    })(),
-    placedAt: (row.placed_at as string | null) ?? null,
-    paidAt: (row.paid_at as string | null) ?? null,
+    escrowId: (row.escrow_id as string | null) ?? null, items, buyerDetails,
+    placedAt: (row.placed_at as string | null) ?? null, paidAt: (row.paid_at as string | null) ?? null,
     fulfilledAt: (row.fulfilled_at as string | null) ?? null,
     deliveryPeriodDays: row.delivery_period_days == null ? null : Number(row.delivery_period_days),
     deliveryDeadline: (row.delivery_deadline as string | null) ?? null,
-    createdAt: row.created_at as string,
-    updatedAt: row.updated_at as string,
+    createdAt: row.created_at as string, updatedAt: row.updated_at as string,
   };
 }
 
@@ -91,23 +89,23 @@ export class PostgresOrderRepository {
   private get db() { return getPaymentDb(); }
 
   private prepareOrderForStorage(order: StoredOrder): StoredOrder {
-    const hydrated = hydrateDeliveryWindow(this.db, order);
     const existing = this.findById(order.id);
     if (existing?.deliveryDeadline || existing?.deliveryPeriodDays) {
       return {
-        ...hydrated,
-        deliveryPeriodDays: existing.deliveryPeriodDays ?? hydrated.deliveryPeriodDays,
-        deliveryDeadline: existing.deliveryDeadline ?? hydrated.deliveryDeadline,
+        ...order,
+        deliveryPeriodDays: existing.deliveryPeriodDays ?? order.deliveryPeriodDays ?? DEFAULT_DELIVERY_PERIOD_DAYS,
+        deliveryDeadline: existing.deliveryDeadline ?? order.deliveryDeadline ?? null,
       };
     }
-    if (!hydrated.deliveryPeriodDays && (hydrated.items?.length ?? 0) > 0) {
-      hydrated.deliveryPeriodDays = getListingDeliveryPeriod(this.db, hydrated.items);
-    }
-    if (!hydrated.deliveryDeadline) {
-      const base = hydrated.paidAt ?? hydrated.placedAt ?? hydrated.createdAt ?? null;
-      if (base && hydrated.deliveryPeriodDays) hydrated.deliveryDeadline = new Date(new Date(base).getTime() + hydrated.deliveryPeriodDays * 24 * 60 * 60 * 1000).toISOString();
-    }
-    return hydrated;
+
+    const deliveryPeriodDays = order.deliveryPeriodDays && order.deliveryPeriodDays > 0
+      ? toPositiveInteger(order.deliveryPeriodDays)
+      : getListingDeliveryPeriod(this.db, order.items);
+    const base = order.paidAt ?? order.placedAt ?? order.createdAt ?? null;
+    const deliveryDeadline = order.deliveryDeadline ?? (base
+      ? new Date(new Date(base).getTime() + deliveryPeriodDays * 24 * 60 * 60 * 1000).toISOString()
+      : null);
+    return { ...order, deliveryPeriodDays, deliveryDeadline };
   }
 
   save(order: StoredOrder): StoredOrder {
@@ -139,10 +137,13 @@ export class PostgresOrderRepository {
 
   private async saveAsyncOnExecutor(order: StoredOrder, executor: DbExecutor): Promise<StoredOrder> {
     const now = new Date().toISOString();
-    const hydrated = hydrateDeliveryWindow(this.db, order);
-    const paidAt = hydrated.status === 'paid' ? (hydrated.paidAt ?? now) : (hydrated.paidAt ?? null);
-    const fulfilledAt = hydrated.status === 'fulfilled' ? (hydrated.fulfilledAt ?? now) : (hydrated.fulfilledAt ?? null);
-    const stored: StoredOrder = { ...hydrated, deliveryStatus: hydrated.status === 'fulfilled' || hydrated.status === 'closed' ? 'delivered' : hydrated.deliveryStatus ?? 'action_required', paidAt, fulfilledAt };
+    const current = await this.findByIdAsync(order.id, executor);
+    const deliveryPeriodDays = current?.deliveryPeriodDays ?? (order.deliveryPeriodDays && order.deliveryPeriodDays > 0 ? toPositiveInteger(order.deliveryPeriodDays) : DEFAULT_DELIVERY_PERIOD_DAYS);
+    const deliveryDeadline = current?.deliveryDeadline ?? order.deliveryDeadline ?? ((order.paidAt ?? order.placedAt ?? order.createdAt) ? new Date(new Date((order.paidAt ?? order.placedAt ?? order.createdAt) as string).getTime() + deliveryPeriodDays * 24 * 60 * 60 * 1000).toISOString() : null);
+    const prepared = { ...order, deliveryPeriodDays, deliveryDeadline };
+    const paidAt = prepared.status === 'paid' ? (prepared.paidAt ?? now) : (prepared.paidAt ?? null);
+    const fulfilledAt = prepared.status === 'fulfilled' ? (prepared.fulfilledAt ?? now) : (prepared.fulfilledAt ?? null);
+    const stored: StoredOrder = { ...prepared, deliveryStatus: prepared.status === 'fulfilled' || prepared.status === 'closed' ? 'delivered' : prepared.deliveryStatus ?? 'action_required', paidAt, fulfilledAt };
     await executor.query(`INSERT INTO orders (id,buyer_id,seller_id,source,status,delivery_status,currency,subtotal_amount,subtotal_currency,total_amount,total_currency,payment_provider,settlement_route,payment_reference,checkout_idempotency_key,checkout_request_hash,escrow_id,items,buyer_details,placed_at,paid_at,fulfilled_at,delivery_period_days,delivery_deadline,created_at,updated_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)
       ON CONFLICT(id) DO UPDATE SET status=excluded.status,delivery_status=excluded.delivery_status,payment_provider=excluded.payment_provider,settlement_route=excluded.settlement_route,payment_reference=excluded.payment_reference,checkout_idempotency_key=excluded.checkout_idempotency_key,checkout_request_hash=excluded.checkout_request_hash,escrow_id=excluded.escrow_id,paid_at=excluded.paid_at,fulfilled_at=excluded.fulfilled_at,delivery_period_days=COALESCE(orders.delivery_period_days, excluded.delivery_period_days),delivery_deadline=COALESCE(orders.delivery_deadline, excluded.delivery_deadline),updated_at=excluded.updated_at,items=excluded.items,buyer_details=excluded.buyer_details`,[
@@ -153,11 +154,7 @@ export class PostgresOrderRepository {
     return stored;
   }
 
-  async saveAsync(order: StoredOrder, executor?: DbExecutor): Promise<StoredOrder> {
-    const run = (client: DbExecutor) => this.saveAsyncOnExecutor(order, client);
-    return executor ? run(executor) : withTransaction(run);
-  }
-
+  async saveAsync(order: StoredOrder, executor?: DbExecutor): Promise<StoredOrder> { const run = (client: DbExecutor) => this.saveAsyncOnExecutor(order, client); return executor ? run(executor) : withTransaction(run); }
   async findByIdAsync(id: string, executor: DbExecutor = { query }): Promise<StoredOrder | undefined> { const result=await executor.query<Record<string, unknown>>('SELECT * FROM orders WHERE id = $1',[id]); return result.rows[0] ? rowToOrder(result.rows[0]) : undefined; }
   async findByPaymentReferenceAsync(reference: string, executor: DbExecutor = { query }): Promise<StoredOrder | undefined> { const result=await executor.query<Record<string, unknown>>('SELECT * FROM orders WHERE payment_reference = $1',[reference]); return result.rows[0] ? rowToOrder(result.rows[0]) : undefined; }
   async findByCheckoutIdempotencyKeyAsync(buyerId: string, key: string, executor: DbExecutor = { query }): Promise<StoredOrder | undefined> { const result=await executor.query<Record<string, unknown>>('SELECT * FROM orders WHERE buyer_id = $1 AND checkout_idempotency_key = $2 LIMIT 1',[buyerId,key]); return result.rows[0] ? rowToOrder(result.rows[0]) : undefined; }
