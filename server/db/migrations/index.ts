@@ -6,6 +6,7 @@ import { backfillEventTickets } from "../../modules/orders/eventTicketProjection
 import { ensureEventOwnershipIntegrityMigration } from "./20260819_event_ownership_integrity.js";
 import { ensureSellerOrdersIndexesMigration } from "./20260903_seller_orders_indexes.js";
 import { ensureRefundDisputeArchitectureMigration } from "./20260904_refund_dispute_architecture.js";
+import { ensureDisputeSupportRequestsMigration } from "./20260905_dispute_support_requests.js";
 
 function ensureExtraTables() {
   postgresDb.exec(`
@@ -104,81 +105,41 @@ function ensureEventTicketStatsSchema() {
 
     CREATE OR REPLACE FUNCTION buymesho_sync_event_ticket_stats_for_order()
     RETURNS trigger AS $$
-    DECLARE
-      item JSONB;
-      event_id_value BIGINT;
-      quantity_value INTEGER;
-      old_eligible BOOLEAN;
-      new_eligible BOOLEAN;
+    DECLARE item JSONB; event_id_value BIGINT; quantity_value INTEGER; old_eligible BOOLEAN; new_eligible BOOLEAN;
     BEGIN
       old_eligible := TG_OP = 'UPDATE' AND OLD.status IN ('paid','in_escrow','fulfilled');
       new_eligible := NEW.status IN ('paid','in_escrow','fulfilled');
-
       IF old_eligible THEN
         FOR item IN SELECT value FROM jsonb_array_elements(COALESCE(NULLIF(OLD.items, '')::jsonb, '[]'::jsonb)) LOOP
-          IF (item->>'kind' = 'event_ticket' OR NULLIF(item->>'eventId', '') IS NOT NULL)
-             AND (item->>'eventId') ~ '^[0-9]+$' THEN
-            event_id_value := (item->>'eventId')::BIGINT;
-            quantity_value := GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0);
-            INSERT INTO event_ticket_stats(event_id, tickets_sold, tickets_checked_in, tickets_remaining, updated_at)
-            VALUES (event_id_value, 0, 0, 0, CURRENT_TIMESTAMP)
-            ON CONFLICT (event_id) DO NOTHING;
-            UPDATE event_ticket_stats
-            SET tickets_sold = GREATEST(0, tickets_sold - quantity_value),
-                tickets_remaining = GREATEST(0, tickets_sold - quantity_value - tickets_checked_in),
-                updated_at = CURRENT_TIMESTAMP
-            WHERE event_id = event_id_value;
+          IF (item->>'kind' = 'event_ticket' OR NULLIF(item->>'eventId', '') IS NOT NULL) AND (item->>'eventId') ~ '^[0-9]+$' THEN
+            event_id_value := (item->>'eventId')::BIGINT; quantity_value := GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0);
+            INSERT INTO event_ticket_stats(event_id, tickets_sold, tickets_checked_in, tickets_remaining, updated_at) VALUES (event_id_value, 0, 0, 0, CURRENT_TIMESTAMP) ON CONFLICT (event_id) DO NOTHING;
+            UPDATE event_ticket_stats SET tickets_sold = GREATEST(0, tickets_sold - quantity_value), tickets_remaining = GREATEST(0, tickets_sold - quantity_value - tickets_checked_in), updated_at = CURRENT_TIMESTAMP WHERE event_id = event_id_value;
           END IF;
         END LOOP;
       END IF;
-
       IF new_eligible THEN
         FOR item IN SELECT value FROM jsonb_array_elements(COALESCE(NULLIF(NEW.items, '')::jsonb, '[]'::jsonb)) LOOP
-          IF (item->>'kind' = 'event_ticket' OR NULLIF(item->>'eventId', '') IS NOT NULL)
-             AND (item->>'eventId') ~ '^[0-9]+$' THEN
-            event_id_value := (item->>'eventId')::BIGINT;
-            quantity_value := GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0);
-            INSERT INTO event_ticket_stats(event_id, tickets_sold, tickets_checked_in, tickets_remaining, updated_at)
-            VALUES (event_id_value, quantity_value, 0, quantity_value, CURRENT_TIMESTAMP)
-            ON CONFLICT (event_id) DO UPDATE SET
-              tickets_sold = event_ticket_stats.tickets_sold + EXCLUDED.tickets_sold,
-              tickets_remaining = GREATEST(0, event_ticket_stats.tickets_sold + EXCLUDED.tickets_sold - event_ticket_stats.tickets_checked_in),
-              updated_at = CURRENT_TIMESTAMP;
+          IF (item->>'kind' = 'event_ticket' OR NULLIF(item->>'eventId', '') IS NOT NULL) AND (item->>'eventId') ~ '^[0-9]+$' THEN
+            event_id_value := (item->>'eventId')::BIGINT; quantity_value := GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0);
+            INSERT INTO event_ticket_stats(event_id, tickets_sold, tickets_checked_in, tickets_remaining, updated_at) VALUES (event_id_value, quantity_value, 0, quantity_value, CURRENT_TIMESTAMP) ON CONFLICT (event_id) DO UPDATE SET tickets_sold = event_ticket_stats.tickets_sold + EXCLUDED.tickets_sold, tickets_remaining = GREATEST(0, event_ticket_stats.tickets_sold + EXCLUDED.tickets_sold - event_ticket_stats.tickets_checked_in), updated_at = CURRENT_TIMESTAMP;
           END IF;
         END LOOP;
       END IF;
-
       RETURN NEW;
     END;
     $$ LANGUAGE plpgsql;
-
     DROP TRIGGER IF EXISTS trg_buymesho_sync_event_ticket_stats ON orders;
-    CREATE TRIGGER trg_buymesho_sync_event_ticket_stats
-    AFTER INSERT OR UPDATE OF status, items ON orders
-    FOR EACH ROW EXECUTE FUNCTION buymesho_sync_event_ticket_stats_for_order();
-
+    CREATE TRIGGER trg_buymesho_sync_event_ticket_stats AFTER INSERT OR UPDATE OF status, items ON orders FOR EACH ROW EXECUTE FUNCTION buymesho_sync_event_ticket_stats_for_order();
     INSERT INTO event_ticket_stats(event_id, tickets_sold, tickets_checked_in, tickets_remaining, updated_at)
     SELECT e.id,
-           COALESCE(SUM(CASE WHEN o.status IN ('paid','in_escrow','fulfilled')
-             AND (item->>'eventId') ~ '^[0-9]+$'
-             AND (item->>'eventId')::BIGINT = e.id
-             THEN GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0) ELSE 0 END), 0)::INTEGER,
+           COALESCE(SUM(CASE WHEN o.status IN ('paid','in_escrow','fulfilled') AND (item->>'eventId') ~ '^[0-9]+$' AND (item->>'eventId')::BIGINT = e.id THEN GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0) ELSE 0 END), 0)::INTEGER,
            0,
-           COALESCE(SUM(CASE WHEN o.status IN ('paid','in_escrow','fulfilled')
-             AND (item->>'eventId') ~ '^[0-9]+$'
-             AND (item->>'eventId')::BIGINT = e.id
-             THEN GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0) ELSE 0 END), 0)::INTEGER,
+           COALESCE(SUM(CASE WHEN o.status IN ('paid','in_escrow','fulfilled') AND (item->>'eventId') ~ '^[0-9]+$' AND (item->>'eventId')::BIGINT = e.id THEN GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0) ELSE 0 END), 0)::INTEGER,
            CURRENT_TIMESTAMP
-    FROM events e
-    LEFT JOIN orders o ON TRUE
-    LEFT JOIN LATERAL jsonb_array_elements(COALESCE(NULLIF(o.items, '')::jsonb, '[]'::jsonb)) AS item ON TRUE
-    WHERE NOT EXISTS (SELECT 1 FROM event_ticket_stats)
-    GROUP BY e.id
-    ON CONFLICT (event_id) DO UPDATE SET
-      tickets_sold = EXCLUDED.tickets_sold,
-      tickets_checked_in = event_ticket_stats.tickets_checked_in,
-      tickets_remaining = GREATEST(0, EXCLUDED.tickets_sold - event_ticket_stats.tickets_checked_in),
-      updated_at = CURRENT_TIMESTAMP;
+    FROM events e LEFT JOIN orders o ON TRUE LEFT JOIN LATERAL jsonb_array_elements(COALESCE(NULLIF(o.items, '')::jsonb, '[]'::jsonb)) AS item ON TRUE
+    WHERE NOT EXISTS (SELECT 1 FROM event_ticket_stats) GROUP BY e.id
+    ON CONFLICT (event_id) DO UPDATE SET tickets_sold = EXCLUDED.tickets_sold, tickets_checked_in = event_ticket_stats.tickets_checked_in, tickets_remaining = GREATEST(0, EXCLUDED.tickets_sold - event_ticket_stats.tickets_checked_in), updated_at = CURRENT_TIMESTAMP;
   `);
 }
 
@@ -187,39 +148,10 @@ function normalizeHardDeleteAfterColumn() {
   if (!column?.data_type || column.data_type === 'timestamp with time zone') return;
   postgresDb.exec(`UPDATE listings SET hard_delete_after = NULL WHERE hard_delete_after IS NOT NULL AND btrim(hard_delete_after) = ''; ALTER TABLE listings ALTER COLUMN hard_delete_after TYPE TIMESTAMPTZ USING CASE WHEN hard_delete_after IS NULL OR btrim(hard_delete_after) = '' THEN NULL ELSE hard_delete_after::timestamptz END;`);
 }
-
-function updateSellerPayoutAccountColumns() {
-  postgresDb.exec(`ALTER TABLE seller_payout_accounts ALTER COLUMN account_number_encrypted DROP NOT NULL; ALTER TABLE seller_payout_accounts ALTER COLUMN mobile_encrypted DROP NOT NULL;`);
-}
-
-function backfillOrderPaidAtFromPayments() {
-  postgresDb.exec(`UPDATE orders SET paid_at = COALESCE(paid_at,(SELECT MIN(COALESCE(p.paid_at,p.updated_at,p.created_at)) FROM payments p WHERE p.order_id=orders.id AND p.status='captured')) WHERE paid_at IS NULL AND status IN ('paid','in_escrow','fulfilled') AND EXISTS (SELECT 1 FROM payments p WHERE p.order_id=orders.id AND p.status='captured');`);
-}
-
-function backfillFulfilledAtFromUpdatedAt() {
-  postgresDb.exec(`
-    UPDATE orders
-    SET fulfilled_at = updated_at
-    WHERE status = 'fulfilled'
-      AND fulfilled_at IS NULL
-      AND updated_at IS NOT NULL
-      AND updated_at >= COALESCE(paid_at, created_at);
-  `);
-}
+function updateSellerPayoutAccountColumns() { postgresDb.exec(`ALTER TABLE seller_payout_accounts ALTER COLUMN account_number_encrypted DROP NOT NULL; ALTER TABLE seller_payout_accounts ALTER COLUMN mobile_encrypted DROP NOT NULL;`); }
+function backfillOrderPaidAtFromPayments() { postgresDb.exec(`UPDATE orders SET paid_at = COALESCE(paid_at,(SELECT MIN(COALESCE(p.paid_at,p.updated_at,p.created_at)) FROM payments p WHERE p.order_id=orders.id AND p.status='captured')) WHERE paid_at IS NULL AND status IN ('paid','in_escrow','fulfilled') AND EXISTS (SELECT 1 FROM payments p WHERE p.order_id=orders.id AND p.status='captured');`); }
+function backfillFulfilledAtFromUpdatedAt() { postgresDb.exec(`UPDATE orders SET fulfilled_at = updated_at WHERE status = 'fulfilled' AND fulfilled_at IS NULL AND updated_at IS NOT NULL AND updated_at >= COALESCE(paid_at, created_at);`); }
 
 export function runMigrations() {
-  ensureExtraTables();
-  ensureEventLifecycleSchema();
-  ensureEventOwnershipIntegrityMigration();
-  ensureMessageSchema(postgresDb);
-  normalizeHardDeleteAfterColumn();
-  updateSellerPayoutAccountColumns();
-  ensurePayoutLifecycleSchema();
-  initPaymentSchema(postgresDb);
-  ensureEventTicketStatsSchema();
-  ensureSellerOrdersIndexesMigration();
-  ensureRefundDisputeArchitectureMigration();
-  backfillOrderPaidAtFromPayments();
-  backfillFulfilledAtFromUpdatedAt();
-  backfillEventTickets();
+  ensureExtraTables(); ensureEventLifecycleSchema(); ensureEventOwnershipIntegrityMigration(); ensureMessageSchema(postgresDb); normalizeHardDeleteAfterColumn(); updateSellerPayoutAccountColumns(); ensurePayoutLifecycleSchema(); initPaymentSchema(postgresDb); ensureEventTicketStatsSchema(); ensureSellerOrdersIndexesMigration(); ensureRefundDisputeArchitectureMigration(); ensureDisputeSupportRequestsMigration(); backfillOrderPaidAtFromPayments(); backfillFulfilledAtFromUpdatedAt(); backfillEventTickets();
 }
