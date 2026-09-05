@@ -4,6 +4,7 @@ import { orderRepository } from '../../modules/orders/order.repository.js';
 import { serverOrderService } from '../../modules/orders/order.service.js';
 import { notifyOrderRefunded } from '../../modules/notifications/order-refunded.notification.js';
 import { getPaymentDb } from '../../postgresCompat.js';
+import { query, withTransaction } from '../../postgres.js';
 import { escrowActionLimiter, jsonError } from './shared.js';
 
 export function createRefundRouter(requireAuth: RequestHandler): express.Router {
@@ -15,13 +16,14 @@ export function createRefundRouter(requireAuth: RequestHandler): express.Router 
         return res.status(403).json({ error: 'Only an admin can refund escrow' });
       }
 
+      const orderId = String(req.params.orderId ?? '').trim();
       const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
       if (!reason) return res.status(400).json({ error: 'Refund reason is required' });
 
-      const order = orderRepository.findById(req.params.orderId);
+      const order = orderRepository.findById(orderId);
       if (!order) return res.status(404).json({ error: 'Order not found' });
 
-      const escrow = escrowRepository.findByOrderId(req.params.orderId);
+      const escrow = escrowRepository.findByOrderId(orderId);
       if (!escrow) return res.status(404).json({ error: 'Escrow not found' });
       if (escrow.state !== 'disputed') {
         return res.status(409).json({ error: 'Admin escrow refunds are available only for disputed orders.', code: 'REFUND_REQUIRES_DISPUTE' });
@@ -52,40 +54,130 @@ export function createRefundRouter(requireAuth: RequestHandler): express.Router 
       const cancelledPayouts = cancelPayouts();
 
       const refund = escrowRepository.refundHeldBalance({
-        orderId: req.params.orderId,
+        orderId,
         refundedBy: req.user.uid,
         note: reason,
-        reference: `escrow-refund:${req.params.orderId}`,
+        reference: `escrow-refund:${orderId}`,
       });
       if (!refund) return res.status(404).json({ error: 'Escrow not found' });
 
-      const updatedOrder = serverOrderService.setStatus(req.params.orderId, 'refunded');
-
+      const updatedOrder = serverOrderService.setStatus(orderId, 'refunded');
       let resolvedDispute: Record<string, unknown> | null = null;
-      if (order.status === 'disputed') {
-        const db = getPaymentDb();
-        const dispute = db.prepare(
-          `SELECT id
-           FROM disputes
-           WHERE order_id = ?
-             AND status = 'open'
-           ORDER BY created_at DESC
-           LIMIT 1`,
-        ).get(req.params.orderId) as { id?: string } | undefined;
 
-        if (dispute?.id) {
+      try {
+        const canonicalResult = await withTransaction(async (client) => {
+          const caseResult = await client.query<Record<string, unknown>>(
+            `SELECT id, buyer_id, seller_id, status, outcome
+             FROM dispute_cases
+             WHERE order_id = $1
+               AND status IN ('open', 'under_review', 'awaiting_response')
+             ORDER BY created_at DESC
+             LIMIT 1
+             FOR UPDATE`,
+            [orderId],
+          );
+          const caseRow = caseResult.rows[0];
+          if (!caseRow) return null;
+
           const resolvedAt = new Date().toISOString();
-          db.prepare(
+          const attemptResult = await client.query<Record<string, unknown>>(
+            `SELECT id
+             FROM dispute_attempts
+             WHERE case_id = $1
+             ORDER BY created_at DESC
+             LIMIT 1
+             FOR UPDATE`,
+            [caseRow.id],
+          );
+          const attempt = attemptResult.rows[0];
+          if (attempt) {
+            await client.query(
+              `UPDATE dispute_attempts
+               SET status = 'resolved',
+                   decision = 'refunded',
+                   resolution_note = $1,
+                   resolved_by = $2,
+                   resolved_at = $3,
+                   updated_at = $3
+               WHERE id = $4`,
+              [reason, req.user.uid, resolvedAt, attempt.id],
+            );
+          }
+
+          await client.query(
+            `UPDATE refund_requests
+             SET status = 'refunded',
+                 latest_status_at = $1,
+                 updated_at = $1
+             WHERE order_id = $2
+               AND status IN ('requested', 'under_review', 'approved', 'processing')`,
+            [resolvedAt, orderId],
+          );
+
+          await client.query(
+            `UPDATE dispute_cases
+             SET status = 'resolved',
+                 outcome = 'refunded',
+                 resolved_at = $1,
+                 updated_at = $1
+             WHERE id = $2`,
+            [resolvedAt, caseRow.id],
+          );
+
+          await client.query(
             `UPDATE disputes
              SET status = 'resolved',
+                 state = 'resolved',
+                 resolution = $1,
+                 resolved_by = $2,
+                 resolved_at = $3,
+                 updated_at = $3
+             WHERE order_id = $4
+               AND status IN ('open', 'under_review')`,
+            [reason, req.user.uid, resolvedAt, orderId],
+          );
+
+          await client.query(
+            `INSERT INTO audit_events
+              (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata)
+             VALUES ($1, 'dispute_case', $2, 'admin_refund_executed', $3, $4, $5, 'resolved', $6)`,
+            [
+              `audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+              String(caseRow.id),
+              req.user.uid,
+              resolvedAt,
+              String(caseRow.status ?? 'open'),
+              JSON.stringify({ orderId, outcome: 'refunded', reason, source: 'admin_payments' }),
+            ],
+          );
+
+          return client.query<Record<string, unknown>>(`SELECT * FROM dispute_cases WHERE id = $1 LIMIT 1`, [caseRow.id]);
+        });
+        if (canonicalResult?.rows[0]) resolvedDispute = canonicalResult.rows[0];
+      } catch (canonicalError) {
+        console.warn('Admin refund completed but canonical dispute settlement sync failed:', canonicalError);
+      }
+
+      try {
+        const legacyDb = getPaymentDb();
+        const legacy = legacyDb.prepare(
+          `SELECT id FROM disputes WHERE order_id = ? AND status IN ('open', 'under_review') ORDER BY created_at DESC LIMIT 1`,
+        ).get(orderId) as { id?: string } | undefined;
+        if (legacy?.id) {
+          const resolvedAt = new Date().toISOString();
+          legacyDb.prepare(
+            `UPDATE disputes
+             SET status = 'resolved',
+                 state = 'resolved',
+                 resolution = ?,
                  resolved_by = ?,
-                 resolution_note = ?,
-                 updated_at = ?,
-                 resolved_at = ?
+                 resolved_at = ?,
+                 updated_at = ?
              WHERE id = ?`,
-          ).run(req.user.uid, reason, resolvedAt, resolvedAt, dispute.id);
-          resolvedDispute = db.prepare('SELECT * FROM disputes WHERE id = ?').get(dispute.id) as Record<string, unknown>;
+          ).run(reason, req.user.uid, resolvedAt, resolvedAt, legacy.id);
         }
+      } catch (legacyError) {
+        console.warn('Admin refund completed but legacy dispute settlement sync failed:', legacyError);
       }
 
       try {
