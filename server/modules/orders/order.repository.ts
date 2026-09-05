@@ -4,21 +4,60 @@ import { query, withTransaction } from '../../postgres.js';
 import type { PoolClient } from 'pg';
 import { projectEventTickets } from './eventTicketProjection.js';
 
+const DEFAULT_DELIVERY_PERIOD_DAYS = 10;
+
+type DbExecutor = Pick<PoolClient, 'query'>;
+
 export interface StoredOrder extends OrderState {
   paymentReference?: string | null;
   paymentCapturedAt?: string | null;
   capturedAt?: string | null;
   checkoutIdempotencyKey?: string | null;
   checkoutRequestHash?: string | null;
+  deliveryPeriodDays?: number | null;
+  deliveryDeadline?: string | null;
 }
 
-type DbExecutor = Pick<PoolClient, 'query'>;
+function toPositiveInteger(value: unknown, fallback = DEFAULT_DELIVERY_PERIOD_DAYS): number {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function parseStoredItems(raw: unknown): StoredOrder['items'] {
+  try {
+    return typeof raw === 'string' ? JSON.parse(raw) as StoredOrder['items'] : (raw as StoredOrder['items'] ?? []);
+  } catch {
+    return [];
+  }
+}
+
+function getListingDeliveryPeriod(db: any, items: StoredOrder['items']): number {
+  const listingIds = (items ?? [])
+    .map((item) => item?.listingId)
+    .filter((id): id is string | number => typeof id === 'string' || typeof id === 'number')
+    .map((id) => Number(id))
+    .filter((id) => Number.isInteger(id) && id > 0);
+
+  if (listingIds.length === 0) return DEFAULT_DELIVERY_PERIOD_DAYS;
+
+  const placeholders = listingIds.map(() => '?').join(',');
+  const rows = db.prepare(`SELECT delivery_period_days FROM listings WHERE id IN (${placeholders})`).all(...listingIds) as Array<{ delivery_period_days?: number }>;
+  const periods = rows.map((row) => toPositiveInteger(row.delivery_period_days)).filter((value) => value > 0);
+  return periods.length ? Math.max(...periods) : DEFAULT_DELIVERY_PERIOD_DAYS;
+}
+
+function hydrateDeliveryWindow(db: any, order: StoredOrder): StoredOrder {
+  const deliveryPeriodDays = toPositiveInteger(order.deliveryPeriodDays);
+  const existingDeadline = order.deliveryDeadline ?? null;
+  const base = order.paidAt ?? order.placedAt ?? order.createdAt ?? null;
+  const deliveryDeadline = existingDeadline ?? (
+    base ? new Date(new Date(base).getTime() + deliveryPeriodDays * 24 * 60 * 60 * 1000).toISOString() : null
+  );
+  return { ...order, deliveryPeriodDays, deliveryDeadline };
+}
 
 function rowToOrder(row: Record<string, unknown>): StoredOrder {
-  let items: StoredOrder['items'];
-  try { items = typeof row.items === 'string' ? JSON.parse(row.items) as StoredOrder['items'] : (row.items as StoredOrder['items'] ?? []); } catch { items = []; }
-  let buyerDetails: StoredOrder['buyerDetails'] = null;
-  try { buyerDetails = row.buyer_details ? typeof row.buyer_details === 'string' ? JSON.parse(row.buyer_details) as StoredOrder['buyerDetails'] : row.buyer_details as StoredOrder['buyerDetails'] : null; } catch { buyerDetails = null; }
+  const items = parseStoredItems(row.items);
   const status = row.status as StoredOrder['status'];
   const deliveryStatus = status === 'fulfilled' || status === 'closed' ? 'delivered' : ((row.delivery_status as StoredOrder['deliveryStatus']) ?? 'action_required');
   return {
@@ -31,29 +70,61 @@ function rowToOrder(row: Record<string, unknown>): StoredOrder {
     paymentReference: (row.payment_reference as string | null) ?? null,
     checkoutIdempotencyKey: (row.checkout_idempotency_key as string | null) ?? null,
     checkoutRequestHash: (row.checkout_request_hash as string | null) ?? null,
-    paymentCapturedAt: (row.paid_at as string | null) ?? null, capturedAt: (row.paid_at as string | null) ?? null,
-    escrowId: (row.escrow_id as string | null) ?? null, items, buyerDetails,
-    placedAt: (row.placed_at as string | null) ?? null, paidAt: (row.paid_at as string | null) ?? null,
-    fulfilledAt: (row.fulfilled_at as string | null) ?? null, createdAt: row.created_at as string, updatedAt: row.updated_at as string,
+    paymentCapturedAt: (row.paid_at as string | null) ?? null,
+    capturedAt: (row.paid_at as string | null) ?? null,
+    escrowId: (row.escrow_id as string | null) ?? null,
+    items,
+    buyerDetails: (() => {
+      try { return row.buyer_details ? typeof row.buyer_details === 'string' ? JSON.parse(row.buyer_details) as StoredOrder['buyerDetails'] : row.buyer_details as StoredOrder['buyerDetails'] : null; } catch { return null; }
+    })(),
+    placedAt: (row.placed_at as string | null) ?? null,
+    paidAt: (row.paid_at as string | null) ?? null,
+    fulfilledAt: (row.fulfilled_at as string | null) ?? null,
+    deliveryPeriodDays: row.delivery_period_days == null ? null : Number(row.delivery_period_days),
+    deliveryDeadline: (row.delivery_deadline as string | null) ?? null,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
   };
 }
 
 export class PostgresOrderRepository {
   private get db() { return getPaymentDb(); }
 
+  private prepareOrderForStorage(order: StoredOrder): StoredOrder {
+    const hydrated = hydrateDeliveryWindow(this.db, order);
+    const existing = this.findById(order.id);
+    if (existing?.deliveryDeadline || existing?.deliveryPeriodDays) {
+      return {
+        ...hydrated,
+        deliveryPeriodDays: existing.deliveryPeriodDays ?? hydrated.deliveryPeriodDays,
+        deliveryDeadline: existing.deliveryDeadline ?? hydrated.deliveryDeadline,
+      };
+    }
+    if (!hydrated.deliveryPeriodDays && (hydrated.items?.length ?? 0) > 0) {
+      hydrated.deliveryPeriodDays = getListingDeliveryPeriod(this.db, hydrated.items);
+    }
+    if (!hydrated.deliveryDeadline) {
+      const base = hydrated.paidAt ?? hydrated.placedAt ?? hydrated.createdAt ?? null;
+      if (base && hydrated.deliveryPeriodDays) hydrated.deliveryDeadline = new Date(new Date(base).getTime() + hydrated.deliveryPeriodDays * 24 * 60 * 60 * 1000).toISOString();
+    }
+    return hydrated;
+  }
+
   save(order: StoredOrder): StoredOrder {
     const now = new Date().toISOString();
-    const paidAt = order.status === 'paid' ? (order.paidAt ?? now) : (order.paidAt ?? null);
-    const fulfilledAt = order.status === 'fulfilled' ? (order.fulfilledAt ?? now) : (order.fulfilledAt ?? null);
-    const stored: StoredOrder = { ...order, deliveryStatus: order.status === 'fulfilled' || order.status === 'closed' ? 'delivered' : order.deliveryStatus ?? 'action_required', paidAt, fulfilledAt };
-    this.db.prepare(`INSERT INTO orders (id,buyer_id,seller_id,source,status,delivery_status,currency,subtotal_amount,subtotal_currency,total_amount,total_currency,payment_provider,settlement_route,payment_reference,checkout_idempotency_key,checkout_request_hash,escrow_id,items,buyer_details,placed_at,paid_at,fulfilled_at,created_at,updated_at)
-      VALUES (@id,@buyer_id,@seller_id,@source,@status,@delivery_status,@currency,@subtotal_amount,@subtotal_currency,@total_amount,@total_currency,@payment_provider,@settlement_route,@payment_reference,@checkout_idempotency_key,@checkout_request_hash,@escrow_id,@items,@buyer_details,@placed_at,@paid_at,@fulfilled_at,@created_at,@updated_at)
-      ON CONFLICT(id) DO UPDATE SET status=excluded.status,delivery_status=excluded.delivery_status,payment_provider=excluded.payment_provider,settlement_route=excluded.settlement_route,payment_reference=excluded.payment_reference,checkout_idempotency_key=excluded.checkout_idempotency_key,checkout_request_hash=excluded.checkout_request_hash,escrow_id=excluded.escrow_id,paid_at=excluded.paid_at,fulfilled_at=excluded.fulfilled_at,updated_at=excluded.updated_at,items=excluded.items,buyer_details=excluded.buyer_details`).run({
+    const prepared = this.prepareOrderForStorage(order);
+    const paidAt = prepared.status === 'paid' ? (prepared.paidAt ?? now) : (prepared.paidAt ?? null);
+    const fulfilledAt = prepared.status === 'fulfilled' ? (prepared.fulfilledAt ?? now) : (prepared.fulfilledAt ?? null);
+    const stored: StoredOrder = { ...prepared, deliveryStatus: prepared.status === 'fulfilled' || prepared.status === 'closed' ? 'delivered' : prepared.deliveryStatus ?? 'action_required', paidAt, fulfilledAt };
+    this.db.prepare(`INSERT INTO orders (id,buyer_id,seller_id,source,status,delivery_status,currency,subtotal_amount,subtotal_currency,total_amount,total_currency,payment_provider,settlement_route,payment_reference,checkout_idempotency_key,checkout_request_hash,escrow_id,items,buyer_details,placed_at,paid_at,fulfilled_at,delivery_period_days,delivery_deadline,created_at,updated_at)
+      VALUES (@id,@buyer_id,@seller_id,@source,@status,@delivery_status,@currency,@subtotal_amount,@subtotal_currency,@total_amount,@total_currency,@payment_provider,@settlement_route,@payment_reference,@checkout_idempotency_key,@checkout_request_hash,@escrow_id,@items,@buyer_details,@placed_at,@paid_at,@fulfilled_at,@delivery_period_days,@delivery_deadline,@created_at,@updated_at)
+      ON CONFLICT(id) DO UPDATE SET status=excluded.status,delivery_status=excluded.delivery_status,payment_provider=excluded.payment_provider,settlement_route=excluded.settlement_route,payment_reference=excluded.payment_reference,checkout_idempotency_key=excluded.checkout_idempotency_key,checkout_request_hash=excluded.checkout_request_hash,escrow_id=excluded.escrow_id,paid_at=excluded.paid_at,fulfilled_at=excluded.fulfilled_at,delivery_period_days=COALESCE(orders.delivery_period_days, excluded.delivery_period_days),delivery_deadline=COALESCE(orders.delivery_deadline, excluded.delivery_deadline),updated_at=excluded.updated_at,items=excluded.items,buyer_details=excluded.buyer_details`).run({
       id:stored.id,buyer_id:stored.buyerId,seller_id:stored.sellerId,source:stored.source,status:stored.status,delivery_status:stored.deliveryStatus,
       currency:stored.currency,subtotal_amount:stored.subtotal.amount,subtotal_currency:stored.subtotal.currency,total_amount:stored.total.amount,total_currency:stored.total.currency,
       payment_provider:stored.paymentProvider ?? null,settlement_route:stored.settlementRoute ?? null,payment_reference:stored.paymentReference ?? null,
       checkout_idempotency_key:stored.checkoutIdempotencyKey ?? null,checkout_request_hash:stored.checkoutRequestHash ?? null,escrow_id:stored.escrowId ?? null,
-      items:JSON.stringify(stored.items),buyer_details:stored.buyerDetails ? JSON.stringify(stored.buyerDetails) : null,placed_at:stored.placedAt ?? null,paid_at:paidAt,fulfilled_at:fulfilledAt,created_at:stored.createdAt,updated_at:stored.updatedAt ?? now,
+      items:JSON.stringify(stored.items),buyer_details:stored.buyerDetails ? JSON.stringify(stored.buyerDetails) : null,placed_at:stored.placedAt ?? null,paid_at:paidAt,fulfilled_at:fulfilledAt,
+      delivery_period_days:stored.deliveryPeriodDays ?? DEFAULT_DELIVERY_PERIOD_DAYS,delivery_deadline:stored.deliveryDeadline ?? null,created_at:stored.createdAt,updated_at:stored.updatedAt ?? now,
     });
     projectEventTickets(stored);
     return stored;
@@ -62,29 +133,29 @@ export class PostgresOrderRepository {
   findById(id: string): StoredOrder | undefined { const row=this.db.prepare('SELECT * FROM orders WHERE id = ?').get(id) as Record<string, unknown> | undefined; return row ? rowToOrder(row) : undefined; }
   findByPaymentReference(reference: string): StoredOrder | undefined { const row=this.db.prepare('SELECT * FROM orders WHERE payment_reference = ?').get(reference) as Record<string, unknown> | undefined; return row ? rowToOrder(row) : undefined; }
   findByCheckoutIdempotencyKey(buyerId: string, key: string): StoredOrder | undefined { const row=this.db.prepare('SELECT * FROM orders WHERE buyer_id = ? AND checkout_idempotency_key = ? LIMIT 1').get(buyerId,key) as Record<string, unknown> | undefined; return row ? rowToOrder(row) : undefined; }
-  update(id: string, updater: (order: StoredOrder) => StoredOrder): StoredOrder | undefined { const current=this.findById(id); if(!current)return undefined; return this.save(updater(current)); }
-  updateByPaymentReference(reference: string, updater: (order: StoredOrder) => StoredOrder): StoredOrder | undefined { const current=this.findByPaymentReference(reference); if(!current)return undefined; return this.save(updater(current)); }
+  update(id: string, updater: (order: StoredOrder) => StoredOrder): StoredOrder | undefined { const current=this.findById(id); return current ? this.save(updater(current)) : undefined; }
+  updateByPaymentReference(reference: string, updater: (order: StoredOrder) => StoredOrder): StoredOrder | undefined { const current=this.findByPaymentReference(reference); return current ? this.save(updater(current)) : undefined; }
   clear(): void { this.db.prepare('DELETE FROM orders').run(); }
 
   private async saveAsyncOnExecutor(order: StoredOrder, executor: DbExecutor): Promise<StoredOrder> {
     const now = new Date().toISOString();
-    const paidAt = order.status === 'paid' ? (order.paidAt ?? now) : (order.paidAt ?? null);
-    const fulfilledAt = order.status === 'fulfilled' ? (order.fulfilledAt ?? now) : (order.fulfilledAt ?? null);
-    const stored: StoredOrder = { ...order, deliveryStatus: order.status === 'fulfilled' || order.status === 'closed' ? 'delivered' : order.deliveryStatus ?? 'action_required', paidAt, fulfilledAt };
-    await executor.query(`INSERT INTO orders (id,buyer_id,seller_id,source,status,delivery_status,currency,subtotal_amount,subtotal_currency,total_amount,total_currency,payment_provider,settlement_route,payment_reference,checkout_idempotency_key,checkout_request_hash,escrow_id,items,buyer_details,placed_at,paid_at,fulfilled_at,created_at,updated_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)
-      ON CONFLICT(id) DO UPDATE SET status=excluded.status,delivery_status=excluded.delivery_status,payment_provider=excluded.payment_provider,settlement_route=excluded.settlement_route,payment_reference=excluded.payment_reference,checkout_idempotency_key=excluded.checkout_idempotency_key,checkout_request_hash=excluded.checkout_request_hash,escrow_id=excluded.escrow_id,paid_at=excluded.paid_at,fulfilled_at=excluded.fulfilled_at,updated_at=excluded.updated_at,items=excluded.items,buyer_details=excluded.buyer_details`,[
+    const hydrated = hydrateDeliveryWindow(this.db, order);
+    const paidAt = hydrated.status === 'paid' ? (hydrated.paidAt ?? now) : (hydrated.paidAt ?? null);
+    const fulfilledAt = hydrated.status === 'fulfilled' ? (hydrated.fulfilledAt ?? now) : (hydrated.fulfilledAt ?? null);
+    const stored: StoredOrder = { ...hydrated, deliveryStatus: hydrated.status === 'fulfilled' || hydrated.status === 'closed' ? 'delivered' : hydrated.deliveryStatus ?? 'action_required', paidAt, fulfilledAt };
+    await executor.query(`INSERT INTO orders (id,buyer_id,seller_id,source,status,delivery_status,currency,subtotal_amount,subtotal_currency,total_amount,total_currency,payment_provider,settlement_route,payment_reference,checkout_idempotency_key,checkout_request_hash,escrow_id,items,buyer_details,placed_at,paid_at,fulfilled_at,delivery_period_days,delivery_deadline,created_at,updated_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)
+      ON CONFLICT(id) DO UPDATE SET status=excluded.status,delivery_status=excluded.delivery_status,payment_provider=excluded.payment_provider,settlement_route=excluded.settlement_route,payment_reference=excluded.payment_reference,checkout_idempotency_key=excluded.checkout_idempotency_key,checkout_request_hash=excluded.checkout_request_hash,escrow_id=excluded.escrow_id,paid_at=excluded.paid_at,fulfilled_at=excluded.fulfilled_at,delivery_period_days=COALESCE(orders.delivery_period_days, excluded.delivery_period_days),delivery_deadline=COALESCE(orders.delivery_deadline, excluded.delivery_deadline),updated_at=excluded.updated_at,items=excluded.items,buyer_details=excluded.buyer_details`,[
       stored.id,stored.buyerId,stored.sellerId,stored.source,stored.status,stored.deliveryStatus,stored.currency,stored.subtotal.amount,stored.subtotal.currency,stored.total.amount,stored.total.currency,
       stored.paymentProvider ?? null,stored.settlementRoute ?? null,stored.paymentReference ?? null,stored.checkoutIdempotencyKey ?? null,stored.checkoutRequestHash ?? null,stored.escrowId ?? null,
-      JSON.stringify(stored.items),stored.buyerDetails ? JSON.stringify(stored.buyerDetails) : null,stored.placedAt ?? null,paidAt,fulfilledAt,stored.createdAt,stored.updatedAt ?? now,
+      JSON.stringify(stored.items),stored.buyerDetails ? JSON.stringify(stored.buyerDetails) : null,stored.placedAt ?? null,paidAt,fulfilledAt,stored.deliveryPeriodDays ?? DEFAULT_DELIVERY_PERIOD_DAYS,stored.deliveryDeadline ?? null,stored.createdAt,stored.updatedAt ?? now,
     ]);
     return stored;
   }
 
   async saveAsync(order: StoredOrder, executor?: DbExecutor): Promise<StoredOrder> {
     const run = (client: DbExecutor) => this.saveAsyncOnExecutor(order, client);
-    const stored = executor ? await run(executor) : await withTransaction(run);
-    return stored;
+    return executor ? run(executor) : withTransaction(run);
   }
 
   async findByIdAsync(id: string, executor: DbExecutor = { query }): Promise<StoredOrder | undefined> { const result=await executor.query<Record<string, unknown>>('SELECT * FROM orders WHERE id = $1',[id]); return result.rows[0] ? rowToOrder(result.rows[0]) : undefined; }
