@@ -72,36 +72,59 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         const order = orderResult.rows[0];
         if (!order) throw new Error('Order not found');
 
-        const caseResult = await client.query<Record<string, unknown>>(`SELECT * FROM dispute_cases WHERE order_id = $1 AND status IN ('open','under_review') ORDER BY created_at ASC LIMIT 1`, [orderId]);
-        const existingCase = caseResult.rows[0];
-        if (existingCase) {
-          return {
-            duplicate: true,
-            caseId: String(existingCase.id),
-            attemptId: existingCase.latest_attempt_id ? String(existingCase.latest_attempt_id) : null,
-            refundRequestId: null,
-            windowEndsAt: existingCase.window_ends_at ? String(existingCase.window_ends_at) : null,
-            buyerId: String(order.buyer_id),
-            sellerId: String(order.seller_id),
-            currency: String(order.total_currency ?? 'MWK'),
-            status: String(existingCase.status ?? 'open'),
-          };
+        const latestCaseResult = await client.query<Record<string, unknown>>(`SELECT id, status, outcome, resolved_at, window_ends_at FROM dispute_cases WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [orderId]);
+        const latestCase = latestCaseResult.rows[0];
+        if (latestCase) {
+          const caseStatus = String(latestCase.status ?? '').trim().toLowerCase();
+          const caseOutcome = String(latestCase.outcome ?? '').trim().toLowerCase();
+          if (['resolved', 'closed'].includes(caseStatus) || ['refunded', 'returned', 'seller_refund_confirmed', 'seller_refund_accepted', 'return', 'return_and_refund'].includes(caseOutcome)) {
+            return {
+              duplicate: false,
+              settled: true,
+              caseId: String(latestCase.id),
+              attemptId: null,
+              refundRequestId: null,
+              windowEndsAt: latestCase.window_ends_at ? String(latestCase.window_ends_at) : null,
+              buyerId: String(order.buyer_id),
+              sellerId: String(order.seller_id),
+              currency: String(order.total_currency ?? 'MWK'),
+              status: caseStatus,
+            };
+          }
+          if (['open', 'under_review'].includes(caseStatus)) {
+            return {
+              duplicate: true,
+              settled: false,
+              caseId: String(latestCase.id),
+              attemptId: null,
+              refundRequestId: null,
+              windowEndsAt: latestCase.window_ends_at ? String(latestCase.window_ends_at) : null,
+              buyerId: String(order.buyer_id),
+              sellerId: String(order.seller_id),
+              currency: String(order.total_currency ?? 'MWK'),
+              status: caseStatus,
+            };
+          }
         }
 
-        const legacyCaseResult = await client.query<Record<string, unknown>>(`SELECT * FROM disputes WHERE order_id = $1 AND status IN ('open','under_review') ORDER BY created_at ASC LIMIT 1`, [orderId]);
-        const existingLegacyCase = legacyCaseResult.rows[0];
-        if (existingLegacyCase) {
-          return {
-            duplicate: true,
-            caseId: String(existingLegacyCase.case_id ?? existingLegacyCase.id),
-            attemptId: null,
-            refundRequestId: null,
-            windowEndsAt: existingLegacyCase.window_ends_at ? String(existingLegacyCase.window_ends_at) : null,
-            buyerId: String(order.buyer_id),
-            sellerId: String(order.seller_id),
-            currency: String(order.total_currency ?? 'MWK'),
-            status: String(existingLegacyCase.status ?? 'open'),
-          };
+        const legacyLatestResult = await client.query<Record<string, unknown>>(`SELECT id, case_id, status, state, resolution, resolved_at, window_ends_at FROM disputes WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [orderId]);
+        const legacyLatest = legacyLatestResult.rows[0];
+        if (legacyLatest) {
+          const legacyStatus = String(legacyLatest.status ?? legacyLatest.state ?? '').trim().toLowerCase();
+          if (['resolved', 'closed'].includes(legacyStatus)) {
+            return {
+              duplicate: false,
+              settled: true,
+              caseId: String(legacyLatest.case_id ?? legacyLatest.id),
+              attemptId: null,
+              refundRequestId: null,
+              windowEndsAt: legacyLatest.window_ends_at ? String(legacyLatest.window_ends_at) : null,
+              buyerId: String(order.buyer_id),
+              sellerId: String(order.seller_id),
+              currency: String(order.total_currency ?? 'MWK'),
+              status: legacyStatus,
+            };
+          }
         }
 
         const caseId = `case_${randomUUID()}`;
@@ -119,25 +142,15 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
           await client.query(`INSERT INTO disputes (id, order_id, ticket_id, escrow_id, opened_by, reason, status, case_id, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,'open',$7,$8,$9,$9)`, [`legacy_${randomUUID()}`, orderId, resolvedTicketId, escrow?.id ?? null, openedBy, reason, caseId, windowEndsAt, nowIso]);
         }
         await client.query(`INSERT INTO audit_events (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata) VALUES ($1,'dispute_case',$2,'dispute_submitted',$3,$4,NULL,'open',$5)`, [`audit_${randomUUID()}`, caseId, openedBy, nowIso, JSON.stringify({ attemptId, refundRequestId, orderId, ticketId: resolvedTicketId, requestType, requestedResolution })]);
-        return { duplicate: false, caseId, attemptId, refundRequestId, windowEndsAt, buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: 'open' };
+        return { duplicate: false, settled: false, caseId, attemptId, refundRequestId, windowEndsAt, buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: 'open' };
       });
 
-      if (result.duplicate) {
-        return res.status(409).json({
-          error: 'This order already has an active dispute. Please wait for the current dispute to be resolved before submitting another one.',
-          code: 'ACTIVE_DISPUTE_EXISTS',
-          caseId: result.caseId,
-          status: result.status,
-          windowEndsAt: result.windowEndsAt,
-          orderId,
-        });
-      }
+      if (result.settled) return res.status(409).json({ error: 'Dispute already settled.', code: 'DISPUTE_ALREADY_SETTLED', caseId: result.caseId, status: result.status, windowEndsAt: result.windowEndsAt, orderId });
+      if (result.duplicate) return res.status(409).json({ error: 'This order already has an active dispute. Please wait for the current dispute to be resolved before submitting another one.', code: 'ACTIVE_DISPUTE_EXISTS', caseId: result.caseId, status: result.status, windowEndsAt: result.windowEndsAt, orderId });
 
       try {
         await notifyDisputeWorkflowEvent({ caseId: result.caseId, orderId, buyerId: result.buyerId, sellerId: result.sellerId, event: 'submitted', note: reason, amount: amountRequested, currency: result.currency });
-      } catch (notificationError) {
-        console.warn('Failed to send dispute submission notification:', notificationError);
-      }
+      } catch (notificationError) { console.warn('Failed to send dispute submission notification:', notificationError); }
       return res.status(201).json({ caseId: result.caseId, attemptId: result.attemptId, refundRequestId: result.refundRequestId, windowEndsAt: result.windowEndsAt, orderId, ticketId: resolvedTicketId, requestType, requestedResolution, status: 'open' });
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to open dispute'));
@@ -146,11 +159,9 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
 
   router.get('/me', disputeLimiter, requireAuth, async (req, res) => {
     try {
-      const result = await query<Record<string, unknown>>(`SELECT dc.*, da.id AS latest_attempt_id, da.request_type AS latest_request_type, da.requested_resolution AS latest_requested_resolution, da.reason AS latest_reason, da.status AS latest_attempt_status, da.created_at AS latest_attempt_created_at FROM dispute_cases dc LEFT JOIN LATERAL (SELECT * FROM dispute_attempts WHERE case_id = dc.id ORDER BY created_at DESC LIMIT 1) da ON true WHERE dc.buyer_id = $1 ORDER BY dc.updated_at DESC`, [req.user!.uid]);
+      const result = await query<Record<string, unknown>>(`SELECT dc.*, da.id AS latest_attempt_id, da.request_type AS latest_request_type, da.requested_resolution AS latest_requested_resolution, da.reason AS latest_reason, da.status AS latest_attempt_status, da.created_at AS latest_attempt_created_at, rt.id AS refunded_transaction_id, rt.amount AS refunded_amount, rt.currency AS refunded_currency, rt.payment_method AS refunded_payment_method, rt.provider AS refunded_provider, rt.transaction_id AS refunded_transaction_id_reference, rt.status AS refunded_status, rt.executed_by AS refunded_by, rt.executed_at AS refunded_at FROM dispute_cases dc LEFT JOIN LATERAL (SELECT * FROM dispute_attempts WHERE case_id = dc.id ORDER BY created_at DESC LIMIT 1) da ON true LEFT JOIN LATERAL (SELECT * FROM refund_transactions WHERE order_id = dc.order_id ORDER BY created_at DESC LIMIT 1) rt ON true WHERE dc.buyer_id = $1 ORDER BY dc.updated_at DESC`, [req.user!.uid]);
       return res.status(200).json(result.rows);
-    } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to fetch disputes'));
-    }
+    } catch (error) { return res.status(500).json(jsonError(error, 'Failed to fetch disputes')); }
   });
 
   router.get('/ticket/:ticketId', disputeLimiter, requireAuth, async (req, res) => {
@@ -163,9 +174,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       const dispute = result.rows[0];
       if (!dispute) return res.status(404).json({ error: 'No dispute found for this ticket' });
       return res.status(200).json(dispute);
-    } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to fetch dispute for ticket'));
-    }
+    } catch (error) { return res.status(500).json(jsonError(error, 'Failed to fetch dispute for ticket')); }
   });
 
   router.get('/:orderId', disputeLimiter, requireAuth, async (req, res) => {
@@ -176,9 +185,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       const dispute = result.rows[0];
       if (!dispute) return res.status(404).json({ error: 'No dispute found for this order' });
       return res.status(200).json(dispute);
-    } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to fetch dispute'));
-    }
+    } catch (error) { return res.status(500).json(jsonError(error, 'Failed to fetch dispute')); }
   });
 
   router.patch('/:id', disputeLimiter, requireAuth, async (req, res) => {
@@ -202,10 +209,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       await query(`UPDATE disputes SET status=$1, resolved_by=$2, resolution_note=$3, updated_at=$4, resolved_at=$4 WHERE id=$5`, [status, req.user.uid, resolutionNote.trim(), now, req.params.id]);
       const updatedResult = await query<Record<string, unknown>>('SELECT * FROM disputes WHERE id = $1', [req.params.id]);
       return res.status(200).json(updatedResult.rows[0]);
-    } catch (error) {
-      return res.status(400).json(jsonError(error, 'Failed to resolve dispute'));
-    }
+    } catch (error) { return res.status(400).json(jsonError(error, 'Failed to resolve dispute')); }
   });
-
   return router;
 }
