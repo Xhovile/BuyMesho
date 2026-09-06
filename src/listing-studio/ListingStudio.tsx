@@ -307,63 +307,57 @@ export default function ListingStudio({
   const resolvedSubmitBusyLabel = submitBusyLabel || (mode === "create" ? "Posting..." : "Saving...");
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-8">
       <ListingAiStudio
         currentDraft={form}
         onApplyDraftSuggestion={(suggested) => setForm((prev) => ({ ...prev, ...suggested }))}
         showFeedback={showFeedback}
       />
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <div className="space-y-6">
-          <ListingStudioFields
-            form={form}
-            setForm={setForm}
-            fieldErrors={fieldErrors}
-            clearError={clearError}
-            subcategories={availableSubcategories}
-            itemTypes={availableItemTypes}
-            onAdvancedDetailsReset={() => setShowAdvancedSpecs(false)}
-          />
+      <ListingStudioFields
+        form={form}
+        setForm={setForm}
+        fieldErrors={fieldErrors}
+        clearError={clearError}
+        subcategories={availableSubcategories}
+        itemTypes={availableItemTypes}
+        onAdvancedDetailsReset={() => setShowAdvancedSpecs(false)}
+      />
 
-          <ListingStudioMedia
-            photos={form.photos}
-            videoUrl={form.video_url}
-            uploading={uploadingMedia}
-            error={fieldErrors.photos}
-            onAddImages={handleAddImages}
-            onRemovePhoto={(index) => {
-              setForm((prev) => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) }));
-              clearError("photos");
-            }}
-            onReplaceVideo={handleReplaceVideo}
-            onRemoveVideo={() => setForm((prev) => ({ ...prev, video_url: "" }))}
-          />
-        </div>
+      <ListingStudioMedia
+        photos={form.photos}
+        videoUrl={form.video_url}
+        uploading={uploadingMedia}
+        error={fieldErrors.photos}
+        onAddImages={handleAddImages}
+        onRemovePhoto={(index) => {
+          setForm((prev) => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) }));
+          clearError("photos");
+        }}
+        onReplaceVideo={handleReplaceVideo}
+        onRemoveVideo={() => setForm((prev) => ({ ...prev, video_url: "" }))}
+      />
 
-        <div className="space-y-6">
-          <ListingStudioPricing
-            form={form}
-            setForm={setForm}
-            mode={form.listing_mode || "normal"}
-            onModeChange={handleModeChange}
-            fieldErrors={fieldErrors}
-            clearError={clearError}
-          />
+      <ListingStudioPricing
+        form={form}
+        setForm={setForm}
+        mode={form.listing_mode || "normal"}
+        onModeChange={handleModeChange}
+        fieldErrors={fieldErrors}
+        clearError={clearError}
+      />
 
-          <ListingStudioSpecs
-            basicFields={basicSpecFields}
-            advancedFields={advancedSpecFields}
-            selectedItemConfig={selectedItemConfig}
-            form={form}
-            setForm={setForm}
-            fieldErrors={fieldErrors}
-            clearError={clearError}
-            showAdvanced={showAdvancedSpecs}
-            setShowAdvanced={setShowAdvancedSpecs}
-          />
-        </div>
-      </div>
+      <ListingStudioSpecs
+        basicFields={basicSpecFields}
+        advancedFields={advancedSpecFields}
+        selectedItemConfig={selectedItemConfig}
+        form={form}
+        setForm={setForm}
+        fieldErrors={fieldErrors}
+        clearError={clearError}
+        showAdvanced={showAdvancedSpecs}
+        setShowAdvanced={setShowAdvancedSpecs}
+      />
 
       <section className="sticky bottom-0 z-30 border-t border-zinc-200 bg-zinc-100/95 py-3 backdrop-blur">
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
