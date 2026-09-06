@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { ListingStudio } from "./listing-studio";
 import FeedbackModal from "./components/FeedbackModal";
+import BrandMark from "./components/BrandMark";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { invalidateHomepageCache } from "./hooks/useHomePageData";
 import { apiFetch } from "./lib/api";
@@ -167,25 +168,7 @@ export default function EditListingPage() {
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <button
-            type="button"
-            onClick={() => navigateToPath(HOME_PATH)}
-            className="flex min-w-0 items-center gap-2.5"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-900 text-xl font-extrabold text-white shadow-lg shadow-red-900/20">
-              B
-            </div>
-            <div className="text-left">
-              <p className="text-lg font-extrabold tracking-tight">
-                <span className="text-red-900">Buy</span>
-                <span className="text-zinc-700">Mesho</span>
-              </p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
-                Edit listing
-              </p>
-            </div>
-          </button>
-
+          <BrandMark subtitle="Edit listing" />
           <button
             type="button"
             onClick={() => navigateBackOrPath(EXPLORE_PATH)}
@@ -211,7 +194,7 @@ export default function EditListingPage() {
           <div className="border-b border-zinc-200 pb-12 pt-6 text-center">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Seller account required</h1>
             <p className="mt-3 text-sm text-zinc-500">Only seller accounts can edit listings.</p>
-            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Return to Explore</button>
+            <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Return to Explore</button>
           </div>
         ) : !listing ? (
           <div className="border-b border-zinc-200 pb-12 pt-6 text-center">
