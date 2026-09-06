@@ -1,16 +1,11 @@
-import { useMemo, useRef, useState, type ChangeEvent } from "react";
-import { X } from "lucide-react";
+import { useMemo, useState, type ChangeEvent } from "react";
 import type {
   Category,
   CreateListingPayload,
-  ListingCondition,
   ListingDraft,
   ListingMode,
   University,
 } from "../types";
-import { CATEGORIES, UNIVERSITIES } from "../constants";
-import FormDropdown from "../components/FormDropdown";
-import ListingAiStudio from "../components/ai/ListingAiStudio";
 import {
   createEmptyListingSpecValues,
   getAdvancedListingFields,
@@ -19,12 +14,20 @@ import {
   getListingItemTypes,
   getListingSubcategories,
   validateListingSpecValues,
-  type ListingSpecField,
 } from "../listingSchemas";
-import { getConditionConfig } from "./listingStudio.constants";
+import ListingAiStudio from "../components/ai/ListingAiStudio";
+import ListingStudioFields from "./ListingStudioFields";
+import ListingStudioMedia from "./ListingStudioMedia";
+import ListingStudioPricing from "./ListingStudioPricing";
+import ListingStudioSpecs from "./ListingStudioSpecs";
 import type { ListingStudioFormProps } from "./listingStudio.types";
 
-const LISTING_MODE_OPTIONS: ListingMode[] = ["normal", "deal", "wholesale"];
+const inferListingMode = (draft: ListingDraft): ListingMode => {
+  if (draft.listing_mode) return draft.listing_mode;
+  if (draft.is_wholesale) return "wholesale";
+  if (String(draft.original_price ?? "").trim()) return "deal";
+  return "normal";
+};
 
 export default function ListingStudio({
   mode,
@@ -36,21 +39,13 @@ export default function ListingStudio({
   submitLabel,
   submitBusyLabel,
 }: ListingStudioFormProps) {
-  const [form, setForm] = useState<ListingDraft>(() => {
-    if (initialData.listing_mode === undefined) {
-      const inferredMode: ListingMode = initialData.is_wholesale
-        ? "wholesale"
-        : String(initialData.original_price ?? "").trim()
-          ? "deal"
-          : "normal";
-      return { ...initialData, listing_mode: inferredMode };
-    }
-    return initialData;
-  });
+  const [form, setForm] = useState<ListingDraft>(() => ({
+    ...initialData,
+    listing_mode: inferListingMode(initialData),
+  }));
   const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const specFieldRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const isSchemaDrivenCategory = getListingSubcategories(form.category as Category).length > 0;
   const availableSubcategories = useMemo(
@@ -86,21 +81,18 @@ export default function ListingStudio({
     [isSchemaDrivenCategory, form.category, form.subcategory, form.item_type]
   );
 
-  const listingMode = form.listing_mode || "normal";
-  const isDealMode = listingMode === "deal";
-  const isWholesaleMode = listingMode === "wholesale";
-  const conditionConfig = getConditionConfig(form.category);
-
-  const setError = (key: string, message: string) =>
+  const setError = (key: string, message: string) => {
     setFieldErrors((prev) => ({ ...prev, [key]: message }));
+  };
 
-  const clearError = (key: string) =>
+  const clearError = (key: string) => {
     setFieldErrors((prev) => {
       if (!prev[key]) return prev;
       const next = { ...prev };
       delete next[key];
       return next;
     });
+  };
 
   const handleModeChange = (nextMode: ListingMode) => {
     setForm((prev) => ({
@@ -132,20 +124,30 @@ export default function ListingStudio({
               is_wholesale: true,
             }),
     }));
+    clearError("original_price");
+    clearError("pack_size");
+    clearError("bulk_units");
+    clearError("single_item_price");
   };
 
   const uploadMediaFile = async (file: File) => {
     const formData = new FormData();
     formData.append("image", file);
-    const res = await fetch("/api/upload/", { method: "POST", body: formData });
-    const text = await res.text();
-    const data = text ? JSON.parse(text) : null;
-    if (!res.ok) throw new Error(data?.error || "Upload failed");
-    return data.url as string;
+    const response = await fetch("/api/upload/", { method: "POST", body: formData });
+    const text = await response.text();
+    let data: { url?: string; error?: string } | null = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+    if (!response.ok) throw new Error(data?.error || "Upload failed");
+    if (!data?.url) throw new Error("Upload succeeded but no URL was returned.");
+    return data.url;
   };
 
-  const handleAddImages = async (e: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
+  const handleAddImages = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
     if (!files.length) return;
 
     const selectedFiles = files.slice(0, Math.max(0, 5 - form.photos.length));
@@ -159,202 +161,36 @@ export default function ListingStudio({
       for (const file of selectedFiles) urls.push(await uploadMediaFile(file));
       setForm((prev) => ({ ...prev, photos: [...prev.photos, ...urls].slice(0, 5) }));
       clearError("photos");
-    } catch (err: unknown) {
+    } catch (error: unknown) {
       showFeedback(
         "error",
         "Image upload failed",
-        err instanceof Error ? err.message : "We could not upload the images."
+        error instanceof Error ? error.message : "We could not upload the images."
       );
     } finally {
       setUploadingMedia(false);
-      e.target.value = "";
+      event.target.value = "";
     }
   };
 
-  const handleReplaceVideo = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleReplaceVideo = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
+
     setUploadingMedia(true);
     try {
       const url = await uploadMediaFile(file);
       setForm((prev) => ({ ...prev, video_url: url }));
-    } catch (err: unknown) {
+    } catch (error: unknown) {
       showFeedback(
         "error",
         "Video upload failed",
-        err instanceof Error ? err.message : "We could not upload the video."
+        error instanceof Error ? error.message : "We could not upload the video."
       );
     } finally {
       setUploadingMedia(false);
-      e.target.value = "";
+      event.target.value = "";
     }
-  };
-
-  const renderSpecField = (field: ListingSpecField) => {
-    const rawValue = form.spec_values[field.key];
-    const value = rawValue ?? "";
-    const error = fieldErrors[field.key];
-    const required = !!field.required || !!selectedItemConfig?.requiredKeys.includes(field.key);
-    const label = `${field.label}${required ? " *" : ""}`;
-    const ref = (el: HTMLDivElement | null) => {
-      specFieldRefs.current[field.key] = el;
-    };
-
-    if (field.type === "select") {
-      return (
-        <div key={field.key} ref={ref}>
-          <FormDropdown
-            label={label}
-            value={String(value)}
-            options={field.options || []}
-            onChange={(selected) => {
-              clearError(field.key);
-              setForm((prev) => ({
-                ...prev,
-                spec_values: { ...prev.spec_values, [field.key]: selected },
-              }));
-            }}
-            placeholder={`Select ${field.label}`}
-          />
-          {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
-        </div>
-      );
-    }
-
-    if (field.type === "textarea") {
-      return (
-        <div key={field.key} ref={ref}>
-          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
-          <textarea
-            value={String(value)}
-            onChange={(e) => {
-              clearError(field.key);
-              setForm((prev) => ({
-                ...prev,
-                spec_values: { ...prev.spec_values, [field.key]: e.target.value },
-              }));
-            }}
-            className="h-24 w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
-          />
-          {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
-        </div>
-      );
-    }
-
-    if (field.type === "boolean") {
-      const boolValue = typeof rawValue === "boolean" ? rawValue : null;
-      return (
-        <div key={field.key} ref={ref}>
-          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: "Not set", value: null },
-              { label: "Yes", value: true },
-              { label: "No", value: false },
-            ].map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() => {
-                  clearError(field.key);
-                  setForm((prev) => ({
-                    ...prev,
-                    spec_values: { ...prev.spec_values, [field.key]: item.value },
-                  }));
-                }}
-                className={`rounded-2xl border px-3 py-2 text-sm font-bold ${
-                  boolValue === item.value
-                    ? "border-zinc-900 bg-zinc-900 text-white"
-                    : "border-zinc-200 bg-white text-zinc-600"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-          {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
-        </div>
-      );
-    }
-
-    if (field.type === "multiselect") {
-      const selectedValues = Array.isArray(rawValue) ? rawValue : [];
-      return (
-        <div key={field.key} ref={ref}>
-          <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
-          <div className="grid grid-cols-2 gap-2 rounded-2xl border border-zinc-200 bg-white p-3">
-            {(field.options || []).map((option) => {
-              const checked = selectedValues.includes(option);
-              return (
-                <label key={option} className="flex items-center gap-2 text-sm text-zinc-700">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(e) => {
-                      clearError(field.key);
-                      setForm((prev) => ({
-                        ...prev,
-                        spec_values: {
-                          ...prev.spec_values,
-                          [field.key]: e.target.checked
-                            ? [...selectedValues, option]
-                            : selectedValues.filter((item: string) => item !== option),
-                        },
-                      }));
-                    }}
-                  />
-                  <span>{option}</span>
-                </label>
-              );
-            })}
-          </div>
-          {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
-        </div>
-      );
-    }
-
-    if (field.type === "number") {
-      return (
-        <div key={field.key} ref={ref}>
-          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
-          <input
-            type="number"
-            value={value === "" ? "" : String(value)}
-            onChange={(e) => {
-              clearError(field.key);
-              setForm((prev) => ({
-                ...prev,
-                spec_values: {
-                  ...prev.spec_values,
-                  [field.key]: e.target.value === "" ? null : Number(e.target.value),
-                },
-              }));
-            }}
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
-          />
-          {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
-        </div>
-      );
-    }
-
-    return (
-      <div key={field.key} ref={ref}>
-        <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
-        <input
-          type="text"
-          value={String(value)}
-          onChange={(e) => {
-            clearError(field.key);
-            setForm((prev) => ({
-              ...prev,
-              spec_values: { ...prev.spec_values, [field.key]: e.target.value },
-            }));
-          }}
-          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
-        />
-        {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
-      </div>
-    );
   };
 
   const handleSave = async () => {
@@ -372,6 +208,8 @@ export default function ListingStudio({
     const originalPriceNum = originalPriceRaw ? Number(originalPriceRaw) : null;
     const packSizeNum = packSizeRaw ? Number(packSizeRaw) : null;
     const singleItemPriceNum = singleItemPriceRaw ? Number(singleItemPriceRaw) : null;
+    const listingMode = form.listing_mode || "normal";
+    const isDeal = listingMode === "deal";
     const isWholesale = listingMode === "wholesale" || Boolean(form.is_wholesale);
 
     if (form.name.trim().replace(/\s+/g, " ").length < 3) {
@@ -386,11 +224,9 @@ export default function ListingStudio({
       setError("price", "Please enter a valid price.");
       return;
     }
-    if (isDealMode) {
-      if (!Number.isFinite(originalPriceNum as number) || (originalPriceNum as number) <= priceNum) {
-        showFeedback("error", "Invalid deal price", "Original price must be higher than current price.");
-        return;
-      }
+    if (isDeal && (!Number.isFinite(originalPriceNum as number) || (originalPriceNum as number) <= priceNum)) {
+      showFeedback("error", "Invalid deal price", "Original price must be higher than current price.");
+      return;
     }
     if (isWholesale) {
       if (!packSizeRaw || !Number.isInteger(packSizeNum as number) || (packSizeNum as number) < 1) {
@@ -401,11 +237,9 @@ export default function ListingStudio({
         setError("bulk_units", "Bulk units are required for wholesale listings.");
         return;
       }
-      if (form.can_sell_individually) {
-        if (!singleItemPriceRaw || !Number.isFinite(singleItemPriceNum as number) || (singleItemPriceNum as number) <= 0) {
-          setError("single_item_price", "Enter a valid single item price.");
-          return;
-        }
+      if (form.can_sell_individually && (!singleItemPriceRaw || !Number.isFinite(singleItemPriceNum as number) || (singleItemPriceNum as number) <= 0)) {
+        setError("single_item_price", "Enter a valid single item price.");
+        return;
       }
     }
     if (form.photos.length < 1) {
@@ -424,6 +258,7 @@ export default function ListingStudio({
       setError("sold_quantity", "Sold quantity cannot be greater than total quantity.");
       return;
     }
+
     if (isSchemaDrivenCategory) {
       if (!form.subcategory) {
         setError("subcategory", "Choose a subcategory.");
@@ -433,6 +268,7 @@ export default function ListingStudio({
         setError("item_type", "Choose an item type.");
         return;
       }
+
       const validation = validateListingSpecValues(
         form.category as Category,
         form.subcategory,
@@ -445,10 +281,6 @@ export default function ListingStudio({
           if (item.key) nextErrors[item.key] = item.message;
         }
         setFieldErrors(nextErrors);
-        const first = validation.errors[0];
-        if (first?.key) {
-          specFieldRefs.current[first.key]?.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
         return;
       }
     }
@@ -469,10 +301,10 @@ export default function ListingStudio({
       photos: form.photos,
       video_url: form.video_url || null,
       listing_mode: listingMode,
-      original_price: isDealMode ? originalPriceNum : null,
+      original_price: isDeal ? originalPriceNum : null,
       discount_percent: null,
-      deal_label: isDealMode ? dealLabelRaw || null : null,
-      deal_expires_at: isDealMode ? dealExpiresAtRaw || null : null,
+      deal_label: isDeal ? dealLabelRaw || null : null,
+      deal_expires_at: isDeal ? dealExpiresAtRaw || null : null,
       is_wholesale: isWholesale,
       can_sell_individually: isWholesale ? form.can_sell_individually === true : null,
       pack_size: isWholesale ? packSizeNum : null,
@@ -494,256 +326,70 @@ export default function ListingStudio({
         showFeedback={showFeedback}
       />
 
-      <div className="grid gap-8 xl:grid-cols-2">
-        <div className="min-w-0 space-y-8">
-          <section className="border-b border-zinc-200 pb-6">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Basic info</p>
-            <div className="mt-4 space-y-4">
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Product name</label>
-                <input
-                  value={form.name}
-                  onChange={(e) => {
-                    clearError("name");
-                    setForm((prev) => ({ ...prev, name: e.target.value }));
-                  }}
-                  className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.name ? "border-red-500" : "border-zinc-200"}`}
-                />
-                {fieldErrors.name ? <p className="mt-1 text-xs text-red-600">{fieldErrors.name}</p> : null}
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Description</label>
-                <textarea
-                  rows={7}
-                  value={form.description}
-                  onChange={(e) => {
-                    clearError("description");
-                    setForm((prev) => ({ ...prev, description: e.target.value }));
-                  }}
-                  className={`w-full resize-none rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.description ? "border-red-500" : "border-zinc-200"}`}
-                />
-                {fieldErrors.description ? <p className="mt-1 text-xs text-red-600">{fieldErrors.description}</p> : null}
-              </div>
-            </div>
-          </section>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <div className="space-y-6">
+          <ListingStudioFields
+            form={form}
+            setForm={setForm}
+            fieldErrors={fieldErrors}
+            setError={setError}
+            clearError={clearError}
+            subcategories={availableSubcategories}
+            itemTypes={availableItemTypes}
+          />
 
-          <section className="border-b border-zinc-200 pb-6">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Media</p>
-            <div className="mt-4 space-y-4">
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Photos (max 5)</label>
-                {form.photos.length > 0 ? (
-                  <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {form.photos.map((url, idx) => (
-                      <div key={`${url}-${idx}`} className="relative aspect-square overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100">
-                        <img src={url} alt={`Photo ${idx + 1}`} className="h-full w-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setForm((prev) => ({ ...prev, photos: prev.photos.filter((_, i) => i !== idx) }))
-                          }
-                          className="absolute right-2 top-2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleAddImages}
-                  disabled={uploadingMedia || form.photos.length >= 5}
-                  className={`w-full rounded-2xl border bg-white p-3 ${fieldErrors.photos ? "border-red-500" : "border-zinc-200"}`}
-                />
-                {fieldErrors.photos ? <p className="mt-1 text-xs text-red-600">{fieldErrors.photos}</p> : null}
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Video (optional)</label>
-                <input type="file" accept="video/*" onChange={handleReplaceVideo} disabled={uploadingMedia} className="w-full rounded-2xl border border-zinc-200 bg-white p-3" />
-                {form.video_url ? <p className="mt-2 text-xs text-zinc-500">Video attached.</p> : null}
-              </div>
-            </div>
-          </section>
+          <ListingStudioMedia
+            photos={form.photos}
+            videoUrl={form.video_url}
+            uploading={uploadingMedia}
+            error={fieldErrors.photos}
+            onAddImages={handleAddImages}
+            onRemovePhoto={(index) => {
+              setForm((prev) => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) }));
+              clearError("photos");
+            }}
+            onReplaceVideo={handleReplaceVideo}
+            onRemoveVideo={() => setForm((prev) => ({ ...prev, video_url: "" }))}
+          />
         </div>
 
-        <div className="min-w-0 space-y-8">
-          <section className="border-b border-zinc-200 pb-6">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Listing setup</p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Price (MK)</label>
-                <input
-                  type="number"
-                  value={form.price}
-                  onChange={(e) => {
-                    clearError("price");
-                    setForm((prev) => ({ ...prev, price: e.target.value }));
-                  }}
-                  className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.price ? "border-red-500" : "border-zinc-200"}`}
-                />
-                {fieldErrors.price ? <p className="mt-1 text-xs text-red-600">{fieldErrors.price}</p> : null}
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Total quantity</label>
-                <input type="number" min="1" value={form.quantity} onChange={(e) => { clearError("quantity"); setForm((prev) => ({ ...prev, quantity: e.target.value })); }} className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.quantity ? "border-red-500" : "border-zinc-200"}`} />
-                {fieldErrors.quantity ? <p className="mt-1 text-xs text-red-600">{fieldErrors.quantity}</p> : null}
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Sold quantity</label>
-                <input type="number" min="0" value={form.sold_quantity} onChange={(e) => { clearError("sold_quantity"); setForm((prev) => ({ ...prev, sold_quantity: e.target.value })); }} className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.sold_quantity ? "border-red-500" : "border-zinc-200"}`} />
-                {fieldErrors.sold_quantity ? <p className="mt-1 text-xs text-red-600">{fieldErrors.sold_quantity}</p> : null}
-              </div>
-              <FormDropdown
-                label="Category"
-                value={form.category}
-                options={CATEGORIES}
-                onChange={(value) => {
-                  const category = value as Category;
-                  setFieldErrors((prev) => {
-                    const next = { ...prev };
-                    delete next.subcategory;
-                    delete next.item_type;
-                    return next;
-                  });
-                  setForm((prev) => ({
-                    ...prev,
-                    category,
-                    subcategory: "",
-                    item_type: "",
-                    spec_values: {},
-                    condition: (getConditionConfig(category).options[0] as ListingCondition) || prev.condition,
-                  }));
-                  setShowAdvancedSpecs(false);
-                }}
-              />
-              <FormDropdown label="University" value={form.university} options={UNIVERSITIES} onChange={(value) => setForm((prev) => ({ ...prev, university: value as University }))} />
-              <div className="sm:col-span-2">
-                <FormDropdown label={conditionConfig.label} value={form.condition} options={conditionConfig.options} onChange={(value) => setForm((prev) => ({ ...prev, condition: value as ListingCondition }))} />
-              </div>
-              <div className="sm:col-span-2">
-                <FormDropdown label="Listing mode" value={listingMode} options={LISTING_MODE_OPTIONS} onChange={(value) => handleModeChange(value as ListingMode)} />
-              </div>
-            </div>
-          </section>
+        <div className="space-y-6">
+          <ListingStudioPricing
+            form={form}
+            setForm={setForm}
+            mode={form.listing_mode || "normal"}
+            onModeChange={handleModeChange}
+          />
 
-          {isDealMode ? (
-            <section className="border-b border-zinc-200 pb-6">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Deal pricing</p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Original price (MK)</label>
-                  <input type="number" min="0" value={form.original_price ?? ""} onChange={(e) => { clearError("original_price"); setForm((prev) => ({ ...prev, original_price: e.target.value })); }} className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.original_price ? "border-red-500" : "border-zinc-200"}`} />
-                  {fieldErrors.original_price ? <p className="mt-1 text-xs text-red-600">{fieldErrors.original_price}</p> : null}
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal label (optional)</label>
-                  <input type="text" value={String(form.deal_label ?? "")} onChange={(e) => setForm((prev) => ({ ...prev, deal_label: e.target.value }))} placeholder="e.g. Back to school deal" className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal expires at (optional)</label>
-                  <input type="date" value={String(form.deal_expires_at ?? "")} onChange={(e) => setForm((prev) => ({ ...prev, deal_expires_at: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-              </div>
-            </section>
-          ) : null}
-
-          {isWholesaleMode ? (
-            <section className="border-b border-zinc-200 pb-6">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Wholesale</p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Pack size</label>
-                  <input type="number" min="1" value={form.pack_size ?? ""} onChange={(e) => { clearError("pack_size"); setForm((prev) => ({ ...prev, pack_size: e.target.value })); }} placeholder="e.g. 12" className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.pack_size ? "border-red-500" : "border-zinc-200"}`} />
-                  {fieldErrors.pack_size ? <p className="mt-1 text-xs text-red-600">{fieldErrors.pack_size}</p> : null}
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Bulk units</label>
-                  <input type="text" value={form.bulk_units ?? ""} onChange={(e) => { clearError("bulk_units"); setForm((prev) => ({ ...prev, bulk_units: e.target.value })); }} placeholder="e.g. bottles, boxes" className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.bulk_units ? "border-red-500" : "border-zinc-200"}`} />
-                  {fieldErrors.bulk_units ? <p className="mt-1 text-xs text-red-600">{fieldErrors.bulk_units}</p> : null}
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="flex w-full items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-700">
-                    <span>Can sell individually</span>
-                    <input type="checkbox" checked={Boolean(form.can_sell_individually)} onChange={(e) => setForm((prev) => ({ ...prev, can_sell_individually: e.target.checked }))} className="h-4 w-4 rounded border-zinc-300" />
-                  </label>
-                </div>
-                {form.can_sell_individually ? (
-                  <div>
-                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Single item price</label>
-                    <input type="number" min="0" value={form.single_item_price ?? ""} onChange={(e) => { clearError("single_item_price"); setForm((prev) => ({ ...prev, single_item_price: e.target.value })); }} placeholder="e.g. 1500" className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.single_item_price ? "border-red-500" : "border-zinc-200"}`} />
-                    {fieldErrors.single_item_price ? <p className="mt-1 text-xs text-red-600">{fieldErrors.single_item_price}</p> : null}
-                  </div>
-                ) : null}
-              </div>
-            </section>
-          ) : null}
-
-          {isSchemaDrivenCategory ? (
-            <section className="border-b border-zinc-200 pb-6">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Item details</p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
-                <div>
-                  <FormDropdown
-                    label="Subcategory"
-                    value={form.subcategory}
-                    options={availableSubcategories}
-                    onChange={(value) => {
-                      clearError("subcategory");
-                      clearError("item_type");
-                      setForm((prev) => ({ ...prev, subcategory: value, item_type: "", spec_values: {} }));
-                      setShowAdvancedSpecs(false);
-                    }}
-                  />
-                  {fieldErrors.subcategory ? <p className="mt-1 text-xs text-red-600">{fieldErrors.subcategory}</p> : null}
-                </div>
-                <div>
-                  <FormDropdown
-                    label="Item type"
-                    value={form.item_type}
-                    options={availableItemTypes}
-                    onChange={(value) => {
-                      clearError("item_type");
-                      setForm((prev) => ({
-                        ...prev,
-                        item_type: value,
-                        spec_values: createEmptyListingSpecValues(prev.category as Category, prev.subcategory, value),
-                      }));
-                      setShowAdvancedSpecs(false);
-                    }}
-                  />
-                  {fieldErrors.item_type ? <p className="mt-1 text-xs text-red-600">{fieldErrors.item_type}</p> : null}
-                </div>
-              </div>
-              {form.subcategory && form.item_type && selectedItemConfig ? (
-                <div className="mt-5 space-y-4">
-                  <div className="min-w-0 rounded-2xl border border-zinc-200 bg-white p-4">
-                    <p className="text-sm font-bold text-zinc-900">Required details</p>
-                    <div className="mt-4 grid gap-4">{basicSpecFields.map(renderSpecField)}</div>
-                  </div>
-                  {advancedSpecFields.length > 0 ? (
-                    <button type="button" onClick={() => setShowAdvancedSpecs((prev) => !prev)} className="text-left text-sm font-bold text-primary hover:underline">
-                      {showAdvancedSpecs ? "Hide optional details" : `Add optional details (${advancedSpecFields.length})`}
-                    </button>
-                  ) : null}
-                  {showAdvancedSpecs && advancedSpecFields.length > 0 ? (
-                    <div className="grid gap-4 rounded-2xl border border-zinc-200 bg-white p-4">{advancedSpecFields.map(renderSpecField)}</div>
-                  ) : null}
-                </div>
-              ) : null}
-            </section>
-          ) : null}
+          <ListingStudioSpecs
+            basicFields={basicSpecFields}
+            advancedFields={advancedSpecFields}
+            selectedItemConfig={selectedItemConfig}
+            form={form}
+            setForm={setForm}
+            fieldErrors={fieldErrors}
+            clearError={clearError}
+            showAdvanced={showAdvancedSpecs}
+            setShowAdvanced={setShowAdvancedSpecs}
+          />
         </div>
       </div>
 
-      <section className="sticky bottom-0 z-30 mt-8 border-t border-zinc-200 bg-zinc-100/95 pt-4 pb-3 backdrop-blur">
+      <section className="sticky bottom-0 z-30 border-t border-zinc-200 bg-zinc-100/95 py-3 backdrop-blur">
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button type="button" onClick={onCancel} className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-700 hover:bg-zinc-50">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-700 hover:bg-zinc-50"
+          >
             Cancel
           </button>
-          <button type="button" onClick={() => void handleSave()} disabled={isSubmitting || uploadingMedia} className="w-full rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:opacity-50 sm:w-auto">
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={isSubmitting || uploadingMedia}
+            className="w-full rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:opacity-50 sm:w-auto"
+          >
             {isSubmitting || uploadingMedia ? resolvedSubmitBusyLabel : resolvedSubmitLabel}
           </button>
         </div>
@@ -751,5 +397,3 @@ export default function ListingStudio({
     </div>
   );
 }
-
-export type { ListingStudioFormProps } from "./listingStudio.types";
