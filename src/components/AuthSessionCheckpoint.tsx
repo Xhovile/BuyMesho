@@ -150,9 +150,9 @@ export default function AuthSessionCheckpoint({ mode, children }: AuthSessionChe
     await signOut(auth);
   };
 
-  if (restoring) {
-    return <div className="min-h-screen bg-[linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_48%,_#f8fafc_100%)] text-zinc-900"><main className="flex min-h-screen items-center justify-center px-4"><div className="flex items-center gap-3 text-sm font-bold text-zinc-600"><Loader2 className="h-5 w-5 animate-spin" />Checking your session…</div></main></div>;
-  }
+  // Login and signup should remain usable while Firebase restores persisted state.
+  // Existing-session protection is applied as soon as the auth callback reports it.
+  if (restoring) return <>{children}</>;
 
   if (!sessionExistedOnEntry) return <>{children}</>;
   if (!user) return <>{children}</>;
