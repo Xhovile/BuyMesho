@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-// List of all 64 files with conflicts
+// List of files that may need conflict-marker checks.
 const conflictedFiles = [
   ".env.example",
   "index.html",
@@ -48,7 +48,6 @@ const conflictedFiles = [
   "src/components/AppFooter.tsx",
   "src/components/BecomeSellerModal.tsx",
   "src/components/ChangePasswordModal.tsx",
-  "src/components/ListingStudioForm.tsx",
   "src/components/ListingStudioFormWide.tsx",
   "src/components/ReportListingModal.tsx",
   "src/components/ReportProblemPage.tsx",

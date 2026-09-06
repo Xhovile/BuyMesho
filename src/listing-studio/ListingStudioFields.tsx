@@ -2,30 +2,28 @@ import type { Dispatch, SetStateAction } from "react";
 import FormDropdown from "../components/FormDropdown";
 import type { Category, ListingCondition, ListingDraft, University } from "../types";
 import { CATEGORIES, UNIVERSITIES } from "../constants";
-
-const CONDITION_OPTIONS_BY_CATEGORY: Record<string, { label: string; options: string[] }> = {
-  "Food & Snacks": { label: "Freshness", options: ["fresh", "packed", "prepared", "frozen"] },
-  "Fashion & Clothing": { label: "Condition", options: ["new", "like new", "used", "thrifted"] },
-  "Academic Services": { label: "Service Status", options: ["available", "ongoing", "completed", "remote"] },
-  "Electronics & Gadgets": { label: "Condition", options: ["new", "used", "refurbished"] },
-  "Beauty & Personal Care": { label: "Condition", options: ["new", "opened", "used", "refill"] },
-};
-
-function getConditionConfig(category: string) {
-  return CONDITION_OPTIONS_BY_CATEGORY[category] || { label: "Condition", options: ["new", "used", "refurbished"] };
-}
+import { createEmptyListingSpecValues } from "../listingSchemas";
+import { getConditionConfig } from "./listingStudio.constants";
 
 type Props = {
   form: ListingDraft;
   setForm: Dispatch<SetStateAction<ListingDraft>>;
   fieldErrors: Record<string, string>;
-  setError: (key: string, message: string) => void;
   clearError: (key: string) => void;
   subcategories: string[];
   itemTypes: string[];
+  onAdvancedDetailsReset?: () => void;
 };
 
-export default function ListingStudioFields({ form, setForm, fieldErrors, setError, clearError, subcategories, itemTypes }: Props) {
+export default function ListingStudioFields({
+  form,
+  setForm,
+  fieldErrors,
+  clearError,
+  subcategories,
+  itemTypes,
+  onAdvancedDetailsReset,
+}: Props) {
   const conditionConfig = getConditionConfig(form.category);
 
   return (
@@ -41,8 +39,11 @@ export default function ListingStudioFields({ form, setForm, fieldErrors, setErr
           <input
             type="text"
             value={form.name}
-            onChange={(event) => { clearError("name"); setForm((prev) => ({ ...prev, name: event.target.value })); }}
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+            onChange={(event) => {
+              clearError("name");
+              setForm((prev) => ({ ...prev, name: event.target.value }));
+            }}
+            className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.name ? "border-red-500" : "border-zinc-200"}`}
             placeholder="What are you selling?"
           />
           {fieldErrors.name ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.name}</p> : null}
@@ -52,8 +53,11 @@ export default function ListingStudioFields({ form, setForm, fieldErrors, setErr
           <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Description *</label>
           <textarea
             value={form.description}
-            onChange={(event) => { clearError("description"); setForm((prev) => ({ ...prev, description: event.target.value })); }}
-            className="h-32 w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+            onChange={(event) => {
+              clearError("description");
+              setForm((prev) => ({ ...prev, description: event.target.value }));
+            }}
+            className={`h-32 w-full resize-none rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.description ? "border-red-500" : "border-zinc-200"}`}
             placeholder="Explain what the buyer should know about this listing."
           />
           {fieldErrors.description ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.description}</p> : null}
@@ -65,7 +69,16 @@ export default function ListingStudioFields({ form, setForm, fieldErrors, setErr
           options={CATEGORIES as unknown as string[]}
           onChange={(value) => {
             clearError("category");
-            setForm((prev) => ({ ...prev, category: value as Category, subcategory: "", item_type: "", spec_values: {} }));
+            const category = value as Category;
+            setForm((prev) => ({
+              ...prev,
+              category,
+              subcategory: "",
+              item_type: "",
+              spec_values: {},
+              condition: (getConditionConfig(category).options[0] as ListingCondition) || prev.condition,
+            }));
+            onAdvancedDetailsReset?.();
           }}
           placeholder="Select category"
         />
@@ -79,23 +92,42 @@ export default function ListingStudioFields({ form, setForm, fieldErrors, setErr
         />
 
         {subcategories.length ? (
-          <FormDropdown
-            label="Subcategory"
-            value={form.subcategory}
-            options={subcategories}
-            onChange={(value) => { clearError("subcategory"); setForm((prev) => ({ ...prev, subcategory: value, item_type: "", spec_values: {} })); }}
-            placeholder="Select subcategory"
-          />
+          <div>
+            <FormDropdown
+              label="Subcategory"
+              value={form.subcategory}
+              options={subcategories}
+              onChange={(value) => {
+                clearError("subcategory");
+                clearError("item_type");
+                setForm((prev) => ({ ...prev, subcategory: value, item_type: "", spec_values: {} }));
+                onAdvancedDetailsReset?.();
+              }}
+              placeholder="Select subcategory"
+            />
+            {fieldErrors.subcategory ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.subcategory}</p> : null}
+          </div>
         ) : null}
 
         {itemTypes.length ? (
-          <FormDropdown
-            label="Item type"
-            value={form.item_type}
-            options={itemTypes}
-            onChange={(value) => { clearError("item_type"); setForm((prev) => ({ ...prev, item_type: value, spec_values: {} })); }}
-            placeholder="Select item type"
-          />
+          <div>
+            <FormDropdown
+              label="Item type"
+              value={form.item_type}
+              options={itemTypes}
+              onChange={(value) => {
+                clearError("item_type");
+                setForm((prev) => ({
+                  ...prev,
+                  item_type: value,
+                  spec_values: createEmptyListingSpecValues(prev.category as Category, prev.subcategory, value),
+                }));
+                onAdvancedDetailsReset?.();
+              }}
+              placeholder="Select item type"
+            />
+            {fieldErrors.item_type ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.item_type}</p> : null}
+          </div>
         ) : null}
 
         <FormDropdown
@@ -112,10 +144,28 @@ export default function ListingStudioFields({ form, setForm, fieldErrors, setErr
             type="number"
             min="1"
             value={form.quantity}
-            onChange={(event) => { clearError("quantity"); setForm((prev) => ({ ...prev, quantity: event.target.value })); }}
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+            onChange={(event) => {
+              clearError("quantity");
+              setForm((prev) => ({ ...prev, quantity: event.target.value }));
+            }}
+            className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.quantity ? "border-red-500" : "border-zinc-200"}`}
           />
           {fieldErrors.quantity ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.quantity}</p> : null}
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Sold quantity</label>
+          <input
+            type="number"
+            min="0"
+            value={form.sold_quantity}
+            onChange={(event) => {
+              clearError("sold_quantity");
+              setForm((prev) => ({ ...prev, sold_quantity: event.target.value }));
+            }}
+            className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.sold_quantity ? "border-red-500" : "border-zinc-200"}`}
+          />
+          {fieldErrors.sold_quantity ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.sold_quantity}</p> : null}
         </div>
       </div>
     </section>

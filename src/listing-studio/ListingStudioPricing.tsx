@@ -6,6 +6,8 @@ type Props = {
   setForm: Dispatch<SetStateAction<ListingDraft>>;
   mode: ListingMode;
   onModeChange: (mode: ListingMode) => void;
+  fieldErrors?: Record<string, string>;
+  clearError?: (key: string) => void;
 };
 
 const MODES: Array<{ value: ListingMode; label: string; description: string }> = [
@@ -14,9 +16,22 @@ const MODES: Array<{ value: ListingMode; label: string; description: string }> =
   { value: "wholesale", label: "Wholesale", description: "Sell in packs or bulk quantities." },
 ];
 
-export default function ListingStudioPricing({ form, setForm, mode, onModeChange }: Props) {
+export default function ListingStudioPricing({
+  form,
+  setForm,
+  mode,
+  onModeChange,
+  fieldErrors = {},
+  clearError,
+}: Props) {
   const isDeal = mode === "deal";
   const isWholesale = mode === "wholesale";
+  const errorClass = (key: string) => (fieldErrors[key] ? "border-red-500" : "border-zinc-200");
+
+  const update = <K extends keyof ListingDraft>(key: K, value: ListingDraft[K]) => {
+    clearError?.(String(key));
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
   return (
     <section className="space-y-5 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
@@ -46,49 +61,47 @@ export default function ListingStudioPricing({ form, setForm, mode, onModeChange
             type="number"
             min="0"
             value={form.price}
-            onChange={(event) => setForm((prev) => ({ ...prev, price: event.target.value }))}
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+            onChange={(event) => update("price", event.target.value)}
+            className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${errorClass("price")}`}
             placeholder="0"
           />
+          {fieldErrors.price ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.price}</p> : null}
         </div>
 
         {isDeal ? (
-          <div>
-            <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Original price *</label>
-            <input
-              type="number"
-              min="0"
-              value={form.original_price ?? ""}
-              onChange={(event) => setForm((prev) => ({ ...prev, original_price: event.target.value }))}
-              className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
-              placeholder="0"
-            />
-          </div>
-        ) : null}
-
-        {isDeal ? (
-          <div>
-            <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal label</label>
-            <input
-              type="text"
-              value={form.deal_label ?? ""}
-              onChange={(event) => setForm((prev) => ({ ...prev, deal_label: event.target.value }))}
-              className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
-              placeholder="Weekend offer"
-            />
-          </div>
-        ) : null}
-
-        {isDeal ? (
-          <div>
-            <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal expires</label>
-            <input
-              type="datetime-local"
-              value={form.deal_expires_at ?? ""}
-              onChange={(event) => setForm((prev) => ({ ...prev, deal_expires_at: event.target.value }))}
-              className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
+          <>
+            <div>
+              <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Original price *</label>
+              <input
+                type="number"
+                min="0"
+                value={form.original_price ?? ""}
+                onChange={(event) => update("original_price", event.target.value)}
+                className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${errorClass("original_price")}`}
+                placeholder="0"
+              />
+              {fieldErrors.original_price ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.original_price}</p> : null}
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal label</label>
+              <input
+                type="text"
+                value={form.deal_label ?? ""}
+                onChange={(event) => update("deal_label", event.target.value)}
+                className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder="Weekend offer"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal expires at (optional)</label>
+              <input
+                type="date"
+                value={form.deal_expires_at ?? ""}
+                onChange={(event) => update("deal_expires_at", event.target.value)}
+                className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+          </>
         ) : null}
 
         {isWholesale ? (
@@ -99,40 +112,45 @@ export default function ListingStudioPricing({ form, setForm, mode, onModeChange
                 type="number"
                 min="1"
                 value={form.pack_size ?? ""}
-                onChange={(event) => setForm((prev) => ({ ...prev, pack_size: event.target.value }))}
-                className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+                onChange={(event) => update("pack_size", event.target.value)}
+                className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${errorClass("pack_size")}`}
                 placeholder="e.g. 12"
               />
+              {fieldErrors.pack_size ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.pack_size}</p> : null}
             </div>
             <div>
               <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Bulk units</label>
               <input
                 type="text"
                 value={form.bulk_units ?? ""}
-                onChange={(event) => setForm((prev) => ({ ...prev, bulk_units: event.target.value }))}
-                className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+                onChange={(event) => update("bulk_units", event.target.value)}
+                className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${errorClass("bulk_units")}`}
                 placeholder="e.g. carton"
               />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Single-item price</label>
-              <input
-                type="number"
-                min="0"
-                value={form.single_item_price ?? ""}
-                onChange={(event) => setForm((prev) => ({ ...prev, single_item_price: event.target.value }))}
-                className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
-                placeholder="Optional"
-              />
+              {fieldErrors.bulk_units ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.bulk_units}</p> : null}
             </div>
             <label className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-bold text-zinc-700">
               <input
                 type="checkbox"
                 checked={form.can_sell_individually ?? false}
-                onChange={(event) => setForm((prev) => ({ ...prev, can_sell_individually: event.target.checked }))}
+                onChange={(event) => update("can_sell_individually", event.target.checked)}
               />
               Can sell individually
             </label>
+            {form.can_sell_individually ? (
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Single item price</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.single_item_price ?? ""}
+                  onChange={(event) => update("single_item_price", event.target.value)}
+                  className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${errorClass("single_item_price")}`}
+                  placeholder="e.g. 1500"
+                />
+                {fieldErrors.single_item_price ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.single_item_price}</p> : null}
+              </div>
+            ) : null}
           </>
         ) : null}
       </div>
