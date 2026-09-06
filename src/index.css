@@ -109,6 +109,21 @@ main .bg-sky-50:has(button):not(:has(button.border-zinc-300))::after {
   line-height: 1.5rem;
 }
 
+/* Keep create-listing sections inside the same mobile container as the page actions.
+   This only constrains overflow; it does not add, remove, or restyle any cards. */
+main > div.pb-20 > * {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+main > div.pb-20 section {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 @keyframes buymesho-loader-spin {
   to {
     transform: rotate(360deg);
