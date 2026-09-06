@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import FormDropdown from "../components/FormDropdown";
 import type { Category, ListingCondition, ListingDraft, University } from "../types";
 import { CATEGORIES, UNIVERSITIES } from "../constants";
+import { createEmptyListingSpecValues } from "../listingSchemas";
 import { getConditionConfig } from "./listingStudio.constants";
 
 type Props = {
@@ -95,6 +96,7 @@ export default function ListingStudioFields({
               options={subcategories}
               onChange={(value) => {
                 clearError("subcategory");
+                clearError("item_type");
                 setForm((prev) => ({ ...prev, subcategory: value, item_type: "", spec_values: {} }));
               }}
               placeholder="Select subcategory"
@@ -111,7 +113,11 @@ export default function ListingStudioFields({
               options={itemTypes}
               onChange={(value) => {
                 clearError("item_type");
-                setForm((prev) => ({ ...prev, item_type: value, spec_values: {} }));
+                setForm((prev) => ({
+                  ...prev,
+                  item_type: value,
+                  spec_values: createEmptyListingSpecValues(prev.category as Category, prev.subcategory, value),
+                }));
               }}
               placeholder="Select item type"
             />
