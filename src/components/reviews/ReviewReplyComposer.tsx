@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, MessageSquareReply } from "lucide-react";
+import { ChevronDown, ChevronUp, MessageSquareReply, Pencil } from "lucide-react";
 import type { ListingReview } from "../../types";
 import { apiFetch } from "../../lib/api";
 
@@ -13,16 +13,19 @@ type ReviewReplyComposerProps = {
 const MAX_REPLY_LENGTH = 500;
 
 export default function ReviewReplyComposer({ listingId, review, canReply, onSaved }: ReviewReplyComposerProps) {
-  const [open, setOpen] = useState(Boolean(review.seller_reply));
+  const [open, setOpen] = useState(!review.seller_reply);
   const [reply, setReply] = useState(review.seller_reply ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setOpen(Boolean(review.seller_reply));
     setReply(review.seller_reply ?? "");
     setError(null);
   }, [review.id, review.seller_reply]);
+
+  useEffect(() => {
+    setOpen(!review.seller_reply);
+  }, [review.id]);
 
   const handleSave = async () => {
     if (!canReply) return;
@@ -41,7 +44,7 @@ export default function ReviewReplyComposer({ listingId, review, canReply, onSav
       }
 
       setReply(result.review.seller_reply ?? "");
-      setOpen(true);
+      setOpen(false);
       await onSaved?.(result.review);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save reply.");
@@ -54,6 +57,25 @@ export default function ReviewReplyComposer({ listingId, review, canReply, onSav
     return null;
   }
 
+  if (!open && review.seller_reply) {
+    return (
+      <div className="mt-2 flex justify-end">
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            setOpen(true);
+          }}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-200 bg-white text-zinc-600 transition hover:bg-blue-50 hover:text-zinc-950"
+          aria-label="Edit seller reply"
+          title="Edit seller reply"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
       <button
@@ -64,7 +86,7 @@ export default function ReviewReplyComposer({ listingId, review, canReply, onSav
       >
         <span className="flex items-center gap-2">
           <MessageSquareReply className="h-4 w-4" />
-          REPLY AS SELLER
+          {review.seller_reply ? "EDIT SELLER REPLY" : "REPLY AS SELLER"}
         </span>
         {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
@@ -96,7 +118,7 @@ export default function ReviewReplyComposer({ listingId, review, canReply, onSav
               disabled={submitting}
               className="inline-flex items-center justify-center rounded-full bg-zinc-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {submitting ? "Saving..." : "Save reply"}
+              {submitting ? "Saving..." : review.seller_reply ? "Save changes" : "Save reply"}
             </button>
             <span className="text-xs font-medium text-zinc-500">This response appears under the review.</span>
           </div>
