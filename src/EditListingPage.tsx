@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import ListingStudioFormWide from "./components/ListingStudioFormWide";
+import { ListingStudio } from "./listing-studio";
 import FeedbackModal from "./components/FeedbackModal";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { invalidateHomepageCache } from "./hooks/useHomePageData";
@@ -233,7 +233,7 @@ export default function EditListingPage() {
             </div>
 
             {initialDraft ? (
-              <ListingStudioFormWide
+              <ListingStudio
                 key={listing.id}
                 mode="edit"
                 initialData={initialDraft}
