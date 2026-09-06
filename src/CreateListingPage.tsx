@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import ListingStudioFormWide from "./components/ListingStudioFormWide";
+import { ListingStudio } from "./listing-studio";
 import FeedbackModal from "./components/FeedbackModal";
 import { apiFetch } from "./lib/api";
 import { EXPLORE_PATH, HOME_PATH, navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
@@ -9,6 +9,13 @@ import { useAccountProfile } from "./hooks/useAccountProfile";
 import { invalidateHomepageCache } from "./hooks/useHomePageData";
 import { resolveUniversity } from "./lib/university";
 import type { ListingDraft, UserProfile } from "./types";
+
+type FeedbackState = {
+  open: boolean;
+  type: "success" | "error" | "info";
+  title: string;
+  message: string;
+} | null;
 
 const createInitialListingDraft = (userProfile?: UserProfile | null): ListingDraft => ({
   name: "",
@@ -34,13 +41,6 @@ const createInitialListingDraft = (userProfile?: UserProfile | null): ListingDra
   bulk_units: "",
 });
 
-type FeedbackState = {
-  open: boolean;
-  type: "success" | "error" | "info";
-  title: string;
-  message: string;
-} | null;
-
 export default function CreateListingPage() {
   const { firebaseUser, authLoading, profile, profileLoading, refreshProfile, emailVerified } = useAccountProfile();
   const [submitting, setSubmitting] = useState(false);
@@ -48,7 +48,6 @@ export default function CreateListingPage() {
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
   const listingDraft = useMemo(() => createInitialListingDraft(profile), [profile]);
-
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
@@ -87,32 +86,32 @@ export default function CreateListingPage() {
     setSubmitting(true);
     try {
       await refreshProfile();
-   try {
-  await apiFetch("/api/listings", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-} catch (err: any) {
-  const message = err instanceof Error ? err.message : String(err);
+      try {
+        await apiFetch("/api/listings", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+      } catch (err: any) {
+        const message = err instanceof Error ? err.message : String(err);
 
-  if (message.includes("Seller profile not found")) {
-    await apiFetch("/api/profile/bootstrap", {
-      method: "POST",
-      body: JSON.stringify({
-        university: payload.university,
-      }),
-    });
+        if (message.includes("Seller profile not found")) {
+          await apiFetch("/api/profile/bootstrap", {
+            method: "POST",
+            body: JSON.stringify({
+              university: payload.university,
+            }),
+          });
 
-    await apiFetch("/api/listings", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+          await apiFetch("/api/listings", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
 
-    return;
-  }
+          return;
+        }
 
-  throw err;
-}
+        throw err;
+      }
 
       invalidateHomepageCache();
       setRedirectAfterFeedback(true);
@@ -193,7 +192,7 @@ export default function CreateListingPage() {
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing studio</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Create a listing in a dedicated page.</h1>
             </div>
-            <ListingStudioFormWide
+            <ListingStudio
               mode="create"
               initialData={listingDraft}
               onCancel={() => navigateBackOrPath(EXPLORE_PATH)}
