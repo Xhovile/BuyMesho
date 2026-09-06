@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import type {
   Category,
   CreateListingPayload,
@@ -19,6 +19,11 @@ import ListingStudioFields from "./ListingStudioFields";
 import ListingStudioMedia from "./ListingStudioMedia";
 import ListingStudioPricing from "./ListingStudioPricing";
 import ListingStudioSpecs from "./ListingStudioSpecs";
+import {
+  clearListingDraft,
+  loadListingDraft,
+  saveListingDraft,
+} from "./listingDraftPersistence";
 import type { ListingStudioFormProps } from "./listingStudio.types";
 
 const inferListingMode = (draft: ListingDraft): ListingMode => {
@@ -31,6 +36,7 @@ const inferListingMode = (draft: ListingDraft): ListingMode => {
 export default function ListingStudio({
   mode,
   initialData,
+  draftStorageKey,
   onCancel,
   onSubmit,
   showFeedback,
@@ -38,13 +44,25 @@ export default function ListingStudio({
   submitLabel,
   submitBusyLabel,
 }: ListingStudioFormProps) {
-  const [form, setForm] = useState<ListingDraft>(() => ({
-    ...initialData,
-    listing_mode: inferListingMode(initialData),
-  }));
+  const storageKey = draftStorageKey?.trim() || null;
+  const [form, setForm] = useState<ListingDraft>(() => {
+    const normalizedInitialData = {
+      ...initialData,
+      listing_mode: inferListingMode(initialData),
+    };
+
+    return storageKey
+      ? loadListingDraft(storageKey, normalizedInitialData)
+      : normalizedInitialData;
+  });
   const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!storageKey) return;
+    saveListingDraft(storageKey, form);
+  }, [form, storageKey]);
 
   const isSchemaDrivenCategory = getListingSubcategories(form.category as Category).length > 0;
   const availableSubcategories = useMemo(
@@ -366,6 +384,10 @@ export default function ListingStudio({
     };
 
     await onSubmit(payload);
+
+    if (storageKey) {
+      clearListingDraft(storageKey);
+    }
   };
 
   const resolvedSubmitLabel = submitLabel || (mode === "create" ? "Post Listing" : "Save Changes");
