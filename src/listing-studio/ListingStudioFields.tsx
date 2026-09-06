@@ -27,7 +27,7 @@ export default function ListingStudioFields({
   const conditionConfig = getConditionConfig(form.category);
 
   return (
-    <section className="space-y-5 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+    <section className="space-y-5">
       <div>
         <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">Listing details</p>
         <h2 className="mt-1 text-lg font-black text-zinc-900">Give buyers the essentials</h2>
