@@ -35,7 +35,7 @@ export default function ListingStudioFields({
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Listing title *</label>
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Product Name *</label>
           <input
             type="text"
             value={form.name}
@@ -81,14 +81,6 @@ export default function ListingStudioFields({
             onAdvancedDetailsReset?.();
           }}
           placeholder="Select category"
-        />
-
-        <FormDropdown
-          label="University"
-          value={form.university}
-          options={UNIVERSITIES as unknown as string[]}
-          onChange={(value) => setForm((prev) => ({ ...prev, university: value as University }))}
-          placeholder="Select university"
         />
 
         {subcategories.length ? (
@@ -167,6 +159,14 @@ export default function ListingStudioFields({
           />
           {fieldErrors.sold_quantity ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.sold_quantity}</p> : null}
         </div>
+
+        <FormDropdown
+          label="University"
+          value={form.university}
+          options={UNIVERSITIES as unknown as string[]}
+          onChange={(value) => setForm((prev) => ({ ...prev, university: value as University }))}
+          placeholder="Select university"
+        />
       </div>
     </section>
   );
