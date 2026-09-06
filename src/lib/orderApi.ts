@@ -38,7 +38,7 @@ export type OrderBundle = {
       eventId?: string;
       title?: string;
       quantity?: number;
-      unitPrice?: { amount?: number; currency?: string };
+      unitPrice?: { amount?: number };
       reference?: string;
     }>;
     [key: string]: unknown;
@@ -52,6 +52,21 @@ export type OrderBundle = {
 const PAYOUT_STATUSES: SellerOrderPayoutStatus[] = [
   "eligible", "queued", "processing", "pending", "held", "paid", "failed", "cancelled",
 ];
+
+const SETTLED_DISPUTE_OUTCOMES = new Set([
+  "refunded",
+  "returned",
+  "seller_refund_confirmed",
+  "seller_refund_accepted",
+  "return",
+  "return_and_refund",
+  "seller_replacement_confirmed",
+  "seller_replacement_committed",
+  "seller_rejected",
+  "seller_dispute_rejected",
+  "replacement",
+  "refund_executed",
+]);
 
 function pickString(...values: unknown[]): string | null {
   for (const value of values) if (typeof value === "string" && value.trim()) return value.trim();
@@ -102,7 +117,16 @@ export function getOrderDisputeEligibility(bundle: OrderBundle, now = new Date()
   reason: string;
 } {
   const disputeStatus = toLower(bundle.dispute?.status);
-  if (bundle.dispute && !["resolved", "rejected", "closed"].includes(disputeStatus)) return { eligible: false, phase: "active", eligibleAt: null, windowEndsAt: null, reason: "This order already has an active dispute." };
+  const disputeOutcome = toLower(bundle.dispute?.outcome ?? bundle.dispute?.resolution);
+  const isActiveDispute = Boolean(bundle.dispute) && ["open", "under_review", "awaiting_response"].includes(disputeStatus);
+  const isSettledDispute = Boolean(bundle.dispute) && (
+    ["resolved", "closed", "rejected"].includes(disputeStatus) ||
+    SETTLED_DISPUTE_OUTCOMES.has(disputeOutcome)
+  );
+
+  if (isActiveDispute) return { eligible: false, phase: "active", eligibleAt: null, windowEndsAt: null, reason: "This order already has an active dispute." };
+  if (isSettledDispute) return { eligible: false, phase: "settled", eligibleAt: null, windowEndsAt: null, reason: "This order already has a final dispute outcome." };
+
   const orderStatus = toLower(bundle.order.status);
   const escrowState = toLower(bundle.escrow?.state ?? bundle.escrow?.status);
   const deliveryDeadlineRaw = bundle.order.deliveryDeadline;
@@ -110,14 +134,14 @@ export function getOrderDisputeEligibility(bundle: OrderBundle, now = new Date()
   const fulfilledAtRaw = bundle.order.fulfilledAt ?? (typeof bundle.escrow?.updatedAt === "string" && escrowState === "released" ? bundle.escrow.updatedAt : null);
   const fulfilledAt = fulfilledAtRaw ? new Date(fulfilledAtRaw) : null;
   const released = escrowState === "released" || ["fulfilled", "closed"].includes(orderStatus);
-  const settled = bundle.dispute && ["resolved", "closed"].includes(disputeStatus);
-  if (settled) return { eligible: false, phase: "settled", eligibleAt: null, windowEndsAt: null, reason: "This order already has a settled dispute." };
+
   if (released) {
     if (!fulfilledAt || Number.isNaN(fulfilledAt.getTime())) return { eligible: false, phase: "expired", eligibleAt: null, windowEndsAt: null, reason: "Delivery confirmation date is unavailable." };
     const windowEndsAt = new Date(fulfilledAt.getTime() + 30 * 24 * 60 * 60 * 1000);
     if (now.getTime() >= windowEndsAt.getTime()) return { eligible: false, phase: "expired", eligibleAt: fulfilledAt.toISOString(), windowEndsAt: windowEndsAt.toISOString(), reason: "The 30-day post-delivery dispute period has ended." };
     return { eligible: true, phase: "post_delivery", eligibleAt: fulfilledAt.toISOString(), windowEndsAt: windowEndsAt.toISOString(), reason: "You can report an issue within 30 days of confirmed delivery." };
   }
+
   if (deliveryDeadline && !Number.isNaN(deliveryDeadline.getTime()) && now.getTime() < deliveryDeadline.getTime()) return { eligible: false, phase: "delivery", eligibleAt: deliveryDeadline.toISOString(), windowEndsAt: null, reason: "The escrow dispute becomes available after the delivery period ends if delivery has not been confirmed." };
   return { eligible: true, phase: "escrow", eligibleAt: deliveryDeadline?.toISOString() ?? null, windowEndsAt: null, reason: "The delivery period has ended and escrow is still held. You may open a dispute." };
 }

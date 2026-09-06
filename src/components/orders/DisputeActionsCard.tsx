@@ -114,8 +114,8 @@ export default function DisputeActionsCard({
           </>
         ) : eligibility.phase === 'settled' ? (
           <>
-            <p className="mt-2 text-sm font-bold text-zinc-900">This order has a settled dispute</p>
-            <p className="mt-1 text-sm leading-6 text-zinc-600">A second dispute cannot be opened for this order.</p>
+            <p className="mt-2 text-sm font-bold text-zinc-900">Dispute has reached a final outcome</p>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">This dispute is no longer open for another submission. You cannot open a second dispute for this order.</p>
           </>
         ) : null}
 
