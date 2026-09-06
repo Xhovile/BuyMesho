@@ -28,7 +28,7 @@ export default function ListingStudioPricing({
   const isWholesale = mode === "wholesale";
   const errorClass = (key: string) => (fieldErrors[key] ? "border-red-500" : "border-zinc-200");
 
-  const update = (key: keyof ListingDraft, value: string | boolean) => {
+  const update = <K extends keyof ListingDraft>(key: K, value: ListingDraft[K]) => {
     clearError?.(String(key));
     setForm((prev) => ({ ...prev, [key]: value }));
   };
