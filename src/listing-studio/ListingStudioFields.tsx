@@ -12,6 +12,7 @@ type Props = {
   clearError: (key: string) => void;
   subcategories: string[];
   itemTypes: string[];
+  onAdvancedDetailsReset?: () => void;
 };
 
 export default function ListingStudioFields({
@@ -21,6 +22,7 @@ export default function ListingStudioFields({
   clearError,
   subcategories,
   itemTypes,
+  onAdvancedDetailsReset,
 }: Props) {
   const conditionConfig = getConditionConfig(form.category);
 
@@ -76,6 +78,7 @@ export default function ListingStudioFields({
               spec_values: {},
               condition: (getConditionConfig(category).options[0] as ListingCondition) || prev.condition,
             }));
+            onAdvancedDetailsReset?.();
           }}
           placeholder="Select category"
         />
@@ -98,6 +101,7 @@ export default function ListingStudioFields({
                 clearError("subcategory");
                 clearError("item_type");
                 setForm((prev) => ({ ...prev, subcategory: value, item_type: "", spec_values: {} }));
+                onAdvancedDetailsReset?.();
               }}
               placeholder="Select subcategory"
             />
@@ -118,6 +122,7 @@ export default function ListingStudioFields({
                   item_type: value,
                   spec_values: createEmptyListingSpecValues(prev.category as Category, prev.subcategory, value),
                 }));
+                onAdvancedDetailsReset?.();
               }}
               placeholder="Select item type"
             />
@@ -146,6 +151,21 @@ export default function ListingStudioFields({
             className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.quantity ? "border-red-500" : "border-zinc-200"}`}
           />
           {fieldErrors.quantity ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.quantity}</p> : null}
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Sold quantity</label>
+          <input
+            type="number"
+            min="0"
+            value={form.sold_quantity}
+            onChange={(event) => {
+              clearError("sold_quantity");
+              setForm((prev) => ({ ...prev, sold_quantity: event.target.value }));
+            }}
+            className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.sold_quantity ? "border-red-500" : "border-zinc-200"}`}
+          />
+          {fieldErrors.sold_quantity ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.sold_quantity}</p> : null}
         </div>
       </div>
     </section>
