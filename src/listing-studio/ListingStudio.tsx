@@ -361,7 +361,6 @@ export default function ListingStudio({
             clearError={clearError}
             showAdvanced={showAdvancedSpecs}
             setShowAdvanced={setShowAdvancedSpecs}
-            onValidationFieldFocus={scrollToSpecField}
           />
         </div>
       </div>
