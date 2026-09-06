@@ -1,14 +1,6 @@
 import type { ReactNode } from "react";
-import { ChevronLeft, House, LogOut, ShoppingBag } from "lucide-react";
-import { signOut } from "firebase/auth";
-import {
-  EXPLORE_PATH,
-  HOME_PATH,
-  LOGIN_PATH,
-  navigateBackOrPath,
-  navigateToPath,
-} from "../lib/appNavigation";
-import { auth } from "../firebase";
+import { ChevronLeft, House, ShoppingBag } from "lucide-react";
+import { EXPLORE_PATH, HOME_PATH, navigateBackOrPath, navigateToPath } from "../lib/appNavigation";
 import { useAccountProfile } from "../hooks/useAccountProfile";
 import BrandMark from "./BrandMark";
 import EventTicketSearchPanel from "./EventTicketSearchPanel";
@@ -42,18 +34,9 @@ export default function AccountPageShell({
   hideBackButton = false,
   showBrandHero = false,
 }: AccountPageShellProps) {
-  const { firebaseUser } = useAccountProfile();
   const isProfilePage = title === "My profile";
   const pathname = window.location.pathname;
   const showEventTicketSearch = pathname === "/explore/events/manage" || pathname === "/explore/events/dashboard";
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } finally {
-      navigateToPath(LOGIN_PATH);
-    }
-  };
 
   const childrenWrapperClassName =
     childrenSectionClassName ||
@@ -68,16 +51,6 @@ export default function AccountPageShell({
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
             <BrandMark />
             <div className="flex items-center gap-3">
-              {firebaseUser && (
-                <button
-                  type="button"
-                  onClick={() => void handleLogout()}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-bold hover:bg-zinc-50 md:px-4"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="hidden md:inline">Log out</span>
-                </button>
-              )}
               <button
                 type="button"
                 onClick={() => navigateToPath(HOME_PATH)}
