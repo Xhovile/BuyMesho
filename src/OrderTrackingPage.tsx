@@ -298,7 +298,7 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
 
   const handleOpenDispute = () => {
     if (!order || !disputeEligibility.eligible) return;
-    navigateToPath(`/disputes?reference=${encodeURIComponent(order.id)}`);
+    navigateToPath(`/payments/disputes?reference=${encodeURIComponent(order.id)}`);
   };
 
   return (
