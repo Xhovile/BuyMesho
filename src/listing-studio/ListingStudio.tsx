@@ -316,16 +316,6 @@ export default function ListingStudio({
 
       <div className="grid gap-6 xl:grid-cols-2">
         <div className="space-y-6">
-          <ListingStudioFields
-            form={form}
-            setForm={setForm}
-            fieldErrors={fieldErrors}
-            clearError={clearError}
-            subcategories={availableSubcategories}
-            itemTypes={availableItemTypes}
-            onAdvancedDetailsReset={() => setShowAdvancedSpecs(false)}
-          />
-
           <ListingStudioMedia
             photos={form.photos}
             videoUrl={form.video_url}
@@ -338,6 +328,16 @@ export default function ListingStudio({
             }}
             onReplaceVideo={handleReplaceVideo}
             onRemoveVideo={() => setForm((prev) => ({ ...prev, video_url: "" }))}
+          />
+
+          <ListingStudioFields
+            form={form}
+            setForm={setForm}
+            fieldErrors={fieldErrors}
+            clearError={clearError}
+            subcategories={availableSubcategories}
+            itemTypes={availableItemTypes}
+            onAdvancedDetailsReset={() => setShowAdvancedSpecs(false)}
           />
         </div>
 
@@ -366,11 +366,11 @@ export default function ListingStudio({
       </div>
 
       <section className="sticky bottom-0 z-30 border-t border-zinc-200 bg-zinc-100/95 py-3 backdrop-blur">
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button type="button" onClick={onCancel} className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-700 hover:bg-zinc-50">
+        <div className="flex flex-row gap-3">
+          <button type="button" onClick={onCancel} className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-700 hover:bg-zinc-50">
             Cancel
           </button>
-          <button type="button" onClick={() => void handleSave()} disabled={isSubmitting || uploadingMedia} className="w-full rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:opacity-50 sm:w-auto">
+          <button type="button" onClick={() => void handleSave()} disabled={isSubmitting || uploadingMedia} className="w-full rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:opacity-50">
             {isSubmitting || uploadingMedia ? resolvedSubmitBusyLabel : resolvedSubmitLabel}
           </button>
         </div>
