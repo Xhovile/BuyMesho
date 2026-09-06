@@ -93,9 +93,9 @@ export default function ListingStudioPricing({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal expires</label>
+              <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal expires at (optional)</label>
               <input
-                type="datetime-local"
+                type="date"
                 value={form.deal_expires_at ?? ""}
                 onChange={(event) => update("deal_expires_at", event.target.value)}
                 className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
@@ -129,18 +129,6 @@ export default function ListingStudioPricing({
               />
               {fieldErrors.bulk_units ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.bulk_units}</p> : null}
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Single-item price</label>
-              <input
-                type="number"
-                min="0"
-                value={form.single_item_price ?? ""}
-                onChange={(event) => update("single_item_price", event.target.value)}
-                className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${errorClass("single_item_price")}`}
-                placeholder="Optional"
-              />
-              {fieldErrors.single_item_price ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.single_item_price}</p> : null}
-            </div>
             <label className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-bold text-zinc-700">
               <input
                 type="checkbox"
@@ -149,6 +137,20 @@ export default function ListingStudioPricing({
               />
               Can sell individually
             </label>
+            {form.can_sell_individually ? (
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Single item price</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.single_item_price ?? ""}
+                  onChange={(event) => update("single_item_price", event.target.value)}
+                  className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${errorClass("single_item_price")}`}
+                  placeholder="e.g. 1500"
+                />
+                {fieldErrors.single_item_price ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.single_item_price}</p> : null}
+              </div>
+            ) : null}
           </>
         ) : null}
       </div>
