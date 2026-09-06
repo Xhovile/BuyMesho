@@ -437,7 +437,7 @@ async function saveSellerReplyHandler(req: Request, res: Response, review: Revie
     db.prepare(
       `
         UPDATE listing_reviews
-        SET seller_reply = ?, seller_reply_at = CASE WHEN ? IS NULL THEN NULL ELSE CURRENT_TIMESTAMP END, updated_at = CURRENT_TIMESTAMP
+        SET seller_reply = ?, seller_reply_at = CASE WHEN COALESCE(?, '') = '' THEN NULL ELSE CURRENT_TIMESTAMP END, updated_at = CURRENT_TIMESTAMP
         WHERE listing_id = ? AND reviewer_uid = ?
       `
     ).run(normalizedReply, normalizedReply, listingId, review.reviewer_uid);
