@@ -13,7 +13,6 @@ type Props = {
   clearError: (key: string) => void;
   showAdvanced: boolean;
   setShowAdvanced: (value: boolean) => void;
-  onValidationFieldFocus?: (key: string) => void;
 };
 
 export default function ListingStudioSpecs({
@@ -26,7 +25,6 @@ export default function ListingStudioSpecs({
   clearError,
   showAdvanced,
   setShowAdvanced,
-  onValidationFieldFocus,
 }: Props) {
   const renderField = (field: ListingSpecField) => {
     const rawValue = form.spec_values[field.key];
@@ -49,7 +47,7 @@ export default function ListingStudioSpecs({
 
     if (field.type === "select") {
       return (
-        <div key={field.key} className={fieldShellClass}>
+        <div key={field.key} id={`listing-spec-${field.key}`} className={fieldShellClass}>
           <FormDropdown
             label={label}
             value={String(value)}
@@ -64,7 +62,7 @@ export default function ListingStudioSpecs({
 
     if (field.type === "textarea") {
       return (
-        <div key={field.key} className={fieldShellClass}>
+        <div key={field.key} id={`listing-spec-${field.key}`} className={fieldShellClass}>
           <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
           <textarea
             value={String(value)}
@@ -79,7 +77,7 @@ export default function ListingStudioSpecs({
     if (field.type === "boolean") {
       const boolValue = typeof rawValue === "boolean" ? rawValue : null;
       return (
-        <div key={field.key} className={fieldShellClass}>
+        <div key={field.key} id={`listing-spec-${field.key}`} className={fieldShellClass}>
           <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
           <div className="grid grid-cols-3 gap-2">
             {[
@@ -109,7 +107,7 @@ export default function ListingStudioSpecs({
     if (field.type === "multiselect") {
       const selectedValues = Array.isArray(rawValue) ? rawValue : [];
       return (
-        <div key={field.key} className={fieldShellClass}>
+        <div key={field.key} id={`listing-spec-${field.key}`} className={fieldShellClass}>
           <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
           <div className={`grid grid-cols-2 gap-2 rounded-2xl border bg-white p-3 ${error ? "border-red-500" : "border-zinc-200"}`}>
             {(field.options || []).map((option) => {
@@ -139,7 +137,7 @@ export default function ListingStudioSpecs({
 
     if (field.type === "number") {
       return (
-        <div key={field.key} className={fieldShellClass}>
+        <div key={field.key} id={`listing-spec-${field.key}`} className={fieldShellClass}>
           <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
           <input
             type="number"
@@ -153,7 +151,7 @@ export default function ListingStudioSpecs({
     }
 
     return (
-      <div key={field.key} className={fieldShellClass}>
+      <div key={field.key} id={`listing-spec-${field.key}`} className={fieldShellClass}>
         <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
         <input
           type="text"
