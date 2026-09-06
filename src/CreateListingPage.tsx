@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { ListingStudio } from "./listing-studio";
 import FeedbackModal from "./components/FeedbackModal";
+import BrandMark from "./components/BrandMark";
 import { apiFetch } from "./lib/api";
-import { EXPLORE_PATH, HOME_PATH, navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
+import { EXPLORE_PATH, navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
 import { CATEGORIES } from "./constants";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { invalidateHomepageCache } from "./hooks/useHomePageData";
@@ -152,13 +153,7 @@ export default function CreateListingPage() {
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-900 text-xl font-extrabold text-white shadow-lg shadow-red-900/20">B</div>
-            <div className="text-left">
-              <p className="text-lg font-extrabold tracking-tight"><span className="text-red-900">Buy</span><span className="text-zinc-700">Mesho</span></p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Create listing</p>
-            </div>
-          </button>
+          <BrandMark subtitle="Create listing" />
           <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50">Back</button>
         </div>
       </header>
