@@ -114,8 +114,8 @@ export default function FormDropdown({
 
   const isDark = tone === "dark";
   const triggerBase = isDark
-    ? "w-full flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white/95 backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/15"
-    : "w-full flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-700 transition-all hover:border-zinc-300 hover:bg-white";
+    ? "w-full min-w-0 flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white/95 backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/15"
+    : "w-full min-w-0 flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-700 transition-all hover:border-zinc-300 hover:bg-white";
   const menuWrapper = "rounded-2xl border border-zinc-200 bg-white shadow-2xl overflow-hidden";
   const searchWrap = "p-2 border-b border-zinc-100 bg-white sticky top-0 z-10";
   const searchInput =
@@ -169,7 +169,7 @@ export default function FormDropdown({
   ) : null;
 
   return (
-    <div className="relative space-y-2" data-form-dropdown ref={wrapperRef}>
+    <div className="relative min-w-0 w-full space-y-2" data-form-dropdown ref={wrapperRef}>
       <label className={`mb-1 block text-xs font-bold uppercase ${isDark ? "text-white/70" : "text-zinc-400"}`}>
         {label}
       </label>
@@ -184,7 +184,7 @@ export default function FormDropdown({
         disabled={disabled}
         className={`${triggerBase} ${disabled ? (isDark ? "cursor-not-allowed bg-white/5 text-white/45 hover:bg-white/5 hover:border-white/10" : "cursor-not-allowed bg-zinc-100 text-zinc-500 hover:border-zinc-200 hover:bg-zinc-100") : ""}`}
       >
-        <span className="truncate text-left">{selectedLabel || placeholder}</span>
+        <span className="min-w-0 truncate text-left">{selectedLabel || placeholder}</span>
         <ChevronRight
           className={`h-4 w-4 flex-shrink-0 transition-transform ${isDark ? "text-white/65" : "text-zinc-400"} ${open ? "rotate-90" : "rotate-0"}`}
         />
