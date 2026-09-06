@@ -1,4 +1,5 @@
 import type { ChangeEvent } from "react";
+import { X } from "lucide-react";
 
 type ListingStudioMediaProps = {
   photos: string[];
@@ -42,9 +43,11 @@ export default function ListingStudioMedia({
               <button
                 type="button"
                 onClick={() => onRemovePhoto(index)}
-                className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-1 text-xs font-bold text-white opacity-0 transition group-hover:opacity-100"
+                aria-label={`Remove listing photo ${index + 1}`}
+                title="Remove photo"
+                className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-white shadow-sm transition hover:bg-black focus:outline-none focus:ring-2 focus:ring-white/80"
               >
-                Remove
+                <X className="h-4 w-4" />
               </button>
             </div>
           ))}
