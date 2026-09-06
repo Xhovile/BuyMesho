@@ -15,6 +15,7 @@ const AI_HIDDEN_DRAWER_PATHS = new Set([
   "/payments",
   "/seller/payouts",
   "/create",
+  "/edit",
   "/login",
   "/signup",
   "/cart",
