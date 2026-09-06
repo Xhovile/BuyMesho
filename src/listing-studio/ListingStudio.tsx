@@ -148,12 +148,10 @@ export default function ListingStudio({
   const handleAddImages = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
     if (!files.length) return;
-
     const selectedFiles = files.slice(0, Math.max(0, 5 - form.photos.length));
     if (selectedFiles.length < files.length) {
       showFeedback("info", "Photo limit reached", "You can upload a maximum of 5 photos per listing.");
     }
-
     setUploadingMedia(true);
     try {
       const urls: string[] = [];
@@ -161,11 +159,7 @@ export default function ListingStudio({
       setForm((prev) => ({ ...prev, photos: [...prev.photos, ...urls].slice(0, 5) }));
       clearError("photos");
     } catch (error: unknown) {
-      showFeedback(
-        "error",
-        "Image upload failed",
-        error instanceof Error ? error.message : "We could not upload the images."
-      );
+      showFeedback("error", "Image upload failed", error instanceof Error ? error.message : "We could not upload the images.");
     } finally {
       setUploadingMedia(false);
       event.target.value = "";
@@ -175,26 +169,25 @@ export default function ListingStudio({
   const handleReplaceVideo = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     setUploadingMedia(true);
     try {
       const url = await uploadMediaFile(file);
       setForm((prev) => ({ ...prev, video_url: url }));
     } catch (error: unknown) {
-      showFeedback(
-        "error",
-        "Video upload failed",
-        error instanceof Error ? error.message : "We could not upload the video."
-      );
+      showFeedback("error", "Video upload failed", error instanceof Error ? error.message : "We could not upload the video.");
     } finally {
       setUploadingMedia(false);
       event.target.value = "";
     }
   };
 
+  const scrollToSpecField = (fieldKey: string) => {
+    const target = document.getElementById(`listing-spec-${fieldKey}`);
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   const handleSave = async () => {
     setFieldErrors({});
-
     const priceNum = Number(form.price);
     const quantityNum = Number(form.quantity);
     const soldQuantityNum = Number(form.sold_quantity);
@@ -267,19 +260,15 @@ export default function ListingStudio({
         setError("item_type", "Choose an item type.");
         return;
       }
-
-      const validation = validateListingSpecValues(
-        form.category as Category,
-        form.subcategory,
-        form.item_type,
-        form.spec_values
-      );
+      const validation = validateListingSpecValues(form.category as Category, form.subcategory, form.item_type, form.spec_values);
       if (!validation.isValid) {
         const nextErrors: Record<string, string> = {};
         for (const item of validation.errors) {
           if (item.key) nextErrors[item.key] = item.message;
         }
         setFieldErrors(nextErrors);
+        const first = validation.errors[0];
+        if (first?.key) scrollToSpecField(first.key);
         return;
       }
     }
@@ -334,6 +323,7 @@ export default function ListingStudio({
             clearError={clearError}
             subcategories={availableSubcategories}
             itemTypes={availableItemTypes}
+            onAdvancedDetailsReset={() => setShowAdvancedSpecs(false)}
           />
 
           <ListingStudioMedia
@@ -371,25 +361,17 @@ export default function ListingStudio({
             clearError={clearError}
             showAdvanced={showAdvancedSpecs}
             setShowAdvanced={setShowAdvancedSpecs}
+            onValidationFieldFocus={scrollToSpecField}
           />
         </div>
       </div>
 
       <section className="sticky bottom-0 z-30 border-t border-zinc-200 bg-zinc-100/95 py-3 backdrop-blur">
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-700 hover:bg-zinc-50"
-          >
+          <button type="button" onClick={onCancel} className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-700 hover:bg-zinc-50">
             Cancel
           </button>
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={isSubmitting || uploadingMedia}
-            className="w-full rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:opacity-50 sm:w-auto"
-          >
+          <button type="button" onClick={() => void handleSave()} disabled={isSubmitting || uploadingMedia} className="w-full rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:opacity-50 sm:w-auto">
             {isSubmitting || uploadingMedia ? resolvedSubmitBusyLabel : resolvedSubmitLabel}
           </button>
         </div>
