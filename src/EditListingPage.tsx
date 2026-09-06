@@ -220,6 +220,7 @@ export default function EditListingPage() {
                 key={listing.id}
                 mode="edit"
                 initialData={initialDraft}
+                draftStorageKey={`edit:${firebaseUser.uid}:${listing.id}`}
                 onCancel={() => navigateBackOrPath(EXPLORE_PATH)}
                 onSubmit={handleSave}
                 showFeedback={showFeedback}
