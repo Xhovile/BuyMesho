@@ -11,9 +11,6 @@ type Props = {
   clearError: (key: string) => void;
   subcategories: string[];
   itemTypes: string[];
-  onCategoryChange?: (category: Category) => void;
-  onSubcategoryChange?: (subcategory: string) => void;
-  onItemTypeChange?: (itemType: string) => void;
 };
 
 export default function ListingStudioFields({
@@ -23,9 +20,6 @@ export default function ListingStudioFields({
   clearError,
   subcategories,
   itemTypes,
-  onCategoryChange,
-  onSubcategoryChange,
-  onItemTypeChange,
 }: Props) {
   const conditionConfig = getConditionConfig(form.category);
 
@@ -73,10 +67,6 @@ export default function ListingStudioFields({
           onChange={(value) => {
             clearError("category");
             const category = value as Category;
-            if (onCategoryChange) {
-              onCategoryChange(category);
-              return;
-            }
             setForm((prev) => ({
               ...prev,
               category,
@@ -98,43 +88,35 @@ export default function ListingStudioFields({
         />
 
         {subcategories.length ? (
-          <>
+          <div>
             <FormDropdown
               label="Subcategory"
               value={form.subcategory}
               options={subcategories}
               onChange={(value) => {
                 clearError("subcategory");
-                if (onSubcategoryChange) {
-                  onSubcategoryChange(value);
-                  return;
-                }
                 setForm((prev) => ({ ...prev, subcategory: value, item_type: "", spec_values: {} }));
               }}
               placeholder="Select subcategory"
             />
-            {fieldErrors.subcategory ? <p className="text-xs font-semibold text-red-600">{fieldErrors.subcategory}</p> : null}
-          </>
+            {fieldErrors.subcategory ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.subcategory}</p> : null}
+          </div>
         ) : null}
 
         {itemTypes.length ? (
-          <>
+          <div>
             <FormDropdown
               label="Item type"
               value={form.item_type}
               options={itemTypes}
               onChange={(value) => {
                 clearError("item_type");
-                if (onItemTypeChange) {
-                  onItemTypeChange(value);
-                  return;
-                }
                 setForm((prev) => ({ ...prev, item_type: value, spec_values: {} }));
               }}
               placeholder="Select item type"
             />
-            {fieldErrors.item_type ? <p className="text-xs font-semibold text-red-600">{fieldErrors.item_type}</p> : null}
-          </>
+            {fieldErrors.item_type ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.item_type}</p> : null}
+          </div>
         ) : null}
 
         <FormDropdown
