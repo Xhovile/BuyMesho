@@ -114,6 +114,19 @@ export default function SellerOrdersPage() {
   useEffect(() => { if (!profileLoading && profile?.is_seller && cachedOrders === null) void loadOrders(); }, [profileLoading, profile?.is_seller]);
   const selectedOrderId = new URLSearchParams(window.location.search).get("order");
   useEffect(() => { if (!selectedOrderId) { setSelected(null); return; } setSelected(orders.find((entry) => entry.order.id === selectedOrderId) ?? null); }, [orders, selectedOrderId]);
+  useEffect(() => {
+    setSellerResolution(null);
+    setResolutionReason("");
+    setRefundAmount("");
+    setRefundMethod("mobile_money");
+    setRefundTransactionId("");
+    setRefundDate(new Date().toISOString().slice(0, 10));
+    setRefundDestination("");
+    setRefundNote("");
+    setRefundEvidence([]);
+    setRefundEvidenceInput("");
+    setError(null);
+  }, [selectedOrderId]);
   const filteredOrders = useMemo(() => orders.filter((bundle) => matchesFilter(bundle, filter, disputedFilter)), [orders, filter, disputedFilter]);
   const pendingDisputes = useMemo(() => orders.filter(isPendingDispute), [orders]);
   if (profileLoading) return <main className="min-h-screen grid place-items-center bg-zinc-50 text-sm font-semibold text-zinc-500">Loading seller orders…</main>;
@@ -123,9 +136,9 @@ export default function SellerOrdersPage() {
   const updateSelectedBundle = (nextBundle: OrderBundle) => { setOrders((current) => { const next = current.map((entry) => entry.order.id === nextBundle.order.id ? nextBundle : entry); setSellerCache("orders", next); return next; }); setSelected(nextBundle); };
   const markAsPendingDelivery = async (bundle: OrderBundle) => { try { setActionLoading(true); const updated = await apiFetch(`/api/seller/orders/${encodeURIComponent(bundle.order.id)}/mark-pending-delivery`, { method: "POST" }); updateSelectedBundle(updated as OrderBundle); } catch (err) { setError(err instanceof Error ? err.message : "Failed to update delivery status"); } finally { setActionLoading(false); } };
   const contactBuyer = async (bundle: OrderBundle) => { try { setResolutionLoading(true); setError(null); const result = await apiFetch(`/api/seller/disputes/${encodeURIComponent(bundle.order.id)}/dispute/contact-buyer`, { method: "POST" }); if (result?.conversationTarget) { navigateToPath(String(result.conversationTarget)); return; } setError("Buyer conversation could not be opened."); } catch (err) { setError(err instanceof Error ? err.message : "Failed to open buyer conversation"); } finally { setResolutionLoading(false); } };
-  const resetResolutionFields = () => { setSellerResolution(null); setResolutionReason(""); setRefundAmount(""); setRefundTransactionId(""); setRefundDestination(""); setRefundNote(""); setRefundEvidence([]); setRefundEvidenceInput(""); setRefundDate(new Date().toISOString().slice(0, 10)); setError(null); };
+  const resetResolutionFields = () => { setSellerResolution(null); setResolutionReason(""); setRefundAmount(""); setRefundMethod("mobile_money"); setRefundTransactionId(""); setRefundDestination(""); setRefundNote(""); setRefundEvidence([]); setRefundEvidenceInput(""); setRefundDate(new Date().toISOString().slice(0, 10)); setError(null); };
   const payoutPaid = normalize(selected?.payoutStatus) === "paid";
-  const chooseSellerResolution = (resolution: Exclude<SellerResolution, null>) => { setSellerResolution(resolution); setResolutionReason(""); setError(null); };
+  const chooseSellerResolution = (resolution: Exclude<SellerResolution, null>) => { resetResolutionFields(); setSellerResolution(resolution); };
   const addEvidence = () => { const value = refundEvidenceInput.trim(); if (!value || refundEvidence.includes(value)) return setRefundEvidenceInput(""); setRefundEvidence((current) => [...current, value].slice(0, 20)); setRefundEvidenceInput(""); };
   const submitSellerRefund = async () => { if (!selected) return; const amount = Number(refundAmount); if (!Number.isFinite(amount) || amount <= 0) return setError("Enter a valid refund amount."); if (amount > Number(selected.order.total.amount)) return setError("Refund amount cannot exceed the order total."); if (!payoutPaid) return setError("Seller payout must be paid before recording a seller refund."); if (!refundTransactionId.trim()) return setError("Transaction ID is required."); if (!refundDate) return setError("Refund date is required."); try { setResolutionLoading(true); setError(null); await apiFetch(`/api/seller/disputes/${encodeURIComponent(selected.order.id)}/dispute/confirm-refunded`, { method: "POST", body: JSON.stringify({ amount, refundMethod, transactionId: refundTransactionId.trim(), refundDate, destination: refundDestination.trim() || undefined, note: refundNote.trim() || undefined, evidence: refundEvidence }) }); resetResolutionFields(); await loadOrders(true); } catch (err) { setError(err instanceof Error ? err.message : "Failed to record seller refund"); } finally { setResolutionLoading(false); } };
   const submitSellerNonRefund = async () => { if (!selected || (sellerResolution !== "replacement" && sellerResolution !== "rejected")) return; const explanation = resolutionReason.trim(); if (explanation.length < 10) return setError("Please provide at least 10 characters explaining this resolution."); try { setResolutionLoading(true); setError(null); await apiFetch(`/api/seller/disputes/${encodeURIComponent(selected.order.id)}/dispute/resolve`, { method: "POST", body: JSON.stringify({ resolution: sellerResolution, reason: explanation, paymentStatus: normalize(selected.order.status) }) }); resetResolutionFields(); await loadOrders(true); } catch (err) { setError(err instanceof Error ? err.message : "Failed to submit seller resolution"); } finally { setResolutionLoading(false); } };
