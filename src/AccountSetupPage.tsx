@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { Loader2, MapPin, UserRound } from "lucide-react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { Camera, Loader2, MapPin, UserRound } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
 import FormDropdown from "./components/FormDropdown";
 import FeedbackModal from "./components/FeedbackModal";
@@ -100,6 +100,25 @@ export default function AccountSetupPage() {
   const setField = (field: keyof FormState, value: string) => setForm((prev) => ({ ...prev, [field]: value }));
   const isStudent = form.userType === "student";
 
+  const handleProfileImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setFeedback({ open: true, type: "error", title: "Invalid profile image", message: "Please choose an image file." });
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") setField("profilePicture", reader.result);
+    };
+    reader.onerror = () => setFeedback({ open: true, type: "error", title: "Could not read image", message: "Please choose the image again and try again." });
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!firebaseUser) return;
@@ -168,7 +187,7 @@ export default function AccountSetupPage() {
       eyebrow="Welcome to BuyMesho"
       title="Complete your profile"
       description="Your account is verified. Tell us a little more so BuyMesho can work for you."
-      backLabel="Log out"
+      hideBackButton
     >
       {loading ? (
         <div className="flex items-center justify-center py-16 text-zinc-500"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading your account…</div>
@@ -181,7 +200,16 @@ export default function AccountSetupPage() {
               <label><span className="mb-2 block text-sm font-medium text-zinc-600">Surname</span><input required autoComplete="family-name" value={form.surname} onChange={(e) => setField("surname", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
               <label className="sm:col-span-2"><span className="mb-2 block text-sm font-medium text-zinc-600">Other names <span className="text-zinc-400">(optional)</span></span><input autoComplete="additional-name" value={form.otherNames} onChange={(e) => setField("otherNames", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
               <label><span className="mb-2 block text-sm font-medium text-zinc-600">Phone number</span><input required autoComplete="tel" value={form.phone} onChange={(e) => setField("phone", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
-              {form.profilePicture ? <div className="flex items-center gap-3 sm:justify-end"><img src={form.profilePicture} alt="Profile" className="h-12 w-12 rounded-full object-cover border border-zinc-200" /><div><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Profile photo</p><p className="text-xs text-zinc-500">Imported from your sign-in profile.</p></div></div> : null}
+              <div className="flex items-center gap-3 sm:justify-end">
+                <input id="account-setup-profile-image" type="file" accept="image/*" className="sr-only" onChange={handleProfileImageChange} />
+                <label htmlFor="account-setup-profile-image" className="flex cursor-pointer items-center gap-3">
+                  <span className="relative inline-flex h-14 w-14 shrink-0 overflow-hidden rounded-full border border-zinc-200 bg-zinc-50">
+                    {form.profilePicture ? <img src={form.profilePicture} alt="Profile" className="h-full w-full object-cover" /> : <UserRound className="m-auto h-6 w-6 text-zinc-400" />}
+                    <span className="absolute bottom-0 right-0 inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-zinc-900 text-white shadow-sm"><Camera className="h-3 w-3" /></span>
+                  </span>
+                  <span><span className="block text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Profile image</span><span className="block text-xs text-zinc-500">Tap the avatar or camera to upload or replace</span></span>
+                </label>
+              </div>
             </div>
           </section>
 
