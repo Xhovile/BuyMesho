@@ -44,6 +44,9 @@ const DEFAULT_SAFE_RETRY_ATTEMPTS = 3;
 const DEFAULT_SAFE_RETRY_DELAY_MS = 350;
 const RETRYABLE_STATUS_CODES = new Set([502, 503, 504]);
 const adminMessagesResponseCache = new Map<string, any>();
+const AUTHLESS_API_PATHS = new Set([
+  "/api/auth/check-login-email",
+]);
 
 type ApiFetchInit = RequestInit & {
   timeoutMs?: number;
@@ -51,6 +54,11 @@ type ApiFetchInit = RequestInit & {
   retryDelayMs?: number;
   requiresAuth?: boolean;
 };
+
+function shouldWaitForAuth(url: string, init: ApiFetchInit) {
+  if (typeof init.requiresAuth === "boolean") return init.requiresAuth;
+  return !AUTHLESS_API_PATHS.has(url);
+}
 
 function formatApiErrorMessage(value: unknown): string | null {
   if (typeof value === "string") {
@@ -222,7 +230,7 @@ async function performApiFetch(
 ) {
   const headers: Record<string, string> = {
     ...(init.headers as Record<string, string> | undefined),
-    ...(await authHeader(forceRefreshToken, init.requiresAuth !== false)),
+    ...(await authHeader(forceRefreshToken, shouldWaitForAuth(url, init))),
   };
 
   if (init.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
