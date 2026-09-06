@@ -194,22 +194,25 @@ export default function AccountSetupPage() {
       ) : (
         <form onSubmit={handleSubmit} className="w-full space-y-7 pb-28">
           <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <input id="account-setup-profile-image" type="file" accept="image/*" className="sr-only" onChange={handleProfileImageChange} />
+              <label htmlFor="account-setup-profile-image" className="flex cursor-pointer items-center gap-3">
+                <span className="relative inline-flex h-14 w-14 shrink-0 overflow-hidden rounded-full border border-zinc-200 bg-zinc-50">
+                  {form.profilePicture ? <img src={form.profilePicture} alt="Profile" className="h-full w-full object-cover" /> : <UserRound className="m-auto h-6 w-6 text-zinc-400" />}
+                  <span className="absolute bottom-0 right-0 inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-zinc-900 text-white shadow-sm"><Camera className="h-3 w-3" /></span>
+                </span>
+                <span><span className="block text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Profile image</span><span className="block text-xs text-zinc-500">Tap the avatar or camera to upload or replace</span></span>
+              </label>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
             <div className="mb-5 flex items-center gap-3"><UserRound className="h-5 w-5 text-zinc-700" /><div><h2 className="font-extrabold text-zinc-900">About you</h2><p className="text-xs text-zinc-500">Your general BuyMesho identity.</p></div></div>
             <div className="grid gap-5 sm:grid-cols-2">
               <label><span className="mb-2 block text-sm font-medium text-zinc-600">First name</span><input required autoComplete="given-name" value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
               <label><span className="mb-2 block text-sm font-medium text-zinc-600">Surname</span><input required autoComplete="family-name" value={form.surname} onChange={(e) => setField("surname", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
               <label className="sm:col-span-2"><span className="mb-2 block text-sm font-medium text-zinc-600">Other names <span className="text-zinc-400">(optional)</span></span><input autoComplete="additional-name" value={form.otherNames} onChange={(e) => setField("otherNames", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
-              <label><span className="mb-2 block text-sm font-medium text-zinc-600">Phone number</span><input required autoComplete="tel" value={form.phone} onChange={(e) => setField("phone", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
-              <div className="flex items-center gap-3 sm:justify-end">
-                <input id="account-setup-profile-image" type="file" accept="image/*" className="sr-only" onChange={handleProfileImageChange} />
-                <label htmlFor="account-setup-profile-image" className="flex cursor-pointer items-center gap-3">
-                  <span className="relative inline-flex h-14 w-14 shrink-0 overflow-hidden rounded-full border border-zinc-200 bg-zinc-50">
-                    {form.profilePicture ? <img src={form.profilePicture} alt="Profile" className="h-full w-full object-cover" /> : <UserRound className="m-auto h-6 w-6 text-zinc-400" />}
-                    <span className="absolute bottom-0 right-0 inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-zinc-900 text-white shadow-sm"><Camera className="h-3 w-3" /></span>
-                  </span>
-                  <span><span className="block text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Profile image</span><span className="block text-xs text-zinc-500">Tap the avatar or camera to upload or replace</span></span>
-                </label>
-              </div>
+              <label className="sm:col-span-2"><span className="mb-2 block text-sm font-medium text-zinc-600">Phone number</span><input required autoComplete="tel" value={form.phone} onChange={(e) => setField("phone", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
             </div>
           </section>
 
