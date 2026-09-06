@@ -7,7 +7,6 @@ import type {
   University,
 } from "../types";
 import {
-  createEmptyListingSpecValues,
   getAdvancedListingFields,
   getBasicListingFields,
   getListingItemConfig,
@@ -332,7 +331,6 @@ export default function ListingStudio({
             form={form}
             setForm={setForm}
             fieldErrors={fieldErrors}
-            setError={setError}
             clearError={clearError}
             subcategories={availableSubcategories}
             itemTypes={availableItemTypes}
@@ -359,6 +357,8 @@ export default function ListingStudio({
             setForm={setForm}
             mode={form.listing_mode || "normal"}
             onModeChange={handleModeChange}
+            fieldErrors={fieldErrors}
+            clearError={clearError}
           />
 
           <ListingStudioSpecs
