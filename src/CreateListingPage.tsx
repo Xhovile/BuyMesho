@@ -190,6 +190,7 @@ export default function CreateListingPage() {
             <ListingStudio
               mode="create"
               initialData={listingDraft}
+              draftStorageKey={`create:${firebaseUser.uid}`}
               onCancel={() => navigateBackOrPath(EXPLORE_PATH)}
               onSubmit={handleCreate}
               showFeedback={showFeedback}
