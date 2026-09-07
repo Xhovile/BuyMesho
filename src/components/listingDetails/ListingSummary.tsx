@@ -1,7 +1,8 @@
 import { type ReactNode } from "react";
-import { Plus, Share2, ShieldCheck, ShoppingBag, ShoppingCart } from "lucide-react";
+import { Plus, Share2, ShieldCheck, ShoppingCart } from "lucide-react";
 import type { Listing } from "../../types";
 import { InfoPill } from "./ListingDetailsShared";
+import BuyBasketIcon from "../BuyBasketIcon";
 
 type SellerProfile = {
   business_name?: string;
@@ -100,6 +101,7 @@ export default function ListingSummary({
           <div className="border-t border-zinc-200 pt-4">
             <div className="grid grid-cols-3 gap-2">
               <button type="button" onClick={onBuyNow} className={`${actionButtonClass} bg-lime-400 text-zinc-950 hover:bg-lime-500`}>
+                <BuyBasketIcon className="hidden h-5 w-5 shrink-0 lg:block" />
                 <span>Buy</span>
               </button>
 
