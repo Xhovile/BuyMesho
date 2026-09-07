@@ -27,7 +27,7 @@ export default function EventDetailsActions({
   onCancelEvent: () => void;
 }) {
   const ownerActionButtonClass = "inline-flex items-center gap-2 rounded-2xl border border-blue-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-blue-50";
-  const buyerActionButtonClass = "inline-flex min-w-0 w-full items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-extrabold transition-colors";
+  const buyerActionButtonClass = "inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-extrabold transition-colors";
 
   return canManageEvent ? (
     <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/80 via-zinc-50 to-white p-4 shadow-sm ring-1 ring-blue-100/60">
@@ -52,12 +52,12 @@ export default function EventDetailsActions({
     </div>
   ) : (
     <div className="border-t border-zinc-200 pt-4 pb-24">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+      <div className="grid grid-cols-3 items-center gap-2 sm:flex sm:flex-wrap sm:justify-start sm:gap-3">
         <button
           type="button"
           onClick={onBuyTicket}
           disabled={!canBuyOrCart || checkoutLoading}
-          className={`${buyerActionButtonClass} bg-orange-500 text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60`}
+          className={`${buyerActionButtonClass} w-full bg-orange-500 text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-5`}
         >
           <span className="truncate">{checkoutLoading ? "Buying…" : "Buy Ticket"}</span>
         </button>
@@ -66,7 +66,7 @@ export default function EventDetailsActions({
           type="button"
           onClick={onMessage}
           disabled={!canMessageEvent}
-          className="flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 shadow-sm transition-all hover:bg-zinc-50 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 shadow-sm transition-all hover:bg-zinc-50 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-4"
           aria-label="Message event owner"
           title={!canMessageEvent ? "This event is not available for messaging right now." : "Message event owner"}
         >
@@ -76,17 +76,18 @@ export default function EventDetailsActions({
             <circle cx="284" cy="316" r="12" fill="#FFFFFF" />
             <circle cx="323" cy="316" r="12" fill="#FFFFFF" />
           </svg>
-          <span className="hidden truncate font-extrabold sm:inline">Message</span>
+          <span className="hidden font-extrabold sm:inline">Message</span>
         </button>
 
         <button
           type="button"
           onClick={onShare}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
+          className="flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 shadow-sm transition-colors hover:bg-zinc-50 sm:w-auto sm:px-4"
           aria-label="Share event"
           title="Share event"
         >
           <Share2 className="h-4 w-4 text-zinc-700" />
+          <span className="hidden font-extrabold sm:inline">Share</span>
         </button>
       </div>
     </div>
