@@ -85,27 +85,22 @@ export default function EventDetailsActions({
           type="button"
           onClick={onMessage}
           disabled={!canMessageEvent}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-transparent p-0 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-12 w-24 shrink-0 items-center justify-center rounded-2xl bg-transparent p-0 disabled:cursor-not-allowed disabled:opacity-60"
           aria-label="Message event owner"
           title={!canMessageEvent ? "This event is not available for messaging right now." : "Message event owner"}
         >
           <svg
             viewBox="0 0 512 512"
             xmlns="http://www.w3.org/2000/svg"
+            preserveAspectRatio="none"
             aria-hidden="true"
-            className="h-12 w-12"
+            className="h-12 w-24"
           >
-            <path
-              d="M232 250 H360 C379 250 394 265 394 284 V351 C394 370 379 385 360 385 H351 V414 C351 424 343 429 335 421 L298 385 H232 C213 385 198 370 198 351 V284 C198 265 213 250 232 250 Z"
-              fill="#198FC7"
-            />
+            <path d="M232 250 H360 C379 250 394 265 394 284 V351 C394 370 379 385 360 385 H351 V414 C351 424 343 429 335 421 L298 385 H232 C213 385 198 370 198 351 V284 C198 265 213 250 232 250 Z" fill="#198FC7" />
             <circle cx="245" cy="316" r="12" fill="#FFFFFF" />
             <circle cx="284" cy="316" r="12" fill="#FFFFFF" />
             <circle cx="323" cy="316" r="12" fill="#FFFFFF" />
-            <path
-              d="M149 264 C126 264 108 245 108 222 V108 C108 85 126 67 149 67 H321 C344 67 362 85 362 108 V222 C362 245 344 264 321 264 H229 L180 309 C170 318 162 313 162 300 V264 H149 Z"
-              fill="#3E5569"
-            />
+            <path d="M149 264 C126 264 108 245 108 222 V108 C108 85 126 67 149 67 H321 C344 67 362 85 362 108 V222 C362 245 344 264 321 264 H229 L180 309 C170 318 162 313 162 300 V264 H149 Z" fill="#3E5569" />
             <circle cx="170" cy="150" r="17" fill="#FFFFFF" />
             <circle cx="225" cy="150" r="17" fill="#FFFFFF" />
             <circle cx="280" cy="150" r="17" fill="#FFFFFF" />
