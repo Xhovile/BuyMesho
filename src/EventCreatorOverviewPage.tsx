@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { AlertCircle, ArrowRight, CalendarDays, Clock3, Download, Filter, LayoutDashboard, Loader2, Search, Ticket, Wallet } from "lucide-react";
 
-import loaderImage from "../photos/LoaderPic.png";
+import logoImage from "../photos/Logo.png";
 import AccountPageShell from "./components/AccountPageShell";
 import { apiFetch } from "./lib/api";
 import { EVENTS_MANAGE_PATH, navigateToPath } from "./lib/appNavigation";
@@ -498,7 +498,7 @@ export default function EventCreatorOverviewPage() {
     if (typeof window === "undefined") return;
     const html = buildPrintableDashboardHtml({
       title: "Creator Dashboard Export",
-      logoUrl: loaderImage,
+      logoUrl: logoImage,
       summary,
       events: filteredEvents,
       filters: exportState,
