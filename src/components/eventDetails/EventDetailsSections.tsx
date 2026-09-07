@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import AccordionSection from "./AccordionSection";
 import DetailRow from "./DetailRow";
 import { fieldLabelFromKey, normalizeValue } from "./eventDetailsUtils";
@@ -18,6 +19,17 @@ export default function EventDetailsSections({
   onToggleExtra: () => void;
   extraSpecEntries: Array<[string, unknown]>;
 }) {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(min-width: 768px)").matches) return;
+
+    if (!coreOpen) onToggleCore();
+    if (!extraOpen) onToggleExtra();
+    // Intentionally run once on mount so desktop starts expanded without
+    // preventing the user from closing either accordion afterward.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="grid gap-6 md:grid-cols-2">
       <AccordionSection title="Core details" open={coreOpen} onToggle={onToggleCore}>
