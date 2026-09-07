@@ -12,6 +12,7 @@ import type { Listing } from "../types";
 import ListingImage from "./ListingImage";
 import ListingActionsMenu from "./ListingActionsMenu";
 import CheckoutModal from "./CheckoutModal";
+import BuyBasketIcon from "./BuyBasketIcon";
 
 type ListingCardProps = {
   listing: Listing;
@@ -242,9 +243,10 @@ export default function ListingCard({
               <button
                 type="button"
                 onClick={handleBuyClick}
-                className="inline-flex h-9 w-full items-center justify-center rounded-xl bg-lime-400 px-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-950 shadow-sm transition-colors hover:bg-lime-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60"
+                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-lime-400 px-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-950 shadow-sm transition-colors hover:bg-lime-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60"
               >
-                Buy
+                <BuyBasketIcon className="h-5 w-5 shrink-0" />
+                <span>Buy</span>
               </button>
               {buyNotice ? <p className="text-[10px] font-bold text-red-700">{buyNotice}</p> : null}
             </div>
