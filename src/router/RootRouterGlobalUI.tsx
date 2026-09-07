@@ -4,7 +4,7 @@ import AiIcon from "../components/ai/AiIcon";
 import PwaInstallPrompt from "../components/PwaInstallPrompt";
 import ScrollToTopFab from "../components/ScrollToTopFab";
 import { navigateToPath } from "../lib/appNavigation";
-import logoImage from "../../photos/Logo.png";
+import logoImage from "../../photos/LOGO.svg";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 export function RouteLoader() {
