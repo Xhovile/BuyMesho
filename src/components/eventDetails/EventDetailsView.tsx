@@ -22,6 +22,7 @@ import { navigateToConversation } from "../../lib/messagesNavigation";
 import { useAuthUser } from "../../hooks/useAuthUser";
 import { upsertEventCartItem } from "../../lib/eventCart";
 import FeedbackModal from "../FeedbackModal";
+import ConfirmModal from "../ConfirmModal";
 import TicketHolderForm, { type TicketHolderInformation } from "../tickets/TicketHolderForm";
 
 export default function EventDetailsView() {
@@ -47,6 +48,8 @@ export default function EventDetailsView() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [cartNoticeOpen, setCartNoticeOpen] = useState(false);
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | "cart" | null>(null);
   const [coreOpen, setCoreOpen] = useState(false);
   const [extraOpen, setExtraOpen] = useState(false);
 
@@ -93,6 +96,21 @@ export default function EventDetailsView() {
 
   const clearNotice = () => setNotice(null);
 
+  const openAuthPrompt = (action: "message" | "buy" | "cart") => {
+    setAuthPromptAction(action);
+    setAuthPromptOpen(true);
+  };
+
+  const closeAuthPrompt = () => {
+    setAuthPromptOpen(false);
+    setAuthPromptAction(null);
+  };
+
+  const continueToAuth = () => {
+    closeAuthPrompt();
+    navigateToLoginWithReturnPath();
+  };
+
   const handleShare = async () => {
     if (!event || !eventPageUrl) return;
     const shareData = { title: event.event_title, text: `${event.event_title} • ${price}`, url: eventPageUrl };
@@ -113,7 +131,7 @@ export default function EventDetailsView() {
   const handleMessage = async () => {
     if (!event) return;
     if (!firebaseUser?.uid) {
-      navigateToLoginWithReturnPath(eventPageUrl || `${EVENTS_PATH}?event=${event.id}`);
+      openAuthPrompt("message");
       return;
     }
     if (!canMessageEvent) {
@@ -131,9 +149,7 @@ export default function EventDetailsView() {
   const handleBuyTicket = useCallback(() => {
     if (!event) return;
     if (!firebaseUser?.uid) {
-      navigateToLoginWithReturnPath(
-        autoBuyRequested ? `${eventPageUrl}&buy=1` : eventPageUrl || `${EVENTS_PATH}?event=${event.id}`
-      );
+      openAuthPrompt("buy");
       return;
     }
     if (!canBuyOrCart) {
@@ -142,7 +158,7 @@ export default function EventDetailsView() {
     }
     setNotice(null);
     setTicketHolderOpen(true);
-  }, [canBuyOrCart, event, eventPageUrl, firebaseUser?.uid, autoBuyRequested]);
+  }, [canBuyOrCart, event, firebaseUser?.uid]);
 
   useEffect(() => {
     if (!autoBuyRequested || authLoading || !event || autoBuyHandledRef.current) return;
@@ -185,7 +201,7 @@ export default function EventDetailsView() {
   const handleAddToCart = async () => {
     if (!event) return;
     if (!firebaseUser?.uid) {
-      navigateToLoginWithReturnPath(eventPageUrl || `${EVENTS_PATH}?event=${event.id}`);
+      openAuthPrompt("cart");
       return;
     }
     if (!canBuyOrCart) {
@@ -285,6 +301,28 @@ export default function EventDetailsView() {
       ) : null}
 
       <FeedbackModal open={cartNoticeOpen} type="success" title="Added to cart" message="Ticket added to cart." onClose={() => setCartNoticeOpen(false)} />
+
+      <ConfirmModal
+        open={authPromptOpen}
+        title={
+          authPromptAction === "buy"
+            ? "Sign in to buy"
+            : authPromptAction === "cart"
+              ? "Sign in to use cart"
+              : "Sign in to message"
+        }
+        message={
+          authPromptAction === "buy"
+            ? "You need to sign in or create an account before you can buy this ticket."
+            : authPromptAction === "cart"
+              ? "You need to sign in or create an account before adding this ticket to your cart."
+              : "You need to sign in or create an account before you can message the event organizer."
+        }
+        confirmText={authPromptAction === "cart" ? "Login" : "Continue"}
+        cancelText="Cancel"
+        onCancel={closeAuthPrompt}
+        onConfirm={continueToAuth}
+      />
     </div>
   );
 }
