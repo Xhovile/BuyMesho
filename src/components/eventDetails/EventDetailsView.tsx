@@ -50,7 +50,10 @@ export default function EventDetailsView() {
   const [cartNoticeOpen, setCartNoticeOpen] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | "cart" | null>(null);
-  const [coreOpen, setCoreOpen] = useState(false);
+  const [coreOpen, setCoreOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 767px)").matches;
+  });
   const [extraOpen, setExtraOpen] = useState(false);
 
   useEffect(() => {
