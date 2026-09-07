@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { AppRoute } from "../lib/appNavigation";
-import loaderImage from "../../photos/LoaderPic.png";
+import logoImage from "../../photos/Logo.png";
 
 const SEO_BASE_URL = "https://buymesho.app";
 const HOMEPAGE_TITLE = "BuyMesho — Malawi's Secure E-commerce Platform";
@@ -18,7 +18,7 @@ function upsertMeta(name: string, content: string, attribute: "name" | "property
   let el = document.head.querySelector(`meta[${attribute}="${name}"]`) as HTMLMetaElement | null;
   if (!el) {
     el = document.createElement("meta");
-    el.setAttribute(attribute, name);
+    el.setAttribute("${attribute}", name);
     document.head.appendChild(el);
   }
   el.setAttribute("content", content);
@@ -82,7 +82,7 @@ export function useRootRouterSeo(locationPath: string, route: AppRoute) {
     upsertMeta("og:title", seo.title, "property");
     upsertMeta("og:description", seo.description, "property");
     upsertMeta("og:url", `${SEO_BASE_URL}${seo.canonicalPath}`, "property");
-    upsertMeta("og:image", loaderImage, "property");
+    upsertMeta("og:image", logoImage, "property");
     upsertMeta("og:type", "website", "property");
     upsertMeta("twitter:card", "summary_large_image");
   }, [locationPath, route]);
