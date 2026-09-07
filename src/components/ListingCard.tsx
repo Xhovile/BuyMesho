@@ -30,6 +30,7 @@ type ListingCardProps = {
   isLoggedIn?: boolean;
   compact?: boolean;
   ultraCompact?: boolean;
+  fillGrid?: boolean;
   clickable?: boolean;
   showActionsMenu?: boolean;
   performanceMode?: boolean;
@@ -56,6 +57,7 @@ export default function ListingCard({
   isLoggedIn,
   compact = false,
   ultraCompact = false,
+  fillGrid = false,
   showActionsMenu = true,
   performanceMode = false,
   clickable = true,
@@ -104,7 +106,7 @@ export default function ListingCard({
   };
 
   const imageAspect = ultraCompact ? "aspect-square" : compact ? "aspect-[4/3]" : "aspect-[1/1] md:aspect-[4/5]";
-  const cardSize = ultraCompact ? "max-w-[160px]" : compact ? "max-w-[235px]" : "max-w-[300px]";
+  const cardSize = fillGrid ? "w-full max-w-none" : ultraCompact ? "max-w-[160px]" : compact ? "max-w-[235px]" : "max-w-[300px]";
 
   const handleBuyClick = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
