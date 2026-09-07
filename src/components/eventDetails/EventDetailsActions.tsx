@@ -69,7 +69,7 @@ export default function EventDetailsActions({
       </div>
     </div>
   ) : (
-    <div className="border-t border-zinc-200 pt-4 pb-8">
+    <div className="border-t border-zinc-200 pt-4 pb-16">
       <div className="grid grid-cols-3 gap-2">
         <button
           type="button"
