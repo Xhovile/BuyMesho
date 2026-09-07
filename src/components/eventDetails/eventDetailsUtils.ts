@@ -78,7 +78,30 @@ export function posterAccent(eventType: string) {
 export function getPosterUrl(item: EventRecord) {
   const specValues = item.spec_values ?? {};
   const posterValue = specValues.poster_image_url || specValues.poster_url || specValues.poster;
-  return typeof posterValue === "string" && posterValue.trim().length > 0 ? posterValue.trim() : "";
+  const rawUrl = typeof posterValue === "string" && posterValue.trim().length > 0 ? posterValue.trim() : "";
+
+  if (!rawUrl) return "";
+
+  // Cloudinary can be given transformed delivery URLs. Strip delivery
+  // transformations so event details use the original uploaded asset.
+  try {
+    const marker = "/upload/";
+    const markerIndex = rawUrl.indexOf(marker);
+    if (markerIndex === -1) return rawUrl;
+
+    const prefix = rawUrl.slice(0, markerIndex + marker.length);
+    const remainder = rawUrl.slice(markerIndex + marker.length);
+    const parts = remainder.split("/");
+    const versionIndex = parts.findIndex((part) => /^v\d+$/.test(part));
+
+    if (versionIndex > 0) {
+      return `${prefix}${parts.slice(versionIndex).join("/")}`;
+    }
+  } catch {
+    // Fall back to the stored URL if it cannot be normalized.
+  }
+
+  return rawUrl;
 }
 
 export function getPosterAlt(item: EventRecord) {
