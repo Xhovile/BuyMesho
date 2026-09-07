@@ -60,7 +60,7 @@ export default function EventDetailsActions({
           disabled={!canBuyOrCart || checkoutLoading}
           className={`${buyerActionButtonClass} w-full bg-orange-500 text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-5`}
         >
-          <BuyBasketIcon className="hidden h-5 w-5 shrink-0 lg:block" />
+          <BuyBasketIcon className="hidden h-6 w-6 shrink-0 text-[#8F171D] lg:block" />
           <span className="truncate">{checkoutLoading ? "Buying…" : "Buy Ticket"}</span>
         </button>
 
