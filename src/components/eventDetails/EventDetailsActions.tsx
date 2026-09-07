@@ -2,6 +2,7 @@ import { BarChart3, Pencil, Share2, Trash2 } from "lucide-react";
 
 import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, navigateToPath } from "../../lib/appNavigation";
 import type { EventRecord } from "./eventDetailsTypes";
+import BuyBasketIcon from "../BuyBasketIcon";
 
 export default function EventDetailsActions({
   event,
@@ -59,6 +60,7 @@ export default function EventDetailsActions({
           disabled={!canBuyOrCart || checkoutLoading}
           className={`${buyerActionButtonClass} w-full bg-orange-500 text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-5`}
         >
+          <BuyBasketIcon className="hidden h-5 w-5 shrink-0 lg:block" />
           <span className="truncate">{checkoutLoading ? "Buying…" : "Buy Ticket"}</span>
         </button>
 
@@ -82,7 +84,7 @@ export default function EventDetailsActions({
         <button
           type="button"
           onClick={onShare}
-          className="flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 shadow-sm transition-colors hover:bg-zinc-50 sm:w-auto sm:px-4"
+          className="flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 transition-colors hover:bg-zinc-50 sm:w-auto sm:px-4"
           aria-label="Share event"
           title="Share event"
         >
