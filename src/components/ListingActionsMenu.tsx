@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CirclePlus, HandCoins, MoreVertical, Share2 } from "lucide-react";
+import { Bookmark, CirclePlus, HandCoins, MoreVertical, Share2 } from "lucide-react";
 import type { Listing } from "../types";
 import { apiFetch } from "../lib/api";
 import { buildListingShareUrl } from "../lib/listingUrl";
+import { toggleSavedListingId } from "../lib/savedListings";
 import { EXPLORE_PATH, navigateBackOrPath, navigateToEditListing } from "../lib/appNavigation";
 import ActionModal from "./ActionModal";
 
@@ -48,6 +49,7 @@ export default function ListingActionsMenu({
   listing,
   currentUid,
   isLoggedIn,
+  isSaved,
   variant = "card",
   onReport,
   onDelete,
@@ -62,12 +64,17 @@ export default function ListingActionsMenu({
   const [quantityInput, setQuantityInput] = useState("1");
   const [dialogBusy, setDialogBusy] = useState(false);
   const [noticeMessage, setNoticeMessage] = useState("");
+  const [savedState, setSavedState] = useState(Boolean(isSaved));
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const sellerUid = listing.seller_uid;
   const isOwner = !!currentUid && !!sellerUid && currentUid === sellerUid;
   const wrapperClassName = variant === "detail" ? "relative inline-flex" : "absolute right-3 top-3 z-20";
   const currentAvailable = getAvailableQuantity(listing);
+
+  useEffect(() => {
+    setSavedState(Boolean(isSaved));
+  }, [isSaved]);
 
   useEffect(() => {
     if (!open) return;
@@ -154,6 +161,12 @@ export default function ListingActionsMenu({
     setOpen(false);
     setQuantityInput("1");
     setActiveDialog("delete");
+  };
+
+  const handleToggleSaved = () => {
+    const next = toggleSavedListingId(listing.id, currentUid);
+    setSavedState(next);
+    setOpen(false);
   };
 
   const submitDelete = async () => {
@@ -347,6 +360,14 @@ export default function ListingActionsMenu({
                     Share listing
                   </span>
                 </button>
+                {variant === "detail" ? (
+                  <button type="button" onClick={handleToggleSaved} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                    <span className="inline-flex items-center gap-2">
+                      <Bookmark className={`w-4 h-4 ${savedState ? "fill-current" : ""}`} />
+                      {savedState ? "Remove from saved" : "Save listing"}
+                    </span>
+                  </button>
+                ) : null}
                 <button type="button" onClick={handleHideListing} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
                   Hide this listing
                 </button>
