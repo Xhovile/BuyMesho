@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Bookmark, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Share2 } from "lucide-react";
 import { getListingImageUrl } from "../../lib/imageUrl";
 
 function FullscreenToggleIcon({ isFullscreen }: { isFullscreen: boolean }) {
@@ -37,9 +37,8 @@ type ListingGalleryProps = {
   currentImage: string;
   videoUrl?: string | null;
   isFullscreen: boolean;
-  saved: boolean;
   actionsMenu: ReactNode;
-  onToggleSaved: () => void;
+  onShare: () => void;
   onOpenFullscreen: () => void;
   onCloseFullscreen: () => void;
   onPrevImage: () => void;
@@ -54,9 +53,8 @@ export default function ListingGallery({
   currentImage,
   videoUrl,
   isFullscreen,
-  saved,
   actionsMenu,
-  onToggleSaved,
+  onShare,
   onOpenFullscreen,
   onCloseFullscreen,
   onPrevImage,
@@ -120,13 +118,12 @@ export default function ListingGallery({
           <div className="shrink-0">{actionsMenu}</div>
           <button
             type="button"
-            onClick={onToggleSaved}
-            className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all shadow-sm ${
-              saved ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-            }`}
-            aria-label={saved ? "Remove from saved" : "Save item"}
+            onClick={onShare}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-all hover:bg-zinc-50"
+            aria-label="Share listing"
+            title="Share listing"
           >
-            <Bookmark className={`h-4 w-4 ${saved ? "fill-current" : ""}`} />
+            <Share2 className="h-4 w-4" />
           </button>
         </div>
 
