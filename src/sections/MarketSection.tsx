@@ -74,8 +74,8 @@ type MarketSectionProps = {
 
 function ListingCardSkeleton() {
   return (
-    <div className="w-full max-w-[160px] overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white shadow-sm">
-      <div className="aspect-square animate-pulse bg-zinc-100" />
+    <div className="w-full max-w-none overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white shadow-sm">
+      <div className="aspect-[4/3] animate-pulse bg-zinc-100" />
       <div className="space-y-1.5 p-2">
         <div className="h-3.5 w-11/12 animate-pulse rounded-full bg-zinc-100" />
         <div className="h-3 w-4/5 animate-pulse rounded-full bg-zinc-100" />
@@ -148,26 +148,26 @@ export default function MarketSection({
   const [showMoreFilters, setShowMoreFilters] = useState(false);
 
   const matchesChip = (listing: Listing) => {
-  if (activeChip === "Deals") {
-    return (
-      listing.listing_mode === "deal" ||
-      Boolean(
-        (listing.original_price && listing.original_price > listing.price) ||
-          (listing.discount_percent && listing.discount_percent > 0)
-      )
-    );
-  }
+    if (activeChip === "Deals") {
+      return (
+        listing.listing_mode === "deal" ||
+        Boolean(
+          (listing.original_price && listing.original_price > listing.price) ||
+            (listing.discount_percent && listing.discount_percent > 0)
+        )
+      );
+    }
 
-  if (activeChip === "Wholesale") {
-    return (
-      listing.listing_mode === "wholesale" ||
-      Boolean(listing.is_wholesale) ||
-      Boolean(listing.pack_size && listing.pack_size > 1)
-    );
-  }
+    if (activeChip === "Wholesale") {
+      return (
+        listing.listing_mode === "wholesale" ||
+        Boolean(listing.is_wholesale) ||
+        Boolean(listing.pack_size && listing.pack_size > 1)
+      );
+    }
 
-  return true;
-};
+    return true;
+  };
 
   const visibleListings = listings.filter((listing) => {
     const notHidden =
@@ -276,14 +276,14 @@ export default function MarketSection({
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-[repeat(auto-fit,160px)] justify-start gap-x-2 gap-y-4 md:gap-x-8 md:gap-y-6">
+        <div className="grid grid-cols-2 justify-start gap-x-4 gap-y-5 md:grid-cols-4 md:gap-x-8 md:gap-y-6">
           {Array.from({ length: skeletonCount }).map((_, index) => (
             <ListingCardSkeleton key={index} />
           ))}
         </div>
       ) : visibleListings.length > 0 ? (
         <>
-          <div className="grid grid-cols-[repeat(auto-fit,160px)] justify-start gap-x-2 gap-y-4 md:gap-x-8 md:gap-y-6">
+          <div className="grid grid-cols-2 justify-start gap-x-4 gap-y-5 md:grid-cols-4 md:gap-x-8 md:gap-y-6">
             {visibleListings.map((listing) => (
               <ListingCard
                 key={listing.id}
@@ -301,7 +301,7 @@ export default function MarketSection({
                 onOpenDetails={onOpenDetails}
                 onOpenSeller={onOpenSeller}
                 compact
-                ultraCompact
+                fillGrid
                 showActionsMenu={false}
                 showBuyButton
               />
