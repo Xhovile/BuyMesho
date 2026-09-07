@@ -73,7 +73,6 @@ export default function ListingDetailsContent({
   sameCampusListings,
   sameCategoryListings,
   sellerOtherListings,
-  handleToggleSaved,
   handleShare,
   handleBuyNow,
   handleAddToCart,
@@ -183,8 +182,7 @@ export default function ListingDetailsContent({
                     currentImage={currentImage}
                     videoUrl={listing.video_url}
                     isFullscreen={isFullscreen}
-                    saved={saved}
-                    onToggleSaved={handleToggleSaved}
+                    onShare={handleShare}
                     onOpenFullscreen={() => onToggleFullscreen(true)}
                     onCloseFullscreen={() => onToggleFullscreen(false)}
                     onPrevImage={handlePrevImage}
