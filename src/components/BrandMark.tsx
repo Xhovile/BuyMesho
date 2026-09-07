@@ -1,5 +1,5 @@
 import { HOME_PATH, navigateToPath } from "../lib/appNavigation";
-import Logo from "../../photos/Logo.png";
+import Logo from "../../photos/LOGO.svg";
 
 type BrandMarkProps = {
   subtitle?: string;
