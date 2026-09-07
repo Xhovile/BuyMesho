@@ -1,4 +1,4 @@
-import { BarChart3, Pencil, Share2, ShoppingBag, Trash2 } from "lucide-react";
+import { BarChart3, Pencil, Share2, Trash2 } from "lucide-react";
 
 import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, navigateToPath } from "../../lib/appNavigation";
 import type { EventRecord } from "./eventDetailsTypes";
@@ -52,22 +52,40 @@ export default function EventDetailsActions({
     </div>
   ) : (
     <div className="border-t border-zinc-200 pt-4 pb-24">
-      <div className="grid grid-cols-3 gap-2">
-        <button type="button" onClick={onBuyTicket} disabled={!canBuyOrCart || checkoutLoading} className={`${buyerActionButtonClass} bg-orange-500 text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60`}>
-          <ShoppingBag className="h-4 w-4 shrink-0" />
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+        <button
+          type="button"
+          onClick={onBuyTicket}
+          disabled={!canBuyOrCart || checkoutLoading}
+          className={`${buyerActionButtonClass} bg-orange-500 text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60`}
+        >
           <span className="truncate">{checkoutLoading ? "Buying…" : "Buy Ticket"}</span>
         </button>
 
-        <button type="button" onClick={onMessage} disabled={!canMessageEvent} className="flex h-12 w-full min-w-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white p-0 shadow-sm transition-all hover:bg-zinc-50 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60" aria-label="Message event owner" title={!canMessageEvent ? "This event is not available for messaging right now." : "Message event owner"}>
-          <svg viewBox="190 240 220 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="h-8 w-9 drop-shadow-[0_3px_3px_rgba(0,0,0,0.18)]">
+        <button
+          type="button"
+          onClick={onMessage}
+          disabled={!canMessageEvent}
+          className="flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 shadow-sm transition-all hover:bg-zinc-50 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
+          aria-label="Message event owner"
+          title={!canMessageEvent ? "This event is not available for messaging right now." : "Message event owner"}
+        >
+          <svg viewBox="190 240 220 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="h-8 w-9 shrink-0 drop-shadow-[0_3px_3px_rgba(0,0,0,0.18)]">
             <path d="M232 250 H360 C379 250 394 265 394 284 V351 C394 370 379 385 360 385 H351 V414 C351 424 343 429 335 421 L298 385 H232 C213 385 198 370 198 351 V284 C198 265 213 250 232 250 Z" fill="#198FC7" />
             <circle cx="245" cy="316" r="12" fill="#FFFFFF" />
             <circle cx="284" cy="316" r="12" fill="#FFFFFF" />
             <circle cx="323" cy="316" r="12" fill="#FFFFFF" />
           </svg>
+          <span className="hidden truncate font-extrabold sm:inline">Message</span>
         </button>
 
-        <button type="button" onClick={onShare} className="flex h-12 w-full min-w-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50" aria-label="Share event" title="Share event">
+        <button
+          type="button"
+          onClick={onShare}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
+          aria-label="Share event"
+          title="Share event"
+        >
           <Share2 className="h-4 w-4 text-zinc-700" />
         </button>
       </div>
