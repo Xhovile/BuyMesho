@@ -49,7 +49,16 @@ export default function EventDetailsHero({
           aria-label="Open poster fullscreen"
           title="Open poster fullscreen"
         >
-          {posterUrl ? <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" /> : null}
+          {posterUrl ? (
+            <img
+              src={posterUrl}
+              alt={posterAlt}
+              loading="eager"
+              fetchPriority="high"
+              decoding="auto"
+              className="h-full w-full object-cover"
+            />
+          ) : null}
           <span className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/55 text-white backdrop-blur-sm">
             <Maximize2 className="h-4 w-4" />
           </span>
@@ -82,6 +91,9 @@ export default function EventDetailsHero({
                 <img
                   src={posterUrl}
                   alt={posterAlt}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="auto"
                   className="block h-auto w-auto max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-2rem)] object-contain sm:max-h-[calc(100dvh-3rem)] sm:max-w-[calc(100vw-3rem)]"
                 />
               ) : (
