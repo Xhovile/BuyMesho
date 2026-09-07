@@ -7,7 +7,7 @@ import {
   SAFETY_PATH,
   TERMS_PATH,
 } from "../lib/appNavigation";
-import Logo from "../../photos/Logo.png";
+import Logo from "../../photos/LOGO.svg";
 
 export default function AppFooter() {
   return (
