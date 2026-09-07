@@ -105,8 +105,20 @@ export default function ListingCard({
     }
   };
 
-  const imageAspect = ultraCompact ? "aspect-square" : compact ? "aspect-[4/3]" : "aspect-[1/1] md:aspect-[4/5]";
-  const cardSize = fillGrid ? "w-full max-w-none" : ultraCompact ? "max-w-[160px]" : compact ? "max-w-[235px]" : "max-w-[300px]";
+  const imageAspect = fillGrid
+    ? "aspect-square md:aspect-[4/3]"
+    : ultraCompact
+      ? "aspect-square"
+      : compact
+        ? "aspect-[4/3]"
+        : "aspect-[1/1] md:aspect-[4/5]";
+  const cardSize = fillGrid
+    ? "w-full max-w-[160px] md:max-w-none"
+    : ultraCompact
+      ? "max-w-[160px]"
+      : compact
+        ? "max-w-[235px]"
+        : "max-w-[300px]";
 
   const handleBuyClick = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -186,18 +198,38 @@ export default function ListingCard({
               <div
                 className={`inline-flex flex-col gap-0.5 rounded-xl border border-white/30 bg-black/45 px-2.5 py-1.5 shadow-lg ${
                   performanceMode ? "" : "backdrop-blur-[2px]"
-                } ${ultraCompact ? "max-w-[100px]" : compact ? "max-w-[132px]" : "max-w-[165px]"}`}
+                } ${
+                  fillGrid
+                    ? "max-w-[100px] md:max-w-[132px]"
+                    : ultraCompact
+                      ? "max-w-[100px]"
+                      : compact
+                        ? "max-w-[132px]"
+                        : "max-w-[165px]"
+                }`}
               >
                 <span
                   className={`font-black uppercase tracking-[0.18em] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.60)] ${
-                    ultraCompact ? "text-[8px]" : compact ? "text-[9px]" : "text-[10px]"
+                    fillGrid
+                      ? "text-[8px] md:text-[9px]"
+                      : ultraCompact
+                        ? "text-[8px]"
+                        : compact
+                          ? "text-[9px]"
+                          : "text-[10px]"
                   }`}
                 >
                   {offerLabel}
                 </span>
                 <span
                   className={`font-extrabold leading-none text-red-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] ${
-                    ultraCompact ? "text-[9px]" : compact ? "text-[10px]" : "text-[11px]"
+                    fillGrid
+                      ? "text-[9px] md:text-[10px]"
+                      : ultraCompact
+                        ? "text-[9px]"
+                        : compact
+                          ? "text-[10px]"
+                          : "text-[11px]"
                   }`}
                 >
                   {offerValue}
@@ -207,7 +239,15 @@ export default function ListingCard({
               <div
                 className={`rounded-xl border border-white/25 bg-white/90 font-extrabold shadow-md ${
                   performanceMode ? "" : "backdrop-blur-md"
-                } ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"} text-zinc-950`}
+                } ${
+                  fillGrid
+                    ? "px-2 py-1 text-[11px] md:px-2.5 md:py-1 md:text-xs"
+                    : ultraCompact
+                      ? "px-2 py-1 text-[11px]"
+                      : compact
+                        ? "px-2.5 py-1 text-xs"
+                        : "px-3 py-1.5 text-sm"
+                } text-zinc-950`}
               >
                 <span>{formatMoney(Number(listing.price) || 0)}</span>
               </div>
@@ -215,20 +255,36 @@ export default function ListingCard({
           </div>
         </div>
 
-        <div className={ultraCompact ? "py-2" : compact ? "space-y-1.5 py-3" : "space-y-2 py-3"}>
+        <div
+          className={
+            fillGrid
+              ? "space-y-2 py-2 md:space-y-1.5 md:py-3"
+              : ultraCompact
+                ? "py-2"
+                : compact
+                  ? "space-y-1.5 py-3"
+                  : "space-y-2 py-3"
+          }
+        >
           <h3
             className={
-              ultraCompact
-                ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900"
-                : compact
-                  ? "line-clamp-1 text-[14px] font-extrabold tracking-tight text-zinc-900 group-hover:text-primary"
-                  : "line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
+              fillGrid
+                ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900 md:text-[14px] md:group-hover:text-primary"
+                : ultraCompact
+                  ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900"
+                  : compact
+                    ? "line-clamp-1 text-[14px] font-extrabold tracking-tight text-zinc-900 group-hover:text-primary"
+                    : "line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
             }
           >
             {titleLabel}
           </h3>
 
-          <div className={`flex min-h-[1.6rem] flex-wrap gap-0.5 ${ultraCompact ? "text-[8px]" : compact ? "text-[9px]" : "text-[10px]"}`}>
+          <div
+            className={`flex min-h-[1.6rem] flex-wrap gap-0.5 ${
+              fillGrid ? "text-[8px] md:text-[9px]" : ultraCompact ? "text-[8px]" : compact ? "text-[9px]" : "text-[10px]"
+            }`}
+          >
             {cardSpecs.map((spec) => (
               <span key={spec.key} className="rounded-full bg-zinc-100 px-1.5 py-px font-semibold leading-tight text-zinc-700">
                 {spec.label}: {spec.value}
