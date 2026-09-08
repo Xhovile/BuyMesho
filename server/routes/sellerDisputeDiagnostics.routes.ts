@@ -34,10 +34,12 @@ async function getColumns(tableName: string): Promise<string[]> {
   return result.rows.map((row) => row.column_name);
 }
 
-export function createSellerDisputeDiagnosticsRouter(requireAuth: RequestHandler): express.Router {
+export function createSellerDisputeDiagnosticsRouter(_requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
-  router.get('/seller-disputes', requireAuth, async (_req: any, res) => {
+  // Temporary read-only runtime diagnostic. Kept unauthenticated so deployment
+  // health can be checked without requiring a Firebase token.
+  router.get('/seller-disputes', async (_req: any, res) => {
     const startedAt = Date.now();
     try {
       const tables: Record<string, unknown> = {};
