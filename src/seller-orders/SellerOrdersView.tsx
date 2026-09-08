@@ -141,7 +141,7 @@ export default function SellerOrdersView() {
             <button
               type="button"
               onClick={() => void loadOrders(true)}
-              className="mt-4 inline-flex self-start items-center gap-2 rounded-xl border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800 md:absolute md:right-0 md:top-1/2 md:mt-0 md:-translate-y-1/2"
+              className="mt-4 inline-flex self-start items-center gap-2 rounded-xl border border-zinc-950 bg-zinc-950 px-3 py-2 text-xs font-bold text-white hover:bg-black md:absolute md:right-0 md:top-1/2 md:mt-0 md:-translate-y-1/2"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Refresh
             </button>
