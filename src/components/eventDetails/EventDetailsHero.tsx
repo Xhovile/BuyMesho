@@ -99,7 +99,10 @@ export default function EventDetailsHero({
           <div className="relative flex h-full w-full items-center justify-center p-2 sm:p-4">
             <button
               type="button"
-              onClick={closeFullscreen}
+              onClick={(event) => {
+                event.stopPropagation();
+                closeFullscreen();
+              }}
               className="absolute right-3 top-3 z-[10000] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white shadow-lg backdrop-blur-sm hover:bg-black/85 sm:right-5 sm:top-5"
               aria-label="Return from fullscreen"
               title="Return"
