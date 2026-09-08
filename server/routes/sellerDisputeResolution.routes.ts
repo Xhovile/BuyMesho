@@ -30,6 +30,13 @@ function requireNonEmpty(value: unknown, field: string): string {
   return result;
 }
 
+function sellerResolutionFromOutcome(outcome: string): 'refund' | 'replacement' | 'rejected' | null {
+  if (['seller_refund_confirmed', 'seller_refund_accepted'].includes(outcome)) return 'refund';
+  if (['seller_replacement_confirmed', 'seller_replacement_committed'].includes(outcome)) return 'replacement';
+  if (['seller_rejected', 'seller_dispute_rejected'].includes(outcome)) return 'rejected';
+  return null;
+}
+
 async function loadSellerOrder(orderId: string, sellerId: string) {
   const result = await query<Record<string, unknown>>(
     `SELECT o.id, o.buyer_id, o.seller_id, o.total_amount, o.total_currency,
@@ -161,9 +168,6 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
         const order = orderResult.rows[0];
         if (!order) throw new Error('Seller order not found');
 
-        // Rejecting or committing to a replacement is a dispute decision, not a refund.
-        // It must remain available while the dispute itself is actionable, regardless of
-        // whether the order has already moved beyond the literal 'paid' state.
         const caseResult = await client.query<Record<string, unknown>>(
           `SELECT *
              FROM dispute_cases
@@ -179,6 +183,20 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
         const disputeStatus = clean(dispute.status).toLowerCase();
         const disputeOutcome = clean(dispute.outcome).toLowerCase();
         if (['resolved', 'closed'].includes(disputeStatus) || SETTLED_SELLER_OUTCOMES.has(disputeOutcome)) {
+          const submittedResolution = sellerResolutionFromOutcome(disputeOutcome);
+          if (submittedResolution) {
+            return {
+              alreadySubmitted: true,
+              caseId: String(dispute.id),
+              buyerId: String(order.buyer_id),
+              sellerId,
+              currency: String(order.total_currency ?? 'MWK'),
+              orderId,
+              resolution: submittedResolution,
+              reason: '',
+              outcome: disputeOutcome,
+            };
+          }
           throw new Error('Dispute already settled.');
         }
         if (!['open', 'under_review', 'awaiting_response'].includes(disputeStatus)) {
@@ -230,6 +248,7 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
           ],
         );
         return {
+          alreadySubmitted: false,
           caseId: String(dispute.id),
           buyerId: String(order.buyer_id),
           sellerId,
@@ -241,42 +260,47 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
         };
       });
 
-      try {
-        await notifyDisputeWorkflowEvent({
-          caseId: result.caseId,
-          orderId: result.orderId,
-          buyerId: result.buyerId,
-          sellerId: result.sellerId,
-          event: result.resolution === 'replacement' ? 'seller_replacement_recorded' : 'seller_dispute_rejected',
-          note: result.reason,
-          currency: result.currency,
-          recipients: ['buyer', 'seller'],
-        });
-      } catch (notificationError) {
-        console.warn('Failed to send seller resolution notification:', notificationError);
-      }
-      try {
-        await notifyAdminSellerResolutionRecorded({
-          caseId: result.caseId,
-          orderId: result.orderId,
-          buyerId: result.buyerId,
-          sellerId: result.sellerId,
-          resolution: result.resolution as 'replacement' | 'rejected',
-          reason: result.reason,
-        });
-      } catch (notificationError) {
-        console.warn('Failed to send admin seller-resolution notification:', notificationError);
+      if (!result.alreadySubmitted) {
+        try {
+          await notifyDisputeWorkflowEvent({
+            caseId: result.caseId,
+            orderId: result.orderId,
+            buyerId: result.buyerId,
+            sellerId: result.sellerId,
+            event: result.resolution === 'replacement' ? 'seller_replacement_recorded' : 'seller_dispute_rejected',
+            note: result.reason,
+            currency: result.currency,
+            recipients: ['buyer'],
+          });
+        } catch (notificationError) {
+          console.warn('Failed to send seller resolution notification:', notificationError);
+        }
+        try {
+          await notifyAdminSellerResolutionRecorded({
+            caseId: result.caseId,
+            orderId: result.orderId,
+            buyerId: result.buyerId,
+            sellerId: result.sellerId,
+            resolution: result.resolution as 'replacement' | 'rejected',
+            reason: result.reason,
+          });
+        } catch (notificationError) {
+          console.warn('Failed to send admin seller-resolution notification:', notificationError);
+        }
       }
 
-      return res.status(201).json({
+      return res.status(result.alreadySubmitted ? 200 : 201).json({
         caseId: result.caseId,
         status: 'resolved',
         outcome: result.outcome,
         resolution: result.resolution,
         reason: result.reason,
-        message: result.resolution === 'replacement'
-          ? 'Replacement resolution recorded and the dispute is now settled.'
-          : 'Dispute rejection recorded and the dispute is now settled.',
+        alreadySubmitted: result.alreadySubmitted,
+        message: result.alreadySubmitted
+          ? 'This seller resolution was already submitted.'
+          : result.resolution === 'replacement'
+            ? 'Replacement resolution recorded and the dispute is now settled.'
+            : 'Dispute rejection recorded and the dispute is now settled.',
       });
     } catch (error) {
       return res.status(error instanceof Error && error.message === 'Dispute already settled.' ? 409 : 400).json({
@@ -327,7 +351,26 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
 
         const caseStatus = clean(caseRow.status).toLowerCase();
         const caseOutcome = clean(caseRow.outcome).toLowerCase();
-        if (['resolved', 'closed'].includes(caseStatus) || SETTLED_SELLER_OUTCOMES.has(caseOutcome)) throw new Error('Dispute already settled.');
+
+        if (['resolved', 'closed'].includes(caseStatus) || SETTLED_SELLER_OUTCOMES.has(caseOutcome)) {
+          if (sellerResolutionFromOutcome(caseOutcome) === 'refund') {
+            const existingTransaction = await client.query<Record<string, unknown>>(
+              `SELECT * FROM refund_transactions WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1`,
+              [orderId],
+            );
+            if (existingTransaction.rows[0]) {
+              return {
+                duplicate: true,
+                transaction: existingTransaction.rows[0],
+                caseId: caseRow.id,
+                buyerId: String(caseRow.buyer_id),
+                sellerId,
+                currency: String(order.total_currency ?? 'MWK'),
+              };
+            }
+          }
+          throw new Error('Dispute already settled.');
+        }
         if (!['open', 'under_review'].includes(caseStatus)) throw new Error('This dispute is not available for seller refund confirmation');
 
         const attemptResult = await client.query<Record<string, unknown>>(
@@ -465,7 +508,7 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
             refundMethod,
             refundDate,
             destination,
-            recipients: ['buyer', 'seller'],
+            recipients: ['buyer'],
           });
         } catch (notificationError) {
           console.warn('Failed to send seller-refund notification:', notificationError);
@@ -491,6 +534,7 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
 
       return res.status(result.duplicate ? 200 : 201).json({
         duplicate: result.duplicate,
+        alreadySubmitted: result.duplicate,
         transaction: result.transaction,
         caseId: result.caseId,
         status: 'resolved',
