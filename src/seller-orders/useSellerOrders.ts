@@ -45,7 +45,7 @@ export function useSellerOrders() {
     else setLoading(true);
 
     try {
-      const data = await apiFetch("/api/seller/orders");
+      const data = await apiFetch("/api/seller/orders", force ? { cache: "no-store" } : undefined);
       const next = Array.isArray(data) ? (data as OrderBundle[]) : [];
       setOrders(next);
       setSellerCache("orders", next);
