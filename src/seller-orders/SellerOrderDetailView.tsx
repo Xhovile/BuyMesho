@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, Send, ShieldAlert } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, Send, ShieldAlert } from "lucide-react";
 import SellerDisputeResolution from "./SellerDisputeResolution";
 import type { OrderBundle, SellerResolution } from "./types";
 import {
@@ -27,6 +27,7 @@ export type SellerOrderDetailViewProps = {
   refundEvidence: string[];
   refundEvidenceInput: string;
   payoutPaid: boolean;
+  error: string | null;
   setResolutionReason: (value: string) => void;
   setRefundAmount: (value: string) => void;
   setRefundMethod: (value: string) => void;
@@ -59,6 +60,7 @@ export default function SellerOrderDetailView({
   refundEvidence,
   refundEvidenceInput,
   payoutPaid,
+  error,
   setResolutionReason,
   setRefundAmount,
   setRefundMethod,
@@ -117,6 +119,23 @@ export default function SellerOrderDetailView({
               {orderStatusLabel(selected)}
             </span>
           </div>
+
+          {error ? (
+            <div
+              role="alert"
+              className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+            >
+              <div className="flex items-start gap-3">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-700" />
+                <div className="min-w-0">
+                  <p className="font-black">Seller action failed</p>
+                  <p className="mt-1 whitespace-pre-wrap break-words font-semibold">
+                    {error}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           {hasDispute(selected) ? (
             <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5">
