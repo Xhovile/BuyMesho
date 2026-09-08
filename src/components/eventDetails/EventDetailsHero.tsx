@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, X } from "lucide-react";
 
@@ -24,11 +24,20 @@ export default function EventDetailsHero({
   onClearNotice: () => void;
 }) {
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
+  const fullscreenHistoryActiveRef = useRef(false);
   const date = formatDate(event.event_date);
   const startTime = formatClock(event.start_time);
 
+  const closeFullscreen = () => {
+    if (typeof window !== "undefined" && fullscreenHistoryActiveRef.current) {
+      window.history.back();
+      return;
+    }
+    setFullscreenOpen(false);
+  };
+
   useEffect(() => {
-    if (!fullscreenOpen) return;
+    if (!fullscreenOpen || typeof window === "undefined") return;
 
     const previousOverflow = document.body.style.overflow;
     const previousTouchAction = document.body.style.touchAction;
@@ -37,16 +46,45 @@ export default function EventDetailsHero({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setFullscreenOpen(false);
+        closeFullscreen();
       }
     };
 
+    const handlePopState = () => {
+      if (!fullscreenHistoryActiveRef.current) return;
+      fullscreenHistoryActiveRef.current = false;
+      setFullscreenOpen(false);
+    };
+
+    window.addEventListener("popstate", handlePopState);
     document.addEventListener("keydown", handleKeyDown);
     return () => {
+      window.removeEventListener("popstate", handlePopState);
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
       document.body.style.touchAction = previousTouchAction;
     };
+  }, [fullscreenOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (fullscreenOpen && !fullscreenHistoryActiveRef.current) {
+      window.history.pushState(
+        { ...(window.history.state ?? null), buyMeshoFullscreen: "event" },
+        "",
+        window.location.href,
+      );
+      fullscreenHistoryActiveRef.current = true;
+      return;
+    }
+
+    if (!fullscreenOpen && fullscreenHistoryActiveRef.current) {
+      fullscreenHistoryActiveRef.current = false;
+      if (window.history.state?.buyMeshoFullscreen === "event") {
+        window.history.back();
+      }
+    }
   }, [fullscreenOpen]);
 
   const fullscreenOverlay = fullscreenOpen
@@ -56,12 +94,12 @@ export default function EventDetailsHero({
           role="dialog"
           aria-modal="true"
           aria-label="Event poster fullscreen"
-          onClick={() => setFullscreenOpen(false)}
+          onClick={closeFullscreen}
         >
           <div className="relative flex h-full w-full items-center justify-center p-2 sm:p-4">
             <button
               type="button"
-              onClick={() => setFullscreenOpen(false)}
+              onClick={closeFullscreen}
               className="absolute right-3 top-3 z-[10000] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white shadow-lg backdrop-blur-sm hover:bg-black/85 sm:right-5 sm:top-5"
               aria-label="Return from fullscreen"
               title="Return"
