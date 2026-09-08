@@ -109,6 +109,7 @@ export default function SellerOrdersView() {
           refundEvidence={refundEvidence}
           refundEvidenceInput={refundEvidenceInput}
           payoutPaid={payoutPaid}
+          error={error}
           setResolutionReason={setResolutionReason}
           setRefundAmount={setRefundAmount}
           setRefundMethod={setRefundMethod}
