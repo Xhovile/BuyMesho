@@ -1,4 +1,4 @@
-function escapeHtml(value: string) { return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;"); }
+import { renderBuyMeshoEmail, renderDetailCard } from "./buymesho-email.js";
 
 export type EventTicketEmailItem = {
   ticketId: string;
@@ -29,47 +29,54 @@ export type EventTicketEmailData = {
   tickets?: EventTicketEmailItem[];
 };
 
-function details(d: EventTicketEmailData) {
-  const lines = [
-    `Event: ${d.eventName}`,
-    `Ticket: ${d.ticketType}`,
-    `Quantity: ${d.quantity}`,
-    `Order reference: ${d.orderReference}`,
-    `Amount paid: ${d.amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})} ${d.currency}`,
-    `When: ${d.eventDate} ${d.startTime}`.trim(),
-    `Where: ${d.venue}${d.location ? `, ${d.location}` : ""}`,
+function details(data: EventTicketEmailData): Array<[string, string]> {
+  const rows: Array<[string, string]> = [
+    ["Event", data.eventName],
+    ["Ticket", data.ticketType],
+    ["Quantity", String(data.quantity)],
+    ["Order reference", data.orderReference],
+    ["Amount paid", `${data.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${data.currency}`],
+    ["When", `${data.eventDate} ${data.startTime}`.trim()],
+    ["Where", `${data.venue}${data.location ? `, ${data.location}` : ""}`],
   ];
-  if (!d.tickets?.length && d.ticketId) lines.push(`Ticket ID: ${d.ticketId}`);
-  return lines;
+  if (!data.tickets?.length && data.ticketId) rows.push(["Ticket ID", data.ticketId]);
+  return rows;
 }
 
-function ticketLines(d: EventTicketEmailData) {
-  if (!d.tickets?.length) return [] as string[];
-  return d.tickets.map((ticket, index) => {
-    const holder = ticket.holderName ? ` — Holder: ${ticket.holderName}` : "";
-    return `Ticket ${index + 1}: ${ticket.ticketId} — ${ticket.ticketType}${holder}`;
-  });
+function ticketRows(data: EventTicketEmailData): Array<[string, string]> {
+  if (!data.tickets?.length) return [];
+  return data.tickets.map((ticket, index) => [
+    `Ticket ${index + 1}`,
+    `${ticket.ticketId} — ${ticket.ticketType}${ticket.holderName ? ` — Holder: ${ticket.holderName}` : ""}`,
+  ]);
 }
 
 function render(title: string, intro: string, data: EventTicketEmailData, action: string) {
   const rows = details(data);
-  const ticketRows = ticketLines(data);
-  const text = [
-    `Hello ${data.buyerName},`,
-    "",
-    intro,
-    "",
-    ...rows,
-    ...(ticketRows.length ? ["", "Tickets:", ...ticketRows] : []),
-    "",
-    `${action}: ${data.accessUrl}`,
-    "",
-    "BuyMesho",
+  const tickets = ticketRows(data);
+  const ticketCard = tickets.length ? renderDetailCard(tickets, "Tickets") : "";
+  const bodyHtml = `${renderDetailCard(rows, "Order details")}${ticketCard}`;
+  const bodyText = [
+    "Order details",
+    ...rows.map(([label, value]) => `${label}: ${value}`),
+    ...(tickets.length ? ["", "Tickets", ...tickets.map(([label, value]) => `${label}: ${value}`)] : []),
   ].join("\n");
 
-  const html = `<div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111827"><h2>${escapeHtml(title)}</h2><p>Hello ${escapeHtml(data.buyerName)},</p><p>${escapeHtml(intro)}</p><div style="padding:14px 16px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px">${rows.map(row=>`<p style="margin:0 0 6px">${escapeHtml(row)}</p>`).join("")}${ticketRows.length?`<p style="margin:10px 0 6px;font-weight:700">Tickets</p>${ticketRows.map(row=>`<p style="margin:0 0 6px">${escapeHtml(row)}</p>`).join("")}`:""}</div><p><a href="${escapeHtml(data.accessUrl)}" style="display:inline-block;background:#111827;color:#fff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:700">${escapeHtml(action)}</a></p></div>`;
-  return {text,html};
+  return renderBuyMeshoEmail({
+    recipientName: data.buyerName,
+    title,
+    intro,
+    bodyHtml,
+    bodyText,
+    action: { label: action, url: data.accessUrl },
+    preheader: intro,
+  });
 }
 
-export function renderTicketPurchaseConfirmationEmail(data: EventTicketEmailData) { return render("Ticket purchase confirmed", "Your payment was successful and your ticket is ready.", data, "View your ticket"); }
-export function renderTicketDeliveryEmail(data: EventTicketEmailData) { return render("Your event ticket is ready", "Your event pass has been issued and is ready to access.", data, "Access your ticket"); }
+export function renderTicketPurchaseConfirmationEmail(data: EventTicketEmailData) {
+  return render("Ticket purchase confirmed", "Your payment was successful and your ticket is ready.", data, "View your ticket");
+}
+
+export function renderTicketDeliveryEmail(data: EventTicketEmailData) {
+  return render("Your event ticket is ready", "Your event pass has been issued and is ready to access.", data, "Access your ticket");
+}
