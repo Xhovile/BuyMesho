@@ -85,6 +85,14 @@ export default function SellerOrderDetailView({
   const settled = isSettledDispute(selected);
   const pending = isPendingDispute(selected);
   const settledLabel = settlementLabel(selected);
+  const sellerSubmittedResolution =
+    settledLabel === "Refunded"
+      ? "Refund"
+      : settledLabel === "Replacement"
+        ? "Send another item"
+        : settledLabel === "Rejected"
+          ? "Reject"
+          : settledLabel;
 
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-6 md:px-8">
@@ -156,6 +164,25 @@ export default function SellerOrderDetailView({
                         ? "Review the buyer’s request and choose one resolution."
                         : "This order has dispute history."}
                   </p>
+
+                  {settled ? (
+                    <div className="mt-4 rounded-xl border border-emerald-200 bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">
+                        Seller resolution
+                      </p>
+                      <p className="mt-2 text-sm font-black text-zinc-950">
+                        {sellerSubmittedResolution}
+                      </p>
+                      <button
+                        type="button"
+                        disabled
+                        className="mt-3 rounded-xl bg-zinc-200 px-4 py-2.5 text-sm font-extrabold text-zinc-500"
+                      >
+                        Submitted
+                      </button>
+                    </div>
+                  ) : null}
+
                   {disputeReason ? (
                     <div className="mt-3 rounded-xl border border-amber-200 bg-white p-4">
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-700">
