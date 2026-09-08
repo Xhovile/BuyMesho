@@ -23,6 +23,7 @@ export type DisputeSummary = {
     id?: string | null;
     status?: string | null;
     reason?: string | null;
+    resolution?: string | null;
     requestedResolution?: string | null;
   } | null;
 };
