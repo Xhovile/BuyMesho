@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Share2 } from "lucide-react";
 import { getListingImageUrl } from "../../lib/imageUrl";
 
@@ -104,14 +105,59 @@ export default function ListingGallery({
     </button>
   );
 
+  const fullscreenOverlay = isFullscreen ? (
+    <div className="fixed inset-0 z-[1000] h-[100dvh] w-screen overflow-hidden bg-black">
+      <button
+        type="button"
+        onClick={onCloseFullscreen}
+        className="absolute right-3 top-3 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/60 text-white hover:bg-black/75 sm:right-4 sm:top-4"
+        aria-label="Close fullscreen"
+      >
+        <FullscreenToggleIcon isFullscreen />
+      </button>
+
+      <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-black">
+        {fullscreenImageLoading ? <ImageShimmer className="bg-zinc-950" /> : null}
+
+        <img
+          src={getListingImageUrl(currentImage, "fullscreen")}
+          alt={listingName}
+          loading="eager"
+          decoding="async"
+          onLoad={() => setFullscreenImageLoading(false)}
+          onError={() => setFullscreenImageLoading(false)}
+          className={`relative max-h-full max-w-full object-contain transition-opacity duration-150 ${
+            fullscreenImageLoading ? "opacity-0" : "opacity-100"
+          }`}
+        />
+
+        {showThumbRail ? (
+          <>
+            <button
+              type="button"
+              onClick={onPrevImage}
+              className="absolute left-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-900 hover:bg-white"
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={onNextImage}
+              className="absolute right-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-900 hover:bg-white"
+              aria-label="Next image"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </>
+        ) : null}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <>
-      <style>{`
-        @keyframes listing-gallery-shimmer {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(400%); }
-        }
-      `}</style>
+      <style>{`\n        @keyframes listing-gallery-shimmer {\n          0% { transform: translateX(0); }\n          100% { transform: translateX(400%); }\n        }\n      `}</style>
 
       <div className="w-full min-w-0 max-w-full">
         <div className="mb-3 flex items-center justify-start gap-2">
@@ -209,57 +255,9 @@ export default function ListingGallery({
         ) : null}
       </div>
 
-      {isFullscreen ? (
-        <div className="fixed inset-0 z-[120] bg-black p-2 sm:p-4">
-          <div className="relative mx-auto h-full w-full max-w-7xl">
-            <button
-              type="button"
-              onClick={onCloseFullscreen}
-              className="absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/60 text-white hover:bg-black/75 sm:right-4 sm:top-4"
-              aria-label="Close fullscreen"
-            >
-              <FullscreenToggleIcon isFullscreen />
-            </button>
-
-            <div className="relative h-full overflow-hidden rounded-xl bg-black sm:rounded-2xl">
-              {fullscreenImageLoading ? <ImageShimmer className="bg-zinc-950" /> : null}
-
-              <img
-                src={getListingImageUrl(currentImage, "fullscreen")}
-                alt={listingName}
-                loading="eager"
-                decoding="async"
-                onLoad={() => setFullscreenImageLoading(false)}
-                onError={() => setFullscreenImageLoading(false)}
-                className={`relative h-full w-full object-contain transition-opacity duration-150 ${
-                  fullscreenImageLoading ? "opacity-0" : "opacity-100"
-                }`}
-              />
-
-              {showThumbRail ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={onPrevImage}
-                    className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-900 hover:bg-white"
-                    aria-label="Previous image"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onNextImage}
-                    className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-900 hover:bg-white"
-                    aria-label="Next image"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                </>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {typeof document !== "undefined" && fullscreenOverlay
+        ? createPortal(fullscreenOverlay, document.body)
+        : null}
     </>
   );
 }

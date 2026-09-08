@@ -165,7 +165,7 @@ export default function ListingDetailsContent({
       <FloatingCartButton isLoggedIn={isLoggedIn} />
       <ListingHeaderBar />
 
-      <main className="mx-auto max-w-[1500px] px-4 pb-12 pt-6 sm:pt-8">
+      <main className="mx-auto max-w-[1500px] px-4 pb-24 pt-6 sm:pt-8">
         {loading ? (
           <ListingStatusPanel loading hasListing={!!listing} />
         ) : !listing ? (
