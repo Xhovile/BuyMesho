@@ -134,20 +134,14 @@ export default function SellerOrdersView() {
       <MarketHeaderBar subtitle="Seller Orders" />
       <main className="min-h-screen bg-zinc-50 px-4 py-6 md:px-8">
         <div className="mx-auto max-w-6xl">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-                Seller Workspace
-              </p>
-              <h1 className="mt-1 text-3xl font-black text-zinc-950">Seller Orders</h1>
-              <p className="mt-1 text-sm text-zinc-500">
-                Manage purchases made from your listings and respond to order disputes in the same workspace.
-              </p>
-            </div>
+          <div className="relative flex items-center justify-center py-1">
+            <h1 className="text-center text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">
+              Seller Orders
+            </h1>
             <button
               type="button"
               onClick={() => void loadOrders(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800"
+              className="absolute right-0 inline-flex items-center gap-2 rounded-xl border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Refresh
             </button>
