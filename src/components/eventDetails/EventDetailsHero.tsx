@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Maximize2, X } from "lucide-react";
 
 import SummaryCard from "./SummaryCard";
@@ -29,6 +30,11 @@ export default function EventDetailsHero({
   useEffect(() => {
     if (!fullscreenOpen) return;
 
+    const previousOverflow = document.body.style.overflow;
+    const previousTouchAction = document.body.style.touchAction;
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setFullscreenOpen(false);
@@ -36,8 +42,57 @@ export default function EventDetailsHero({
     };
 
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      document.body.style.touchAction = previousTouchAction;
+    };
   }, [fullscreenOpen]);
+
+  const fullscreenOverlay = fullscreenOpen
+    ? createPortal(
+        <div
+          className="fixed inset-0 z-[9999] h-[100dvh] w-screen overflow-hidden bg-black"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Event poster fullscreen"
+          onClick={() => setFullscreenOpen(false)}
+        >
+          <div className="relative flex h-full w-full items-center justify-center p-2 sm:p-4">
+            <button
+              type="button"
+              onClick={() => setFullscreenOpen(false)}
+              className="absolute right-3 top-3 z-[10000] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white shadow-lg backdrop-blur-sm hover:bg-black/85 sm:right-5 sm:top-5"
+              aria-label="Return from fullscreen"
+              title="Return"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div
+              className="flex h-full w-full items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {posterUrl ? (
+                <img
+                  src={posterUrl}
+                  alt={posterAlt}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="auto"
+                  className="block h-full w-full object-contain"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-sm text-zinc-300">
+                  No poster available
+                </div>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
 
   return (
     <section className="space-y-8">
@@ -65,44 +120,7 @@ export default function EventDetailsHero({
         </button>
       </section>
 
-      {fullscreenOpen ? (
-        <div
-          className="fixed inset-0 z-[80] bg-black/95 p-4 sm:p-6"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Event poster fullscreen"
-          onClick={() => setFullscreenOpen(false)}
-        >
-          <div className="relative flex h-full items-center justify-center">
-            <button
-              type="button"
-              onClick={() => setFullscreenOpen(false)}
-              className="absolute right-2 top-2 z-[81] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
-              aria-label="Return from fullscreen"
-              title="Return"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <div
-              className="max-h-full max-w-full rounded-[1.5rem] bg-zinc-950 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {posterUrl ? (
-                <img
-                  src={posterUrl}
-                  alt={posterAlt}
-                  loading="eager"
-                  fetchPriority="high"
-                  decoding="auto"
-                  className="block h-auto w-auto max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-2rem)] object-contain sm:max-h-[calc(100dvh-3rem)] sm:max-w-[calc(100vw-3rem)]"
-                />
-              ) : (
-                <div className="flex h-[60vh] w-[80vw] items-center justify-center text-sm text-zinc-300">No poster available</div>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {fullscreenOverlay}
 
       {notice ? (
         <div className="flex items-start justify-between gap-4 rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700 shadow-sm">
