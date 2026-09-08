@@ -134,14 +134,14 @@ export default function SellerOrdersView() {
       <MarketHeaderBar subtitle="Seller Orders" />
       <main className="min-h-screen bg-zinc-50 px-4 py-6 md:px-8">
         <div className="mx-auto max-w-6xl">
-          <div className="relative flex items-center justify-center py-1">
-            <h1 className="text-center text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">
+          <div className="relative flex flex-col items-center py-1">
+            <h1 className="text-center text-4xl font-black uppercase tracking-tight text-zinc-950 sm:text-5xl">
               Seller Orders
             </h1>
             <button
               type="button"
               onClick={() => void loadOrders(true)}
-              className="absolute right-0 inline-flex items-center gap-2 rounded-xl border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800"
+              className="mt-4 inline-flex self-start items-center gap-2 rounded-xl border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800 md:absolute md:right-0 md:top-1/2 md:mt-0 md:-translate-y-1/2"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Refresh
             </button>
