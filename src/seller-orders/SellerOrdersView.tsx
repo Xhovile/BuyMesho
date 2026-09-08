@@ -213,65 +213,67 @@ export default function SellerOrdersView() {
           </section>
         ) : null}
 
-        <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
-          {FILTERS.map((item) => {
-            const count = getFilterCount(orders, item.key, disputedFilter);
-            return (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => {
-                  setFilter(item.key);
-                  if (item.key !== "disputed") setDisputedFilter("all");
-                }}
-                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-xs font-extrabold transition ${
-                  filter === item.key
-                    ? "bg-zinc-950 text-white"
-                    : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:bg-zinc-100"
-                }`}
-              >
-                {item.label}
-                <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+        <div className="sticky top-0 z-30 -mx-4 mt-6 bg-zinc-50/95 px-4 py-3 backdrop-blur-sm md:-mx-8 md:px-8">
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {FILTERS.map((item) => {
+              const count = getFilterCount(orders, item.key, disputedFilter);
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => {
+                    setFilter(item.key);
+                    if (item.key !== "disputed") setDisputedFilter("all");
+                  }}
+                  className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-xs font-extrabold transition ${
                     filter === item.key
-                      ? "bg-white/15 text-white"
-                      : "bg-zinc-100 text-zinc-500"
+                      ? "bg-zinc-950 text-white"
+                      : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:bg-zinc-100"
                   }`}
                 >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {filter === "disputed" ? (
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Dispute status">
-            {([
-              ["all", "All", "bg-zinc-900 text-white"],
-              ["pending", "Pending", "bg-amber-100 text-amber-900"],
-              ["settled", "Settled", "bg-emerald-100 text-emerald-900"],
-            ] as const).map(([key, label, activeClass]) => (
-              <button
-                key={key}
-                type="button"
-                role="tab"
-                aria-selected={disputedFilter === key}
-                onClick={() => setDisputedFilter(key)}
-                className={`rounded-xl px-4 py-2 text-xs font-black ${
-                  disputedFilter === key
-                    ? activeClass
-                    : "bg-white text-zinc-600 ring-1 ring-zinc-200"
-                }`}
-              >
-                {label}{" "}
-                <span className="ml-1 opacity-70">
-                  {getFilterCount(orders, "disputed", key)}
-                </span>
-              </button>
-            ))}
+                  {item.label}
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                      filter === item.key
+                        ? "bg-white/15 text-white"
+                        : "bg-zinc-100 text-zinc-500"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-        ) : null}
+
+          {filter === "disputed" ? (
+            <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Dispute status">
+              {([
+                ["all", "All", "bg-zinc-900 text-white"],
+                ["pending", "Pending", "bg-amber-100 text-amber-900"],
+                ["settled", "Settled", "bg-emerald-100 text-emerald-900"],
+              ] as const).map(([key, label, activeClass]) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={disputedFilter === key}
+                  onClick={() => setDisputedFilter(key)}
+                  className={`rounded-xl px-4 py-2 text-xs font-black ${
+                    disputedFilter === key
+                      ? activeClass
+                      : "bg-white text-zinc-600 ring-1 ring-zinc-200"
+                  }`}
+                >
+                  {label}{" "}
+                  <span className="ml-1 opacity-70">
+                    {getFilterCount(orders, "disputed", key)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
 
         {error ? (
           <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
