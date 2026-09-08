@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Share2 } from "lucide-react";
 import { getListingImageUrl } from "../../lib/imageUrl";
@@ -65,6 +65,12 @@ export default function ListingGallery({
   const showThumbRail = galleryImages.length > 1;
   const [mainImageLoading, setMainImageLoading] = useState(Boolean(currentImage));
   const [fullscreenImageLoading, setFullscreenImageLoading] = useState(Boolean(currentImage));
+  const fullscreenHistoryActiveRef = useRef(false);
+  const closeFullscreenRef = useRef(onCloseFullscreen);
+
+  useEffect(() => {
+    closeFullscreenRef.current = onCloseFullscreen;
+  }, [onCloseFullscreen]);
 
   useEffect(() => {
     setMainImageLoading(Boolean(currentImage));
@@ -84,6 +90,48 @@ export default function ListingGallery({
     preload(galleryImages[currentGalleryIndex - 1]);
     preload(galleryImages[currentGalleryIndex + 1]);
   }, [currentGalleryIndex, currentImage, galleryImages]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handlePopState = () => {
+      if (!fullscreenHistoryActiveRef.current) return;
+      fullscreenHistoryActiveRef.current = false;
+      closeFullscreenRef.current();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (isFullscreen && !fullscreenHistoryActiveRef.current) {
+      window.history.pushState(
+        { ...(window.history.state ?? null), buyMeshoFullscreen: "listing" },
+        "",
+        window.location.href,
+      );
+      fullscreenHistoryActiveRef.current = true;
+      return;
+    }
+
+    if (!isFullscreen && fullscreenHistoryActiveRef.current) {
+      fullscreenHistoryActiveRef.current = false;
+      if (window.history.state?.buyMeshoFullscreen === "listing") {
+        window.history.back();
+      }
+    }
+  }, [isFullscreen]);
+
+  const closeFullscreen = () => {
+    if (typeof window !== "undefined" && fullscreenHistoryActiveRef.current) {
+      window.history.back();
+      return;
+    }
+    onCloseFullscreen();
+  };
 
   const renderThumb = (url: string, idx: number, className = "") => (
     <button
@@ -109,7 +157,7 @@ export default function ListingGallery({
     <div className="fixed inset-0 z-[1000] h-[100dvh] w-screen overflow-hidden bg-black">
       <button
         type="button"
-        onClick={onCloseFullscreen}
+        onClick={closeFullscreen}
         className="absolute right-3 top-3 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/60 text-white hover:bg-black/75 sm:right-4 sm:top-4"
         aria-label="Close fullscreen"
       >
