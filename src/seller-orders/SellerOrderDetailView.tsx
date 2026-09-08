@@ -8,6 +8,7 @@ import {
   isPendingDispute,
   isSettledDispute,
   money,
+  normalize,
   orderStatusLabel,
   settlementLabel,
 } from "./utils";
@@ -85,14 +86,15 @@ export default function SellerOrderDetailView({
   const settled = isSettledDispute(selected);
   const pending = isPendingDispute(selected);
   const settledLabel = settlementLabel(selected);
+  const sellerOutcome = normalize(dispute?.outcome);
   const sellerSubmittedResolution =
-    settledLabel === "Refunded"
+    sellerOutcome === "seller_refund_confirmed" || sellerOutcome === "seller_refund_accepted"
       ? "Refund"
-      : settledLabel === "Replacement"
+      : sellerOutcome === "seller_replacement_confirmed" || sellerOutcome === "seller_replacement_committed"
         ? "Send another item"
-        : settledLabel === "Rejected"
+        : sellerOutcome === "seller_rejected" || sellerOutcome === "seller_dispute_rejected"
           ? "Reject"
-          : settledLabel;
+          : null;
 
   return (
     <main className="min-h-screen bg-zinc-50 px-4 py-6 md:px-8">
@@ -165,7 +167,7 @@ export default function SellerOrderDetailView({
                         : "This order has dispute history."}
                   </p>
 
-                  {settled ? (
+                  {sellerSubmittedResolution ? (
                     <div className="mt-4 rounded-xl border border-emerald-200 bg-white p-4">
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">
                         Seller resolution
