@@ -59,8 +59,9 @@ export function useSellerOrders() {
   };
 
   useEffect(() => {
-    const cachedOrders = getSellerCache<OrderBundle[]>("orders");
-    if (!profileLoading && profile?.is_seller && cachedOrders === null) void loadOrders();
+    if (!profileLoading && profile?.is_seller) {
+      void loadOrders(Boolean(getSellerCache<OrderBundle[]>("orders")));
+    }
   }, [profileLoading, profile?.is_seller]);
 
   const selectedOrderId = new URLSearchParams(window.location.search).get("order");
