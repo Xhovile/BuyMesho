@@ -147,7 +147,7 @@ export default function SellerOrdersView() {
             <button
               type="button"
               onClick={() => void loadOrders(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Refresh
             </button>
@@ -165,7 +165,7 @@ export default function SellerOrdersView() {
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-amber-900/80">
-                    Review buyer requests before continuing delivery or settlement actions.
+                    Review buyer requests before continuing delivery.
                   </p>
                 </div>
                 <button
@@ -181,12 +181,12 @@ export default function SellerOrdersView() {
               </div>
 
               <div className="mt-4 space-y-2">
-                {pendingDisputes.slice(0, 5).map((bundle) => (
+                {pendingDisputes.slice(0, 3).map((bundle) => (
                   <button
                     key={bundle.order.id}
                     type="button"
                     onClick={() => openOrder(bundle)}
-                    className="group w-full rounded-2xl border border-amber-200 bg-white p-4 text-left transition hover:border-amber-300 hover:shadow-sm"
+                    className="group hidden first:block w-full rounded-2xl border border-amber-200 bg-white p-4 text-left transition hover:border-amber-300 hover:shadow-sm md:block"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0">
