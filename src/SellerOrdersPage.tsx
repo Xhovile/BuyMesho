@@ -4,7 +4,6 @@ import { apiFetch } from "./lib/api";
 import { navigateToPath } from "./lib/appNavigation";
 import { SELLER_HUB_PATH, SELLER_ORDERS_PATH } from "./lib/appNavigation.paths";
 import { useAccountProfile } from "./hooks/useAccountProfile";
-import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 import { getSellerCache, setSellerCache } from "./lib/sellerWorkspaceCache";
 
 type BuyerDetails = { fullName: string; phone: string; addressLine: string; area: string; townOrDistrict: string; landmark: string } | null;
@@ -83,14 +82,7 @@ function orderStatusLabel(bundle: OrderBundle): string {
   return bundle.order.status.replaceAll("_", " ");
 }
 function requestedResolutionLabel(value: unknown): string { const normalized = normalize(value); if (normalized === "refund") return "Refund"; if (normalized === "return") return "Return"; if (normalized === "return_and_refund") return "Return + refund"; return "BuyMesho review"; }
-
 export default function SellerOrdersPage() {
-  const ready = useRequireVerifiedUser();
-  if (!ready) return null;
-  return <SellerOrdersPageContent />;
-}
-
-function SellerOrdersPageContent() {
   const { profileLoading, profile } = useAccountProfile();
   const cachedOrders = getSellerCache<OrderBundle[]>("orders");
   const [orders, setOrders] = useState<OrderBundle[]>(cachedOrders ?? []);
