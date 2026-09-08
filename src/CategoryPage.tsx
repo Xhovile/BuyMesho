@@ -38,6 +38,7 @@ import ListingCard from "./components/ListingCard";
 import FormDropdown from "./components/FormDropdown";
 import FeedbackModal from "./components/FeedbackModal";
 import { useAccountProfile } from "./hooks/useAccountProfile";
+import { updateSEOMetaTags } from "./lib/seo";
 import {
   readHiddenListingIds,
   readHiddenSellerUids,
@@ -172,6 +173,27 @@ export default function CategoryPage() {
 
   const config = CATEGORY_CONFIG[categoryKey];
   const activeCategoryChip = CATEGORY_CHIP_BY_KEY[categoryKey];
+
+  useEffect(() => {
+    const canonicalUrl = `https://buymesho.app/category?category=${encodeURIComponent(categoryKey)}`;
+
+    updateSEOMetaTags({
+      title: `${config.title} in Malawi`,
+      description: config.description,
+      url: canonicalUrl,
+      keywords: [
+        config.title,
+        config.subtitle,
+        "BuyMesho",
+        "Malawi marketplace",
+        "buy in Malawi",
+      ],
+    });
+
+    return () => {
+      updateSEOMetaTags();
+    };
+  }, [categoryKey, config.description, config.subtitle, config.title]);
 
   useEffect(() => {
     let cancelled = false;
