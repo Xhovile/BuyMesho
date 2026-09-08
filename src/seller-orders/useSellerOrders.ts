@@ -119,6 +119,45 @@ export function useSellerOrders() {
     setSelected(nextBundle);
   };
 
+  const applySettledSellerResolution = (response: any) => {
+    if (!selected) return;
+    const outcome = normalize(response?.outcome);
+    if (!outcome) return;
+
+    const nextBundle: OrderBundle = {
+      ...selected,
+      dispute: selected.dispute
+        ? {
+            ...selected.dispute,
+            status: "resolved",
+            state: "resolved",
+            outcome,
+            latestAttempt: selected.dispute.latestAttempt
+              ? {
+                  ...selected.dispute.latestAttempt,
+                  status: "resolved",
+                  resolution:
+                    outcome === "seller_refund_confirmed" ? "seller_refund_confirmed" : outcome,
+                }
+              : selected.dispute.latestAttempt,
+          }
+        : selected.dispute,
+      refundRequest:
+        outcome === "seller_refund_confirmed" && selected.refundRequest
+          ? { ...selected.refundRequest, status: "refunded" }
+          : selected.refundRequest,
+    };
+
+    setOrders((current) => {
+      const next = current.map((entry) =>
+        entry.order.id === nextBundle.order.id ? nextBundle : entry,
+      );
+      setSellerCache("orders", next);
+      return next;
+    });
+    setSelected(nextBundle);
+  };
+
   const markAsPendingDelivery = async (bundle: OrderBundle) => {
     try {
       setActionLoading(true);
@@ -199,7 +238,7 @@ export function useSellerOrders() {
     try {
       setResolutionLoading(true);
       setError(null);
-      await apiFetch(
+      const result = await apiFetch(
         `/api/seller/disputes/${encodeURIComponent(selected.order.id)}/dispute/confirm-refunded`,
         {
           method: "POST",
@@ -214,6 +253,7 @@ export function useSellerOrders() {
           }),
         },
       );
+      applySettledSellerResolution(result);
       resetResolutionFields();
       await loadOrders(true);
     } catch (err) {
@@ -235,7 +275,7 @@ export function useSellerOrders() {
     try {
       setResolutionLoading(true);
       setError(null);
-      await apiFetch(
+      const result = await apiFetch(
         `/api/seller/disputes/${encodeURIComponent(selected.order.id)}/dispute/resolve`,
         {
           method: "POST",
@@ -246,6 +286,7 @@ export function useSellerOrders() {
           }),
         },
       );
+      applySettledSellerResolution(result);
       resetResolutionFields();
       await loadOrders(true);
     } catch (err) {
