@@ -339,13 +339,14 @@ export async function apiFetch(url: string, init: ApiFetchInit = {}) {
   const retryDelayMs = eventInit.retryDelayMs ?? DEFAULT_SAFE_RETRY_DELAY_MS;
   const isAdminMessagesList = method === "GET" && rewrittenUrl.startsWith("/api/admin/messages?") && !rewrittenUrl.includes("/summary");
   const sellerCacheKey = method === "GET" ? sellerWorkspaceCacheKey(rewrittenUrl) : null;
+  const forceSellerWorkspaceRefresh = eventInit.cache === "no-store" || eventInit.headers?.["x-force-refresh"] === "1";
 
   if (isAdminMessagesList) {
     const cached = adminMessagesResponseCache.get(rewrittenUrl);
-    if (cached !== undefined) return cached;
+    if (cached !== undefined && !forceSellerWorkspaceRefresh) return cached;
   }
 
-  if (sellerCacheKey) {
+  if (sellerCacheKey && !forceSellerWorkspaceRefresh) {
     const cached = getSellerCache<any>(sellerCacheKey);
     if (cached !== null) return cached;
   }
