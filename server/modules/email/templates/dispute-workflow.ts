@@ -26,11 +26,11 @@ export function renderDisputeWorkflowEmail(data: DisputeWorkflowEmailData) {
     [
       ["Order", data.orderId],
       ["Status", data.eventLabel],
-      ...(data.amount != null && data.currency ? [["Amount", formatAmount(data.amount, data.currency)] as const] : []),
-      ...(data.refundMethod ? [["Refund method", data.refundMethod.replaceAll("_", " ")] as const] : []),
-      ...(data.transactionId ? [["Transaction ID", data.transactionId] as const] : []),
-      ...(data.refundDate ? [["Refund date", data.refundDate] as const] : []),
-      ...(data.destination ? [["Refund destination", data.destination] as const] : []),
+      ...(data.amount != null && data.currency ? [["Amount", formatAmount(data.amount, data.currency)] as [string, string]] : []),
+      ...(data.refundMethod ? [["Refund method", data.refundMethod.replaceAll("_", " ")] as [string, string]] : []),
+      ...(data.transactionId ? [["Transaction ID", data.transactionId] as [string, string]] : []),
+      ...(data.refundDate ? [["Refund date", data.refundDate] as [string, string]] : []),
+      ...(data.destination ? [["Refund destination", data.destination] as [string, string]] : []),
     ],
     "Dispute details",
   );
