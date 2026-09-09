@@ -1,8 +1,8 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
-import { renderDisputeWorkflowEmail } from './dispute-workflow.js';
+import assert from "node:assert/strict";
+import test from "node:test";
+import { renderDisputeWorkflowEmail } from "./dispute-workflow.js";
 
-test("dispute email uses structured transaction details", () => {
+test("dispute email uses structured transaction details and BuyMesho branding", () => {
   const { text, html } = renderDisputeWorkflowEmail({
     recipientName: "Jordan Tchen Murray",
     title: "Seller refund recorded",
@@ -23,6 +23,10 @@ test("dispute email uses structured transaction details", () => {
   assert.match(text, /Refund amount|Amount/);
   assert.match(text, /Description/);
   assert.doesNotMatch(text, /Seller note|Seller explanation/);
+  assert.match(html, /alt="BuyMesho logo"/);
+  assert.match(html, /https:\/\/buymesho\.app\/icon-192\.png/);
+  assert.match(html, /#e00106/);
+  assert.match(html, /Secure marketplace notifications/);
   assert.match(html, /background:#f8fafc/);
   assert.match(html, /border-collapse:collapse/);
   assert.match(html, />Description</);
@@ -42,7 +46,7 @@ test("dispute email escapes user-controlled content", () => {
   });
 
   assert.doesNotMatch(html, /<script>/i);
-  assert.doesNotMatch(html, /<img /i);
+  assert.doesNotMatch(html, /<img src=x onerror=alert\(1\)>/i);
   assert.match(html, /&lt;script&gt;/i);
   assert.match(html, /&lt;b&gt;raw&lt;\/b&gt;/i);
 });
