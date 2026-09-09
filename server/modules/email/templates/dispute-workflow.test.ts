@@ -1,6 +1,6 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-import { renderDisputeWorkflowEmail } from "./dispute-workflow.js";
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { renderDisputeWorkflowEmail } from './dispute-workflow.js';
 
 test("dispute email uses structured transaction details", () => {
   const { text, html } = renderDisputeWorkflowEmail({
@@ -21,9 +21,12 @@ test("dispute email uses structured transaction details", () => {
 
   assert.match(text, /Dispute details/);
   assert.match(text, /Refund amount|Amount/);
-  assert.match(text, /Seller note/);
+  assert.match(text, /Description/);
+  assert.doesNotMatch(text, /Seller note|Seller explanation/);
   assert.match(html, /background:#f8fafc/);
   assert.match(html, /border-collapse:collapse/);
+  assert.match(html, />Description</);
+  assert.doesNotMatch(html, /Seller note|Seller explanation/);
   assert.match(html, /View dispute/);
 });
 
