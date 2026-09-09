@@ -55,7 +55,7 @@ export function renderDisputeWorkflowEmail(data: DisputeWorkflowEmailData) {
     "",
     "Dispute details",
     ...rows.map(([label, value]) => `${label}: ${value}`),
-    ...(note ? ["", data.eventLabel === "Seller refund recorded" ? "Seller note" : "Seller explanation", note] : []),
+    ...(note ? ["", "Description", note] : []),
     "",
     `${data.actionLabel ?? "View dispute"}: ${data.actionUrl}`,
     "",
@@ -67,7 +67,7 @@ export function renderDisputeWorkflowEmail(data: DisputeWorkflowEmailData) {
     .join("");
 
   const noteBlock = note
-    ? `<div style="margin:20px 0 20px;padding:14px 16px;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;"><p style="margin:0 0 8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;">${escapeHtml(data.eventLabel === "Seller refund recorded" ? "Seller note" : "Seller explanation")}</p><p style="margin:0;font-size:14px;line-height:1.6;color:#111827;white-space:pre-wrap;">${escapeHtml(note)}</p></div>`
+    ? `<div style="margin:20px 0 20px;padding:14px 16px;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;"><p style="margin:0 0 8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;">Description</p><p style="margin:0;font-size:14px;line-height:1.6;color:#111827;white-space:pre-wrap;">${escapeHtml(note)}</p></div>`
     : "";
 
   const html = `
