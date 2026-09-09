@@ -38,7 +38,7 @@ async function notifySellerOfPaidPayout(payout: PayoutRecord | undefined): Promi
       currency: payout.currency || 'MWK',
       payoutId: payout.id,
       orderReference: payout.orderId,
-      completedAt: payout.updatedAt || new Date().toISOString(),
+      completedAt: payout.paidAt || payout.updatedAt || new Date().toISOString(),
       status: payout.status,
     });
   } catch (error) {
@@ -101,12 +101,20 @@ export class PayoutService {
     actorId?: string | null;
   }) {
     const { reconcilePayoutStatusFlow } = await import('./payout.service.reconciliation.js');
-    return reconcilePayoutStatusFlow(this.repository, input);
+    const result = await reconcilePayoutStatusFlow(this.repository, input);
+    if (result.payout?.status === 'paid') {
+      await notifySellerOfPaidPayout(result.payout);
+    }
+    return result;
   }
 
   reconcileProviderCallback(input: ReconcileProviderCallbackInput): PayoutRecord | undefined {
     const { reconcileProviderCallbackFlow } = require('./payout.service.reconciliation.js') as typeof import('./payout.service.reconciliation.js');
-    return reconcileProviderCallbackFlow(this.repository, input);
+    const payout = reconcileProviderCallbackFlow(this.repository, input);
+    if (payout?.status === 'paid') {
+      void notifySellerOfPaidPayout(payout);
+    }
+    return payout;
   }
 
   async reconcilePendingPayoutStatuses(input: {
