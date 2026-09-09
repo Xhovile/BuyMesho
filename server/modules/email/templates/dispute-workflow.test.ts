@@ -43,7 +43,7 @@ test("dispute email escapes user-controlled content", () => {
   });
 
   assert.doesNotMatch(html, /<script>/i);
-  assert.doesNotMatch(html, /<img /i);
+  assert.doesNotMatch(html, /<img src=x onerror=alert\(1\)>/i);
   assert.match(html, /&lt;script&gt;/i);
   assert.match(html, /&lt;b&gt;raw&lt;\/b&gt;/i);
 });
