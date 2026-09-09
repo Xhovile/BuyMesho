@@ -36,7 +36,7 @@ export function renderDisputeWorkflowEmail(data: DisputeWorkflowEmailData) {
   );
 
   const note = data.note?.trim();
-  const noteLabel = data.eventLabel.toLowerCase().includes("refund") ? "Seller note" : "Seller explanation";
+  const noteLabel = "Description";
   const noteCard = note ? renderNoteCard(noteLabel, note) : "";
 
   const bodyText = [
