@@ -38,7 +38,7 @@ async function notifySellerOfPaidPayout(payout: PayoutRecord | undefined): Promi
       currency: payout.currency || 'MWK',
       payoutId: payout.id,
       orderReference: payout.orderId,
-      completedAt: payout.paidAt || payout.updatedAt || new Date().toISOString(),
+      completedAt: payout.updatedAt || new Date().toISOString(),
       status: payout.status,
     });
   } catch (error) {
