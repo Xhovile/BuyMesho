@@ -10,6 +10,31 @@ import { assertOrderAccessAsync, disputeLimiter, jsonError } from './shared.js';
 const POST_DELIVERY_DISPUTE_WINDOW_DAYS = 30;
 const SETTLED_OUTCOMES = new Set(['refunded', 'returned', 'seller_refund_confirmed', 'seller_refund_accepted', 'return', 'return_and_refund', 'seller_replacement_confirmed', 'seller_replacement_committed', 'seller_rejected', 'seller_dispute_rejected']);
 
+const DISPUTE_STATUS_LABELS: Record<string, string> = {
+  open: 'Open',
+  under_review: 'Under review',
+  resolved: 'Resolved',
+  closed: 'Closed',
+  rejected: 'Rejected',
+};
+
+const DISPUTE_REQUEST_TYPE_LABELS: Record<string, string> = {
+  buyer_cancellation: 'Order cancellation',
+  seller_failed_to_fulfill: 'Seller did not fulfill the order',
+  product_item_problem: 'Problem with the product or item',
+  delivery_failure: 'Delivery problem',
+  payment_platform_error: 'Payment or platform problem',
+  exceptional_dispute: 'Other issue',
+  legacy_dispute: 'Previous dispute record',
+};
+
+const DISPUTE_RESOLUTION_LABELS: Record<string, string> = {
+  refund: 'Refund',
+  return: 'Return',
+  return_and_refund: 'Return & refund',
+  review: 'BuyMesho review',
+};
+
 function addDays(from: Date, days: number): string {
   return new Date(from.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
 }
@@ -161,8 +186,65 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
 
   router.get('/me', disputeLimiter, requireAuth, async (req, res) => {
     try {
-      const result = await query<Record<string, unknown>>(`SELECT dc.*, da.id AS latest_attempt_id, da.request_type AS latest_request_type, da.requested_resolution AS latest_requested_resolution, da.reason AS latest_reason, da.status AS latest_attempt_status, da.created_at AS latest_attempt_created_at, rt.id AS refund_transaction_id, rt.executed_at AS refund_executed_at FROM dispute_cases dc LEFT JOIN LATERAL (SELECT * FROM dispute_attempts WHERE case_id = dc.id ORDER BY created_at DESC LIMIT 1) da ON true LEFT JOIN LATERAL (SELECT * FROM refund_transactions WHERE refund_request_id = (SELECT id FROM refund_requests WHERE dispute_case_id = dc.id ORDER BY created_at DESC LIMIT 1) ORDER BY created_at DESC LIMIT 1) rt ON true WHERE dc.buyer_id = $1 OR dc.seller_id = $1 ORDER BY dc.created_at DESC`, [req.user!.uid]);
-      return res.json(result.rows);
+      const result = await query<Record<string, unknown>>(`
+        SELECT DISTINCT ON (dc.order_id)
+          dc.*,
+          da.id AS latest_attempt_id,
+          da.request_type AS latest_request_type,
+          da.requested_resolution AS latest_requested_resolution,
+          da.reason AS latest_reason,
+          da.status AS latest_attempt_status,
+          da.created_at AS latest_attempt_created_at,
+          rt.id AS refund_transaction_id,
+          rt.executed_at AS refund_executed_at
+        FROM dispute_cases dc
+        LEFT JOIN LATERAL (
+          SELECT *
+          FROM dispute_attempts
+          WHERE case_id = dc.id
+          ORDER BY created_at DESC
+          LIMIT 1
+        ) da ON true
+        LEFT JOIN LATERAL (
+          SELECT *
+          FROM refund_transactions
+          WHERE refund_request_id = (
+            SELECT id
+            FROM refund_requests
+            WHERE dispute_case_id = dc.id
+            ORDER BY created_at DESC
+            LIMIT 1
+          )
+          ORDER BY created_at DESC
+          LIMIT 1
+        ) rt ON true
+        WHERE dc.buyer_id = $1 OR dc.seller_id = $1
+        ORDER BY
+          dc.order_id,
+          CASE WHEN dc.legacy_dispute_id IS NULL THEN 0 ELSE 1 END,
+          dc.updated_at DESC,
+          dc.created_at DESC
+      `, [req.user!.uid]);
+
+      const formattedRows = result.rows.map((row) => {
+        const status = String(row.status ?? '').trim().toLowerCase();
+        const requestType = String(row.latest_request_type ?? '').trim().toLowerCase();
+        const resolution = String(row.latest_requested_resolution ?? '').trim().toLowerCase();
+        return {
+          ...row,
+          status: DISPUTE_STATUS_LABELS[status] ?? status.replace(/_/g, ' '),
+          latest_request_type: DISPUTE_REQUEST_TYPE_LABELS[requestType] ?? requestType.replace(/_/g, ' '),
+          latest_requested_resolution: DISPUTE_RESOLUTION_LABELS[resolution] ?? resolution.replace(/_/g, ' '),
+        };
+      });
+
+      formattedRows.sort((a, b) => {
+        const aTime = new Date(String(a.updated_at ?? a.created_at ?? 0)).getTime();
+        const bTime = new Date(String(b.updated_at ?? b.created_at ?? 0)).getTime();
+        return bTime - aTime;
+      });
+
+      return res.json(formattedRows);
     } catch (error) {
       return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to load disputes' });
     }
