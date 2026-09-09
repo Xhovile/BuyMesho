@@ -1,3 +1,4 @@
+import { query } from "../../postgres.js";
 import { sendEmail } from "../email/email.service.js";
 import { renderDisputeWorkflowEmail } from "../email/templates/dispute-workflow.js";
 import { claimEmailNotification, markEmailNotificationSent, releaseEmailNotification } from "./email-delivery.repository.js";
@@ -7,7 +8,7 @@ export type DisputeWorkflowEvent = "submitted" | "under_review" | "more_informat
 type RecipientRole = "buyer" | "seller";
 type SendEmail = typeof sendEmail;
 type FirebaseUser = { email?: string | null; displayName?: string | null };
-type DeliveryDependencies = { send?: SendEmail; claim?: (notificationType: string, dedupeKey: string) => boolean; markSent?: (notificationType: string, dedupeKey: string) => void; release?: (notificationType: string, dedupeKey: string) => void; lookupUser?: (uid: string) => Promise<FirebaseUser> };
+type DeliveryDependencies = { send?: SendEmail; claim?: (notificationType: string, dedupeKey: string) => boolean; markSent?: (notificationType: string, dedupeKey: string) => void; release?: (notificationType: string, dedupeKey: string) => void; lookupUser?: (uid: string) => Promise<FirebaseUser>; lookupSellerBusinessName?: (uid: string) => Promise<string | null> };
 export type DisputeWorkflowNotificationInput = {
   caseId: string; orderId: string; buyerId: string; sellerId: string; event: DisputeWorkflowEvent; note?: string | null; amount?: number | null; currency?: string | null; transactionId?: string | null; refundMethod?: string | null; refundDate?: string | null; destination?: string | null; recipients?: RecipientRole[];
 };
@@ -26,6 +27,19 @@ const EVENT_COPY: Record<DisputeWorkflowEvent, { subject: string; buyer: string;
   seller_replacement_recorded: { subject: "BuyMesho seller replacement submitted", label: "Seller replacement submitted", buyer: "The seller has chosen to send another item to resolve your disputed order. Review the seller's explanation in your BuyMesho Disputes page.", seller: "Your replacement resolution for the disputed order has been recorded." },
   seller_dispute_rejected: { subject: "BuyMesho seller disputed-order response", label: "Seller rejected dispute", buyer: "The seller has rejected your dispute. Review the seller's explanation in your BuyMesho Disputes page or contact BuyMesho Admin for assistance.", seller: "Your rejection response for the disputed order has been recorded." },
 };
+
+async function getSellerBusinessName(sellerUid: string): Promise<string | null> {
+  try {
+    const result = await query<{ business_name?: string | null }>(
+      "SELECT business_name FROM sellers WHERE uid = $1 LIMIT 1",
+      [sellerUid],
+    );
+    return result.rows[0]?.business_name?.trim() || null;
+  } catch (error) {
+    console.warn("Failed to load seller business name for dispute workflow email", error);
+    return null;
+  }
+}
 
 function actionUrl(role: RecipientRole, orderId: string): string {
   return role === "seller"
@@ -47,7 +61,13 @@ async function sendToRole(input: DisputeWorkflowNotificationInput, role: Recipie
   const release = dependencies.release ?? releaseEmailNotification;
   if (!claim(notificationType, dedupeKey)) return false;
 
-  const recipientName = recipient.displayName.trim() || (role === "seller" ? "BuyMesho seller" : "there");
+  const sellerBusinessName = role === "seller"
+    ? ((await (dependencies.lookupSellerBusinessName ?? getSellerBusinessName)(input.sellerId)) || recipient.displayName.trim() || "BuyMesho seller")
+    : null;
+  const recipientName = role === "seller"
+    ? sellerBusinessName!
+    : recipient.displayName.trim() || "there";
+
   const { text, html } = renderDisputeWorkflowEmail({
     recipientName,
     title: eventCopy.label,
