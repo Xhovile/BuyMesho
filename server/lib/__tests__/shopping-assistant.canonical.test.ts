@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { loadMarketplaceCandidates, shoppingAssistant } from "../shopping-assistant.js";
+import { getPlatformNavigationEntry, resolvePlatformNavigation } from "../../../shared/platformNavigation.js";
 
 test("shopping assistant candidates come only from the canonical marketplace query", () => {
   let receivedSql = "";
@@ -60,4 +61,25 @@ test("shopping assistant rejects an invalid mode before invoking AI", async () =
     () => shoppingAssistant({ mode: "invalid" as never, query: "How does BuyMesho work?" }),
     /mode is invalid/,
   );
+});
+
+test("navigation resolver maps seller payout language to the canonical route target", () => {
+  const target = resolvePlatformNavigation("Where can I find my seller payouts page?");
+  assert.equal(target?.id, "seller-payouts");
+  assert.equal(target?.path, "/seller/payouts");
+});
+
+test("navigation registry exposes the canonical seller payout target", () => {
+  assert.deepEqual(getPlatformNavigationEntry("seller-payouts"), {
+    id: "seller-payouts",
+    name: "Seller Payouts",
+    description: "Open the seller payouts area for payout and seller finance information.",
+    path: "/seller/payouts",
+    access: "seller",
+    keywords: ["seller payouts", "payouts", "my payouts", "payout history", "seller earnings", "withdraw money", "seller finance"],
+  });
+});
+
+test("navigation resolver does not invent an unknown page target", () => {
+  assert.equal(resolvePlatformNavigation("take me to the imaginary refunds workspace"), undefined);
 });
