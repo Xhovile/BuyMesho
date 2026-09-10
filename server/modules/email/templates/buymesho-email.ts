@@ -1,6 +1,5 @@
 export const BUYMESHO_EMAIL = {
   appUrl: "https://buymesho.app",
-  logoUrl: "https://buymesho.app/icon-192.png",
   brandRed: "#e00106",
   brandRedDark: "#991b1b",
   brandText: "#3f3f46",
@@ -33,6 +32,10 @@ export function escapeEmailHtml(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function renderBrandMark(): string {
+  return `<span style="display:inline-block;width:44px;height:44px;line-height:44px;text-align:center;border-radius:10px;background:${BUYMESHO_EMAIL.brandRedDark};color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:800;">B</span>`;
 }
 
 function renderWordmark(): string {
@@ -81,9 +84,7 @@ export function renderBuyMeshoEmail(options: BuyMeshoEmailOptions) {
                 <a href="${BUYMESHO_EMAIL.appUrl}" style="text-decoration:none;">
                   <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
                     <tr>
-                      <td valign="middle" style="padding:0 10px 0 0;">
-                        <img src="${BUYMESHO_EMAIL.logoUrl}" width="44" height="44" alt="BuyMesho logo" style="display:block;width:44px;height:44px;border:0;border-radius:10px;" />
-                      </td>
+                      <td valign="middle" style="padding:0 10px 0 0;">${renderBrandMark()}</td>
                       <td valign="middle">${renderWordmark()}</td>
                     </tr>
                   </table>
