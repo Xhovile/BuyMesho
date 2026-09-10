@@ -46,6 +46,13 @@ async function notifySellerOfPaidPayout(payout: PayoutRecord | undefined): Promi
   }
 }
 
+async function notifySellerIfPaid(payout: PayoutRecord | undefined): Promise<PayoutRecord | undefined> {
+  if (payout?.status === 'paid') {
+    await notifySellerOfPaidPayout(payout);
+  }
+  return payout;
+}
+
 export class PayoutService {
   constructor(private readonly repository: PayoutTransitionRepository = payoutRepository) {}
 
@@ -84,9 +91,7 @@ export class PayoutService {
   async executePayout(input: ExecutePayoutInput) {
     const { executePayoutFlow } = await import('./payout.service.execution.js');
     const result = await executePayoutFlow(this.repository, input);
-    if (result.payout?.status === 'paid') {
-      await notifySellerOfPaidPayout(result.payout);
-    }
+    await notifySellerIfPaid(result.payout);
     return result;
   }
 
@@ -102,9 +107,7 @@ export class PayoutService {
   }) {
     const { reconcilePayoutStatusFlow } = await import('./payout.service.reconciliation.js');
     const result = await reconcilePayoutStatusFlow(this.repository, input);
-    if (result.payout?.status === 'paid') {
-      await notifySellerOfPaidPayout(result.payout);
-    }
+    await notifySellerIfPaid(result.payout);
     return result;
   }
 
@@ -123,7 +126,13 @@ export class PayoutService {
     limit?: number;
   } = {}) {
     const { reconcilePendingPayoutStatusesFlow } = await import('./payout.service.reconciliation.js');
-    return reconcilePendingPayoutStatusesFlow(this.repository, input);
+    const results = await reconcilePendingPayoutStatusesFlow(this.repository, input);
+    for (const result of results) {
+      if (result.ok && (result.payout as PayoutRecord | undefined)?.status === 'paid') {
+        await notifySellerOfPaidPayout(result.payout as PayoutRecord);
+      }
+    }
+    return results;
   }
 
   markPaid(payoutId: string, actorId: string, note?: string): PayoutRecord | undefined {
