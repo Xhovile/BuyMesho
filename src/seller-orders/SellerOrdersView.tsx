@@ -155,7 +155,7 @@ export default function SellerOrdersView() {
                   <div className="flex items-center gap-2">
                     <ShieldAlert className="h-5 w-5 text-amber-700" />
                     <h2 className="text-lg font-black text-amber-950">Pending Disputes</h2>
-                    <span className="rounded-full bg-amber-200 px-2.5 py-1 text-xs font-black text-amber-900">
+                    <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-black leading-none text-red-700 ring-1 ring-red-200">
                       {pendingDisputes.length}
                     </span>
                   </div>
