@@ -33,11 +33,11 @@ export function isPendingDelivery(bundle: OrderBundle): boolean {
 }
 
 export function isSettledDispute(bundle: OrderBundle): boolean {
+  if (!hasDispute(bundle)) return false;
+
   const status = normalize(bundle.dispute?.status ?? bundle.dispute?.state);
   const outcome = normalize(bundle.dispute?.outcome);
   const refundStatus = normalize(bundle.refundRequest?.status);
-  const orderStatus = normalize(bundle.order.status);
-  const escrowState = normalize(bundle.escrow?.state);
 
   return (
     ["resolved", "closed"].includes(status) ||
@@ -53,9 +53,7 @@ export function isSettledDispute(bundle: OrderBundle): boolean {
       "seller_rejected",
       "seller_dispute_rejected",
     ].includes(outcome) ||
-    ["refunded", "returned", "settled"].includes(refundStatus) ||
-    ["refunded", "returned"].includes(orderStatus) ||
-    ["refunded", "returned"].includes(escrowState)
+    ["refunded", "returned", "settled"].includes(refundStatus)
   );
 }
 
@@ -73,6 +71,22 @@ export function isPendingDispute(bundle: OrderBundle): boolean {
     ["open", "under_review", "awaiting_response"].includes(disputeStatus) ||
     ["requested", "under_review", "processing", "approved"].includes(refundStatus)
   );
+}
+
+export function isSellerOwnedDispute(bundle: OrderBundle): boolean {
+  if (!isPendingDispute(bundle)) return false;
+  const owner = normalize(bundle.dispute?.resolutionOwner);
+  if (owner === "seller") return true;
+  if (owner === "admin") return false;
+  return normalize(bundle.payoutStatus) === "paid";
+}
+
+export function isAdminOwnedDispute(bundle: OrderBundle): boolean {
+  if (!isPendingDispute(bundle)) return false;
+  const owner = normalize(bundle.dispute?.resolutionOwner);
+  if (owner === "admin") return true;
+  if (owner === "seller") return false;
+  return normalize(bundle.payoutStatus) !== "paid";
 }
 
 export function isActionRequired(bundle: OrderBundle): boolean {
@@ -104,8 +118,6 @@ export function settlementLabel(
   const values = [
     normalize(bundle.dispute?.outcome),
     normalize(bundle.refundRequest?.status),
-    normalize(bundle.order.status),
-    normalize(bundle.escrow?.state),
   ];
 
   if (
@@ -164,7 +176,9 @@ export function getFilterCount(
 
 export function orderStatusLabel(bundle: OrderBundle): string {
   if (isSettledDispute(bundle)) return `Dispute — ${settlementLabel(bundle)}`;
-  if (isPendingDispute(bundle)) return "Dispute Pending";
+  if (isPendingDispute(bundle)) {
+    return isAdminOwnedDispute(bundle) ? "Dispute — BuyMesho Review" : "Dispute — Action Required";
+  }
   if (bundle.order.deliveryStatus === "pending_delivery") return "Pending Delivery";
   if (isDelivered(bundle)) return "Delivered";
   if (isEscrow(bundle)) return "In Escrow";

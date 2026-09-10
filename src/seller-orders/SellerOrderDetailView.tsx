@@ -4,8 +4,10 @@ import type { OrderBundle, SellerResolution } from "./types";
 import {
   hasDispute,
   isActionRequired,
+  isAdminOwnedDispute,
   isDelivered,
   isPendingDispute,
+  isSellerOwnedDispute,
   isSettledDispute,
   money,
   normalize,
@@ -85,6 +87,8 @@ export default function SellerOrderDetailView({
   ).trim();
   const settled = isSettledDispute(selected);
   const pending = isPendingDispute(selected);
+  const sellerOwned = isSellerOwnedDispute(selected);
+  const adminOwned = isAdminOwnedDispute(selected);
   const settledLabel = settlementLabel(selected);
   const sellerOutcome = normalize(dispute?.outcome);
   const sellerSubmittedResolution =
@@ -155,16 +159,20 @@ export default function SellerOrderDetailView({
                   <p className="text-sm font-black text-amber-950">
                     {settled
                       ? `Dispute settled — ${settledLabel}`
-                      : pending
-                        ? "Buyer has an open dispute"
-                        : "Dispute history"}
+                      : adminOwned
+                        ? "Buyer dispute — BuyMesho review"
+                        : pending
+                          ? "Buyer has an open dispute"
+                          : "Dispute history"}
                   </p>
                   <p className="mt-1 text-sm leading-6 text-amber-900/80">
                     {settled
                       ? "This dispute is settled and no further seller resolution is required."
-                      : pending
-                        ? "Review the buyer’s request and choose one resolution."
-                        : "This order has dispute history."}
+                      : adminOwned
+                        ? "This dispute was submitted before seller payout was completed. BuyMesho is reviewing the case and the seller payout is protected while the review is active."
+                        : pending
+                          ? "Review the buyer’s request and choose one resolution."
+                          : "This order has dispute history."}
                   </p>
 
                   {sellerSubmittedResolution ? (
@@ -266,7 +274,7 @@ export default function SellerOrderDetailView({
             </div>
           </div>
 
-          {pending ? (
+          {pending && sellerOwned ? (
             <SellerDisputeResolution
               sellerResolution={sellerResolution}
               resolutionReason={resolutionReason}
@@ -294,6 +302,19 @@ export default function SellerOrderDetailView({
               submitSellerNonRefund={submitSellerNonRefund}
               contactBuyer={() => contactBuyer(selected)}
             />
+          ) : null}
+
+          {pending && adminOwned ? (
+            <div className="mt-5 rounded-2xl border border-sky-200 bg-sky-50 p-5">
+              <p className="text-sm font-black text-sky-950">BuyMesho dispute review</p>
+              <p className="mt-1 text-sm leading-6 text-sky-900/80">
+                Seller resolution is unavailable because the seller payout had not been completed when the dispute was submitted. BuyMesho will review the case and handle any refund from BuyMesho-controlled funds if approved.
+              </p>
+              <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                <p><span className="text-sky-800/70">Payout at submission:</span>{" "}<strong>{selected.dispute?.payoutStatusAtSubmission ?? selected.payoutStatus ?? "Not available"}</strong></p>
+                <p><span className="text-sky-800/70">Current payout:</span>{" "}<strong>{selected.payoutStatus ?? "Not available"}</strong></p>
+              </div>
+            </div>
           ) : null}
 
           {isActionRequired(selected) ? (

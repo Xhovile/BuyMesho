@@ -5,7 +5,7 @@ import { SELLER_HUB_PATH, SELLER_ORDERS_PATH } from "../lib/appNavigation.paths"
 import { useAccountProfile } from "../hooks/useAccountProfile";
 import { getSellerCache, setSellerCache } from "../lib/sellerWorkspaceCache";
 import type { DisputedFilter, FilterKey, OrderBundle, SellerResolution } from "./types";
-import { isPendingDispute, isSettledDispute, matchesFilter, normalize } from "./utils";
+import { isSellerOwnedDispute, isSettledDispute, matchesFilter, normalize } from "./utils";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -97,7 +97,7 @@ export function useSellerOrders() {
     () => orders.filter((bundle) => matchesFilter(bundle, filter, disputedFilter)),
     [orders, filter, disputedFilter],
   );
-  const pendingDisputes = useMemo(() => orders.filter(isPendingDispute), [orders]);
+  const pendingDisputes = useMemo(() => orders.filter(isSellerOwnedDispute), [orders]);
 
   const openOrder = (bundle: OrderBundle) => {
     setSelected(bundle);

@@ -24,6 +24,8 @@ type SellerOrderRow = Record<string, unknown> & {
   case_outcome?: string | null;
   case_window_ends_at?: string | null;
   case_opened_at?: string | null;
+  case_resolution_owner?: string | null;
+  case_payout_status_at_submission?: string | null;
   latest_attempt_id?: string | null;
   latest_attempt_status?: string | null;
   latest_attempt_reason?: string | null;
@@ -97,7 +99,7 @@ function buildPayment(row: SellerOrderRow) {
 function buildEscrow(row: SellerOrderRow) { if (!row.escrow_state) return null; return { state: row.escrow_state }; }
 function buildDispute(row: SellerOrderRow) {
   if (!row.dispute_id && !row.case_id) return null;
-  return { id: row.dispute_id ?? row.case_id, caseId: row.case_id ?? null, orderId: row.id, escrowId: row.dispute_escrow_id ?? null, openedBy: row.dispute_opened_by ?? null, status: row.case_status ?? row.dispute_state ?? null, state: row.dispute_state ?? row.case_status ?? null, reason: row.latest_attempt_reason ?? row.dispute_reason ?? null, requestedResolution: row.latest_attempt_requested_resolution ?? row.refund_requested_resolution ?? null, outcome: row.case_outcome ?? null, windowEndsAt: row.case_window_ends_at ?? row.refund_window_ends_at ?? null, openedAt: row.case_opened_at ?? row.dispute_created_at ?? null, createdAt: row.dispute_created_at ?? row.case_opened_at ?? null, updatedAt: row.dispute_updated_at ?? null, latestAttempt: row.latest_attempt_id ? { id: row.latest_attempt_id, status: row.latest_attempt_status ?? null, reason: row.latest_attempt_reason ?? null, resolution: row.latest_attempt_resolution ?? null, requestedResolution: row.latest_attempt_requested_resolution ?? null } : null };
+  return { id: row.dispute_id ?? row.case_id, caseId: row.case_id ?? null, orderId: row.id, escrowId: row.dispute_escrow_id ?? null, openedBy: row.dispute_opened_by ?? null, status: row.case_status ?? row.dispute_state ?? null, state: row.dispute_state ?? row.case_status ?? null, reason: row.latest_attempt_reason ?? row.dispute_reason ?? null, requestedResolution: row.latest_attempt_requested_resolution ?? row.refund_requested_resolution ?? null, outcome: row.case_outcome ?? null, resolutionOwner: row.case_resolution_owner ?? null, payoutStatusAtSubmission: row.case_payout_status_at_submission ?? null, windowEndsAt: row.case_window_ends_at ?? row.refund_window_ends_at ?? null, openedAt: row.case_opened_at ?? row.dispute_created_at ?? null, createdAt: row.dispute_created_at ?? row.case_opened_at ?? null, updatedAt: row.dispute_updated_at ?? null, latestAttempt: row.latest_attempt_id ? { id: row.latest_attempt_id, status: row.latest_attempt_status ?? null, reason: row.latest_attempt_reason ?? null, resolution: row.latest_attempt_resolution ?? null, requestedResolution: row.latest_attempt_requested_resolution ?? null } : null };
 }
 function buildRefundRequest(row: SellerOrderRow) {
   if (!row.refund_request_id) return null;
@@ -113,7 +115,7 @@ const SELLER_ORDER_SELECT = `
     pay.status AS payout_status,
     e.state AS escrow_state,
     d.id AS dispute_id, d.escrow_id AS dispute_escrow_id, d.opened_by AS dispute_opened_by, d.status AS dispute_state, d.reason AS dispute_reason, d.created_at AS dispute_created_at, d.updated_at AS dispute_updated_at,
-    dc.id AS case_id, dc.status AS case_status, dc.outcome AS case_outcome, dc.window_ends_at AS case_window_ends_at, dc.opened_at AS case_opened_at,
+    dc.id AS case_id, dc.status AS case_status, dc.outcome AS case_outcome, dc.window_ends_at AS case_window_ends_at, dc.opened_at AS case_opened_at, dc.resolution_owner AS case_resolution_owner, dc.payout_status_at_submission AS case_payout_status_at_submission,
     da.id AS latest_attempt_id, da.status AS latest_attempt_status, da.reason AS latest_attempt_reason, da.resolution_note AS latest_attempt_resolution, da.requested_resolution AS latest_attempt_requested_resolution,
     rr.id AS refund_request_id, rr.status AS refund_request_status, rr.request_type AS refund_request_type, rr.amount_requested AS refund_requested_amount, rr.requested_resolution AS refund_requested_resolution, rr.window_ends_at AS refund_window_ends_at
   FROM orders o
@@ -121,7 +123,7 @@ const SELLER_ORDER_SELECT = `
   LEFT JOIN LATERAL (SELECT status FROM payouts WHERE payouts.order_id = o.id ORDER BY created_at DESC LIMIT 1) pay ON TRUE
   LEFT JOIN escrows e ON e.order_id = o.id
   LEFT JOIN LATERAL (SELECT id, escrow_id, opened_by, status, reason, created_at, updated_at FROM disputes WHERE disputes.order_id = o.id ORDER BY disputes.created_at DESC LIMIT 1) d ON TRUE
-  LEFT JOIN LATERAL (SELECT id, status, outcome, window_ends_at, opened_at FROM dispute_cases WHERE dispute_cases.order_id = o.id ORDER BY dispute_cases.created_at DESC LIMIT 1) dc ON TRUE
+  LEFT JOIN LATERAL (SELECT id, status, outcome, window_ends_at, opened_at, resolution_owner, payout_status_at_submission FROM dispute_cases WHERE dispute_cases.order_id = o.id ORDER BY dispute_cases.created_at DESC LIMIT 1) dc ON TRUE
   LEFT JOIN LATERAL (SELECT id, status, reason, resolution_note, requested_resolution FROM dispute_attempts WHERE dispute_attempts.case_id = dc.id ORDER BY dispute_attempts.created_at DESC LIMIT 1) da ON TRUE
   LEFT JOIN LATERAL (SELECT id, status, request_type, amount_requested, requested_resolution, window_ends_at FROM refund_requests WHERE refund_requests.order_id = o.id ORDER BY refund_requests.created_at DESC LIMIT 1) rr ON TRUE`;
 
@@ -146,6 +148,10 @@ export function createSellerOrdersRouter(requireAuth: RequestHandler): express.R
                     WHERE dc.order_id = o.id
                       AND dc.seller_id = $1
                       AND dc.status IN ('open', 'under_review', 'awaiting_response')
+                      AND (
+                        dc.resolution_owner = 'seller'
+                        OR (dc.resolution_owner IS NULL AND EXISTS (SELECT 1 FROM payouts p WHERE p.order_id = o.id AND p.status = 'paid'))
+                      )
                  )
                  OR EXISTS (
                    SELECT 1
@@ -153,6 +159,9 @@ export function createSellerOrdersRouter(requireAuth: RequestHandler): express.R
                     WHERE rr.order_id = o.id
                       AND rr.seller_id = $1
                       AND rr.status IN ('requested', 'under_review', 'processing', 'approved')
+                      AND EXISTS (
+                        SELECT 1 FROM dispute_cases dc2 WHERE dc2.id = rr.dispute_case_id AND (dc2.resolution_owner = 'seller' OR dc2.resolution_owner IS NULL)
+                      )
                  )
                )) AS order_attention_count,
            (SELECT COALESCE(SUM(c.seller_unread_count), 0)
@@ -162,10 +171,7 @@ export function createSellerOrdersRouter(requireAuth: RequestHandler): express.R
         [sellerUid],
       );
       const row = result.rows[0] ?? { order_attention_count: 0, message_unread_count: 0 };
-      return res.json({
-        orderAttentionCount: Number(row.order_attention_count ?? 0),
-        messageUnreadCount: Number(row.message_unread_count ?? 0),
-      });
+      return res.json({ orderAttentionCount: Number(row.order_attention_count ?? 0), messageUnreadCount: Number(row.message_unread_count ?? 0) });
     } catch (error) {
       return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to load seller workspace summary' });
     }

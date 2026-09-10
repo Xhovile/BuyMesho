@@ -5,6 +5,7 @@ import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import { notifyDisputeWorkflowEvent } from '../../modules/notifications/dispute-workflow.notification.js';
 import { assertAllowedDisputeTransition, type DisputeStatus } from './disputeState.js';
 import { ensureDisputeWorkflowFoundation } from '../../db/migrations/20260904_dispute_workflow_foundation.js';
+import { ensureDisputeResolutionOwnershipMigration } from '../../db/migrations/20260910_dispute_resolution_ownership.js';
 import { assertOrderAccessAsync, disputeLimiter, jsonError } from './shared.js';
 
 const POST_DELIVERY_DISPUTE_WINDOW_DAYS = 30;
@@ -67,6 +68,7 @@ async function resolveTicketToOrder(ticketId: string): Promise<{ ticketId: strin
 
 export function createDisputeRouter(requireAuth: RequestHandler): express.Router {
   ensureDisputeWorkflowFoundation();
+  ensureDisputeResolutionOwnershipMigration();
   const router = express.Router();
 
   router.post('/', disputeLimiter, requireAuth, async (req, res) => {
@@ -106,10 +108,10 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
           const caseStatus = String(latestCase.status ?? '').trim().toLowerCase();
           const caseOutcome = String(latestCase.outcome ?? '').trim().toLowerCase();
           if (['resolved', 'closed'].includes(caseStatus) || SETTLED_OUTCOMES.has(caseOutcome)) {
-            return { duplicate: false, settled: true, timingError: null, caseId: String(latestCase.id), attemptId: null, refundRequestId: null, windowEndsAt: latestCase.window_ends_at ? String(latestCase.window_ends_at) : null, eligibleAt: null, phase: 'settled', buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: caseStatus };
+            return { duplicate: false, settled: true, timingError: null, caseId: String(latestCase.id), attemptId: null, refundRequestId: null, windowEndsAt: latestCase.window_ends_at ? String(latestCase.window_ends_at) : null, eligibleAt: null, phase: 'settled', buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: caseStatus, resolutionOwner: String(latestCase.resolution_owner ?? 'admin'), payoutStatusAtSubmission: latestCase.payout_status_at_submission ? String(latestCase.payout_status_at_submission) : null };
           }
           if (['open', 'under_review'].includes(caseStatus)) {
-            return { duplicate: true, settled: false, timingError: null, caseId: String(latestCase.id), attemptId: null, refundRequestId: null, windowEndsAt: latestCase.window_ends_at ? String(latestCase.window_ends_at) : null, eligibleAt: null, phase: 'active', buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: caseStatus };
+            return { duplicate: true, settled: false, timingError: null, caseId: String(latestCase.id), attemptId: null, refundRequestId: null, windowEndsAt: latestCase.window_ends_at ? String(latestCase.window_ends_at) : null, eligibleAt: null, phase: 'active', buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: caseStatus, resolutionOwner: String(latestCase.resolution_owner ?? 'admin'), payoutStatusAtSubmission: latestCase.payout_status_at_submission ? String(latestCase.payout_status_at_submission) : null };
           }
         }
 
@@ -118,7 +120,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         if (legacyLatest) {
           const legacyStatus = String(legacyLatest.status ?? legacyLatest.state ?? '').trim().toLowerCase();
           if (['resolved', 'closed'].includes(legacyStatus) || SETTLED_OUTCOMES.has(String(legacyLatest.resolution ?? '').trim().toLowerCase())) {
-            return { duplicate: false, settled: true, timingError: null, caseId: String(legacyLatest.case_id ?? legacyLatest.id), attemptId: null, refundRequestId: null, windowEndsAt: legacyLatest.window_ends_at ? String(legacyLatest.window_ends_at) : null, eligibleAt: null, phase: 'settled', buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: legacyStatus };
+            return { duplicate: false, settled: true, timingError: null, caseId: String(legacyLatest.case_id ?? legacyLatest.id), attemptId: null, refundRequestId: null, windowEndsAt: legacyLatest.window_ends_at ? String(legacyLatest.window_ends_at) : null, eligibleAt: null, phase: 'settled', buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: legacyStatus, resolutionOwner: 'admin', payoutStatusAtSubmission: null };
           }
         }
 
@@ -134,38 +136,61 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         if (released) {
           const deliveredAt = parseDate(order.fulfilled_at) ?? (escrowState === 'released' ? parseDate(escrow?.updatedAt) : null);
           if (!deliveredAt) {
-            return { duplicate: false, settled: false, timingError: 'DELIVERY_TIMESTAMP_UNAVAILABLE', caseId: null, attemptId: null, refundRequestId: null, windowEndsAt: null, eligibleAt: null, phase: 'post_delivery', buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: orderStatus };
+            return { duplicate: false, settled: false, timingError: 'DELIVERY_TIMESTAMP_UNAVAILABLE', caseId: null, attemptId: null, refundRequestId: null, windowEndsAt: null, eligibleAt: null, phase: 'post_delivery', buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: orderStatus, resolutionOwner: 'admin', payoutStatusAtSubmission: null };
           }
           windowEndsAt = addDays(deliveredAt, POST_DELIVERY_DISPUTE_WINDOW_DAYS);
           eligibleAt = deliveredAt.toISOString();
           phase = 'post_delivery';
           if (now.getTime() >= new Date(windowEndsAt).getTime()) {
-            return { duplicate: false, settled: false, timingError: 'DISPUTE_PERIOD_EXPIRED', caseId: null, attemptId: null, refundRequestId: null, windowEndsAt, eligibleAt, phase, buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: orderStatus };
+            return { duplicate: false, settled: false, timingError: 'DISPUTE_PERIOD_EXPIRED', caseId: null, attemptId: null, refundRequestId: null, windowEndsAt, eligibleAt, phase, buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: orderStatus, resolutionOwner: 'admin', payoutStatusAtSubmission: null };
           }
         } else {
           const deliveryDeadline = parseDate(order.delivery_deadline);
           if (deliveryDeadline && now.getTime() < deliveryDeadline.getTime()) {
-            return { duplicate: false, settled: false, timingError: 'DISPUTE_WINDOW_NOT_OPEN', caseId: null, attemptId: null, refundRequestId: null, windowEndsAt: null, eligibleAt: deliveryDeadline.toISOString(), phase: 'delivery', buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: orderStatus };
+            return { duplicate: false, settled: false, timingError: 'DISPUTE_WINDOW_NOT_OPEN', caseId: null, attemptId: null, refundRequestId: null, windowEndsAt: null, eligibleAt: deliveryDeadline.toISOString(), phase: 'delivery', buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: orderStatus, resolutionOwner: 'admin', payoutStatusAtSubmission: null };
           }
           eligibleAt = deliveryDeadline?.toISOString() ?? null;
           phase = 'escrow';
         }
 
+        const payoutResult = await client.query<Record<string, unknown>>(
+          `SELECT id, status FROM payouts WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
+          [orderId],
+        );
+        const payout = payoutResult.rows[0] ?? null;
+        const payoutStatusAtSubmission = payout ? String(payout.status ?? '').trim().toLowerCase() : null;
+        const resolutionOwner: 'admin' | 'seller' = released && payoutStatusAtSubmission === 'paid' ? 'seller' : 'admin';
+
+        if (resolutionOwner === 'admin' && payout) {
+          const payoutStatus = String(payout.status ?? '').trim().toLowerCase();
+          if (!['paid', 'cancelled'].includes(payoutStatus)) {
+            const holdReason = 'Payout held because this delivered order has an active pre-payout dispute under BuyMesho review.';
+            await client.query(
+              `UPDATE payouts SET status = 'held', provider_status = 'held', failure_reason = 'order_disputed', manual_review_reason = $1, updated_at = $2 WHERE id = $3 AND status NOT IN ('paid','cancelled')`,
+              [holdReason, nowIso, payout.id],
+            );
+            await client.query(
+              `INSERT INTO payout_events (payout_id, seller_id, event_type, actor_type, actor_id, note, payload, created_at) VALUES ($1,$2,'payout_held_for_dispute','system',$2,$3,$4,$5)`,
+              [payout.id, String(order.seller_id), holdReason, JSON.stringify({ orderId, disputeRouting: 'admin', payoutStatusAtSubmission, phase }), nowIso],
+            );
+          }
+        }
+
         const caseId = `case_${randomUUID()}`;
-        await client.query(`INSERT INTO dispute_cases (id, order_id, buyer_id, seller_id, opened_by, status, opened_at, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,'open',$6,$7,$6,$6)`, [caseId, orderId, String(order.buyer_id), String(order.seller_id), openedBy, nowIso, windowEndsAt]);
+        await client.query(`INSERT INTO dispute_cases (id, order_id, buyer_id, seller_id, opened_by, status, resolution_owner, payout_status_at_submission, opened_at, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,'open',$6,$7,$8,$9,$8,$8)`, [caseId, orderId, String(order.buyer_id), String(order.seller_id), openedBy, resolutionOwner, payoutStatusAtSubmission, nowIso, windowEndsAt]);
         const attemptId = `attempt_${randomUUID()}`;
         await client.query(`INSERT INTO dispute_attempts (id, case_id, order_id, request_type, requested_resolution, reason, amount_requested, evidence, submitted_by, status, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'open',$10,$11,$12)`, [attemptId, caseId, orderId, requestType, requestedResolution, reason, amountRequested, JSON.stringify(evidence), openedBy, windowEndsAt, nowIso, nowIso]);
         let refundRequestId: string | null = null;
         if (requestedResolution === 'refund' || requestedResolution === 'return_and_refund') {
           refundRequestId = `refund_${randomUUID()}`;
-          await client.query(`INSERT INTO refund_requests (id, order_id, buyer_id, seller_id, item_id, dispute_case_id, request_type, requested_resolution, reason, amount_requested, currency, payment_method, refund_destination, order_state_snapshot, escrow_state_snapshot, payout_state_snapshot, evidence, buyer_comments, status, submitted_at, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'requested',$19,$20,$21,$22)`, [refundRequestId, orderId, String(order.buyer_id), String(order.seller_id), resolvedTicketId, caseId, requestType, requestedResolution, reason, amountRequested, String(order.total_currency ?? 'MWK'), typeof body.paymentMethod === 'string' ? body.paymentMethod.trim() || null : null, typeof body.refundDestination === 'string' ? body.refundDestination.trim() || null : null, String(order.status ?? 'pending'), escrowState || null, null, JSON.stringify(evidence), reason, nowIso, windowEndsAt, nowIso, nowIso]);
+          await client.query(`INSERT INTO refund_requests (id, order_id, buyer_id, seller_id, item_id, dispute_case_id, request_type, requested_resolution, reason, amount_requested, currency, payment_method, refund_destination, order_state_snapshot, escrow_state_snapshot, payout_state_snapshot, evidence, buyer_comments, status, submitted_at, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'requested',$19,$20,$21,$22)`, [refundRequestId, orderId, String(order.buyer_id), String(order.seller_id), resolvedTicketId, caseId, requestType, requestedResolution, reason, amountRequested, String(order.total_currency ?? 'MWK'), typeof body.paymentMethod === 'string' ? body.paymentMethod.trim() || null : null, typeof body.refundDestination === 'string' ? body.refundDestination.trim() || null : null, String(order.status ?? 'pending'), escrowState || null, payoutStatusAtSubmission, JSON.stringify(evidence), reason, nowIso, windowEndsAt, nowIso, nowIso]);
         }
         const legacyResult = await client.query<Record<string, unknown>>(`SELECT id FROM disputes WHERE order_id = $1 AND status = 'open' ORDER BY created_at ASC LIMIT 1`, [orderId]);
         if (!legacyResult.rows[0]) {
           await client.query(`INSERT INTO disputes (id, order_id, ticket_id, escrow_id, opened_by, reason, status, case_id, window_ends_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,'open',$7,$8,$9,$10)`, [`legacy_${randomUUID()}`, orderId, resolvedTicketId, escrow?.id ?? null, openedBy, reason, caseId, windowEndsAt, nowIso, nowIso]);
         }
-        await client.query(`INSERT INTO audit_events (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata) VALUES ($1,'dispute_case',$2,'dispute_submitted',$3,$4,NULL,'open',$5)`, [`audit_${randomUUID()}`, caseId, openedBy, nowIso, JSON.stringify({ attemptId, refundRequestId, orderId, ticketId: resolvedTicketId, requestType, requestedResolution, phase, eligibleAt, windowEndsAt })]);
-        return { duplicate: false, settled: false, timingError: null, caseId, attemptId, refundRequestId, windowEndsAt, eligibleAt, phase, buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: 'open' };
+        await client.query(`INSERT INTO audit_events (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata) VALUES ($1,'dispute_case',$2,'dispute_submitted',$3,$4,NULL,'open',$5)`, [`audit_${randomUUID()}`, caseId, openedBy, nowIso, JSON.stringify({ attemptId, refundRequestId, orderId, ticketId: resolvedTicketId, requestType, requestedResolution, phase, eligibleAt, windowEndsAt, resolutionOwner, payoutStatusAtSubmission })]);
+        return { duplicate: false, settled: false, timingError: null, caseId, attemptId, refundRequestId, windowEndsAt, eligibleAt, phase, buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: 'open', resolutionOwner, payoutStatusAtSubmission };
       });
 
       if (result.settled) return res.status(409).json({ error: 'Dispute already settled.', code: 'DISPUTE_ALREADY_SETTLED', caseId: result.caseId, status: result.status, windowEndsAt: result.windowEndsAt, orderId });
@@ -178,7 +203,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       try {
         await notifyDisputeWorkflowEvent({ caseId: result.caseId, orderId, buyerId: result.buyerId, sellerId: result.sellerId, event: 'submitted', note: reason, amount: amountRequested, currency: result.currency });
       } catch (notificationError) { console.warn('Failed to send dispute submission notification:', notificationError); }
-      return res.status(201).json({ caseId: result.caseId, attemptId: result.attemptId, refundRequestId: result.refundRequestId, windowEndsAt: result.windowEndsAt, orderId, ticketId: resolvedTicketId, requestType, requestedResolution, phase: result.phase, eligibleAt: result.eligibleAt, status: 'open' });
+      return res.status(201).json({ caseId: result.caseId, attemptId: result.attemptId, refundRequestId: result.refundRequestId, windowEndsAt: result.windowEndsAt, orderId, ticketId: resolvedTicketId, requestType, requestedResolution, phase: result.phase, eligibleAt: result.eligibleAt, status: 'open', resolutionOwner: result.resolutionOwner, payoutStatusAtSubmission: result.payoutStatusAtSubmission });
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to open dispute'));
     }
