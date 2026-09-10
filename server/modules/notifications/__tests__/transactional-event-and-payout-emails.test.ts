@@ -158,22 +158,16 @@ test("payout completed email sends only to the seller when the authoritative pay
 
 test("payout completed notification releases the claim when delivery fails so the seller can be retried", async () => {
   let attempts = 0;
+  const input = { email: "seller@example.com", sellerName: "Ada's Shop", amount: 1250, currency: "MWK", payoutId: "payout-2", orderReference: "ord-2", completedAt: "2026-10-01T12:00:00Z", status: "paid" };
+  let claimed = false;
   const deps = {
-    claim: (() => {
-      let claimed = false;
-      return () => {
-        if (claimed) return false;
-        claimed = true;
-        return true;
-      };
-    })(),
+    claim: () => {
+      if (claimed) return false;
+      claimed = true;
+      return true;
+    },
     markSent: () => undefined,
-    release: (() => {
-      let releaseClaim = false;
-      return () => {
-        releaseClaim = true;
-      };
-    })(),
+    release: () => { claimed = false; },
     send: async () => {
       attempts += 1;
       if (attempts === 1) throw new Error("temporary provider failure");
@@ -181,21 +175,8 @@ test("payout completed notification releases the claim when delivery fails so th
     },
   };
 
-  const input = { email: "seller@example.com", sellerName: "Ada's Shop", amount: 1250, currency: "MWK", payoutId: "payout-2", orderReference: "ord-2", completedAt: "2026-10-01T12:00:00Z", status: "paid" };
-  let claimed = false;
-  const retryDeps = {
-    claim: (key: string) => {
-      if (claimed) return false;
-      claimed = true;
-      return true;
-    },
-    markSent: () => undefined,
-    release: () => { claimed = false; },
-    send: deps.send,
-  };
-
-  await assert.rejects(() => notifyPayoutCompleted(input, retryDeps), /temporary provider failure/);
-  assert.equal(await notifyPayoutCompleted(input, retryDeps), true);
+  await assert.rejects(() => notifyPayoutCompleted(input, deps), /temporary provider failure/);
+  assert.equal(await notifyPayoutCompleted(input, deps), true);
   assert.equal(attempts, 2);
 });
 
