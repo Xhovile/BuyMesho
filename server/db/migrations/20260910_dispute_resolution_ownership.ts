@@ -12,14 +12,25 @@ export function ensureDisputeResolutionOwnershipMigration(): void {
     CREATE INDEX IF NOT EXISTS idx_dispute_cases_resolution_owner_status
       ON dispute_cases (resolution_owner, status, created_at DESC);
 
+    /*
+     * Backfill active/settled legacy cases from the authoritative payout and
+     * seller-resolution signals. Existing admin-owned pre-payout cases remain
+     * admin-owned until a seller resolution outcome proves otherwise.
+     */
     UPDATE dispute_cases dc
        SET resolution_owner = CASE
          WHEN EXISTS (
            SELECT 1
              FROM dispute_attempts da
             WHERE da.case_id = dc.id
-              AND da.status IN ('resolved', 'rejected')
-              AND da.decision IN ('seller_refund_confirmed', 'seller_refund_accepted', 'seller_replacement_confirmed', 'seller_replacement_committed', 'seller_rejected', 'seller_dispute_rejected')
+              AND da.decision IN (
+                'seller_refund_confirmed',
+                'seller_refund_accepted',
+                'seller_replacement_confirmed',
+                'seller_replacement_committed',
+                'seller_rejected',
+                'seller_dispute_rejected'
+              )
          ) THEN 'seller'
          WHEN EXISTS (
            SELECT 1
@@ -29,7 +40,8 @@ export function ensureDisputeResolutionOwnershipMigration(): void {
          ) THEN 'seller'
          ELSE 'admin'
        END
-     WHERE dc.resolution_owner IS NULL OR dc.resolution_owner NOT IN ('admin', 'seller');
+     WHERE dc.status IN ('open', 'under_review')
+        OR dc.resolution_owner NOT IN ('admin', 'seller');
 
     UPDATE dispute_cases dc
        SET payout_status_at_submission = (
