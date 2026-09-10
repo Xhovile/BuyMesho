@@ -9,6 +9,8 @@ export type BuyerDetails = {
 
 export type DeliveryStatus = "action_required" | "pending_delivery" | "delivered";
 
+export type DisputeResolutionOwner = "admin" | "seller";
+
 export type DisputeSummary = {
   id?: string | null;
   caseId?: string | null;
@@ -17,6 +19,8 @@ export type DisputeSummary = {
   reason?: string | null;
   requestedResolution?: string | null;
   outcome?: string | null;
+  resolutionOwner?: DisputeResolutionOwner | null;
+  payoutStatusAtSubmission?: string | null;
   windowEndsAt?: string | null;
   openedAt?: string | null;
   latestAttempt?: {
