@@ -1,5 +1,6 @@
 export const BUYMESHO_EMAIL = {
   appUrl: "https://buymesho.app",
+  logoUrl: "https://raw.githubusercontent.com/Xhovile/BuyMesho/main/photos/Logo.png",
   brandRed: "#e00106",
   brandRedDark: "#991b1b",
   brandText: "#3f3f46",
@@ -35,7 +36,7 @@ export function escapeEmailHtml(value: string): string {
 }
 
 function renderBrandMark(): string {
-  return `<span style="display:inline-block;width:44px;height:44px;line-height:44px;text-align:center;border-radius:10px;background:${BUYMESHO_EMAIL.brandRedDark};color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:800;">B</span>`;
+  return `<img src="${BUYMESHO_EMAIL.logoUrl}" width="56" height="56" alt="BuyMesho platform logo" style="display:block;width:56px;height:56px;border:0;border-radius:12px;" />`;
 }
 
 function renderWordmark(): string {
