@@ -43,10 +43,13 @@ async function loginEmailCheckHandler(req: Request, res: Response) {
     }
 
     console.error("Failed to check login email:", error);
-    return res.status(500).json({
-      registered: false,
-      code: "check-failed",
-      error: "We could not verify this email address right now. Please try again.",
+    // This endpoint is only an account-existence pre-check. Authentication
+    // itself is handled by Firebase on the client and must not be blocked by
+    // a transient BuyMesho/Firebase Admin outage here.
+    return res.status(200).json({
+      registered: true,
+      disabled: false,
+      checkUnavailable: true,
     });
   }
 }
