@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { BUYMESHO_EMAIL, renderBuyMeshoEmail, renderDetailCard } from "./buymesho-email.js";
 
-test("shared BuyMesho shell renders branded header and footer", () => {
+test("shared BuyMesho shell renders branded header and footer without remote images", () => {
   const { html, text } = renderBuyMeshoEmail({
     recipientName: "Jordan Tchen Murray",
     title: "Payment confirmed",
@@ -12,8 +12,8 @@ test("shared BuyMesho shell renders branded header and footer", () => {
     action: { label: "View order", url: "https://buymesho.app/orders/ord_123" },
   });
 
-  assert.match(html, /alt="BuyMesho logo"/);
-  assert.match(html, /https:\/\/buymesho\.app\/icon-192\.png/);
+  assert.doesNotMatch(html, /<img\b/i);
+  assert.match(html, />B<\/span>/);
   assert.match(html, /Buy<\/span><span[^>]*>Mesho/);
   assert.match(html, new RegExp(BUYMESHO_EMAIL.brandRed.slice(1), "i"));
   assert.match(html, /Secure marketplace notifications/);
