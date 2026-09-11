@@ -110,7 +110,7 @@ test("ticket delivery sends once per recipient and includes the issued pass iden
   assert.match(messages[0].text, /Quantity: 2/);
 });
 
-test("ticket delivery releases the claim when delivery fails so a retry can succeed", async () => {
+test("ticket delivery releases the claim when delivery fails so the seller can be retried", async () => {
   const claimed = new Set<string>();
   let attempts = 0;
   const deps = {
@@ -139,9 +139,20 @@ test("issued ticket delivery will not send before the order is successful", asyn
   assert.equal(messages.length, 0);
 });
 
-test("payout completed email sends only to the seller when the authoritative payout status is paid", async () => {
+test("payout completed email uses the order item title and masked destination", async () => {
   const messages: any[] = [];
-  const input = { email: "seller@example.com", sellerName: "Ada's Shop", amount: 1250, currency: "MWK", payoutId: "payout-1", orderReference: "ord-1", completedAt: "2026-10-01T12:00:00Z", status: "paid" };
+  const input = {
+    email: "seller@example.com",
+    sellerName: "Ada's Shop",
+    amount: 1250,
+    currency: "MWK",
+    payoutId: "payout-1",
+    orderReference: "ord-1",
+    orderTitle: "Samsung Galaxy A15",
+    destination: "099****8283",
+    completedAt: "2026-10-01T12:00:00Z",
+    status: "paid",
+  };
   const deps = notificationDeps(messages);
 
   assert.equal(await notifyPayoutCompleted(input, deps), true);
@@ -149,11 +160,33 @@ test("payout completed email sends only to the seller when the authoritative pay
   assert.equal(messages[0].sender, "transactional");
   assert.deepEqual(messages[0].to, { email: "seller@example.com", name: "Ada's Shop" });
   assert.equal(messages[0].subject, "Your BuyMesho payout has been completed");
+  assert.match(messages[0].text, /Your payout of 1,250\.00 MWK for Samsung Galaxy A15 was successfully sent to 099\*\*\*\*8283\./);
   assert.match(messages[0].text, /payout-1/);
-  assert.match(messages[0].text, /1,250.00 MWK/);
+  assert.match(messages[0].text, /Items: Samsung Galaxy A15/);
+  assert.match(messages[0].text, /Sent to: 099\*\*\*\*8283/);
 
   assert.equal(await notifyPayoutCompleted(input, deps), false);
   assert.equal(messages.length, 1);
+});
+
+test("payout completed email preserves mixed-checkout display titles", async () => {
+  const messages: any[] = [];
+  const deps = notificationDeps(messages);
+  const input = {
+    email: "seller@example.com",
+    sellerName: "Ada's Shop",
+    amount: 3750,
+    currency: "MWK",
+    payoutId: "payout-mixed",
+    orderReference: "ord-mixed",
+    orderTitle: "Samsung Galaxy A15, Air Max +2 more",
+    destination: "099****8283",
+    completedAt: "2026-10-01T12:00:00Z",
+    status: "paid",
+  };
+
+  assert.equal(await notifyPayoutCompleted(input, deps), true);
+  assert.match(messages[0].text, /for Samsung Galaxy A15, Air Max \+2 more was successfully sent to 099\*\*\*\*8283\./);
 });
 
 test("payout completed notification releases the claim when delivery fails so the seller can be retried", async () => {
