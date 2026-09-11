@@ -58,7 +58,7 @@ export default function HomeHero({
               <span className="mt-1 block text-red-800">Everything <span className="text-zinc-950">Online.</span></span>
             </h1>
 
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 md:justify-start">
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-3 md:justify-start md:mt-10 lg:mt-12">
               <button
                 type="button"
                 onClick={onBrowseMarket}
