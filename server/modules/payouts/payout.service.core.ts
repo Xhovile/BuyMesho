@@ -3,7 +3,7 @@ import { payoutRepository, type PayoutTransitionRepository } from './payout.tran
 import { applyAdminOverrideAtomic } from './payout.admin-override.atomic.js';
 import { query } from '../../postgres.js';
 import { notifyPayoutCompleted } from '../notifications/payout-completed.notification.js';
-import { buildPayoutOrderTitle, parseOrderItems } from '../email/order-title.js';
+import { buildPayoutOrderTitle } from '../email/order-title.js';
 import type { PoolClient } from 'pg';
 import {
   type CreateConnectPayoutInput,
