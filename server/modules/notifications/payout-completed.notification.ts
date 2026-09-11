@@ -11,6 +11,8 @@ type PayoutCompletedInput = {
   currency: string;
   payoutId: string;
   orderReference?: string | null;
+  orderTitle?: string | null;
+  destination?: string | null;
   completedAt: string;
   status: string;
 };
