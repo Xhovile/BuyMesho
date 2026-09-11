@@ -66,7 +66,7 @@ export default function HomeHero({
               <button
                 type="button"
                 onClick={onBrowseMarket}
-                className="inline-flex items-center justify-center gap-2 rounded-[1.05rem] bg-red-800 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(185,15,32,0.45)] transition-all hover:-translate-y-0.5 hover:bg-red-900 hover:shadow-[0_20px_40px_-14px_rgba(185,15,32,0.5)] focus:outline-none focus:ring-2 focus:ring-red-700/30 focus:ring-offset-2"
+                className="inline-flex items-center justify-center gap-2 rounded-[1.05rem] bg-red-800 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(185,15,32,0.45)] ring-2 ring-red-700/30 ring-offset-2 ring-offset-white transition-all hover:-translate-y-0.5 hover:bg-red-900 hover:shadow-[0_20px_40px_-14px_rgba(185,15,32,0.5)] focus:outline-none"
               >
                 Browse Market
                 <ArrowRight className="h-4 w-4" />
@@ -75,7 +75,7 @@ export default function HomeHero({
                 type="button"
                 onClick={onSellItem}
                 disabled={!onSellItem || isSellerProfileLoading}
-                className="hidden items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(0,0,0,0.45)] transition-all hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_20px_40px_-14px_rgba(0,0,0,0.5)] focus:outline-none focus:ring-2 focus:ring-zinc-950/30 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
+                className="hidden items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(0,0,0,0.45)] ring-2 ring-zinc-950/30 ring-offset-2 ring-offset-white transition-all hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_20px_40px_-14px_rgba(0,0,0,0.5)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
               >
                 <Plus className="h-4 w-4" />
                 <span>
