@@ -23,8 +23,8 @@ test("dispute email uses structured transaction details and BuyMesho branding", 
   assert.match(text, /Refund amount|Amount/);
   assert.match(text, /Description/);
   assert.doesNotMatch(text, /Seller note|Seller explanation/);
-  assert.match(html, /alt="BuyMesho logo"/);
-  assert.match(html, /https:\/\/buymesho\.app\/icon-192\.png/);
+  assert.match(html, /alt="BuyMesho platform logo"/);
+  assert.match(html, /https:\/\/raw\.githubusercontent\.com\/Xhovile\/BuyMesho\/main\/photos\/Logo\.png/);
   assert.match(html, /#e00106/);
   assert.match(html, /Secure marketplace notifications/);
   assert.match(html, /background:#f8fafc/);
