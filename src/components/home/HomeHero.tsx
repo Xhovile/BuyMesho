@@ -10,13 +10,13 @@ const heroCards = [
   {
     title: "For everyone",
     description: "Browse and buy from sellers across Malawi and beyond.",
-    className: "md:left-[30%] md:top-0 md:rotate-3 lg:left-[36%] lg:top-[2%] lg:rotate-3",
+    className: "md:right-0 md:top-[2%] md:rotate-3 lg:left-[36%] lg:top-[2%] lg:rotate-3",
     tone: "bg-amber-50/65 border-amber-200/80 before:bg-amber-500/70",
   },
   {
     title: "Built for sellers",
     description: "List your products and reach more customers online.",
-    className: "md:left-[12%] md:bottom-[2%] md:-rotate-5 lg:left-[10%] lg:bottom-[3%] lg:-rotate-5",
+    className: "md:left-[4%] md:bottom-[2%] md:-rotate-5 lg:left-[10%] lg:bottom-[3%] lg:-rotate-5",
     tone: "bg-sky-50/70 border-sky-200/80 before:bg-sky-500/70",
   },
   {
@@ -57,10 +57,6 @@ export default function HomeHero({
               <span className="block">Buy. Sell.</span>
               <span className="mt-1 block text-red-800">Everything <span className="text-zinc-950">Online.</span></span>
             </h1>
-
-            <p className="mt-7 max-w-xl text-lg leading-relaxed text-zinc-600 sm:text-xl max-md:hidden">
-              Discover products, reach customers, and buy securely — all in one place.
-            </p>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3 md:justify-start">
               <button
