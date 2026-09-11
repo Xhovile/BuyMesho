@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   ChevronRight,
+  Loader2,
   Package,
   RefreshCw,
   ShieldAlert,
@@ -286,7 +287,10 @@ export default function SellerOrdersView() {
 
           {loading ? (
             <div className="mt-8 rounded-3xl border border-zinc-200 bg-white p-10 text-center text-sm font-semibold text-zinc-500">
-              Loading seller orders…
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                <span>Loading seller orders…</span>
+              </div>
             </div>
           ) : filteredOrders.length === 0 ? (
             <div className="mt-8 rounded-3xl border border-zinc-200 bg-white p-10 text-center">
