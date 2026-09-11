@@ -10,7 +10,7 @@ const heroCards = [
   {
     title: "For everyone",
     description: "Browse and buy from sellers across Malawi and beyond.",
-    className: "md:right-0 md:top-[2%] md:rotate-3 lg:left-[36%] lg:top-[2%] lg:rotate-3",
+    className: "md:right-[7%] md:top-[2%] md:rotate-3 lg:left-[36%] lg:top-[2%] lg:rotate-3",
     tone: "bg-amber-50/65 border-amber-200/80 before:bg-amber-500/70",
   },
   {
