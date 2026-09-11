@@ -180,32 +180,9 @@ export default function LoginPage() {
     clearTotpVerifiedSessionToken();
 
     try {
-      await apiFetch("/api/auth/check-login-email", {
-        method: "POST",
-        body: JSON.stringify({ email }),
-      });
-
       const userCredential = await signInWithEmailAndPassword(auth, email, form.password);
       await finishSuccessfulAuthentication(userCredential.user);
     } catch (err: any) {
-      if (err?.status === 400 && /valid email address/i.test(String(err?.message || ""))) {
-        showFeedback("error", "Invalid email address", "Please enter a valid email address.");
-        return;
-      }
-
-      if (err?.status === 404 || /not registered with BuyMesho/i.test(String(err?.message || ""))) {
-        showFeedback("error", "Email not registered", "This email address is not registered with BuyMesho.", [
-          { label: "Cancel", variant: "secondary", onClick: closeFeedback },
-          { label: "Create Account", onClick: () => { closeFeedback(); navigateToSignup(); } },
-        ]);
-        return;
-      }
-
-      if (err?.status === 429) {
-        showFeedback("error", "Too many attempts", "Please wait a moment and try again.");
-        return;
-      }
-
       if (err?.code === "auth/user-not-found") {
         showFeedback("error", "Email not registered", "This email address is not registered with BuyMesho.", [
           { label: "Cancel", variant: "secondary", onClick: closeFeedback },
