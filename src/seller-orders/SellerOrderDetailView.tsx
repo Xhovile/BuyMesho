@@ -1,5 +1,6 @@
 import { AlertCircle, ArrowLeft, CheckCircle2, Send, ShieldAlert } from "lucide-react";
 import SellerDisputeResolution from "./SellerDisputeResolution";
+import OrderTimeline from "./OrderTimeline";
 import type { OrderBundle, SellerResolution } from "./types";
 import {
   hasDispute,
@@ -273,6 +274,8 @@ export default function SellerOrderDetailView({
               </p>
             </div>
           </div>
+
+          <OrderTimeline bundle={selected} />
 
           {pending && sellerOwned ? (
             <SellerDisputeResolution
