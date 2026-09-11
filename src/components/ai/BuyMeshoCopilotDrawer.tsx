@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { X, Send, Bot, RefreshCw, ShoppingBag, ArrowRight, HelpCircle, Search } from "lucide-react";
 import { queryShoppingAssistant, type AssistantConversationMessage, type ShoppingAssistantMode, type ShoppingAssistantResult, type ShoppingAssistantListing } from "../../lib/ai";
+import { getPlatformNavigationEntry } from "../../../shared/platformNavigation";
+import { navigateToPath } from "../../lib/appNavigation";
 import { formatMoney } from "../../shared/utils/formatMoney";
 import AiIcon, { shouldHideLauncher } from "./AiIcon";
 
@@ -91,6 +93,12 @@ export default function BuyMeshoCopilotDrawer({ isOpen, onClose, availableListin
       setMessages((prev) => [...prev, { role: "assistant", text: "BuyMesho Assistant is temporarily unavailable. Please try again later." }]);
     } finally { setLoading(false); }
   };
+  const handleNavigation = (targetId: string) => {
+    const target = getPlatformNavigationEntry(targetId);
+    if (!target) return;
+    navigateToPath(target.path);
+    onClose();
+  };
   const latestFollowUpMessageIndex = messages.reduce((latest, message, index) => message.role === "assistant" && (message.result?.suggestions?.length ?? 0) > 0 ? index : latest, -1);
 
   return (
@@ -109,6 +117,7 @@ export default function BuyMeshoCopilotDrawer({ isOpen, onClose, availableListin
             <div className={`max-w-[88%] rounded-3xl px-4 py-3 text-sm shadow-2xs ${msg.role === "user" ? "rounded-br-xs bg-zinc-900 text-white" : "rounded-bl-xs border border-zinc-200 bg-white text-zinc-900"}`}>
               {msg.role === "assistant" && <div className="mb-2 flex items-center gap-1.5 text-xs font-bold text-zinc-700"><Bot className="h-3.5 w-3.5 text-zinc-900" /> BuyMesho Assistant</div>}
               {msg.role === "assistant" ? renderAssistantText(msg.text) : <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>}
+              {msg.result?.actions?.length ? <div className="mt-3 space-y-2 border-t border-zinc-200/80 pt-3"><p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Go to</p><div className="grid gap-2">{msg.result.actions.filter((action) => action.type === "navigate").map((action) => <button type="button" key={action.id} onClick={() => handleNavigation(action.target)} className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-left hover:border-zinc-300 hover:bg-zinc-100"><span className="min-w-0"><span className="block text-sm font-bold text-zinc-900">{action.label}</span>{action.description ? <span className="mt-0.5 block text-xs leading-snug text-zinc-500">{action.description}</span> : null}</span><ArrowRight className="h-4 w-4 shrink-0 text-zinc-400" /></button>)}</div></div> : null}
               {msg.result?.recommended_listings?.length ? <div className="mt-3 space-y-2 border-t border-zinc-200/80 pt-3"><p className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-zinc-500"><ShoppingBag className="h-3 w-3" /> Current BuyMesho matches</p><div className="grid gap-2">{msg.result.recommended_listings.map((item) => { const reason = msg.result?.match_reasons?.[String(item.id)]; return <button type="button" key={item.id} onClick={() => onSelectListing?.(item.id)} className="group flex items-start justify-between gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-2.5 text-left hover:border-zinc-300 hover:bg-zinc-100"><span className="min-w-0 space-y-1"><span className="block truncate text-xs font-bold">{item.name}</span><span className="block text-xs font-extrabold">{formatMoney(item.price)}</span>{item.condition ? <span className="block text-[11px] text-zinc-500">Condition: {item.condition}</span> : null}{reason ? <span className="block line-clamp-2 text-[11px] leading-snug text-zinc-600">{reason}</span> : null}</span><ArrowRight className="mt-1 h-4 w-4 shrink-0 text-zinc-400" /></button>; })}</div></div> : null}
             </div>
             {followUpSuggestionsVisible && idx === latestFollowUpMessageIndex && idx === messages.length - 1 && msg.result?.suggestions?.length ? <div className="mt-2 flex max-w-[88%] flex-wrap gap-1.5">{msg.result.suggestions.map((suggestion) => <button type="button" key={suggestion.id} onClick={() => handleSend(suggestion.label)} className="cursor-pointer rounded-full border border-emerald-300/80 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-950">{suggestion.label}</button>)}</div> : null}

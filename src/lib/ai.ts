@@ -1,4 +1,5 @@
 import { apiFetch } from "./api";
+import { resolvePlatformNavigation } from "../../shared/platformNavigation";
 import type { ListingDraft } from "../types";
 
 export type ListingAiDraft = Partial<ListingDraft> & {
@@ -21,6 +22,7 @@ export type PriceSuggestionResult = {
 export type ShoppingAssistantMode = "ask" | "shop";
 export type ShoppingAssistantIntent = "product_discovery" | "price_filter" | "category_discovery" | "listing_comparison" | "seller_help" | "order_help" | "buyer_protection" | "account_help" | "navigation_help" | "general_help";
 export type ShoppingAssistantSuggestion = { id: string; label: string; intent: ShoppingAssistantIntent; action: "send_message" };
+export type ShoppingAssistantAction = { id: string; type: "navigate"; target: string; label: string; description?: string; path?: string };
 export type ShoppingAssistantContext = { category?: string; min_price?: number; max_price?: number; condition?: string; university?: string };
 
 export type ShoppingAssistantListing = {
@@ -39,6 +41,7 @@ export type ShoppingAssistantResult = {
   intent: { type: ShoppingAssistantIntent; confidence?: number };
   recommendations: ShoppingAssistantListing[];
   suggestions: ShoppingAssistantSuggestion[];
+  actions?: ShoppingAssistantAction[];
   context: ShoppingAssistantContext;
   recommended_listing_ids: string[];
   match_reasons: Record<string, string>;
@@ -116,7 +119,24 @@ export async function queryShoppingAssistant(payload: {
     throw new Error("BuyMesho Assistant returned an empty response.");
   }
 
-  return response.result as ShoppingAssistantResult;
+  const result = response.result as ShoppingAssistantResult;
+  const navigationEntry = resolvePlatformNavigation(payload.query);
+  if (!navigationEntry) return result;
+
+  const existingNavigationAction = result.actions?.find((action) => action.type === "navigate");
+  if (existingNavigationAction) return result;
+
+  return {
+    ...result,
+    actions: [{
+      id: `navigate-${navigationEntry.id}`,
+      type: "navigate",
+      target: navigationEntry.id,
+      label: `Open ${navigationEntry.name}`,
+      description: navigationEntry.description,
+      path: navigationEntry.path,
+    }],
+  };
 }
 
 /** The server owns canonical listing truth for comparisons; clients submit IDs only. */
