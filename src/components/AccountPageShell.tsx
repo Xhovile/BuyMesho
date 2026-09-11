@@ -46,6 +46,12 @@ export default function AccountPageShell({
   const isProfilePage = title === "My profile";
   const pathname = window.location.pathname;
   const showEventTicketSearch = pathname === "/explore/events/manage" || pathname === "/explore/events/dashboard";
+  const normalizedTitle = title.trim().toLowerCase();
+  const brandHeroSubtitle = normalizedTitle.startsWith("log in")
+    ? "Log In"
+    : normalizedTitle.includes("create") && normalizedTitle.includes("account")
+      ? "Create Account"
+      : eyebrow;
 
   const handleLogout = async () => {
     try {
@@ -103,7 +109,7 @@ export default function AccountPageShell({
         <div className="space-y-6 sm:space-y-8">
           {showBrandHero && (
             <div className="rounded-[2rem] border border-white/80 bg-white/90 px-5 py-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-sm">
-              <BrandMark />
+              <BrandMark subtitle={brandHeroSubtitle} />
             </div>
           )}
 
