@@ -48,14 +48,8 @@ function buildEvents(bundle: OrderBundle): TimelineEvent[] {
     { label: "Dispute opened", at: bundle.dispute?.openedAt },
     { label: "Dispute resolved", at: bundle.dispute?.resolvedAt },
     { label: "Payout created", at: bundle.payout?.createdAt },
-    {
-      label: "Payout paid",
-      at: bundle.payout?.status?.toLowerCase() === "paid" ? bundle.payout.paidAt : null,
-    },
-    {
-      label: "Payout failed",
-      at: bundle.payout?.status?.toLowerCase() === "failed" ? bundle.payout.failedAt : null,
-    },
+    { label: "Payout paid", at: bundle.payout?.paidAt },
+    { label: "Payout failed", at: bundle.payout?.failedAt },
   ];
 
   return events
