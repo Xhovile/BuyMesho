@@ -1,6 +1,7 @@
 import { sendEmail } from "../email/email.service.js";
 import { renderPayoutFailedEmail } from "../email/templates/payout-failed.js";
 import { claimEmailNotification, markEmailNotificationSent, releaseEmailNotification } from "./email-delivery.repository.js";
+import { PAYOUT_POLICY } from "../payouts/payout.policy.js";
 
 type Send = typeof sendEmail;
 
@@ -30,7 +31,7 @@ export async function notifyPayoutFinalFailed(
   input: PayoutFinalFailedInput,
   deps: NotificationDependencies = {},
 ): Promise<boolean> {
-  if (input.attemptNo < 16 || !input.payoutId.trim()) return false;
+  if (input.attemptNo < PAYOUT_POLICY.maxRetryCount || !input.payoutId.trim()) return false;
 
   const email = input.email.trim();
   if (!email) return false;
