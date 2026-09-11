@@ -55,7 +55,7 @@ export default function HomeHero({
 
             <h1 className="mt-6 text-5xl font-black leading-[0.92] tracking-[-0.065em] text-zinc-950 sm:text-7xl lg:text-[5rem]">
               <span className="block">Buy. Sell.</span>
-              <span className="mt-1 block text-red-800">Everything Online.</span>
+              <span className="mt-1 block text-red-800">Everything <span className="text-zinc-950">Online.</span></span>
             </h1>
 
             <p className="mt-7 max-w-xl text-lg leading-relaxed text-zinc-600 sm:text-xl max-md:hidden">
@@ -66,7 +66,7 @@ export default function HomeHero({
               <button
                 type="button"
                 onClick={onBrowseMarket}
-                className="inline-flex items-center justify-center gap-2 rounded-[1.05rem] bg-red-700 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(185,15,32,0.45)] transition-all hover:-translate-y-0.5 hover:bg-red-800 hover:shadow-[0_20px_40px_-14px_rgba(185,15,32,0.5)] focus:outline-none focus:ring-2 focus:ring-red-700/30 focus:ring-offset-2"
+                className="inline-flex items-center justify-center gap-2 rounded-[1.05rem] bg-red-800 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(185,15,32,0.45)] transition-all hover:-translate-y-0.5 hover:bg-red-900 hover:shadow-[0_20px_40px_-14px_rgba(185,15,32,0.5)] focus:outline-none focus:ring-2 focus:ring-red-700/30 focus:ring-offset-2"
               >
                 Browse Market
                 <ArrowRight className="h-4 w-4" />
@@ -75,7 +75,7 @@ export default function HomeHero({
                 type="button"
                 onClick={onSellItem}
                 disabled={!onSellItem || isSellerProfileLoading}
-                className="hidden items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(0,0,0,0.45)] transition-all hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_20px_40px_-14px_rgba(0,0,0,0.5)] disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
+                className="hidden items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(0,0,0,0.45)] transition-all hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_20px_40px_-14px_rgba(0,0,0,0.5)] focus:outline-none focus:ring-2 focus:ring-zinc-950/30 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
               >
                 <Plus className="h-4 w-4" />
                 <span>
