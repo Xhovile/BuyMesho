@@ -4,6 +4,7 @@ import { applyAdminOverrideAtomic } from './payout.admin-override.atomic.js';
 import { query } from '../../postgres.js';
 import { notifyPayoutCompleted } from '../notifications/payout-completed.notification.js';
 import { notifyPayoutFinalFailed } from '../notifications/payout-final-failed.notification.js';
+import { notifyAdminsPayoutFinalFailed } from '../notifications/admin-payout-failed.notification.js';
 import { buildPayoutOrderTitle } from '../email/order-title.js';
 import { PAYOUT_POLICY } from './payout.policy.js';
 import type { PoolClient } from 'pg';
@@ -89,18 +90,38 @@ async function notifySellerOfFinalPayoutFailure(
     const email = result.rows[0]?.email?.trim();
     if (!email) return;
 
+    const sellerName = result.rows[0]?.business_name?.trim() || 'there';
+    const orderTitle = buildPayoutOrderTitle(result.rows[0]?.order_items);
+    const destination = result.rows[0]?.masked_account?.trim() || null;
+    const attempt = Number(attemptNo);
+    const failureReason = payout.failureReason ?? null;
+    const failedAt = payout.updatedAt || new Date().toISOString();
+
     await notifyPayoutFinalFailed({
       email,
-      sellerName: result.rows[0]?.business_name?.trim() || 'there',
+      sellerName,
       amount: Number(payout.amount ?? 0),
       currency: payout.currency || 'MWK',
       payoutId: payout.id,
       orderReference: payout.orderId,
-      orderTitle: buildPayoutOrderTitle(result.rows[0]?.order_items),
-      destination: result.rows[0]?.masked_account?.trim() || null,
-      attemptNo: Number(attemptNo),
-      failureReason: payout.failureReason ?? null,
-      failedAt: payout.updatedAt || new Date().toISOString(),
+      orderTitle,
+      destination,
+      attemptNo: attempt,
+      failureReason,
+      failedAt,
+    });
+
+    await notifyAdminsPayoutFinalFailed({
+      sellerName,
+      amount: Number(payout.amount ?? 0),
+      currency: payout.currency || 'MWK',
+      payoutId: payout.id,
+      orderReference: payout.orderId,
+      orderTitle,
+      destination,
+      attemptNo: attempt,
+      failureReason,
+      failedAt,
     });
   } catch (error) {
     console.warn('[notification] payout_final_failed email delivery failed', error);
