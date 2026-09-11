@@ -19,7 +19,7 @@ export default function SellerPayoutsAccessGate({
       <div className="flex min-h-screen items-center justify-center bg-[#f5f6f8] px-4">
         <div className="flex items-center gap-3 rounded-3xl border border-zinc-200 bg-white px-5 py-4 shadow-[0_12px_35px_rgba(0,0,0,0.06)]">
           <Loader2 className="h-5 w-5 animate-spin text-zinc-700" />
-          <span className="font-bold text-zinc-700">Loading seller workspace…</span>
+          <span className="font-bold text-zinc-700">Loading seller payouts…</span>
         </div>
       </div>
     );
