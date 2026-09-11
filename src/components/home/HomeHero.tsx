@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Plus } from "lucide-react";
 
 const heroCards = [
   {
@@ -27,7 +27,17 @@ const heroCards = [
   },
 ] as const;
 
-export default function HomeHero({ onBrowseMarket, onSellItem }: { onBrowseMarket: () => void; onSellItem?: () => void }) {
+export default function HomeHero({
+  onBrowseMarket,
+  onSellItem,
+  isSeller = false,
+  isSellerProfileLoading = false,
+}: {
+  onBrowseMarket: () => void;
+  onSellItem?: () => void;
+  isSeller?: boolean;
+  isSellerProfileLoading?: boolean;
+}) {
   return (
     <section className="relative overflow-hidden border-b border-zinc-200 bg-gradient-to-br from-zinc-100 via-zinc-100 to-white pb-10 pt-10 sm:pb-14 sm:pt-12">
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
@@ -64,9 +74,13 @@ export default function HomeHero({ onBrowseMarket, onSellItem }: { onBrowseMarke
               <button
                 type="button"
                 onClick={onSellItem}
-                className="hidden rounded-[1.05rem] bg-zinc-950 px-5 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-zinc-950/15 transition hover:-translate-y-0.5 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950/30 focus:ring-offset-2 md:inline-flex"
+                disabled={!onSellItem || isSellerProfileLoading}
+                className="hidden items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 shadow-md transition-all hover:border-zinc-300 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 sm:flex md:inline-flex"
               >
-                + Sell / + List item
+                <Plus className="h-4 w-4" />
+                <span>
+                  {isSellerProfileLoading ? "Loading..." : isSeller ? "List Item" : "Sell"}
+                </span>
               </button>
             </div>
           </div>
