@@ -3,7 +3,9 @@ import { payoutRepository, type PayoutTransitionRepository } from './payout.tran
 import { applyAdminOverrideAtomic } from './payout.admin-override.atomic.js';
 import { query } from '../../postgres.js';
 import { notifyPayoutCompleted } from '../notifications/payout-completed.notification.js';
+import { notifyPayoutFinalFailed } from '../notifications/payout-final-failed.notification.js';
 import { buildPayoutOrderTitle } from '../email/order-title.js';
+import { PAYOUT_POLICY } from './payout.policy.js';
 import type { PoolClient } from 'pg';
 import {
   type CreateConnectPayoutInput,
@@ -61,6 +63,50 @@ async function notifySellerOfPaidPayout(payout: PayoutRecord | undefined): Promi
   }
 }
 
+async function notifySellerOfFinalPayoutFailure(
+  payout: PayoutRecord | undefined,
+  attemptNo: number | null | undefined,
+): Promise<void> {
+  if (!payout || payout.status !== 'failed' || Number(attemptNo ?? 0) < PAYOUT_POLICY.maxRetryCount) return;
+
+  try {
+    const result = await query<{
+      email?: string | null;
+      business_name?: string | null;
+      order_items?: unknown;
+      masked_account?: string | null;
+    }>(
+      `SELECT s.email, s.business_name, o.items AS order_items, spa.masked_account
+         FROM sellers s
+         LEFT JOIN orders o ON o.id = $2
+         LEFT JOIN seller_payout_accounts spa
+           ON spa.id = $3
+          AND spa.seller_uid = s.uid
+        WHERE s.uid = $1
+        LIMIT 1`,
+      [payout.sellerId, payout.orderId ?? null, payout.destinationAccountId ?? null],
+    );
+    const email = result.rows[0]?.email?.trim();
+    if (!email) return;
+
+    await notifyPayoutFinalFailed({
+      email,
+      sellerName: result.rows[0]?.business_name?.trim() || 'there',
+      amount: Number(payout.amount ?? 0),
+      currency: payout.currency || 'MWK',
+      payoutId: payout.id,
+      orderReference: payout.orderId,
+      orderTitle: buildPayoutOrderTitle(result.rows[0]?.order_items),
+      destination: result.rows[0]?.masked_account?.trim() || null,
+      attemptNo: Number(attemptNo),
+      failureReason: payout.failureReason ?? null,
+      failedAt: payout.updatedAt || new Date().toISOString(),
+    });
+  } catch (error) {
+    console.warn('[notification] payout_final_failed email delivery failed', error);
+  }
+}
+
 async function notifySellerIfPaid(payout: PayoutRecord | undefined): Promise<PayoutRecord | undefined> {
   if (payout?.status === 'paid') {
     await notifySellerOfPaidPayout(payout);
@@ -107,6 +153,9 @@ export class PayoutService {
     const { executePayoutFlow } = await import('./payout.service.execution.js');
     const result = await executePayoutFlow(this.repository, input);
     await notifySellerIfPaid(result.payout);
+    if (result.payout?.status === 'failed' && result.attempt?.attemptNo != null) {
+      await notifySellerOfFinalPayoutFailure(result.payout, result.attempt.attemptNo);
+    }
     return result;
   }
 
