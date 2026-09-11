@@ -67,6 +67,7 @@ async function notifySellerOfPaidPayout(payout: PayoutRecord | undefined): Promi
 async function notifySellerOfFinalPayoutFailure(
   payout: PayoutRecord | undefined,
   attemptNo: number | null | undefined,
+  failureReason?: string | null,
 ): Promise<void> {
   if (!payout || payout.status !== 'failed' || Number(attemptNo ?? 0) < PAYOUT_POLICY.maxRetryCount) return;
 
@@ -94,7 +95,6 @@ async function notifySellerOfFinalPayoutFailure(
     const orderTitle = buildPayoutOrderTitle(result.rows[0]?.order_items);
     const destination = result.rows[0]?.masked_account?.trim() || null;
     const attempt = Number(attemptNo);
-    const failureReason = payout.failureReason ?? null;
     const failedAt = payout.updatedAt || new Date().toISOString();
 
     await notifyPayoutFinalFailed({
@@ -107,7 +107,7 @@ async function notifySellerOfFinalPayoutFailure(
       orderTitle,
       destination,
       attemptNo: attempt,
-      failureReason,
+      failureReason: failureReason?.trim() || null,
       failedAt,
     });
 
@@ -120,7 +120,7 @@ async function notifySellerOfFinalPayoutFailure(
       orderTitle,
       destination,
       attemptNo: attempt,
-      failureReason,
+      failureReason: failureReason?.trim() || null,
       failedAt,
     });
   } catch (error) {
@@ -175,7 +175,7 @@ export class PayoutService {
     const result = await executePayoutFlow(this.repository, input);
     await notifySellerIfPaid(result.payout);
     if (result.payout?.status === 'failed' && result.attempt?.attemptNo != null) {
-      await notifySellerOfFinalPayoutFailure(result.payout, result.attempt.attemptNo);
+      await notifySellerOfFinalPayoutFailure(result.payout, result.attempt.attemptNo, result.reason);
     }
     return result;
   }
