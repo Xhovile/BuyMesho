@@ -238,7 +238,10 @@ export default function HomePage() {
       />
 
       <main className="overflow-x-clip">
-        <HomeHero onBrowseMarket={() => navigateToPath(EXPLORE_PATH)} />
+        <HomeHero
+          onBrowseMarket={() => navigateToPath(EXPLORE_PATH)}
+          onSellItem={controller.handleStartSelling}
+        />
 
         {controller.error ? (
           <section className="mx-auto max-w-7xl px-4 pb-2">

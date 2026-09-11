@@ -56,10 +56,10 @@ export default function HomeHero({ onBrowseMarket, onSellItem }: { onBrowseMarke
               <button
                 type="button"
                 onClick={onBrowseMarket}
-                className="group inline-flex items-center gap-2 rounded-[1.05rem] bg-red-700 px-7 py-4 text-sm font-extrabold text-white shadow-[0_18px_35px_-14px_rgba(185,15,32,0.65)] transition hover:-translate-y-0.5 hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-700/30 focus:ring-offset-2"
+                className="inline-flex items-center justify-center gap-2 rounded-[1.05rem] bg-red-700 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(185,15,32,0.45)] transition-all hover:-translate-y-0.5 hover:bg-red-800 hover:shadow-[0_20px_40px_-14px_rgba(185,15,32,0.5)] focus:outline-none focus:ring-2 focus:ring-red-700/30 focus:ring-offset-2"
               >
                 Browse Market
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                <ArrowRight className="h-4 w-4" />
               </button>
               <button
                 type="button"
