@@ -1,82 +1,91 @@
-import { ArrowRight, BadgeCheck, Globe2, Users } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const heroCards = [
   {
+    title: "Secure with Passkeys, 2FA Authentication, and more!",
+    description: "Protect your account with modern authentication and additional security controls.",
+    className: "md:left-0 md:top-[7%] md:-rotate-3 lg:left-[-3%] lg:top-[8%] lg:-rotate-3",
+    tone: "bg-red-50/75 border-red-200/80 before:bg-red-500/70",
+  },
+  {
     title: "For everyone",
-    description: "Anyone can browse and buy.",
-    icon: Globe2,
-    className: "left-0 top-8 -rotate-3",
+    description: "Browse and buy from sellers across Malawi and beyond.",
+    className: "md:left-[30%] md:top-0 md:rotate-3 lg:left-[36%] lg:top-[2%] lg:rotate-3",
+    tone: "bg-amber-50/65 border-amber-200/80 before:bg-amber-500/70",
   },
   {
-    title: "Student entrepreneurs",
-    description: "Built to help sellers grow.",
-    icon: Users,
-    className: "right-6 top-28 rotate-3",
+    title: "Built for sellers",
+    description: "List your products and reach more customers online.",
+    className: "md:left-[12%] md:bottom-[2%] md:-rotate-5 lg:left-[10%] lg:bottom-[3%] lg:-rotate-5",
+    tone: "bg-sky-50/70 border-sky-200/80 before:bg-sky-500/70",
   },
   {
-    title: "Trusted listings",
-    description: "A structured marketplace for real commerce.",
-    icon: BadgeCheck,
-    className: "left-16 bottom-0 rotate-1",
+    title: "Secure payments",
+    description: "Pay with Mpamba, Airtel Money, VISA card or directly from a Malawian Bank account. Confirmation after delivery (Escrow) is also supported.",
+    className: "md:right-0 md:bottom-[2%] md:rotate-3 lg:right-[-1%] lg:bottom-[4%] lg:rotate-3",
+    tone: "bg-emerald-50/70 border-emerald-200/80 before:bg-emerald-500/70",
   },
 ] as const;
 
-export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => void }) {
+export default function HomeHero({ onBrowseMarket, onSellItem }: { onBrowseMarket: () => void; onSellItem?: () => void }) {
   return (
-    <section className="relative overflow-hidden border-b border-zinc-200 bg-gradient-to-br from-zinc-900/10 to-zinc-100 pb-8 pt-4 sm:pb-14 sm:pt-8">
+    <section className="relative overflow-hidden border-b border-zinc-200 bg-gradient-to-br from-zinc-100 via-zinc-100 to-white pb-10 pt-10 sm:pb-14 sm:pt-12">
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-        <div className="absolute left-1/2 top-10 h-[24rem] w-[24rem] -translate-x-1/2 rounded-full bg-zinc-900/8 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-44 w-44 rounded-full bg-zinc-300/20 blur-3xl" />
+        <div className="absolute left-[68%] top-8 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-red-700/8 blur-3xl" />
+        <div className="absolute bottom-0 right-0 h-52 w-52 rounded-full bg-zinc-300/18 blur-3xl" />
       </div>
 
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12">
-          <div className="mx-auto flex max-w-2xl flex-col items-center text-center lg:mx-0 lg:items-center">
-            <h1 className="mt-5 text-4xl font-black tracking-[-0.06em] leading-[0.92] text-zinc-950 sm:text-6xl lg:text-[4.75rem]">
-              Buy. Sell. Online. 
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="grid items-center gap-8 md:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] md:gap-6 lg:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)] lg:gap-2">
+          <div className="relative z-10 flex flex-col items-center text-center md:items-start md:text-left">
+            <div className="flex items-center gap-4 text-[10px] font-bold tracking-[0.24em] text-zinc-500 sm:text-[11px]">
+              <span className="h-[2px] w-12 bg-gradient-to-r from-red-600 to-red-200 sm:w-14" />
+              A PUBLIC MARKETPLACE
+            </div>
+
+            <h1 className="mt-6 text-5xl font-black leading-[0.92] tracking-[-0.065em] text-zinc-950 sm:text-7xl lg:text-[5rem]">
+              <span className="block">Buy. Sell.</span>
+              <span className="mt-1 block text-red-800">Everything Online.</span>
             </h1>
 
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <p className="mt-7 max-w-xl text-lg leading-relaxed text-zinc-600 sm:text-xl max-md:hidden">
+              Discover products, reach customers, and buy securely — all in one place.
+            </p>
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 md:justify-start">
               <button
                 type="button"
                 onClick={onBrowseMarket}
-                className="inline-flex items-center gap-2 rounded-2xl bg-red-900 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-red-900/20 hover:bg-red-800"
+                className="group inline-flex items-center gap-2 rounded-[1.05rem] bg-red-700 px-7 py-4 text-sm font-extrabold text-white shadow-[0_18px_35px_-14px_rgba(185,15,32,0.65)] transition hover:-translate-y-0.5 hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-700/30 focus:ring-offset-2"
               >
                 Browse Market
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </button>
+              <button
+                type="button"
+                onClick={onSellItem}
+                className="hidden rounded-[1.05rem] bg-zinc-950 px-5 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-zinc-950/15 transition hover:-translate-y-0.5 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950/30 focus:ring-offset-2 md:inline-flex"
+              >
+                + Sell / + List item
               </button>
             </div>
           </div>
 
-          <div className="relative hidden min-h-[30rem] lg:block" aria-hidden="true">
-            <div className="pointer-events-none absolute inset-8 rounded-[2.5rem] bg-[radial-gradient(circle_at_top_left,rgba(39,39,42,0.10),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(161,161,170,0.10),transparent_30%)] blur-2xl" />
-
-            {heroCards.map((card) => {
-              const Icon = card.icon;
-
-              return (
-                <div
-                  key={card.title}
-                  className={`absolute w-64 rounded-[1.75rem] border border-zinc-200/90 bg-white/95 p-5 shadow-[0_24px_65px_-20px_rgba(0,0,0,0.32),0_10px_25px_-12px_rgba(0,0,0,0.16)] ring-1 ring-black/5 backdrop-blur-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_30px_75px_-20px_rgba(0,0,0,0.36),0_12px_30px_-12px_rgba(0,0,0,0.18)] ${card.className}`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-zinc-900 text-white shadow-lg shadow-zinc-900/15">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
-                      BuyMesho
-                    </span>
-                  </div>
-
-                  <h2 className="mt-4 text-xl font-black tracking-[-0.04em] text-zinc-950">
-                    {card.title}
-                  </h2>
-                  <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-                    {card.description}
-                  </p>
-                </div>
-              );
-            })}
+          <div className="relative hidden min-h-[32rem] md:block" aria-label="BuyMesho marketplace benefits">
+            {heroCards.map((card) => (
+              <article
+                key={card.title}
+                className={`absolute z-20 w-56 rounded-[1.65rem] border p-5 shadow-[0_24px_65px_-20px_rgba(0,0,0,0.20),0_10px_25px_-12px_rgba(0,0,0,0.10)] backdrop-blur-sm before:absolute before:inset-x-4 before:top-0 before:h-[2px] before:rounded-full before:content-[''] sm:w-60 lg:w-64 ${card.tone} ${card.className}`}
+              >
+                <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-500/90">BuyMesho</span>
+                <h2 className="mt-5 text-xl font-black leading-tight tracking-[-0.04em] text-zinc-950">
+                  {card.title}
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-700/80">
+                  {card.description}
+                </p>
+              </article>
+            ))}
           </div>
         </div>
       </div>
