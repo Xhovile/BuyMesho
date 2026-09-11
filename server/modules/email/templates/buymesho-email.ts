@@ -26,8 +26,8 @@ export type BuyMeshoEmailOptions = {
   footerText?: string;
 };
 
-export function escapeEmailHtml(value: string): string {
-  return value
+export function escapeEmailHtml(value: unknown): string {
+  return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -121,10 +121,10 @@ export function renderBuyMeshoEmail(options: BuyMeshoEmailOptions) {
   };
 }
 
-export function renderDetailCard(rows: Array<[label: string, value: string]>, heading = "Details"): string {
+export function renderDetailCard(rows: Array<[label: string, value: unknown]>, heading = "Details"): string {
   const safeHeading = escapeEmailHtml(heading);
   const safeRows = rows
-    .filter(([, value]) => value !== "")
+    .filter(([, value]) => value !== "" && value !== null && value !== undefined)
     .map(([label, value]) => `<tr><td style="padding:10px 12px 10px 0;font-size:14px;color:${BUYMESHO_EMAIL.muted};width:42%;vertical-align:top;">${escapeEmailHtml(label)}</td><td style="padding:10px 0;font-size:14px;color:${BUYMESHO_EMAIL.ink};font-weight:700;vertical-align:top;word-break:break-word;">${escapeEmailHtml(value)}</td></tr>`)
     .join("");
 
