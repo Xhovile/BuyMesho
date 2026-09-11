@@ -241,6 +241,8 @@ export default function HomePage() {
         <HomeHero
           onBrowseMarket={() => navigateToPath(EXPLORE_PATH)}
           onSellItem={controller.handleStartSelling}
+          isSeller={controller.isSeller}
+          isSellerProfileLoading={controller.isSellerProfileLoading}
         />
 
         {controller.error ? (
