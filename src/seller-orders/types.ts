@@ -23,6 +23,7 @@ export type DisputeSummary = {
   payoutStatusAtSubmission?: string | null;
   windowEndsAt?: string | null;
   openedAt?: string | null;
+  resolvedAt?: string | null;
   latestAttempt?: {
     id?: string | null;
     status?: string | null;
@@ -39,6 +40,14 @@ export type RefundRequestSummary = {
   amountRequested?: number;
   requestedResolution?: string | null;
   windowEndsAt?: string | null;
+};
+
+export type PayoutTimelineSummary = {
+  status?: string | null;
+  createdAt?: string | null;
+  paidAt?: string | null;
+  failedAt?: string | null;
+  updatedAt?: string | null;
 };
 
 export type OrderBundle = {
@@ -70,6 +79,7 @@ export type OrderBundle = {
   } | null;
   escrow: { state?: string | null } | null;
   payoutStatus?: string | null;
+  payout?: PayoutTimelineSummary | null;
   dispute: DisputeSummary | null;
   refundRequest?: RefundRequestSummary | null;
 };
