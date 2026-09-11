@@ -75,7 +75,7 @@ export default function HomeHero({
                 type="button"
                 onClick={onSellItem}
                 disabled={!onSellItem || isSellerProfileLoading}
-                className="hidden items-center gap-2 rounded-[1.05rem] bg-zinc-950 px-5 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-zinc-950/15 transition hover:-translate-y-0.5 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950/30 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
+                className="hidden items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(0,0,0,0.45)] transition-all hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_20px_40px_-14px_rgba(0,0,0,0.5)] disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
               >
                 <Plus className="h-4 w-4" />
                 <span>
