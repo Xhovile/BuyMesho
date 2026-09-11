@@ -38,3 +38,15 @@ test("shared shell escapes untrusted content", () => {
   assert.match(html, /&lt;script&gt;/i);
   assert.match(html, /&lt;123&gt;/i);
 });
+
+test("detail cards safely render non-string transaction values", () => {
+  const html = renderDetailCard([
+    ["Amount", 1250],
+    ["Completed", new Date("2026-10-01T12:00:00Z")],
+    ["Metadata", { provider: "manual" }],
+  ]);
+
+  assert.match(html, />1,?250</);
+  assert.match(html, /2026-10-01T12:00:00\.000Z/);
+  assert.match(html, /\[object Object\]/);
+});
