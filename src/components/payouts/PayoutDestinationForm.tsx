@@ -54,7 +54,7 @@ const FALLBACK_BANK_OPTIONS: PayoutProviderOption[] = [
     destinationType: "bank",
     providerRefId: "87e62436-0553-4fb5-a76d-f27d28420c5b",
   },
-    {
+  {
     id: "236760c9-3045-4a01-990e-497b28d115bb",
     name: "Centenary Bank",
     destinationType: "bank",
@@ -140,7 +140,7 @@ export default function PayoutDestinationForm({
           <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Payout setup</p>
           <h2 className="mt-2 text-2xl font-black tracking-tight">Add or update your payout destination.</h2>
           <p className="mt-2 text-sm text-zinc-600">
-            Choose a PayChangu-supported payout destination. Real provider identifiers are stored securely on the server.
+            Choose a supported payout destination. Your details are stored securely, and the destination becomes available once the required details are valid. No admin approval is required.
           </p>
         </div>
         {activeDestinationCount !== undefined ? (
