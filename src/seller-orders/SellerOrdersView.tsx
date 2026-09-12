@@ -69,7 +69,10 @@ export default function SellerOrdersView() {
   if (profileLoading) {
     return (
       <main className="min-h-screen grid place-items-center bg-zinc-50 text-sm font-semibold text-zinc-500">
-        Loading seller orders…
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          <span>Loading Seller Orders</span>
+        </div>
       </main>
     );
   }
@@ -289,7 +292,7 @@ export default function SellerOrdersView() {
             <div className="mt-8 rounded-3xl border border-zinc-200 bg-white p-10 text-center text-sm font-semibold text-zinc-500">
               <div className="flex items-center justify-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                <span>Loading seller orders…</span>
+                <span>Loading Seller Orders</span>
               </div>
             </div>
           ) : filteredOrders.length === 0 ? (
