@@ -21,9 +21,9 @@ export default function AppFooter() {
           <span className="inline-flex h-10 w-10 flex-shrink-0 overflow-hidden bg-transparent">
             <img src={Logo} alt="BuyMesho logo" className="h-full w-full object-cover" />
           </span>
-          <span className="text-sm font-bold text-zinc-900">
+          <span className="text-xl font-extrabold tracking-tight md:text-lg">
             <span className="text-red-900">Buy</span>
-            <span className="text-zinc-700">Mesho Mw</span>
+            <span className="text-zinc-700">Mesho Ltd</span>
           </span>
         </button>
 
