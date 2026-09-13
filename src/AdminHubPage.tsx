@@ -6,7 +6,6 @@ import {
   ADMIN_MESSAGES_PATH,
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_PAYMENTS_PATH,
-  ADMIN_PAYOUT_DESTINATIONS_PATH,
   ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH,
   ADMIN_TRANSACTION_INSPECTOR_PATH,
@@ -14,7 +13,6 @@ import {
   navigateToAdminModerationQueue,
   navigateToAdminPayments,
   navigateToAdminTransactionInspector,
-  navigateToAdminPayoutDestinations,
   navigateToAdminReports,
   navigateToAdminSellerApplications,
   navigateToPath,
@@ -36,7 +34,6 @@ export default function AdminHubPage() {
       <AdminOverviewCard title="Event Moderation" description="Review event creators, posted events, and moderation activity." icon={CalendarDays} path={ADMIN_EVENTS_PATH} onClick={(event) => { event.preventDefault(); navigateToAdminEvents(); }} />
       <AdminOverviewCard title="Payments & Webhooks" description="Inspect payment events and webhook activity." icon={Webhook} path={ADMIN_PAYMENTS_PATH} onClick={(event) => { event.preventDefault(); navigateToAdminPayments(); }} />
       <AdminOverviewCard title="Transaction Inspector" description="Deep-dive into payouts, reconciliation, and seller payout history." icon={CreditCard} path={ADMIN_TRANSACTION_INSPECTOR_PATH} onClick={(event) => { event.preventDefault(); navigateToAdminTransactionInspector(); }} />
-      <AdminOverviewCard title="Payout Destination Review" description="Approve pending seller payout destinations before payouts are released to PayChangu." icon={ShieldCheck} path={ADMIN_PAYOUT_DESTINATIONS_PATH} onClick={(event) => { event.preventDefault(); navigateToAdminPayoutDestinations(); }} />
     </section>
     <section className="rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-sm"><p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">Navigation rule</p><h2 className="mt-2 text-lg font-black tracking-tight text-zinc-900">No duplicated button wall here</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600">The overview should summarize the control room and send operators into separate work pages. The shared admin nav belongs on the workspace pages, not repeated inside the hub.</p><button type="button" onClick={() => navigateToPath(ADMIN_EVENTS_PATH)} className="mt-4 inline-flex items-center rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800">Open Event Moderation</button></section>
   </AdminWorkspaceLayout>;

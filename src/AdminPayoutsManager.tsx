@@ -15,7 +15,6 @@ import { useIsAdmin } from "./hooks/useIsAdmin";
 import { getSellerPayoutStatusLabel, getVisibleAdminActions } from "./modules/payouts/uiModel";
 import ActionModal from "./components/ActionModal";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
-import { navigateToAdminPayoutDestinations } from "./lib/appNavigation";
 import FormDropdown from "./components/FormDropdown";
 import PayoutQueueCard from "./PayoutQueueCard";
 import PayoutDetailDrawer from "./AdminPayoutDetailDrawer";
@@ -611,7 +610,6 @@ export default function AdminPayoutsManager() {
       return;
     }
     void loadAdjustments(selected.id);
-  
     setDestinationStatus(selected.destinationVerificationStatus ?? selected.destinationStatus ?? "verified");
     setDestinationReason(selected.destinationLastError ?? selected.lastError ?? selected.latestAttemptFailureReason ?? "");
     setSellerControlReason("");

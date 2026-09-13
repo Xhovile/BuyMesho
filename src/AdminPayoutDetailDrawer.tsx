@@ -281,38 +281,6 @@ export default function AdminPayoutDetailDrawer(props: Props) {
     );
   };
 
-  const handleDestinationVerification = async () => {
-    if (!selected.destinationAccountId) {
-      setNotice({ type: "error", message: "This payout does not have a destination account attached." });
-      return;
-    }
-    const status = String(props.destinationStatus ?? selected.destinationVerificationStatus ?? "").trim().toLowerCase();
-    if (!["pending", "verified", "failed", "disabled"].includes(status)) {
-      setNotice({ type: "error", message: "Choose a valid destination verification status first." });
-      return;
-    }
-    const reason = pickReason(props.destinationReason, selected.destinationLastError, `Admin set destination to ${status}`);
-    await runAction("Destination verification updated.", () =>
-      apiFetch(`/api/admin/payouts/destinations/${encodeURIComponent(selected.destinationAccountId as string)}/verification`, {
-        method: "POST",
-        body: JSON.stringify({ status, reason }),
-      }),
-    );
-  };
-
-  const handleApproveDestinationVerification = async () => {
-    if (!selected.destinationAccountId) {
-      setNotice({ type: "error", message: "This payout does not have a destination account attached." });
-      return;
-    }
-    await runAction("Destination approved.", () =>
-      apiFetch(`/api/admin/payouts/destinations/${encodeURIComponent(selected.destinationAccountId as string)}/verification`, {
-        method: "POST",
-        body: JSON.stringify({ status: "verified", reason: pickReason(props.destinationReason, "Destination approved by admin") }),
-      }),
-    );
-  };
-
   const handleSellerSuspension = async (suspended: boolean) => {
     const reason = pickReason(props.sellerControlReason, selected.manualReviewReason, selected.lastError, suspended ? "Admin suspension" : "Admin unsuspension");
     await runAction(suspended ? "Seller payouts suspended." : "Seller payouts unsuspended.", () =>
@@ -410,8 +378,8 @@ export default function AdminPayoutDetailDrawer(props: Props) {
           onOpenOverrideDialog={(action) => void handleOverride(action)}
           onOpenReconcileDialog={() => void handleReconcile()}
           onOpenRefundEscrowDialog={() => void handleRefundEscrow()}
-          onUpdateDestinationVerification={() => void handleDestinationVerification()}
-          onApproveDestinationVerification={() => void handleApproveDestinationVerification()}
+          onUpdateDestinationVerification={() => void props.onUpdateDestinationVerification()}
+          onSellerControlReasonChange={props.onSellerControlReasonChange}
           onUpdateSellerSuspension={(suspended) => void handleSellerSuspension(suspended)}
           onCreateAdjustment={() => void handleCreateAdjustment()}
         />

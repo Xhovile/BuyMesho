@@ -83,6 +83,9 @@ export default function PayoutDestinationCard({
               {destination.destinationType === "bank" ? "Bank" : "Mobile money"} · {accountLabel}
             </span>
           </p>
+          <p className="mt-2 text-xs font-semibold text-zinc-500">
+            Seller-managed destination. No admin approval is required to save or replace it.
+          </p>
         </div>
 
         <button
@@ -98,7 +101,7 @@ export default function PayoutDestinationCard({
 
       <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-zinc-500">
         <MetaBox label="Updated" value={formatDate(destination.updatedAt)} />
-        <MetaBox label="Verified" value={formatDate(destination.verifiedAt)} />
+        <MetaBox label="Ready since" value={formatDate(destination.verifiedAt)} />
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
