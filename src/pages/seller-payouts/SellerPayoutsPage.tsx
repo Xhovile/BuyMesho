@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import BrandMark from "../../components/BrandMark";
 import ConfirmModal from "../../components/ConfirmModal";
@@ -54,13 +55,28 @@ function SellerPayoutsManageView() {
     startEdit,
     handleSaveDestination,
     handleMakeDefault,
-    handleRemoveDestination,
+    handleRemoveDestination: removeDestination,
     handleConfirmRemoveDestination,
     handleRefresh,
   } = useSellerPayoutsPage();
 
+  const [destinationFormOpen, setDestinationFormOpen] = useState(false);
+  const savingWasActive = useRef(false);
+
   const hasCachedPayoutData = Boolean(sellerId && getSellerCache(`payouts:${sellerId}`));
   const isAuthenticated = Boolean(sellerId);
+
+  useEffect(() => {
+    if (savingDestination) {
+      savingWasActive.current = true;
+      return;
+    }
+
+    if (savingWasActive.current) {
+      savingWasActive.current = false;
+      if (!destinationFormError) setDestinationFormOpen(false);
+    }
+  }, [savingDestination, destinationFormError]);
 
   if (!isAuthenticated && !profileLoading) {
     return <SellerPayoutsAccessGate loading={false} isSeller={false} isAuthenticated={false} onBack={() => navigateToPath(EXPLORE_PATH)} />;
@@ -76,6 +92,29 @@ function SellerPayoutsManageView() {
 
   const providerOptions = [...providerMetadata.mobileMoneyOperators, ...providerMetadata.banks];
 
+  const openAddDestination = () => {
+    if (!canEditSettings) return;
+    resetForm();
+    setDestinationFormOpen(true);
+  };
+
+  const openReplaceDestination = (destination: typeof activeDestinations[number]) => {
+    if (!canEditSettings) return;
+    startEdit(destination);
+    setDestinationFormOpen(true);
+  };
+
+  const closeDestinationForm = () => {
+    if (savingDestination) return;
+    setDestinationFormOpen(false);
+    resetForm();
+  };
+
+  const handleDestinationRemove = (destination: typeof activeDestinations[number]) => {
+    removeDestination(destination);
+    if (destination.isDefault && canEditSettings) setDestinationFormOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-[#f4f5f7] text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/70 bg-white/95">
@@ -87,13 +126,43 @@ function SellerPayoutsManageView() {
           </div>
         </div>
       </header>
+
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8">
         <SellerPayoutsHero summary={summary} earningsSummary={earningsSummary} canEditSettings={canEditSettings} />
         {notice ? <SellerPayoutsNotice type={notice.type} message={notice.message} details={lastSaveDiagnostic?.reasons} /> : null}
-        <SellerPayoutsDestinationsSection form={form} onFormChange={setForm} onSave={handleSaveDestination} onCancel={resetForm} saving={savingDestination} error={destinationFormError} canEditSettings={canEditSettings} isEditing={Boolean(selectedDestinationId)} activeDestinationCount={activeDestinations.length} activeDestinations={activeDestinations} providerOptions={providerOptions} onReplace={startEdit} onRemove={handleRemoveDestination} onMakeDefault={handleMakeDefault} />
+
+        <SellerPayoutsDestinationsSection
+          form={form}
+          onFormChange={setForm}
+          onSave={handleSaveDestination}
+          onCancel={closeDestinationForm}
+          saving={savingDestination}
+          error={destinationFormError}
+          canEditSettings={canEditSettings}
+          isEditing={Boolean(selectedDestinationId)}
+          formOpen={destinationFormOpen}
+          activeDestinations={activeDestinations}
+          providerOptions={providerOptions}
+          onAdd={openAddDestination}
+          onReplace={openReplaceDestination}
+          onRemove={handleDestinationRemove}
+          onMakeDefault={handleMakeDefault}
+        />
+
         <SellerPayoutsHistorySection payouts={payouts} canViewHistory={canViewHistory} />
       </main>
-      <ConfirmModal open={Boolean(removeTarget)} title="Remove payout destination" message={removeTarget ? `Are you sure you want to remove ${removeTarget.providerName} from your payout destinations?` : "Are you sure you want to remove this payout destination?"} cancelText="Cancel" confirmText={removeCountdown > 0 ? `Confirm (${removeCountdown}s)` : "Confirm"} confirmDisabled={savingDestination || removeCountdown > 0} danger onCancel={() => setRemoveTarget(null)} onConfirm={() => void handleConfirmRemoveDestination()} />
+
+      <ConfirmModal
+        open={Boolean(removeTarget)}
+        title="Remove payout destination"
+        message={removeTarget ? `Are you sure you want to remove ${removeTarget.providerName} from your payout destinations?` : "Are you sure you want to remove this payout destination?"}
+        cancelText="Cancel"
+        confirmText={removeCountdown > 0 ? `Confirm (${removeCountdown}s)` : "Confirm"}
+        confirmDisabled={savingDestination || removeCountdown > 0}
+        danger
+        onCancel={() => setRemoveTarget(null)}
+        onConfirm={() => void handleConfirmRemoveDestination()}
+      />
     </div>
   );
 }
