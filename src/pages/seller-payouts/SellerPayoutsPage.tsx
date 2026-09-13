@@ -91,6 +91,7 @@ function SellerPayoutsManageView() {
   }
 
   const providerOptions = [...providerMetadata.mobileMoneyOperators, ...providerMetadata.banks];
+  const visibleNotice = notice && !notice.message.includes("Connect status") ? notice : null;
 
   const openAddDestination = () => {
     if (!canEditSettings) return;
@@ -129,7 +130,7 @@ function SellerPayoutsManageView() {
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8">
         <SellerPayoutsHero summary={summary} earningsSummary={earningsSummary} canEditSettings={canEditSettings} />
-        {notice ? <SellerPayoutsNotice type={notice.type} message={notice.message} details={lastSaveDiagnostic?.reasons} /> : null}
+        {visibleNotice ? <SellerPayoutsNotice type={visibleNotice.type} message={visibleNotice.message} details={lastSaveDiagnostic?.reasons} /> : null}
 
         <SellerPayoutsDestinationsSection
           form={form}
