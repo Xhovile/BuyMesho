@@ -6,24 +6,28 @@ const heroCards = [
     description: "Protect your account with modern authentication and additional security controls.",
     className: "md:left-0 md:top-[7%] md:-rotate-3 lg:left-[-3%] lg:top-[8%] lg:-rotate-3",
     tone: "bg-red-50/75 border-red-200/80 before:bg-red-500/70",
+    rope: "bg-red-700/80",
   },
   {
     title: "For everyone",
     description: "Browse and buy from sellers across Malawi and beyond.",
     className: "md:right-[7%] md:top-[2%] md:rotate-3 lg:left-[36%] lg:top-[2%] lg:rotate-3",
     tone: "bg-amber-50/65 border-amber-200/80 before:bg-amber-500/70",
+    rope: "bg-amber-600/85",
   },
   {
     title: "Built for sellers",
     description: "List your products and reach more customers online.",
     className: "md:left-[4%] md:bottom-[2%] md:-rotate-5 lg:left-[10%] lg:bottom-[3%] lg:-rotate-5",
     tone: "bg-sky-50/70 border-sky-200/80 before:bg-sky-500/70",
+    rope: "bg-sky-600/80",
   },
   {
     title: "Secure payments",
     description: "Pay with Mpamba, Airtel Money, VISA card or directly from a Malawian Bank account. Confirmation after delivery (Escrow) is also supported.",
     className: "md:right-0 md:bottom-[2%] md:rotate-3 lg:right-[-1%] lg:bottom-[4%] lg:rotate-3",
     tone: "bg-emerald-50/70 border-emerald-200/80 before:bg-emerald-500/70",
+    rope: "bg-emerald-600/80",
   },
 ] as const;
 
@@ -85,8 +89,14 @@ export default function HomeHero({
             {heroCards.map((card) => (
               <article
                 key={card.title}
-                className={`absolute z-20 w-56 rounded-[1.65rem] border p-5 shadow-[0_24px_65px_-20px_rgba(0,0,0,0.20),0_10px_25px_-12px_rgba(0,0,0,0.10)] backdrop-blur-sm before:absolute before:inset-x-4 before:top-0 before:h-[2px] before:rounded-full before:content-[''] sm:w-60 lg:w-64 ${card.tone} ${card.className}`}
+                className={`absolute z-20 w-56 overflow-visible rounded-[1.65rem] border p-5 shadow-[0_24px_65px_-20px_rgba(0,0,0,0.20),0_10px_25px_-12px_rgba(0,0,0,0.10)] backdrop-blur-sm before:absolute before:inset-x-4 before:top-0 before:h-[2px] before:rounded-full before:content-[''] sm:w-60 lg:w-64 ${card.tone} ${card.className}`}
               >
+                <div className="pointer-events-none absolute -top-10 left-1/2 h-12 w-48 -translate-x-1/2" aria-hidden="true">
+                  <span className="absolute left-1/2 top-0 h-5 w-5 -translate-x-1/2 rounded-full border-2 border-zinc-400 bg-zinc-700 shadow-[0_3px_8px_rgba(0,0,0,0.22)]" />
+                  <span className={`absolute right-1/2 top-3 h-[2px] w-24 origin-right -rotate-[28deg] rounded-full ${card.rope} shadow-sm`} />
+                  <span className={`absolute left-1/2 top-3 h-[2px] w-24 origin-left rotate-[28deg] rounded-full ${card.rope} shadow-sm`} />
+                </div>
+
                 <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-500/90">BuyMesho</span>
                 <h2 className="mt-5 text-xl font-black leading-tight tracking-[-0.04em] text-zinc-950">
                   {card.title}
