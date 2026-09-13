@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import express from 'express';
-import { createPayoutRouter } from '../payoutRoutes.js';
 import { getPaymentDb } from '../../../postgresCompat.js';
+
+process.env.SELLER_PAYOUT_ENCRYPTION_KEY ??= 'test-only-seller-payout-encryption-key';
+
+const { createPayoutRouter } = await import('../payoutRoutes.js');
 
 const sellerId = 'seller-destination-independence-test';
 const foreignSellerId = 'seller-destination-independence-foreign-test';
