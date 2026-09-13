@@ -84,6 +84,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Architecture guard
+        run: npm run check:payout-destination-independence
+
       - name: Reset shared test database
         env:
           NODE_ENV: test
