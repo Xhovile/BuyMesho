@@ -22,6 +22,7 @@ export type PayoutDestination = {
   currency: string;
   accountName: string;
   maskedAccount: string;
+  accountDisplay: string;
   isDefault: boolean;
   verificationStatus: string;
   verificationAttempts: number;
