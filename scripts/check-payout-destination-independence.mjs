@@ -10,7 +10,7 @@ const files = {
   destinationHelper: 'server/routes/escrow/payoutRoutes.helpers.destinations.ts',
   destinationForm: 'src/components/payouts/PayoutDestinationForm.tsx',
   destinationCard: 'src/components/payouts/PayoutDestinationCard.tsx',
-  payoutCore: 'server/modules/payouts/payout.service.core.ts',
+  payoutExecution: 'server/modules/payouts/payout.service.execution.async.ts',
   payoutDrawer: 'src/PayoutDetailDrawer.tsx',
 };
 
@@ -30,7 +30,7 @@ const checks = [
   ['Seller UI says no Admin approval is required', source.destinationForm.includes('No admin approval is required')],
   ['Destination UI uses Ready since language', source.destinationCard.includes('Ready since')],
   ['Admin destination UI has no routine Approve-as-verified action', !source.payoutDrawer.includes('Approve as verified') && !source.payoutDrawer.includes('Destination approved.')],
-  ['Payout execution still protects against unverified destinations', source.payoutCore.includes('destination_not_verified')],
+  ['Payout execution still rejects unverified destinations', source.payoutExecution.includes("reasonCode: 'destination_not_verified'")],
 ];
 
 const failures = checks.filter(([, passed]) => !passed);
