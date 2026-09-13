@@ -20,6 +20,20 @@ async function getSellerBusinessName(sellerUid: string): Promise<string | null> 
   }
 }
 
+async function getEventCreatorRegistrationName(creatorUid: string): Promise<string | null> {
+  try {
+    const result = await query<{ display_name?: string | null }>(
+      "SELECT display_name FROM event_creators WHERE uid = $1 LIMIT 1",
+      [creatorUid],
+    );
+    const name = result.rows[0]?.display_name?.trim();
+    return name || null;
+  } catch (error) {
+    console.warn("Failed to load event creator registration name for order email", error);
+    return null;
+  }
+}
+
 function getEventTicketHolderName(order: StoredOrder): string | null {
   for (const item of order.items ?? []) {
     const record = item as unknown as Record<string, unknown>;
@@ -64,10 +78,13 @@ async function sendOrderPaidEmail(order: StoredOrder, role: RecipientRole): Prom
   const eventTicketHolderName = getEventTicketHolderName(order);
   const buyerCheckoutName = order.buyerDetails?.fullName?.trim() || eventTicketHolderName;
   const isEventOrder = order.source === "event";
+  const eventCreatorRegistrationName = isEventOrder
+    ? await getEventCreatorRegistrationName(order.sellerId)
+    : null;
   const recipientName = role === "buyer"
     ? buyerCheckoutName || userRecord.displayName?.trim() || "there"
     : isEventOrder
-      ? userRecord.displayName?.trim() || sellerBusinessName || "there"
+      ? eventCreatorRegistrationName || sellerBusinessName || userRecord.displayName?.trim() || "there"
       : sellerBusinessName || userRecord.displayName?.trim() || "there";
   const counterpartyName = role === "buyer"
     ? sellerBusinessName || "BuyMesho seller"
