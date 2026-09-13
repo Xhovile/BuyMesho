@@ -11,6 +11,7 @@ const files = {
   destinationForm: 'src/components/payouts/PayoutDestinationForm.tsx',
   destinationCard: 'src/components/payouts/PayoutDestinationCard.tsx',
   payoutCore: 'server/modules/payouts/payout.service.core.ts',
+  payoutDrawer: 'src/PayoutDetailDrawer.tsx',
 };
 
 const source = {};
@@ -21,13 +22,14 @@ for (const [key, relativePath] of Object.entries(files)) {
 const checks = [
   ['Admin destination location mapping removed', !source.navigation.includes('ADMIN_PAYOUT_DESTINATIONS_PATH') && !source.navigation.includes('admin_payout_destinations')],
   ['Admin destination request API removed', !source.adminRoutes.includes('/payout-destination-requests')],
-  ['Admin destination verification API removed', !source.adminRoutes.includes('/payouts/destinations/:destinationAccountId/verification')],
+  ['Routine Admin destination approval API removed from review workflow', !source.adminRoutes.includes('/payouts/destinations/:destinationAccountId/verification')],
   ['Seller destination create route retained', source.payoutRoutes.includes("router.post('/destinations'")],
   ['Seller destination ownership check retained', source.payoutRoutes.includes('assertEditSettingsAccess(req, sellerId)')],
   ['New destinations become verified', source.destinationHelper.includes("VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'verified'")],
   ['Changed destinations do not wait for Admin verification', source.destinationHelper.includes("shouldResetVerification ? 'verified' : existing.verification_status")],
   ['Seller UI says no Admin approval is required', source.destinationForm.includes('No admin approval is required')],
   ['Destination UI uses Ready since language', source.destinationCard.includes('Ready since')],
+  ['Admin destination UI has no routine Approve-as-verified action', !source.payoutDrawer.includes('Approve as verified') && !source.payoutDrawer.includes('Destination approved.')],
   ['Payout execution still protects against unverified destinations', source.payoutCore.includes('destination_not_verified')],
 ];
 
