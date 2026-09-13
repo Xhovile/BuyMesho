@@ -50,20 +50,19 @@ test("PayoutDestinationForm disables save controls while loading or disabled", (
   assert.match(html, /Save destination/);
 });
 
-test("PayoutDestinationCard renders masked destination details only", () => {
-  const rawAccountNumber = "1234567890";
-  const rawMobileNumber = "0999123456";
+test("PayoutDestinationCard renders compact destination credentials and only masks three middle digits", () => {
   const html = renderToStaticMarkup(
     <PayoutDestinationCard
       destination={{
         id: "dest_1",
         sellerId: "seller_1",
-        destinationType: "bank",
-        providerName: "NBS",
-        providerRefId: "nbs",
+        destinationType: "mobile_money",
+        providerName: "TNM Mpamba",
+        providerRefId: "tnm-mpamba",
         currency: "MWK",
-        accountName: "Test Seller",
-        maskedAccount: "•••• 7890",
+        accountName: "Isaac Mtsiriza",
+        maskedAccount: "****0000",
+        accountDisplay: "099***0000",
         isDefault: true,
         verificationStatus: "verified",
         verificationAttempts: 1,
@@ -78,7 +77,18 @@ test("PayoutDestinationCard renders masked destination details only", () => {
     />,
   );
 
-  assert.match(html, /•••• 7890/);
-  assert.doesNotMatch(html, new RegExp(rawAccountNumber));
-  assert.doesNotMatch(html, new RegExp(rawMobileNumber));
+  assert.match(html, /Mobile Money/);
+  assert.match(html, /TNM Mpamba/);
+  assert.match(html, /Isaac Mtsiriza/);
+  assert.match(html, /099\*\*\*0000/);
+  assert.match(html, /Default/);
+  assert.match(html, /Destination actions/);
+  assert.match(html, /Replace/);
+  assert.match(html, /Make default/);
+  assert.match(html, /Remove/);
+  assert.doesNotMatch(html, /Seller-managed destination/);
+  assert.doesNotMatch(html, /Verified/);
+  assert.doesNotMatch(html, /Active/);
+  assert.doesNotMatch(html, /Ready since/);
+  assert.doesNotMatch(html, /Updated/);
 });
