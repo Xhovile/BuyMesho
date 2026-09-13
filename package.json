@@ -39,7 +39,6 @@
     "@google/genai": "^1.29.0",
     "@tailwindcss/vite": "^4.1.21",
     "@types/multer": "^2.0.0",
-    "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.4",
     "@xhovile/platform": "github:Xhovile/Platform#main",
     "cloudinary": "^2.9.0",
