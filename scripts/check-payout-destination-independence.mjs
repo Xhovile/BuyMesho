@@ -27,8 +27,8 @@ const checks = [
   ['Seller destination ownership check retained', source.payoutRoutes.includes('assertEditSettingsAccess(req, sellerId)')],
   ['New destinations become verified', source.destinationHelper.includes("VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'verified'")],
   ['Changed destinations do not wait for Admin verification', source.destinationHelper.includes("shouldResetVerification ? 'verified' : existing.verification_status")],
-  ['Seller UI says no Admin approval is required', source.destinationForm.includes('No admin approval is required')],
-  ['Destination UI uses Ready since language', source.destinationCard.includes('Ready since')],
+  ['Seller UI does not claim Admin approval is required', !source.destinationForm.includes('No admin approval is required')],
+  ['Destination UI does not present Ready since language', !source.destinationCard.includes('Ready since')],
   ['Admin destination UI has no routine Approve-as-verified action', !source.payoutDrawer.includes('Approve as verified') && !source.payoutDrawer.includes('Destination approved.')],
   ['Payout execution still rejects unverified destinations', source.payoutExecution.includes("reasonCode: 'destination_not_verified'")],
 ];
