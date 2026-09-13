@@ -131,7 +131,7 @@ export function useSellerPayoutsPage() {
       if (payoutsRes.status === "rejected") failedResources.push("payout history");
       if (escrowsRes.status === "rejected") failedResources.push("escrow data");
       if (providerMetadataRes.status === "rejected") failedResources.push("provider metadata");
-      if (connectRes.status === "rejected") failedResources.push("Connect status");
+      // Connect is reserved for a later seller payout experience and is intentionally not surfaced here.
 
       setPermissions(nextPermissions);
       setDestinations(nextDestinations);
