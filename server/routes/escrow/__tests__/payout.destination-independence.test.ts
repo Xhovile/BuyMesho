@@ -27,6 +27,12 @@ function resetState(): void {
   db.prepare('DELETE FROM sellers WHERE uid IN (?, ?)').run(sellerId, foreignSellerId);
 }
 
+async function closeServer(server: import('node:http').Server): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()));
+  });
+}
+
 async function call(app: express.Express, path: string, init?: RequestInit): Promise<{ status: number; body: Record<string, unknown> }> {
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
@@ -34,7 +40,7 @@ async function call(app: express.Express, path: string, init?: RequestInit): Pro
     const response = await fetch(`http://127.0.0.1:${port}${path}`, init);
     return { status: response.status, body: await response.json() as Record<string, unknown> };
   } finally {
-    server.close();
+    await closeServer(server);
   }
 }
 
