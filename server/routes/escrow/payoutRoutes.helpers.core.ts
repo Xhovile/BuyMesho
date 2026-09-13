@@ -230,3 +230,67 @@ export function assertAllowed(req: express.Request, allowed: boolean, message: s
     throw new Error(message);
   }
 }
+
+export function assertViewSettingsAccess(req: express.Request, sellerId: string): void {
+  assertAllowed(req, canViewPayoutSettings({ actor: getActor(req), sellerId }), 'You are not allowed to view this payout setting');
+}
+
+export function assertProviderLookupAccess(req: express.Request): string {
+  const sellerId = getRequestSellerId(req, req.query.sellerUid);
+  assertViewSettingsAccess(req, sellerId);
+  return sellerId;
+}
+
+export function normalizeMobileMoneyProviderRecords(records: Array<{ refId: string; name: string }>): NormalizedMobileMoneyOperator[] {
+  return records.map((record) => ({ refId: record.refId, name: record.name }));
+}
+
+export function normalizeBankProviderRecords(records: Array<{ uuid: string; name: string }>): NormalizedPayoutBank[] {
+  return records.map((record) => ({ uuid: record.uuid, name: record.name }));
+}
+
+export function assertEditSettingsAccess(req: express.Request, sellerId: string): void {
+  assertAllowed(req, canEditPayoutSettings({ actor: getActor(req), sellerId }), 'You are not allowed to edit this payout setting');
+}
+
+export function assertWithdrawalAccess(req: express.Request, sellerId: string): void {
+  assertAllowed(req, canRequestWithdrawal({ actor: getActor(req), sellerId }), 'You are not allowed to request withdrawal for this seller');
+}
+
+export function assertHistoryAccess(req: express.Request, sellerId: string): void {
+  assertAllowed(req, canViewPayoutHistory({ actor: getActor(req), sellerId }), 'You are not allowed to view this payout history');
+}
+
+export function assertRetryAccess(req: express.Request, sellerId: string): void {
+  assertAllowed(req, canRequestPayoutRetry({ actor: getActor(req), sellerId }), 'You are not allowed to trigger payout retry');
+}
+
+export function assertOverrideAccess(req: express.Request): void {
+  const actor = getActor(req);
+  assertAllowed(req, canApprovePayoutOverride({ actor, sellerId: actor?.uid ?? '' }), 'Admin approval required');
+}
+
+export function formatPayChanguMobile(value: unknown, targetEndpoint: 'momo' | 'bank_payout_momo' = 'momo'): string {
+  const raw = normalizeDestinationValue(value, 'mobile');
+  const digits = onlyDigits(raw);
+  let local: string;
+  if (digits.length === 10 && digits.startsWith('0')) local = digits;
+  else if (digits.length === 12 && digits.startsWith('265')) local = `0${digits.slice(3)}`;
+  else if (digits.length === 9) local = `0${digits}`;
+  else throw new Error('mobile must be a valid Malawi number');
+  if (local.length !== 10 || !local.startsWith('0')) throw new Error('mobile must be a valid Malawi number');
+  return targetEndpoint === 'bank_payout_momo' ? `265${local.slice(1)}` : local;
+}
+
+export function normalizeMobileNumber(value: unknown): string { return formatPayChanguMobile(value, 'bank_payout_momo'); }
+
+export function buildDestinationFingerprint(input: { sellerId: string; destinationType: DestinationType; providerName: string; providerRefId: string | null; currency: string; targetValue: string; }): string {
+  return createHash('sha256').update([input.sellerId, input.destinationType, input.providerName.toLowerCase(), input.providerRefId?.toLowerCase() ?? '', input.currency.toUpperCase(), input.targetValue].join('|')).digest('hex');
+}
+
+export function getRequestSellerId(req: express.Request, sellerUid?: unknown): string {
+  const user = getRequestUser(req);
+  if (!user) throw new Error('Unauthorized');
+  if (user.is_admin && typeof sellerUid === 'string' && sellerUid.trim()) return sellerUid.trim();
+  return user.uid;
+}
