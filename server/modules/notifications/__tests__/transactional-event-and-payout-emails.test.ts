@@ -4,7 +4,7 @@ import { notifyTicketDelivery, notifyTicketPurchaseConfirmation } from "../event
 import { notifyPayoutCompleted } from "../payout-completed.notification.js";
 import { notifyEventCancelled } from "../event-cancelled.notification.js";
 
-const ticket = { email: "buyer@example.com", buyerName: "Ada Buyer", eventName: "Campus Concert", ticketType: "VIP", quantity: 1, orderReference: "ord-event-1", amount: 5000, currency: "MWK", eventDate: "2026-10-01", startTime: "18:00", venue: "Main Hall", location: "Campus", ticketId: "ticket-1", accessUrl: "https://buymesho.app/orders/ord-event-1", orderStatus: "paid" };
+const ticket = { email: "buyer@example.com", buyerName: "Ada Buyer", eventName: "Campus Concert", ticketType: "VIP", quantity: 1, orderReference: "ord-event-1", amount: 5000, currency: "MWK", eventDate: "2026-10-01", startTime: "18:00", venue: "Main Hall", location: "Campus", ticketId: "ticket-1", accessUrl: "https://buymesho.app/tickets?ticketId=ticket-1", orderStatus: "paid" };
 
 function notificationDeps(messages: any[], claimed = new Set<string>()) {
   return {
