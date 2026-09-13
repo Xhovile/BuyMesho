@@ -5,29 +5,29 @@ const heroCards = [
     title: "Secure with Passkeys, 2FA Authentication, and more!",
     description: "Protect your account with modern authentication and additional security controls.",
     className: "md:left-0 md:top-[7%] md:-rotate-3 lg:left-[-3%] lg:top-[8%] lg:-rotate-3",
-    tone: "bg-red-50/75 border-red-200/80 before:bg-red-500/70",
-    rope: "bg-red-700/80",
+    tone: "bg-red-50/75 border-red-200/80",
+    roll: "bg-gradient-to-b from-red-300 via-red-400 to-red-500",
   },
   {
     title: "For everyone",
     description: "Browse and buy from sellers across Malawi and beyond.",
     className: "md:right-[7%] md:top-[2%] md:rotate-3 lg:left-[36%] lg:top-[2%] lg:rotate-3",
-    tone: "bg-amber-50/65 border-amber-200/80 before:bg-amber-500/70",
-    rope: "bg-amber-600/85",
+    tone: "bg-amber-50/65 border-amber-200/80",
+    roll: "bg-gradient-to-b from-amber-200 via-amber-300 to-amber-500",
   },
   {
     title: "Built for sellers",
     description: "List your products and reach more customers online.",
     className: "md:left-[4%] md:bottom-[2%] md:-rotate-5 lg:left-[10%] lg:bottom-[3%] lg:-rotate-5",
-    tone: "bg-sky-50/70 border-sky-200/80 before:bg-sky-500/70",
-    rope: "bg-sky-600/80",
+    tone: "bg-sky-50/70 border-sky-200/80",
+    roll: "bg-gradient-to-b from-sky-200 via-sky-300 to-sky-500",
   },
   {
     title: "Secure payments",
     description: "Pay with Mpamba, Airtel Money, VISA card or directly from a Malawian Bank account. Confirmation after delivery (Escrow) is also supported.",
     className: "md:right-0 md:bottom-[2%] md:rotate-3 lg:right-[-1%] lg:bottom-[4%] lg:rotate-3",
-    tone: "bg-emerald-50/70 border-emerald-200/80 before:bg-emerald-500/70",
-    rope: "bg-emerald-600/80",
+    tone: "bg-emerald-50/70 border-emerald-200/80",
+    roll: "bg-gradient-to-b from-emerald-200 via-emerald-300 to-emerald-500",
   },
 ] as const;
 
@@ -63,47 +63,28 @@ export default function HomeHero({
             </h1>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3 md:mt-10 lg:mt-12 md:justify-start">
-              <button
-                type="button"
-                onClick={onBrowseMarket}
-                className="inline-flex items-center justify-center gap-2 rounded-[1.05rem] bg-red-800 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(185,15,32,0.45)] ring-2 ring-red-700/30 ring-offset-2 ring-offset-white transition-all hover:-translate-y-0.5 hover:bg-red-900 hover:shadow-[0_20px_40px_-14px_rgba(185,15,32,0.5)] focus:outline-none"
-              >
+              <button type="button" onClick={onBrowseMarket} className="inline-flex items-center justify-center gap-2 rounded-[1.05rem] bg-red-800 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(185,15,32,0.45)] ring-2 ring-red-700/30 ring-offset-2 ring-offset-white transition-all hover:-translate-y-0.5 hover:bg-red-900 hover:shadow-[0_20px_40px_-14px_rgba(185,15,32,0.5)] focus:outline-none">
                 Browse Market
                 <ArrowRight className="h-4 w-4" />
               </button>
-              <button
-                type="button"
-                onClick={onSellItem}
-                disabled={!onSellItem || isSellerProfileLoading}
-                className="hidden items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(0,0,0,0.45)] ring-2 ring-zinc-950/30 ring-offset-2 ring-offset-white transition-all hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_20px_40px_-14px_rgba(0,0,0,0.5)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
-              >
+              <button type="button" onClick={onSellItem} disabled={!onSellItem || isSellerProfileLoading} className="hidden items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(0,0,0,0.45)] ring-2 ring-zinc-950/30 ring-offset-2 ring-offset-white transition-all hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_20px_40px_-14px_rgba(0,0,0,0.5)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex">
                 <Plus className="h-4 w-4" />
-                <span>
-                  {isSellerProfileLoading ? "Loading..." : isSeller ? "List Item" : "Sell"}
-                </span>
+                <span>{isSellerProfileLoading ? "Loading..." : isSeller ? "List Item" : "Sell"}</span>
               </button>
             </div>
           </div>
 
           <div className="relative hidden min-h-[32rem] md:block" aria-label="BuyMesho marketplace benefits">
             {heroCards.map((card) => (
-              <article
-                key={card.title}
-                className={`absolute z-20 w-56 overflow-visible rounded-[1.65rem] border p-5 shadow-[0_24px_65px_-20px_rgba(0,0,0,0.20),0_10px_25px_-12px_rgba(0,0,0,0.10)] backdrop-blur-sm before:absolute before:inset-x-4 before:top-0 before:h-[2px] before:rounded-full before:content-[''] sm:w-60 lg:w-64 ${card.tone} ${card.className}`}
-              >
-                <div className="pointer-events-none absolute -top-10 left-1/2 h-12 w-48 -translate-x-1/2" aria-hidden="true">
-                  <span className="absolute left-1/2 top-0 h-5 w-5 -translate-x-1/2 rounded-full border-2 border-zinc-400 bg-zinc-700 shadow-[0_3px_8px_rgba(0,0,0,0.22)]" />
-                  <span className={`absolute right-1/2 top-3 h-[2px] w-24 origin-right -rotate-[28deg] rounded-full ${card.rope} shadow-sm`} />
-                  <span className={`absolute left-1/2 top-3 h-[2px] w-24 origin-left rotate-[28deg] rounded-full ${card.rope} shadow-sm`} />
+              <article key={card.title} className={`absolute z-20 w-56 overflow-visible rounded-[1.65rem] border p-5 pt-7 shadow-[0_24px_65px_-20px_rgba(0,0,0,0.20),0_10px_25px_-12px_rgba(0,0,0,0.10)] backdrop-blur-sm sm:w-60 lg:w-64 ${card.tone} ${card.className}`}>
+                <div className={`pointer-events-none absolute -top-2 left-2 right-2 h-3 rounded-full ${card.roll} shadow-[0_3px_7px_-2px_rgba(0,0,0,0.24)]`} aria-hidden="true">
+                  <span className="absolute -left-1 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-inherit shadow-[1px_1px_4px_rgba(0,0,0,0.18)]" />
+                  <span className="absolute -right-1 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-inherit shadow-[-1px_1px_4px_rgba(0,0,0,0.18)]" />
                 </div>
 
                 <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-500/90">BuyMesho</span>
-                <h2 className="mt-5 text-xl font-black leading-tight tracking-[-0.04em] text-zinc-950">
-                  {card.title}
-                </h2>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-700/80">
-                  {card.description}
-                </p>
+                <h2 className="mt-5 text-xl font-black leading-tight tracking-[-0.04em] text-zinc-950">{card.title}</h2>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-700/80">{card.description}</p>
               </article>
             ))}
           </div>
