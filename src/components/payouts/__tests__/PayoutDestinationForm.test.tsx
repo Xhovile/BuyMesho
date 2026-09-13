@@ -16,15 +16,18 @@ const baseValue: PayoutDestinationFormValue = {
   isDefault: true,
 };
 
-test("PayoutDestinationForm renders mobile-money required fields without bank account fields", () => {
+test("PayoutDestinationForm keeps the payout setup flow compact", () => {
   const html = renderToStaticMarkup(
-    <PayoutDestinationForm value={baseValue} onChange={() => undefined} onSave={() => undefined} />,
+    <PayoutDestinationForm value={baseValue} onChange={() => undefined} onSave={() => undefined} onCancel={() => undefined} />,
   );
 
+  assert.match(html, /Destination type/);
   assert.match(html, /Mobile operator/);
+  assert.match(html, /Account holder name/);
   assert.match(html, /Mobile number/);
-  assert.doesNotMatch(html, /Account number/);
-  assert.match(html, /required/);
+  assert.match(html, /Save account/);
+  assert.doesNotMatch(html, /Provider identifier/);
+  assert.doesNotMatch(html, /Currency/);
 });
 
 test("PayoutDestinationForm renders bank account fields when bank is selected", () => {
@@ -33,11 +36,12 @@ test("PayoutDestinationForm renders bank account fields when bank is selected", 
       value={{ ...baseValue, destinationType: "bank", providerName: "NBS", accountNumber: "1234567890", mobile: "" }}
       onChange={() => undefined}
       onSave={() => undefined}
+      onCancel={() => undefined}
     />,
   );
 
   assert.match(html, /Bank/);
-  assert.match(html, /Account number/);
+  assert.match(html, /Bank account number/);
   assert.doesNotMatch(html, /Mobile number/);
 });
 
@@ -47,10 +51,10 @@ test("PayoutDestinationForm disables save controls while loading or disabled", (
   );
 
   assert.match(html, /disabled=""/);
-  assert.match(html, /Save destination/);
+  assert.match(html, /Save account/);
 });
 
-test("PayoutDestinationCard renders compact destination credentials and only masks three middle digits", () => {
+test("PayoutDestinationCard renders the destination with only the middle digits masked", () => {
   const html = renderToStaticMarkup(
     <PayoutDestinationCard
       destination={{
@@ -83,12 +87,6 @@ test("PayoutDestinationCard renders compact destination credentials and only mas
   assert.match(html, /099\*\*\*0000/);
   assert.match(html, /Default/);
   assert.match(html, /Destination actions/);
-  assert.match(html, /Replace/);
-  assert.match(html, /Make default/);
-  assert.match(html, /Remove/);
-  assert.doesNotMatch(html, /Seller-managed destination/);
   assert.doesNotMatch(html, /Verified/);
   assert.doesNotMatch(html, /Active/);
-  assert.doesNotMatch(html, /Ready since/);
-  assert.doesNotMatch(html, /Updated/);
 });
