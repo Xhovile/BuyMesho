@@ -5,29 +5,25 @@ const heroCards = [
     title: "Secure with Passkeys, 2FA Authentication, and more!",
     description: "Protect your account with modern authentication and additional security controls.",
     className: "md:left-0 md:top-[7%] md:-rotate-3 lg:left-[-3%] lg:top-[8%] lg:-rotate-3",
-    tone: "bg-red-50/75 border-red-200/80",
-    roll: "bg-gradient-to-b from-red-300 via-red-400 to-red-500",
+    tone: "bg-white/92 border-red-300/90",
   },
   {
     title: "For everyone",
     description: "Browse and buy from sellers across Malawi and beyond.",
     className: "md:right-[7%] md:top-[2%] md:rotate-3 lg:left-[36%] lg:top-[2%] lg:rotate-3",
-    tone: "bg-amber-50/65 border-amber-200/80",
-    roll: "bg-gradient-to-b from-amber-200 via-amber-300 to-amber-500",
+    tone: "bg-white/92 border-amber-300/90",
   },
   {
     title: "Built for sellers",
     description: "List your products and reach more customers online.",
     className: "md:left-[4%] md:bottom-[2%] md:-rotate-5 lg:left-[10%] lg:bottom-[3%] lg:-rotate-5",
-    tone: "bg-sky-50/70 border-sky-200/80",
-    roll: "bg-gradient-to-b from-sky-200 via-sky-300 to-sky-500",
+    tone: "bg-white/92 border-sky-300/90",
   },
   {
     title: "Secure payments",
     description: "Pay with Mpamba, Airtel Money, VISA card or directly from a Malawian Bank account. Confirmation after delivery (Escrow) is also supported.",
     className: "md:right-0 md:bottom-[2%] md:rotate-3 lg:right-[-1%] lg:bottom-[4%] lg:rotate-3",
-    tone: "bg-emerald-50/70 border-emerald-200/80",
-    roll: "bg-gradient-to-b from-emerald-200 via-emerald-300 to-emerald-500",
+    tone: "bg-white/92 border-emerald-300/90",
   },
 ] as const;
 
@@ -76,12 +72,7 @@ export default function HomeHero({
 
           <div className="relative hidden min-h-[32rem] md:block" aria-label="BuyMesho marketplace benefits">
             {heroCards.map((card) => (
-              <article key={card.title} className={`absolute z-20 w-56 overflow-visible rounded-[1.65rem] border p-5 pt-7 shadow-[0_24px_65px_-20px_rgba(0,0,0,0.20),0_10px_25px_-12px_rgba(0,0,0,0.10)] backdrop-blur-sm sm:w-60 lg:w-64 ${card.tone} ${card.className}`}>
-                <div className={`pointer-events-none absolute -top-2 left-2 right-2 h-3 rounded-full ${card.roll} shadow-[0_3px_7px_-2px_rgba(0,0,0,0.24)]`} aria-hidden="true">
-                  <span className="absolute -left-1 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-inherit shadow-[1px_1px_4px_rgba(0,0,0,0.18)]" />
-                  <span className="absolute -right-1 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-inherit shadow-[-1px_1px_4px_rgba(0,0,0,0.18)]" />
-                </div>
-
+              <article key={card.title} className={`absolute z-20 w-56 rounded-[1.65rem] border-2 p-5 shadow-[0_24px_65px_-20px_rgba(0,0,0,0.20),0_10px_25px_-12px_rgba(0,0,0,0.10)] backdrop-blur-sm sm:w-60 lg:w-64 ${card.tone} ${card.className}`}>
                 <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-500/90">BuyMesho</span>
                 <h2 className="mt-5 text-xl font-black leading-tight tracking-[-0.04em] text-zinc-950">{card.title}</h2>
                 <p className="mt-2 text-sm leading-relaxed text-zinc-700/80">{card.description}</p>
