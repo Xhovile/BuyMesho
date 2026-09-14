@@ -20,7 +20,7 @@ async function getSellerBusinessName(sellerUid: string): Promise<string | null> 
   }
 }
 
-async function getEventCreatorRegistrationName(creatorUid: string): Promise<string | null> {
+async function getEventCreatorDisplayName(creatorUid: string): Promise<string | null> {
   try {
     const result = await query<{ display_name?: string | null }>(
       "SELECT display_name FROM event_creators WHERE uid = $1 LIMIT 1",
@@ -29,7 +29,7 @@ async function getEventCreatorRegistrationName(creatorUid: string): Promise<stri
     const name = result.rows[0]?.display_name?.trim();
     return name || null;
   } catch (error) {
-    console.warn("Failed to load event creator registration name for order email", error);
+    console.warn("Failed to load event creator name for order email", error);
     return null;
   }
 }
@@ -75,19 +75,19 @@ async function sendOrderPaidEmail(order: StoredOrder, role: RecipientRole): Prom
   if (!email) return;
 
   const sellerBusinessName = await getSellerBusinessName(order.sellerId);
+  const eventCreatorDisplayName = order.source === "event"
+    ? await getEventCreatorDisplayName(order.sellerId)
+    : null;
   const eventTicketHolderName = getEventTicketHolderName(order);
   const buyerCheckoutName = order.buyerDetails?.fullName?.trim() || eventTicketHolderName;
   const isEventOrder = order.source === "event";
-  const eventCreatorRegistrationName = isEventOrder
-    ? await getEventCreatorRegistrationName(order.sellerId)
-    : null;
   const recipientName = role === "buyer"
     ? buyerCheckoutName || userRecord.displayName?.trim() || "there"
     : isEventOrder
-      ? eventCreatorRegistrationName || sellerBusinessName || userRecord.displayName?.trim() || "there"
+      ? eventCreatorDisplayName || "there"
       : sellerBusinessName || userRecord.displayName?.trim() || "there";
   const counterpartyName = role === "buyer"
-    ? sellerBusinessName || "BuyMesho seller"
+    ? (isEventOrder ? eventCreatorDisplayName || sellerBusinessName || "Event creator" : sellerBusinessName || "BuyMesho seller")
     : buyerCheckoutName || "BuyMesho customer";
   const eventId = getEventId(order);
   const actionUrl = role === "seller"
@@ -110,7 +110,7 @@ async function sendOrderPaidEmail(order: StoredOrder, role: RecipientRole): Prom
     sender: "notifications",
     to: { email, name: recipientName },
     subject: role === "buyer"
-      ? `BuyMesho payment confirmed — ${sellerBusinessName || "BuyMesho seller"}`
+      ? `BuyMesho payment confirmed — ${counterpartyName}`
       : `BuyMesho — new paid order from ${counterpartyName}`,
     text,
     html,
