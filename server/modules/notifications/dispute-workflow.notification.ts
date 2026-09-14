@@ -31,10 +31,7 @@ const EVENT_COPY: Record<DisputeWorkflowEvent, { subject: string; buyer: string;
 
 async function getSellerBusinessName(sellerUid: string): Promise<string | null> {
   try {
-    const result = await query<{ business_name?: string | null }>(
-      "SELECT business_name FROM sellers WHERE uid = $1 LIMIT 1",
-      [sellerUid],
-    );
+    const result = await query<{ business_name?: string | null }>("SELECT business_name FROM sellers WHERE uid = $1 LIMIT 1", [sellerUid]);
     return result.rows[0]?.business_name?.trim() || null;
   } catch (error) {
     console.warn("Failed to load seller business name for dispute workflow email", error);
@@ -44,10 +41,7 @@ async function getSellerBusinessName(sellerUid: string): Promise<string | null> 
 
 async function getEventCreatorDisplayName(creatorUid: string): Promise<string | null> {
   try {
-    const result = await query<{ display_name?: string | null }>(
-      "SELECT display_name FROM event_creators WHERE uid = $1 LIMIT 1",
-      [creatorUid],
-    );
+    const result = await query<{ display_name?: string | null }>("SELECT display_name FROM event_creators WHERE uid = $1 LIMIT 1", [creatorUid]);
     return result.rows[0]?.display_name?.trim() || null;
   } catch (error) {
     console.warn("Failed to load event creator name for dispute workflow email", error);
@@ -58,7 +52,6 @@ async function getEventCreatorDisplayName(creatorUid: string): Promise<string | 
 function getBuyerCheckoutName(order: ReturnType<typeof orderRepository.findById>): string | null {
   const orderName = order?.buyerDetails?.fullName?.trim();
   if (orderName) return orderName;
-
   for (const item of order?.items ?? []) {
     const record = item as unknown as Record<string, unknown>;
     if (record.kind !== "event_ticket") continue;
@@ -78,19 +71,16 @@ function getBuyerCheckoutName(order: ReturnType<typeof orderRepository.findById>
       }
     }
   }
-
   return null;
 }
 
 function getOrderItemSummary(order: ReturnType<typeof orderRepository.findById>): string[] {
-  return (order?.items ?? [])
-    .map((item) => {
-      const title = typeof item?.title === "string" ? item.title.trim() : "";
-      if (!title) return "";
-      const quantity = Number(item.quantity ?? 1);
-      return quantity > 1 ? `${title} × ${Math.trunc(quantity)}` : title;
-    })
-    .filter(Boolean);
+  return (order?.items ?? []).map((item) => {
+    const title = typeof item?.title === "string" ? item.title.trim() : "";
+    if (!title) return "";
+    const quantity = Number(item.quantity ?? 1);
+    return quantity > 1 ? `${title} × ${Math.trunc(quantity)}` : title;
+  }).filter(Boolean);
 }
 
 function actionUrl(role: RecipientRole, orderId: string): string {
@@ -113,12 +103,14 @@ async function sendToRole(input: DisputeWorkflowNotificationInput, role: Recipie
   const release = dependencies.release ?? releaseEmailNotification;
   if (!claim(notificationType, dedupeKey)) return false;
 
-  const order = dependencies.lookupOrder ? dependencies.lookupOrder(input.orderId) : orderRepository.findById(input.orderId);
+  const order = dependencies.lookupOrder ? await dependencies.lookupOrder(input.orderId) : await orderRepository.findById(input.orderId);
   const isEventOrder = order?.source === "event";
   const buyerCheckoutName = getBuyerCheckoutName(order);
   const sellerBusinessName = await getSellerBusinessName(input.sellerId);
   const eventCreatorDisplayName = isEventOrder ? await getEventCreatorDisplayName(input.sellerId) : null;
-  const sellerName = eventCreatorDisplayName || sellerBusinessName || recipient.displayName.trim() || "BuyMesho seller";
+  const sellerName = isEventOrder
+    ? eventCreatorDisplayName || "Event creator"
+    : sellerBusinessName || recipient.displayName.trim() || "BuyMesho seller";
   const buyerName = buyerCheckoutName || (role === "buyer" ? recipient.displayName.trim() : null) || "BuyMesho customer";
   const counterpartyName = role === "seller" ? buyerName : sellerName;
   const itemSummary = getOrderItemSummary(order);
@@ -145,13 +137,7 @@ async function sendToRole(input: DisputeWorkflowNotificationInput, role: Recipie
   });
 
   try {
-    await (dependencies.send ?? sendEmail)({
-      sender: "notifications",
-      to: { email, name: role === "seller" ? sellerName : buyerName },
-      subject: eventCopy.subject,
-      text,
-      html,
-    });
+    await (dependencies.send ?? sendEmail)({ sender: "notifications", to: { email, name: role === "seller" ? sellerName : buyerName }, subject: eventCopy.subject, text, html });
     markSent(notificationType, dedupeKey);
     return true;
   } catch (error) {
