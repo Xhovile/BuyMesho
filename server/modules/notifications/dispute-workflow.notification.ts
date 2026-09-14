@@ -9,6 +9,7 @@ type RecipientRole = "buyer" | "seller";
 type SendEmail = typeof sendEmail;
 type FirebaseUser = { email?: string | null; displayName?: string | null };
 type DeliveryDependencies = { send?: SendEmail; claim?: (notificationType: string, dedupeKey: string) => boolean; markSent?: (notificationType: string, dedupeKey: string) => void; release?: (notificationType: string, dedupeKey: string) => void; lookupUser?: (uid: string) => Promise<FirebaseUser>; lookupSellerBusinessName?: (uid: string) => Promise<string | null>; lookupOrder?: (orderId: string) => ReturnType<typeof orderRepository.findById> };
+export type DisputeWorkflowEvent = "submitted" | "under_review" | "more_information_requested" | "rejected" | "approved" | "refund_processing" | "refund_completed" | "seller_wins" | "buyer_wins" | "seller_refund_recorded" | "seller_replacement_recorded" | "seller_dispute_rejected";
 export type DisputeWorkflowNotificationInput = {
   caseId: string; orderId: string; buyerId: string; sellerId: string; event: DisputeWorkflowEvent; note?: string | null; amount?: number | null; currency?: string | null; transactionId?: string | null; refundMethod?: string | null; refundDate?: string | null; destination?: string | null; recipients?: RecipientRole[];
 };
