@@ -20,22 +20,80 @@ async function getSellerBusinessName(sellerUid: string): Promise<string | null> 
   }
 }
 
+async function getEventCreatorDisplayName(creatorUid: string): Promise<string | null> {
+  try {
+    const result = await query<{ display_name?: string | null }>(
+      "SELECT display_name FROM event_creators WHERE uid = $1 LIMIT 1",
+      [creatorUid],
+    );
+    const name = result.rows[0]?.display_name?.trim();
+    return name || null;
+  } catch (error) {
+    console.warn("Failed to load event creator name for order email", error);
+    return null;
+  }
+}
+
+function getEventTicketHolderName(order: StoredOrder): string | null {
+  for (const item of order.items ?? []) {
+    const record = item as unknown as Record<string, unknown>;
+    if (record.kind !== "event_ticket") continue;
+
+    const ticketHolder = record.ticketHolder;
+    if (ticketHolder && typeof ticketHolder === "object" && !Array.isArray(ticketHolder)) {
+      const holder = ticketHolder as Record<string, unknown>;
+      if (typeof holder.fullName === "string" && holder.fullName.trim()) return holder.fullName.trim();
+    }
+
+    const tickets = record.tickets;
+    if (Array.isArray(tickets)) {
+      for (const ticket of tickets) {
+        if (!ticket || typeof ticket !== "object") continue;
+        const holder = (ticket as Record<string, unknown>).holder;
+        if (!holder || typeof holder !== "object" || Array.isArray(holder)) continue;
+        const fullName = (holder as Record<string, unknown>).fullName;
+        if (typeof fullName === "string" && fullName.trim()) return fullName.trim();
+      }
+    }
+  }
+
+  return null;
+}
+
+function getEventId(order: StoredOrder): string | null {
+  if (order.source !== "event") return null;
+  for (const item of order.items ?? []) {
+    if (item?.kind === "event_ticket" && item.eventId) return String(item.eventId);
+  }
+  return null;
+}
+
 async function sendOrderPaidEmail(order: StoredOrder, role: RecipientRole): Promise<void> {
   const recipientId = role === "buyer" ? order.buyerId : order.sellerId;
   const userRecord = await resolveNotificationRecipient(recipientId);
   const email = userRecord.email?.trim();
   if (!email) return;
 
-  const sellerBusinessName = (await getSellerBusinessName(order.sellerId)) || "BuyMesho seller";
-  const buyerCheckoutName = order.buyerDetails?.fullName?.trim();
+  const sellerBusinessName = await getSellerBusinessName(order.sellerId);
+  const eventCreatorDisplayName = order.source === "event"
+    ? await getEventCreatorDisplayName(order.sellerId)
+    : null;
+  const eventTicketHolderName = getEventTicketHolderName(order);
+  const buyerCheckoutName = order.buyerDetails?.fullName?.trim() || eventTicketHolderName;
+  const isEventOrder = order.source === "event";
   const recipientName = role === "buyer"
     ? buyerCheckoutName || userRecord.displayName?.trim() || "there"
-    : sellerBusinessName;
+    : isEventOrder
+      ? eventCreatorDisplayName || "there"
+      : sellerBusinessName || userRecord.displayName?.trim() || "there";
   const counterpartyName = role === "buyer"
-    ? sellerBusinessName
-    : buyerCheckoutName || userRecord.displayName?.trim() || "BuyMesho customer";
+    ? (isEventOrder ? eventCreatorDisplayName || sellerBusinessName || "Event creator" : sellerBusinessName || "BuyMesho seller")
+    : buyerCheckoutName || "BuyMesho customer";
+  const eventId = getEventId(order);
   const actionUrl = role === "seller"
-    ? `https://buymesho.app/seller/payouts?view=orders&order=${encodeURIComponent(order.id)}`
+    ? eventId
+      ? `https://buymesho.app/explore/events/manage?event=${encodeURIComponent(eventId)}`
+      : `https://buymesho.app/seller/payouts?view=orders&order=${encodeURIComponent(order.id)}`
     : `https://buymesho.app/orders/${encodeURIComponent(order.id)}`;
 
   const { text, html } = renderOrderPaidEmail({
@@ -52,7 +110,7 @@ async function sendOrderPaidEmail(order: StoredOrder, role: RecipientRole): Prom
     sender: "notifications",
     to: { email, name: recipientName },
     subject: role === "buyer"
-      ? `BuyMesho payment confirmed — ${sellerBusinessName}`
+      ? `BuyMesho payment confirmed — ${counterpartyName}`
       : `BuyMesho — new paid order from ${counterpartyName}`,
     text,
     html,

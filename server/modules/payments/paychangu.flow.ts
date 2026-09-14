@@ -48,7 +48,7 @@ function emitEventTicketNotifications(order:ReturnType<typeof orderRepository.fi
     venue:String(ticket.venue??''),
     location:String(ticket.location??''),
     ticketId:String(ticket.code??ticket.id),
-    accessUrl:`https://buymesho.app/orders/${encodeURIComponent(order.id)}`,
+    accessUrl:`https://buymesho.app/tickets?ticketId=${encodeURIComponent(String(ticket.code??ticket.id))}`,
     orderStatus:order.status,
   }));
   const firstTicket=ticketRows.find(ticket=>ticket.email);
