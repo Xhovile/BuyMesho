@@ -15,6 +15,10 @@ export type DisputeWorkflowEmailData = {
   refundDate?: string | null;
   destination?: string | null;
   note?: string | null;
+  buyerName?: string | null;
+  sellerName?: string | null;
+  items?: string[];
+  counterpartyName?: string | null;
 };
 
 function formatAmount(amount: number, currency: string) {
@@ -22,9 +26,14 @@ function formatAmount(amount: number, currency: string) {
 }
 
 export function renderDisputeWorkflowEmail(data: DisputeWorkflowEmailData) {
+  const itemValues = (data.items ?? []).filter(Boolean);
   const details = renderDetailCard(
     [
       ["Order", data.orderId],
+      ...(data.buyerName ? [["Buyer", data.buyerName] as [string, string]] : []),
+      ...(data.sellerName ? [["Seller", data.sellerName] as [string, string]] : []),
+      ...(itemValues.length ? [["Items", itemValues.join(" · ")] as [string, string]] : []),
+      ...(data.counterpartyName ? [["Other party", data.counterpartyName] as [string, string]] : []),
       ["Status", data.eventLabel],
       ...(data.amount != null && data.currency ? [["Amount", formatAmount(data.amount, data.currency)] as [string, string]] : []),
       ...(data.refundMethod ? [["Refund method", data.refundMethod.replaceAll("_", " ")] as [string, string]] : []),
@@ -42,6 +51,10 @@ export function renderDisputeWorkflowEmail(data: DisputeWorkflowEmailData) {
   const bodyText = [
     "Dispute details",
     `Order: ${data.orderId}`,
+    data.buyerName ? `Buyer: ${data.buyerName}` : "",
+    data.sellerName ? `Seller: ${data.sellerName}` : "",
+    itemValues.length ? `Items: ${itemValues.join(" · ")}` : "",
+    data.counterpartyName ? `Other party: ${data.counterpartyName}` : "",
     `Status: ${data.eventLabel}`,
     data.amount != null && data.currency ? `Amount: ${formatAmount(data.amount, data.currency)}` : "",
     data.refundMethod ? `Refund method: ${data.refundMethod.replaceAll("_", " ")}` : "",
