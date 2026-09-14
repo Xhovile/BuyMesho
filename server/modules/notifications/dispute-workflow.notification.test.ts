@@ -78,7 +78,7 @@ test('dispute email includes checkout buyer, seller, order items, and correct CT
     assert.match(messages[0].text, /Buyer: Ada Buyer/);
     assert.match(messages[0].text, /Seller: Isaac's Shop/);
     assert.match(messages[0].text, /Items: Samsung Galaxy A15 · Air Max 270 × 2/);
-    assert.match(messages[0].html, /href="https:\/\/buymesho\.app\/seller\/payouts\?view=orders&order=order-context"/);
+    assert.match(messages[0].html, /href="https:\/\/buymesho\.app\/seller\/payouts\?view=orders&amp;order=order-context"/);
 
     const buyerMessages: any[] = [];
     await notifyDisputeWorkflowEvent(
