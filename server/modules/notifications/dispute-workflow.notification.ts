@@ -9,7 +9,7 @@ export type DisputeWorkflowEvent = "submitted" | "under_review" | "more_informat
 type RecipientRole = "buyer" | "seller";
 type SendEmail = typeof sendEmail;
 type FirebaseUser = { email?: string | null; displayName?: string | null };
-type DeliveryDependencies = { send?: SendEmail; claim?: (notificationType: string, dedupeKey: string) => boolean; markSent?: (notificationType: string, dedupeKey: string) => void; release?: (notificationType: string, dedupeKey: string) => void; lookupUser?: (uid: string) => Promise<FirebaseUser>; lookupSellerBusinessName?: (uid: string) => Promise<string | null> };
+type DeliveryDependencies = { send?: SendEmail; claim?: (notificationType: string, dedupeKey: string) => boolean; markSent?: (notificationType: string, dedupeKey: string) => void; release?: (notificationType: string, dedupeKey: string) => void; lookupUser?: (uid: string) => Promise<FirebaseUser>; lookupSellerBusinessName?: (uid: string) => Promise<string | null>; lookupOrder?: (orderId: string) => ReturnType<typeof orderRepository.findById> };
 export type DisputeWorkflowNotificationInput = {
   caseId: string; orderId: string; buyerId: string; sellerId: string; event: DisputeWorkflowEvent; note?: string | null; amount?: number | null; currency?: string | null; transactionId?: string | null; refundMethod?: string | null; refundDate?: string | null; destination?: string | null; recipients?: RecipientRole[];
 };
@@ -113,7 +113,7 @@ async function sendToRole(input: DisputeWorkflowNotificationInput, role: Recipie
   const release = dependencies.release ?? releaseEmailNotification;
   if (!claim(notificationType, dedupeKey)) return false;
 
-  const order = orderRepository.findById(input.orderId);
+  const order = dependencies.lookupOrder ? dependencies.lookupOrder(input.orderId) : orderRepository.findById(input.orderId);
   const isEventOrder = order?.source === "event";
   const buyerCheckoutName = getBuyerCheckoutName(order);
   const sellerBusinessName = await getSellerBusinessName(input.sellerId);
