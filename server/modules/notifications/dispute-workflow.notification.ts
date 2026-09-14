@@ -3,6 +3,7 @@ import { sendEmail } from "../email/email.service.js";
 import { renderDisputeWorkflowEmail } from "../email/templates/dispute-workflow.js";
 import { claimEmailNotification, markEmailNotificationSent, releaseEmailNotification } from "./email-delivery.repository.js";
 import { resolveNotificationRecipient } from "./email-recipient.js";
+import { orderRepository } from "../orders/order.repository.js";
 
 export type DisputeWorkflowEvent = "submitted" | "under_review" | "more_information_requested" | "rejected" | "approved" | "refund_processing" | "refund_completed" | "seller_wins" | "buyer_wins" | "seller_refund_recorded" | "seller_replacement_recorded" | "seller_dispute_rejected";
 type RecipientRole = "buyer" | "seller";
@@ -41,6 +42,57 @@ async function getSellerBusinessName(sellerUid: string): Promise<string | null> 
   }
 }
 
+async function getEventCreatorDisplayName(creatorUid: string): Promise<string | null> {
+  try {
+    const result = await query<{ display_name?: string | null }>(
+      "SELECT display_name FROM event_creators WHERE uid = $1 LIMIT 1",
+      [creatorUid],
+    );
+    return result.rows[0]?.display_name?.trim() || null;
+  } catch (error) {
+    console.warn("Failed to load event creator name for dispute workflow email", error);
+    return null;
+  }
+}
+
+function getBuyerCheckoutName(order: ReturnType<typeof orderRepository.findById>): string | null {
+  const orderName = order?.buyerDetails?.fullName?.trim();
+  if (orderName) return orderName;
+
+  for (const item of order?.items ?? []) {
+    const record = item as unknown as Record<string, unknown>;
+    if (record.kind !== "event_ticket") continue;
+    const holder = record.ticketHolder;
+    if (holder && typeof holder === "object" && !Array.isArray(holder)) {
+      const fullName = (holder as Record<string, unknown>).fullName;
+      if (typeof fullName === "string" && fullName.trim()) return fullName.trim();
+    }
+    const tickets = record.tickets;
+    if (Array.isArray(tickets)) {
+      for (const ticket of tickets) {
+        if (!ticket || typeof ticket !== "object") continue;
+        const ticketHolder = (ticket as Record<string, unknown>).holder;
+        if (!ticketHolder || typeof ticketHolder !== "object" || Array.isArray(ticketHolder)) continue;
+        const fullName = (ticketHolder as Record<string, unknown>).fullName;
+        if (typeof fullName === "string" && fullName.trim()) return fullName.trim();
+      }
+    }
+  }
+
+  return null;
+}
+
+function getOrderItemSummary(order: ReturnType<typeof orderRepository.findById>): string[] {
+  return (order?.items ?? [])
+    .map((item) => {
+      const title = typeof item?.title === "string" ? item.title.trim() : "";
+      if (!title) return "";
+      const quantity = Number(item.quantity ?? 1);
+      return quantity > 1 ? `${title} × ${Math.trunc(quantity)}` : title;
+    })
+    .filter(Boolean);
+}
+
 function actionUrl(role: RecipientRole, orderId: string): string {
   return role === "seller"
     ? `https://buymesho.app/seller/payouts?view=orders&order=${encodeURIComponent(orderId)}`
@@ -61,15 +113,18 @@ async function sendToRole(input: DisputeWorkflowNotificationInput, role: Recipie
   const release = dependencies.release ?? releaseEmailNotification;
   if (!claim(notificationType, dedupeKey)) return false;
 
-  const sellerBusinessName = role === "seller"
-    ? ((await (dependencies.lookupSellerBusinessName ?? getSellerBusinessName)(input.sellerId)) || recipient.displayName.trim() || "BuyMesho seller")
-    : null;
-  const recipientName = role === "seller"
-    ? sellerBusinessName!
-    : recipient.displayName.trim() || "there";
+  const order = orderRepository.findById(input.orderId);
+  const isEventOrder = order?.source === "event";
+  const buyerCheckoutName = getBuyerCheckoutName(order);
+  const sellerBusinessName = await getSellerBusinessName(input.sellerId);
+  const eventCreatorDisplayName = isEventOrder ? await getEventCreatorDisplayName(input.sellerId) : null;
+  const sellerName = eventCreatorDisplayName || sellerBusinessName || recipient.displayName.trim() || "BuyMesho seller";
+  const buyerName = buyerCheckoutName || (role === "buyer" ? recipient.displayName.trim() : null) || "BuyMesho customer";
+  const counterpartyName = role === "seller" ? buyerName : sellerName;
+  const itemSummary = getOrderItemSummary(order);
 
   const { text, html } = renderDisputeWorkflowEmail({
-    recipientName,
+    recipientName: role === "seller" ? sellerName : buyerName,
     title: eventCopy.label,
     intro: eventCopy[role],
     orderId: input.orderId,
@@ -83,12 +138,16 @@ async function sendToRole(input: DisputeWorkflowNotificationInput, role: Recipie
     refundDate: input.refundDate,
     destination: role === "buyer" ? input.destination : null,
     note: input.note,
+    buyerName,
+    sellerName,
+    items: itemSummary,
+    counterpartyName,
   });
 
   try {
     await (dependencies.send ?? sendEmail)({
       sender: "notifications",
-      to: { email, name: recipientName },
+      to: { email, name: role === "seller" ? sellerName : buyerName },
       subject: eventCopy.subject,
       text,
       html,
