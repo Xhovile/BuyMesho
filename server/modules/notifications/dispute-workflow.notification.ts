@@ -5,7 +5,6 @@ import { claimEmailNotification, markEmailNotificationSent, releaseEmailNotifica
 import { resolveNotificationRecipient } from "./email-recipient.js";
 import { orderRepository } from "../orders/order.repository.js";
 
-export type DisputeWorkflowEvent = "submitted" | "under_review" | "more_information_requested" | "rejected" | "approved" | "refund_processing" | "refund_completed" | "seller_wins" | "buyer_wins" | "seller_refund_recorded" | "seller_replacement_recorded" | "seller_dispute_rejected";
 type RecipientRole = "buyer" | "seller";
 type SendEmail = typeof sendEmail;
 type FirebaseUser = { email?: string | null; displayName?: string | null };
@@ -84,9 +83,7 @@ function getOrderItemSummary(order: ReturnType<typeof orderRepository.findById>)
 }
 
 function actionUrl(role: RecipientRole, orderId: string): string {
-  return role === "seller"
-    ? `https://buymesho.app/seller/payouts?view=orders&order=${encodeURIComponent(orderId)}`
-    : `https://buymesho.app/disputes?reference=${encodeURIComponent(orderId)}`;
+  return role === "seller" ? `https://buymesho.app/seller/payouts?view=orders&order=${encodeURIComponent(orderId)}` : `https://buymesho.app/disputes?reference=${encodeURIComponent(orderId)}`;
 }
 
 async function sendToRole(input: DisputeWorkflowNotificationInput, role: RecipientRole, dependencies: DeliveryDependencies): Promise<boolean> {
@@ -94,7 +91,6 @@ async function sendToRole(input: DisputeWorkflowNotificationInput, role: Recipie
   const recipient = await resolveNotificationRecipient(recipientId, { lookupUser: dependencies.lookupUser });
   const email = recipient.email.trim();
   if (!email) return false;
-
   const eventCopy = EVENT_COPY[input.event];
   const dedupeKey = `${input.caseId}:${input.event}:${role}:${input.transactionId ?? ""}`;
   const notificationType = `dispute_${input.event}`;
@@ -102,19 +98,14 @@ async function sendToRole(input: DisputeWorkflowNotificationInput, role: Recipie
   const markSent = dependencies.markSent ?? markEmailNotificationSent;
   const release = dependencies.release ?? releaseEmailNotification;
   if (!claim(notificationType, dedupeKey)) return false;
-
   const order = dependencies.lookupOrder ? await dependencies.lookupOrder(input.orderId) : await orderRepository.findById(input.orderId);
   const isEventOrder = order?.source === "event";
   const buyerCheckoutName = getBuyerCheckoutName(order);
   const sellerBusinessName = await getSellerBusinessName(input.sellerId);
   const eventCreatorDisplayName = isEventOrder ? await getEventCreatorDisplayName(input.sellerId) : null;
-  const sellerName = isEventOrder
-    ? eventCreatorDisplayName || "Event creator"
-    : sellerBusinessName || recipient.displayName.trim() || "BuyMesho seller";
+  const sellerName = isEventOrder ? (eventCreatorDisplayName || "Event creator") : (sellerBusinessName || recipient.displayName.trim() || "BuyMesho seller");
   const buyerName = buyerCheckoutName || (role === "buyer" ? recipient.displayName.trim() : null) || "BuyMesho customer";
-  const counterpartyName = role === "seller" ? buyerName : sellerName;
   const itemSummary = getOrderItemSummary(order);
-
   const { text, html } = renderDisputeWorkflowEmail({
     recipientName: role === "seller" ? sellerName : buyerName,
     title: eventCopy.label,
@@ -133,9 +124,7 @@ async function sendToRole(input: DisputeWorkflowNotificationInput, role: Recipie
     buyerName,
     sellerName,
     items: itemSummary,
-    counterpartyName,
   });
-
   try {
     await (dependencies.send ?? sendEmail)({ sender: "notifications", to: { email, name: role === "seller" ? sellerName : buyerName }, subject: eventCopy.subject, text, html });
     markSent(notificationType, dedupeKey);
