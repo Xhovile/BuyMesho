@@ -14,6 +14,17 @@ const REQUEST_TYPES = [{ value: "buyer_cancellation", label: "Cancel my order" }
 const RESOLUTIONS = [{ value: "refund", label: "I want a refund" }, { value: "return", label: "I want to return the item" }, { value: "return_and_refund", label: "I want to return the item and get a refund" }, { value: "review", label: "I want BuyMesho to review the issue" }] as const;
 const PAYMENT_METHODS = [{ value: "mobile_money", label: "Mobile Money" }, { value: "bank_transfer", label: "Bank transfer" }, { value: "card", label: "Card" }, { value: "other", label: "Other" }] as const;
 
+function sortDisputesNewestFirst(items: DisputeListItem[]): DisputeListItem[] {
+  return [...items].sort((left, right) => {
+    const leftUpdated = Date.parse(String(left.updated_at ?? left.created_at ?? ""));
+    const rightUpdated = Date.parse(String(right.updated_at ?? right.created_at ?? ""));
+    const rightTime = Number.isNaN(rightUpdated) ? 0 : rightUpdated;
+    const leftTime = Number.isNaN(leftUpdated) ? 0 : leftUpdated;
+    if (rightTime !== leftTime) return rightTime - leftTime;
+    return String(right.id ?? "").localeCompare(String(left.id ?? ""));
+  });
+}
+
 export default function DisputesPage() { const ready = useRequireVerifiedUser(); if (!ready) return null; return <DisputesPageContent />; }
 
 function DisputesPageContent() {
@@ -21,7 +32,7 @@ function DisputesPageContent() {
   const [reference, setReference] = useState(initialReference); const [ticketId, setTicketId] = useState<string | null>(initialTicketId || null); const [bundle, setBundle] = useState<OrderBundle | null>(null); const [cases, setCases] = useState<DisputeListItem[]>([]); const [requestType, setRequestType] = useState(""); const [resolution, setResolution] = useState("review"); const [reason, setReason] = useState(""); const [amount, setAmount] = useState(""); const [paymentMethod, setPaymentMethod] = useState(""); const [refundDestination, setRefundDestination] = useState(""); const [evidence, setEvidence] = useState(""); const [loadingOrder, setLoadingOrder] = useState(false); const [loadingCases, setLoadingCases] = useState(true); const [submitting, setSubmitting] = useState(false); const [submitted, setSubmitted] = useState(false); const [error, setError] = useState<string | null>(null);
   const [supportRequest, setSupportRequest] = useState<SupportRequest | null>(null); const [supportOverlayOpen, setSupportOverlayOpen] = useState(false); const [supportReason, setSupportReason] = useState(""); const [supportSubmitting, setSupportSubmitting] = useState(false); const [supportError, setSupportError] = useState<string | null>(null);
   const [lastSearchedReference, setLastSearchedReference] = useState("");
-  const loadCases = async () => { try { setLoadingCases(true); const data = await apiFetch("/api/disputes/me"); setCases(Array.isArray(data) ? (data as DisputeListItem[]) : []); } catch { setCases([]); } finally { setLoadingCases(false); } };
+  const loadCases = async () => { try { setLoadingCases(true); const data = await apiFetch("/api/disputes/me"); setCases(sortDisputesNewestFirst(Array.isArray(data) ? (data as DisputeListItem[]) : [])); } catch { setCases([]); } finally { setLoadingCases(false); } };
   const loadOrder = async (value: string, requestedTicketId?: string | null) => { const trimmed = value.trim(); if (!trimmed) return; setLoadingOrder(true); setError(null); setSubmitted(false); setSupportRequest(null); try { const resolved = await resolveOrderIdentifier(trimmed); const data = await fetchOrderById(resolved); if (requestedTicketId) { const identity = (await apiFetch(`/api/event-tickets/${encodeURIComponent(requestedTicketId)}/identity`)) as { ticketId?: string; orderId?: string | null }; if (!identity?.ticketId || identity.orderId !== data.order.id) throw new Error("The Ticket ID does not belong to this order."); setTicketId(identity.ticketId); } else setTicketId(null); setBundle(data); setLastSearchedReference(trimmed); } catch (err) { setBundle(null); setTicketId(null); setError(err instanceof Error ? err.message : "Failed to load the order."); } finally { setLoadingOrder(false); } };
   useEffect(() => { void loadCases(); if (initialReference) void loadOrder(initialReference, initialTicketId || null); }, []);
   const order = bundle?.order ?? null; const totalAmount = Number(order?.total?.amount ?? 0); const currency = String(order?.total?.currency ?? "MWK"); const itemTitle = order?.items?.[0]?.title ?? "Order item"; const paidOut = ["released", "paid", "settled"].includes(String(bundle?.payout?.status ?? "").trim().toLowerCase()) || String(bundle?.escrow?.state ?? "").trim().toLowerCase() === "released";
