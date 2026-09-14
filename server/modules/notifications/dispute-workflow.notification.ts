@@ -102,7 +102,7 @@ async function sendToRole(input: DisputeWorkflowNotificationInput, role: Recipie
   const order = dependencies.lookupOrder ? await dependencies.lookupOrder(input.orderId) : await orderRepository.findById(input.orderId);
   const isEventOrder = order?.source === "event";
   const buyerCheckoutName = getBuyerCheckoutName(order);
-  const sellerBusinessName = await getSellerBusinessName(input.sellerId);
+  const sellerBusinessName = dependencies.lookupSellerBusinessName ? await dependencies.lookupSellerBusinessName(input.sellerId) : await getSellerBusinessName(input.sellerId);
   const eventCreatorDisplayName = isEventOrder ? await getEventCreatorDisplayName(input.sellerId) : null;
   const sellerName = isEventOrder ? (eventCreatorDisplayName || "Event creator") : (sellerBusinessName || recipient.displayName.trim() || "BuyMesho seller");
   const buyerName = buyerCheckoutName || (role === "buyer" ? recipient.displayName.trim() : null) || "BuyMesho customer";
