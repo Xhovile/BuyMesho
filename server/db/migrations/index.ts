@@ -10,6 +10,7 @@ import { ensureDisputeSupportRequestsMigration } from "./20260905_dispute_suppor
 import { ensureDisputeWindowsMigration } from "./20260905_dispute_windows.js";
 import { ensureDisputeTimestampCompatibilityMigration } from "./20260908_dispute_timestamp_compatibility.js";
 import { ensureDisputeResolutionOwnershipMigration } from "./20260910_dispute_resolution_ownership.js";
+import { ensurePayoutDestinationOwnershipMigration } from "./20260915_payout_destination_ownership.js";
 
 function ensureExtraTables() {
   postgresDb.exec(`
@@ -156,5 +157,5 @@ function backfillOrderPaidAtFromPayments() { postgresDb.exec(`UPDATE orders SET 
 function backfillFulfilledAtFromUpdatedAt() { postgresDb.exec(`UPDATE orders SET fulfilled_at = updated_at WHERE status = 'fulfilled' AND fulfilled_at IS NULL AND updated_at IS NOT NULL AND updated_at >= COALESCE(paid_at, created_at);`); }
 
 export function runMigrations() {
-  ensureExtraTables(); ensureEventLifecycleSchema(); ensureEventOwnershipIntegrityMigration(); ensureMessageSchema(postgresDb); normalizeHardDeleteAfterColumn(); updateSellerPayoutAccountColumns(); ensurePayoutLifecycleSchema(); initPaymentSchema(postgresDb); ensureEventTicketStatsSchema(); ensureSellerOrdersIndexesMigration(); ensureRefundDisputeArchitectureMigration(); ensureDisputeSupportRequestsMigration(); ensureDisputeWindowsMigration(); ensureDisputeTimestampCompatibilityMigration(); ensureDisputeResolutionOwnershipMigration(); backfillOrderPaidAtFromPayments(); backfillFulfilledAtFromUpdatedAt(); backfillEventTickets();
+  ensureExtraTables(); ensureEventLifecycleSchema(); ensureEventOwnershipIntegrityMigration(); ensureMessageSchema(postgresDb); normalizeHardDeleteAfterColumn(); updateSellerPayoutAccountColumns(); ensurePayoutLifecycleSchema(); ensurePayoutDestinationOwnershipMigration(); initPaymentSchema(postgresDb); ensureEventTicketStatsSchema(); ensureSellerOrdersIndexesMigration(); ensureRefundDisputeArchitectureMigration(); ensureDisputeSupportRequestsMigration(); ensureDisputeWindowsMigration(); ensureDisputeTimestampCompatibilityMigration(); ensureDisputeResolutionOwnershipMigration(); backfillOrderPaidAtFromPayments(); backfillFulfilledAtFromUpdatedAt(); backfillEventTickets();
 }
