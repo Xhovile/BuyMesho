@@ -8,22 +8,32 @@ type Props = {
   onSelect?: () => void;
 };
 
+const PWA_DISPLAY_MODES = [
+  "standalone",
+  "fullscreen",
+  "minimal-ui",
+  "window-controls-overlay",
+];
+
 export default function PwaInstallMenuItem({ className, onSelect }: Props) {
-  const [installed, setInstalled] = useState(false);
+  const [installed, setInstalled] = useState(() => isPwaInstalled());
 
   useEffect(() => {
     const sync = () => setInstalled(isPwaInstalled());
     const handleInstalled = () => setInstalled(true);
+    const mediaQueries = PWA_DISPLAY_MODES.map((mode) => window.matchMedia(`(display-mode: ${mode})`));
 
     sync();
     window.addEventListener("appinstalled", handleInstalled);
     window.addEventListener("pageshow", sync);
     document.addEventListener("visibilitychange", sync);
+    mediaQueries.forEach((query) => query.addEventListener?.("change", sync));
 
     return () => {
       window.removeEventListener("appinstalled", handleInstalled);
       window.removeEventListener("pageshow", sync);
       document.removeEventListener("visibilitychange", sync);
+      mediaQueries.forEach((query) => query.removeEventListener?.("change", sync));
     };
   }, []);
 
