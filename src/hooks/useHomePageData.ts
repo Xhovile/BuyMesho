@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../lib/api";
-import { readCachedApiJson } from "../lib/apiCache";
+import { readCachedApiResponse, readCachedApiJson, isCachedApiResponseFresh } from "../lib/apiCache";
 import { useAuthUser } from "./useAuthUser";
 
 export type HomePreviewListing = {
@@ -49,6 +49,7 @@ const FEATURED_LISTINGS_URL = "/api/listings?sortBy=popular&pageSize=6";
 const CATEGORY_SECTION_LIMIT = 4;
 const SHARED_API_CACHE_PREFIX = "__buymesho_api_cache_v2:";
 const FORCE_NETWORK_HEADER = "x-buymesho-force-network";
+const MAX_OFFLINE_STALE_CACHE_MS = 24 * 60 * 60 * 1000;
 
 function normalize(v?: string | null) {
   return v?.toLowerCase().trim() || "";
@@ -103,9 +104,25 @@ function buildSectionUrl(section: HomeFeaturedSection) {
   return `/api/listings?category=${encodeURIComponent(section.apiCategory)}&pageSize=${CATEGORY_SECTION_LIMIT}`;
 }
 
-function readListingsFromCache(path: string) {
-  const cached = readCachedApiJson<{ items?: HomePreviewListing[] }>(path);
-  return Array.isArray(cached?.items) ? cached.items : [];
+function readListingsFromCache(path: string, allowStaleOffline = false) {
+  const cached = readCachedApiResponse(path);
+  if (!cached) return [];
+
+  const isFresh = isCachedApiResponseFresh(path);
+  const isOfflineStale =
+    allowStaleOffline &&
+    typeof navigator !== "undefined" &&
+    !navigator.onLine &&
+    Date.now() - cached.timestamp <= MAX_OFFLINE_STALE_CACHE_MS;
+
+  if (!isFresh && !isOfflineStale) return [];
+
+  try {
+    const parsed = JSON.parse(cached.body) as { items?: HomePreviewListing[] };
+    return Array.isArray(parsed?.items) ? parsed.items : [];
+  } catch {
+    return [];
+  }
 }
 
 function buildRankedSnapshot(
@@ -145,12 +162,13 @@ function buildRankedSnapshot(
 }
 
 function readHomeSnapshot(featuredSections: HomeFeaturedSection[], campus: string) {
-  const newest = readListingsFromCache(NEWEST_LISTINGS_URL);
-  const featured = readListingsFromCache(FEATURED_LISTINGS_URL);
+  const allowStaleOffline = typeof navigator !== "undefined" && !navigator.onLine;
+  const newest = readListingsFromCache(NEWEST_LISTINGS_URL, allowStaleOffline);
+  const featured = readListingsFromCache(FEATURED_LISTINGS_URL, allowStaleOffline);
   const sectionMap: Record<string, HomePreviewListing[]> = {};
 
   for (const section of featuredSections) {
-    sectionMap[section.key] = readListingsFromCache(buildSectionUrl(section));
+    sectionMap[section.key] = readListingsFromCache(buildSectionUrl(section), allowStaleOffline);
   }
 
   const hasAnyListings =
@@ -326,7 +344,7 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
       sectionRequestsRef.current.set(sectionKey, controller);
 
       const url = buildSectionUrl(section);
-      const cachedItems = readListingsFromCache(url);
+      const cachedItems = readListingsFromCache(url, true);
       if (cachedItems.length > 0) {
         setSectionListings((current) => ({ ...current, [sectionKey]: cachedItems }));
         setSectionLoading((current) => ({ ...current, [sectionKey]: false }));
