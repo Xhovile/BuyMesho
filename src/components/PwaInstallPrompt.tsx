@@ -4,7 +4,6 @@ import {
   X,
   Share,
   PlusSquare,
-  Smartphone,
   ExternalLink,
   Info,
 } from "lucide-react";
@@ -100,9 +99,6 @@ export default function PwaInstallPrompt() {
     window.addEventListener("appinstalled", handleAppInstalled);
     window.addEventListener("buymesho:show-pwa-install", handleCustomTrigger);
 
-    // iOS does not expose beforeinstallprompt, so the manual guide is the correct path.
-    // For other browsers, keep the banner available so the browser menu can be used
-    // when a native prompt is not exposed by that browser/version.
     if (!recentlyDismissed && (ios || !standalone)) {
       setShowBanner(true);
     }
@@ -127,9 +123,6 @@ export default function PwaInstallPrompt() {
 
     const promptEvent = deferredPromptRef.current;
     if (!promptEvent) {
-      // The browser only exposes beforeinstallprompt when its installability
-      // conditions are met. When it does not, give the user accurate browser
-      // menu instructions instead of pretending that a native prompt exists.
       setShowGuide(true);
       return;
     }
@@ -164,7 +157,7 @@ export default function PwaInstallPrompt() {
   return (
     <div
       id="pwa-install-prompt-card"
-      className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-50 bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl border border-slate-700/70 transition-all duration-300 animate-in slide-in-from-bottom-5"
+      className="fixed bottom-24 left-4 right-4 md:bottom-20 md:left-auto md:right-6 md:max-w-md z-50 bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl border border-slate-700/70 transition-all duration-300 animate-in slide-in-from-bottom-5"
       role="dialog"
       aria-label="Install BuyMesho"
     >
