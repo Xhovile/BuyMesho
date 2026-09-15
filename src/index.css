@@ -57,16 +57,22 @@ header:has(a[href^="/seller?uid="] + a[href^="/seller?uid="]) > div > a[href^="/
   display: none;
 }
 
-/* BuyMesho branded route loader: the logo is fixed at 64px inside a 96px coordinate system. */
+/* BuyMesho branded route loader. Keep it lightweight because it is also used
+   between route/component transitions. */
 .animate-loader-spin {
   animation: buymesho-loader-spin 1.4s linear infinite;
   transform-origin: center;
 }
 
-/* Slightly strengthen only the red progress arc; position, radius, diameter,
-   logo size, and animation remain unchanged. */
+/* Use a dark progress arc rather than the brand-red startup treatment. */
 .animate-loader-spin circle:last-child {
   stroke-width: 3.5px;
+}
+
+/* PWA startup splash progress indicator. */
+.animate-pwa-launch-progress {
+  animation: buymesho-launch-progress 3.05s cubic-bezier(0.2, 0.72, 0.32, 1) forwards;
+  transform-origin: left center;
 }
 
 /* Keep the AI launcher out of the route-loading screen. */
@@ -130,8 +136,22 @@ main > div.pb-20 section {
   }
 }
 
+@keyframes buymesho-launch-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-loader-spin {
     animation-duration: 3.5s;
+  }
+
+  .animate-pwa-launch-progress {
+    animation-duration: 0s;
+    transform: translateX(260%);
   }
 }
