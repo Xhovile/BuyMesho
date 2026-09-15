@@ -1,12 +1,11 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import HeaderMenuItem from "./HeaderMenuItem";
 import { triggerPwaInstall } from "../PwaInstallPrompt";
 
 type Props = {
   className: string;
-  iconClassName?: string;
-  children?: ReactNode;
+  onSelect?: () => void;
 };
 
 function detectInstalled(): boolean {
@@ -18,7 +17,7 @@ function detectInstalled(): boolean {
   return standalone || fullscreen || minimalUi || iosStandalone;
 }
 
-export default function PwaInstallMenuItem({ className }: Props) {
+export default function PwaInstallMenuItem({ className, onSelect }: Props) {
   const [installed, setInstalled] = useState(false);
 
   useEffect(() => {
@@ -47,7 +46,10 @@ export default function PwaInstallMenuItem({ className }: Props) {
           <Download className="w-4 h-4 text-white" />
         </span>
       )}
-      onClick={triggerPwaInstall}
+      onClick={() => {
+        onSelect?.();
+        triggerPwaInstall();
+      }}
       className={className}
     />
   );
