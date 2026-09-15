@@ -33,6 +33,11 @@ export default function MobileDrawerSwipe() {
   const horizontalIntentRef = useRef(false);
 
   useEffect(() => {
+    const resetTracking = () => {
+      trackingRef.current = false;
+      horizontalIntentRef.current = false;
+    };
+
     const handleTouchStart = (event: TouchEvent) => {
       if (!isMobileViewport() || event.touches.length !== 1) return;
 
@@ -42,11 +47,8 @@ export default function MobileDrawerSwipe() {
       );
 
       // Only track gestures that begin at the right edge while the drawer is closed.
-      if (
-        window.innerWidth - touch.clientX > EDGE_ZONE_PX ||
-        drawerOpen
-      ) {
-        trackingRef.current = false;
+      if (window.innerWidth - touch.clientX > EDGE_ZONE_PX || drawerOpen) {
+        resetTracking();
         return;
       }
 
@@ -65,7 +67,7 @@ export default function MobileDrawerSwipe() {
 
       if (!horizontalIntentRef.current) {
         if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 12) {
-          trackingRef.current = false;
+          resetTracking();
           return;
         }
 
@@ -86,8 +88,7 @@ export default function MobileDrawerSwipe() {
       const deltaX = touch.clientX - startXRef.current;
       const deltaY = touch.clientY - startYRef.current;
 
-      trackingRef.current = false;
-      horizontalIntentRef.current = false;
+      resetTracking();
 
       if (
         deltaX <= -OPEN_THRESHOLD_PX &&
@@ -100,15 +101,13 @@ export default function MobileDrawerSwipe() {
     window.addEventListener("touchstart", handleTouchStart, { passive: true });
     window.addEventListener("touchmove", handleTouchMove, { passive: false });
     window.addEventListener("touchend", handleTouchEnd, { passive: true });
-    window.addEventListener("touchcancel", () => {
-      trackingRef.current = false;
-      horizontalIntentRef.current = false;
-    });
+    window.addEventListener("touchcancel", resetTracking, { passive: true });
 
     return () => {
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
+      window.removeEventListener("touchcancel", resetTracking);
     };
   }, []);
 
