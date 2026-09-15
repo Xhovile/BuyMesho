@@ -166,10 +166,16 @@ CREATE TABLE IF NOT EXISTS events (
   spec_values TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'published',
   deleted_at TEXT,
+  payout_destination_id TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (creator_uid) REFERENCES event_creators(uid) ON DELETE CASCADE
+  FOREIGN KEY (creator_uid) REFERENCES event_creators(uid) ON DELETE CASCADE,
+  FOREIGN KEY (payout_destination_id) REFERENCES seller_payout_accounts(id) ON DELETE RESTRICT
 );
+
+CREATE INDEX IF NOT EXISTS idx_events_payout_destination_id
+ON events (payout_destination_id)
+WHERE payout_destination_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS event_activity (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
