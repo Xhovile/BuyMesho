@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 const MOBILE_BREAKPOINT = 768;
-const EDGE_ZONE_PX = 60;
+const EDGE_ZONE_PX = 100;
 const OPEN_THRESHOLD_PX = 80;
 const MAX_VERTICAL_DRIFT_PX = 100;
 
