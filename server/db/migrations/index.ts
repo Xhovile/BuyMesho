@@ -83,7 +83,7 @@ function ensureEventLifecycleSchema() {
           END,
           '{end_time}', COALESCE(to_jsonb(NEW.end_time), 'null'::jsonb), true
         ),
-        '{runtime_mode}', COALESCE(to_jsonb(runtime_mode), to_jsonb('automatic'::text)), true
+        '{runtime_mode}', COALESCE(to_jsonb(NEW.runtime_mode), to_jsonb('automatic'::text)), true
       )::text;
       RETURN NEW;
     END;
