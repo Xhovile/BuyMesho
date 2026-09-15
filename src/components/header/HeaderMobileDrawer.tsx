@@ -29,7 +29,7 @@ export default function HeaderMobileDrawer({ open, isLoggedIn, isSeller, isAdmin
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className={primaryWrapperClass}><HeaderMenuItem label={primaryDrawerLabel} icon={null} onClick={handlePrimaryNavigation} className={primaryButtonClass} /></div>
         <HeaderMenuItem label={isSeller ? "List Item" : "Sell"} icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0"><Plus className="w-4 h-4 text-white" /></span>} onClick={handleSellAction} className={navButtonClass} />
-        <PwaInstallMenuItem className={navButtonClass} />
+        <PwaInstallMenuItem className={navButtonClass} onSelect={onClose} />
         {isLoggedIn ? <>
           <HeaderMenuItem label="Messages" extra={unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null} icon={<span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0"><MessageSquareText className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onMessagesClick(); }} className={navButtonClass} />
           <HeaderMenuItem label="Saved" icon={<span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0"><Bookmark className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onSavedClick(); }} className={navButtonClass} />
