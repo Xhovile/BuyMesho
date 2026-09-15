@@ -8,17 +8,53 @@ import { navigateToPath } from "../lib/appNavigation";
 import logoImage from "../../photos/LOGO.svg";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
+const HOMEPAGE_TITLE = "BuyMesho: Malawi's Secure E-commerce Platform";
+const HOMEPAGE_DESCRIPTION =
+  "BuyMesho is Malawi's secure e-commerce platform for discovering and buying products, services, and tickets from sellers across the country.";
+
 export function RouteLoader() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white px-6 py-8">
-      <div className="relative h-24 w-24">
-        <svg className="absolute inset-0 h-full w-full animate-loader-spin" viewBox="0 0 96 96" fill="none" aria-hidden="true">
-          <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="1.5" className="text-zinc-100" />
-          <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="125 126" className="text-red-600" />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <img src={logoImage} alt="BuyMesho" width={60} height={60} className="h-[60px] w-[60px] object-contain" />
+    <div
+      className="flex min-h-screen items-center justify-center bg-white px-6 py-8"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading BuyMesho"
+    >
+      <div className="flex flex-col items-center text-center">
+        <div className="relative h-28 w-28 sm:h-32 sm:w-32">
+          <svg
+            className="absolute inset-0 h-full w-full animate-loader-spin"
+            viewBox="0 0 96 96"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="1.5" className="text-zinc-100" />
+            <circle
+              cx="48"
+              cy="48"
+              r="40"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeDasharray="125 126"
+              className="text-red-600"
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <img
+              src={logoImage}
+              alt="BuyMesho"
+              width={72}
+              height={72}
+              className="h-[72px] w-[72px] object-contain sm:h-20 sm:w-20"
+            />
+          </div>
         </div>
+        <h1 className="mt-7 text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">BuyMesho</h1>
+        <p className="mt-2 max-w-xs text-sm font-medium leading-6 text-zinc-500 sm:max-w-sm sm:text-base">
+          Malawi's Secure E-commerce Platform
+        </p>
+        <span className="sr-only">{HOMEPAGE_DESCRIPTION}</span>
       </div>
     </div>
   );
