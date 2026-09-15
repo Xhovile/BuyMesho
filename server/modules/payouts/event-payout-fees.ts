@@ -1,5 +1,5 @@
 import {
-  calculatePayoutFormula,
+  calculatePayoutFee,
   PAYOUT_POLICY,
   toFixedMoney,
   type PayoutFormulaResult,
@@ -57,34 +57,39 @@ export function calculateEventPayoutFees(input: EventPayoutFeeInput): EventPayou
     throw new Error('eventId is required for event payout fee calculation');
   }
 
+  const grossAmount = toFixedMoney(input.grossAmount);
   const processingFeeAmount = toFixedMoney(input.processingFeeAmount ?? 0);
-  const base = calculatePayoutFormula({
-    grossAmount: input.grossAmount,
-    processingFeeAmount,
-    reserveAmount: input.reserveAmount,
-    manualAdjustmentAmount: input.manualAdjustmentAmount,
-    payoutMethod: input.payoutMethod ?? null,
-    currency: input.currency ?? 'MWK',
-  });
-
-  const adjustedNetAmount = Math.max(
+  const manualAdjustmentAmount = toFixedMoney(input.manualAdjustmentAmount ?? 0);
+  const reserveCapAmount = toFixedMoney((grossAmount * PAYOUT_POLICY.reserveCapBps) / 10_000);
+  const requestedReserveAmount = toFixedMoney(input.reserveAmount ?? 0);
+  const reserveAmount = Math.min(requestedReserveAmount, reserveCapAmount);
+  const platformFeeAmount = toFixedMoney((grossAmount * PAYOUT_POLICY.platformFeeBps) / 10_000);
+  const payoutFeeAmount = calculatePayoutFee(grossAmount, input.payoutMethod ?? null);
+  const netAmount = Math.max(
     0,
     toFixedMoney(
-      base.grossAmount -
-        base.platformFeeAmount -
-        base.processingFeeAmount -
-        base.reserveAmount -
-        base.manualAdjustmentAmount -
-        base.payoutFeeAmount,
+      grossAmount -
+        platformFeeAmount -
+        processingFeeAmount -
+        reserveAmount -
+        manualAdjustmentAmount -
+        payoutFeeAmount,
     ),
   );
 
   return {
-    ...base,
     eventId: input.eventId,
     formulaVersion: EVENT_PAYOUT_FORMULA_VERSION,
-    sellerReceivesAmount: adjustedNetAmount,
-    netAmount: adjustedNetAmount,
+    grossAmount,
+    platformFeeAmount,
+    processingFeeAmount,
+    reserveAmount,
+    reserveCapAmount,
+    manualAdjustmentAmount,
+    payoutFeeAmount,
+    sellerReceivesAmount: netAmount,
+    netAmount,
+    currency: (input.currency ?? 'MWK').toUpperCase(),
   };
 }
 
