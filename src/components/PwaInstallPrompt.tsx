@@ -87,6 +87,14 @@ export default function PwaInstallPrompt() {
       if (!capturedBeforeInstallPrompt) return;
       deferredPromptRef.current = capturedBeforeInstallPrompt;
       setCanNativeInstall(true);
+
+      // Only surface the automatic banner when the browser has actually
+      // exposed a native install prompt. This avoids showing an install CTA
+      // that cannot perform a one-tap installation.
+      if (!recentlyDismissed && !isStandaloneDisplayMode()) {
+        setShowBanner(true);
+        setShowGuide(false);
+      }
     };
 
     const handleAppInstalled = () => {
@@ -102,6 +110,10 @@ export default function PwaInstallPrompt() {
     const handleCustomTrigger = () => {
       if (isStandaloneDisplayMode()) return;
       syncInstallAvailability();
+
+      // A user explicitly requesting installation should still get useful
+      // fallback instructions on browsers/iOS that do not expose the native
+      // prompt.
       setShowBanner(true);
       setShowGuide(false);
     };
@@ -112,7 +124,10 @@ export default function PwaInstallPrompt() {
 
     syncInstallAvailability();
 
-    if (!recentlyDismissed && (ios || !standalone)) {
+    // iOS Safari does not expose beforeinstallprompt, so its install guidance
+    // is intentionally still surfaced automatically. Other browsers wait for
+    // the native prompt before showing the automatic banner.
+    if (!recentlyDismissed && ios) {
       setShowBanner(true);
     }
 
