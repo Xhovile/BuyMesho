@@ -18,6 +18,19 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+let capturedBeforeInstallPrompt: BeforeInstallPromptEvent | null = null;
+
+// Capture the browser event as early as possible. React effects are intentionally
+// not relied on for the first event because beforeinstallprompt can fire before
+// an effect has mounted on a fast production load.
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    capturedBeforeInstallPrompt = event as BeforeInstallPromptEvent;
+    window.dispatchEvent(new Event("buymesho:pwa-install-available"));
+  });
+}
+
 const DISMISS_KEY = "buymesho_pwa_install_dismissed";
 const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -37,14 +50,14 @@ function isIosDevice() {
 }
 
 export default function PwaInstallPrompt() {
-  const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
+  const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(capturedBeforeInstallPrompt);
   const [showBanner, setShowBanner] = useState(false);
   const [isIos, setIsIos] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [isInIframe, setIsInIframe] = useState(false);
-  const [canNativeInstall, setCanNativeInstall] = useState(false);
+  const [canNativeInstall, setCanNativeInstall] = useState(!!capturedBeforeInstallPrompt);
 
   useEffect(() => {
     let inIframe = false;
@@ -70,17 +83,14 @@ export default function PwaInstallPrompt() {
       return;
     }
 
-    const handleBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      const installEvent = event as BeforeInstallPromptEvent;
-      deferredPromptRef.current = installEvent;
+    const syncInstallAvailability = () => {
+      if (!capturedBeforeInstallPrompt) return;
+      deferredPromptRef.current = capturedBeforeInstallPrompt;
       setCanNativeInstall(true);
-      if (!recentlyDismissed) {
-        setShowBanner(true);
-      }
     };
 
     const handleAppInstalled = () => {
+      capturedBeforeInstallPrompt = null;
       deferredPromptRef.current = null;
       setCanNativeInstall(false);
       setIsInstalled(true);
@@ -91,20 +101,23 @@ export default function PwaInstallPrompt() {
 
     const handleCustomTrigger = () => {
       if (isStandaloneDisplayMode()) return;
+      syncInstallAvailability();
       setShowBanner(true);
       setShowGuide(false);
     };
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("buymesho:pwa-install-available", syncInstallAvailability);
     window.addEventListener("appinstalled", handleAppInstalled);
     window.addEventListener("buymesho:show-pwa-install", handleCustomTrigger);
+
+    syncInstallAvailability();
 
     if (!recentlyDismissed && (ios || !standalone)) {
       setShowBanner(true);
     }
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("buymesho:pwa-install-available", syncInstallAvailability);
       window.removeEventListener("appinstalled", handleAppInstalled);
       window.removeEventListener("buymesho:show-pwa-install", handleCustomTrigger);
     };
@@ -121,7 +134,7 @@ export default function PwaInstallPrompt() {
       return;
     }
 
-    const promptEvent = deferredPromptRef.current;
+    const promptEvent = deferredPromptRef.current || capturedBeforeInstallPrompt;
     if (!promptEvent) {
       setShowGuide(true);
       return;
@@ -138,6 +151,7 @@ export default function PwaInstallPrompt() {
       console.warn("BuyMesho PWA install prompt failed:", error);
       setShowGuide(true);
     } finally {
+      capturedBeforeInstallPrompt = null;
       deferredPromptRef.current = null;
       setCanNativeInstall(false);
       setInstalling(false);
