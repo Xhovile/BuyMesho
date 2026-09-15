@@ -11,6 +11,9 @@ export function ensurePayoutDestinationOwnershipMigration() {
     SET owner_type = 'seller', owner_uid = seller_uid
     WHERE owner_type IS NULL OR owner_type = '' OR owner_uid IS NULL;
 
+    ALTER TABLE seller_payout_accounts
+      DROP CONSTRAINT IF EXISTS ck_seller_payout_accounts_owner_identity;
+
     DO $$ BEGIN
       IF NOT EXISTS (
         SELECT 1 FROM pg_constraint
@@ -23,21 +26,33 @@ export function ensurePayoutDestinationOwnershipMigration() {
       END IF;
     END $$;
 
-    DO $$ BEGIN
-      IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint
-        WHERE conname = 'ck_seller_payout_accounts_owner_identity'
-          AND conrelid = 'seller_payout_accounts'::regclass
-      ) THEN
-        ALTER TABLE seller_payout_accounts
-          ADD CONSTRAINT ck_seller_payout_accounts_owner_identity
-          CHECK (
-            (owner_type = 'seller' AND seller_uid IS NOT NULL AND event_creator_uid IS NULL AND owner_uid = seller_uid)
-            OR
-            (owner_type = 'event_creator' AND seller_uid IS NULL AND event_creator_uid IS NOT NULL AND owner_uid = event_creator_uid)
-          ) NOT VALID;
+    CREATE OR REPLACE FUNCTION buymesho_normalize_payout_destination_owner()
+    RETURNS trigger AS $$
+    BEGIN
+      IF COALESCE(NEW.owner_type, '') = 'event_creator' THEN
+        NEW.seller_uid := NULL;
+        NEW.owner_uid := NEW.event_creator_uid;
+      ELSE
+        NEW.owner_type := 'seller';
+        NEW.event_creator_uid := NULL;
+        NEW.owner_uid := NEW.seller_uid;
       END IF;
-    END $$;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
+    DROP TRIGGER IF EXISTS trg_buymesho_normalize_payout_destination_owner ON seller_payout_accounts;
+    CREATE TRIGGER trg_buymesho_normalize_payout_destination_owner
+    BEFORE INSERT OR UPDATE ON seller_payout_accounts
+    FOR EACH ROW EXECUTE FUNCTION buymesho_normalize_payout_destination_owner();
+
+    ALTER TABLE seller_payout_accounts
+      ADD CONSTRAINT ck_seller_payout_accounts_owner_identity
+      CHECK (
+        (owner_type = 'seller' AND seller_uid IS NOT NULL AND event_creator_uid IS NULL AND owner_uid = seller_uid)
+        OR
+        (owner_type = 'event_creator' AND seller_uid IS NULL AND event_creator_uid IS NOT NULL AND owner_uid = event_creator_uid)
+      ) NOT VALID;
 
     ALTER TABLE seller_payout_accounts VALIDATE CONSTRAINT ck_seller_payout_accounts_owner_identity;
 
@@ -59,6 +74,9 @@ export function ensurePayoutDestinationOwnershipMigration() {
     SET owner_type = 'seller', owner_uid = seller_uid
     WHERE owner_type IS NULL OR owner_type = '' OR owner_uid IS NULL;
 
+    ALTER TABLE seller_payout_account_events
+      DROP CONSTRAINT IF EXISTS ck_seller_payout_account_events_owner_identity;
+
     DO $$ BEGIN
       IF NOT EXISTS (
         SELECT 1 FROM pg_constraint
@@ -71,21 +89,33 @@ export function ensurePayoutDestinationOwnershipMigration() {
       END IF;
     END $$;
 
-    DO $$ BEGIN
-      IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint
-        WHERE conname = 'ck_seller_payout_account_events_owner_identity'
-          AND conrelid = 'seller_payout_account_events'::regclass
-      ) THEN
-        ALTER TABLE seller_payout_account_events
-          ADD CONSTRAINT ck_seller_payout_account_events_owner_identity
-          CHECK (
-            (owner_type = 'seller' AND seller_uid IS NOT NULL AND event_creator_uid IS NULL AND owner_uid = seller_uid)
-            OR
-            (owner_type = 'event_creator' AND seller_uid IS NULL AND event_creator_uid IS NOT NULL AND owner_uid = event_creator_uid)
-          ) NOT VALID;
+    CREATE OR REPLACE FUNCTION buymesho_normalize_payout_account_event_owner()
+    RETURNS trigger AS $$
+    BEGIN
+      IF COALESCE(NEW.owner_type, '') = 'event_creator' THEN
+        NEW.seller_uid := NULL;
+        NEW.owner_uid := NEW.event_creator_uid;
+      ELSE
+        NEW.owner_type := 'seller';
+        NEW.event_creator_uid := NULL;
+        NEW.owner_uid := NEW.seller_uid;
       END IF;
-    END $$;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
+    DROP TRIGGER IF EXISTS trg_buymesho_normalize_payout_account_event_owner ON seller_payout_account_events;
+    CREATE TRIGGER trg_buymesho_normalize_payout_account_event_owner
+    BEFORE INSERT OR UPDATE ON seller_payout_account_events
+    FOR EACH ROW EXECUTE FUNCTION buymesho_normalize_payout_account_event_owner();
+
+    ALTER TABLE seller_payout_account_events
+      ADD CONSTRAINT ck_seller_payout_account_events_owner_identity
+      CHECK (
+        (owner_type = 'seller' AND seller_uid IS NOT NULL AND event_creator_uid IS NULL AND owner_uid = seller_uid)
+        OR
+        (owner_type = 'event_creator' AND seller_uid IS NULL AND event_creator_uid IS NOT NULL AND owner_uid = event_creator_uid)
+      ) NOT VALID;
 
     ALTER TABLE seller_payout_account_events VALIDATE CONSTRAINT ck_seller_payout_account_events_owner_identity;
 
