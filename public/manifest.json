@@ -6,7 +6,8 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
   "background_color": "#ffffff",
   "theme_color": "#111827",
   "lang": "en",
@@ -18,8 +19,8 @@
     { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Explore Marketplace", "short_name": "Marketplace", "description": "Browse products, services, and listings", "url": "/", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Create Listing", "short_name": "Sell", "description": "Post a new product or service for sale", "url": "/create-listing", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Event Tickets", "short_name": "Events", "description": "Discover upcoming events and buy event tickets", "url": "/events", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+    { "name": "Explore Marketplace", "short_name": "Marketplace", "description": "Browse products, services, and listings", "url": "/explore", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Create Listing", "short_name": "Sell", "description": "Post a new product or service for sale", "url": "/create", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Event Tickets", "short_name": "Events", "description": "Discover upcoming events and buy event tickets", "url": "/explore/events", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
   ]
 }
