@@ -255,6 +255,7 @@ db.exec(`
     publication_at TIMESTAMPTZ,
     runtime_mode TEXT NOT NULL DEFAULT 'automatic',
     deleted_at TEXT,
+    payout_destination_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
