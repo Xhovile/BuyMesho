@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { Bookmark, CreditCard, EyeOff, LogOut, MessageSquareText, Plus, Settings, ShieldCheck, Store, User } from "lucide-react";
+import { Bookmark, CreditCard, Download, EyeOff, LogOut, MessageSquareText, Plus, Settings, ShieldCheck, Store, User } from "lucide-react";
 import HeaderMenuItem from "./HeaderMenuItem";
 import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "../../lib/appNavigation";
 
@@ -9,14 +9,15 @@ const primaryButtonClass = "w-full rounded-xl bg-white px-4 py-3 text-center tex
 const primaryWrapperClass = "rounded-2xl border border-zinc-100 bg-white p-1 shadow-sm mb-2";
 
 type HeaderMobileDrawerProps = {
-  open: boolean; isLoggedIn: boolean; isSeller: boolean; isAdmin: boolean; unreadCount: number; primaryDrawerLabel: string;
+  open: boolean; isLoggedIn: boolean; isSeller: boolean; isAdmin: boolean; unreadCount: number; primaryDrawerLabel: string; showInstallOption?: boolean;
   onClose: () => void; onPrimaryClick: () => void; onBecomeSellerClick: () => void; onMyListingsClick?: () => void;
+  onInstallClick?: () => void;
   onMessagesClick: () => void; onSavedClick: () => void; onHiddenClick: () => void; onPaymentsClick: () => void;
   onSellerPayoutsClick: () => void; onAdminClick: () => void; onSettingsClick: () => void; onProfileClick: () => void;
   onLogoutClick: () => void | Promise<void>; onSignInClick: () => void; onCreateAccountClick: () => void;
 };
 
-export default function HeaderMobileDrawer({ open, isLoggedIn, isSeller, isAdmin, unreadCount, primaryDrawerLabel, onClose, onPrimaryClick, onBecomeSellerClick, onMyListingsClick: _onMyListingsClick, onMessagesClick, onSavedClick, onHiddenClick, onPaymentsClick, onSellerPayoutsClick, onAdminClick, onSettingsClick, onProfileClick, onLogoutClick, onSignInClick, onCreateAccountClick }: HeaderMobileDrawerProps) {
+export default function HeaderMobileDrawer({ open, isLoggedIn, isSeller, isAdmin, unreadCount, primaryDrawerLabel, showInstallOption=false, onClose, onPrimaryClick, onBecomeSellerClick, onMyListingsClick: _onMyListingsClick, onInstallClick, onMessagesClick, onSavedClick, onHiddenClick, onPaymentsClick, onSellerPayoutsClick, onAdminClick, onSettingsClick, onProfileClick, onLogoutClick, onSignInClick, onCreateAccountClick }: HeaderMobileDrawerProps) {
   void _onMyListingsClick;
   const primaryPath = primaryDrawerLabel === "Home" ? HOME_PATH : EXPLORE_PATH;
   const handlePrimaryNavigation = () => { onClose(); navigateToPath(primaryPath); };
@@ -28,6 +29,7 @@ export default function HeaderMobileDrawer({ open, isLoggedIn, isSeller, isAdmin
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className={primaryWrapperClass}><HeaderMenuItem label={primaryDrawerLabel} icon={null} onClick={handlePrimaryNavigation} className={primaryButtonClass} /></div>
         <HeaderMenuItem label={isSeller ? "List Item" : "Sell"} icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0"><Plus className="w-4 h-4 text-white" /></span>} onClick={handleSellAction} className={navButtonClass} />
+        {showInstallOption ? <HeaderMenuItem label="Install BuyMesho" icon={<span className="w-8 h-8 rounded-full bg-red-900 flex items-center justify-center flex-shrink-0"><Download className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onInstallClick?.(); }} className={navButtonClass} /> : null}
         {isLoggedIn ? <>
           <HeaderMenuItem label="Messages" extra={unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null} icon={<span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0"><MessageSquareText className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onMessagesClick(); }} className={navButtonClass} />
           <HeaderMenuItem label="Saved" icon={<span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0"><Bookmark className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onSavedClick(); }} className={navButtonClass} />
