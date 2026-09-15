@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import BuyMeshoCopilotDrawer from "../components/ai/BuyMeshoCopilotDrawer";
 import AiIcon from "../components/ai/AiIcon";
 import PwaInstallPrompt from "../components/PwaInstallPrompt";
-import PwaLaunchSplash from "../components/PwaLaunchSplash";
 import MobileDrawerSwipe from "../components/MobileDrawerSwipe";
 import ScrollToTopFab from "../components/ScrollToTopFab";
 import { navigateToPath } from "../lib/appNavigation";
@@ -109,7 +108,6 @@ export default function RootRouterGlobalUI() {
 
   return (
     <>
-      <PwaLaunchSplash />
       <MobileDrawerSwipe />
 
       {!copilotOpen && (
