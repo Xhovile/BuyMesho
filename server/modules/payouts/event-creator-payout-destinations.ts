@@ -179,7 +179,12 @@ export function createEventCreatorPayoutDestination(input: {
      LIMIT 1`,
   ).get(input.eventCreatorUid, destinationFingerprint) as EventCreatorPayoutDestinationRow | undefined;
 
-  if (duplicate) return rowToDestination(duplicate);
+  if (duplicate) {
+    if (duplicate.is_active === 1 && duplicate.verification_status.toLowerCase() === 'verified') {
+      return rowToDestination(duplicate);
+    }
+    throw new Error('That payout destination already exists but is not currently usable');
+  }
 
   const accountNumberEncrypted = destinationType === 'bank' ? encryptSensitiveValue(targetValue) : null;
   const mobileEncrypted = destinationType === 'mobile_money' ? encryptSensitiveValue(targetValue) : null;
@@ -243,7 +248,9 @@ export function createEventCreatorPayoutDestination(input: {
          WHERE owner_type = 'event_creator' AND event_creator_uid = ? AND destination_fingerprint = ?
          LIMIT 1`,
       ).get(input.eventCreatorUid, destinationFingerprint) as EventCreatorPayoutDestinationRow | undefined;
-      if (existing) return rowToDestination(existing);
+      if (existing && existing.is_active === 1 && existing.verification_status.toLowerCase() === 'verified') {
+        return rowToDestination(existing);
+      }
     }
     throw error;
   }
