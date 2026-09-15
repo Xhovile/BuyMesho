@@ -8,10 +8,6 @@ import { navigateToPath } from "../lib/appNavigation";
 import logoImage from "../../photos/LOGO.svg";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
-const HOMEPAGE_TITLE = "BuyMesho: Malawi's Secure E-commerce Platform";
-const HOMEPAGE_DESCRIPTION =
-  "BuyMesho is Malawi's secure e-commerce platform for discovering and buying products, services, and tickets from sellers across the country.";
-
 export function RouteLoader() {
   return (
     <div
@@ -54,7 +50,6 @@ export function RouteLoader() {
         <p className="mt-2 max-w-xs text-sm font-medium leading-6 text-zinc-500 sm:max-w-sm sm:text-base">
           Malawi's Secure E-commerce Platform
         </p>
-        <span className="sr-only">{HOMEPAGE_DESCRIPTION}</span>
       </div>
     </div>
   );
