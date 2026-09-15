@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import BuyMeshoCopilotDrawer from "../components/ai/BuyMeshoCopilotDrawer";
 import AiIcon from "../components/ai/AiIcon";
 import PwaInstallPrompt from "../components/PwaInstallPrompt";
-import NetworkStatusBanner from "../components/NetworkStatusBanner";
 import MobileDrawerSwipe from "../components/MobileDrawerSwipe";
 import ScrollToTopFab from "../components/ScrollToTopFab";
 import { navigateToPath } from "../lib/appNavigation";
@@ -96,7 +95,6 @@ export default function RootRouterGlobalUI() {
       />
 
       <ScrollToTopFab show={showScrollTop} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} />
-      <NetworkStatusBanner />
       <PwaInstallPrompt />
     </>
   );
