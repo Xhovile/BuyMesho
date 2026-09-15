@@ -29,7 +29,6 @@ export default function HeaderMobileDrawer({ open, isLoggedIn, isSeller, isAdmin
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className={primaryWrapperClass}><HeaderMenuItem label={primaryDrawerLabel} icon={null} onClick={handlePrimaryNavigation} className={primaryButtonClass} /></div>
         <HeaderMenuItem label={isSeller ? "List Item" : "Sell"} icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0"><Plus className="w-4 h-4 text-white" /></span>} onClick={handleSellAction} className={navButtonClass} />
-        <PwaInstallMenuItem className={navButtonClass} onSelect={onClose} />
         {isLoggedIn ? <>
           <HeaderMenuItem label="Messages" extra={unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null} icon={<span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0"><MessageSquareText className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onMessagesClick(); }} className={navButtonClass} />
           <HeaderMenuItem label="Saved" icon={<span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0"><Bookmark className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onSavedClick(); }} className={navButtonClass} />
@@ -39,9 +38,17 @@ export default function HeaderMobileDrawer({ open, isLoggedIn, isSeller, isAdmin
           {isSeller && isAdmin ? <div className={navSeparatorClass} aria-hidden="true" /> : null}{isAdmin ? <HeaderMenuItem label="ADMIN" icon={<span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0"><ShieldCheck className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onAdminClick(); }} className={navButtonClass} /> : null}
           {!isSeller && !isAdmin ? <div className={navSeparatorClass} aria-hidden="true" /> : null}{isSeller && !isAdmin ? <div className={navSeparatorClass} aria-hidden="true" /> : null}
           <HeaderMenuItem label="Settings" icon={<span className="w-8 h-8 rounded-full bg-slate-500 flex items-center justify-center flex-shrink-0"><Settings className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onSettingsClick(); }} className={navButtonClass} />
-          <HeaderMenuItem label="Profile" icon={<span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0"><User className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onProfileClick(); }} className={navButtonClass} /><div className={navSeparatorClass} aria-hidden="true" />
+          <HeaderMenuItem label="Profile" icon={<span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0"><User className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onProfileClick(); }} className={navButtonClass} />
+          <div className={navSeparatorClass} aria-hidden="true" />
+          <PwaInstallMenuItem className={navButtonClass} onSelect={onClose} />
           <HeaderMenuItem label="Log Out" icon={<span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0"><LogOut className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); void onLogoutClick(); }} className="w-full flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors" />
-        </> : <><HeaderMenuItem label="Become Seller" icon={<span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0"><ShieldCheck className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onBecomeSellerClick(); }} className={navButtonClass} /><div className={navSeparatorClass} aria-hidden="true" /><HeaderMenuItem label="Log In" icon={<span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0"><User className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onSignInClick(); }} className={navButtonClass} /><HeaderMenuItem label="Create Account" icon={<span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0"><User className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onCreateAccountClick(); }} className={navButtonClass} /></>}
+        </> : <>
+          <HeaderMenuItem label="Become Seller" icon={<span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0"><ShieldCheck className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onBecomeSellerClick(); }} className={navButtonClass} />
+          <div className={navSeparatorClass} aria-hidden="true" />
+          <HeaderMenuItem label="Log In" icon={<span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0"><User className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onSignInClick(); }} className={navButtonClass} />
+          <HeaderMenuItem label="Create Account" icon={<span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0"><User className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onCreateAccountClick(); }} className={navButtonClass} />
+          <PwaInstallMenuItem className={navButtonClass} onSelect={onClose} />
+        </>}
       </div>
     </motion.div>
   </> : null}</AnimatePresence>;
