@@ -1,5 +1,5 @@
 {
-  "name": "BuyMesho: Malawi's Secure E-commerce Platform",
+  "name": "BuyMesho",
   "short_name": "BuyMesho",
   "description": "Malawi's secure e-commerce platform for discovering and buying products, services, event tickets, and more.",
   "id": "/",
@@ -8,8 +8,8 @@
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "any",
-  "background_color": "#ffffff",
-  "theme_color": "#111827",
+  "background_color": "#070a12",
+  "theme_color": "#070a12",
   "lang": "en",
   "categories": ["shopping", "business", "lifestyle"],
   "icons": [
