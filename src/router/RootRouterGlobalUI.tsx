@@ -34,7 +34,7 @@ export function RouteLoader() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeDasharray="125 126"
-              className="text-red-600"
+              className="text-zinc-900"
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
@@ -47,7 +47,9 @@ export function RouteLoader() {
             />
           </div>
         </div>
-        <h1 className="mt-7 text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">BuyMesho</h1>
+        <h1 className="mt-7 text-2xl font-black tracking-tight sm:text-3xl" aria-label="BuyMesho">
+          <span className="text-[#991b1b]">Buy</span><span className="text-[#3f3f46]">Mesho</span>
+        </h1>
         <p className="mt-2 max-w-xs text-sm font-medium leading-6 text-zinc-500 sm:max-w-sm sm:text-base">
           Malawi&apos;s Secure E-commerce Platform
         </p>
