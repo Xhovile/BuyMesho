@@ -1,4 +1,4 @@
-const CACHE_NAME = 'buymesho-pwa-v5';
+const CACHE_NAME = 'buymesho-pwa-v6';
 
 // Keep this list limited to stable shell assets. Vite's hashed JS/CSS assets
 // are discovered and cached naturally by the runtime strategy below.
@@ -6,6 +6,8 @@ const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/pwa-splash-icon-192.svg',
+  '/pwa-splash-icon-512.svg',
   '/icon-192.png',
   '/icon-512.png',
   '/icon-maskable-192.png',
