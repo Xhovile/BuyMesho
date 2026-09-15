@@ -38,10 +38,21 @@ export function triggerPwaInstall() {
   window.dispatchEvent(new CustomEvent("buymesho:show-pwa-install"));
 }
 
+/**
+ * Detect whether BuyMesho is already running as an installed web app.
+ * Covers supported standalone-style display modes and iOS Safari's
+ * navigator.standalone flag.
+ */
 export function isPwaInstalled() {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
 
-  const displayModes = ["standalone", "fullscreen", "minimal-ui", "window-controls-overlay"];
+  const displayModes = [
+    "standalone",
+    "fullscreen",
+    "minimal-ui",
+    "window-controls-overlay",
+  ];
+
   const displayModeInstalled = displayModes.some((mode) => {
     try {
       return window.matchMedia(`(display-mode: ${mode})`).matches;
@@ -87,7 +98,6 @@ export default function PwaInstallPrompt() {
 
     setIsInIframe(inIframe);
     setIsIos(ios);
-    setIsInstalled(isPwaInstalled());
 
     const syncInstalledState = () => {
       const installed = isPwaInstalled();
@@ -98,6 +108,7 @@ export default function PwaInstallPrompt() {
       }
     };
 
+    syncInstalledState();
     if (isPwaInstalled()) {
       return () => undefined;
     }
@@ -127,7 +138,10 @@ export default function PwaInstallPrompt() {
     };
 
     const handleCustomTrigger = () => {
-      if (isPwaInstalled()) return;
+      if (isPwaInstalled()) {
+        setIsInstalled(true);
+        return;
+      }
       syncInstallAvailability();
 
       // A user explicitly requesting installation should still get useful
@@ -143,6 +157,7 @@ export default function PwaInstallPrompt() {
       "(display-mode: minimal-ui)",
       "(display-mode: window-controls-overlay)",
     ].map((query) => window.matchMedia(query));
+
     const handleDisplayModeChange = () => syncInstalledState();
 
     window.addEventListener("buymesho:pwa-install-available", syncInstallAvailability);
@@ -232,12 +247,7 @@ export default function PwaInstallPrompt() {
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-11 h-11 rounded-xl overflow-hidden shadow-md shrink-0 bg-white">
-            <img
-              src={logoImage}
-              alt="BuyMesho"
-              className="w-full h-full object-cover"
-              draggable={false}
-            />
+            <img src={logoImage} alt="BuyMesho" className="w-full h-full object-cover" draggable={false} />
           </div>
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-white tracking-wide">Install BuyMesho App</h3>
