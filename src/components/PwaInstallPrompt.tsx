@@ -20,9 +20,6 @@ interface BeforeInstallPromptEvent extends Event {
 
 let capturedBeforeInstallPrompt: BeforeInstallPromptEvent | null = null;
 
-// Capture the browser event as early as possible. React effects are intentionally
-// not relied on for the first event because beforeinstallprompt can fire before
-// an effect has mounted on a fast production load.
 if (typeof window !== "undefined") {
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
@@ -67,8 +64,21 @@ export function isPwaInstalled() {
   return displayModeInstalled || navigatorStandalone;
 }
 
+/**
+ * Safari on iPadOS 13+ can expose a desktop-style user agent, so user-agent
+ * matching alone is not sufficient for iPad detection.
+ */
 function isIosDevice() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (typeof navigator === "undefined") return false;
+
+  const userAgent = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+  const maxTouchPoints = Number(navigator.maxTouchPoints || 0);
+
+  const classicIos = /iphone|ipad|ipod/i.test(userAgent);
+  const ipadDesktopMode = /macintosh/i.test(userAgent) && /mac/i.test(platform) && maxTouchPoints > 1;
+
+  return classicIos || ipadDesktopMode;
 }
 
 export default function PwaInstallPrompt() {
@@ -109,18 +119,13 @@ export default function PwaInstallPrompt() {
     };
 
     syncInstalledState();
-    if (isPwaInstalled()) {
-      return () => undefined;
-    }
+    if (isPwaInstalled()) return () => undefined;
 
     const syncInstallAvailability = () => {
       if (!capturedBeforeInstallPrompt) return;
       deferredPromptRef.current = capturedBeforeInstallPrompt;
       setCanNativeInstall(true);
 
-      // Only surface the automatic banner when the browser has actually
-      // exposed a native install prompt. This avoids showing an install CTA
-      // that cannot perform a one-tap installation.
       if (!recentlyDismissed && !isPwaInstalled()) {
         setShowBanner(true);
         setShowGuide(false);
@@ -143,10 +148,6 @@ export default function PwaInstallPrompt() {
         return;
       }
       syncInstallAvailability();
-
-      // A user explicitly requesting installation should still get useful
-      // fallback instructions on browsers/iOS that do not expose the native
-      // prompt.
       setShowBanner(true);
       setShowGuide(false);
     };
@@ -169,12 +170,9 @@ export default function PwaInstallPrompt() {
 
     syncInstallAvailability();
 
-    // iOS Safari does not expose beforeinstallprompt, so its install guidance
-    // is intentionally still surfaced automatically. Other browsers wait for
-    // the native prompt before showing the automatic banner.
-    if (!recentlyDismissed && ios && !isPwaInstalled()) {
-      setShowBanner(true);
-    }
+    // iOS/iPadOS Safari does not expose beforeinstallprompt, so installation
+    // guidance remains available automatically on Apple mobile devices.
+    if (!recentlyDismissed && ios && !isPwaInstalled()) setShowBanner(true);
 
     return () => {
       window.removeEventListener("buymesho:pwa-install-available", syncInstallAvailability);
@@ -213,9 +211,7 @@ export default function PwaInstallPrompt() {
     try {
       await promptEvent.prompt();
       const { outcome } = await promptEvent.userChoice;
-      if (outcome === "accepted") {
-        setShowBanner(false);
-      }
+      if (outcome === "accepted") setShowBanner(false);
     } catch (error) {
       console.warn("BuyMesho PWA install prompt failed:", error);
       setShowGuide(true);
@@ -233,9 +229,7 @@ export default function PwaInstallPrompt() {
     localStorage.setItem(DISMISS_KEY, Date.now().toString());
   };
 
-  if (isInstalled || !showBanner) {
-    return null;
-  }
+  if (isInstalled || !showBanner) return null;
 
   return (
     <div
