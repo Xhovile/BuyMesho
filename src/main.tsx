@@ -142,10 +142,10 @@ function setBrandMetadata() {
   upsertMeta('theme-color', '#111827');
   upsertMeta('description', "BuyMesho is Malawi's secure e-commerce platform for discovering and buying products, services, and tickets from sellers across the country.");
 
-  // Keep every browser-facing brand surface on the canonical BuyMesho SVG.
+  // Keep the canonical BuyMesho SVG on browser-facing favicon surfaces.
+  // The manifest remains the source for installable app icons.
   upsertLink('icon', logoImage, 'image/svg+xml');
   upsertLink('shortcut icon', logoImage, 'image/svg+xml');
-  upsertLink('apple-touch-icon', logoImage, 'image/svg+xml');
 }
 
 setBrandMetadata();
