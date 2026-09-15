@@ -34,7 +34,7 @@ export function RouteLoader() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeDasharray="125 126"
-              className="text-red-700"
+              className="text-red-600"
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
