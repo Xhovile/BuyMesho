@@ -45,10 +45,10 @@ export default function PwaLaunchSplash() {
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_44%,rgba(255,255,255,0.85),transparent_36%),radial-gradient(circle_at_50%_100%,rgba(153,27,27,0.06),transparent_46%)]" />
 
-      <div className="relative w-full max-w-[420px] rounded-[34px] border border-black/10 bg-[#070a12] px-7 py-9 text-center shadow-[0_30px_90px_rgba(0,0,0,0.22)] sm:px-10 sm:py-11">
-        <div className="pointer-events-none absolute inset-0 rounded-[34px] bg-[radial-gradient(circle_at_50%_40%,rgba(255,255,255,0.07),transparent_32%),radial-gradient(circle_at_50%_100%,rgba(185,28,28,0.08),transparent_42%)]" />
+      <div className="relative w-full max-w-[420px] overflow-hidden rounded-[34px] border border-white/10 bg-[radial-gradient(circle_at_50%_35%,rgba(31,41,55,0.5),transparent_44%),radial-gradient(circle_at_50%_100%,rgba(127,29,29,0.16),transparent_55%),linear-gradient(145deg,#11151f_0%,#090c14_58%,#0b0710_100%)] px-7 py-9 text-center shadow-[0_30px_90px_rgba(0,0,0,0.22)] sm:px-10 sm:py-11">
+        <div className="pointer-events-none absolute inset-0 rounded-[34px] bg-[radial-gradient(circle_at_24%_24%,rgba(255,255,255,0.045),transparent_28%),radial-gradient(circle_at_78%_76%,rgba(185,28,28,0.09),transparent_34%)]" />
 
-        <div className="relative mx-auto flex h-24 w-24 items-center justify-center rounded-[26px] bg-[#070a12] sm:h-28 sm:w-28 sm:rounded-[30px]">
+        <div className="relative mx-auto flex h-24 w-24 items-center justify-center rounded-[26px] bg-transparent sm:h-28 sm:w-28 sm:rounded-[30px]">
           <img
             src={logoImage}
             alt="BuyMesho"
