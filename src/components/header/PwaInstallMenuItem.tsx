@@ -41,7 +41,7 @@ export default function PwaInstallMenuItem({ className, onSelect }: Props) {
 
   return (
     <HeaderMenuItem
-      label="Install BuyMesho"
+      label="Install App"
       icon={(
         <span className="w-8 h-8 rounded-full bg-red-900 flex items-center justify-center flex-shrink-0">
           <Download className="w-4 h-4 text-white" />
