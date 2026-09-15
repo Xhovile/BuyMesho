@@ -144,13 +144,29 @@ export type PayoutNextAction =
 
 const PAYOUT_ENCRYPTION_SECRET = process.env.SELLER_PAYOUT_ENCRYPTION_KEY ?? '';
 
-export function isProviderHoldFailure(_reasonCode: PayChanguPayoutFailureClass): boolean { return false; }
+// Provider execution failures remain failed so the automatic retry worker can retry them.
+export function isProviderHoldFailure(_reasonCode: PayChanguPayoutFailureClass): boolean {
+  return false;
+}
 
 export function classifyProviderFailureFromError(error: unknown): PayChanguPayoutFailureClass {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
-    if (message.includes('429') || message.includes('rate limit') || message.includes('rate-limit') || message.includes('too many requests')) return 'provider_rate_limited';
-    if (message.includes('timeout') || message.includes('timed out') || message.includes('etimedout')) return 'provider_timeout';
+    if (
+      message.includes('429') ||
+      message.includes('rate limit') ||
+      message.includes('rate-limit') ||
+      message.includes('too many requests')
+    ) {
+      return 'provider_rate_limited';
+    }
+    if (
+      message.includes('timeout') ||
+      message.includes('timed out') ||
+      message.includes('etimedout')
+    ) {
+      return 'provider_timeout';
+    }
   }
   return 'provider_unavailable';
 }
@@ -160,48 +176,101 @@ export function exactProviderErrorMessage(rawResponse: unknown): string | null {
     if (typeof value === 'string') {
       const trimmed = value.trim();
       if (!trimmed) return null;
-      try { const parsed = JSON.parse(trimmed); return extract(parsed) ?? trimmed; } catch { return trimmed; }
+
+      try {
+        const parsed = JSON.parse(trimmed);
+        return extract(parsed) ?? trimmed;
+      } catch {
+        return trimmed;
+      }
     }
+
     if (!value || typeof value !== 'object') return null;
     const record = value as Record<string, unknown>;
-    for (const key of ['message', 'error', 'detail', 'reason', 'rawText']) { const found = extract(record[key]); if (found) return found; }
+
+    for (const key of ['message', 'error', 'detail', 'reason', 'rawText']) {
+      const found = extract(record[key]);
+      if (found) return found;
+    }
+
     if (record.response) return extract(record.response);
     return null;
   };
+
   return extract(rawResponse);
 }
 
-export function providerFailureReason(reasonCode: PayChanguPayoutFailureClass, exactMessage?: string | null): string {
-  if (reasonCode === 'provider_rate_limited') return exactMessage ? `Provider rate-limited: ${exactMessage}` : 'Provider rate-limited';
-  if (reasonCode === 'provider_timeout') return exactMessage ? `Provider timeout: ${exactMessage}` : 'Provider timeout';
-  if (reasonCode === 'provider_unavailable') return exactMessage ? `Provider unavailable: ${exactMessage}` : 'Provider unavailable';
+export function providerFailureReason(
+  reasonCode: PayChanguPayoutFailureClass,
+  exactMessage?: string | null,
+): string {
+  if (reasonCode === 'provider_rate_limited') {
+    return exactMessage ? `Provider rate-limited: ${exactMessage}` : 'Provider rate-limited';
+  }
+  if (reasonCode === 'provider_timeout') {
+    return exactMessage ? `Provider timeout: ${exactMessage}` : 'Provider timeout';
+  }
+  if (reasonCode === 'provider_unavailable') {
+    return exactMessage ? `Provider unavailable: ${exactMessage}` : 'Provider unavailable';
+  }
   return exactMessage ? exactMessage : 'Payout failed at provider';
 }
 
-export function canViewPayoutSettings(context: PayoutPermissionContext): boolean { return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId); }
-export function canEditPayoutSettings(context: PayoutPermissionContext): boolean { return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId); }
-export function canRequestWithdrawal(context: PayoutPermissionContext): boolean { return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId); }
-export function canViewPayoutHistory(context: PayoutPermissionContext): boolean { return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId); }
-export function canRequestPayoutRetry(context: PayoutPermissionContext): boolean { return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId); }
-export function canApprovePayoutOverride(context: PayoutPermissionContext): boolean { return Boolean(context.actor?.is_admin); }
+export function canViewPayoutSettings(context: PayoutPermissionContext): boolean {
+  return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId);
+}
+
+export function canEditPayoutSettings(context: PayoutPermissionContext): boolean {
+  return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId);
+}
+
+export function canRequestWithdrawal(context: PayoutPermissionContext): boolean {
+  return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId);
+}
+
+export function canViewPayoutHistory(context: PayoutPermissionContext): boolean {
+  return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId);
+}
+
+export function canRequestPayoutRetry(context: PayoutPermissionContext): boolean {
+  return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId);
+}
+
+export function canApprovePayoutOverride(context: PayoutPermissionContext): boolean {
+  return Boolean(context.actor?.is_admin);
+}
 
 export function decryptSensitiveValue(value: string | null | undefined): string | null {
   if (!value) return null;
+
   const trimmed = value.trim();
   if (!trimmed) return null;
+
+  // Backward-compatible support for legacy/plaintext test fixtures and existing rows
+  // that predate encrypted destination storage. Newly created destinations use the
+  // 3-part AES-256-GCM representation below.
   const parts = trimmed.split(':');
   if (parts.length !== 3) return trimmed;
   if (!PAYOUT_ENCRYPTION_SECRET) return null;
+
   const [ivPart, tagPart, encryptedPart] = parts;
   if (!ivPart || !tagPart || !encryptedPart) return null;
+
   try {
     const key = scryptSync(PAYOUT_ENCRYPTION_SECRET, 'BuyMesho seller payout', 32);
     const iv = Buffer.from(ivPart, 'base64');
     const tag = Buffer.from(tagPart, 'base64');
     const encrypted = Buffer.from(encryptedPart, 'base64');
+
     const decipher = createDecipheriv('aes-256-gcm', key, iv);
     decipher.setAuthTag(tag);
-    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
+    const decrypted = Buffer.concat([
+      decipher.update(encrypted),
+      decipher.final(),
+    ]).toString('utf8');
+
     return decrypted || null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
