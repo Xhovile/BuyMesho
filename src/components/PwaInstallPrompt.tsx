@@ -1,5 +1,13 @@
-import { useEffect, useState } from "react";
-import { Download, X, Share, PlusSquare, Smartphone, ExternalLink, Info, Check } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Download,
+  X,
+  Share,
+  PlusSquare,
+  ExternalLink,
+  Info,
+} from "lucide-react";
+import logoImage from "../../photos/LOGO.svg";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -10,178 +18,143 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+let capturedBeforeInstallPrompt: BeforeInstallPromptEvent | null = null;
+
+// Capture the browser event as early as possible. React effects are intentionally
+// not relied on for the first event because beforeinstallprompt can fire before
+// an effect has mounted on a fast production load.
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    capturedBeforeInstallPrompt = event as BeforeInstallPromptEvent;
+    window.dispatchEvent(new Event("buymesho:pwa-install-available"));
+  });
+}
+
 const DISMISS_KEY = "buymesho_pwa_install_dismissed";
-const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function triggerPwaInstall() {
   window.dispatchEvent(new CustomEvent("buymesho:show-pwa-install"));
 }
 
+function isStandaloneDisplayMode() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true
+  );
+}
+
+function isIosDevice() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
 export default function PwaInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(capturedBeforeInstallPrompt);
   const [showBanner, setShowBanner] = useState(false);
   const [isIos, setIsIos] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [isInIframe, setIsInIframe] = useState(false);
+  const [canNativeInstall, setCanNativeInstall] = useState(!!capturedBeforeInstallPrompt);
 
   useEffect(() => {
-    // Detect iframe execution
+    let inIframe = false;
     try {
-      setIsInIframe(window.self !== window.top);
+      inIframe = window.self !== window.top;
     } catch {
-      setIsInIframe(true);
+      inIframe = true;
     }
 
-    // Check if already in standalone / installed mode
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (navigator as unknown as { standalone?: boolean }).standalone === true;
+    const standalone = isStandaloneDisplayMode();
+    const ios = isIosDevice();
+    const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || 0);
+    const recentlyDismissed =
+      Number.isFinite(dismissedAt) &&
+      dismissedAt > 0 &&
+      Date.now() - dismissedAt < DISMISS_DURATION_MS;
 
-    if (isStandalone) {
+    setIsInIframe(inIframe);
+    setIsIos(ios);
+
+    if (standalone) {
       setIsInstalled(true);
       return;
     }
 
-    // Detect iOS
-    const ua = window.navigator.userAgent;
-    const isIosDevice = /iphone|ipad|ipod/i.test(ua);
-    setIsIos(isIosDevice);
-
-    // Log diagnostic information on mount
-    console.log("[PWA Debug] Checking PWA installability environment...", {
-      isInIframe,
-      isStandalone,
-      isIosDevice,
-      hasServiceWorker: 'serviceWorker' in navigator,
-      serviceWorkerController: navigator.serviceWorker?.controller ? 'Active' : 'None / Registering',
-      supportsGetInstallabilityState: 'getInstallabilityState' in navigator,
-      supportsGetInstalledRelatedApps: 'getInstalledRelatedApps' in navigator,
-      userAgent: navigator.userAgent
-    });
-
-    // Check experimental getInstallabilityState API if supported
-    const nav = navigator as any;
-    if (typeof nav.getInstallabilityState === "function") {
-      try {
-        nav.getInstallabilityState().then((state: any) => {
-          console.log("[PWA Debug] getInstallabilityState result:", state);
-        }).catch((err: any) => {
-          console.warn("[PWA Debug] getInstallabilityState error:", err);
-        });
-      } catch (e) {
-        console.warn("[PWA Debug] getInstallabilityState execution failed:", e);
-      }
-    }
-
-    if (typeof nav.getInstalledRelatedApps === "function") {
-      nav.getInstalledRelatedApps().then((apps: any) => {
-        console.log("[PWA Debug] getInstalledRelatedApps result:", apps);
-      }).catch((err: any) => {
-        console.warn("[PWA Debug] getInstalledRelatedApps error:", err);
-      });
-    }
-
-    // Check last dismissal
-    const lastDismissed = localStorage.getItem(DISMISS_KEY);
-    const isDismissedRecently =
-      lastDismissed && Date.now() - parseInt(lastDismissed, 10) < DISMISS_DURATION_MS;
-
-    // Listen for beforeinstallprompt
-    const handleBeforeInstallPrompt = (e: Event) => {
-      console.log("[PWA Debug] 'beforeinstallprompt' event successfully fired by browser!", e);
-      e.preventDefault();
-      const promptEvent = e as BeforeInstallPromptEvent;
-      setDeferredPrompt(promptEvent);
-
-      if (!isDismissedRecently) {
-        setShowBanner(true);
-      }
+    const syncInstallAvailability = () => {
+      if (!capturedBeforeInstallPrompt) return;
+      deferredPromptRef.current = capturedBeforeInstallPrompt;
+      setCanNativeInstall(true);
     };
 
-    // Listen for appinstalled
     const handleAppInstalled = () => {
-      console.log("[PWA Debug] 'appinstalled' event fired! App was successfully installed.");
+      capturedBeforeInstallPrompt = null;
+      deferredPromptRef.current = null;
+      setCanNativeInstall(false);
       setIsInstalled(true);
       setShowBanner(false);
-      setDeferredPrompt(null);
+      setShowGuide(false);
+      localStorage.removeItem(DISMISS_KEY);
+    };
+
+    const handleCustomTrigger = () => {
+      if (isStandaloneDisplayMode()) return;
+      syncInstallAvailability();
+      setShowBanner(true);
       setShowGuide(false);
     };
 
-    // Listen for custom trigger from footer or navigation
-    const handleCustomTrigger = () => {
-      console.log("[PWA Debug] Manual triggerPwaInstall event received", {
-        hasDeferredPrompt: !!deferredPrompt,
-        isInIframe,
-        isIos: isIosDevice
-      });
-      setShowBanner(true);
-      setShowGuide(true);
-    };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("buymesho:pwa-install-available", syncInstallAvailability);
     window.addEventListener("appinstalled", handleAppInstalled);
     window.addEventListener("buymesho:show-pwa-install", handleCustomTrigger);
 
-    // Auto banner prompt if not dismissed recently
-    if (!isStandalone && !isDismissedRecently) {
+    syncInstallAvailability();
+
+    if (!recentlyDismissed && (ios || !standalone)) {
       setShowBanner(true);
     }
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("buymesho:pwa-install-available", syncInstallAvailability);
       window.removeEventListener("appinstalled", handleAppInstalled);
       window.removeEventListener("buymesho:show-pwa-install", handleCustomTrigger);
     };
   }, []);
 
   const handleInstallClick = async () => {
-    console.log("[PWA Debug] Install button clicked", {
-      isInIframe,
-      isIos,
-      hasDeferredPrompt: !!deferredPrompt,
-      windowLocation: window.location.href
-    });
-
-    // If inside an iframe, native browser install prompt is blocked by browser security.
     if (isInIframe) {
-      console.warn("[PWA Debug] Clicked inside preview iframe - opening full window for native PWA prompt...");
-      window.open(window.location.href, "_blank");
-      setShowGuide(true);
+      window.open(window.location.href, "_blank", "noopener,noreferrer");
       return;
     }
 
-    // iOS Safari requires manually tapping Share -> Add to Home Screen
     if (isIos) {
-      console.log("[PWA Debug] iOS device detected - showing iOS Share guide...");
       setShowGuide(true);
       return;
     }
 
-    // Android/Desktop Chrome native prompt if available
-    if (deferredPrompt) {
-      console.log("[PWA Debug] Triggering native beforeinstallprompt.prompt()...");
-      setInstalling(true);
-      try {
-        await deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log("[PWA Debug] User install choice outcome:", outcome);
-        if (outcome === "accepted") {
-          setShowBanner(false);
-          setDeferredPrompt(null);
-        } else {
-          setShowGuide(true);
-        }
-      } catch (err) {
-        console.warn("[PWA Debug] Install prompt error:", err);
-        setShowGuide(true);
-      } finally {
-        setInstalling(false);
-      }
-    } else {
-      console.warn("[PWA Debug] No beforeinstallprompt event captured yet by browser. Showing install guide fallback.");
+    const promptEvent = deferredPromptRef.current || capturedBeforeInstallPrompt;
+    if (!promptEvent) {
       setShowGuide(true);
+      return;
+    }
+
+    setInstalling(true);
+    try {
+      await promptEvent.prompt();
+      const { outcome } = await promptEvent.userChoice;
+      if (outcome === "accepted") {
+        setShowBanner(false);
+      }
+    } catch (error) {
+      console.warn("BuyMesho PWA install prompt failed:", error);
+      setShowGuide(true);
+    } finally {
+      capturedBeforeInstallPrompt = null;
+      deferredPromptRef.current = null;
+      setCanNativeInstall(false);
+      setInstalling(false);
     }
   };
 
@@ -198,27 +171,26 @@ export default function PwaInstallPrompt() {
   return (
     <div
       id="pwa-install-prompt-card"
-      className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-50 bg-slate-900/95 backdrop-blur-md text-white p-4.5 rounded-2xl shadow-2xl border border-slate-700/70 transition-all duration-300 animate-in slide-in-from-bottom-5"
+      className="fixed bottom-24 left-4 right-4 md:bottom-20 md:left-auto md:right-6 md:max-w-md z-50 bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl border border-slate-700/70 transition-all duration-300 animate-in slide-in-from-bottom-5"
+      role="dialog"
+      aria-label="Install BuyMesho"
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 p-0.5 shadow-md shrink-0 flex items-center justify-center">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-11 h-11 rounded-xl overflow-hidden shadow-md shrink-0 bg-white">
             <img
-              src="/icon-192.png"
-              alt="BuyMesho Logo"
-              className="w-full h-full object-cover rounded-[10px]"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = "none";
-              }}
+              src={logoImage}
+              alt="BuyMesho"
+              className="w-full h-full object-cover"
+              draggable={false}
             />
-            <Smartphone className="w-5 h-5 text-slate-950 hidden" />
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-white tracking-wide flex items-center gap-1.5">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-white tracking-wide">
               Install BuyMesho App
             </h3>
             <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
-              Add to your phone or computer home screen for quick offline access.
+              Add BuyMesho to your home screen for faster access.
             </p>
           </div>
         </div>
@@ -238,17 +210,18 @@ export default function PwaInstallPrompt() {
           {isInIframe && (
             <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 space-y-1.5">
               <p className="font-semibold text-amber-300 flex items-center gap-1.5">
-                <Info className="w-4 h-4 text-amber-400 shrink-0" /> Open app in full browser tab
+                <Info className="w-4 h-4 text-amber-400 shrink-0" /> Open BuyMesho in your browser
               </p>
-              <p className="text-[11px] text-amber-200/90 leading-normal">
-                Browser installation requires viewing the app outside this preview frame.
+              <p className="text-[11px] leading-normal">
+                Installation must be started from the real browser tab, not an embedded preview.
               </p>
               <button
                 type="button"
-                onClick={() => window.open(window.location.href, "_blank")}
-                className="w-full py-1.5 px-3 bg-amber-400 text-slate-950 hover:bg-amber-300 font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                onClick={() => window.open(window.location.href, "_blank", "noopener,noreferrer")}
+                className="w-full py-2 px-3 bg-amber-400 text-slate-950 hover:bg-amber-300 font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors"
               >
-                <ExternalLink className="w-3.5 h-3.5" /> Open in New Browser Window
+                <ExternalLink className="w-3.5 h-3.5" />
+                Open BuyMesho
               </button>
             </div>
           )}
@@ -256,34 +229,29 @@ export default function PwaInstallPrompt() {
           {isIos ? (
             <div className="space-y-1.5">
               <p className="font-medium text-amber-400 flex items-center gap-1">
-                <Share className="w-3.5 h-3.5" /> On iPhone / iPad (Safari):
+                <Share className="w-3.5 h-3.5" /> On iPhone / iPad (Safari)
               </p>
-              <ol className="list-decimal list-inside space-y-1 pl-1 text-slate-300">
-                <li>
-                  Tap the <span className="font-semibold text-white">Share</span> icon in Safari.
-                </li>
-                <li>
-                  Select <span className="font-semibold text-white">Add to Home Screen</span>{" "}
-                  <PlusSquare className="w-3.5 h-3.5 inline ml-0.5 text-amber-400" />.
-                </li>
-                <li>
-                  Tap <span className="font-semibold text-white">Add</span> at the top right.
-                </li>
+              <ol className="list-decimal list-inside space-y-1 pl-1">
+                <li>Tap the <span className="font-semibold text-white">Share</span> button.</li>
+                <li>Select <span className="font-semibold text-white">Add to Home Screen</span> <PlusSquare className="w-3.5 h-3.5 inline ml-0.5 text-amber-400" />.</li>
+                <li>Tap <span className="font-semibold text-white">Add</span>.</li>
               </ol>
             </div>
           ) : (
             <div className="space-y-1.5">
               <p className="font-medium text-amber-400 flex items-center gap-1">
-                <Download className="w-3.5 h-3.5" /> On Android / Chrome / Edge:
+                <Download className="w-3.5 h-3.5" /> Install from your browser
               </p>
-              <ol className="list-decimal list-inside space-y-1 pl-1 text-slate-300">
-                <li>
-                  Click the <span className="font-semibold text-white">Install App</span> icon in your browser bar (or open menu <span className="font-bold text-white">⋮</span>).
-                </li>
-                <li>
-                  Select <span className="font-semibold text-white">"Install BuyMesho"</span> or <span className="font-semibold text-white">"Add to Home screen"</span>.
-                </li>
+              <ol className="list-decimal list-inside space-y-1 pl-1">
+                <li>Open your browser menu <span className="font-bold text-white">⋮</span>.</li>
+                <li>Choose <span className="font-semibold text-white">Install BuyMesho</span> or <span className="font-semibold text-white">Add to Home screen</span>.</li>
+                <li>Confirm the installation.</li>
               </ol>
+              {!canNativeInstall && (
+                <p className="text-[11px] text-slate-400 pt-1">
+                  Your browser has not exposed the one-tap install prompt yet, so the browser menu is the fallback.
+                </p>
+              )}
             </div>
           )}
 
@@ -291,7 +259,7 @@ export default function PwaInstallPrompt() {
             <button
               type="button"
               onClick={handleDismiss}
-              className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition-colors"
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition-colors"
             >
               Close
             </button>
@@ -317,22 +285,22 @@ export default function PwaInstallPrompt() {
             ) : isInIframe ? (
               <>
                 <ExternalLink className="w-3.5 h-3.5" />
-                <span>Open in Tab to Install</span>
+                <span>Open to Install</span>
               </>
             ) : isIos ? (
               <>
                 <Share className="w-3.5 h-3.5" />
-                <span>Show Instructions</span>
+                <span>How to Install</span>
               </>
-            ) : deferredPrompt ? (
+            ) : canNativeInstall ? (
               <>
                 <Download className="w-3.5 h-3.5" />
-                <span>Install Now</span>
+                <span>Install</span>
               </>
             ) : (
               <>
                 <Download className="w-3.5 h-3.5" />
-                <span>Install Guide</span>
+                <span>How to Install</span>
               </>
             )}
           </button>
@@ -341,4 +309,3 @@ export default function PwaInstallPrompt() {
     </div>
   );
 }
-
