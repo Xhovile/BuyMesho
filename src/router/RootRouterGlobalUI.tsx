@@ -3,6 +3,7 @@ import BuyMeshoCopilotDrawer from "../components/ai/BuyMeshoCopilotDrawer";
 import AiIcon from "../components/ai/AiIcon";
 import PwaInstallPrompt from "../components/PwaInstallPrompt";
 import NetworkStatusBanner from "../components/NetworkStatusBanner";
+import MobileDrawerSwipe from "../components/MobileDrawerSwipe";
 import ScrollToTopFab from "../components/ScrollToTopFab";
 import { navigateToPath } from "../lib/appNavigation";
 import logoImage from "../../photos/LOGO.svg";
@@ -75,6 +76,8 @@ export default function RootRouterGlobalUI() {
 
   return (
     <>
+      <MobileDrawerSwipe />
+
       {!copilotOpen && (
         <div className="fixed bottom-5 right-5 z-[99] sm:bottom-5 sm:right-6">
           <button type="button" onClick={() => setCopilotOpen(true)} className="block cursor-pointer p-0 drop-shadow-md transition-transform hover:scale-110 active:scale-95" title="Open BuyMesho AI" aria-label="BuyMesho AI">
