@@ -1,10 +1,15 @@
-const CACHE_NAME = 'buymesho-pwa-v3';
+const CACHE_NAME = 'buymesho-pwa-v4';
+
+// Keep this list limited to stable shell assets. Vite's hashed JS/CSS assets
+// are discovered and cached naturally by the runtime strategy below.
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
+  '/icon-maskable-192.png',
+  '/icon-maskable-512.png',
   '/apple-touch-icon.png',
   '/robots.txt',
 ];
@@ -42,14 +47,16 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/')) return;
 
   // App navigations stay network-first so users receive the current build.
-  // Cached index.html is only the offline fallback.
+  // The cached shell is only an offline fallback.
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((response) => {
           if (response.ok) {
             const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy));
+            event.waitUntil(
+              caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy)),
+            );
           }
           return response;
         })
@@ -58,15 +65,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets use stale-while-revalidate. This keeps the app responsive
-  // while still refreshing cached assets in the background.
+  // Static same-origin assets use stale-while-revalidate. Existing cached
+  // resources render immediately while a fresh copy is fetched in parallel.
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       const networkResponse = fetch(request)
         .then((response) => {
           if (response.ok && response.type === 'basic') {
             const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+            event.waitUntil(
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)),
+            );
           }
           return response;
         })
