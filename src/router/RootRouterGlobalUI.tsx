@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import BuyMeshoCopilotDrawer from "../components/ai/BuyMeshoCopilotDrawer";
 import AiIcon from "../components/ai/AiIcon";
 import PwaInstallPrompt from "../components/PwaInstallPrompt";
+import PwaLaunchSplash from "../components/PwaLaunchSplash";
 import MobileDrawerSwipe from "../components/MobileDrawerSwipe";
 import ScrollToTopFab from "../components/ScrollToTopFab";
 import { navigateToPath } from "../lib/appNavigation";
@@ -33,7 +34,7 @@ export function RouteLoader() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeDasharray="125 126"
-              className="text-red-600"
+              className="text-zinc-900"
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
@@ -48,7 +49,7 @@ export function RouteLoader() {
         </div>
         <h1 className="mt-7 text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">BuyMesho</h1>
         <p className="mt-2 max-w-xs text-sm font-medium leading-6 text-zinc-500 sm:max-w-sm sm:text-base">
-          Malawi's Secure E-commerce Platform
+          Malawi&apos;s Secure E-commerce Platform
         </p>
       </div>
     </div>
@@ -106,6 +107,7 @@ export default function RootRouterGlobalUI() {
 
   return (
     <>
+      <PwaLaunchSplash />
       <MobileDrawerSwipe />
 
       {!copilotOpen && (
