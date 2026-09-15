@@ -73,6 +73,7 @@ export function ensureEventPayoutDestinationLockMigration() {
           target_event_id := (item->>'eventId')::BIGINT;
           UPDATE events
           SET payout_destination_locked_at = COALESCE(payout_destination_locked_at, CURRENT_TIMESTAMP),
+              payout_destination_locked_by = COALESCE(payout_destination_locked_by, 'system'),
               payout_destination_lock_reason = COALESCE(payout_destination_lock_reason, 'first_successful_sale'),
               updated_at = CURRENT_TIMESTAMP
           WHERE id = target_event_id
@@ -111,6 +112,7 @@ export function ensureEventPayoutDestinationLockMigration() {
          AND buymesho_event_has_successful_sale(NEW.id)
       THEN
         NEW.payout_destination_locked_at := CURRENT_TIMESTAMP;
+        NEW.payout_destination_locked_by := COALESCE(NEW.payout_destination_locked_by, 'system');
         NEW.payout_destination_lock_reason := COALESCE(NEW.payout_destination_lock_reason, 'first_successful_sale');
       END IF;
 
@@ -126,6 +128,7 @@ export function ensureEventPayoutDestinationLockMigration() {
 
     UPDATE events e
     SET payout_destination_locked_at = COALESCE(e.payout_destination_locked_at, CURRENT_TIMESTAMP),
+        payout_destination_locked_by = COALESCE(e.payout_destination_locked_by, 'system'),
         payout_destination_lock_reason = COALESCE(e.payout_destination_lock_reason, 'first_successful_sale')
     WHERE e.payout_destination_id IS NOT NULL
       AND e.payout_destination_locked_at IS NULL
