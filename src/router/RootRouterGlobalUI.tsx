@@ -40,9 +40,9 @@ export function RouteLoader() {
             <img
               src={logoImage}
               alt="BuyMesho"
-              width={72}
-              height={72}
-              className="h-[72px] w-[72px] object-contain sm:h-20 sm:w-20"
+              width={70}
+              height={70}
+              className="h-[70px] w-[70px] object-contain sm:h-20 sm:w-20"
             />
           </div>
         </div>
