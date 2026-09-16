@@ -11,7 +11,6 @@ import { withTransaction } from '../../postgres.js';
 import {
   createEventPayoutCandidateAsync,
   resolveEventPayoutContext,
-  type EventPayoutContext,
 } from '../../modules/payouts/event-payout.integration.js';
 import { assertEscrowReleaseAccess, assertOrderAccess, escrowActionLimiter, jsonError } from './shared.js';
 
@@ -68,7 +67,7 @@ function releaseDebug(stage: string, details?: Record<string, unknown>): void {
   console.error(`[escrow-release-debug] ${stage}`, details ?? {});
 }
 
-function payoutMethodFromDestination(destination: VerifiedPayoutDestination | EventPayoutContext) {
+function payoutMethodFromSellerDestination(destination: VerifiedPayoutDestination) {
   if (destination.destination_type === 'bank') return 'bank_transfer' as const;
 
   const provider = `${destination.provider_ref_id ?? ''} ${destination.provider_name ?? ''}`;
@@ -224,7 +223,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
             throw new Error('Invalid payout destination for this seller');
           }
 
-          const payoutMethod = payoutMethodFromDestination(destination);
+          const payoutMethod = payoutMethodFromSellerDestination(destination);
 
           payoutFormula = calculatePayoutFormula({
             grossAmount: released.releaseEntry.amount,
