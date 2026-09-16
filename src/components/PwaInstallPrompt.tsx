@@ -36,6 +36,28 @@ export function triggerPwaInstall() {
 }
 
 /**
+ * Directly requests the browser's native PWA installation prompt.
+ * This intentionally bypasses BuyMesho's in-page install banner.
+ */
+export async function requestNativePwaInstall(): Promise<"accepted" | "dismissed" | null> {
+  if (typeof window === "undefined" || isPwaInstalled()) return null;
+
+  const promptEvent = capturedBeforeInstallPrompt;
+  if (!promptEvent) return null;
+
+  try {
+    await promptEvent.prompt();
+    const { outcome } = await promptEvent.userChoice;
+    return outcome;
+  } catch (error) {
+    console.warn("BuyMesho PWA native install prompt failed:", error);
+    return null;
+  } finally {
+    capturedBeforeInstallPrompt = null;
+  }
+}
+
+/**
  * Detect whether BuyMesho is already running as an installed web app.
  * Covers supported standalone-style display modes and iOS Safari's
  * navigator.standalone flag.
@@ -170,8 +192,6 @@ export default function PwaInstallPrompt() {
 
     syncInstallAvailability();
 
-    // iOS/iPadOS Safari does not expose beforeinstallprompt, so installation
-    // guidance remains available automatically on Apple mobile devices.
     if (!recentlyDismissed && ios && !isPwaInstalled()) setShowBanner(true);
 
     return () => {
