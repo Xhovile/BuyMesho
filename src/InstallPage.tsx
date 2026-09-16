@@ -84,12 +84,6 @@ export default function InstallPage() {
               Install BuyMesho
             </button>
 
-            <p className="mt-4 text-xs leading-5 text-white/45">
-              {android
-                ? "Your browser will open the standard install prompt when supported."
-                : "Open BuyMesho in a browser that supports PWA installation to add it as an app."}
-            </p>
-
             {installStarted && (
               <p className="mt-3 text-xs font-semibold text-white/65" role="status">
                 Follow the browser&apos;s installation prompt to finish.
