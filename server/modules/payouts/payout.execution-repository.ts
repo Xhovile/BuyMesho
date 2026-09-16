@@ -29,6 +29,8 @@ function rowToPayout(row: Record<string, unknown>): PayoutRecord {
   return {
     id: row.id as string,
     sellerId: row.seller_id as string,
+    eventId: row.event_id == null ? null : String(row.event_id),
+    eventCreatorUid: row.event_creator_uid == null ? null : String(row.event_creator_uid),
     orderId: (row.order_id as string | null) ?? null,
     escrowId: (row.escrow_id as string | null) ?? null,
     releaseEntryId: (row.release_entry_id as string | null) ?? null,
@@ -48,19 +50,33 @@ function rowToPayout(row: Record<string, unknown>): PayoutRecord {
 
 export async function gatePayoutForSubmission(payoutId: string): Promise<{ row: Record<string, unknown> | undefined; fallbackDestination?: Record<string, unknown> }> {
   const result = await query<Record<string, unknown>>(
-    `SELECT p.id, p.seller_id, p.amount, p.currency, p.status, p.provider, p.failure_reason,
-       p.order_id, p.escrow_id, p.provider_charge_id, o.status AS order_status, e.state AS escrow_state,
+    `SELECT p.id, p.seller_id, p.event_id, p.event_creator_uid, p.amount, p.currency, p.status, p.provider, p.failure_reason,
+       p.order_id, p.escrow_id, p.provider_charge_id, p.destination_account_id, o.status AS order_status, e.state AS escrow_state,
        s.is_suspended AS seller_suspended, spa.destination_type, spa.provider_ref_id, spa.provider_name,
        spa.account_name, spa.masked_account, spa.account_number_encrypted, spa.mobile_encrypted,
        spa.verification_status, spa.is_active, spa.id AS destination_account_id,
        (SELECT COALESCE(MAX(attempt_no), 0) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS attempt_count
      FROM payouts p LEFT JOIN orders o ON o.id = p.order_id LEFT JOIN escrows e ON e.id = p.escrow_id
-     LEFT JOIN sellers s ON s.uid = p.seller_id LEFT JOIN seller_payout_accounts spa
-       ON spa.id = p.destination_account_id AND spa.seller_uid = p.seller_id WHERE p.id = $1 LIMIT 1`, [payoutId]);
+     LEFT JOIN sellers s ON s.uid = p.seller_id
+     LEFT JOIN seller_payout_accounts spa
+       ON spa.id = p.destination_account_id
+      AND (
+        (p.event_id IS NOT NULL AND spa.owner_type = 'event_creator' AND spa.event_creator_uid = p.event_creator_uid)
+        OR
+        (p.event_id IS NULL AND spa.seller_uid = p.seller_id)
+      )
+     WHERE p.id = $1 LIMIT 1`, [payoutId]);
   const row = result.rows[0];
   if (!row) return { row: undefined };
   const destinationUsable = Boolean(row.destination_type) && String(row.verification_status ?? '').toLowerCase() === 'verified' && Number(row.is_active ?? 0) === 1;
   if (destinationUsable) return { row };
+
+  if (row.event_id != null) {
+    // Event payouts must never fall back to the creator's current/default
+    // destination. Their historical destination identity is fixed on the payout.
+    return { row };
+  }
+
   const fallback = await query<Record<string, unknown>>(
     `SELECT id, destination_type, provider_ref_id, provider_name, account_name, verification_status, is_active, account_number_encrypted, mobile_encrypted
      FROM seller_payout_accounts WHERE seller_uid = $1 AND is_active = 1 AND verification_status = 'verified'
