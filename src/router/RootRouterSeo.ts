@@ -21,7 +21,7 @@ function upsertMeta(name: string, content: string, attribute: "name" | "property
   let el = document.head.querySelector(`meta[${attribute}="${name}"]`) as HTMLMetaElement | null;
   if (!el) {
     el = document.createElement("meta");
-    el.setAttribute(attribute, name);
+    el.setAttribute("name", name);
     document.head.appendChild(el);
   }
   el.setAttribute("content", content);
@@ -41,12 +41,9 @@ function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
   switch (pathname) {
     case "/":
     case "/home":
-      return {
-        title: HOMEPAGE_TITLE,
-        description: HOMEPAGE_DESCRIPTION,
-        canonicalPath: "/",
-        keywords: HOMEPAGE_KEYWORDS,
-      };
+      return { title: HOMEPAGE_TITLE, description: HOMEPAGE_DESCRIPTION, canonicalPath: "/", keywords: HOMEPAGE_KEYWORDS };
+    case "/install":
+      return { title: "Install BuyMesho", description: "Install BuyMesho on your phone for fast access to Malawi's secure e-commerce platform.", canonicalPath: "/install" };
     case "/signup":
       return { title: "Create a BuyMesho Account", description: "Join BuyMesho to buy, sell, and manage your marketplace activity.", canonicalPath: "/signup" };
     case "/about":
