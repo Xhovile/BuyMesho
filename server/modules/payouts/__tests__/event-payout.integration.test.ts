@@ -97,7 +97,7 @@ test('event payout candidate stores event identity, bound destination, and immut
     assert.equal(result.payout.eventId, '992001');
     assert.equal(result.payout.eventCreatorUid, 'event_payout_test_creator');
     assert.equal(result.payout.destinationAccountId, 'event-payout-test-destination');
-    assert.equal(result.payout.grossAmount ?? 10000, 10000);
+    assert.equal(result.payout.amount, 9520);
     assert.equal(result.payoutFormula.platformFeeAmount, 300);
     assert.equal(result.payoutFormula.payoutFeeAmount, 180);
     assert.equal(result.payoutFormula.netAmount, 9520);
