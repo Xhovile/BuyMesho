@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Download, ExternalLink } from "lucide-react";
 import logoImage from "../photos/LOGO.svg";
-import { isPwaInstalled, triggerPwaInstall } from "./components/PwaInstallPrompt";
+import { isPwaInstalled, requestNativePwaInstall } from "./components/PwaInstallPrompt";
 
 function isIosDevice() {
   if (typeof navigator === "undefined") return false;
@@ -9,23 +9,14 @@ function isIosDevice() {
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
-function isAndroidDevice() {
-  if (typeof navigator === "undefined") return false;
-  return /android/i.test(navigator.userAgent);
-}
-
 export default function InstallPage() {
   const [installed, setInstalled] = useState(false);
-  const [installStarted, setInstallStarted] = useState(false);
+  const [installUnavailable, setInstallUnavailable] = useState(false);
   const ios = isIosDevice();
-  const android = isAndroidDevice();
 
   useEffect(() => {
     const sync = () => setInstalled(isPwaInstalled());
-    const handleInstalled = () => {
-      setInstalled(true);
-      setInstallStarted(true);
-    };
+    const handleInstalled = () => setInstalled(true);
 
     sync();
     window.addEventListener("appinstalled", handleInstalled);
@@ -39,9 +30,23 @@ export default function InstallPage() {
     };
   }, []);
 
-  const handleInstall = () => {
-    setInstallStarted(true);
-    triggerPwaInstall();
+  const handleInstall = async () => {
+    setInstallUnavailable(false);
+
+    if (isPwaInstalled()) {
+      setInstalled(true);
+      return;
+    }
+
+    const outcome = await requestNativePwaInstall();
+    if (outcome === "accepted") {
+      setInstalled(true);
+      return;
+    }
+
+    if (outcome === "dismissed") return;
+
+    setInstallUnavailable(true);
   };
 
   return (
@@ -84,9 +89,9 @@ export default function InstallPage() {
               Install BuyMesho
             </button>
 
-            {installStarted && (
-              <p className="mt-3 text-xs font-semibold text-white/65" role="status">
-                Follow the browser&apos;s installation prompt to finish.
+            {installUnavailable && (
+              <p className="mt-3 text-xs font-semibold leading-5 text-white/60" role="status">
+                Open the browser menu and choose Install BuyMesho or Add to Home screen.
               </p>
             )}
           </div>
