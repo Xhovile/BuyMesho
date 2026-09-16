@@ -57,11 +57,6 @@ export async function requestNativePwaInstall(): Promise<"accepted" | "dismissed
   }
 }
 
-/**
- * Detect whether BuyMesho is already running as an installed web app.
- * Covers supported standalone-style display modes and iOS Safari's
- * navigator.standalone flag.
- */
 export function isPwaInstalled() {
   if (typeof window === "undefined" || typeof navigator === "undefined") return false;
 
@@ -86,10 +81,6 @@ export function isPwaInstalled() {
   return displayModeInstalled || navigatorStandalone;
 }
 
-/**
- * Safari on iPadOS 13+ can expose a desktop-style user agent, so user-agent
- * matching alone is not sufficient for iPad detection.
- */
 function isIosDevice() {
   if (typeof navigator === "undefined") return false;
 
@@ -122,6 +113,7 @@ export default function PwaInstallPrompt() {
     }
 
     const ios = isIosDevice();
+    const isInstallPage = window.location.pathname === "/install";
     const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || 0);
     const recentlyDismissed =
       Number.isFinite(dismissedAt) &&
@@ -148,7 +140,7 @@ export default function PwaInstallPrompt() {
       deferredPromptRef.current = capturedBeforeInstallPrompt;
       setCanNativeInstall(true);
 
-      if (!recentlyDismissed && !isPwaInstalled()) {
+      if (!isInstallPage && !recentlyDismissed && !isPwaInstalled()) {
         setShowBanner(true);
         setShowGuide(false);
       }
@@ -192,7 +184,7 @@ export default function PwaInstallPrompt() {
 
     syncInstallAvailability();
 
-    if (!recentlyDismissed && ios && !isPwaInstalled()) setShowBanner(true);
+    if (!isInstallPage && !recentlyDismissed && ios && !isPwaInstalled()) setShowBanner(true);
 
     return () => {
       window.removeEventListener("buymesho:pwa-install-available", syncInstallAvailability);
@@ -268,7 +260,6 @@ export default function PwaInstallPrompt() {
             <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">Add BuyMesho to your home screen for faster access.</p>
           </div>
         </div>
-
         <button
           id="pwa-install-dismiss-button"
           onClick={handleDismiss}
@@ -288,7 +279,6 @@ export default function PwaInstallPrompt() {
               <button type="button" onClick={() => window.open(window.location.href, "_blank", "noopener,noreferrer")} className="w-full py-2 px-3 bg-amber-400 text-slate-950 hover:bg-amber-300 font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors"><ExternalLink className="w-3.5 h-3.5" />Open BuyMesho</button>
             </div>
           )}
-
           {isIos ? (
             <div className="space-y-1.5">
               <p className="font-medium text-amber-400 flex items-center gap-1"><Share className="w-3.5 h-3.5" /> On iPhone / iPad (Safari)</p>
@@ -309,7 +299,6 @@ export default function PwaInstallPrompt() {
               {!canNativeInstall && <p className="text-[11px] text-slate-400 pt-1">Your browser has not exposed the one-tap install prompt yet, so the browser menu is the fallback.</p>}
             </div>
           )}
-
           <div className="flex justify-end pt-1"><button type="button" onClick={handleDismiss} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition-colors">Close</button></div>
         </div>
       ) : (
