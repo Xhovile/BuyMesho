@@ -94,6 +94,8 @@ test('event payout candidate stores event identity, bound destination, and immut
     }, client);
 
     assert.equal(result.created, true);
+    assert.equal(result.payout.ownerType, 'event_creator');
+    assert.equal(result.payout.ownerUid, 'event_payout_test_creator');
     assert.equal(result.payout.eventId, '992001');
     assert.equal(result.payout.eventCreatorUid, 'event_payout_test_creator');
     assert.equal(result.payout.destinationAccountId, 'event-payout-test-destination');
