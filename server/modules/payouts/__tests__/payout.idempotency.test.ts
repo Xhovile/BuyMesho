@@ -78,6 +78,8 @@ test('payout cannot be processed twice while a provider attempt is active', asyn
 
     const current = repository.findById(payout.id);
     assert.equal(current?.status, 'processing');
+    assert.equal(current?.ownerType, 'seller');
+    assert.equal(current?.ownerUid, 'seller_phase3_idempotency_1');
     assert.equal(current?.providerChargeId, firstAttempt.providerChargeId);
   } finally {
     clearState();
