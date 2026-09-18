@@ -8,7 +8,7 @@ export function ensurePayoutOwnershipRefactorMigration() {
     CREATE OR REPLACE FUNCTION buymesho_normalize_payout_owner()
     RETURNS trigger
     LANGUAGE plpgsql
-    AS $
+    AS $payout_owner$
     BEGIN
       IF NEW.event_id IS NOT NULL OR NEW.event_creator_uid IS NOT NULL OR NEW.owner_type = 'event_creator' THEN
         NEW.owner_type := 'event_creator';
@@ -19,7 +19,7 @@ export function ensurePayoutOwnershipRefactorMigration() {
       END IF;
       RETURN NEW;
     END;
-    $;
+    $payout_owner$;
 
     DROP TRIGGER IF EXISTS trg_buymesho_normalize_payout_owner ON payouts;
     CREATE TRIGGER trg_buymesho_normalize_payout_owner
