@@ -2,8 +2,31 @@ import { postgresDb } from "../../db.js";
 
 export function ensurePayoutOwnershipRefactorMigration() {
   postgresDb.exec(`
-    ALTER TABLE payouts ADD COLUMN IF NOT EXISTS owner_type TEXT;
+    ALTER TABLE payouts ADD COLUMN IF NOT EXISTS owner_type TEXT DEFAULT 'seller';
     ALTER TABLE payouts ADD COLUMN IF NOT EXISTS owner_uid TEXT;
+
+    CREATE OR REPLACE FUNCTION buymesho_normalize_payout_owner()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    AS $
+    BEGIN
+      IF NEW.event_id IS NOT NULL OR NEW.event_creator_uid IS NOT NULL OR NEW.owner_type = 'event_creator' THEN
+        NEW.owner_type := 'event_creator';
+        NEW.owner_uid := COALESCE(NEW.owner_uid, NEW.event_creator_uid);
+      ELSE
+        NEW.owner_type := COALESCE(NEW.owner_type, 'seller');
+        NEW.owner_uid := COALESCE(NEW.owner_uid, NEW.seller_id);
+      END IF;
+      RETURN NEW;
+    END;
+    $;
+
+    DROP TRIGGER IF EXISTS trg_buymesho_normalize_payout_owner ON payouts;
+    CREATE TRIGGER trg_buymesho_normalize_payout_owner
+    BEFORE INSERT OR UPDATE OF owner_type, owner_uid, seller_id, event_id, event_creator_uid
+    ON payouts
+    FOR EACH ROW
+    EXECUTE FUNCTION buymesho_normalize_payout_owner();
 
     UPDATE payouts
     SET owner_type = 'event_creator',
