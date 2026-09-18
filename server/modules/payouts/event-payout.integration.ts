@@ -241,8 +241,8 @@ export async function createEventPayoutCandidateAsync(input: {
        seller_receives_amount, net_amount, formula_snapshot, currency, status, provider,
        provider_charge_id, requested_by, requested_at, raw_request, created_at, updated_at
      ) VALUES (
-       $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,
-       'pending_settlement','paychangu',NULL,$22,$23,$24,$23,$23
+       $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,
+       'pending_settlement','paychangu',NULL,$23,$24,$25,$24,$24
      )
      ON CONFLICT (id) DO NOTHING`,
     [
