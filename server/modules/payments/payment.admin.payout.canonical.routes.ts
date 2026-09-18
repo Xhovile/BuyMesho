@@ -63,6 +63,10 @@ function shapePayout(row: Record<string, unknown>, attempts: Array<Record<string
 
   return {
     id: text(row.id) ?? '',
+    ownerType: text(row.ownerType) ?? (text(row.eventId) ? 'event_creator' : 'seller'),
+    ownerUid: text(row.ownerUid) ?? (text(row.eventId) ? text(row.eventCreatorUid) : text(row.sellerId)),
+    eventId: text(row.eventId),
+    eventCreatorUid: text(row.eventCreatorUid),
     sellerId: text(row.sellerId) ?? '',
     sellerBusinessName: text(row.sellerBusinessName),
     sellerEmail: text(row.sellerEmail),
@@ -134,6 +138,10 @@ function shapePayout(row: Record<string, unknown>, attempts: Array<Record<string
     adjustments,
     diagnostics: {
       payoutId: text(row.id),
+      ownerType: text(row.ownerType) ?? (text(row.eventId) ? 'event_creator' : 'seller'),
+      ownerUid: text(row.ownerUid) ?? (text(row.eventId) ? text(row.eventCreatorUid) : text(row.sellerId)),
+      eventId: text(row.eventId),
+      eventCreatorUid: text(row.eventCreatorUid),
       sellerId: text(row.sellerId),
       orderId: text(row.orderId),
       escrowId: text(row.escrowId),
@@ -171,8 +179,14 @@ const baseSelect = `
   SELECT
     p.id,
     p.seller_id AS "sellerId",
+    p.owner_type AS "ownerType",
+    p.owner_uid AS "ownerUid",
+    p.event_id AS "eventId",
+    p.event_creator_uid AS "eventCreatorUid",
     s.business_name AS "sellerBusinessName",
     s.email AS "sellerEmail",
+    ec.display_name AS "eventCreatorName",
+    ec.email AS "eventCreatorEmail",
     p.order_id AS "orderId",
     p.escrow_id AS "escrowId",
     e.state AS "escrowState",
@@ -227,9 +241,16 @@ const baseSelect = `
       LIMIT 1
     ) AS "latestWebhookEventAt"
   FROM payouts p
-  LEFT JOIN sellers s ON s.uid = p.seller_id
+  LEFT JOIN sellers s
+    ON s.uid = CASE WHEN COALESCE(p.owner_type, 'seller') = 'seller' THEN p.seller_id END
+  LEFT JOIN event_creators ec
+    ON ec.uid = p.owner_uid
+   AND p.owner_type = 'event_creator'
   LEFT JOIN escrows e ON e.id = p.escrow_id
-  LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
+  LEFT JOIN seller_payout_accounts spa
+    ON spa.id = p.destination_account_id
+   AND spa.owner_type = COALESCE(p.owner_type, 'seller')
+   AND spa.owner_uid = COALESCE(p.owner_uid, p.seller_id)
 `;
 
 async function loadRelated(payoutId: string) {
