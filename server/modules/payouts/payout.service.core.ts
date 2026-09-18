@@ -24,38 +24,65 @@ function payoutDebug(stage: string, details?: Record<string, unknown>): void {
   console.error(`[payout-debug] ${stage}`, details ?? {});
 }
 
+async function loadPayoutRecipient(payout: PayoutRecord): Promise<{
+  email: string | null;
+  name: string;
+  orderItems: unknown;
+  maskedAccount: string | null;
+}> {
+  const ownerType = payout.ownerType ?? 'seller';
+  const ownerUid = payout.ownerUid ?? payout.sellerId;
+  const result = await query<{
+    email?: string | null;
+    recipient_name?: string | null;
+    order_items?: unknown;
+    masked_account?: string | null;
+  }>(
+    `SELECT
+       COALESCE(ec.email, s.email) AS email,
+       COALESCE(s.business_name, ec.display_name, ec.organization_name, ec.uid, s.uid) AS recipient_name,
+       o.items AS order_items,
+       spa.masked_account
+     FROM orders o
+     LEFT JOIN sellers s
+       ON s.uid = $1
+      AND $4 = 'seller'
+     LEFT JOIN event_creators ec
+       ON ec.uid = $1
+      AND $4 = 'event_creator'
+     LEFT JOIN seller_payout_accounts spa
+       ON spa.id = $3
+      AND spa.owner_type = $4
+      AND spa.owner_uid = $1
+     WHERE o.id = $2
+     LIMIT 1`,
+    [ownerUid, payout.orderId ?? null, payout.destinationAccountId ?? null, ownerType],
+  );
+
+  return {
+    email: result.rows[0]?.email?.trim() || null,
+    name: result.rows[0]?.recipient_name?.trim() || 'there',
+    orderItems: result.rows[0]?.order_items,
+    maskedAccount: result.rows[0]?.masked_account?.trim() || null,
+  };
+}
+
 async function notifySellerOfPaidPayout(payout: PayoutRecord | undefined): Promise<void> {
   if (!payout || payout.status !== 'paid') return;
 
   try {
-    const result = await query<{
-      email?: string | null;
-      business_name?: string | null;
-      order_items?: unknown;
-      masked_account?: string | null;
-    }>(
-      `SELECT s.email, s.business_name, o.items AS order_items, spa.masked_account
-         FROM sellers s
-         LEFT JOIN orders o ON o.id = $2
-         LEFT JOIN seller_payout_accounts spa
-           ON spa.id = $3
-          AND spa.seller_uid = s.uid
-        WHERE s.uid = $1
-        LIMIT 1`,
-      [payout.sellerId, payout.orderId ?? null, payout.destinationAccountId ?? null],
-    );
-    const email = result.rows[0]?.email?.trim();
-    if (!email) return;
+    const recipient = await loadPayoutRecipient(payout);
+    if (!recipient.email) return;
 
     await notifyPayoutCompleted({
-      email,
-      sellerName: result.rows[0]?.business_name?.trim() || 'there',
+      email: recipient.email,
+      sellerName: recipient.name,
       amount: Number(payout.amount ?? 0),
       currency: payout.currency || 'MWK',
       payoutId: payout.id,
       orderReference: payout.orderId,
-      orderTitle: buildPayoutOrderTitle(result.rows[0]?.order_items),
-      destination: result.rows[0]?.masked_account?.trim() || null,
+      orderTitle: buildPayoutOrderTitle(recipient.orderItems),
+      destination: recipient.maskedAccount,
       completedAt: payout.updatedAt || new Date().toISOString(),
       status: payout.status,
     });
@@ -72,53 +99,35 @@ async function notifySellerOfFinalPayoutFailure(
   if (!payout || payout.status !== 'failed' || Number(attemptNo ?? 0) < PAYOUT_POLICY.maxRetryCount) return;
 
   try {
-    const result = await query<{
-      email?: string | null;
-      business_name?: string | null;
-      order_items?: unknown;
-      masked_account?: string | null;
-    }>(
-      `SELECT s.email, s.business_name, o.items AS order_items, spa.masked_account
-         FROM sellers s
-         LEFT JOIN orders o ON o.id = $2
-         LEFT JOIN seller_payout_accounts spa
-           ON spa.id = $3
-          AND spa.seller_uid = s.uid
-        WHERE s.uid = $1
-        LIMIT 1`,
-      [payout.sellerId, payout.orderId ?? null, payout.destinationAccountId ?? null],
-    );
-    const email = result.rows[0]?.email?.trim();
-    if (!email) return;
+    const recipient = await loadPayoutRecipient(payout);
+    if (!recipient.email) return;
 
-    const sellerName = result.rows[0]?.business_name?.trim() || 'there';
-    const orderTitle = buildPayoutOrderTitle(result.rows[0]?.order_items);
-    const destination = result.rows[0]?.masked_account?.trim() || null;
+    const orderTitle = buildPayoutOrderTitle(recipient.orderItems);
     const attempt = Number(attemptNo);
     const failedAt = payout.updatedAt || new Date().toISOString();
 
     await notifyPayoutFinalFailed({
-      email,
-      sellerName,
+      email: recipient.email,
+      sellerName: recipient.name,
       amount: Number(payout.amount ?? 0),
       currency: payout.currency || 'MWK',
       payoutId: payout.id,
       orderReference: payout.orderId,
       orderTitle,
-      destination,
+      destination: recipient.maskedAccount,
       attemptNo: attempt,
       failureReason: failureReason?.trim() || null,
       failedAt,
     });
 
     await notifyAdminsPayoutFinalFailed({
-      sellerName,
+      sellerName: recipient.name,
       amount: Number(payout.amount ?? 0),
       currency: payout.currency || 'MWK',
       payoutId: payout.id,
       orderReference: payout.orderId,
       orderTitle,
-      destination,
+      destination: recipient.maskedAccount,
       attemptNo: attempt,
       failureReason: failureReason?.trim() || null,
       failedAt,
