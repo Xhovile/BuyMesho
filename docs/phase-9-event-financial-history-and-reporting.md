@@ -9,7 +9,7 @@ The report reads:
 - successful event ticket sales from recorded order/payment and event-ticket records;
 - refunds from canonical `refund_transactions` records, with escrow refund entries as a compatibility fallback;
 - payout amounts and fee components from the payout row and its immutable `formula_snapshot`;
-- exact historical payout destinations from `payouts.destination_account_id`;
+- exact historical payout destinations from `payouts.destination_account_id`; payout destinations referenced by payout history cannot be deleted;
 - provider attempts from `payout_attempts`.
 
 The current payout policy is not applied when reading historical payout records.
@@ -122,7 +122,8 @@ The overview's previous estimated-net wording was removed so dashboard totals us
 - refund amount and ticket refund count;
 - historical payout fee snapshot values;
 - paid payout totals;
-- destination identity;
+- dashboard refund reconciliation;
+- destination identity and deletion protection;
 - provider attempt identity;
 - event/order/escrow payout trace;
 - ledger entry creation.
