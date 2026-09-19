@@ -7,8 +7,8 @@ import { withTransaction } from '../../../postgres.js';
 const db = getPaymentDb();
 
 function cleanup() {
-  db.prepare("DELETE FROM payout_attempts WHERE payout_id LIKE 'event-payout-test-%'").run();
-  db.prepare("DELETE FROM payouts WHERE id LIKE 'event-payout-test-%'").run();
+  db.prepare("DELETE FROM payout_attempts WHERE payout_id IN (SELECT id FROM payouts WHERE order_id = 'event-payout-test-order' OR event_id = 992001)").run();
+  db.prepare("DELETE FROM payouts WHERE order_id = 'event-payout-test-order' OR event_id = 992001").run();
   db.prepare("DELETE FROM orders WHERE id = 'event-payout-test-order'").run();
   db.prepare("DELETE FROM events WHERE id = 992001").run();
   db.prepare("DELETE FROM seller_payout_accounts WHERE id = 'event-payout-test-destination'").run();
