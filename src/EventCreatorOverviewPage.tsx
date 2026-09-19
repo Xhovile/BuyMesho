@@ -359,7 +359,7 @@ function TransactionHistorySection({ events, onViewFinancial }: { events: Dashbo
                           </div>
                           <div className="flex justify-between gap-3">
                             <span>Refunds</span>
-                            <span>-{formatMoney(feeAmount, event.revenue_currency)}</span>
+                            <span>-{formatMoney(refundAmount, event.revenue_currency)}</span>
                           </div>
                           <div className="flex justify-between gap-3 border-t border-zinc-200 pt-1 font-bold text-zinc-700">
                             <span>Net</span>
@@ -548,7 +548,7 @@ export default function EventCreatorOverviewPage() {
         <div className="grid gap-4 md:grid-cols-5 print:grid-cols-5">
           <MetricCard label="Total tickets sold" value={String(summary.totalTicketsSold)} helper="Across all events" icon={Ticket} />
           <MetricCard label="Gross sales" value={formatMoney(summary.grossRevenueAmount, summary.revenueCurrency)} helper="Before platform fee" icon={Wallet} />
-          <MetricCard label="Estimated net sales" value={formatMoney(summary.netRevenueAmount, summary.revenueCurrency)} helper="After platform fee" icon={Wallet} />
+          <MetricCard label="Net sales" value={formatMoney(summary.netRevenueAmount, summary.revenueCurrency)} helper="Gross sales less recorded refunds" icon={Wallet} />
           <MetricCard label="Active events" value={String(summary.activeEvents)} helper="Currently published" icon={CalendarDays} />
           <MetricCard label="Pending issues" value={String(summary.pendingIssues)} helper="Needs attention" icon={AlertCircle} />
         </div>
