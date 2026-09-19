@@ -213,11 +213,15 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
             provider_name: eventContext.providerName,
           };
         } else {
-          destination = await resolveVerifiedPayoutDestination(access.order.sellerId, client) as VerifiedPayoutDestination | undefined;
-          releaseDebug('destinationLookup:end', { found: Boolean(destination), destinationId: destination?.id });
-          if (!destination) {
+          const verifiedDestination = await resolveVerifiedPayoutDestination(access.order.sellerId, client);
+          releaseDebug('destinationLookup:end', {
+            found: Boolean(verifiedDestination),
+            destinationId: verifiedDestination?.id,
+          });
+          if (!verifiedDestination) {
             throw new Error('No verified active payout destination found for seller');
           }
+          destination = verifiedDestination;
 
           if (requestedDestinationAccountId && requestedDestinationAccountId !== destination.id) {
             throw new Error('Invalid payout destination for this seller');
