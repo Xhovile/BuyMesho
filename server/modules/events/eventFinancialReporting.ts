@@ -324,7 +324,7 @@ function loadAttempts(db: PgCompatDatabase, payoutId: string): EventFinancialPay
   try {
     const rows = db.prepare(
       `SELECT attempt_no, provider, provider_charge_id, status, failure_reason,
-              request_payload, created_at
+              request_payload, response_payload, created_at
        FROM payout_attempts
        WHERE payout_id = ?
        ORDER BY attempt_no ASC, created_at ASC`,
@@ -332,14 +332,15 @@ function loadAttempts(db: PgCompatDatabase, payoutId: string): EventFinancialPay
 
     return rows.map((row) => {
       const request = parseJsonObject(row.request_payload);
+      const response = parseJsonObject(row.response_payload);
       return {
         attemptNo: numberValue(row.attempt_no),
         provider: text(row.provider),
         providerChargeId: text(row.provider_charge_id),
         status: text(row.status) || "unknown",
         failureReason: text(row.failure_reason) || null,
-        providerReference: text(request?.providerReference) || null,
-        providerTransactionId: text(request?.providerTransactionId) || null,
+        providerReference: text(request?.providerReference ?? response?.providerReference ?? response?.provider_reference) || null,
+        providerTransactionId: text(request?.providerTransactionId ?? response?.providerTransactionId ?? response?.provider_transaction_id) || null,
         createdAt: text(row.created_at) || null,
       };
     });
@@ -515,13 +516,12 @@ export function getEventFinancialReport(db: PgCompatDatabase, eventId: string): 
     const amounts = payoutAmounts(row);
     const status = text(row.status).toLowerCase() || "unknown";
 
-    buyMeshoCommission += amounts.platformFeeAmount;
-    processingFees += amounts.processingFeeAmount;
-    reserves += amounts.reserveAmount;
-    payoutFees += amounts.payoutFeeAmount;
-    manualAdjustments += amounts.manualAdjustmentAmount;
-
     if (status !== "cancelled") {
+      buyMeshoCommission += amounts.platformFeeAmount;
+      processingFees += amounts.processingFeeAmount;
+      reserves += amounts.reserveAmount;
+      payoutFees += amounts.payoutFeeAmount;
+      manualAdjustments += amounts.manualAdjustmentAmount;
       grossAmountRecorded += amounts.grossAmount;
       if (status === "paid") netPaidAmount += amounts.netAmount;
       if (OUTSTANDING_PAYOUT_STATUSES.has(status)) netPayableAmount += amounts.netAmount;
