@@ -7,6 +7,7 @@ const db = getPaymentDb();
 
 function cleanup() {
   db.prepare("DELETE FROM disputes WHERE order_id IN ('event_tx_order_a','event_tx_order_b','event_tx_order_other')").run();
+  db.prepare("DELETE FROM refund_transactions WHERE order_id IN ('event_tx_order_a','event_tx_order_b','event_tx_order_other')").run();
   db.prepare("DELETE FROM payments WHERE order_id IN ('event_tx_order_a','event_tx_order_b','event_tx_order_other')").run();
   db.prepare("DELETE FROM event_tickets WHERE id IN ('event_tx_ticket_a','event_tx_ticket_b','event_tx_ticket_other')").run();
   db.prepare("DELETE FROM orders WHERE id IN ('event_tx_order_a','event_tx_order_b','event_tx_order_other')").run();
@@ -60,6 +61,13 @@ function seed() {
     INSERT INTO disputes (id,order_id,escrow_id,opened_by,reason,status,created_at,updated_at,ticket_id)
     VALUES ('event_tx_dispute_a','event_tx_order_a',NULL,'buyer-a','ticket issue','open',?,?,'event_tx_ticket_a')
   `).run(now, now);
+
+  db.prepare(`
+    INSERT INTO refund_transactions
+      (id,refund_request_id,order_id,buyer_id,seller_id,amount,currency,status,transaction_id,executed_at,created_at,updated_at)
+    VALUES ('event_tx_refund_a',NULL,'event_tx_order_a','buyer-a','event_tx_creator',
+            250,'MWK','refunded','REFUND-EVENT-A',?,?,?)
+  `).run(now, now);
 }
 
 test('canonical event transaction service isolates event transactions and summaries', () => {
@@ -81,6 +89,8 @@ test('canonical event transaction service isolates event transactions and summar
   assert.equal(summary.ticketsDisputed, 1);
   assert.equal(summary.disputedPaymentCount, 1);
   assert.equal(summary.grossRevenueAmount, 3000);
+  assert.equal(summary.refundedAmount, 250);
+  assert.equal(summary.netRevenueAmount, 2750);
   assert.equal(summary.latestPaymentReference, 'REF-EVENT-B');
 
   cleanup();
