@@ -75,6 +75,7 @@ type EventFinancialReport = {
     ticketsRefunded: number;
     grossTicketRevenue: number;
     refundedAmount: number;
+    unallocatedRefundedAmount: number;
     netSales: number;
   };
   fees: {
@@ -219,6 +220,12 @@ export default function EventFinancialReportPanel({
           </button>
         ) : null}
       </div>
+
+      {report.sales.unallocatedRefundedAmount > 0 ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-900">
+          MK {report.sales.unallocatedRefundedAmount.toLocaleString()} of recorded refunds could not be attributed to this event because the source refund did not identify an event ticket.
+        </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <FinancialMetric label="Gross sales" value={formatMoney(report.sales.grossTicketRevenue, currency)} helper={`${report.sales.ticketsSold} tickets sold`} />
