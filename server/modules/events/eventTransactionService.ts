@@ -297,9 +297,9 @@ export function getEventTransactionSummary(
     }>;
 
   empty.ticketsIssued = tickets.length;
-  empty.ticketsSold = tickets.filter((ticket) => !["Cancelled", "Refunded"].includes(text(ticket.status))).length;
-  empty.ticketsCancelled = tickets.filter((ticket) => text(ticket.status) === "Cancelled").length;
-  empty.ticketsRefunded = tickets.filter((ticket) => text(ticket.status) === "Refunded").length;
+  empty.ticketsSold = tickets.filter((ticket) => text(ticket.status).toLowerCase() !== "cancelled").length;
+  empty.ticketsCancelled = tickets.filter((ticket) => text(ticket.status).toLowerCase() === "cancelled").length;
+  empty.ticketsRefunded = tickets.filter((ticket) => text(ticket.status).toLowerCase() === "refunded").length;
 
   const orderIds = [...new Set(tickets.map((ticket) => text(ticket.order_id)).filter(Boolean))];
   if (orderIds.length === 0) return empty;
