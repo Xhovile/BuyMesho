@@ -33,42 +33,19 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Configure Git access to private Platform dependency
-        env:
-          PLATFORM_REPO_TOKEN: ${{ secrets.PLATFORM_REPO_TOKEN }}
+      - name: Configure Git access to public Platform dependency
         run: |
-          if [ -z "$PLATFORM_REPO_TOKEN" ]; then
-            echo "PLATFORM_REPO_TOKEN GitHub repository secret is not configured or is unavailable to this workflow."
-            exit 1
-          fi
-
-          echo "Verifying token access to Xhovile/Platform via GitHub API..."
-          http_code=$(curl -sS -o /tmp/platform-response.json -w "%{http_code}" \
-            -H "Authorization: Bearer $PLATFORM_REPO_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/Xhovile/Platform)
-          if [ "$http_code" != "200" ]; then
-            echo "PLATFORM_REPO_TOKEN cannot access Xhovile/Platform (HTTP $http_code)."
-            cat /tmp/platform-response.json
-            exit 1
-          fi
-          echo "Private Platform repository access verified via API."
-
-          printf 'machine github.com\nlogin x-access-token\npassword %s\n' "$PLATFORM_REPO_TOKEN" > "$HOME/.netrc"
-          chmod 600 "$HOME/.netrc"
-
           git config --global --unset-all 'url.https://github.com/.insteadOf' || true
           git config --global --add 'url.https://github.com/.insteadOf' 'ssh://git@github.com/'
           git config --global --add 'url.https://github.com/.insteadOf' 'git+ssh://git@github.com/'
           git config --global --add 'url.https://github.com/.insteadOf' 'git@github.com:'
-          echo "Configured Git SSH URLs to use HTTPS with the repository credential."
+          echo "Configured Git SSH URLs to use HTTPS for GitHub dependencies."
 
       - name: Verify Git access to Platform
         run: |
           git ls-remote https://github.com/Xhovile/Platform.git HEAD >/tmp/platform-head.txt
           test -s /tmp/platform-head.txt
-          echo "Git access to Xhovile/Platform verified."
-
+          echo "Git access to public Xhovile/Platform verified."
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
