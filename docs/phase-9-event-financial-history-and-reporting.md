@@ -79,6 +79,21 @@ does not recalculate or redirect an existing payout record.
 
 The report may show the event's current receiving destination separately, but every historical payout retains the exact destination account ID that was recorded when that payout was created.
 
+## Payout totals and ledger semantics
+
+`payouts.netPaidAmount` is the sum of payout net amounts with status `paid`.
+
+`payouts.netPayableAmount` is the sum of currently outstanding payout obligations, including retryable `failed` payouts.
+
+`payouts.netPayoutAmount` is the total recorded net payout amount across paid and outstanding obligations. It replaces the ambiguous `netAmountOwed` field.
+
+Ledger entries carry both:
+
+- `direction`: actual inflow/outflow direction for cash movement, or `neutral` when the row represents an obligation rather than cash movement;
+- `movementType`: `cash`, `obligation`, or `none`.
+
+A paid payout is a cash outflow. Pending, processing, queued, held, eligible, ready-for-payout, and failed payouts are represented as obligations rather than completed cash outflows. Cancelled payouts are retained in history but do not create a cash movement entry.
+
 ## Creator-facing UI
 
 The event creator overview now provides a **Financials** action for each event.
