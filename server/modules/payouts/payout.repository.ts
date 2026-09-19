@@ -111,7 +111,7 @@ export class PayoutRepository {
           input.reserveAmount, input.reserveCapAmount, input.manualAdjustmentAmount,
           input.payoutFeeAmount ?? 0, input.sellerReceivesAmount ?? input.netAmount, input.netAmount,
           JSON.stringify(input.formulaSnapshot), input.currency, input.requestedBy, now,
-          input.snapshot ? JSON.stringify(input.snapshot) : null, now,
+          input.snapshot ? JSON.stringify(input.snapshot) : null,
         ],
       );
       const created = await this.findByEscrowIdAsync(input.escrowId, client);
