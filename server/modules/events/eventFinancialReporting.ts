@@ -201,9 +201,9 @@ function loadRefundsForOrder(db: PgCompatDatabase, orderId: string): Array<{ id:
               rr.item_id
        FROM refund_transactions rt
        LEFT JOIN refund_requests rr ON rr.id = rt.refund_request_id
-       WHERE order_id = ?
-         AND lower(status) IN ('refunded', 'completed', 'successful')
-       ORDER BY created_at ASC, id ASC`,
+       WHERE rt.order_id = ?
+         AND lower(rt.status) IN ('refunded', 'completed', 'successful')
+       ORDER BY rt.created_at ASC, rt.id ASC`,
     ).all(orderId) as Row[];
 
     return rows.map((row) => ({
@@ -212,6 +212,7 @@ function loadRefundsForOrder(db: PgCompatDatabase, orderId: string): Array<{ id:
       currency: text(row.currency) || "MWK",
       occurredAt: text(row.executed_at ?? row.created_at) || null,
       reference: text(row.transaction_id) || null,
+      itemId: text(row.item_id) || null,
     }));
   } catch {
     return [];
