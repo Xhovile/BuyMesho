@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { afterEach } from "node:test";
 import { getPaymentDb } from "../../../postgresCompat.js";
 import { getEventFinancialReport } from "../eventFinancialReporting.js";
 import { PAYOUT_POLICY } from "../../payouts/payout.policy.js";
@@ -18,6 +18,8 @@ function cleanup() {
   db.prepare("DELETE FROM seller_payout_accounts WHERE id IN ('event_financial_destination_1','event_financial_destination_2')").run();
   db.prepare("DELETE FROM event_creators WHERE uid = 'event_financial_creator'").run();
 }
+
+afterEach(cleanup);
 
 test("event financial reporting uses recorded payout snapshots and preserves traceability", () => {
   cleanup();
