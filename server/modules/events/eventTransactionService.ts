@@ -241,6 +241,8 @@ export function getEventTransactionSummary(
 
   const financialReport = getEventFinancialReport(db, normalizedEventId);
   if (financialReport) {
+    empty.ticketsSold = financialReport.sales.ticketsSold;
+    empty.ticketsRefunded = financialReport.sales.ticketsRefunded;
     empty.grossRevenueAmount = financialReport.sales.grossTicketRevenue;
     empty.refundedAmount = financialReport.sales.refundedAmount;
     empty.netRevenueAmount = financialReport.sales.netSales;
