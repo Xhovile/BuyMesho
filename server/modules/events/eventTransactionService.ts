@@ -380,7 +380,8 @@ export function getEventTransactionSummary(
     }
   }
 
-  if (refundSummary) empty.refundedAmount = refundSummary.refundedAmount;
+  const effectiveRefundSummary = refundSummary ?? loadEventRefundSummaries(db, [normalizedEventId]).get(normalizedEventId);
+  if (effectiveRefundSummary) empty.refundedAmount = effectiveRefundSummary.refundedAmount;
   empty.netRevenueAmount = Math.max(0, empty.grossRevenueAmount - empty.refundedAmount);
 
   empty.lastTransactionAt = latestTimestamp;
