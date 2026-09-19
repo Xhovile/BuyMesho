@@ -56,7 +56,8 @@ type EventFinancialPayout = {
 type EventFinancialLedgerEntry = {
   id: string;
   kind: "sale" | "refund" | "payout";
-  direction: "inflow" | "outflow";
+  direction: "inflow" | "outflow" | "neutral";
+  movementType: "cash" | "obligation" | "none";
   amount: number;
   currency: string;
   status: string;
@@ -90,7 +91,7 @@ type EventFinancialReport = {
     grossAmountRecorded: number;
     netPaidAmount: number;
     netPayableAmount: number;
-    netAmountOwed: number;
+    netPayoutAmount: number;
     byStatus: Record<string, { count: number; amount: number }>;
   };
   currentDestination: EventFinancialDestination | null;
@@ -260,10 +261,10 @@ export default function EventFinancialReportPanel({
           </div>
           <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-950 px-4 py-4 text-white">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/60">Net paid / payable</span>
-              <span className="text-xl font-black">{formatMoney(report.payouts.netAmountOwed, currency)}</span>
+              <span className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/60">Total net payout</span>
+              <span className="text-xl font-black">{formatMoney(report.payouts.netPayoutAmount, currency)}</span>
             </div>
-            <p className="mt-1 text-xs font-medium text-white/60">Based only on recorded payout rows; current fee policy is not re-applied.</p>
+            <p className="mt-1 text-xs font-medium text-white/60">Paid plus currently outstanding recorded payouts; current fee policy is not re-applied.</p>
           </div>
         </section>
 
@@ -375,10 +376,12 @@ export default function EventFinancialReportPanel({
                   <tr key={entry.id}>
                     <td className="px-3 py-3 text-zinc-500">{formatDateTime(entry.occurredAt)}</td>
                     <td className="px-3 py-3">
-                      <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em]">{entry.kind}</span>
+                      <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em]">
+                        {entry.kind}{entry.movementType !== "cash" ? ` • ${entry.movementType}` : ""}
+                      </span>
                     </td>
                     <td className="px-3 py-3 font-black text-zinc-950">
-                      {entry.direction === "outflow" ? "-" : "+"}{formatMoney(entry.amount, entry.currency)}
+                      {entry.direction === "outflow" ? "-" : entry.direction === "inflow" ? "+" : ""}{formatMoney(entry.amount, entry.currency)}
                     </td>
                     <td className="px-3 py-3 text-xs text-zinc-500">{entry.orderId || entry.payoutId || "—"}</td>
                     <td className="px-3 py-3 text-xs text-zinc-500">{entry.reference || "—"}</td>
