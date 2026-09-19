@@ -166,6 +166,7 @@ function loadEventRefundSummaries(
   }
 
   const refundRows: Array<Record<string, unknown>> = [];
+  const canonicalRefundOrderIds = new Set<string>();
   try {
     refundRows.push(
       ...(db.prepare(
@@ -195,21 +196,25 @@ function loadEventRefundSummaries(
   };
 
   for (const row of refundRows) {
+    const orderId = text(row.order_id);
+    if (orderId) canonicalRefundOrderIds.add(orderId);
     addRefund(
       text(row.id),
-      text(row.order_id),
+      orderId,
       numberValue(row.amount),
       text(row.item_id),
     );
   }
 
-  if (refundRows.length < orderIds.length) {
+  const escrowFallbackOrderIds = orderIds.filter((orderId) => !canonicalRefundOrderIds.has(orderId));
+  if (escrowFallbackOrderIds.length > 0) {
     try {
+      const escrowPlaceholders = escrowFallbackOrderIds.map(() => "?").join(",");
       const escrowRows = db.prepare(
         `SELECT id, order_id, balance_currency, entries
          FROM escrows
-         WHERE order_id IN (${orderPlaceholders})`,
-      ).all(...orderIds) as Array<Record<string, unknown>>;
+         WHERE order_id IN (${escrowPlaceholders})`,
+      ).all(...escrowFallbackOrderIds) as Array<Record<string, unknown>>;
 
       for (const escrow of escrowRows) {
         const orderId = text(escrow.order_id);
