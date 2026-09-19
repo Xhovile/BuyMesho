@@ -1,5 +1,5 @@
 import type { PgCompatDatabase } from "../../db.js";
-import { calculatePayoutFormula } from "../payouts/payout.policy.js";
+import { getEventFinancialReport } from "./eventFinancialReporting.js";
 import {
   findEventTicketIdentity,
   getEventTicketTransaction,
@@ -204,7 +204,6 @@ export function getEventTransactionSummary(
         const gross = calculateItemRevenue(item, numberValue(event.ticket_price));
         const currency = text(paymentRow.payment_currency || orderRow.total_currency || orderRow.currency || "MWK") || "MWK";
         empty.grossRevenueAmount += gross;
-        empty.netRevenueAmount += calculatePayoutFormula({ grossAmount: gross, currency }).netAmount;
         empty.revenueCurrency = currency;
       }
     }
@@ -238,6 +237,14 @@ export function getEventTransactionSummary(
       latestTimestamp = timestamp;
       latestReference = transaction.payment?.reference || latestReference;
     }
+  }
+
+  const financialReport = getEventFinancialReport(db, normalizedEventId);
+  if (financialReport) {
+    empty.grossRevenueAmount = financialReport.sales.grossTicketRevenue;
+    empty.refundedAmount = financialReport.sales.refundedAmount;
+    empty.netRevenueAmount = financialReport.sales.netSales;
+    empty.revenueCurrency = financialReport.event.currency;
   }
 
   empty.lastTransactionAt = latestTimestamp;
