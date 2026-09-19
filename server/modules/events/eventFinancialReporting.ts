@@ -120,6 +120,17 @@ function text(value: unknown): string {
   return String(value ?? "").trim();
 }
 
+function isMissingSchemaError(error: unknown): boolean {
+  const code =
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof (error as { code?: unknown }).code === "string"
+      ? (error as { code: string }).code
+      : "";
+  return code === "42P01" || code === "42703" || code === "42704";
+}
+
 function numberValue(value: unknown): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -215,8 +226,9 @@ function loadRefundsForOrder(db: PgCompatDatabase, orderId: string): Array<{ id:
       reference: text(row.transaction_id) || null,
       itemId: text(row.item_id) || null,
     }));
-  } catch {
-    return [];
+  } catch (error) {
+    if (isMissingSchemaError(error)) return [];
+    throw error;
   }
 }
 
@@ -240,8 +252,9 @@ function loadEscrowRefundsForOrder(db: PgCompatDatabase, orderId: string): Array
         reference: text(entry.reference) || null,
         itemId: text(entry.itemId ?? entry.item_id) || null,
       }));
-  } catch {
-    return [];
+  } catch (error) {
+    if (isMissingSchemaError(error)) return [];
+    throw error;
   }
 }
 
@@ -250,58 +263,50 @@ function destinationFor(db: PgCompatDatabase, row: Row): EventFinancialDestinati
   const ownerUid = text(row.event_creator_uid);
   if (!id || !ownerUid) return null;
 
-  try {
-    const destination = db.prepare(
-      `SELECT id, destination_type, provider_name, masked_account, verification_status, is_active
-       FROM seller_payout_accounts
-       WHERE id = ?
-         AND owner_type = 'event_creator'
-         AND owner_uid = ?
-       LIMIT 1`,
-    ).get(id, ownerUid) as Row | undefined;
+  const destination = db.prepare(
+    `SELECT id, destination_type, provider_name, masked_account, verification_status, is_active
+     FROM seller_payout_accounts
+     WHERE id = ?
+       AND owner_type = 'event_creator'
+       AND owner_uid = ?
+     LIMIT 1`,
+  ).get(id, ownerUid) as Row | undefined;
 
-    if (!destination) return null;
+  if (!destination) return null;
 
-    return {
-      id: text(destination.id),
-      destinationType: text(destination.destination_type) || null,
-      providerName: text(destination.provider_name) || null,
-      maskedAccount: text(destination.masked_account) || null,
-      verificationStatus: text(destination.verification_status) || null,
-      isActive: Number(destination.is_active ?? 0) === 1,
-    };
-  } catch {
-    return null;
-  }
+  return {
+    id: text(destination.id),
+    destinationType: text(destination.destination_type) || null,
+    providerName: text(destination.provider_name) || null,
+    maskedAccount: text(destination.masked_account) || null,
+    verificationStatus: text(destination.verification_status) || null,
+    isActive: Number(destination.is_active ?? 0) === 1,
+  };
 }
 
 function currentDestinationForEvent(db: PgCompatDatabase, eventId: string): EventFinancialDestination | null {
-  try {
-    const row = db.prepare(
-      `SELECT spa.id, spa.destination_type, spa.provider_name, spa.masked_account,
-              spa.verification_status, spa.is_active
-       FROM events e
-       LEFT JOIN seller_payout_accounts spa
-         ON spa.id = e.payout_destination_id
-        AND spa.owner_type = 'event_creator'
-        AND spa.owner_uid = e.creator_uid
-       WHERE e.id = ?
-       LIMIT 1`,
-    ).get(eventId) as Row | undefined;
+  const row = db.prepare(
+    `SELECT spa.id, spa.destination_type, spa.provider_name, spa.masked_account,
+            spa.verification_status, spa.is_active
+     FROM events e
+     LEFT JOIN seller_payout_accounts spa
+       ON spa.id = e.payout_destination_id
+      AND spa.owner_type = 'event_creator'
+      AND spa.owner_uid = e.creator_uid
+     WHERE e.id = ?
+     LIMIT 1`,
+  ).get(eventId) as Row | undefined;
 
-    if (!row?.id) return null;
+  if (!row?.id) return null;
 
-    return {
-      id: text(row.id),
-      destinationType: text(row.destination_type) || null,
-      providerName: text(row.provider_name) || null,
-      maskedAccount: text(row.masked_account) || null,
-      verificationStatus: text(row.verification_status) || null,
-      isActive: Number(row.is_active ?? 0) === 1,
-    };
-  } catch {
-    return null;
-  }
+  return {
+    id: text(row.id),
+    destinationType: text(row.destination_type) || null,
+    providerName: text(row.provider_name) || null,
+    maskedAccount: text(row.masked_account) || null,
+    verificationStatus: text(row.verification_status) || null,
+    isActive: Number(row.is_active ?? 0) === 1,
+  };
 }
 
 function payoutAmounts(row: Row) {
@@ -322,32 +327,28 @@ function payoutAmounts(row: Row) {
 }
 
 function loadAttempts(db: PgCompatDatabase, payoutId: string): EventFinancialPayoutAttempt[] {
-  try {
-    const rows = db.prepare(
-      `SELECT attempt_no, provider, provider_charge_id, status, failure_reason,
-              request_payload, response_payload, created_at
-       FROM payout_attempts
-       WHERE payout_id = ?
-       ORDER BY attempt_no ASC, created_at ASC`,
-    ).all(payoutId) as Row[];
+  const rows = db.prepare(
+    `SELECT attempt_no, provider, provider_charge_id, status, failure_reason,
+            request_payload, response_payload, created_at
+     FROM payout_attempts
+     WHERE payout_id = ?
+     ORDER BY attempt_no ASC, created_at ASC`,
+  ).all(payoutId) as Row[];
 
-    return rows.map((row) => {
-      const request = parseJsonObject(row.request_payload);
-      const response = parseJsonObject(row.response_payload);
-      return {
-        attemptNo: numberValue(row.attempt_no),
-        provider: text(row.provider),
-        providerChargeId: text(row.provider_charge_id),
-        status: text(row.status) || "unknown",
-        failureReason: text(row.failure_reason) || null,
-        providerReference: text(request?.providerReference ?? response?.providerReference ?? response?.provider_reference) || null,
-        providerTransactionId: text(request?.providerTransactionId ?? response?.providerTransactionId ?? response?.provider_transaction_id) || null,
-        createdAt: text(row.created_at) || null,
-      };
-    });
-  } catch {
-    return [];
-  }
+  return rows.map((row) => {
+    const request = parseJsonObject(row.request_payload);
+    const response = parseJsonObject(row.response_payload);
+    return {
+      attemptNo: numberValue(row.attempt_no),
+      provider: text(row.provider),
+      providerChargeId: text(row.provider_charge_id),
+      status: text(row.status) || "unknown",
+      failureReason: text(row.failure_reason) || null,
+      providerReference: text(request?.providerReference ?? response?.providerReference ?? response?.provider_reference) || null,
+      providerTransactionId: text(request?.providerTransactionId ?? response?.providerTransactionId ?? response?.provider_transaction_id) || null,
+      createdAt: text(row.created_at) || null,
+    };
+  });
 }
 
 function loadOrderIds(db: PgCompatDatabase, eventId: string): string[] {
