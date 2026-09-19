@@ -140,6 +140,7 @@ test("event financial reporting uses recorded payout snapshots and preserves tra
   assert.equal(report.sales.ticketsRefunded, 1);
   assert.equal(report.sales.grossTicketRevenue, 20000);
   assert.equal(report.sales.refundedAmount, 5000);
+  assert.equal(report.sales.unallocatedRefundedAmount, 0);
   assert.equal(report.sales.netSales, 15000);
 
   assert.equal(report.fees.buyMeshoCommission, 600);
