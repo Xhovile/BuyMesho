@@ -242,6 +242,11 @@ test("event financial reporting uses recorded payout snapshots and preserves tra
   assert.equal(historicalPayout.netAmount, 18540);
   assert.equal(historicalPayout.formulaVersion, 'event-payout-v1');
 
+  assert.throws(
+    () => db.prepare("DELETE FROM seller_payout_accounts WHERE id = ?").run('event_financial_destination_1'),
+    /retained because it is referenced by historical payout records/,
+  );
+
   assert.equal(report.ledger.filter((entry) => entry.kind === 'sale').length, 1);
   assert.equal(report.ledger.filter((entry) => entry.kind === 'refund').length, 1);
   assert.equal(report.ledger.filter((entry) => entry.kind === 'payout').length, 1);
