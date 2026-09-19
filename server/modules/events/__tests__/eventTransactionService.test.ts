@@ -53,7 +53,7 @@ function seed() {
     INSERT INTO event_tickets (id,event_id,order_id,code,ticket_title,ticket_type,holder_name,holder_email,holder_phone,status,purchase_date,updated_at,event_title,event_date,start_time,venue,location,metadata)
     VALUES
       ('event_tx_ticket_a',991001,'event_tx_order_a','TICKET-EVENT-A','Canonical Event','General Admission','Buyer A','a@example.com','0990000001','Waiting Entry',?,?,'Canonical Event','2026-08-21','18:00','Venue A','Lilongwe','{}'),
-      ('event_tx_ticket_b',991001,'event_tx_order_b','TICKET-EVENT-B','Canonical Event','General Admission','Buyer B','b@example.com','0990000002','Waiting Entry',?,?,'Canonical Event','2026-08-21','18:00','Venue A','Lilongwe','{}'),
+      ('event_tx_ticket_b',991001,'event_tx_order_b','TICKET-EVENT-B','Canonical Event','General Admission','Buyer B','b@example.com','0990000002','Refunded',?,?,'Canonical Event','2026-08-21','18:00','Venue A','Lilongwe','{}'),
       ('event_tx_ticket_other',991002,'event_tx_order_other','TICKET-OTHER','Other Event','General Admission','Buyer C','c@example.com','0990000003','Waiting Entry',?,?,'Other Event','2026-08-22','18:00','Venue B','Lilongwe','{}')
   `).run(now, now, now, now, now, now);
 
@@ -83,6 +83,7 @@ test('canonical event transaction service isolates event transactions and summar
   const summary = getEventTransactionSummary(db, '991001');
   assert.equal(summary.ticketsIssued, 2);
   assert.equal(summary.ticketsSold, 2);
+  assert.equal(summary.ticketsRefunded, 1);
   assert.equal(summary.orderCount, 2);
   assert.equal(summary.paymentCount, 2);
   assert.equal(summary.successfulPaymentCount, 2);
