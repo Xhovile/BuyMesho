@@ -55,7 +55,8 @@ export type EventFinancialPayout = {
 export type EventFinancialLedgerEntry = {
   id: string;
   kind: "sale" | "refund" | "payout";
-  direction: "inflow" | "outflow";
+  direction: "inflow" | "outflow" | "neutral";
+  movementType: "cash" | "obligation" | "none";
   amount: number;
   currency: string;
   status: string;
@@ -94,7 +95,7 @@ export type EventFinancialReport = {
     grossAmountRecorded: number;
     netPaidAmount: number;
     netPayableAmount: number;
-    netAmountOwed: number;
+    netPayoutAmount: number;
     byStatus: Record<string, { count: number; amount: number }>;
   };
   currentDestination: EventFinancialDestination | null;
@@ -441,6 +442,7 @@ export function getEventFinancialReport(db: PgCompatDatabase, eventId: string): 
       id: `sale-${normalizedEventId}-${orderId}`,
       kind: "sale",
       direction: "inflow",
+      movementType: "cash",
       amount: gross,
       currency: text(payment?.currency ?? order.total_currency ?? order.currency) || "MWK",
       status: "paid",
@@ -483,6 +485,7 @@ export function getEventFinancialReport(db: PgCompatDatabase, eventId: string): 
         id: `refund-${refund.id}-${normalizedEventId}`,
         kind: "refund",
         direction: "outflow",
+        movementType: "cash",
         amount: refund.amount,
         currency: refund.currency,
         status: "refunded",
@@ -565,10 +568,19 @@ export function getEventFinancialReport(db: PgCompatDatabase, eventId: string): 
       failedAt: text(row.failed_at) || null,
     });
 
+    const payoutMovementType =
+      status === "paid"
+        ? "cash"
+        : OUTSTANDING_PAYOUT_STATUSES.has(status)
+          ? "obligation"
+          : "none";
+    const payoutDirection = status === "paid" ? "outflow" : "neutral";
+
     ledger.push({
       id: `payout-${payoutId}`,
       kind: "payout",
-      direction: "outflow",
+      direction: payoutDirection,
+      movementType: payoutMovementType,
       amount: amounts.netAmount,
       currency: text(row.currency) || "MWK",
       status,
@@ -624,7 +636,7 @@ export function getEventFinancialReport(db: PgCompatDatabase, eventId: string): 
       grossAmountRecorded,
       netPaidAmount,
       netPayableAmount,
-      netAmountOwed: netPaidAmount + netPayableAmount,
+      netPayoutAmount: netPaidAmount + netPayableAmount,
       byStatus,
     },
     currentDestination: currentDestinationForEvent(db, normalizedEventId),
