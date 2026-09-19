@@ -79,6 +79,7 @@ export type EventFinancialReport = {
     ticketsRefunded: number;
     grossTicketRevenue: number;
     refundedAmount: number;
+    unallocatedRefundedAmount: number;
     netSales: number;
   };
   fees: {
@@ -193,11 +194,13 @@ function parseEscrowEntries(value: unknown): Row[] {
   }
 }
 
-function loadRefundsForOrder(db: PgCompatDatabase, orderId: string): Array<{ id: string; amount: number; currency: string; occurredAt: string | null; reference: string | null }> {
+function loadRefundsForOrder(db: PgCompatDatabase, orderId: string): Array<{ id: string; amount: number; currency: string; occurredAt: string | null; reference: string | null; itemId: string | null }> {
   try {
     const rows = db.prepare(
-      `SELECT id, amount, currency, status, transaction_id, executed_at, created_at
-       FROM refund_transactions
+      `SELECT rt.id, rt.amount, rt.currency, rt.status, rt.transaction_id, rt.executed_at, rt.created_at,
+              rr.item_id
+       FROM refund_transactions rt
+       LEFT JOIN refund_requests rr ON rr.id = rt.refund_request_id
        WHERE order_id = ?
          AND lower(status) IN ('refunded', 'completed', 'successful')
        ORDER BY created_at ASC, id ASC`,
@@ -215,7 +218,7 @@ function loadRefundsForOrder(db: PgCompatDatabase, orderId: string): Array<{ id:
   }
 }
 
-function loadEscrowRefundsForOrder(db: PgCompatDatabase, orderId: string): Array<{ id: string; amount: number; currency: string; occurredAt: string | null; reference: string | null }> {
+function loadEscrowRefundsForOrder(db: PgCompatDatabase, orderId: string): Array<{ id: string; amount: number; currency: string; occurredAt: string | null; reference: string | null; itemId: string | null }> {
   try {
     const row = db.prepare(
       `SELECT id, balance_currency, entries
@@ -233,6 +236,7 @@ function loadEscrowRefundsForOrder(db: PgCompatDatabase, orderId: string): Array
         currency: text(entry.currency ?? row.balance_currency) || "MWK",
         occurredAt: text(entry.createdAt) || null,
         reference: text(entry.reference) || null,
+        itemId: text(entry.itemId ?? entry.item_id) || null,
       }));
   } catch {
     return [];
@@ -412,6 +416,7 @@ export function getEventFinancialReport(db: PgCompatDatabase, eventId: string): 
   }
 
   let grossTicketRevenue = 0;
+  let unallocatedRefundedAmount = 0;
   const ledger: EventFinancialLedgerEntry[] = [];
   const refundIds = new Set<string>();
 
@@ -444,10 +449,32 @@ export function getEventFinancialReport(db: PgCompatDatabase, eventId: string): 
 
     const canonicalRefunds = loadRefundsForOrder(db, orderId);
     const refunds = canonicalRefunds.length ? canonicalRefunds : loadEscrowRefundsForOrder(db, orderId);
+    const eventIdsInOrder = new Set(items.map(itemEventId).filter(Boolean));
 
     for (const refund of refunds) {
       if (!refund.id || refundIds.has(refund.id)) continue;
       refundIds.add(refund.id);
+
+      let refundBelongsToEvent = eventIdsInOrder.size === 1 && eventIdsInOrder.has(normalizedEventId);
+      if (refund.itemId) {
+        try {
+          const ticketLink = db.prepare(
+            `SELECT event_id
+             FROM event_tickets
+             WHERE id = ? OR code = ?
+             LIMIT 1`,
+          ).get(refund.itemId, refund.itemId) as Row | undefined;
+          refundBelongsToEvent = text(ticketLink?.event_id) === normalizedEventId;
+        } catch {
+          refundBelongsToEvent = false;
+        }
+      }
+
+      if (!refundBelongsToEvent) {
+        unallocatedRefundedAmount += refund.amount;
+        continue;
+      }
+
       ledger.push({
         id: `refund-${refund.id}-${normalizedEventId}`,
         kind: "refund",
@@ -579,6 +606,7 @@ export function getEventFinancialReport(db: PgCompatDatabase, eventId: string): 
       ticketsRefunded,
       grossTicketRevenue,
       refundedAmount,
+      unallocatedRefundedAmount,
       netSales,
     },
     fees: {
