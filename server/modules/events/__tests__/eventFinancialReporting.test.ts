@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { getPaymentDb } from "../../../postgresCompat.js";
 import { getEventFinancialReport } from "../eventFinancialReporting.js";
+import { PAYOUT_POLICY } from "../../payouts/payout.policy.js";
 
 const db = getPaymentDb();
 
@@ -14,7 +15,7 @@ function cleanup() {
   db.prepare("DELETE FROM event_tickets WHERE order_id IN ('event_financial_order_1','event_financial_mixed_order_1')").run();
   db.prepare("DELETE FROM orders WHERE id IN ('event_financial_order_1','event_financial_mixed_order_1')").run();
   db.prepare("DELETE FROM events WHERE id IN (992001, 992002)").run();
-  db.prepare("DELETE FROM seller_payout_accounts WHERE id = 'event_financial_destination_1'").run();
+  db.prepare("DELETE FROM seller_payout_accounts WHERE id IN ('event_financial_destination_1','event_financial_destination_2')").run();
   db.prepare("DELETE FROM event_creators WHERE uid = 'event_financial_creator'").run();
 }
 
@@ -153,7 +154,7 @@ test("event financial reporting uses recorded payout snapshots and preserves tra
   assert.equal(report.payouts.count, 1);
   assert.equal(report.payouts.netPaidAmount, 18540);
   assert.equal(report.payouts.netPayableAmount, 0);
-  assert.equal(report.payouts.netAmountOwed, 18540);
+  assert.equal(report.payouts.netPayoutAmount, 18540);
   assert.equal(report.payouts.byStatus.paid?.amount, 18540);
 
   assert.equal(report.payoutHistory[0]?.destination?.id, 'event_financial_destination_1');
@@ -161,6 +162,49 @@ test("event financial reporting uses recorded payout snapshots and preserves tra
   assert.equal(report.payoutHistory[0]?.attempts[0]?.providerReference, 'PROVIDER-FIN-1');
   assert.equal(report.payoutHistory[0]?.orderId, 'event_financial_order_1');
   assert.equal(report.payoutHistory[0]?.escrowId, 'event_financial_escrow_1');
+
+  db.prepare(`
+    INSERT INTO seller_payout_accounts
+      (id,seller_uid,event_creator_uid,owner_type,owner_uid,destination_type,provider_name,provider_ref_id,
+       currency,account_name,account_number_encrypted,mobile_encrypted,masked_account,destination_fingerprint,
+       is_default,verification_status,verification_attempts,is_active,created_at,updated_at)
+    VALUES ('event_financial_destination_2',NULL,'event_financial_creator','event_creator','event_financial_creator',
+            'mobile_money','TNM Mpamba','tnm','MWK','Finance Creator',NULL,'encrypted-mobile-2','0888****222',
+            'event-financial-fingerprint-2',0,'verified',0,1,?,?)
+  `).run(now, now);
+
+  db.prepare("SELECT set_config('buymesho.allow_event_payout_replacement','1',false)").get();
+  try {
+    db.prepare("UPDATE events SET payout_destination_id = ?, updated_at = ? WHERE id = ?")
+      .run('event_financial_destination_2', now, 992001);
+  } finally {
+    db.prepare("SELECT set_config('buymesho.allow_event_payout_replacement','0',false)").get();
+  }
+
+  const mutablePolicy = PAYOUT_POLICY as unknown as {
+    platformFeeBps: number;
+    payoutFeeBps: Record<string, number>;
+  };
+  const originalPlatformFeeBps = mutablePolicy.platformFeeBps;
+  const originalAirtelFeeBps = mutablePolicy.payoutFeeBps.airtel_money;
+  mutablePolicy.platformFeeBps = 900;
+  mutablePolicy.payoutFeeBps.airtel_money = 999;
+
+  let historicalReportAfterChanges;
+  try {
+    historicalReportAfterChanges = getEventFinancialReport(db, '992001');
+  } finally {
+    mutablePolicy.platformFeeBps = originalPlatformFeeBps;
+    mutablePolicy.payoutFeeBps.airtel_money = originalAirtelFeeBps;
+  }
+
+  assert.ok(historicalReportAfterChanges);
+  assert.equal(historicalReportAfterChanges.currentDestination?.id, 'event_financial_destination_2');
+  assert.equal(historicalReportAfterChanges.payoutHistory[0]?.destination?.id, 'event_financial_destination_1');
+  assert.equal(historicalReportAfterChanges.fees.buyMeshoCommission, 600);
+  assert.equal(historicalReportAfterChanges.fees.payoutFees, 360);
+  assert.equal(historicalReportAfterChanges.payoutHistory[0]?.netAmount, 18540);
+  assert.equal(historicalReportAfterChanges.payoutHistory[0]?.formulaVersion, 'event-payout-v1');
 
   assert.equal(report.ledger.filter((entry) => entry.kind === 'sale').length, 1);
   assert.equal(report.ledger.filter((entry) => entry.kind === 'refund').length, 1);
