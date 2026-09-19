@@ -13,8 +13,8 @@ function cleanup() {
   db.prepare("DELETE FROM payments WHERE order_id = 'event_financial_order_1'").run();
   db.prepare("DELETE FROM event_tickets WHERE order_id = 'event_financial_order_1'").run();
   db.prepare("DELETE FROM orders WHERE id = 'event_financial_order_1'").run();
+  db.prepare("DELETE FROM events WHERE id IN (992001, 992002)").run();
   db.prepare("DELETE FROM seller_payout_accounts WHERE id = 'event_financial_destination_1'").run();
-  db.prepare("DELETE FROM events WHERE id = 992001").run();
   db.prepare("DELETE FROM event_creators WHERE uid = 'event_financial_creator'").run();
 }
 
@@ -22,6 +22,7 @@ test("event financial reporting uses recorded payout snapshots and preserves tra
   cleanup();
   const now = new Date().toISOString();
 
+  try {
   db.prepare(`
     INSERT INTO event_creators
       (uid,email,display_name,organization_name,organization_type,event_types,status,created_at,updated_at)
@@ -165,5 +166,9 @@ test("event financial reporting uses recorded payout snapshots and preserves tra
   assert.equal(report.ledger.filter((entry) => entry.kind === 'refund').length, 1);
   assert.equal(report.ledger.filter((entry) => entry.kind === 'payout').length, 1);
 
-  cleanup();
+    cleanup();
+  } catch (error) {
+    cleanup();
+    throw error;
+  }
 });
