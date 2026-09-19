@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { afterEach } from 'node:test';
 import { getPaymentDb } from '../../../postgresCompat.js';
 import { createEventPayoutCandidateAsync, resolveEventPayoutContext } from '../event-payout.integration.js';
 import { withTransaction } from '../../../postgres.js';
@@ -14,6 +14,8 @@ function cleanup() {
   db.prepare("DELETE FROM seller_payout_accounts WHERE id = 'event-payout-test-destination'").run();
   db.prepare("DELETE FROM event_creators WHERE uid = 'event_payout_test_creator'").run();
 }
+
+afterEach(cleanup);
 
 function seed() {
   cleanup();
