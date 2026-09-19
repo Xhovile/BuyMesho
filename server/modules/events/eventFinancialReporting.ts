@@ -423,8 +423,11 @@ export function getEventFinancialReport(db: PgCompatDatabase, eventId: string): 
   const refundIds = new Set<string>();
 
   for (const [orderId, order] of orderMap.entries()) {
-    const items = eventOrderItems(parseItems(order.items), normalizedEventId);
+    const allItems = parseItems(order.items);
+    const items = eventOrderItems(allItems, normalizedEventId);
     if (items.length === 0) continue;
+
+    const eventIdsInOrder = new Set(allItems.map(itemEventId).filter(Boolean));
 
     const payment = successfulPayment(paymentsByOrder.get(orderId) ?? []);
     const orderStatus = text(order.status).toLowerCase();
@@ -451,7 +454,6 @@ export function getEventFinancialReport(db: PgCompatDatabase, eventId: string): 
 
     const canonicalRefunds = loadRefundsForOrder(db, orderId);
     const refunds = canonicalRefunds.length ? canonicalRefunds : loadEscrowRefundsForOrder(db, orderId);
-    const eventIdsInOrder = new Set(items.map(itemEventId).filter(Boolean));
 
     for (const refund of refunds) {
       if (!refund.id || refundIds.has(refund.id)) continue;
