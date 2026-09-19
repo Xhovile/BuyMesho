@@ -1,5 +1,4 @@
 import type { PgCompatDatabase } from "../../db.js";
-import { getEventFinancialReport } from "./eventFinancialReporting.js";
 import {
   findEventTicketIdentity,
   getEventTicketTransaction,
@@ -239,15 +238,7 @@ export function getEventTransactionSummary(
     }
   }
 
-  const financialReport = getEventFinancialReport(db, normalizedEventId);
-  if (financialReport) {
-    empty.ticketsSold = financialReport.sales.ticketsSold;
-    empty.ticketsRefunded = financialReport.sales.ticketsRefunded;
-    empty.grossRevenueAmount = financialReport.sales.grossTicketRevenue;
-    empty.refundedAmount = financialReport.sales.refundedAmount;
-    empty.netRevenueAmount = financialReport.sales.netSales;
-    empty.revenueCurrency = financialReport.event.currency;
-  }
+  empty.netRevenueAmount = Math.max(0, empty.grossRevenueAmount - empty.refundedAmount);
 
   empty.lastTransactionAt = latestTimestamp;
   empty.latestPaymentReference = latestReference;
