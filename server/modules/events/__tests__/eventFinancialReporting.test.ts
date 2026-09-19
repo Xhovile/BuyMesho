@@ -30,33 +30,7 @@ test("event financial reporting uses recorded payout snapshots and preserves tra
     VALUES ('event_financial_creator','creator@example.com','Finance Creator','Finance Org','events','concert','approved',?,?)
   `).run(now, now);
 
-  db.prepare(`
-    INSERT INTO payouts
-      (id,seller_id,owner_type,owner_uid,event_id,event_creator_uid,order_id,escrow_id,release_entry_id,
-       destination_account_id,amount,gross_amount,platform_fee_amount,processing_fee_amount,reserve_amount,
-       reserve_cap_amount,manual_adjustment_amount,payout_fee_amount,seller_receives_amount,net_amount,
-       formula_snapshot,currency,status,provider,requested_by,requested_at,created_at,updated_at)
-    VALUES ('event_financial_payout_failed_1','event_financial_creator','event_creator','event_financial_creator',992001,
-            'event_financial_creator','event_financial_order_1','event_financial_escrow_1','release-fin-failed-1',
-            'event_financial_destination_1',1000,1000,0,0,0,60,0,0,1000,1000,
-            '{"formulaVersion":"event-payout-v1","scope":"event","eventId":"992001","currency":"MWK",
-              "inputs":{"grossAmount":1000,"processingFeeAmount":0,"reserveAmount":0,"manualAdjustmentAmount":0,"payoutMethod":"airtel_money"},
-              "policy":{"platformFeeBps":300,"payoutFeeBps":{"airtel_money":180},"bankPayoutFlatFeeAmount":700},
-              "result":{"grossAmount":1000,"platformFeeAmount":0,"processingFeeAmount":0,"reserveAmount":0,"reserveCapAmount":60,
-                        "manualAdjustmentAmount":0,"payoutFeeAmount":0,"sellerReceivesAmount":1000,"netAmount":1000}}',
-            'MWK','failed','paychangu','event_financial_creator',?,?,?)
-  `).run(now, now, now);
 
-  const payoutStateReport = getEventFinancialReport(db, '992001');
-  assert.ok(payoutStateReport);
-  assert.equal(payoutStateReport.payouts.netPaidAmount, 18540);
-  assert.equal(payoutStateReport.payouts.netPayableAmount, 1000);
-  assert.equal(payoutStateReport.payouts.netPayoutAmount, 19540);
-  const failedPayoutLedger = payoutStateReport.ledger.find((entry) => entry.payoutId === 'event_financial_payout_failed_1');
-  assert.ok(failedPayoutLedger);
-  assert.equal(failedPayoutLedger.direction, 'neutral');
-  assert.equal(failedPayoutLedger.movementType, 'obligation');
-  assert.equal(failedPayoutLedger.amount, 1000);
 
   db.prepare(`
     INSERT INTO seller_payout_accounts
@@ -190,6 +164,34 @@ test("event financial reporting uses recorded payout snapshots and preserves tra
   assert.equal(report.payoutHistory[0]?.attempts[0]?.providerReference, 'PROVIDER-FIN-1');
   assert.equal(report.payoutHistory[0]?.orderId, 'event_financial_order_1');
   assert.equal(report.payoutHistory[0]?.escrowId, 'event_financial_escrow_1');
+
+  db.prepare(`
+    INSERT INTO payouts
+      (id,seller_id,owner_type,owner_uid,event_id,event_creator_uid,order_id,escrow_id,release_entry_id,
+       destination_account_id,amount,gross_amount,platform_fee_amount,processing_fee_amount,reserve_amount,
+       reserve_cap_amount,manual_adjustment_amount,payout_fee_amount,seller_receives_amount,net_amount,
+       formula_snapshot,currency,status,provider,requested_by,requested_at,created_at,updated_at)
+    VALUES ('event_financial_payout_failed_1','event_financial_creator','event_creator','event_financial_creator',992001,
+            'event_financial_creator','event_financial_order_1','event_financial_escrow_1','release-fin-failed-1',
+            'event_financial_destination_1',1000,1000,0,0,0,60,0,0,1000,1000,
+            '{"formulaVersion":"event-payout-v1","scope":"event","eventId":"992001","currency":"MWK",
+              "inputs":{"grossAmount":1000,"processingFeeAmount":0,"reserveAmount":0,"manualAdjustmentAmount":0,"payoutMethod":"airtel_money"},
+              "policy":{"platformFeeBps":300,"payoutFeeBps":{"airtel_money":180},"bankPayoutFlatFeeAmount":700},
+              "result":{"grossAmount":1000,"platformFeeAmount":0,"processingFeeAmount":0,"reserveAmount":0,"reserveCapAmount":60,
+                        "manualAdjustmentAmount":0,"payoutFeeAmount":0,"sellerReceivesAmount":1000,"netAmount":1000}}',
+            'MWK','failed','paychangu','event_financial_creator',?,?,?)
+  `).run(now, now, now);
+
+  const payoutStateReport = getEventFinancialReport(db, '992001');
+  assert.ok(payoutStateReport);
+  assert.equal(payoutStateReport.payouts.netPaidAmount, 18540);
+  assert.equal(payoutStateReport.payouts.netPayableAmount, 1000);
+  assert.equal(payoutStateReport.payouts.netPayoutAmount, 19540);
+  const failedPayoutLedger = payoutStateReport.ledger.find((entry) => entry.payoutId === 'event_financial_payout_failed_1');
+  assert.ok(failedPayoutLedger);
+  assert.equal(failedPayoutLedger.direction, 'neutral');
+  assert.equal(failedPayoutLedger.movementType, 'obligation');
+  assert.equal(failedPayoutLedger.amount, 1000);
 
   db.prepare(`
     INSERT INTO seller_payout_accounts
