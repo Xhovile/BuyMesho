@@ -19,7 +19,9 @@ export function ensureEventPayoutDestinationLockMigration() {
       ON events (payout_destination_locked_at)
       WHERE payout_destination_locked_at IS NOT NULL;
 
-    CREATE OR REPLACE FUNCTION buymesho_lock_event_payout_destination_for_order_id(target_order_id BIGINT)
+    DROP FUNCTION IF EXISTS buymesho_lock_event_payout_destination_for_order_id(BIGINT);
+
+    CREATE FUNCTION buymesho_lock_event_payout_destination_for_order_id(target_order_id TEXT)
     RETURNS VOID
     LANGUAGE plpgsql
     AS $$
