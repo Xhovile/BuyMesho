@@ -192,7 +192,7 @@ export class PayoutRepository {
       destination_account_id,amount,gross_amount,platform_fee_amount,processing_fee_amount,reserve_amount,
       reserve_cap_amount,manual_adjustment_amount,payout_fee_amount,seller_receives_amount,net_amount,
       formula_snapshot,currency,status,provider,provider_charge_id,requested_by,requested_at,raw_request,created_at,updated_at
-    ) VALUES (?,?,?,?,?,?,?,NULL,NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending_settlement','paychangu',NULL,?,?,?,?,?) ON CONFLICT(id) DO NOTHING`).run(
+    ) VALUES (?,?,?,?,?,?,?,NULL,NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending_settlement','paychangu',NULL,?,?,?,?,?) ON CONFLICT(id) DO NOTHING`).run(
       id,input.sellerId,owner.ownerType,owner.ownerUid,input.eventId != null ? Number(input.eventId) : null,
       owner.ownerType === 'event_creator' ? input.eventCreatorUid ?? owner.ownerUid : null,input.orderId,
       input.destinationAccountId ?? null,input.amount,input.grossAmount,input.platformFeeAmount,input.processingFeeAmount,
