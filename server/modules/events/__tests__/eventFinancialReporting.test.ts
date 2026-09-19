@@ -25,7 +25,6 @@ test("event financial reporting uses recorded payout snapshots and preserves tra
   cleanup();
   const now = new Date().toISOString();
 
-  try {
   db.prepare(`
     INSERT INTO event_creators
       (uid,email,display_name,organization_name,organization_type,event_types,status,created_at,updated_at)
@@ -252,12 +251,6 @@ test("event financial reporting uses recorded payout snapshots and preserves tra
   assert.equal(report.ledger.filter((entry) => entry.kind === 'payout').length, 1);
 
 
-
-    cleanup();
-  } catch (error) {
-    cleanup();
-    throw error;
-  }
 });
 
 
@@ -265,8 +258,7 @@ test("event financial reporting leaves refunds unallocated for mixed-event order
   cleanup();
   const now = new Date().toISOString();
 
-  try {
-    db.prepare(`
+  db.prepare(`
       INSERT INTO event_creators
         (uid,email,display_name,organization_name,organization_type,event_types,status,created_at,updated_at)
       VALUES ('event_financial_creator','creator@example.com','Finance Creator','Finance Org','events','concert','approved',?,?)
@@ -331,10 +323,4 @@ test("event financial reporting leaves refunds unallocated for mixed-event order
     assert.equal(eventB.sales.refundedAmount, 0);
     assert.equal(eventA.sales.unallocatedRefundedAmount, 4000);
     assert.equal(eventB.sales.unallocatedRefundedAmount, 4000);
-  } catch (error) {
-    cleanup();
-    throw error;
-  }
-
-  cleanup();
 });
