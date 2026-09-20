@@ -18,9 +18,64 @@ import {
   type PayoutStatus,
   type ReconcileProviderCallbackInput,
   type PayoutNextAction,
+  type PayoutOwnerType,
 } from './payout.shared.js';
 
 type DbExecutor = Pick<PoolClient, 'query'>;
+
+function existingPayoutMatchesInput(
+  existing: PayoutRecord,
+  input: CreateEligiblePayoutInput | CreateConnectPayoutInput,
+  owner: { ownerType: PayoutOwnerType; ownerUid: string },
+): boolean {
+  const requestedEventId = input.eventId == null ? null : String(input.eventId);
+  const requestedEventCreatorUid = input.eventCreatorUid ?? null;
+  const requestedDestinationAccountId = input.destinationAccountId ?? null;
+
+  return (
+    existing.ownerType === owner.ownerType &&
+    existing.ownerUid === owner.ownerUid &&
+    existing.eventId === requestedEventId &&
+    existing.eventCreatorUid === requestedEventCreatorUid &&
+    existing.orderId === input.orderId &&
+    existing.escrowId === input.escrowId &&
+    existing.releaseEntryId === input.releaseEntryId &&
+    (input.destinationAccountId === undefined || existing.destinationAccountId === requestedDestinationAccountId)
+  );
+}
+
+function resolvePayoutOwner(
+  input: Pick<CreateEligiblePayoutInput | CreateConnectPayoutInput, 'sellerId' | 'eventId' | 'eventCreatorUid' | 'ownerType' | 'ownerUid'>,
+): { ownerType: PayoutOwnerType; ownerUid: string } {
+  const ownerType: PayoutOwnerType =
+    input.ownerType ?? (input.eventId != null ? 'event_creator' : 'seller');
+  const ownerUid = input.ownerUid ?? (ownerType === 'event_creator' ? input.eventCreatorUid : input.sellerId);
+
+  if (!ownerUid) {
+    throw new Error(`Payout owner identity is missing for ${ownerType}`);
+  }
+
+  if (ownerType === 'event_creator') {
+    if (input.eventId == null) {
+      throw new Error('Event payout owner requires an eventId');
+    }
+    if (input.eventCreatorUid && input.eventCreatorUid !== ownerUid) {
+      throw new Error('Event payout owner UID does not match eventCreatorUid');
+    }
+    if (input.sellerId && input.sellerId !== ownerUid) {
+      throw new Error('Event payout owner UID does not match sellerId compatibility identity');
+    }
+  } else {
+    if (input.eventId != null || input.eventCreatorUid != null) {
+      throw new Error('Seller payout owner cannot include event payout identity');
+    }
+    if (input.sellerId && input.sellerId !== ownerUid) {
+      throw new Error('Seller payout owner UID does not match sellerId');
+    }
+  }
+
+  return { ownerType, ownerUid };
+}
 
 export class PayoutRepository {
   private readonly statusRepository: PayoutStatusRepository;
@@ -68,26 +123,37 @@ export class PayoutRepository {
   }
 
   async createEligibleForReleaseAsync(input: CreateEligiblePayoutInput, executor?: DbExecutor): Promise<PayoutRecord> {
+    const owner = resolvePayoutOwner(input);
     const run = async (client: DbExecutor): Promise<PayoutRecord> => {
       const existing = await this.findByEscrowIdAsync(input.escrowId, client);
-      if (existing) return existing;
+      if (existing) {
+        if (!existingPayoutMatchesInput(existing, input, owner)) {
+          throw new Error('Existing payout for escrow does not match the requested payout financial identity');
+        }
+        return existing;
+      }
       const now = input.requestedAt ?? new Date().toISOString();
       const id = randomUUID();
       await client.query(
         `INSERT INTO payouts (
-           id, seller_id, order_id, escrow_id, release_entry_id, destination_account_id,
-           amount, gross_amount, platform_fee_amount, processing_fee_amount, reserve_amount,
-           reserve_cap_amount, manual_adjustment_amount, payout_fee_amount, seller_receives_amount,
-           net_amount, formula_snapshot, currency, status, provider, provider_charge_id,
-           requested_by, requested_at, raw_request, created_at, updated_at
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'pending_settlement','paychangu',NULL,$19,$20,$21,$22,$23)
+           id, seller_id, owner_type, owner_uid, event_id, event_creator_uid, order_id, escrow_id,
+           release_entry_id, destination_account_id, amount, gross_amount, platform_fee_amount,
+           processing_fee_amount, reserve_amount, reserve_cap_amount, manual_adjustment_amount,
+           payout_fee_amount, seller_receives_amount, net_amount, formula_snapshot, currency,
+           status, provider, provider_charge_id, requested_by, requested_at, raw_request, created_at, updated_at
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,
+                   'pending_settlement','paychangu',NULL,$23,$24,$25,$24,$24)
          ON CONFLICT(id) DO NOTHING`,
         [
-          id, input.sellerId, input.orderId, input.escrowId, input.releaseEntryId, input.destinationAccountId ?? null,
-          input.amount, input.grossAmount, input.platformFeeAmount, input.processingFeeAmount, input.reserveAmount,
-          input.reserveCapAmount, input.manualAdjustmentAmount, input.payoutFeeAmount ?? 0,
-          input.sellerReceivesAmount ?? input.netAmount, input.netAmount, JSON.stringify(input.formulaSnapshot), input.currency,
-          input.requestedBy, now, input.snapshot ? JSON.stringify(input.snapshot) : null, now, now,
+          id, input.sellerId, owner.ownerType, owner.ownerUid,
+          input.eventId != null ? Number(input.eventId) : null,
+          owner.ownerType === 'event_creator' ? input.eventCreatorUid ?? owner.ownerUid : null,
+          input.orderId, input.escrowId, input.releaseEntryId, input.destinationAccountId ?? null,
+          input.amount, input.grossAmount, input.platformFeeAmount, input.processingFeeAmount,
+          input.reserveAmount, input.reserveCapAmount, input.manualAdjustmentAmount,
+          input.payoutFeeAmount ?? 0, input.sellerReceivesAmount ?? input.netAmount, input.netAmount,
+          JSON.stringify(input.formulaSnapshot), input.currency, input.requestedBy, now,
+          input.snapshot ? JSON.stringify(input.snapshot) : null,
         ],
       );
       const created = await this.findByEscrowIdAsync(input.escrowId, client);
@@ -96,7 +162,6 @@ export class PayoutRepository {
     };
     return executor ? run(executor) : withTransaction(run);
   }
-
   async findByEscrowIdAsync(escrowId: string, executor: DbExecutor = { query }): Promise<PayoutRecord | undefined> {
     const result = await executor.query<Record<string, unknown>>(
       `SELECT * FROM payouts WHERE escrow_id = $1 AND release_entry_id IS NOT NULL ORDER BY created_at ASC LIMIT 1`,
@@ -142,25 +207,68 @@ export class PayoutRepository {
   }
 
   createEligibleForRelease(input: CreateEligiblePayoutInput): PayoutRecord {
-    const existing = this.findByEscrowId(input.escrowId); if (existing) return existing;
+    const owner = resolvePayoutOwner(input);
+    const existing = this.findByEscrowId(input.escrowId);
+    if (existing) {
+      if (!existingPayoutMatchesInput(existing, input, owner)) {
+        throw new Error('Existing payout for escrow does not match the requested payout financial identity');
+      }
+      return existing;
+    }
     const now = input.requestedAt ?? new Date().toISOString(); const id = randomUUID();
-    this.db.prepare(`INSERT INTO payouts (id,seller_id,order_id,escrow_id,release_entry_id,destination_account_id,amount,gross_amount,platform_fee_amount,processing_fee_amount,reserve_amount,reserve_cap_amount,manual_adjustment_amount,payout_fee_amount,seller_receives_amount,net_amount,formula_snapshot,currency,status,provider,provider_charge_id,requested_by,requested_at,raw_request,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'pending_settlement','paychangu',NULL,?,?,?,?,?) ON CONFLICT(id) DO NOTHING`).run(id,input.sellerId,input.orderId,input.escrowId,input.releaseEntryId,input.destinationAccountId ?? null,input.amount,input.grossAmount,input.platformFeeAmount,input.processingFeeAmount,input.reserveAmount,input.reserveCapAmount,input.manualAdjustmentAmount,input.payoutFeeAmount ?? 0,input.sellerReceivesAmount ?? input.netAmount,input.netAmount,JSON.stringify(input.formulaSnapshot),input.currency,input.requestedBy,now,input.snapshot ? JSON.stringify(input.snapshot) : null,now,now);
+    this.db.prepare(`INSERT INTO payouts (
+      id,seller_id,owner_type,owner_uid,event_id,event_creator_uid,order_id,escrow_id,release_entry_id,
+      destination_account_id,amount,gross_amount,platform_fee_amount,processing_fee_amount,reserve_amount,
+      reserve_cap_amount,manual_adjustment_amount,payout_fee_amount,seller_receives_amount,net_amount,
+      formula_snapshot,currency,status,provider,provider_charge_id,requested_by,requested_at,raw_request,created_at,updated_at
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending_settlement','paychangu',NULL,?,?,?,?,?) ON CONFLICT(id) DO NOTHING`).run(
+      id,input.sellerId,owner.ownerType,owner.ownerUid,input.eventId != null ? Number(input.eventId) : null,
+      owner.ownerType === 'event_creator' ? input.eventCreatorUid ?? owner.ownerUid : null,input.orderId,input.escrowId,
+      input.releaseEntryId,input.destinationAccountId ?? null,input.amount,input.grossAmount,input.platformFeeAmount,
+      input.processingFeeAmount,input.reserveAmount,input.reserveCapAmount,input.manualAdjustmentAmount,input.payoutFeeAmount ?? 0,
+      input.sellerReceivesAmount ?? input.netAmount,input.netAmount,JSON.stringify(input.formulaSnapshot),input.currency,
+      input.requestedBy,now,input.snapshot ? JSON.stringify(input.snapshot) : null,now,now
+    );
     const created=this.findByEscrowId(input.escrowId); if(!created)throw new Error('Failed to create payout candidate'); return created;
   }
-
   createConnectPayoutCandidate(input: CreateConnectPayoutInput): { payout: PayoutRecord; created: boolean } {
+    const owner = resolvePayoutOwner(input);
     const existing=this.findConnectByOrderId(input.orderId); if(existing)return {payout:existing,created:false};
     const now=input.requestedAt ?? new Date().toISOString(),id=randomUUID();
-    this.db.prepare(`INSERT INTO payouts (id,seller_id,order_id,escrow_id,release_entry_id,destination_account_id,amount,gross_amount,platform_fee_amount,processing_fee_amount,reserve_amount,reserve_cap_amount,manual_adjustment_amount,payout_fee_amount,seller_receives_amount,net_amount,formula_snapshot,currency,status,provider,provider_charge_id,requested_by,requested_at,raw_request,created_at,updated_at) VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_settlement','paychangu',NULL, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING`).run(id,input.sellerId,input.orderId,input.destinationAccountId ?? null,input.amount,input.grossAmount,input.platformFeeAmount,input.processingFeeAmount,input.reserveAmount,input.reserveCapAmount,input.manualAdjustmentAmount,input.payoutFeeAmount ?? 0,input.sellerReceivesAmount ?? input.netAmount,input.netAmount,JSON.stringify(input.formulaSnapshot),input.currency,input.requestedBy,now,input.snapshot ? JSON.stringify(input.snapshot) : null,now,now);
+    this.db.prepare(`INSERT INTO payouts (
+      id,seller_id,owner_type,owner_uid,event_id,event_creator_uid,order_id,escrow_id,release_entry_id,
+      destination_account_id,amount,gross_amount,platform_fee_amount,processing_fee_amount,reserve_amount,
+      reserve_cap_amount,manual_adjustment_amount,payout_fee_amount,seller_receives_amount,net_amount,
+      formula_snapshot,currency,status,provider,provider_charge_id,requested_by,requested_at,raw_request,created_at,updated_at
+    ) VALUES (?,?,?,?,?,?,?,NULL,NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending_settlement','paychangu',NULL,?,?,?,?,?) ON CONFLICT(id) DO NOTHING`).run(
+      id,input.sellerId,owner.ownerType,owner.ownerUid,input.eventId != null ? Number(input.eventId) : null,
+      owner.ownerType === 'event_creator' ? input.eventCreatorUid ?? owner.ownerUid : null,input.orderId,
+      input.destinationAccountId ?? null,input.amount,input.grossAmount,input.platformFeeAmount,input.processingFeeAmount,
+      input.reserveAmount,input.reserveCapAmount,input.manualAdjustmentAmount,input.payoutFeeAmount ?? 0,
+      input.sellerReceivesAmount ?? input.netAmount,input.netAmount,JSON.stringify(input.formulaSnapshot),input.currency,
+      input.requestedBy,now,input.snapshot ? JSON.stringify(input.snapshot) : null,now,now
+    );
     const payout=this.findConnectByOrderId(input.orderId); if(!payout)throw new Error('Failed to create Connect payout candidate'); return {payout,created:payout.id===id};
   }
-
   updateStatus(id:string,status:PayoutStatus,extra:Record<string,unknown>={}):PayoutRecord|undefined{return this.statusRepository.updateStatus(id,status,extra);}
   updateExecutionState(payoutId:string,execution:PayChanguPayoutExecutionResult):PayoutRecord|undefined{const statusExtras:Record<string,unknown>={provider:execution.provider,providerChargeId:execution.providerChargeId,providerReference:execution.providerReference,providerTransactionId:execution.providerTransactionId,providerStatus:execution.status};if(execution.status==='paid')statusExtras.paidAt=new Date().toISOString();if(execution.status==='failed'){statusExtras.failedAt=new Date().toISOString();statusExtras.failureReason=execution.failureClass ?? 'provider_execution_failed';const exactMessage=exactProviderErrorMessage(execution.rawResponse);statusExtras.manualReviewReason=execution.failureClass?providerFailureReason(execution.failureClass,exactMessage):exactMessage ?? 'Provider reported payout failure';}return this.updateStatus(payoutId,execution.status,statusExtras);}
   nextAttemptNo(payoutId:string):number{const row=this.db.prepare(`SELECT COALESCE(MAX(attempt_no),0) AS max_attempt_no FROM payout_attempts WHERE payout_id=?`).get(payoutId) as {max_attempt_no?:number}|undefined;return Number(row?.max_attempt_no??0)+1;}
   recordAttempt(id:string,payoutId:string,execution:PayChanguPayoutExecutionResult):void{const createdAt=new Date().toISOString();const failedReason=execution.status==='failed'?execution.failureClass ?? 'provider_execution_failed':null;this.db.prepare(`UPDATE payout_attempts SET provider=?,provider_charge_id=?,request_payload=?,response_payload=?,status=?,failure_reason=?,sent_at=?,completed_at=?,updated_at=? WHERE id=?`).run(execution.provider,execution.providerChargeId,JSON.stringify({payoutId:execution.payoutId,providerReference:execution.providerReference,providerTransactionId:execution.providerTransactionId,providerChargeId:execution.providerChargeId,attemptNo:execution.attemptNo,request:execution.rawResponse?.request ?? null}),JSON.stringify(execution.rawResponse ?? {}),execution.status,failedReason,createdAt,createdAt,createdAt,id);}
   reserveRetryAttempt(input:{payoutId:string;provider:string;actorType:'admin'|'system';actorId?:string|null}):{id:string;attemptNo:number;providerChargeId:string;createdAt:string}{this.db.prepare('BEGIN IMMEDIATE TRANSACTION').run();try{const attemptNo=this.nextAttemptNo(input.payoutId),providerChargeId=buildPayChanguPayoutChargeId(input.payoutId,attemptNo),id=randomUUID(),now=new Date().toISOString();this.updateStatus(input.payoutId,'processing',{provider:input.provider,providerChargeId,providerStatus:'processing',approvedBy:input.actorType==='admin'?input.actorId ?? null:null,sentAt:now});this.db.prepare(`INSERT INTO payout_attempts (id,payout_id,attempt_no,provider,provider_charge_id,request_payload,response_payload,status,sent_at,completed_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(id,input.payoutId,attemptNo,input.provider,providerChargeId,JSON.stringify({payoutId:input.payoutId,attemptNo}),null,'processing',now,null,now,now);this.db.prepare('COMMIT').run();return{id,attemptNo,providerChargeId,createdAt:now};}catch(error){this.db.prepare('ROLLBACK').run();throw error;}}
   addEvent(input:{payoutId:string;sellerId:string;eventType:string;actorType:string;actorId?:string|null;note?:string|null;payload?:Record<string,unknown>|null}):void{this.db.prepare(`INSERT INTO payout_events (payout_id,seller_id,event_type,actor_type,actor_id,note,payload,created_at) VALUES (?,?,?,?,?,?,?,?)`).run(input.payoutId,input.sellerId,input.eventType,input.actorType,input.actorId ?? null,input.note ?? null,input.payload ? JSON.stringify(input.payload):null,new Date().toISOString());}
-  private rowToPayout(row:Record<string,unknown>):PayoutRecord{return{id:row.id as string,sellerId:row.seller_id as string,eventId:row.event_id==null?null:String(row.event_id),eventCreatorUid:row.event_creator_uid==null?null:String(row.event_creator_uid),orderId:(row.order_id as string|null)??null,escrowId:(row.escrow_id as string|null)??null,releaseEntryId:(row.release_entry_id as string|null)??null,destinationAccountId:(row.destination_account_id as string|null)??null,amount:row.amount as number,currency:row.currency as string,status:row.status as PayoutStatus,provider:(row.provider as string|null)??null,providerChargeId:(row.provider_charge_id as string|null)??null,providerStatus:(row.provider_status as string|null)??null,requestedBy:(row.requested_by as string|null)??null,requestedAt:(row.requested_at as string|null)??null,createdAt:row.created_at as string,updatedAt:row.updated_at as string};}
+  private rowToPayout(row:Record<string,unknown>):PayoutRecord{return{
+    id:row.id as string,
+    sellerId:row.seller_id as string,
+    ownerType:((row.owner_type as PayoutOwnerType | null) ?? 'seller'),
+    ownerUid:String((row.owner_uid ?? row.event_creator_uid ?? row.seller_id) as string),
+    eventId:row.event_id == null ? null : String(row.event_id),
+    eventCreatorUid:row.event_creator_uid == null ? null : String(row.event_creator_uid),
+    orderId:(row.order_id as string|null)??null,escrowId:(row.escrow_id as string|null)??null,
+    releaseEntryId:(row.release_entry_id as string|null)??null,destinationAccountId:(row.destination_account_id as string|null)??null,
+    amount:row.amount as number,currency:row.currency as string,status:row.status as PayoutStatus,
+    provider:(row.provider as string|null)??null,providerChargeId:(row.provider_charge_id as string|null)??null,
+    providerStatus:(row.provider_status as string|null)??null,requestedBy:(row.requested_by as string|null)??null,
+    requestedAt:(row.requested_at as string|null)??null,createdAt:row.created_at as string,updatedAt:row.updated_at as string
+  };}
 }
 export const payoutRepository=new PayoutRepository();

@@ -15,9 +15,17 @@ export type PayoutStatus =
   | 'failed'
   | 'cancelled';
 
+export type PayoutOwnerType = 'seller' | 'event_creator';
+
 export interface PayoutRecord {
   id: string;
+  /**
+   * Legacy seller-centric identity retained for existing provider/audit
+   * integrations. ownerType/ownerUid are authoritative for payout ownership.
+   */
   sellerId: string;
+  ownerType: PayoutOwnerType;
+  ownerUid: string;
   eventId?: string | null;
   eventCreatorUid?: string | null;
   orderId: string | null;
@@ -52,6 +60,8 @@ export interface PayoutAttemptRecord {
 
 export interface CreateEligiblePayoutInput {
   sellerId: string;
+  ownerType?: PayoutOwnerType;
+  ownerUid?: string | null;
   eventId?: string | null;
   eventCreatorUid?: string | null;
   orderId: string;
@@ -77,6 +87,8 @@ export interface CreateEligiblePayoutInput {
 
 export interface CreateConnectPayoutInput {
   sellerId: string;
+  ownerType?: PayoutOwnerType;
+  ownerUid?: string | null;
   eventId?: string | null;
   eventCreatorUid?: string | null;
   orderId: string;

@@ -1,7 +1,7 @@
 import { getPaymentDb } from '../../postgresCompat.js';
 import { query } from '../../postgres.js';
 import type { PoolClient } from 'pg';
-import type { PayoutRecord, PayoutStatus } from './payout.shared.js';
+import type { PayoutRecord, PayoutOwnerType, PayoutStatus } from './payout.shared.js';
 
 const PAYOUT_ALLOWED_TRANSITIONS: Readonly<Record<PayoutStatus, readonly PayoutStatus[]>> = {
   pending_settlement: ['pending_settlement', 'eligible', 'ready_for_payout', 'queued', 'processing', 'held', 'cancelled'],
@@ -150,6 +150,8 @@ export class PayoutStatusRepository {
     return {
       id: row.id as string,
       sellerId: row.seller_id as string,
+      ownerType: ((row.owner_type as PayoutOwnerType | null) ?? 'seller'),
+      ownerUid: String(row.owner_uid ?? row.event_creator_uid ?? row.seller_id),
       eventId: row.event_id == null ? null : String(row.event_id),
       eventCreatorUid: row.event_creator_uid == null ? null : String(row.event_creator_uid),
       orderId: (row.order_id as string | null) ?? null,
