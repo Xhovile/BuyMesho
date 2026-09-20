@@ -71,6 +71,68 @@ test('payout owner input rejects cross-owner identity', () => {
   );
 });
 
+
+test('existing payout on an escrow cannot be reused across payout owner identities', () => {
+  clearState();
+
+  const existing = repository.createEligibleForRelease({
+    sellerId: 'seller_owner_reuse',
+    orderId: 'order_owner_reuse',
+    escrowId: 'escrow_owner_reuse',
+    releaseEntryId: 'release_owner_reuse',
+    amount: 970,
+    grossAmount: 1000,
+    platformFeeAmount: 30,
+    processingFeeAmount: 0,
+    reserveAmount: 0,
+    reserveCapAmount: 0,
+    manualAdjustmentAmount: 0,
+    payoutFeeAmount: 0,
+    sellerReceivesAmount: 970,
+    netAmount: 970,
+    formulaSnapshot: { grossAmount: 1000, netAmount: 970 },
+    currency: 'MWK',
+    requestedBy: 'system',
+    destinationAccountId: null,
+    snapshot: null,
+  });
+
+  assert.equal(existing.ownerType, 'seller');
+  assert.equal(existing.ownerUid, 'seller_owner_reuse');
+
+  assert.throws(
+    () => repository.createEligibleForRelease({
+      sellerId: 'creator_owner_reuse',
+      ownerType: 'event_creator',
+      ownerUid: 'creator_owner_reuse',
+      eventId: '900003',
+      eventCreatorUid: 'creator_owner_reuse',
+      orderId: 'order_owner_reuse',
+      escrowId: 'escrow_owner_reuse',
+      releaseEntryId: 'release_owner_reuse',
+      amount: 970,
+      grossAmount: 1000,
+      platformFeeAmount: 30,
+      processingFeeAmount: 0,
+      reserveAmount: 0,
+      reserveCapAmount: 0,
+      manualAdjustmentAmount: 0,
+      payoutFeeAmount: 0,
+      sellerReceivesAmount: 970,
+      netAmount: 970,
+      formulaSnapshot: { grossAmount: 1000, netAmount: 970 },
+      currency: 'MWK',
+      requestedBy: 'system',
+      destinationAccountId: null,
+      snapshot: null,
+    }),
+    /Existing payout for escrow does not match the requested payout financial identity/,
+  );
+
+  clearState();
+});
+
+
 test('payout cannot be processed twice while a provider attempt is active', async () => {
   clearState();
   const db = getPaymentDb();
