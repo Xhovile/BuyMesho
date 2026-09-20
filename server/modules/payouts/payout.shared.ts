@@ -18,6 +18,8 @@ export type PayoutStatus =
 export interface PayoutRecord {
   id: string;
   sellerId: string;
+  eventId?: string | null;
+  eventCreatorUid?: string | null;
   orderId: string | null;
   escrowId: string | null;
   releaseEntryId: string | null;
@@ -50,6 +52,8 @@ export interface PayoutAttemptRecord {
 
 export interface CreateEligiblePayoutInput {
   sellerId: string;
+  eventId?: string | null;
+  eventCreatorUid?: string | null;
   orderId: string;
   escrowId: string;
   releaseEntryId: string;
@@ -73,6 +77,8 @@ export interface CreateEligiblePayoutInput {
 
 export interface CreateConnectPayoutInput {
   sellerId: string;
+  eventId?: string | null;
+  eventCreatorUid?: string | null;
   orderId: string;
   amount: number;
   grossAmount: number;

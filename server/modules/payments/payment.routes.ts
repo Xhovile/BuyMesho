@@ -221,6 +221,27 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       }
 
       const containsEventTicket = requestedItems.some((item) => item?.eventId !== undefined && item?.eventId !== null && String(item.eventId).trim() !== "");
+      const containsListingItem = requestedItems.some((item) => item?.listingId !== undefined && item?.listingId !== null && String(item.listingId).trim() !== "");
+      const requestedEventIds = [...new Set(
+        requestedItems
+          .map((item) => item?.eventId == null ? "" : String(item.eventId).trim())
+          .filter(Boolean),
+      )];
+
+      if (containsEventTicket && containsListingItem) {
+        return res.status(400).json({
+          error: "Event tickets and marketplace listings must be checked out separately.",
+          code: "MIXED_EVENT_LISTING_CHECKOUT",
+        });
+      }
+
+      if (requestedEventIds.length > 1) {
+        return res.status(400).json({
+          error: "Tickets from multiple events must be checked out separately.",
+          code: "MULTI_EVENT_CHECKOUT",
+        });
+      }
+
       if (containsEventTicket) {
         const holderError = validateTicketHolder(ticketHolder);
         if (holderError) return res.status(400).json({ error: holderError });

@@ -34,15 +34,30 @@ async function notifySellerOfPaidPayout(payout: PayoutRecord | undefined): Promi
       order_items?: unknown;
       masked_account?: string | null;
     }>(
-      `SELECT s.email, s.business_name, o.items AS order_items, spa.masked_account
-         FROM sellers s
+      `SELECT
+         COALESCE(s.email, ec.email) AS email,
+         COALESCE(NULLIF(s.business_name, ''), NULLIF(ec.organization_name, ''), ec.display_name) AS business_name,
+         o.items AS order_items,
+         spa.masked_account
+         FROM (SELECT $1 AS uid) owner
+         LEFT JOIN sellers s
+           ON s.uid = owner.uid
+          AND $4 IS NULL
+         LEFT JOIN event_creators ec
+           ON ec.uid = owner.uid
+          AND $4 IS NOT NULL
          LEFT JOIN orders o ON o.id = $2
          LEFT JOIN seller_payout_accounts spa
            ON spa.id = $3
-          AND spa.seller_uid = s.uid
-        WHERE s.uid = $1
+          AND (
+            ($4 IS NULL AND spa.seller_uid = owner.uid)
+            OR
+            ($4 IS NOT NULL AND spa.owner_type = 'event_creator' AND spa.event_creator_uid = owner.uid)
+          )
+        WHERE ($4 IS NULL AND s.uid IS NOT NULL)
+           OR ($4 IS NOT NULL AND ec.uid IS NOT NULL)
         LIMIT 1`,
-      [payout.sellerId, payout.orderId ?? null, payout.destinationAccountId ?? null],
+      [payout.sellerId, payout.orderId ?? null, payout.destinationAccountId ?? null, payout.eventId ?? null],
     );
     const email = result.rows[0]?.email?.trim();
     if (!email) return;
@@ -78,13 +93,28 @@ async function notifySellerOfFinalPayoutFailure(
       order_items?: unknown;
       masked_account?: string | null;
     }>(
-      `SELECT s.email, s.business_name, o.items AS order_items, spa.masked_account
-         FROM sellers s
+      `SELECT
+         COALESCE(s.email, ec.email) AS email,
+         COALESCE(NULLIF(s.business_name, ''), NULLIF(ec.organization_name, ''), ec.display_name) AS business_name,
+         o.items AS order_items,
+         spa.masked_account
+         FROM (SELECT $1 AS uid) owner
+         LEFT JOIN sellers s
+           ON s.uid = owner.uid
+          AND $4 IS NULL
+         LEFT JOIN event_creators ec
+           ON ec.uid = owner.uid
+          AND $4 IS NOT NULL
          LEFT JOIN orders o ON o.id = $2
          LEFT JOIN seller_payout_accounts spa
            ON spa.id = $3
-          AND spa.seller_uid = s.uid
-        WHERE s.uid = $1
+          AND (
+            ($4 IS NULL AND spa.seller_uid = owner.uid)
+            OR
+            ($4 IS NOT NULL AND spa.owner_type = 'event_creator' AND spa.event_creator_uid = owner.uid)
+          )
+        WHERE ($4 IS NULL AND s.uid IS NOT NULL)
+           OR ($4 IS NOT NULL AND ec.uid IS NOT NULL)
         LIMIT 1`,
       [payout.sellerId, payout.orderId ?? null, payout.destinationAccountId ?? null],
     );

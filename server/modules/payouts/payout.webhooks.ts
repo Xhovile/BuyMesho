@@ -78,17 +78,53 @@ async function handlePaychanguWebhookInternal(context:PayoutWebhookContext):Prom
   if(latestAttempt?.id)db.prepare(`UPDATE payout_attempts SET status=?,response_payload=?,completed_at=COALESCE(completed_at,?),updated_at=? WHERE id=?`).run(payoutState,rawPayload,now,now,latestAttempt.id);
   db.prepare(`INSERT INTO payout_events (payout_id,seller_id,event_type,actor_type,actor_id,note,payload,created_at) VALUES (?,?,?,'system',NULL,?,?,?)`).run(resolvedPayoutId,resolvedSellerId,payoutState==='paid'?'payout_reconciled':payoutState==='failed'?'payout_webhook_failed':'payout_webhook_pending',payoutState==='paid'?'PayChangu payout webhook confirmed payout completion':payoutState==='failed'?'PayChangu payout webhook reported payout failure':'PayChangu payout webhook reported pending payout status',rawPayload,now);
   if(payoutState==='paid'){
-    const seller=db.prepare(`SELECT email,business_name FROM sellers WHERE uid=? LIMIT 1`).get(resolvedSellerId) as {email?:string;business_name?:string}|undefined;
+    const owner=db.prepare(`
+      SELECT
+        COALESCE(s.email, ec.email) AS email,
+        COALESCE(NULLIF(s.business_name, ''), NULLIF(ec.organization_name, ''), ec.display_name) AS business_name
+      FROM (SELECT ? AS uid) owner
+      LEFT JOIN sellers s
+        ON s.uid = owner.uid
+       AND ? IS NULL
+      LEFT JOIN event_creators ec
+        ON ec.uid = owner.uid
+       AND ? IS NOT NULL
+      WHERE (? IS NULL AND s.uid IS NOT NULL)
+         OR (? IS NOT NULL AND ec.uid IS NOT NULL)
+      LIMIT 1
+    `).get(
+      resolvedSellerId,
+      payoutRow.event_id ?? null,
+      payoutRow.event_id ?? null,
+      payoutRow.event_id ?? null,
+      payoutRow.event_id ?? null,
+    ) as {email?:string;business_name?:string}|undefined;
     const orderRow=payoutRow.order_id
       ? db.prepare(`SELECT items FROM orders WHERE id=? LIMIT 1`).get(String(payoutRow.order_id)) as {items?:unknown}|undefined
       : undefined;
     const destinationRow=payoutRow.destination_account_id
-      ? db.prepare(`SELECT masked_account FROM seller_payout_accounts WHERE id=? AND seller_uid=? LIMIT 1`).get(String(payoutRow.destination_account_id),resolvedSellerId) as {masked_account?:string}|undefined
+      ? db.prepare(`
+          SELECT masked_account
+          FROM seller_payout_accounts
+          WHERE id=?
+            AND (
+              (? IS NULL AND seller_uid=?)
+              OR
+              (? IS NOT NULL AND owner_type='event_creator' AND event_creator_uid=?)
+            )
+          LIMIT 1
+        `).get(
+          String(payoutRow.destination_account_id),
+          payoutRow.event_id ?? null,
+          resolvedSellerId,
+          payoutRow.event_id ?? null,
+          resolvedSellerId,
+        ) as {masked_account?:string}|undefined
       : undefined;
-    const email=seller?.email?.trim();
+    const email=owner?.email?.trim();
     if(email)void notifyPayoutCompleted({
       email,
-      sellerName:seller?.business_name?.trim()||'there',
+      sellerName:owner?.business_name?.trim()||'there',
       amount:payoutAmount,
       currency:payoutCurrency,
       payoutId:resolvedPayoutId,

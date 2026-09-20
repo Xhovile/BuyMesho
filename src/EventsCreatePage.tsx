@@ -5,6 +5,7 @@ import { ArrowRight, ChevronDown, Ticket, Upload, X } from "lucide-react";
 import { EVENTS_PATH, HOME_PATH, navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
 import { useAuthUser } from "./hooks/useAuthUser";
+import EventPayoutSetup from "./components/events/EventPayoutSetup";
 import {
   createEmptyEventValues,
   getEventItemConfig,
@@ -30,6 +31,7 @@ type SavedEvent = {
   description: string;
   contact_whatsapp: string | null;
   poster_alt: string | null;
+  payout_destination_id?: string | null;
   spec_values: Record<string, EventSpecValue>;
   status: string;
   created_at: string;
@@ -410,6 +412,7 @@ export default function EventsCreatePage() {
   const [posterUploading, setPosterUploading] = useState(false);
   const [loadingExistingEvent, setLoadingExistingEvent] = useState(isEditing);
   const [existingEvent, setExistingEvent] = useState<SavedEvent | null>(null);
+  const [payoutDestinationId, setPayoutDestinationId] = useState<string | null>(null);
   const posterInputRef = useRef<HTMLInputElement | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -433,6 +436,8 @@ export default function EventsCreatePage() {
     config?.schema.fields.forEach((field) => map.set(field.key, field));
     return map;
   }, [config]);
+
+  const requiresPayoutDestination = Number(values.ticket_price ?? 0) > 0;
 
   useEffect(() => {
     if (authLoading) return;
@@ -490,6 +495,7 @@ export default function EventsCreatePage() {
 
         const existing = response.event;
         setExistingEvent(existing);
+        setPayoutDestinationId(existing.payout_destination_id ?? null);
         setEventType(existing.event_type || INITIAL_EVENT_TYPE);
         setValues(buildPrefilledValues(existing));
         setPosterAssetUrl(getPosterAssetUrlFromEvent(existing));
@@ -601,12 +607,18 @@ export default function EventsCreatePage() {
       return;
     }
 
+    if (!isEditing && requiresPayoutDestination && !payoutDestinationId) {
+      setFormError("Select or add a payout destination before publishing this paid event.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const normalizedValues = normalizeNumberFields(config.schema.fields, values);
       const payload = {
         event_type: eventType,
         status: existingEvent?.status || "published",
+        payout_destination_id: payoutDestinationId,
         spec_values: {
           ...normalizedValues,
           poster_image_url: posterAssetUrl || null,
@@ -837,6 +849,13 @@ export default function EventsCreatePage() {
                     </div>
                   )}
                 </section>
+
+                <EventPayoutSetup
+                  value={payoutDestinationId}
+                  onChange={setPayoutDestinationId}
+                  required={requiresPayoutDestination}
+                  disabled={submitting}
+                />
 
                 {formError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{formError}</div> : null}
 

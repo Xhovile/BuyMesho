@@ -8,6 +8,10 @@ import { calculatePayoutFormula } from '../../modules/payouts/payout.policy.js';
 import { assertEscrowReleaseReadiness } from '../../modules/escrow/escrow.rules.js';
 import { getPaymentDb } from '../../postgresCompat.js';
 import { withTransaction } from '../../postgres.js';
+import {
+  createEventPayoutCandidateAsync,
+  resolveEventPayoutContext,
+} from '../../modules/payouts/event-payout.integration.js';
 import { assertEscrowReleaseAccess, assertOrderAccess, escrowActionLimiter, jsonError } from './shared.js';
 
 type VerifiedPayoutDestination = {
@@ -61,6 +65,15 @@ function getRequestedDestinationAccountId(body: unknown): string | null {
 function releaseDebug(stage: string, details?: Record<string, unknown>): void {
   if (process.env.NODE_ENV !== 'test') return;
   console.error(`[escrow-release-debug] ${stage}`, details ?? {});
+}
+
+function payoutMethodFromSellerDestination(destination: VerifiedPayoutDestination) {
+  if (destination.destination_type === 'bank') return 'bank_transfer' as const;
+
+  const provider = `${destination.provider_ref_id ?? ''} ${destination.provider_name ?? ''}`;
+  if (/tnm|mpamba/i.test(provider)) return 'tnm_mpamba' as const;
+  if (/airtel/i.test(provider)) return 'airtel_money' as const;
+  return null;
 }
 
 export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Router {
@@ -165,60 +178,89 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           throw new Error('Escrow release succeeded but payout is not eligible');
         }
 
-        const destination = await resolveVerifiedPayoutDestination(access.order.sellerId, client);
-        releaseDebug('destinationLookup:end', { found: Boolean(destination), destinationId: destination?.id });
-        if (!destination) {
-          throw new Error('No verified active payout destination found for seller');
-        }
-
-        if (requestedDestinationAccountId && requestedDestinationAccountId !== destination.id) {
-          throw new Error('Invalid payout destination for this seller');
-        }
-
-        const payoutMethod =
-          destination.destination_type === 'bank'
-            ? 'bank_transfer'
-            : /tnm|mpamba/i.test(`${destination.provider_ref_id ?? ''} ${destination.provider_name ?? ''}`)
-              ? 'tnm_mpamba'
-              : /airtel/i.test(`${destination.provider_ref_id ?? ''} ${destination.provider_name ?? ''}`)
-                ? 'airtel_money'
-                : null;
-
-        const payoutFormula = calculatePayoutFormula({
-          grossAmount: released.releaseEntry.amount,
-          payoutMethod,
-          currency: released.releaseEntry.currency,
+        const eventContext = await resolveEventPayoutContext(orderId, client);
+        releaseDebug('eventPayoutContext:end', {
+          eventId: eventContext?.eventId ?? null,
+          destinationId: eventContext?.destinationAccountId ?? null,
         });
 
-        const payout = await payoutService.createEligiblePayoutCandidateAsync({
-          sellerId: access.order.sellerId,
-          orderId,
-          escrowId: released.escrow.id,
-          releaseEntryId: released.releaseEntry.id,
-          amount: payoutFormula.sellerReceivesAmount,
-          grossAmount: payoutFormula.grossAmount,
-          platformFeeAmount: payoutFormula.platformFeeAmount,
-          processingFeeAmount: payoutFormula.processingFeeAmount,
-          reserveAmount: payoutFormula.reserveAmount,
-          reserveCapAmount: payoutFormula.reserveCapAmount,
-          manualAdjustmentAmount: payoutFormula.manualAdjustmentAmount,
-          payoutFeeAmount: payoutFormula.payoutFeeAmount,
-          sellerReceivesAmount: payoutFormula.sellerReceivesAmount,
-          netAmount: payoutFormula.netAmount,
-          formulaSnapshot: payoutFormula,
-          currency: released.releaseEntry.currency,
-          requestedBy: requesterId,
-          requestedAt: released.releaseEntry.createdAt,
-          destinationAccountId: destination.id,
-          snapshot: {
-            payoutFormula,
-            releaseAmount: released.releaseEntry.amount,
+        let destination: VerifiedPayoutDestination;
+        let payoutFormula;
+        let payout;
+
+        if (eventContext) {
+          if (requestedDestinationAccountId && requestedDestinationAccountId !== eventContext.destinationAccountId) {
+            throw new Error('Invalid payout destination for this event');
+          }
+
+          const eventPayout = await createEventPayoutCandidateAsync({
+            orderId,
+            escrowId: released.escrow.id,
             releaseEntryId: released.releaseEntry.id,
+            event: eventContext,
+            grossAmount: released.releaseEntry.amount,
+            currency: released.releaseEntry.currency,
+            requestedBy: requesterId,
+            requestedAt: released.releaseEntry.createdAt,
+          }, client);
+
+          payout = eventPayout.payout;
+          payoutFormula = eventPayout.payoutFormula;
+          destination = {
+            id: eventContext.destinationAccountId,
+            destination_type: eventContext.destinationType,
+            provider_ref_id: eventContext.providerRefId,
+            provider_name: eventContext.providerName,
+          };
+        } else {
+          destination = await resolveVerifiedPayoutDestination(access.order.sellerId, client) as VerifiedPayoutDestination | undefined;
+          releaseDebug('destinationLookup:end', { found: Boolean(destination), destinationId: destination?.id });
+          if (!destination) {
+            throw new Error('No verified active payout destination found for seller');
+          }
+
+          if (requestedDestinationAccountId && requestedDestinationAccountId !== destination.id) {
+            throw new Error('Invalid payout destination for this seller');
+          }
+
+          const payoutMethod = payoutMethodFromSellerDestination(destination);
+
+          payoutFormula = calculatePayoutFormula({
+            grossAmount: released.releaseEntry.amount,
+            payoutMethod,
+            currency: released.releaseEntry.currency,
+          });
+
+          payout = await payoutService.createEligiblePayoutCandidateAsync({
+            sellerId: access.order.sellerId,
+            orderId,
+            escrowId: released.escrow.id,
+            releaseEntryId: released.releaseEntry.id,
+            amount: payoutFormula.sellerReceivesAmount,
+            grossAmount: payoutFormula.grossAmount,
+            platformFeeAmount: payoutFormula.platformFeeAmount,
+            processingFeeAmount: payoutFormula.processingFeeAmount,
+            reserveAmount: payoutFormula.reserveAmount,
+            reserveCapAmount: payoutFormula.reserveCapAmount,
+            manualAdjustmentAmount: payoutFormula.manualAdjustmentAmount,
+            payoutFeeAmount: payoutFormula.payoutFeeAmount,
+            sellerReceivesAmount: payoutFormula.sellerReceivesAmount,
+            netAmount: payoutFormula.netAmount,
+            formulaSnapshot: payoutFormula,
+            currency: released.releaseEntry.currency,
+            requestedBy: requesterId,
+            requestedAt: released.releaseEntry.createdAt,
             destinationAccountId: destination.id,
-            requestedDestinationAccountId,
-            payoutRetryWindowStartedAt: released.releaseEntry.createdAt,
-          },
-        }, client);
+            snapshot: {
+              payoutFormula,
+              releaseAmount: released.releaseEntry.amount,
+              releaseEntryId: released.releaseEntry.id,
+              destinationAccountId: destination.id,
+              requestedDestinationAccountId,
+              payoutRetryWindowStartedAt: released.releaseEntry.createdAt,
+            },
+          }, client);
+        }
 
         const orderUpdated = await serverOrderService.setStatusAsync(orderId, 'fulfilled', client);
         if (!orderUpdated) {
@@ -238,6 +280,8 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           payoutFormula,
           releaseEntryId: released.releaseEntry.id,
           releaseTimestamp: released.releaseEntry.createdAt,
+          eventId: eventContext?.eventId ?? null,
+          eventCreatorUid: eventContext?.eventCreatorUid ?? null,
         };
       });
 
@@ -261,12 +305,17 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
 
       await payoutService.addEventAsync({
         payoutId: finalPayout.id,
-        sellerId: access.order.sellerId,
+        sellerId: result.eventCreatorUid ?? access.order.sellerId,
         eventType: 'payout_released',
         actorType: req.user?.is_admin ? 'admin' : 'buyer',
         actorId: requesterId,
-        note: 'Escrow release created and immediately submitted payout candidate',
+        note: result.eventId
+          ? 'Event escrow release created and immediately submitted event payout candidate'
+          : 'Escrow release created and immediately submitted payout candidate',
         payload: {
+          scope: result.eventId ? 'event' : 'seller',
+          eventId: result.eventId,
+          eventCreatorUid: result.eventCreatorUid,
           escrowId: result.escrow.id,
           releaseEntryId: result.releaseEntryId,
           releaseTimestamp: result.releaseTimestamp,
@@ -295,6 +344,13 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           verified: true,
           active: true,
         },
+        eventPayout: result.eventId
+          ? {
+              eventId: result.eventId,
+              eventCreatorUid: result.eventCreatorUid,
+              destinationAccountId: result.destination.id,
+            }
+          : null,
       });
     } catch (error) {
       releaseDebug('route:error', { error: error instanceof Error ? error.message : String(error) });
