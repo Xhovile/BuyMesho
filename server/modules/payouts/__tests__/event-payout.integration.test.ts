@@ -76,6 +76,46 @@ test('event payout context resolves the event-bound verified destination', async
   });
   cleanup();
 });
+test('event payout candidate rejects an existing payout with a different financial owner identity', async () => {
+  seed();
+  const now = new Date().toISOString();
+
+  db.prepare(`
+    INSERT INTO payouts (
+      id, seller_id, owner_type, owner_uid, order_id, escrow_id, release_entry_id,
+      amount, gross_amount, platform_fee_amount, processing_fee_amount, reserve_amount, reserve_cap_amount,
+      manual_adjustment_amount, payout_fee_amount, seller_receives_amount, net_amount, formula_snapshot,
+      currency, status, provider, requested_by, requested_at, created_at, updated_at
+    ) VALUES (
+      'event-payout-conflicting-owner', 'event_payout_test_creator', 'seller', 'event_payout_test_creator',
+      'event-payout-test-order', 'event-payout-test-escrow', 'event-payout-test-release',
+      9700, 10000, 300, 0, 0, 0, 0, 0, 9700, 9700, '{}',
+      'MWK', 'pending_settlement', 'paychangu', 'system', ?, ?, ?
+    )
+  `).run(now, now, now);
+
+  await withTransaction(async (client) => {
+    const context = await resolveEventPayoutContext('event-payout-test-order', client);
+    assert.ok(context);
+
+    await assert.rejects(
+      () => createEventPayoutCandidateAsync({
+        orderId: 'event-payout-test-order',
+        escrowId: 'event-payout-test-escrow',
+        releaseEntryId: 'event-payout-test-release',
+        event: context,
+        grossAmount: 10000,
+        currency: 'MWK',
+        requestedBy: 'event_payout_test_creator',
+        requestedAt: now,
+      }, client),
+      /Existing payout for escrow does not match the event payout financial identity/,
+    );
+  });
+
+  cleanup();
+});
+
 
 test('event payout candidate stores event identity, bound destination, and immutable fee snapshot', async () => {
   seed();
