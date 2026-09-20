@@ -45,9 +45,6 @@ export const ENDPOINTS = {
     retry: (sellerId: string) => `${API_BASE_PATH}/payouts/${encodeURIComponent(sellerId)}/retry`,
     override: (sellerId: string) => `${API_BASE_PATH}/payouts/${encodeURIComponent(sellerId)}/override`,
   },
-  eventCreator: {
-    eventFinancial: (eventId: number | string) => `${API_BASE_PATH}/event-creator/events/${encodeURIComponent(String(eventId))}/financial`,
-  },
   listings: {
     all: `${API_BASE_PATH}/listings`,
   },
