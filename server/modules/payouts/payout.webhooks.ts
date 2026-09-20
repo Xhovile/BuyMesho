@@ -82,20 +82,22 @@ async function handlePaychanguWebhookInternal(context:PayoutWebhookContext):Prom
       SELECT
         COALESCE(s.email, ec.email) AS email,
         COALESCE(NULLIF(s.business_name, ''), NULLIF(ec.organization_name, ''), ec.display_name) AS business_name
-      FROM sellers s
-      FULL OUTER JOIN event_creators ec
-        ON ec.uid = ?
+      FROM (SELECT ? AS uid) owner
+      LEFT JOIN sellers s
+        ON s.uid = owner.uid
+       AND ? IS NULL
+      LEFT JOIN event_creators ec
+        ON ec.uid = owner.uid
        AND ? IS NOT NULL
-      WHERE (? IS NULL AND s.uid = ?)
-         OR (? IS NOT NULL AND ec.uid = ?)
+      WHERE (? IS NULL AND s.uid IS NOT NULL)
+         OR (? IS NOT NULL AND ec.uid IS NOT NULL)
       LIMIT 1
     `).get(
       resolvedSellerId,
       payoutRow.event_id ?? null,
       payoutRow.event_id ?? null,
-      resolvedSellerId,
       payoutRow.event_id ?? null,
-      resolvedSellerId,
+      payoutRow.event_id ?? null,
     ) as {email?:string;business_name?:string}|undefined;
     const orderRow=payoutRow.order_id
       ? db.prepare(`SELECT items FROM orders WHERE id=? LIMIT 1`).get(String(payoutRow.order_id)) as {items?:unknown}|undefined
