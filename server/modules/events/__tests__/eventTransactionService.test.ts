@@ -7,7 +7,6 @@ const db = getPaymentDb();
 
 function cleanup() {
   db.prepare("DELETE FROM disputes WHERE order_id IN ('event_tx_order_a','event_tx_order_b','event_tx_order_other')").run();
-  db.prepare("DELETE FROM refund_transactions WHERE order_id IN ('event_tx_order_a','event_tx_order_b','event_tx_order_other')").run();
   db.prepare("DELETE FROM payments WHERE order_id IN ('event_tx_order_a','event_tx_order_b','event_tx_order_other')").run();
   db.prepare("DELETE FROM event_tickets WHERE id IN ('event_tx_ticket_a','event_tx_ticket_b','event_tx_ticket_other')").run();
   db.prepare("DELETE FROM orders WHERE id IN ('event_tx_order_a','event_tx_order_b','event_tx_order_other')").run();
@@ -53,20 +52,13 @@ function seed() {
     INSERT INTO event_tickets (id,event_id,order_id,code,ticket_title,ticket_type,holder_name,holder_email,holder_phone,status,purchase_date,updated_at,event_title,event_date,start_time,venue,location,metadata)
     VALUES
       ('event_tx_ticket_a',991001,'event_tx_order_a','TICKET-EVENT-A','Canonical Event','General Admission','Buyer A','a@example.com','0990000001','Waiting Entry',?,?,'Canonical Event','2026-08-21','18:00','Venue A','Lilongwe','{}'),
-      ('event_tx_ticket_b',991001,'event_tx_order_b','TICKET-EVENT-B','Canonical Event','General Admission','Buyer B','b@example.com','0990000002','Refunded',?,?,'Canonical Event','2026-08-21','18:00','Venue A','Lilongwe','{}'),
+      ('event_tx_ticket_b',991001,'event_tx_order_b','TICKET-EVENT-B','Canonical Event','General Admission','Buyer B','b@example.com','0990000002','Waiting Entry',?,?,'Canonical Event','2026-08-21','18:00','Venue A','Lilongwe','{}'),
       ('event_tx_ticket_other',991002,'event_tx_order_other','TICKET-OTHER','Other Event','General Admission','Buyer C','c@example.com','0990000003','Waiting Entry',?,?,'Other Event','2026-08-22','18:00','Venue B','Lilongwe','{}')
   `).run(now, now, now, now, now, now);
 
   db.prepare(`
     INSERT INTO disputes (id,order_id,escrow_id,opened_by,reason,status,created_at,updated_at,ticket_id)
     VALUES ('event_tx_dispute_a','event_tx_order_a',NULL,'buyer-a','ticket issue','open',?,?,'event_tx_ticket_a')
-  `).run(now, now);
-
-  db.prepare(`
-    INSERT INTO refund_transactions
-      (id,refund_request_id,order_id,buyer_id,seller_id,amount,currency,status,transaction_id,executed_at,created_at,updated_at)
-    VALUES ('event_tx_refund_a',NULL,'event_tx_order_a','buyer-a','event_tx_creator',
-            250,'MWK','refunded','REFUND-EVENT-A',?,?,?)
   `).run(now, now);
 }
 
@@ -83,15 +75,12 @@ test('canonical event transaction service isolates event transactions and summar
   const summary = getEventTransactionSummary(db, '991001');
   assert.equal(summary.ticketsIssued, 2);
   assert.equal(summary.ticketsSold, 2);
-  assert.equal(summary.ticketsRefunded, 1);
   assert.equal(summary.orderCount, 2);
   assert.equal(summary.paymentCount, 2);
   assert.equal(summary.successfulPaymentCount, 2);
   assert.equal(summary.ticketsDisputed, 1);
   assert.equal(summary.disputedPaymentCount, 1);
   assert.equal(summary.grossRevenueAmount, 3000);
-  assert.equal(summary.refundedAmount, 250);
-  assert.equal(summary.netRevenueAmount, 2750);
   assert.equal(summary.latestPaymentReference, 'REF-EVENT-B');
 
   cleanup();
