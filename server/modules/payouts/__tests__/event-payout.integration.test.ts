@@ -251,11 +251,13 @@ test('event payout candidate stores event identity, bound destination, and immut
     assert.equal(result.formulaSnapshot.scope, 'event');
     assert.equal(result.formulaSnapshot.eventId, '992001');
     assert.equal(result.formulaSnapshot.formulaVersion, 'event-payout-v1');
-
-    const genericRead = payoutService.findById(result.payout.id);
-    assert.equal(genericRead?.eventId, '992001');
-    assert.equal(genericRead?.eventCreatorUid, 'event_payout_test_creator');
   });
+
+  const genericRead = payoutService.findById(
+    db.prepare("SELECT id FROM payouts WHERE order_id = 'event-payout-test-order' LIMIT 1").get() as { id: string },
+  );
+  assert.equal(genericRead?.eventId, '992001');
+  assert.equal(genericRead?.eventCreatorUid, 'event_payout_test_creator');
 
   cleanup();
 });
