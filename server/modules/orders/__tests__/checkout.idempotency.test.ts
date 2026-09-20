@@ -30,6 +30,16 @@ function clearState() {
   db.prepare('DELETE FROM orders').run();
   db.prepare('DELETE FROM listings').run();
   db.prepare('DELETE FROM events WHERE id IN (992101, 992102)').run();
+  db.prepare("DELETE FROM event_creators WHERE uid = 'event_creator_checkout_test'").run();
+}
+
+function seedCheckoutEventCreator() {
+  const now = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO event_creators (
+      uid,email,display_name,organization_name,organization_type,event_types,status,created_at,updated_at
+    ) VALUES ('event_creator_checkout_test','checkout@example.com','Checkout Test Creator','Checkout Test Org','events','concert','approved',?,?)
+  `).run(now, now);
 }
 
 function seedListing(): number {
@@ -41,6 +51,7 @@ function seedListing(): number {
 }
 
 function seedEvent(eventId: number, title: string): number {
+  seedCheckoutEventCreator();
   getPaymentDb().prepare(`
     INSERT INTO events (
       id, creator_uid, event_type, event_title, organizer_name, event_date, start_time,
