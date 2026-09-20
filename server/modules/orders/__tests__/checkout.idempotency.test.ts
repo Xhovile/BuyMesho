@@ -47,7 +47,7 @@ function seedEvent(eventId: number, title: string): number {
       venue, location, ticket_mode, ticket_price, description, spec_values, status
     ) VALUES (?, ?, 'concert', ?, 'Event Creator', '2026-10-01', '18:00',
       'Test Venue', 'Lilongwe', 'paid', 5000, 'Checkout scope test', '{}', 'published')
-  `.run(eventId, 'event_creator_checkout_test', title);
+  `).run(eventId, 'event_creator_checkout_test', title);
   return eventId;
 }
 
