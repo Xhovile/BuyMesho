@@ -33,6 +33,14 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Configure Git access to Platform dependency
+        run: |
+          git config --global --unset-all 'url.https://github.com/.insteadOf' || true
+          git config --global --add 'url.https://github.com/.insteadOf' 'ssh://git@github.com/'
+          git config --global --add 'url.https://github.com/.insteadOf' 'git+ssh://git@github.com/'
+          git config --global --add 'url.https://github.com/.insteadOf' 'git@github.com:'
+          echo "Configured public GitHub SSH URLs to use HTTPS."
+
       - name: Verify Git access to Platform
         run: |
           git ls-remote https://github.com/Xhovile/Platform.git HEAD >/tmp/platform-head.txt
