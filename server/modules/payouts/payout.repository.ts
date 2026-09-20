@@ -23,6 +23,27 @@ import {
 
 type DbExecutor = Pick<PoolClient, 'query'>;
 
+function existingPayoutMatchesInput(
+  existing: PayoutRecord,
+  input: CreateEligiblePayoutInput | CreateConnectPayoutInput,
+  owner: { ownerType: PayoutOwnerType; ownerUid: string },
+): boolean {
+  const requestedEventId = input.eventId == null ? null : String(input.eventId);
+  const requestedEventCreatorUid = input.eventCreatorUid ?? null;
+  const requestedDestinationAccountId = input.destinationAccountId ?? null;
+
+  return (
+    existing.ownerType === owner.ownerType &&
+    existing.ownerUid === owner.ownerUid &&
+    existing.eventId === requestedEventId &&
+    existing.eventCreatorUid === requestedEventCreatorUid &&
+    existing.orderId === input.orderId &&
+    existing.escrowId === input.escrowId &&
+    existing.releaseEntryId === input.releaseEntryId &&
+    (input.destinationAccountId === undefined || existing.destinationAccountId === requestedDestinationAccountId)
+  );
+}
+
 function resolvePayoutOwner(
   input: Pick<CreateEligiblePayoutInput | CreateConnectPayoutInput, 'sellerId' | 'eventId' | 'eventCreatorUid' | 'ownerType' | 'ownerUid'>,
 ): { ownerType: PayoutOwnerType; ownerUid: string } {
@@ -105,7 +126,12 @@ export class PayoutRepository {
     const owner = resolvePayoutOwner(input);
     const run = async (client: DbExecutor): Promise<PayoutRecord> => {
       const existing = await this.findByEscrowIdAsync(input.escrowId, client);
-      if (existing) return existing;
+      if (existing) {
+        if (!existingPayoutMatchesInput(existing, input, owner)) {
+          throw new Error('Existing payout for escrow does not match the requested payout financial identity');
+        }
+        return existing;
+      }
       const now = input.requestedAt ?? new Date().toISOString();
       const id = randomUUID();
       await client.query(
@@ -182,7 +208,13 @@ export class PayoutRepository {
 
   createEligibleForRelease(input: CreateEligiblePayoutInput): PayoutRecord {
     const owner = resolvePayoutOwner(input);
-    const existing = this.findByEscrowId(input.escrowId); if (existing) return existing;
+    const existing = this.findByEscrowId(input.escrowId);
+    if (existing) {
+      if (!existingPayoutMatchesInput(existing, input, owner)) {
+        throw new Error('Existing payout for escrow does not match the requested payout financial identity');
+      }
+      return existing;
+    }
     const now = input.requestedAt ?? new Date().toISOString(); const id = randomUUID();
     this.db.prepare(`INSERT INTO payouts (
       id,seller_id,owner_type,owner_uid,event_id,event_creator_uid,order_id,escrow_id,release_entry_id,
