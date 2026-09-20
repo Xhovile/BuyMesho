@@ -59,7 +59,7 @@ export async function gatePayoutForSubmission(payoutId: string): Promise<{ row: 
        spa.verification_status, spa.is_active, spa.id AS destination_account_id,
        (SELECT COALESCE(MAX(attempt_no), 0) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS attempt_count
      FROM payouts p LEFT JOIN orders o ON o.id = p.order_id LEFT JOIN escrows e ON e.id = p.escrow_id
-     LEFT JOIN sellers s ON s.uid = p.seller_id
+     LEFT JOIN sellers s ON s.uid = p.owner_uid AND p.owner_type = 'seller'
      LEFT JOIN seller_payout_accounts spa
        ON spa.id = p.destination_account_id
       AND spa.owner_type = COALESCE(p.owner_type, 'seller')
