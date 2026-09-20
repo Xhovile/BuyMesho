@@ -74,6 +74,31 @@ test('event payout context resolves the event-bound verified destination', async
   cleanup();
 });
 
+test('event payout context rejects orders that mix event tickets with listing items', async () => {
+  seed();
+
+  const dbRow = db.prepare('SELECT items FROM orders WHERE id = ?').get('event-payout-test-order') as { items: string };
+  const mixedItems = JSON.stringify([
+    ...JSON.parse(dbRow.items),
+    {
+      kind: 'listing',
+      listingId: 'listing-992001',
+      title: 'Marketplace item',
+      quantity: 1,
+      unitPrice: { amount: 5000, currency: 'MWK' },
+    },
+  ]);
+
+  db.prepare('UPDATE orders SET items = ? WHERE id = ?').run(mixedItems, 'event-payout-test-order');
+
+  await assert.rejects(
+    withTransaction((client) => resolveEventPayoutContext('event-payout-test-order', client)),
+    /event tickets and non-event items cannot be settled as one payout/,
+  );
+
+  cleanup();
+});
+
 test('event payout candidate stores event identity, bound destination, and immutable fee snapshot', async () => {
   seed();
   const now = new Date().toISOString();
