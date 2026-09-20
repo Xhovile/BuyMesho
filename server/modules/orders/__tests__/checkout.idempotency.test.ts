@@ -29,6 +29,7 @@ function clearState() {
   db.prepare('DELETE FROM payments').run();
   db.prepare('DELETE FROM orders').run();
   db.prepare('DELETE FROM listings').run();
+  db.prepare('DELETE FROM events WHERE id IN (992101, 992102)').run();
 }
 
 function seedListing(): number {
@@ -37,6 +38,17 @@ function seedListing(): number {
     VALUES (?, ?, ?, 'available', 5, 0, 0)
   `).run('seller_idempotency_1', 'Idempotency Test Item', 1000);
   return Number(result.lastInsertRowid);
+}
+
+function seedEvent(eventId: number, title: string): number {
+  getPaymentDb().prepare(`
+    INSERT INTO events (
+      id, creator_uid, event_type, event_title, organizer_name, event_date, start_time,
+      venue, location, ticket_mode, ticket_price, description, spec_values, status
+    ) VALUES (?, ?, 'concert', ?, 'Event Creator', '2026-10-01', '18:00',
+      'Test Venue', 'Lilongwe', 'paid', 5000, 'Checkout scope test', '{}', 'published')
+  `.run(eventId, 'event_creator_checkout_test', title);
+  return eventId;
 }
 
 function mockPayChangu() {
@@ -71,6 +83,84 @@ async function postCheckout(base: string, key: string, payload: Record<string, u
     body: JSON.stringify(payload),
   });
 }
+
+test('checkout rejects mixed event tickets and marketplace listings before creating an order', async () => {
+  clearState();
+  const listingId = seedListing();
+  seedEvent(992101, 'Mixed Scope Event');
+  mockPayChangu();
+
+  const app = createApp();
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+  const base = `http://127.0.0.1:${port}`;
+
+  try {
+    const response = await postCheckout(base, 'checkout-scope-mixed-001', {
+      items: [
+        { listingId, quantity: 1 },
+        { eventId: '992101', quantity: 1 },
+      ],
+      method: 'mobile_money',
+      settlementRoute: 'escrow',
+      ticketHolder: {
+        fullName: 'Test Buyer',
+        email: 'buyer@example.com',
+        phone: '0999999999',
+      },
+    });
+
+    assert.equal(response.status, 400);
+    const body = await response.json() as { code?: string };
+    assert.equal(body.code, 'MIXED_EVENT_LISTING_CHECKOUT');
+
+    const orderCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM orders WHERE checkout_idempotency_key = ?').get('checkout-scope-mixed-001') as { count: number }).count;
+    assert.equal(orderCount, 0);
+  } finally {
+    server.close();
+    clearState();
+    global.fetch = originalFetch;
+  }
+});
+
+test('checkout rejects tickets from multiple events before creating an order', async () => {
+  clearState();
+  seedEvent(992101, 'Event One');
+  seedEvent(992102, 'Event Two');
+  mockPayChangu();
+
+  const app = createApp();
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+  const base = `http://127.0.0.1:${port}`;
+
+  try {
+    const response = await postCheckout(base, 'checkout-scope-multi-001', {
+      items: [
+        { eventId: '992101', quantity: 1 },
+        { eventId: '992102', quantity: 1 },
+      ],
+      method: 'mobile_money',
+      settlementRoute: 'escrow',
+      ticketHolder: {
+        fullName: 'Test Buyer',
+        email: 'buyer@example.com',
+        phone: '0999999999',
+      },
+    });
+
+    assert.equal(response.status, 400);
+    const body = await response.json() as { code?: string };
+    assert.equal(body.code, 'MULTI_EVENT_CHECKOUT');
+
+    const orderCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM orders WHERE checkout_idempotency_key = ?').get('checkout-scope-multi-001') as { count: number }).count;
+    assert.equal(orderCount, 0);
+  } finally {
+    server.close();
+    clearState();
+    global.fetch = originalFetch;
+  }
+});
 
 test('checkout idempotency: replay returns the same order and payment instead of creating another checkout', async () => {
   clearState();
