@@ -12,7 +12,7 @@ afterEach(cleanup);
 function cleanup() {
   db.prepare("DELETE FROM payout_attempts WHERE payout_id LIKE 'event-payout-test-%'").run();
   db.prepare("DELETE FROM payout_events WHERE payout_id LIKE 'event-payout-test-%'").run();
-  db.prepare("DELETE FROM payouts WHERE id LIKE 'event-payout-test-%'").run();
+  db.prepare("DELETE FROM payouts WHERE id LIKE 'event-payout-test-%' OR escrow_id = 'event-payout-test-escrow'").run();
   db.prepare("DELETE FROM event_tickets WHERE order_id = 'event-payout-test-order'").run();
   db.prepare("DELETE FROM escrows WHERE id = 'event-payout-test-escrow'").run();
   db.prepare("DELETE FROM orders WHERE id = 'event-payout-test-order'").run();
