@@ -7,10 +7,14 @@ import { withTransaction } from '../../../postgres.js';
 const db = getPaymentDb();
 
 function cleanup() {
+  db.prepare("DELETE FROM payout_attempts WHERE payout_id LIKE 'event-payout-test-%'").run();
+  db.prepare("DELETE FROM payout_events WHERE payout_id LIKE 'event-payout-test-%'").run();
   db.prepare("DELETE FROM payouts WHERE id LIKE 'event-payout-test-%'").run();
-  db.prepare("DELETE FROM seller_payout_accounts WHERE id = 'event-payout-test-destination'").run();
-  db.prepare("DELETE FROM events WHERE id = 992001").run();
+  db.prepare("DELETE FROM event_tickets WHERE order_id = 'event-payout-test-order'").run();
+  db.prepare("DELETE FROM escrows WHERE id = 'event-payout-test-escrow'").run();
   db.prepare("DELETE FROM orders WHERE id = 'event-payout-test-order'").run();
+  db.prepare("DELETE FROM events WHERE id = 992001").run();
+  db.prepare("DELETE FROM seller_payout_accounts WHERE id = 'event-payout-test-destination'").run();
   db.prepare("DELETE FROM event_creators WHERE uid = 'event_payout_test_creator'").run();
 }
 
@@ -95,6 +99,81 @@ test('event payout context rejects orders that mix event tickets with listing it
     withTransaction((client) => resolveEventPayoutContext('event-payout-test-order', client)),
     /event tickets and non-event items cannot be settled as one payout/,
   );
+
+  cleanup();
+});
+
+test('event payout replay uses the stored immutable fee snapshot', async () => {
+  seed();
+  const now = new Date().toISOString();
+  const storedSnapshot = {
+    formulaVersion: 'event-payout-v1',
+    scope: 'event',
+    eventId: '992001',
+    currency: 'MWK',
+    inputs: {
+      grossAmount: 10000,
+      processingFeeAmount: 250,
+      reserveAmount: 100,
+      manualAdjustmentAmount: 0,
+      payoutMethod: 'airtel_money',
+    },
+    policy: {
+      platformFeeBps: 300,
+      payoutFeeBps: { airtel_money: 180, tnm_mpamba: 150, bank_transfer: 170 },
+      bankPayoutFlatFeeAmount: 700,
+    },
+    result: {
+      grossAmount: 10000,
+      platformFeeAmount: 300,
+      processingFeeAmount: 250,
+      reserveAmount: 100,
+      reserveCapAmount: 600,
+      manualAdjustmentAmount: 0,
+      payoutFeeAmount: 180,
+      sellerReceivesAmount: 9170,
+      netAmount: 9170,
+    },
+  };
+
+  db.prepare(`
+    INSERT INTO payouts (
+      id, seller_id, event_id, event_creator_uid, order_id, escrow_id, release_entry_id,
+      destination_account_id, amount, gross_amount, platform_fee_amount, processing_fee_amount,
+      reserve_amount, reserve_cap_amount, manual_adjustment_amount, payout_fee_amount,
+      seller_receives_amount, net_amount, formula_snapshot, currency, status, provider,
+      provider_charge_id, requested_by, requested_at, created_at, updated_at
+    ) VALUES (
+      'event-payout-test-replay', 'event_payout_test_creator', 992001, 'event_payout_test_creator',
+      'event-payout-test-order', 'event-payout-test-escrow', 'event-payout-test-release',
+      'event-payout-test-destination', 9170, 10000, 300, 250, 100, 600, 0, 180,
+      9170, 9170, ?, 'MWK', 'pending_settlement', 'paychangu', NULL, 'event_payout_test_creator', ?, ?, ?
+    )
+  `).run(JSON.stringify(storedSnapshot), now, now, now);
+
+  await withTransaction(async (client) => {
+    const context = await resolveEventPayoutContext('event-payout-test-order', client);
+    assert.ok(context);
+
+    const result = await createEventPayoutCandidateAsync({
+      orderId: 'event-payout-test-order',
+      escrowId: 'event-payout-test-escrow',
+      releaseEntryId: 'event-payout-test-release',
+      event: context,
+      grossAmount: 15000,
+      currency: 'MWK',
+      requestedBy: 'event_payout_test_creator',
+      requestedAt: now,
+    }, client);
+
+    assert.equal(result.created, false);
+    assert.equal(result.payoutFormula.processingFeeAmount, 250);
+    assert.equal(result.payoutFormula.reserveAmount, 100);
+    assert.equal(result.payoutFormula.netAmount, 9170);
+    assert.equal(result.formulaSnapshot.inputs.grossAmount, 10000);
+    assert.equal(result.formulaSnapshot.inputs.processingFeeAmount, 250);
+    assert.equal(result.formulaSnapshot.result.netAmount, 9170);
+  });
 
   cleanup();
 });
