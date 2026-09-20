@@ -18,6 +18,8 @@ type DbExecutor = Pick<PoolClient, 'query'>;
 type OrderItem = {
   eventId?: unknown;
   event_id?: unknown;
+  listingId?: unknown;
+  listing_id?: unknown;
   kind?: unknown;
 };
 
@@ -34,10 +36,16 @@ function parseOrderItems(items: unknown): OrderItem[] {
   }
 }
 
+function isEventTicketItem(item: OrderItem): boolean {
+  const hasEventId = Boolean(String(item.eventId ?? item.event_id ?? '').trim());
+  const hasListingId = Boolean(String(item.listingId ?? item.listing_id ?? '').trim());
+  return item.kind === 'event_ticket' || (hasEventId && !hasListingId);
+}
+
 function parseEventIds(items: unknown): string[] {
   return [...new Set(
     parseOrderItems(items)
-      .filter((item) => item.kind === 'event_ticket' || item.eventId || item.event_id)
+      .filter(isEventTicketItem)
       .map((item) => String(item.eventId ?? item.event_id ?? '').trim())
       .filter((eventId) => /^\d+$/.test(eventId)),
   )];
@@ -47,10 +55,7 @@ function hasNonEventItems(items: unknown): boolean {
   const parsed = parseOrderItems(items);
   if (parsed.length === 0) return false;
 
-  return parsed.some((item) => {
-    const hasEventIdentity = item.kind === 'event_ticket' || item.eventId || item.event_id;
-    return !hasEventIdentity;
-  });
+  return parsed.some((item) => !isEventTicketItem(item));
 }
 
 function resolvePayoutMethod(destinationType: unknown, providerRefId: unknown, providerName: unknown): EventPayoutFeeInput['payoutMethod'] {
@@ -77,7 +82,6 @@ export async function resolveEventPayoutContext(orderId: string, client: DbExecu
   const order = orderResult.rows[0];
   if (!order) return undefined;
 
-  const orderItems = parseOrderItems(order.items);
   const eventIds = parseEventIds(order.items);
   if (eventIds.length === 0) return undefined;
   if (hasNonEventItems(order.items)) {
