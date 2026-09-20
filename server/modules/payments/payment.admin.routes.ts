@@ -639,7 +639,8 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
                failure_reason = 'seller_suspended',
                manual_review_reason = ?,
                updated_at = ?
-           WHERE seller_id = ?
+           WHERE owner_type = 'seller'
+             AND owner_uid = ?
              AND status IN ('eligible', 'queued', 'processing', 'pending', 'failed')`,
         ).run(reason, now, sellerId);
       }
