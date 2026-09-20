@@ -108,9 +108,9 @@ async function handlePaychanguWebhookInternal(context:PayoutWebhookContext):Prom
           FROM seller_payout_accounts
           WHERE id=?
             AND (
-              (? IS NULL AND seller_uid=?)
+              (CAST(? AS BIGINT) IS NULL AND seller_uid=?)
               OR
-              (? IS NOT NULL AND owner_type='event_creator' AND event_creator_uid=?)
+              (CAST(? AS BIGINT) IS NOT NULL AND owner_type='event_creator' AND event_creator_uid=?)
             )
           LIMIT 1
         `).get(
