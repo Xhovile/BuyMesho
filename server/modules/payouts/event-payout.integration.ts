@@ -180,6 +180,22 @@ export async function createEventPayoutCandidateAsync(input: {
 
   if (existingResult.rows[0]) {
     const existing = rowToPayout(existingResult.rows[0]);
+    const existingEventId = existing.eventId;
+    const existingOwnerUid = existing.ownerUid;
+    const identityMatches =
+      existing.ownerType === 'event_creator' &&
+      existingOwnerUid === input.event.eventCreatorUid &&
+      existingEventId === input.event.eventId &&
+      existing.eventCreatorUid === input.event.eventCreatorUid &&
+      existing.orderId === input.orderId &&
+      existing.escrowId === input.escrowId &&
+      existing.releaseEntryId === input.releaseEntryId &&
+      existing.destinationAccountId === input.event.destinationAccountId;
+
+    if (!identityMatches) {
+      throw new Error('Existing payout for escrow does not match the event payout financial identity');
+    }
+
     const storedSnapshot = existingResult.rows[0].formula_snapshot;
     const storedFormula = typeof storedSnapshot === 'string'
       ? (() => {
