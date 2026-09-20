@@ -1,74 +1,89 @@
-const CACHE_NAME = 'buymesho-pwa-v2';
+const CACHE_NAME = 'buymesho-pwa-v6';
+
+// Keep this list limited to stable shell assets. Vite's hashed JS/CSS assets
+// are discovered and cached naturally by the runtime strategy below.
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/pwa-splash-icon-192.svg',
+  '/pwa-splash-icon-512.svg',
   '/icon-192.png',
   '/icon-512.png',
+  '/icon-maskable-192.png',
+  '/icon-maskable-512.png',
   '/apple-touch-icon.png',
-  '/robots.txt'
+  '/robots.txt',
 ];
 
-// Install Event - Pre-cache core shell assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_ASSETS);
-    }).then(() => self.skipWaiting())
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(PRECACHE_ASSETS))
+      .then(() => self.skipWaiting()),
   );
 });
 
-// Activate Event - Clean up old cache versions
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      );
-    }).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((cacheNames) =>
+        Promise.all(
+          cacheNames
+            .filter((name) => name.startsWith('buymesho-pwa-') && name !== CACHE_NAME)
+            .map((name) => caches.delete(name)),
+        ),
+      )
+      .then(() => self.clients.claim()),
   );
 });
 
-// Fetch Event - Serve cached assets with Stale-While-Revalidate & Network-First for Navigation
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
   if (request.method !== 'GET') return;
   if (url.origin !== self.location.origin) return;
-
-  // Let API requests pass through (handled by client fetch cache)
   if (url.pathname.startsWith('/api/')) return;
 
-  // HTML page navigation -> Network First with fallback to cached index.html for offline support
+  // App navigations stay network-first so users receive the current build.
+  // The cached shell is only an offline fallback.
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => {
-        return caches.match('/') || caches.match('/index.html');
-      })
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            event.waitUntil(
+              caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy)),
+            );
+          }
+          return response;
+        })
+        .catch(() => caches.match('/index.html').then((cached) => cached || caches.match('/'))),
     );
     return;
   }
 
-  // Static assets -> Stale-While-Revalidate
+  // Static same-origin assets use stale-while-revalidate. Existing cached
+  // resources render immediately while a fresh copy is fetched in parallel.
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
-        }
-        return networkResponse;
-      }).catch(() => {
-        // Ignore network fetch errors when offline
-      });
+      const networkResponse = fetch(request)
+        .then((response) => {
+          if (response.ok && response.type === 'basic') {
+            const copy = response.clone();
+            event.waitUntil(
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)),
+            );
+          }
+          return response;
+        })
+        .catch(() => undefined);
 
-      return cachedResponse || fetchPromise;
-    })
+      return cachedResponse || networkResponse;
+    }),
   );
 });

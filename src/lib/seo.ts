@@ -21,13 +21,13 @@ export interface SEOConfig {
 const SITE_URL = "https://buymesho.app";
 
 export const DEFAULT_SEO = {
-  title: "BuyMesho | Malawi's Secure Marketplace",
+  title: "BuyMesho: Malawi's Secure E-commerce Platform",
   description:
-    "BuyMesho is Malawi's secure marketplace, helping student sellers reach more people while giving everyone a simple, trusted place to discover and buy products, services, and tickets.",
+    "BuyMesho is Malawi's secure e-commerce platform for discovering and buying products, services, and tickets from sellers across the country.",
   siteName: "BuyMesho",
   type: "website" as const,
   image: `${SITE_URL}/Og-image.webp`,
-  imageAlt: "BuyMesho — Malawi's Secure Marketplace",
+  imageAlt: "BuyMesho: Malawi's Secure E-commerce Platform",
   currency: "MWK",
 };
 
@@ -107,6 +107,10 @@ export function updateSEOMetaTags(config: Partial<SEOConfig> = {}) {
   updateMetaTag("name", "description", description);
   updateMetaTag("name", "robots", robots);
   updateMetaTag("name", "application-name", DEFAULT_SEO.siteName);
+
+  if (config.keywords?.length) {
+    updateMetaTag("name", "keywords", config.keywords.filter(Boolean).join(", "));
+  }
 
   updateLinkTag("canonical", url);
 

@@ -1,24 +1,27 @@
 import { useEffect } from "react";
 import type { AppRoute } from "../lib/appNavigation";
-import logoImage from "../../photos/Logo.png";
 
 const SEO_BASE_URL = "https://buymesho.app";
-const HOMEPAGE_TITLE = "BuyMesho — Malawi's Secure E-commerce Platform";
+const HOMEPAGE_TITLE = "BuyMesho: Malawi's Secure E-commerce Platform";
 const HOMEPAGE_DESCRIPTION =
   "BuyMesho is Malawi's secure e-commerce platform for discovering and buying products, services, and tickets from sellers across the country.";
+const HOMEPAGE_IMAGE = `${SEO_BASE_URL}/Og-image.webp`;
+const HOMEPAGE_KEYWORDS =
+  "BuyMesho, Malawi e-commerce, Malawi marketplace, online shopping Malawi, buy and sell Malawi, Malawi sellers, products Malawi, services Malawi, event tickets Malawi";
 
 type SeoConfig = {
   title: string;
   description: string;
   canonicalPath: string;
   noindex?: boolean;
+  keywords?: string;
 };
 
 function upsertMeta(name: string, content: string, attribute: "name" | "property" = "name") {
   let el = document.head.querySelector(`meta[${attribute}="${name}"]`) as HTMLMetaElement | null;
   if (!el) {
     el = document.createElement("meta");
-    el.setAttribute(attribute, name);
+    el.setAttribute("name", name);
     document.head.appendChild(el);
   }
   el.setAttribute("content", content);
@@ -38,7 +41,9 @@ function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
   switch (pathname) {
     case "/":
     case "/home":
-      return { title: HOMEPAGE_TITLE, description: HOMEPAGE_DESCRIPTION, canonicalPath: "/" };
+      return { title: HOMEPAGE_TITLE, description: HOMEPAGE_DESCRIPTION, canonicalPath: "/", keywords: HOMEPAGE_KEYWORDS };
+    case "/install":
+      return { title: "Install BuyMesho", description: "Install BuyMesho on your phone for fast access to Malawi's secure e-commerce platform.", canonicalPath: "/install" };
     case "/signup":
       return { title: "Create a BuyMesho Account", description: "Join BuyMesho to buy, sell, and manage your marketplace activity.", canonicalPath: "/signup" };
     case "/about":
@@ -75,15 +80,29 @@ function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
 export function useRootRouterSeo(locationPath: string, route: AppRoute) {
   useEffect(() => {
     const seo = buildSeoConfig(locationPath, route);
+    const canonicalUrl = `${SEO_BASE_URL}${seo.canonicalPath}`;
+
     document.title = seo.title;
     upsertMeta("description", seo.description);
     upsertMeta("robots", seo.noindex ? "noindex,nofollow" : "index,follow");
-    upsertCanonical(`${SEO_BASE_URL}${seo.canonicalPath}`);
+    upsertMeta("application-name", "BuyMesho");
+    upsertCanonical(canonicalUrl);
+
+    upsertMeta("og:site_name", "BuyMesho", "property");
     upsertMeta("og:title", seo.title, "property");
     upsertMeta("og:description", seo.description, "property");
-    upsertMeta("og:url", `${SEO_BASE_URL}${seo.canonicalPath}`, "property");
-    upsertMeta("og:image", logoImage, "property");
+    upsertMeta("og:url", canonicalUrl, "property");
+    upsertMeta("og:image", HOMEPAGE_IMAGE, "property");
+    upsertMeta("og:image:alt", seo.title, "property");
     upsertMeta("og:type", "website", "property");
+    upsertMeta("og:locale", "en_MW", "property");
+
     upsertMeta("twitter:card", "summary_large_image");
+    upsertMeta("twitter:title", seo.title);
+    upsertMeta("twitter:description", seo.description);
+    upsertMeta("twitter:image", HOMEPAGE_IMAGE);
+    upsertMeta("twitter:image:alt", seo.title);
+
+    if (seo.keywords) upsertMeta("keywords", seo.keywords);
   }, [locationPath, route]);
 }
