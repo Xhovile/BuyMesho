@@ -151,6 +151,62 @@ export async function resolveEventPayoutContext(orderId: string, client: DbExecu
   };
 }
 
+function parseStoredEventPayoutFormula(value: unknown): ReturnType<typeof calculateEventPayoutFees> | undefined {
+  if (typeof value !== 'string' || !value.trim()) return undefined;
+
+  try {
+    const parsed = JSON.parse(value) as {
+      formulaVersion?: unknown;
+      eventId?: unknown;
+      currency?: unknown;
+      result?: Partial<ReturnType<typeof calculateEventPayoutFees>>;
+    };
+
+    if (
+      parsed.formulaVersion !== 'event-payout-v1' ||
+      String(parsed.eventId ?? '').trim() === '' ||
+      !parsed.result ||
+      typeof parsed.result !== 'object'
+    ) {
+      return undefined;
+    }
+
+    const result = parsed.result;
+    const requiredNumericFields = [
+      'grossAmount',
+      'platformFeeAmount',
+      'processingFeeAmount',
+      'reserveAmount',
+      'reserveCapAmount',
+      'manualAdjustmentAmount',
+      'payoutFeeAmount',
+      'sellerReceivesAmount',
+      'netAmount',
+    ] as const;
+
+    if (requiredNumericFields.some((field) => !Number.isFinite(Number(result[field])))) {
+      return undefined;
+    }
+
+    return {
+      eventId: String(parsed.eventId),
+      formulaVersion: 'event-payout-v1',
+      grossAmount: Number(result.grossAmount),
+      platformFeeAmount: Number(result.platformFeeAmount),
+      processingFeeAmount: Number(result.processingFeeAmount),
+      reserveAmount: Number(result.reserveAmount),
+      reserveCapAmount: Number(result.reserveCapAmount),
+      manualAdjustmentAmount: Number(result.manualAdjustmentAmount),
+      payoutFeeAmount: Number(result.payoutFeeAmount),
+      sellerReceivesAmount: Number(result.sellerReceivesAmount),
+      netAmount: Number(result.netAmount),
+      currency: String(parsed.currency ?? 'MWK').toUpperCase(),
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 function rowToPayout(row: Record<string, unknown>): PayoutRecord {
   return {
     id: String(row.id),
@@ -199,16 +255,20 @@ export async function createEventPayoutCandidateAsync(input: {
 
   if (existingResult.rows[0]) {
     const existing = rowToPayout(existingResult.rows[0]);
-    const existingFormula = input.grossAmount === existing.amount
-      ? calculateEventPayoutFees({ eventId: input.event.eventId, grossAmount: input.grossAmount, currency: input.currency, payoutMethod: input.event.payoutMethod })
-      : calculateEventPayoutFees({ eventId: input.event.eventId, grossAmount: input.grossAmount, currency: input.currency, payoutMethod: input.event.payoutMethod });
+    const storedFormula = parseStoredEventPayoutFormula(existingResult.rows[0].formula_snapshot);
+
+    if (!storedFormula) {
+      throw new Error('Existing event payout is missing a valid immutable fee snapshot');
+    }
+
+    const formulaSnapshot = typeof existingResult.rows[0].formula_snapshot === 'string'
+      ? JSON.parse(existingResult.rows[0].formula_snapshot)
+      : existingResult.rows[0].formula_snapshot;
+
     return {
       payout: existing,
-      payoutFormula: existingFormula,
-      formulaSnapshot: buildEventPayoutFormulaSnapshot(
-        { eventId: input.event.eventId, grossAmount: input.grossAmount, currency: input.currency, payoutMethod: input.event.payoutMethod },
-        existingFormula,
-      ),
+      payoutFormula: storedFormula,
+      formulaSnapshot: formulaSnapshot as ReturnType<typeof buildEventPayoutFormulaSnapshot>,
       created: false,
     };
   }
