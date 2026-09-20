@@ -40,6 +40,7 @@ export function ensureEventPayoutDestinationLockMigration() {
            AND (item->>'eventId') ~ '^[0-9]+$'
         THEN
           target_event_id := (item->>'eventId')::BIGINT;
+
           UPDATE events
           SET payout_destination_locked_at = COALESCE(payout_destination_locked_at, CURRENT_TIMESTAMP),
               payout_destination_locked_by = COALESCE(payout_destination_locked_by, 'system'),
@@ -56,7 +57,7 @@ export function ensureEventPayoutDestinationLockMigration() {
     CREATE OR REPLACE FUNCTION buymesho_event_has_successful_sale(target_event_id BIGINT)
     RETURNS BOOLEAN
     LANGUAGE plpgsql
-    AS $
+    AS $$
     DECLARE
       order_row RECORD;
       item JSONB;
@@ -82,93 +83,12 @@ export function ensureEventPayoutDestinationLockMigration() {
       LOOP
         FOR item IN
           SELECT value
-          FROM jsonb_array_elements(COALESCE(NULLIF(order_row.items, '')::jsonb, '[]'::jsonb))
+          FROM jsonb_array_elements(
+            COALESCE(NULLIF(order_row.items, '')::jsonb, '[]'::jsonb)
+          )
         LOOP
           IF (item->>'kind' = 'event_ticket' OR NULLIF(item->>'eventId', '') IS NOT NULL)
-             AND (item->>'eventId') ~ '^[0-9]+
-
-    CREATE OR REPLACE FUNCTION buymesho_lock_event_payout_destination_for_order()
-    RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-    BEGIN
-      IF NEW.status IN ('paid', 'in_escrow', 'fulfilled', 'closed') OR NEW.paid_at IS NOT NULL THEN
-        PERFORM buymesho_lock_event_payout_destination_for_order_id(NEW.id);
-      END IF;
-      RETURN NEW;
-    END;
-    $$;
-
-    DROP TRIGGER IF EXISTS trg_buymesho_lock_event_payout_destination_for_order ON orders;
-    CREATE TRIGGER trg_buymesho_lock_event_payout_destination_for_order
-    AFTER INSERT OR UPDATE OF status, paid_at, items ON orders
-    FOR EACH ROW
-    EXECUTE FUNCTION buymesho_lock_event_payout_destination_for_order();
-
-    CREATE OR REPLACE FUNCTION buymesho_lock_event_payout_destination_for_payment()
-    RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-    BEGIN
-      IF NEW.status IN ('captured', 'paid', 'verified', 'successful', 'completed') OR NEW.paid_at IS NOT NULL THEN
-        IF NEW.order_id IS NOT NULL THEN
-          PERFORM buymesho_lock_event_payout_destination_for_order_id(NEW.order_id);
-        END IF;
-      END IF;
-      RETURN NEW;
-    END;
-    $$;
-
-    DROP TRIGGER IF EXISTS trg_buymesho_lock_event_payout_destination_for_payment ON payments;
-    CREATE TRIGGER trg_buymesho_lock_event_payout_destination_for_payment
-    AFTER INSERT OR UPDATE OF status, paid_at ON payments
-    FOR EACH ROW
-    EXECUTE FUNCTION buymesho_lock_event_payout_destination_for_payment();
-
-    CREATE OR REPLACE FUNCTION buymesho_protect_event_payout_destination_change()
-    RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-    BEGIN
-      IF TG_OP = 'UPDATE'
-         AND NEW.payout_destination_id IS DISTINCT FROM OLD.payout_destination_id
-         AND COALESCE(current_setting('buymesho.allow_event_payout_replacement', true), '0') <> '1'
-      THEN
-        IF OLD.payout_destination_locked_at IS NOT NULL
-           OR buymesho_event_has_successful_sale(OLD.id)
-        THEN
-          RAISE EXCEPTION 'Event payout destination is locked after the first successful ticket sale';
-        END IF;
-      END IF;
-
-      IF NEW.payout_destination_locked_at IS NULL
-         AND buymesho_event_has_successful_sale(NEW.id)
-      THEN
-        NEW.payout_destination_locked_at := CURRENT_TIMESTAMP;
-        NEW.payout_destination_locked_by := COALESCE(NEW.payout_destination_locked_by, 'system');
-        NEW.payout_destination_lock_reason := COALESCE(NEW.payout_destination_lock_reason, 'first_successful_sale');
-      END IF;
-
-      RETURN NEW;
-    END;
-    $$;
-
-    DROP TRIGGER IF EXISTS trg_buymesho_protect_event_payout_destination_change ON events;
-    CREATE TRIGGER trg_buymesho_protect_event_payout_destination_change
-    BEFORE INSERT OR UPDATE OF payout_destination_id, payout_destination_locked_at ON events
-    FOR EACH ROW
-    EXECUTE FUNCTION buymesho_protect_event_payout_destination_change();
-
-    UPDATE events e
-    SET payout_destination_locked_at = COALESCE(e.payout_destination_locked_at, CURRENT_TIMESTAMP),
-        payout_destination_locked_by = COALESCE(e.payout_destination_locked_by, 'system'),
-        payout_destination_lock_reason = COALESCE(e.payout_destination_lock_reason, 'first_successful_sale')
-    WHERE e.payout_destination_id IS NOT NULL
-      AND e.payout_destination_locked_at IS NULL
-      AND buymesho_event_has_successful_sale(e.id);
-  `);
-}
-
+             AND (item->>'eventId') ~ '^[0-9]+$'
              AND (item->>'eventId')::BIGINT = target_event_id
           THEN
             RETURN TRUE;
@@ -178,10 +98,10 @@ export function ensureEventPayoutDestinationLockMigration() {
 
       RETURN FALSE;
     END;
-    $;
+    $$;
 
     CREATE OR REPLACE FUNCTION buymesho_lock_event_payout_destination_for_order()
-    RETURNS trigger
+    RETURNS TRIGGER
     LANGUAGE plpgsql
     AS $$
     BEGIN
@@ -199,7 +119,7 @@ export function ensureEventPayoutDestinationLockMigration() {
     EXECUTE FUNCTION buymesho_lock_event_payout_destination_for_order();
 
     CREATE OR REPLACE FUNCTION buymesho_lock_event_payout_destination_for_payment()
-    RETURNS trigger
+    RETURNS TRIGGER
     LANGUAGE plpgsql
     AS $$
     BEGIN
@@ -219,7 +139,7 @@ export function ensureEventPayoutDestinationLockMigration() {
     EXECUTE FUNCTION buymesho_lock_event_payout_destination_for_payment();
 
     CREATE OR REPLACE FUNCTION buymesho_protect_event_payout_destination_change()
-    RETURNS trigger
+    RETURNS TRIGGER
     LANGUAGE plpgsql
     AS $$
     BEGIN
