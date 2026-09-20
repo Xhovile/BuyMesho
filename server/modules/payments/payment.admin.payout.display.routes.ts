@@ -295,7 +295,10 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
          FROM payouts p
          LEFT JOIN orders o ON o.id = p.order_id
          LEFT JOIN sellers s
-           ON s.uid = COALESCE(NULLIF(CASE WHEN COALESCE(p.owner_type, 'seller') = 'seller' THEN p.seller_id END, ''), o.seller_id)
+           ON s.uid = CASE
+             WHEN COALESCE(p.owner_type, 'seller') = 'seller'
+             THEN COALESCE(NULLIF(p.seller_id, ''), o.seller_id)
+           END
          LEFT JOIN event_creators ec
            ON ec.uid = p.owner_uid
           AND p.owner_type = 'event_creator'
@@ -408,7 +411,10 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
          FROM payouts p
          LEFT JOIN orders o ON o.id = p.order_id
          LEFT JOIN sellers s
-           ON s.uid = COALESCE(NULLIF(CASE WHEN COALESCE(p.owner_type, 'seller') = 'seller' THEN p.seller_id END, ''), o.seller_id)
+           ON s.uid = CASE
+             WHEN COALESCE(p.owner_type, 'seller') = 'seller'
+             THEN COALESCE(NULLIF(p.seller_id, ''), o.seller_id)
+           END
          LEFT JOIN event_creators ec
            ON ec.uid = p.owner_uid
           AND p.owner_type = 'event_creator'
