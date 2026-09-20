@@ -21,23 +21,36 @@ type OrderItem = {
   kind?: unknown;
 };
 
-function parseEventIds(items: unknown): string[] {
+function parseOrderItems(items: unknown): OrderItem[] {
   if (typeof items !== 'string') return [];
 
   try {
     const parsed = JSON.parse(items);
-    if (!Array.isArray(parsed)) return [];
-
-    return [...new Set(
-      parsed
-        .map((item) => item as OrderItem)
-        .filter((item) => item && (item.kind === 'event_ticket' || item.eventId || item.event_id))
-        .map((item) => String(item.eventId ?? item.event_id ?? '').trim())
-        .filter((eventId) => /^\d+$/.test(eventId)),
-    )];
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is OrderItem => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+      : [];
   } catch {
     return [];
   }
+}
+
+function parseEventIds(items: unknown): string[] {
+  return [...new Set(
+    parseOrderItems(items)
+      .filter((item) => item.kind === 'event_ticket' || item.eventId || item.event_id)
+      .map((item) => String(item.eventId ?? item.event_id ?? '').trim())
+      .filter((eventId) => /^\d+$/.test(eventId)),
+  )];
+}
+
+function hasNonEventItems(items: unknown): boolean {
+  const parsed = parseOrderItems(items);
+  if (parsed.length === 0) return false;
+
+  return parsed.some((item) => {
+    const hasEventIdentity = item.kind === 'event_ticket' || item.eventId || item.event_id;
+    return !hasEventIdentity;
+  });
 }
 
 function resolvePayoutMethod(destinationType: unknown, providerRefId: unknown, providerName: unknown): EventPayoutFeeInput['payoutMethod'] {
@@ -64,8 +77,12 @@ export async function resolveEventPayoutContext(orderId: string, client: DbExecu
   const order = orderResult.rows[0];
   if (!order) return undefined;
 
+  const orderItems = parseOrderItems(order.items);
   const eventIds = parseEventIds(order.items);
   if (eventIds.length === 0) return undefined;
+  if (hasNonEventItems(order.items)) {
+    throw new Error('An order containing event tickets and non-event items cannot be settled as one payout');
+  }
   if (eventIds.length > 1) {
     throw new Error('An order containing tickets from multiple events cannot be settled as one payout');
   }
