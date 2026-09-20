@@ -150,6 +150,8 @@ export class PayoutStatusRepository {
     return {
       id: row.id as string,
       sellerId: row.seller_id as string,
+      eventId: row.event_id == null ? null : String(row.event_id),
+      eventCreatorUid: row.event_creator_uid == null ? null : String(row.event_creator_uid),
       orderId: (row.order_id as string | null) ?? null,
       escrowId: (row.escrow_id as string | null) ?? null,
       releaseEntryId: (row.release_entry_id as string | null) ?? null,
