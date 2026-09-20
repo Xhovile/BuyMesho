@@ -85,12 +85,12 @@ async function handlePaychanguWebhookInternal(context:PayoutWebhookContext):Prom
       FROM (SELECT ? AS uid) owner
       LEFT JOIN sellers s
         ON s.uid = owner.uid
-       AND ? IS NULL
+       AND CAST(? AS BIGINT) IS NULL
       LEFT JOIN event_creators ec
         ON ec.uid = owner.uid
-       AND ? IS NOT NULL
-      WHERE (? IS NULL AND s.uid IS NOT NULL)
-         OR (? IS NOT NULL AND ec.uid IS NOT NULL)
+       AND CAST(? AS BIGINT) IS NOT NULL
+      WHERE (CAST(? AS BIGINT) IS NULL AND s.uid IS NOT NULL)
+         OR (CAST(? AS BIGINT) IS NOT NULL AND ec.uid IS NOT NULL)
       LIMIT 1
     `).get(
       resolvedSellerId,
