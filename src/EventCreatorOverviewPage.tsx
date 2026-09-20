@@ -3,6 +3,7 @@ import { AlertCircle, ArrowRight, CalendarDays, Clock3, Download, Filter, Layout
 
 import logoImage from "../photos/Logo.png";
 import AccountPageShell from "./components/AccountPageShell";
+import EventFinancialReportPanel from "./components/EventFinancialReportPanel";
 import { apiFetch } from "./lib/api";
 import { EVENTS_MANAGE_PATH, navigateToPath } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
@@ -22,6 +23,7 @@ type DashboardEvent = {
   tickets_sold: number;
   gross_revenue_amount: number;
   net_revenue_amount: number;
+  refunded_amount: number;
   revenue_currency: string;
   ticket_clicks: number;
   cart_adds: number;
@@ -87,7 +89,7 @@ function transactionStatusClass(hasRevenue: boolean, pendingIssues: boolean) {
 
 function transactionStatusLabel(event: DashboardEvent) {
   if (event.gross_revenue_amount > 0) {
-    return "Successful · awaiting midnight settlement";
+    return "Recorded ticket sales";
   }
   if (event.pending_issues) {
     return "Needs attention";
@@ -97,14 +99,13 @@ function transactionStatusLabel(event: DashboardEvent) {
 
 function transactionSettlementNote(event: DashboardEvent) {
   if (event.gross_revenue_amount > 0) {
-    return "Payments made today will be available the next day after midnight. The exact time may vary slightly, but it follows the T+1 cycle.";
+    return "Gross sales and net sales are based on recorded payment, ticket, and refund history.";
   }
   return "No captured event payments yet.";
 }
 
-function settlementFeeAmount(event: DashboardEvent) {
-  const fee = Number(event.gross_revenue_amount || 0) - Number(event.net_revenue_amount || 0);
-  return fee > 0 ? fee : 0;
+function settlementRefundAmount(event: DashboardEvent) {
+  return Math.max(0, Number(event.refunded_amount || 0));
 }
 
 function MetricCard({ label, value, helper, icon: Icon }: { label: string; value: string; helper?: string; icon: ComponentType<{ className?: string }> }) {
@@ -176,7 +177,7 @@ function buildPrintableDashboardHtml(params: {
           <td><strong>${escapeHtml(event.event_title)}</strong><div class="muted">${escapeHtml(event.event_type)} • ${escapeHtml(event.organizer_name)}</div></td>
           <td>${escapeHtml(transactionStatusLabel(event))}</td>
           <td>${escapeHtml(formatMoney(event.gross_revenue_amount, event.revenue_currency))}</td>
-          <td>${escapeHtml(formatMoney(settlementFeeAmount(event), event.revenue_currency))}</td>
+          <td>${escapeHtml(formatMoney(settlementRefundAmount(event), event.revenue_currency))}</td>
           <td>${escapeHtml(formatMoney(event.net_revenue_amount, event.revenue_currency))}</td>
           <td>${event.tickets_sold}</td>
           <td>${event.ticket_clicks} / ${event.cart_adds} / ${event.message_threads}</td>
@@ -227,13 +228,13 @@ function buildPrintableDashboardHtml(params: {
   </div>
 
   <h1>${escapeHtml(title)}</h1>
-  <div class="sub">Creator dashboard export for your events. Successful payments are captured now and settle after midnight on a T+1 cycle.</div>
+  <div class="sub">Creator dashboard export for your events. Financial totals are based on recorded ticket sales and refunds.</div>
   <div class="meta">Exported ${escapeHtml(now)} • Filters: ${escapeHtml(filters.query || "All events")} • ${escapeHtml(filters.status)} • ${escapeHtml(filters.eventType)} • ${escapeHtml(filters.dateFrom || "Any start date")} → ${escapeHtml(filters.dateTo || "Any end date")}</div>
 
   <div class="grid">
     <div class="card"><div class="label">Total tickets sold</div><div class="value">${summary.totalTicketsSold}</div><div class="note">All published ticket purchases in scope.</div></div>
     <div class="card"><div class="label">Gross sales</div><div class="value">${escapeHtml(formatMoney(summary.grossRevenueAmount, summary.revenueCurrency))}</div><div class="note">Before platform fee adjustments.</div></div>
-    <div class="card"><div class="label">Estimated net sales</div><div class="value">${escapeHtml(formatMoney(summary.netRevenueAmount, summary.revenueCurrency))}</div><div class="note">After estimated platform fee only.</div></div>
+    <div class="card"><div class="label">Net sales</div><div class="value">${escapeHtml(formatMoney(summary.netRevenueAmount, summary.revenueCurrency))}</div><div class="note">Gross sales less recorded refunds.</div></div>
     <div class="card"><div class="label">Active events</div><div class="value">${summary.activeEvents}</div><div class="note">Currently published events.</div></div>
     <div class="card"><div class="label">Pending issues</div><div class="value">${summary.pendingIssues}</div><div class="note">Events needing attention.</div></div>
   </div>
@@ -244,7 +245,7 @@ function buildPrintableDashboardHtml(params: {
         <th>Event</th>
         <th>Settlement</th>
         <th>Gross</th>
-        <th>Fee / reserve</th>
+        <th>Refunded</th>
         <th>Net</th>
         <th>Tickets</th>
         <th>Activity</th>
@@ -276,22 +277,19 @@ function SettlementBanner({ summary }: { summary: DashboardResponse["summary"] }
           <Clock3 className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-emerald-600">Settlement status</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-emerald-600">Financial status</p>
           <h3 className="mt-1 text-xl font-black tracking-tight text-emerald-950">
-            {hasRevenue ? "Successful transactions are waiting for midnight settlement" : "No captured transactions yet"}
+            {hasRevenue ? "Recorded ticket sales are available in the financial ledger" : "No captured transactions yet"}
           </h3>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-emerald-900/90">
-            Payments made today will be available the next day after midnight. The exact time may vary slightly, but it follows the T+1 cycle.
+            Financial totals below are based on recorded sales, refunds, and payout records.
           </p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.16em] text-emerald-900">
             <span className="rounded-full border border-emerald-200 bg-white px-3 py-1">
               Captured: {formatMoney(summary.grossRevenueAmount, summary.revenueCurrency)}
             </span>
             <span className="rounded-full border border-emerald-200 bg-white px-3 py-1">
-              Est. net: {formatMoney(summary.netRevenueAmount, summary.revenueCurrency)}
-            </span>
-            <span className="rounded-full border border-emerald-200 bg-white px-3 py-1">
-              T+1 settlement
+              Net sales: {formatMoney(summary.netRevenueAmount, summary.revenueCurrency)}
             </span>
           </div>
         </div>
@@ -300,17 +298,17 @@ function SettlementBanner({ summary }: { summary: DashboardResponse["summary"] }
   );
 }
 
-function TransactionHistorySection({ events }: { events: DashboardEvent[] }) {
+function TransactionHistorySection({ events, onViewFinancial }: { events: DashboardEvent[]; onViewFinancial: (eventId: number) => void }) {
   return (
     <section className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
       <SectionTitle
         eyebrow="Transaction ledger"
-        title="Captured payments and settlement maths"
+        title="Recorded event financials"
         action={<Wallet className="h-5 w-5 text-zinc-400" />}
       />
 
       <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600">
-        Successful event payments stay visible here with gross, fees, net, and settlement state. The ledger stays intact; only the wording changes.
+        Event sales stay visible here with gross sales, recorded refunds, net sales, and a direct link to the event-level financial ledger.
       </p>
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200">
@@ -335,7 +333,7 @@ function TransactionHistorySection({ events }: { events: DashboardEvent[] }) {
               ) : (
                 events.map((event) => {
                   const hasRevenue = event.gross_revenue_amount > 0;
-                  const feeAmount = settlementFeeAmount(event);
+                  const refundAmount = settlementRefundAmount(event);
 
                   return (
                     <tr key={event.id} className="align-top">
@@ -360,8 +358,8 @@ function TransactionHistorySection({ events }: { events: DashboardEvent[] }) {
                             <span>{formatMoney(event.gross_revenue_amount, event.revenue_currency)}</span>
                           </div>
                           <div className="flex justify-between gap-3">
-                            <span>Fee / reserve</span>
-                            <span>-{formatMoney(feeAmount, event.revenue_currency)}</span>
+                            <span>Refunds</span>
+                            <span>-{formatMoney(refundAmount, event.revenue_currency)}</span>
                           </div>
                           <div className="flex justify-between gap-3 border-t border-zinc-200 pt-1 font-bold text-zinc-700">
                             <span>Net</span>
@@ -417,6 +415,7 @@ export default function EventCreatorOverviewPage() {
   const [eventType, setEventType] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [financialEventId, setFinancialEventId] = useState<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -491,6 +490,8 @@ export default function EventCreatorOverviewPage() {
     });
   }, [data?.events, query, status, eventType, dateFrom, dateTo]);
 
+  const handleViewFinancial = (eventId: number) => setFinancialEventId(eventId);
+
   const summary = data?.summary ?? { totalTicketsSold: 0, grossRevenueAmount: 0, netRevenueAmount: 0, revenueAmount: 0, revenueCurrency: "MWK", activeEvents: 0, pendingIssues: 0 };
   const exportState = { query, status, eventType, dateFrom, dateTo };
 
@@ -547,14 +548,18 @@ export default function EventCreatorOverviewPage() {
         <div className="grid gap-4 md:grid-cols-5 print:grid-cols-5">
           <MetricCard label="Total tickets sold" value={String(summary.totalTicketsSold)} helper="Across all events" icon={Ticket} />
           <MetricCard label="Gross sales" value={formatMoney(summary.grossRevenueAmount, summary.revenueCurrency)} helper="Before platform fee" icon={Wallet} />
-          <MetricCard label="Estimated net sales" value={formatMoney(summary.netRevenueAmount, summary.revenueCurrency)} helper="After platform fee" icon={Wallet} />
+          <MetricCard label="Net sales" value={formatMoney(summary.netRevenueAmount, summary.revenueCurrency)} helper="Gross sales less recorded refunds" icon={Wallet} />
           <MetricCard label="Active events" value={String(summary.activeEvents)} helper="Currently published" icon={CalendarDays} />
           <MetricCard label="Pending issues" value={String(summary.pendingIssues)} helper="Needs attention" icon={AlertCircle} />
         </div>
 
         <SettlementBanner summary={summary} />
 
-        <TransactionHistorySection events={filteredEvents} />
+        {financialEventId !== null ? (
+          <EventFinancialReportPanel eventId={financialEventId} onClose={() => setFinancialEventId(null)} />
+        ) : null}
+
+        <TransactionHistorySection events={filteredEvents} onViewFinancial={handleViewFinancial} />
 
         <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="grid gap-3 lg:grid-cols-[1.7fr_0.8fr_0.8fr_0.8fr_0.8fr]">
@@ -636,7 +641,12 @@ export default function EventCreatorOverviewPage() {
                   {filteredEvents.map((event) => (
                     <tr key={event.id} className="align-top hover:bg-zinc-50/50">
                       <td className="px-4 py-4">
-                        <p className="font-black tracking-tight text-zinc-950">{event.event_title}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-black tracking-tight text-zinc-950">{event.event_title}</p>
+                          <button type="button" onClick={() => handleViewFinancial(event.id)} className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-700 hover:bg-zinc-50">
+                            Financials <ArrowRight className="h-3 w-3" />
+                          </button>
+                        </div>
                         <p className="mt-1 text-xs text-zinc-500">{event.event_type} • {event.organizer_name}</p>
                         <p className="mt-1 text-xs text-zinc-500">{event.venue} • {event.location}</p>
                       </td>

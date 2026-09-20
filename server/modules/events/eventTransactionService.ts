@@ -1,5 +1,4 @@
 import type { PgCompatDatabase } from "../../db.js";
-import { calculatePayoutFormula } from "../payouts/payout.policy.js";
 import {
   findEventTicketIdentity,
   getEventTicketTransaction,
@@ -107,9 +106,151 @@ export function getEventTransactionByTicketId(
   return getEventTicketTransaction(db, ticketId);
 }
 
+
+export type EventRefundSummary = {
+  refundedAmount: number;
+};
+
+function loadEventRefundSummaries(
+  db: PgCompatDatabase,
+  eventIds: string[],
+): Map<string, EventRefundSummary> {
+  const normalizedEventIds = [...new Set(eventIds.map(text).filter(Boolean))];
+  const result = new Map(normalizedEventIds.map((eventId) => [eventId, { refundedAmount: 0 }]));
+  if (normalizedEventIds.length === 0) return result;
+
+  const eventPlaceholders = normalizedEventIds.map(() => "?").join(",");
+  const ticketRows = db.prepare(
+    `SELECT event_id, order_id, id, code
+     FROM event_tickets
+     WHERE event_id IN (${eventPlaceholders})
+       AND order_id IS NOT NULL`,
+  ).all(...normalizedEventIds) as Array<Record<string, unknown>>;
+
+  const orderIds = [...new Set(ticketRows.map((row) => text(row.order_id)).filter(Boolean))];
+  if (orderIds.length === 0) return result;
+
+  const orderPlaceholders = orderIds.map(() => "?").join(",");
+  const orders = db.prepare(
+    `SELECT id, items
+     FROM orders
+     WHERE id IN (${orderPlaceholders})`,
+  ).all(...orderIds) as Array<Record<string, unknown>>;
+
+  const eventIdsByOrder = new Map<string, Set<string>>();
+  const ticketEventByReference = new Map<string, string>();
+
+  for (const row of ticketRows) {
+    const eventId = text(row.event_id);
+    const orderId = text(row.order_id);
+    if (!eventId || !orderId) continue;
+    const eventSet = eventIdsByOrder.get(orderId) ?? new Set<string>();
+    eventSet.add(eventId);
+    eventIdsByOrder.set(orderId, eventSet);
+
+    const ticketId = text(row.id);
+    const ticketCode = text(row.code);
+    if (ticketId) ticketEventByReference.set(ticketId, eventId);
+    if (ticketCode) ticketEventByReference.set(ticketCode, eventId);
+  }
+
+  for (const order of orders) {
+    const orderId = text(order.id);
+    if (!orderId) continue;
+    const eventSet = eventIdsByOrder.get(orderId) ?? new Set<string>();
+    for (const item of parseItems(order.items)) {
+      const itemEventId = text(item.eventId ?? item.event_id);
+      if (itemEventId) eventSet.add(itemEventId);
+    }
+    eventIdsByOrder.set(orderId, eventSet);
+  }
+
+  const refundRows: Array<Record<string, unknown>> = [];
+  const canonicalRefundOrderIds = new Set<string>();
+  try {
+    refundRows.push(
+      ...(db.prepare(
+        `SELECT rt.id, rt.order_id, rt.amount, rt.status, rt.transaction_id, rt.executed_at, rt.created_at,
+                rr.item_id
+         FROM refund_transactions rt
+         LEFT JOIN refund_requests rr ON rr.id = rt.refund_request_id
+         WHERE rt.order_id IN (${orderPlaceholders})
+           AND lower(rt.status) IN ('refunded', 'completed', 'successful')`,
+      ).all(...orderIds) as Array<Record<string, unknown>>),
+    );
+  } catch {
+    // Older compatibility schemas may not have the canonical refund tables.
+  }
+
+  const seenRefundIds = new Set<string>();
+  const addRefund = (refundId: string, orderId: string, amount: number, itemId: string) => {
+    if (!refundId || !orderId || seenRefundIds.has(refundId)) return;
+    seenRefundIds.add(refundId);
+
+    const eventSet = eventIdsByOrder.get(orderId) ?? new Set<string>();
+    let targetEventId = itemId ? ticketEventByReference.get(itemId) ?? "" : "";
+    if (!targetEventId && eventSet.size === 1) targetEventId = [...eventSet][0] ?? "";
+
+    if (!targetEventId || !result.has(targetEventId)) return;
+    result.get(targetEventId)!.refundedAmount += amount;
+  };
+
+  for (const row of refundRows) {
+    const orderId = text(row.order_id);
+    if (orderId) canonicalRefundOrderIds.add(orderId);
+    addRefund(
+      text(row.id),
+      orderId,
+      numberValue(row.amount),
+      text(row.item_id),
+    );
+  }
+
+  const escrowFallbackOrderIds = orderIds.filter((orderId) => !canonicalRefundOrderIds.has(orderId));
+  if (escrowFallbackOrderIds.length > 0) {
+    try {
+      const escrowPlaceholders = escrowFallbackOrderIds.map(() => "?").join(",");
+      const escrowRows = db.prepare(
+        `SELECT id, order_id, balance_currency, entries
+         FROM escrows
+         WHERE order_id IN (${escrowPlaceholders})`,
+      ).all(...escrowFallbackOrderIds) as Array<Record<string, unknown>>;
+
+      for (const escrow of escrowRows) {
+        const orderId = text(escrow.order_id);
+        const fallbackEntries = typeof escrow.entries === "string" ? (() => {
+          try {
+            const parsed = JSON.parse(escrow.entries);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        })() : Array.isArray(escrow.entries) ? escrow.entries : [];
+
+        for (const [index, entry] of fallbackEntries.entries()) {
+          if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+          const record = entry as Record<string, unknown>;
+          if (text(record.entryType).toLowerCase() !== "refund") continue;
+          addRefund(
+            text(record.id) || `escrow-refund-${text(escrow.id)}-${index + 1}`,
+            orderId,
+            numberValue(record.amount),
+            text(record.itemId ?? record.item_id),
+          );
+        }
+      }
+    } catch {
+      // Compatibility fallback is best-effort for the dashboard summary.
+    }
+  }
+
+  return result;
+}
+
 export function getEventTransactionSummary(
   db: PgCompatDatabase,
   eventId: string,
+  refundSummary?: EventRefundSummary,
 ): EventTransactionSummary {
   const normalizedEventId = text(eventId);
   const event = db
@@ -156,9 +297,9 @@ export function getEventTransactionSummary(
     }>;
 
   empty.ticketsIssued = tickets.length;
-  empty.ticketsSold = tickets.filter((ticket) => !["Cancelled", "Refunded"].includes(text(ticket.status))).length;
-  empty.ticketsCancelled = tickets.filter((ticket) => text(ticket.status) === "Cancelled").length;
-  empty.ticketsRefunded = tickets.filter((ticket) => text(ticket.status) === "Refunded").length;
+  empty.ticketsSold = tickets.filter((ticket) => text(ticket.status).toLowerCase() !== "cancelled").length;
+  empty.ticketsCancelled = tickets.filter((ticket) => text(ticket.status).toLowerCase() === "cancelled").length;
+  empty.ticketsRefunded = tickets.filter((ticket) => text(ticket.status).toLowerCase() === "refunded").length;
 
   const orderIds = [...new Set(tickets.map((ticket) => text(ticket.order_id)).filter(Boolean))];
   if (orderIds.length === 0) return empty;
@@ -204,7 +345,6 @@ export function getEventTransactionSummary(
         const gross = calculateItemRevenue(item, numberValue(event.ticket_price));
         const currency = text(paymentRow.payment_currency || orderRow.total_currency || orderRow.currency || "MWK") || "MWK";
         empty.grossRevenueAmount += gross;
-        empty.netRevenueAmount += calculatePayoutFormula({ grossAmount: gross, currency }).netAmount;
         empty.revenueCurrency = currency;
       }
     }
@@ -240,6 +380,10 @@ export function getEventTransactionSummary(
     }
   }
 
+  const effectiveRefundSummary = refundSummary ?? loadEventRefundSummaries(db, [normalizedEventId]).get(normalizedEventId);
+  if (effectiveRefundSummary) empty.refundedAmount = effectiveRefundSummary.refundedAmount;
+  empty.netRevenueAmount = Math.max(0, empty.grossRevenueAmount - empty.refundedAmount);
+
   empty.lastTransactionAt = latestTimestamp;
   empty.latestPaymentReference = latestReference;
   return empty;
@@ -249,9 +393,11 @@ export function getEventTransactionSummaries(
   db: PgCompatDatabase,
   eventIds: string[],
 ): Map<string, EventTransactionSummary> {
+  const normalizedEventIds = [...new Set(eventIds.map(text).filter(Boolean))];
+  const refundSummaries = loadEventRefundSummaries(db, normalizedEventIds);
   const result = new Map<string, EventTransactionSummary>();
-  for (const eventId of [...new Set(eventIds.map(text).filter(Boolean))]) {
-    result.set(eventId, getEventTransactionSummary(db, eventId));
+  for (const eventId of normalizedEventIds) {
+    result.set(eventId, getEventTransactionSummary(db, eventId, refundSummaries.get(eventId)));
   }
   return result;
 }

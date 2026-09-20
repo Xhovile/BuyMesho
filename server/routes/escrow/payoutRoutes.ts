@@ -242,7 +242,13 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
       return res.json({ deletedDestinationId: existing.id });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to remove payout destination';
-      const status = /Unauthorized/i.test(message) ? 401 : /not allowed/i.test(message) ? 403 : 400;
+      const status = /Unauthorized/i.test(message)
+        ? 401
+        : /not allowed/i.test(message)
+          ? 403
+          : /referenced by historical payout records|retained because it is referenced/i.test(message)
+            ? 409
+            : 400;
       return res.status(status).json({ error: message });
     }
   });
