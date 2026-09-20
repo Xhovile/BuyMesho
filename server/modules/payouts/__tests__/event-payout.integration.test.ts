@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getPaymentDb } from '../../../postgresCompat.js';
 import { createEventPayoutCandidateAsync, resolveEventPayoutContext } from '../event-payout.integration.js';
+import { payoutService } from '../payout.service.js';
 import { withTransaction } from '../../../postgres.js';
 
 const db = getPaymentDb();
@@ -208,6 +209,10 @@ test('event payout candidate stores event identity, bound destination, and immut
     assert.equal(result.formulaSnapshot.scope, 'event');
     assert.equal(result.formulaSnapshot.eventId, '992001');
     assert.equal(result.formulaSnapshot.formulaVersion, 'event-payout-v1');
+
+    const genericRead = payoutService.findById(result.payout.id);
+    assert.equal(genericRead?.eventId, '992001');
+    assert.equal(genericRead?.eventCreatorUid, 'event_payout_test_creator');
   });
 
   cleanup();
