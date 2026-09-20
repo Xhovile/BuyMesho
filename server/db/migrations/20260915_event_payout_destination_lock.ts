@@ -19,10 +19,7 @@ export function ensureEventPayoutDestinationLockMigration() {
       ON events (payout_destination_locked_at)
       WHERE payout_destination_locked_at IS NOT NULL;
 
-    DROP FUNCTION IF EXISTS buymesho_lock_event_payout_destination_for_order_id(BIGINT);
-    DROP FUNCTION IF EXISTS buymesho_lock_event_payout_destination_for_order_id(TEXT);
-
-    CREATE FUNCTION buymesho_lock_event_payout_destination_for_order_id(target_order_id TEXT)
+    CREATE OR REPLACE FUNCTION buymesho_lock_event_payout_destination_for_order_id(target_order_id BIGINT)
     RETURNS VOID
     LANGUAGE plpgsql
     AS $$
@@ -43,6 +40,7 @@ export function ensureEventPayoutDestinationLockMigration() {
            AND (item->>'eventId') ~ '^[0-9]+$'
         THEN
           target_event_id := (item->>'eventId')::BIGINT;
+
           UPDATE events
           SET payout_destination_locked_at = COALESCE(payout_destination_locked_at, CURRENT_TIMESTAMP),
               payout_destination_locked_by = COALESCE(payout_destination_locked_by, 'system'),
@@ -64,6 +62,19 @@ export function ensureEventPayoutDestinationLockMigration() {
       order_row RECORD;
       item JSONB;
     BEGIN
+      -- Event tickets are indexed by event_id. Once the ticket projection exists,
+      -- use it as the fast path for runtime checks instead of scanning every order.
+      IF EXISTS (
+        SELECT 1
+        FROM event_tickets
+        WHERE event_id = target_event_id
+        LIMIT 1
+      ) THEN
+        RETURN TRUE;
+      END IF;
+
+      -- Keep a compatibility fallback for legacy data that predates the ticket
+      -- projection or during migrations that run before its backfill.
       FOR order_row IN
         SELECT o.id, o.status, o.paid_at, o.items
         FROM orders o
@@ -72,7 +83,9 @@ export function ensureEventPayoutDestinationLockMigration() {
       LOOP
         FOR item IN
           SELECT value
-          FROM jsonb_array_elements(COALESCE(NULLIF(order_row.items, '')::jsonb, '[]'::jsonb))
+          FROM jsonb_array_elements(
+            COALESCE(NULLIF(order_row.items, '')::jsonb, '[]'::jsonb)
+          )
         LOOP
           IF (item->>'kind' = 'event_ticket' OR NULLIF(item->>'eventId', '') IS NOT NULL)
              AND (item->>'eventId') ~ '^[0-9]+$'
@@ -88,7 +101,7 @@ export function ensureEventPayoutDestinationLockMigration() {
     $$;
 
     CREATE OR REPLACE FUNCTION buymesho_lock_event_payout_destination_for_order()
-    RETURNS trigger
+    RETURNS TRIGGER
     LANGUAGE plpgsql
     AS $$
     BEGIN
@@ -106,7 +119,7 @@ export function ensureEventPayoutDestinationLockMigration() {
     EXECUTE FUNCTION buymesho_lock_event_payout_destination_for_order();
 
     CREATE OR REPLACE FUNCTION buymesho_lock_event_payout_destination_for_payment()
-    RETURNS trigger
+    RETURNS TRIGGER
     LANGUAGE plpgsql
     AS $$
     BEGIN
@@ -126,7 +139,7 @@ export function ensureEventPayoutDestinationLockMigration() {
     EXECUTE FUNCTION buymesho_lock_event_payout_destination_for_payment();
 
     CREATE OR REPLACE FUNCTION buymesho_protect_event_payout_destination_change()
-    RETURNS trigger
+    RETURNS TRIGGER
     LANGUAGE plpgsql
     AS $$
     BEGIN
