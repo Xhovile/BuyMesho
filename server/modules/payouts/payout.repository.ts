@@ -31,6 +31,8 @@ function existingPayoutMatchesInput(
   const requestedEventId = input.eventId == null ? null : String(input.eventId);
   const requestedEventCreatorUid = input.eventCreatorUid ?? null;
   const requestedDestinationAccountId = input.destinationAccountId ?? null;
+  const requestedEscrowId = 'escrowId' in input ? input.escrowId : null;
+  const requestedReleaseEntryId = 'releaseEntryId' in input ? input.releaseEntryId : null;
 
   return (
     existing.ownerType === owner.ownerType &&
@@ -38,8 +40,8 @@ function existingPayoutMatchesInput(
     existing.eventId === requestedEventId &&
     existing.eventCreatorUid === requestedEventCreatorUid &&
     existing.orderId === input.orderId &&
-    existing.escrowId === input.escrowId &&
-    existing.releaseEntryId === input.releaseEntryId &&
+    existing.escrowId === requestedEscrowId &&
+    existing.releaseEntryId === requestedReleaseEntryId &&
     (input.destinationAccountId === undefined || existing.destinationAccountId === requestedDestinationAccountId)
   );
 }
