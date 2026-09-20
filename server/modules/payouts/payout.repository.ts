@@ -33,8 +33,24 @@ function resolvePayoutOwner(
   if (!ownerUid) {
     throw new Error(`Payout owner identity is missing for ${ownerType}`);
   }
-  if (ownerType === 'event_creator' && input.eventId == null) {
-    throw new Error('Event payout owner requires an eventId');
+
+  if (ownerType === 'event_creator') {
+    if (input.eventId == null) {
+      throw new Error('Event payout owner requires an eventId');
+    }
+    if (input.eventCreatorUid && input.eventCreatorUid !== ownerUid) {
+      throw new Error('Event payout owner UID does not match eventCreatorUid');
+    }
+    if (input.sellerId && input.sellerId !== ownerUid) {
+      throw new Error('Event payout owner UID does not match sellerId compatibility identity');
+    }
+  } else {
+    if (input.eventId != null || input.eventCreatorUid != null) {
+      throw new Error('Seller payout owner cannot include event payout identity');
+    }
+    if (input.sellerId && input.sellerId !== ownerUid) {
+      throw new Error('Seller payout owner UID does not match sellerId');
+    }
   }
 
   return { ownerType, ownerUid };
