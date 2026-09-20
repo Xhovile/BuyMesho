@@ -5,6 +5,28 @@ export function ensurePayoutOwnershipRefactorMigration() {
     ALTER TABLE payouts ADD COLUMN IF NOT EXISTS owner_type TEXT DEFAULT 'seller';
     ALTER TABLE payouts ADD COLUMN IF NOT EXISTS owner_uid TEXT;
 
+    -- Recover event creator identity for event payouts written before owner_uid
+    -- was introduced. Do this before enforcing the owner identity constraint.
+    UPDATE payouts p
+    SET event_creator_uid = e.creator_uid
+    FROM events e
+    WHERE p.event_id = e.id
+      AND p.event_creator_uid IS NULL
+      AND e.creator_uid IS NOT NULL;
+
+    DO $payout_owner_validate$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM payouts p
+        WHERE p.event_id IS NOT NULL
+          AND p.event_creator_uid IS NULL
+      ) THEN
+        RAISE EXCEPTION 'Cannot backfill payout owner identity: event payout is missing event_creator_uid';
+      END IF;
+    END;
+    $payout_owner_validate$;
+
     CREATE OR REPLACE FUNCTION buymesho_normalize_payout_owner()
     RETURNS trigger
     LANGUAGE plpgsql
@@ -31,8 +53,7 @@ export function ensurePayoutOwnershipRefactorMigration() {
     UPDATE payouts
     SET owner_type = 'event_creator',
         owner_uid = event_creator_uid
-    WHERE event_id IS NOT NULL
-      AND event_creator_uid IS NOT NULL;
+    WHERE event_id IS NOT NULL;
 
     UPDATE payouts
     SET owner_type = 'seller',
