@@ -392,7 +392,7 @@ function StudioCheckoutButton({
       const documentHeight = document.documentElement.scrollHeight;
       const distanceToBottom = documentHeight - (window.scrollY + window.innerHeight);
       const hasScrollableContent = documentHeight > window.innerHeight + 80;
-      setFloating(hasScrollableContent && window.scrollY > 120 && distanceToBottom > 96);
+      setFloating(hasScrollableContent && distanceToBottom > 96);
     };
 
     updatePosition();
