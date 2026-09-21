@@ -96,6 +96,21 @@ export async function ensureStudioDatabaseSchema(): Promise<void> {
     `);
 
     await studioQuery(`
+      ALTER TABLE service_payments
+      ADD COLUMN IF NOT EXISTS success_notification_status TEXT NOT NULL DEFAULT 'pending'
+    `);
+
+    await studioQuery(`
+      ALTER TABLE service_payments
+      ADD COLUMN IF NOT EXISTS success_notification_sent_at TIMESTAMPTZ
+    `);
+
+    await studioQuery(`
+      ALTER TABLE service_payments
+      ADD COLUMN IF NOT EXISTS success_notification_error TEXT
+    `);
+
+    await studioQuery(`
       CREATE INDEX IF NOT EXISTS idx_studio_service_payments_reference
       ON service_payments(payment_reference)
     `);
