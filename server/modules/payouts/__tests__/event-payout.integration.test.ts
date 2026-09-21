@@ -63,7 +63,7 @@ function seed() {
       fees_amount,fees_currency,total_amount,total_currency,payment_provider,payment_reference,
       items,created_at,updated_at,paid_at
     ) VALUES (
-      'event-payout-test-order','buyer','event_payout_test_creator','event','in_escrow','MWK',10000,'MWK',0,'MWK',10000,'MWK',
+      'event-payout-test-order','buyer','event_payout_test_creator','event','paid','MWK',10000,'MWK',0,'MWK',10000,'MWK',
       'paychangu','REF-EVENT-PAYOUT','[{"kind":"event_ticket","eventId":"992001","quantity":1,"unitPrice":{"amount":10000}}]',?,?,?
     )
   `).run(now, now, now);
@@ -148,7 +148,7 @@ test('event payout replay uses the stored immutable fee snapshot', async () => {
       provider_charge_id, requested_by, requested_at, created_at, updated_at
     ) VALUES (
       'event-payout-test-replay', 'event_payout_test_creator', 992001, 'event_payout_test_creator',
-      'event-payout-test-order', 'event-payout-test-escrow', 'event-payout-test-release',
+      'event-payout-test-order', NULL, NULL,
       'event-payout-test-destination', 9170, 10000, 300, 250, 100, 600, 0, 180,
       9170, 9170, ?, 'MWK', 'pending_settlement', 'paychangu', NULL, 'event_payout_test_creator', ?, ?, ?
     )
@@ -193,7 +193,7 @@ test('event payout candidate rejects an existing payout with a different financi
       currency, status, provider, requested_by, requested_at, created_at, updated_at
     ) VALUES (
       'event-payout-conflicting-owner', 'event_payout_test_creator', 'seller', 'event_payout_test_creator',
-      'event-payout-test-order', 'event-payout-test-escrow', 'event-payout-test-release',
+      'event-payout-test-order', NULL, NULL,
       9700, 10000, 300, 0, 0, 0, 0, 0, 9700, 9700, '{}',
       'MWK', 'pending_settlement', 'paychangu', 'system', ?, ?, ?
     )
@@ -206,20 +206,18 @@ test('event payout candidate rejects an existing payout with a different financi
     await assert.rejects(
       () => createEventPayoutCandidateAsync({
         orderId: 'event-payout-test-order',
-        escrowId: 'event-payout-test-escrow',
-        releaseEntryId: 'event-payout-test-release',
         event: context,
         grossAmount: 10000,
         currency: 'MWK',
         requestedBy: 'event_payout_test_creator',
         requestedAt: now,
       }, client),
-      /Existing payout for escrow does not match the event payout financial identity/,
+      /Existing event payout does not match the event payout financial identity/,
     );
   });
 });
 
-test('event payout candidate stores event identity, bound destination, and immutable fee snapshot', async () => {
+test('event payout candidate stores event identity, bound destination, and immutable fee snapshot without escrow', async () => {
   seed();
   const now = new Date().toISOString();
 
@@ -244,6 +242,9 @@ test('event payout candidate stores event identity, bound destination, and immut
     assert.equal(result.payout.eventId, '992001');
     assert.equal(result.payout.eventCreatorUid, 'event_payout_test_creator');
     assert.equal(result.payout.destinationAccountId, 'event-payout-test-destination');
+    assert.equal(result.payout.escrowId, null);
+    assert.equal(result.payout.releaseEntryId, null);
+    assert.equal(result.payout.status, 'eligible');
     assert.equal(result.payout.amount, 9520);
     assert.equal(result.payoutFormula.platformFeeAmount, 300);
     assert.equal(result.payoutFormula.payoutFeeAmount, 180);
