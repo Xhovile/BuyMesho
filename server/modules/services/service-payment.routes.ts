@@ -49,6 +49,7 @@ export function createServicePaymentRouter(
   const router = express.Router();
 
   router.post("/", createRateLimit, async (req: Request, res) => {
+    res.setHeader("Cache-Control", "no-store");
     try {
       const serviceType = cleanString(req.body?.serviceType, 40);
       const customerName = cleanString(req.body?.customerName, 120);
@@ -109,6 +110,7 @@ export function createServicePaymentRouter(
   });
 
   router.get("/:reference", async (req: Request, res) => {
+    res.setHeader("Cache-Control", "no-store");
     const reference = cleanString(req.params.reference, 180);
 
     if (!reference) {
