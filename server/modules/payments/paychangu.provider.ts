@@ -406,8 +406,14 @@ export const paychanguProvider = {
       callback_url: callbackUrl,
       return_url: returnUrl,
       customization: {
-        title: 'BuyMesho Checkout',
-        description: `Payment for order ${request.orderId}`,
+        title:
+          request.metadata?.paymentType === 'xhovile_studio_service'
+            ? 'Xhovilé Studio'
+            : 'BuyMesho Checkout',
+        description:
+          request.metadata?.paymentType === 'xhovile_studio_service'
+            ? String(request.metadata.description ?? 'Xhovilé Studio service payment')
+            : `Payment for order ${request.orderId}`,
       },
       meta: serializeMeta(request.metadata),
     };

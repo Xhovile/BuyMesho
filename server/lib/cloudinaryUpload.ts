@@ -13,10 +13,13 @@ export function isSupportedUploadMime(mime: string): boolean {
   return mime.startsWith("image/") || mime.startsWith("video/");
 }
 
-export async function uploadBufferToCloudinary(file: {
-  buffer: Buffer;
-  mimetype: string;
-}): Promise<string> {
+export async function uploadBufferToCloudinary(
+  file: {
+    buffer: Buffer;
+    mimetype: string;
+  },
+  options: { folder?: string } = {},
+): Promise<string> {
   if (!file.mimetype || !isSupportedUploadMime(file.mimetype)) {
     throw new Error("Unsupported file type");
   }
@@ -26,6 +29,7 @@ export async function uploadBufferToCloudinary(file: {
 
   const result = await cloudinary.uploader.upload(dataURI, {
     resource_type: "auto",
+    folder: options.folder,
   });
 
   return result.secure_url;

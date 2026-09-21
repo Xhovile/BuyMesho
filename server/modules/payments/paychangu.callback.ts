@@ -34,7 +34,7 @@ export async function payChanguCallbackHandler(req: Request, res: Response): Pro
   }
 
   try {
-    if (servicePaymentRepository.findByReference(txRef)) {
+    if (/^PAYCHANGU-svc_/i.test(txRef) && await servicePaymentRepository.findByReference(txRef)) {
       const verification = await verifyXhovileStudioServicePayment(txRef);
       redirectToPaymentReturn(
         res,
@@ -58,14 +58,14 @@ export async function payChanguCallbackHandler(req: Request, res: Response): Pro
     redirectToPaymentReturn(
       res,
       { tx_ref: txRef, status: "failed" },
-      servicePaymentRepository.findByReference(txRef)
+      /^PAYCHANGU-svc_/i.test(txRef) && (await servicePaymentRepository.findByReference(txRef))
         ? "/Services/XhovileStudio/receipt"
         : "/payment/return",
     );
   }
 }
 
-export function payChanguReturnHandler(req: Request, res: Response): void {
+export async function payChanguReturnHandler(req: Request, res: Response): Promise<void> {
   const txRef = String(req.query.tx_ref ?? req.query.txRef ?? req.query.reference ?? "").trim();
   const status = String(req.query.status ?? "failed").trim().toLowerCase() || "failed";
 
@@ -75,7 +75,7 @@ export function payChanguReturnHandler(req: Request, res: Response): void {
       tx_ref: txRef || undefined,
       status,
     },
-    servicePaymentRepository.findByReference(txRef)
+    /^PAYCHANGU-svc_/i.test(txRef) && await servicePaymentRepository.findByReference(txRef)
       ? "/Services/XhovileStudio/receipt"
       : "/payment/return",
   );

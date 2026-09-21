@@ -1,12 +1,12 @@
 import { paychanguProvider } from "../payments/paychangu.provider.js";
-import {
-  createServerPaymentConfigFromEnv,
-  serverPaymentService,
-} from "../payments/payment.service.js";
-import { paymentRepository } from "../payments/payment.repository.js";
+import { uploadBufferToCloudinary } from "../../lib/cloudinaryUpload.js";
+import { createServerPaymentConfigFromEnv } from "../payments/payment.service.js";
 import type { PaymentVerificationResult } from "../../../src/modules/payments/types.js";
+import { sendEmail } from "../email/email.service.js";
+import { renderXhovileStudioPaymentSuccessEmail } from "../email/templates/xhovile-studio-payment-success.js";
 import {
   servicePaymentRepository,
+  type ServicePaymentMode,
   type ServicePaymentRecord,
   type ServicePaymentType,
 } from "./service-payment.repository.js";
@@ -18,52 +18,136 @@ export interface CreateServicePaymentInput {
   customerEmail?: string | null;
   description: string;
   amount: number;
+  paymentMode?: ServicePaymentMode | null;
+  projectTotal?: number | null;
+  projectReference?: string | null;
+  graphicId?: string | null;
+  referenceFiles?: Array<{
+    file: Express.Multer.File;
+    kind: "image" | "video";
+  }>;
+}
+
+export async function notifyXhovileStudioSuccessfulPayment(
+  reference: string,
+): Promise<void> {
+  const claimed = await servicePaymentRepository.claimSuccessNotification(reference);
+  if (!claimed) return;
+
+  try {
+    const { text, html } = renderXhovileStudioPaymentSuccessEmail(claimed);
+
+    const notificationEmail =
+      process.env.XHOVILE_STUDIO_NOTIFICATION_EMAIL?.trim() ||
+      "xhovilepublications@gmail.com";
+
+    await sendEmail({
+      sender: "notifications",
+      to: {
+        email: notificationEmail,
+        name: "Xhovilé Studio",
+      },
+      subject: `Xhovilé Studio payment received — ${claimed.customerName}`,
+      text,
+      html,
+    });
+
+    await servicePaymentRepository.markSuccessNotificationSent(reference);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await servicePaymentRepository.markSuccessNotificationFailed(reference, message);
+    console.error(
+      "[XhovileStudio] Successful payment email failed:",
+      message,
+    );
+  }
 }
 
 export async function createXhovileStudioServicePayment(
   input: CreateServicePaymentInput,
-): Promise<{ servicePayment: ServicePaymentRecord; checkoutUrl: string; reference: string }> {
-  const servicePayment = servicePaymentRepository.create({
-    ...input,
+): Promise<{
+  servicePayment: ServicePaymentRecord;
+  checkoutUrl: string;
+  reference: string;
+}> {
+  const servicePayment = await servicePaymentRepository.create({
+    serviceType: input.serviceType,
+    customerName: input.customerName,
+    customerPhone: input.customerPhone,
+    customerEmail: input.customerEmail,
+    description: input.description,
+    amount: input.amount,
     currency: "MWK",
+    paymentMode: input.paymentMode,
+    projectTotal: input.projectTotal,
+    projectReference: input.projectReference,
+    graphicId: input.graphicId,
   });
 
   try {
-    const payment = await serverPaymentService.createPayment({
-      orderId: servicePayment.id,
-      provider: "paychangu",
-      method: "mobile_money",
-      amount: { amount: input.amount, currency: "MWK" },
-      customer: {
-        name: input.customerName,
-        email: input.customerEmail || undefined,
-        phoneNumber: input.customerPhone,
+    const referenceMedia = [];
+    for (const reference of input.referenceFiles ?? []) {
+      const url = await uploadBufferToCloudinary(
+        {
+          buffer: reference.file.buffer,
+          mimetype: reference.file.mimetype,
+        },
+        { folder: "xhovile-studio/references" },
+      );
+      referenceMedia.push({
+        kind: reference.kind,
+        url,
+        originalName: reference.file.originalname,
+        mimeType: reference.file.mimetype,
+        sizeBytes: reference.file.size,
+      });
+    }
+
+    if (referenceMedia.length) {
+      await servicePaymentRepository.updateReferenceMedia(servicePayment.id, referenceMedia);
+    }
+
+    const payment = await paychanguProvider.createPayment(
+      {
+        orderId: servicePayment.id,
+        provider: "paychangu",
+        method: "mobile_money",
+        amount: { amount: input.amount, currency: "MWK" },
+        customer: {
+          name: input.customerName,
+          email: input.customerEmail || undefined,
+          phoneNumber: input.customerPhone,
+        },
+        metadata: {
+          paymentType: "xhovile_studio_service",
+          servicePaymentId: servicePayment.id,
+          serviceType: input.serviceType,
+          customerName: input.customerName,
+          customerPhone: input.customerPhone,
+          customerEmail: input.customerEmail || undefined,
+          description: input.description,
+          paymentMode: input.paymentMode || undefined,
+          projectTotal: input.projectTotal ?? undefined,
+          projectReference: input.projectReference || undefined,
+          graphicId: input.graphicId || undefined,
+        },
       },
-      metadata: {
-        paymentType: "xhovile_studio_service",
-        servicePaymentId: servicePayment.id,
-        serviceType: input.serviceType,
-        customerName: input.customerName,
-        customerPhone: input.customerPhone,
-        customerEmail: input.customerEmail || undefined,
-        description: input.description,
-      },
-    });
+      createServerPaymentConfigFromEnv(),
+    );
 
     const checkoutUrl = payment.checkoutUrl?.trim();
     if (!checkoutUrl) {
       throw new Error("PayChangu did not return a checkout URL");
     }
 
-    const updated = servicePaymentRepository.attachPayment({
+    const updated = await servicePaymentRepository.attachPayment({
       id: servicePayment.id,
-      paymentId: String(payment.id),
       reference: payment.reference,
       providerReference: payment.providerReference ?? null,
     });
 
     if (!updated) {
-      throw new Error("Service payment record disappeared during checkout setup");
+      throw new Error("Studio payment record disappeared during checkout setup");
     }
 
     return {
@@ -72,7 +156,7 @@ export async function createXhovileStudioServicePayment(
       reference: payment.reference,
     };
   } catch (error) {
-    servicePaymentRepository.markFailedById(servicePayment.id);
+    await servicePaymentRepository.markFailedById(servicePayment.id);
     throw error;
   }
 }
@@ -80,7 +164,7 @@ export async function createXhovileStudioServicePayment(
 export async function isXhovileStudioServicePaymentReference(
   reference: string,
 ): Promise<boolean> {
-  return Boolean(servicePaymentRepository.findByReference(reference));
+  return Boolean(await servicePaymentRepository.findByReference(reference));
 }
 
 function paymentVerificationMatchesService(
@@ -104,7 +188,8 @@ export async function verifyXhovileStudioServicePayment(
   reference: string,
 ): Promise<PaymentVerificationResult> {
   const requestedReference = reference.trim();
-  const servicePayment = servicePaymentRepository.findByReference(requestedReference);
+  const servicePayment =
+    await servicePaymentRepository.findByReference(requestedReference);
 
   if (!servicePayment) {
     return {
@@ -113,11 +198,13 @@ export async function verifyXhovileStudioServicePayment(
       txRef: requestedReference,
       reference: requestedReference,
       status: "unknown",
-      failureReason: "Service payment not found",
+      failureReason: "Studio payment not found",
     };
   }
 
   if (servicePayment.status === "paid") {
+    await notifyXhovileStudioSuccessfulPayment(requestedReference);
+
     return {
       verified: true,
       provider: "paychangu",
@@ -145,7 +232,7 @@ export async function verifyXhovileStudioServicePayment(
         String(verification.status ?? "").toLowerCase(),
       )
     ) {
-      servicePaymentRepository.markFailed(requestedReference);
+      await servicePaymentRepository.markFailed(requestedReference);
     }
 
     return {
@@ -154,27 +241,12 @@ export async function verifyXhovileStudioServicePayment(
       orderId: servicePayment.id,
       failureReason:
         verification.failureReason ??
-        "PayChangu payment did not exactly match the requested service payment",
+        "PayChangu payment did not exactly match the requested Studio payment",
     };
   }
 
-  const payment = await paymentRepository.findByReferenceAsync(requestedReference);
-  if (payment) {
-    await paymentRepository.updateByReferenceAsync(requestedReference, (current) => ({
-      ...current,
-      status: "captured",
-      verified: true,
-      paidAt: new Date().toISOString(),
-      verification: {
-        ...verification,
-        verified: true,
-        orderId: servicePayment.id,
-      },
-      updatedAt: new Date().toISOString(),
-    }));
-  }
-
-  servicePaymentRepository.markPaid(requestedReference);
+  await servicePaymentRepository.markPaid(requestedReference);
+  await notifyXhovileStudioSuccessfulPayment(requestedReference);
 
   return {
     ...verification,
@@ -184,4 +256,3 @@ export async function verifyXhovileStudioServicePayment(
     orderId: servicePayment.id,
   };
 }
-

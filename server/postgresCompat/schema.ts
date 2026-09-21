@@ -139,31 +139,6 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
     CREATE INDEX IF NOT EXISTS idx_payments_reference ON payments(reference);
     CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments(order_id);
 
-    CREATE TABLE IF NOT EXISTS service_payments (
-      id TEXT PRIMARY KEY,
-      service_type TEXT NOT NULL,
-      customer_name TEXT NOT NULL,
-      customer_phone TEXT NOT NULL,
-      customer_email TEXT,
-      description TEXT NOT NULL,
-      amount REAL NOT NULL,
-      currency TEXT NOT NULL DEFAULT 'MWK',
-      status TEXT NOT NULL DEFAULT 'pending',
-      payment_id TEXT,
-      payment_reference TEXT UNIQUE,
-      provider_reference TEXT,
-      paid_at TEXT,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_service_payments_status
-      ON service_payments(status, created_at DESC);
-
-    CREATE INDEX IF NOT EXISTS idx_service_payments_reference
-      ON service_payments(payment_reference);
-
-
     CREATE TABLE IF NOT EXISTS sellers (
       uid TEXT PRIMARY KEY,
       email TEXT,

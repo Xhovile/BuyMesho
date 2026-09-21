@@ -21,6 +21,7 @@ import { createEventTicketIdentityRouter } from "./modules/events/eventTicketIde
 import { createAdminEventTransactionRouter } from "./modules/admin/adminEventTransaction.routes.js";
 import { createAdminTicketTransactionSearchRouter } from "./modules/admin/adminTicketTransactionSearch.routes.js";
 import { createServicePaymentRouter } from "./modules/services/service-payment.routes.js";
+import { createXhovileStudioAdminRouter } from "./modules/services/studio-admin.routes.js";
 import { logGeminiConfiguration } from "./lib/gemini.js";
 import {
   checkoutRateLimit,
@@ -144,6 +145,10 @@ export async function startServer() {
 
   app.use("/api/payments/checkout", checkoutRateLimit);
   app.use("/api/payments/public-status", publicPaymentStatusRateLimit);
+  app.use(
+    "/api/admin/xhovile-studio",
+    createXhovileStudioAdminRouter(requireAuth),
+  );
   app.use(
     "/api/public/service-payments",
     createServicePaymentRouter(
