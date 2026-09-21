@@ -10,7 +10,7 @@ import {
   formatMoney,
 } from "./config";
 
-function PayChanguLogo() {
+export function PayChanguLogo() {
   return (
     <span className="inline-flex items-center gap-1.5" aria-label="PayChangu">
       <svg
@@ -30,7 +30,7 @@ function PayChanguLogo() {
   );
 }
 
-function StudioBackToTop() {
+export function StudioBackToTop() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -57,7 +57,7 @@ function StudioBackToTop() {
   );
 }
 
-function Shell({ children }: { children: ReactNode }) {
+export function Shell({ children }: { children: ReactNode }) {
   return (
     <main className="min-h-screen bg-[#f6f1ea] px-3 py-5 text-zinc-900 sm:px-6 sm:py-8">
       <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] w-full max-w-2xl items-center justify-center sm:min-h-[calc(100vh-4rem)]">
@@ -68,7 +68,7 @@ function Shell({ children }: { children: ReactNode }) {
   );
 }
 
-function ServiceChoice({
+export function ServiceChoice({
   active,
   color,
   icon,
@@ -127,7 +127,7 @@ function ServiceChoice({
   );
 }
 
-function ChoiceButton({
+export function ChoiceButton({
   active,
   title,
   subtitle,
@@ -163,7 +163,7 @@ function ChoiceButton({
   );
 }
 
-function GraphicServicePicker({
+export function GraphicServicePicker({
   value,
   onChange,
   accent = "blue",
@@ -263,7 +263,7 @@ function GraphicServicePicker({
   );
 }
 
-function StudioCheckoutButton({
+export function StudioCheckoutButton({
   disabled,
   submitting,
   amount,
