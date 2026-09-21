@@ -72,8 +72,7 @@ export async function createXhovileStudioServicePayment(
       reference: payment.reference,
     };
   } catch (error) {
-    const failed = servicePaymentRepository.findById(servicePayment.id);
-    if (failed?.paymentReference) servicePaymentRepository.markFailed(failed.paymentReference);
+    servicePaymentRepository.markFailedById(servicePayment.id);
     throw error;
   }
 }
