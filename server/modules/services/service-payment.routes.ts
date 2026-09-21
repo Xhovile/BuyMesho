@@ -61,7 +61,7 @@ function publicRecord(record: ReturnType<typeof servicePaymentRepository.findByI
 
 export function createServicePaymentRouter(
   createRateLimit: RequestHandler,
-  statusRateLimit?: RequestHandler,
+  statusRateLimit: RequestHandler,
 ): Router {
   const router = express.Router();
 
