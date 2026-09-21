@@ -1,4 +1,4 @@
-import type { Express, RequestHandler } from "express";
+import express, { type Request, type RequestHandler, type Router } from "express";
 import {
   createXhovileStudioServicePayment,
   verifyXhovileStudioServicePayment,
@@ -45,8 +45,7 @@ function publicRecord(record: ReturnType<typeof servicePaymentRepository.findByI
 
 export function createServicePaymentRouter(
   createRateLimit: RequestHandler,
-): ReturnType<typeof import("express").Router> {
-  const express = require("express") as typeof import("express");
+): Router {
   const router = express.Router();
 
   router.post("/", createRateLimit, async (req: Request, res) => {
