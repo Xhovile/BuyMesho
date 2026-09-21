@@ -207,30 +207,6 @@ CREATE TABLE IF NOT EXISTS buyer_cart_items (
 CREATE INDEX IF NOT EXISTS idx_payments_order_id
 ON payments (order_id, created_at DESC);
 
-CREATE TABLE IF NOT EXISTS service_payments (
-  id TEXT PRIMARY KEY,
-  service_type TEXT NOT NULL,
-  customer_name TEXT NOT NULL,
-  customer_phone TEXT NOT NULL,
-  customer_email TEXT,
-  description TEXT NOT NULL,
-  amount DOUBLE PRECISION NOT NULL,
-  currency TEXT NOT NULL DEFAULT 'MWK',
-  status TEXT NOT NULL DEFAULT 'pending',
-  payment_id TEXT,
-  payment_reference TEXT UNIQUE,
-  provider_reference TEXT,
-  paid_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_service_payments_status
-ON service_payments (status, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_service_payments_reference
-ON service_payments (payment_reference);
-
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
   buyer_id TEXT NOT NULL,
