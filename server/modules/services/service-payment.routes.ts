@@ -117,6 +117,29 @@ export function createServicePaymentRouter(
         if (projectReference.length < 3) {
           return res.status(400).json({ error: "Enter your existing project reference." });
         }
+
+        let expectedBalance = 0;
+
+        if (needsGraphic) {
+          if (!graphicId || !Object.prototype.hasOwnProperty.call(GRAPHIC_SERVICE_PRICES, graphicId)) {
+            return res.status(400).json({ error: "Choose a valid graphic design service." });
+          }
+          const graphicProjectTotal = GRAPHIC_SERVICE_PRICES[graphicId];
+          expectedBalance += Math.round((graphicProjectTotal / 2) * 100) / 100;
+        }
+
+        if (needsWebsite) {
+          if (!Number.isFinite(websiteTotal) || websiteTotal < 80_000) {
+            return res.status(400).json({ error: "Enter the agreed website project price." });
+          }
+          if (!Number.isFinite(amount) || amount <= expectedBalance || amount > websiteTotal + expectedBalance) {
+            return res.status(400).json({ error: "Enter a valid remaining website balance." });
+          }
+        } else if (Math.abs(amount - expectedBalance) > 0.01) {
+          return res.status(400).json({
+            error: "The graphic design final balance must be 50% of the listed project price.",
+          });
+        }
       } else {
         let expectedProjectTotal = 0;
 
