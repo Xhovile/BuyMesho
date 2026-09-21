@@ -145,12 +145,9 @@ function PaymentForm() {
   return (
     <Shell>
       <header className="mb-5 text-center sm:mb-6">
-        <h1 className="text-3xl font-black uppercase tracking-[0.18em] text-[#8f1528] sm:text-5xl">
-          XHOVILÉ STUDIO
-        </h1>
-        <p className="mt-2 text-[11px] font-black uppercase tracking-[0.28em] text-zinc-500 sm:text-xs">
+        <h1 className="text-xl font-black uppercase tracking-[0.28em] text-zinc-900 sm:text-2xl">
           Service Payment
-        </p>
+        </h1>
         <p className="mx-auto mt-2 max-w-xl text-xs leading-5 text-zinc-500">
           Choose what you need, confirm the amount due today, then continue to PayChangu.
         </p>
