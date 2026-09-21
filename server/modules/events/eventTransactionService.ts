@@ -30,7 +30,7 @@ export type EventTransactionSummary = {
   latestPaymentReference: string | null;
 };
 
-const SETTLED_ORDER_STATUSES = new Set(["paid", "in_escrow", "fulfilled", "closed"]);
+const SETTLED_ORDER_STATUSES = new Set(["paid", "fulfilled", "closed"]);
 const SUCCESSFUL_PAYMENT_STATUSES = new Set(["captured", "paid", "verified", "successful", "completed"]);
 const PENDING_PAYMENT_STATUSES = new Set(["pending", "processing", "initiated", "created"]);
 const FAILED_PAYMENT_STATUSES = new Set(["failed", "cancelled", "expired", "rejected"]);
