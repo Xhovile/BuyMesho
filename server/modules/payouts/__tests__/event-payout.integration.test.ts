@@ -160,8 +160,6 @@ test('event payout replay uses the stored immutable fee snapshot', async () => {
 
     const result = await createEventPayoutCandidateAsync({
       orderId: 'event-payout-test-order',
-      escrowId: 'event-payout-test-escrow',
-      releaseEntryId: 'event-payout-test-release',
       event: context,
       grossAmount: 15000,
       currency: 'MWK',
