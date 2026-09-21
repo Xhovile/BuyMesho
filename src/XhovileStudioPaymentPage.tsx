@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, ChevronRight, CircleAlert, Download, Loader2, Palette, Monitor, RotateCcw, ShieldCheck } from "lucide-react";
 
 type ServiceType = "graphic_design" | "website_development";
@@ -112,7 +112,7 @@ function ServiceChoice({
   onClick,
 }: {
   active: boolean;
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   description: string;
   onClick: () => void;
