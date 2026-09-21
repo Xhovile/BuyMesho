@@ -78,7 +78,7 @@ export function ensureEventPayoutDestinationLockMigration() {
       FOR order_row IN
         SELECT o.id, o.status, o.paid_at, o.items
         FROM orders o
-        WHERE o.status IN ('paid', 'in_escrow', 'fulfilled', 'closed')
+        WHERE o.status IN ('paid', 'fulfilled', 'closed')
            OR o.paid_at IS NOT NULL
       LOOP
         FOR item IN
