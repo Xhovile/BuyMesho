@@ -7,6 +7,9 @@ import { escrowRepository } from "../escrow/escrow.repository.js";
 import { applyVerifiedPayChanguPayment } from "./paychangu.flow.js";
 import { isAcceptedPaychanguEventType, isPaychanguSuccessStatus, paychanguProvider } from "./paychangu.provider.js";
 import {
+  notifyXhovileStudioSuccessfulPayment,
+} from "../services/service-payment.service.js";
+import {
   servicePaymentRepository,
 } from "../services/service-payment.repository.js";
 import { getPaymentDb } from "../../postgresCompat.js";
@@ -189,6 +192,9 @@ async function handleStudioPayChanguWebhook(
     await servicePaymentRepository.markPaid(
       servicePayment.paymentReference ?? txRef,
       new Date().toISOString(),
+    );
+    await notifyXhovileStudioSuccessfulPayment(
+      servicePayment.paymentReference ?? txRef,
     );
     await servicePaymentRepository.updateWebhookEvent(audit.id, "processed");
 
