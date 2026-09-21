@@ -117,7 +117,7 @@ function ensureEventTicketStatsSchema() {
     DECLARE item JSONB; event_id_value BIGINT; quantity_value INTEGER; old_eligible BOOLEAN; new_eligible BOOLEAN;
     BEGIN
       old_eligible := TG_OP = 'UPDATE' AND OLD.status IN ('paid','fulfilled');
-      new_eligible := NEW.status IN ('paid','in_escrow','fulfilled');
+      new_eligible := NEW.status IN ('paid','fulfilled');
       IF old_eligible THEN
         FOR item IN SELECT value FROM jsonb_array_elements(COALESCE(NULLIF(OLD.items, '')::jsonb, '[]'::jsonb)) LOOP
           IF (item->>'kind' = 'event_ticket' OR NULLIF(item->>'eventId', '') IS NOT NULL) AND (item->>'eventId') ~ '^[0-9]+$' THEN
@@ -142,9 +142,9 @@ function ensureEventTicketStatsSchema() {
     CREATE TRIGGER trg_buymesho_sync_event_ticket_stats AFTER INSERT OR UPDATE OF status, items ON orders FOR EACH ROW EXECUTE FUNCTION buymesho_sync_event_ticket_stats_for_order();
     INSERT INTO event_ticket_stats(event_id, tickets_sold, tickets_checked_in, tickets_remaining, updated_at)
     SELECT e.id,
-           COALESCE(SUM(CASE WHEN o.status IN ('paid','in_escrow','fulfilled') AND (item->>'eventId') ~ '^[0-9]+$' AND (item->>'eventId')::BIGINT = e.id THEN GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0) ELSE 0 END), 0)::INTEGER,
+           COALESCE(SUM(CASE WHEN o.status IN ('paid','fulfilled') AND (item->>'eventId') ~ '^[0-9]+$' AND (item->>'eventId')::BIGINT = e.id THEN GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0) ELSE 0 END), 0)::INTEGER,
            0,
-           COALESCE(SUM(CASE WHEN o.status IN ('paid','in_escrow','fulfilled') AND (item->>'eventId') ~ '^[0-9]+$' AND (item->>'eventId')::BIGINT = e.id THEN GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0) ELSE 0 END), 0)::INTEGER,
+           COALESCE(SUM(CASE WHEN o.status IN ('paid','fulfilled') AND (item->>'eventId') ~ '^[0-9]+$' AND (item->>'eventId')::BIGINT = e.id THEN GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0) ELSE 0 END), 0)::INTEGER,
            CURRENT_TIMESTAMP
     FROM events e LEFT JOIN orders o ON TRUE LEFT JOIN LATERAL jsonb_array_elements(COALESCE(NULLIF(o.items, '')::jsonb, '[]'::jsonb)) AS item ON TRUE
     WHERE NOT EXISTS (SELECT 1 FROM event_ticket_stats) GROUP BY e.id
