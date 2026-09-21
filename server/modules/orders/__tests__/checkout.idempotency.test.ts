@@ -36,6 +36,8 @@ test('checkout forces direct settlement for event-only orders', async () => {
       items: [{ eventId: '992101', quantity: 1 }],
       method: 'mobile_money',
       settlementRoute: 'escrow',
+      returnUrl: 'https://example.com/payment/return',
+      cancelUrl: 'https://example.com/payment/return?cancelled=1',
       ticketHolder: { fullName: 'Test Buyer', email: 'buyer@example.com', phone: '0999999999' },
     });
     assert.equal(response.status, 201);
