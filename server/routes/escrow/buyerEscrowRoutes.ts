@@ -271,7 +271,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
 
       await payoutService.addEventAsync({
         payoutId: finalPayout.id,
-        sellerId: result.eventCreatorUid ?? access.order.sellerId,
+        sellerId: access.order.sellerId,
         eventType: 'payout_released',
         actorType: req.user?.is_admin ? 'admin' : 'buyer',
         actorId: requesterId,
