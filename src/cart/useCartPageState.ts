@@ -199,7 +199,14 @@ export function useCartPageState() {
       const result = (await apiFetch(ENDPOINTS.payments.checkout, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
-        body: JSON.stringify({ items: payloadItems, method: "mobile_money", ticketHolder: eventIds.length ? ticketHolder : undefined, returnUrl, cancelUrl }),
+        body: JSON.stringify({
+          items: payloadItems,
+          method: "mobile_money",
+          settlementRoute: eventIds.length && listingIds.length === 0 ? "direct" : undefined,
+          ticketHolder: eventIds.length ? ticketHolder : undefined,
+          returnUrl,
+          cancelUrl,
+        }),
       })) as { orderId: string; paymentId?: string; reference?: string; checkoutUrl?: string | null; payment?: { id?: string; reference?: string; checkoutUrl?: string | null } };
 
       const checkoutUrl = result.checkoutUrl ?? result.payment?.checkoutUrl ?? null;
