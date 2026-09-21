@@ -130,6 +130,119 @@ function findExactWebhookDuplicate(providerEventId: string | null, reference: st
   return null;
 }
 
+async function handleStudioPayChanguWebhook(
+  txRef: string,
+  referenceCandidates: string[],
+  parsedPayload: Record<string, unknown>,
+  eventType: string,
+  eventId: string,
+  status: string,
+  amount: { amount: number; currency: string } | undefined,
+  payloadHash: string,
+): Promise<PaymentWebhookResponse | null> {
+  const studioReferences = referenceCandidates.filter((reference) =>
+    /^PAYCHANGU-svc_/i.test(reference),
+  );
+
+  if (studioReferences.length === 0) return null;
+
+  let servicePayment = null;
+  for (const reference of studioReferences) {
+    servicePayment = await servicePaymentRepository.findByReference(reference);
+    if (servicePayment) break;
+  }
+
+  if (!servicePayment) return null;
+
+  const audit = await servicePaymentRepository.recordWebhookEvent({
+    providerEventId: eventId || null,
+    paymentReference: servicePayment.paymentReference ?? txRef,
+    eventType: eventType || null,
+    payloadHash,
+    signatureValid: true,
+  });
+
+  if (!audit.inserted) {
+    return {
+      ok: true,
+      status: "duplicate",
+      reference: txRef,
+    };
+  }
+
+  const receivedCurrency = normalizeCurrency(amount?.currency);
+  const receivedAmount = amount?.amount;
+
+  if (isPaychanguSuccessStatus(status)) {
+    if (
+      receivedAmount === undefined ||
+      receivedAmount !== servicePayment.amount ||
+      receivedCurrency !== normalizeCurrency(servicePayment.currency)
+    ) {
+      await servicePaymentRepository.updateWebhookEvent(
+        audit.id,
+        "ignored",
+        "Payment amount or currency does not exactly match the Studio payment.",
+      );
+      return { ok: true, status: "ignored", reference: txRef };
+    }
+
+    await servicePaymentRepository.markPaid(
+      servicePayment.paymentReference ?? txRef,
+      new Date().toISOString(),
+    );
+    await servicePaymentRepository.updateWebhookEvent(audit.id, "processed");
+
+    return {
+      ok: true,
+      status: "processed",
+      reference: txRef,
+    };
+  }
+
+  const loweredStatus = status.toLowerCase();
+
+  if (["reversed", "refunded", "chargeback", "charged_back"].includes(loweredStatus)) {
+    await servicePaymentRepository.markRefunded(
+      servicePayment.paymentReference ?? txRef,
+    );
+    await servicePaymentRepository.updateWebhookEvent(audit.id, "processed");
+
+    return {
+      ok: true,
+      status: "processed",
+      reference: txRef,
+    };
+  }
+
+  if (["failed", "cancelled", "canceled", "declined", "expired"].includes(loweredStatus)) {
+    if (servicePayment.status !== "paid") {
+      await servicePaymentRepository.markFailed(
+        servicePayment.paymentReference ?? txRef,
+      );
+    }
+    await servicePaymentRepository.updateWebhookEvent(audit.id, "processed");
+
+    return {
+      ok: true,
+      status: "processed",
+      reference: txRef,
+    };
+  }
+
+  await servicePaymentRepository.updateWebhookEvent(
+    audit.id,
+    "ignored",
+    `Unhandled PayChangu status for Studio payment: ${status || "unknown"}`,
+  );
+
+  return {
+    ok: true,
+    status: "ignored",
+    reference: txRef,
+  };
+}
+
 async function handlePayChanguWebhookInternal(context: PayChanguWebhookContext): Promise<PaymentWebhookResponse> {
   const { rawPayload, parsedPayload } = parseRawWebhookPayload(context.payload);
   const payloadHash = sha256(rawPayload);
@@ -151,6 +264,21 @@ async function handlePayChanguWebhookInternal(context: PayChanguWebhookContext):
     const audit = insertPaymentWebhookEvent({ provider: 'paychangu', providerEventId: eventId || null, reference: txRef || null, txRef: txRef || null, eventType: eventType || null, payloadHash, processingStatus: 'rejected', signatureValid: false, payload: rawPayload, error: 'Invalid PayChangu webhook signature', createdAt: now });
     if (audit.inserted === false) recordPaymentWebhookDuplicateAttempt({ provider: 'paychangu', providerEventId: eventId || null, reference: txRef || null, txRef: txRef || null, eventType: eventType || null, payloadHash }, audit.existingId);
     return { ok: false, error: 'Invalid PayChangu webhook signature' };
+  }
+
+  if (eventType && txRef && isAcceptedPaychanguEventType(eventType)) {
+    const { amount, currency } = readAmountAndCurrency(parsedPayload);
+    const studioResult = await handleStudioPayChanguWebhook(
+      txRef,
+      referenceCandidates,
+      parsedPayload,
+      eventType,
+      eventId,
+      status,
+      amount ?? (currency ? { amount: NaN, currency } : undefined),
+      payloadHash,
+    );
+    if (studioResult) return studioResult;
   }
 
   const duplicate = findPaymentWebhookDuplicate({ provider: 'paychangu', providerEventId: eventId || null, reference: txRef || null, txRef: txRef || null, eventType: eventType || null, payloadHash });
@@ -180,107 +308,8 @@ async function handlePayChanguWebhookInternal(context: PayChanguWebhookContext):
     return { ok: true, status: 'ignored', reference: txRef };
   }
   const resolvedReference = payment.reference;
-  const servicePayment = servicePaymentRepository.findByReference(resolvedReference);
 
-  const { amount, currency } = readAmountAndCurrency(parsedPayload);
-  if (servicePayment) {
-    const receivedCurrency = normalizeCurrency(amount?.currency ?? currency);
-    const receivedAmount = amount?.amount;
-
-    if (isPaychanguSuccessStatus(status)) {
-      if (
-        receivedAmount === undefined ||
-        receivedAmount !== servicePayment.amount ||
-        !receivedCurrency ||
-        receivedCurrency !== normalizeCurrency(servicePayment.currency)
-      ) {
-        updatePaymentWebhookEventStatus(inserted.id, "ignored", {
-          processedAt: now,
-          error: `Payment amount or currency does not exactly match service payment ${servicePayment.id}`,
-          signatureValid: true,
-        });
-        return { ok: true, status: "ignored", reference: txRef };
-      }
-
-      await paymentRepository.updateByReferenceAsync(resolvedReference, current => ({
-        ...current,
-        status: "captured",
-        verified: true,
-        paidAt: now,
-        verification: {
-          verified: true,
-          provider: "paychangu",
-          txRef: resolvedReference,
-          reference: txRef,
-          status,
-          currency: receivedCurrency,
-          amount: { amount: receivedAmount, currency: receivedCurrency },
-          checkoutUrl: null,
-          rawResponse: parsedPayload,
-          orderId: servicePayment.id,
-        },
-        updatedAt: now,
-      }));
-      servicePaymentRepository.markPaid(resolvedReference, now);
-      updatePaymentWebhookEventStatus(inserted.id, "processed", { processedAt: now, signatureValid: true });
-      return { ok: true, status: "processed", reference: txRef };
-    }
-
-    const loweredServiceStatus = status.toLowerCase();
-    if (["reversed", "refunded", "chargeback", "charged_back"].includes(loweredServiceStatus)) {
-      await paymentRepository.updateByReferenceAsync(resolvedReference, current => ({
-        ...current,
-        status: "refunded",
-        verified: false,
-        verification: {
-          verified: false,
-          provider: "paychangu",
-          txRef: resolvedReference,
-          reference: txRef,
-          status,
-          currency: receivedCurrency,
-          amount,
-          checkoutUrl: null,
-          rawResponse: parsedPayload,
-          failureReason: `PayChangu webhook reported ${status}`,
-          orderId: servicePayment.id,
-        },
-        updatedAt: now,
-      }));
-      servicePaymentRepository.markRefunded(resolvedReference);
-      updatePaymentWebhookEventStatus(inserted.id, "processed", { processedAt: now, signatureValid: true });
-      return { ok: true, status: "processed", reference: txRef };
-    }
-
-    const isServiceFailure = ["failed", "cancelled", "canceled", "expired", "declined"].includes(loweredServiceStatus);
-    const nextServiceStatus = isServiceFailure ? "failed" : servicePayment.status;
-    await paymentRepository.updateByReferenceAsync(resolvedReference, current => ({
-      ...current,
-      verified: false,
-      verification: {
-        verified: false,
-        provider: "paychangu",
-        txRef: resolvedReference,
-        reference: txRef,
-        status,
-        currency: receivedCurrency,
-        amount,
-        checkoutUrl: null,
-        rawResponse: parsedPayload,
-        failureReason: `PayChangu webhook reported ${status}`,
-        orderId: servicePayment.id,
-      },
-      status: isServiceFailure && current.status !== "captured" ? "failed" : current.status,
-      updatedAt: now,
-    }));
-    if (isServiceFailure && servicePayment.status !== "paid") {
-      servicePaymentRepository.markFailed(resolvedReference);
-    }
-    updatePaymentWebhookEventStatus(inserted.id, "processed", { processedAt: now, signatureValid: true });
-    return { ok: true, status: "processed", reference: txRef };
-  }
-
-  if (isPaychanguSuccessStatus(status)) {
+  if (isPaychanguSuccessStatus(status)) {if (isPaychanguSuccessStatus(status)) {
     const order = await orderRepository.findByIdAsync(payment.orderId);
     const expectedCurrency = normalizeCurrency(order?.currency);
     const receivedCurrency = normalizeCurrency(amount?.currency ?? currency);
