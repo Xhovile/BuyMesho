@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import type { PoolClient } from 'pg';
 import { calculateEventPayoutFees, buildEventPayoutFormulaSnapshot, type EventPayoutFeeInput } from './event-payout-fees.js';
-import type { PayoutRecord, PayoutStatus } from './payout.shared.js';
+import type { PayoutRecord, PayoutStatus, PayoutOwnerType } from './payout.shared.js';
 
 export type EventPayoutContext = {
   eventId: string;
@@ -212,6 +212,8 @@ function rowToPayout(row: Record<string, unknown>): PayoutRecord {
     id: String(row.id),
     sellerId: String(row.seller_id),
     eventId: row.event_id == null ? null : String(row.event_id),
+    ownerType: ((row.owner_type as PayoutOwnerType | null) ?? 'seller'),
+    ownerUid: String(row.owner_uid ?? row.event_creator_uid ?? row.seller_id),
     eventCreatorUid: row.event_creator_uid == null ? null : String(row.event_creator_uid),
     orderId: row.order_id == null ? null : String(row.order_id),
     escrowId: row.escrow_id == null ? null : String(row.escrow_id),
@@ -255,6 +257,20 @@ export async function createEventPayoutCandidateAsync(input: {
 
   if (existingResult.rows[0]) {
     const existing = rowToPayout(existingResult.rows[0]);
+    const identityMatches =
+      existing.ownerType === 'event_creator' &&
+      existing.ownerUid === input.event.eventCreatorUid &&
+      existing.eventId === input.event.eventId &&
+      existing.eventCreatorUid === input.event.eventCreatorUid &&
+      existing.orderId === input.orderId &&
+      existing.escrowId === input.escrowId &&
+      existing.releaseEntryId === input.releaseEntryId &&
+      existing.destinationAccountId === input.event.destinationAccountId;
+
+    if (!identityMatches) {
+      throw new Error('Existing payout for escrow does not match the event payout financial identity');
+    }
+
     const storedFormula = parseStoredEventPayoutFormula(existingResult.rows[0].formula_snapshot);
 
     if (!storedFormula) {
@@ -300,18 +316,20 @@ export async function createEventPayoutCandidateAsync(input: {
 
   await client.query(
     `INSERT INTO payouts (
-       id, seller_id, event_id, event_creator_uid, order_id, escrow_id, release_entry_id,
+       id, seller_id, owner_type, owner_uid, event_id, event_creator_uid, order_id, escrow_id, release_entry_id,
        destination_account_id, amount, gross_amount, platform_fee_amount, processing_fee_amount,
        reserve_amount, reserve_cap_amount, manual_adjustment_amount, payout_fee_amount,
        seller_receives_amount, net_amount, formula_snapshot, currency, status, provider,
        provider_charge_id, requested_by, requested_at, raw_request, created_at, updated_at
      ) VALUES (
-       $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
-       'pending_settlement','paychangu',NULL,$21,$22,$23,$22,$22
+       $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,
+       'pending_settlement','paychangu',NULL,$23,$24,$25,$24,$24
      )
      ON CONFLICT (id) DO NOTHING`,
     [
       payoutId,
+      input.event.eventCreatorUid,
+      'event_creator',
       input.event.eventCreatorUid,
       Number(input.event.eventId),
       input.event.eventCreatorUid,

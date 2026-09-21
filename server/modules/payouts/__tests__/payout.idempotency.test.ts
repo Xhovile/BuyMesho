@@ -15,6 +15,124 @@ function clearState(): void {
   db.prepare('DELETE FROM sellers WHERE uid = ?').run('seller_phase3_idempotency_1');
 }
 
+test('payout owner input rejects cross-owner identity', () => {
+  assert.throws(
+    () => repository.createConnectPayoutCandidate({
+      sellerId: 'seller_owner_mismatch',
+      ownerType: 'event_creator',
+      ownerUid: 'creator_owner_1',
+      eventId: '900001',
+      eventCreatorUid: 'creator_owner_1',
+      orderId: 'order_owner_mismatch',
+      amount: 100,
+      grossAmount: 100,
+      platformFeeAmount: 0,
+      processingFeeAmount: 0,
+      reserveAmount: 0,
+      reserveCapAmount: 0,
+      manualAdjustmentAmount: 0,
+      payoutFeeAmount: 0,
+      sellerReceivesAmount: 100,
+      netAmount: 100,
+      formulaSnapshot: { grossAmount: 100, netAmount: 100 },
+      currency: 'MWK',
+      requestedBy: 'system',
+      destinationAccountId: null,
+      snapshot: null,
+    }),
+    /Event payout owner UID does not match sellerId compatibility identity/i,
+  );
+
+  assert.throws(
+    () => repository.createConnectPayoutCandidate({
+      sellerId: 'seller_owner_2',
+      ownerType: 'seller',
+      ownerUid: 'seller_owner_2',
+      eventId: '900002',
+      eventCreatorUid: 'creator_owner_2',
+      orderId: 'order_owner_mismatch_2',
+      amount: 100,
+      grossAmount: 100,
+      platformFeeAmount: 0,
+      processingFeeAmount: 0,
+      reserveAmount: 0,
+      reserveCapAmount: 0,
+      manualAdjustmentAmount: 0,
+      payoutFeeAmount: 0,
+      sellerReceivesAmount: 100,
+      netAmount: 100,
+      formulaSnapshot: { grossAmount: 100, netAmount: 100 },
+      currency: 'MWK',
+      requestedBy: 'system',
+      destinationAccountId: null,
+      snapshot: null,
+    }),
+    /Seller payout owner cannot include event payout identity/i,
+  );
+});
+
+
+test('existing payout on an escrow cannot be reused across payout owner identities', () => {
+  clearState();
+
+  const existing = repository.createEligibleForRelease({
+    sellerId: 'seller_owner_reuse',
+    orderId: 'order_owner_reuse',
+    escrowId: 'escrow_owner_reuse',
+    releaseEntryId: 'release_owner_reuse',
+    amount: 970,
+    grossAmount: 1000,
+    platformFeeAmount: 30,
+    processingFeeAmount: 0,
+    reserveAmount: 0,
+    reserveCapAmount: 0,
+    manualAdjustmentAmount: 0,
+    payoutFeeAmount: 0,
+    sellerReceivesAmount: 970,
+    netAmount: 970,
+    formulaSnapshot: { grossAmount: 1000, netAmount: 970 },
+    currency: 'MWK',
+    requestedBy: 'system',
+    destinationAccountId: null,
+    snapshot: null,
+  });
+
+  assert.equal(existing.ownerType, 'seller');
+  assert.equal(existing.ownerUid, 'seller_owner_reuse');
+
+  assert.throws(
+    () => repository.createEligibleForRelease({
+      sellerId: 'creator_owner_reuse',
+      ownerType: 'event_creator',
+      ownerUid: 'creator_owner_reuse',
+      eventId: '900003',
+      eventCreatorUid: 'creator_owner_reuse',
+      orderId: 'order_owner_reuse',
+      escrowId: 'escrow_owner_reuse',
+      releaseEntryId: 'release_owner_reuse',
+      amount: 970,
+      grossAmount: 1000,
+      platformFeeAmount: 30,
+      processingFeeAmount: 0,
+      reserveAmount: 0,
+      reserveCapAmount: 0,
+      manualAdjustmentAmount: 0,
+      payoutFeeAmount: 0,
+      sellerReceivesAmount: 970,
+      netAmount: 970,
+      formulaSnapshot: { grossAmount: 1000, netAmount: 970 },
+      currency: 'MWK',
+      requestedBy: 'system',
+      destinationAccountId: null,
+      snapshot: null,
+    }),
+    /Existing payout for escrow does not match the requested payout financial identity/,
+  );
+
+  clearState();
+});
+
+
 test('payout cannot be processed twice while a provider attempt is active', async () => {
   clearState();
   const db = getPaymentDb();
@@ -78,6 +196,8 @@ test('payout cannot be processed twice while a provider attempt is active', asyn
 
     const current = repository.findById(payout.id);
     assert.equal(current?.status, 'processing');
+    assert.equal(current?.ownerType, 'seller');
+    assert.equal(current?.ownerUid, 'seller_phase3_idempotency_1');
     assert.equal(current?.providerChargeId, firstAttempt.providerChargeId);
   } finally {
     clearState();

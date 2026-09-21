@@ -126,6 +126,87 @@ function seedPayoutWithStaleDestination(prefix: string) {
   return { sellerId, verifiedDestinationId, payoutId };
 }
 
+function seedEventOwnedPayoutWithSuspendedSeller(prefix: string) {
+  const db = getPaymentDb();
+  const now = new Date().toISOString();
+  const ownerUid = `${prefix}-creator`;
+  const orderId = `${prefix}-order`;
+  const eventId = 994001;
+  const payoutId = `${prefix}-payout`;
+
+  db.prepare(`DELETE FROM payout_attempts WHERE payout_id = ?`).run(payoutId);
+  db.prepare(`DELETE FROM payouts WHERE id = ?`).run(payoutId);
+  db.prepare(`DELETE FROM orders WHERE id = ?`).run(orderId);
+  db.prepare(`DELETE FROM events WHERE id = ?`).run(eventId);
+  db.prepare(`DELETE FROM event_creators WHERE uid = ?`).run(ownerUid);
+  db.prepare(`DELETE FROM sellers WHERE uid = ?`).run(ownerUid);
+
+  db.prepare(`
+    INSERT INTO sellers (uid, email, is_verified, is_suspended)
+    VALUES (?, ?, 1, 1)
+  `).run(ownerUid, `${prefix}@example.com`);
+
+  db.prepare(`
+    INSERT INTO event_creators (
+      uid,email,display_name,organization_name,organization_type,event_types,status,created_at,updated_at
+    ) VALUES (?, ?, 'Event Creator', 'Test Org', 'events', 'concert', 'approved', ?, ?)
+  `).run(ownerUid, `${prefix}-creator@example.com`, now, now);
+
+  db.prepare(`
+    INSERT INTO events (
+      id, creator_uid, event_type, event_title, organizer_name, event_date, start_time,
+      venue, location, ticket_mode, ticket_price, description, spec_values, status,
+      created_at, updated_at
+    ) VALUES (?, ?, 'concert', 'Owner Isolation Event', 'Event Creator', '2026-09-20', '18:00',
+      'Test Venue', 'Blantyre', 'paid', 10000, 'Test event', '{}', 'published', ?, ?)
+  `).run(eventId, ownerUid, now, now);
+
+  db.prepare(`
+    INSERT INTO orders (
+      id,buyer_id,seller_id,source,status,currency,subtotal_amount,subtotal_currency,
+      fees_amount,fees_currency,total_amount,total_currency,payment_provider,payment_reference,
+      items,created_at,updated_at,paid_at
+    ) VALUES (?, ?, ?, 'event', 'fulfilled', 'MWK', 10000, 'MWK', 0, 'MWK', 10000, 'MWK',
+      'paychangu', ?, ?, ?, ?)
+  `).run(
+    orderId,
+    `${prefix}-buyer`,
+    ownerUid,
+    `${prefix}-ref`,
+    `[{"kind":"event_ticket","eventId":"${eventId}","quantity":1,"unitPrice":{"amount":10000}}]`,
+    now,
+    now,
+    now,
+  );
+
+  db.prepare(`
+    INSERT INTO payouts (
+      id,seller_id,owner_type,owner_uid,event_id,event_creator_uid,order_id,
+      amount,currency,status,provider,requested_by,requested_at,created_at,updated_at
+    ) VALUES (?, ?, 'event_creator', ?, ?, ?, ?, 9520, 'MWK', 'failed',
+      'paychangu', ?, ?, ?, ?)
+  `).run(payoutId, ownerUid, ownerUid, eventId, ownerUid, orderId, ownerUid, now, now, now);
+
+  return { ownerUid, payoutId, eventId, orderId };
+}
+
+test('admin payout display does not treat an event creator seller row as seller payout suspension', async () => {
+  const { payoutId, ownerUid } = seedEventOwnedPayoutWithSuspendedSeller('admin-display-owner-isolation');
+
+  const result = await callAdmin('/api/admin/payouts?limit=50&offset=0');
+
+  assert.equal(result.status, 200);
+  const body = result.body as { rows?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>;
+  const rows = Array.isArray(body) ? body : body.rows ?? [];
+  const row = rows.find((entry) => entry.id === payoutId);
+  assert.ok(row);
+  assert.equal(row.ownerType, 'event_creator');
+  assert.equal(row.ownerUid, ownerUid);
+  assert.equal(row.sellerSuspended, false);
+  assert.doesNotContain(row.verificationBlockers ?? [], 'Seller payouts are suspended');
+  assert.notEqual(row.retryBlockedReason, 'Seller payouts are suspended');
+});
+
 test('admin payouts list hydrates a fallback verified destination when the payout FK is stale', async () => {
   const { verifiedDestinationId, payoutId } = seedPayoutWithStaleDestination('admin-display-fallback');
 

@@ -60,14 +60,26 @@ test('event payout financial identity binds payout to event and exact event dest
   `).run(now, now, now);
 
   const payout = db.prepare(`
-    SELECT event_id,event_creator_uid,destination_account_id
+    SELECT event_id,event_creator_uid,owner_type,owner_uid,destination_account_id
     FROM payouts
     WHERE id = 'event-financial-identity-test'
-  `).get() as { event_id: number; event_creator_uid: string; destination_account_id: string };
+  `).get() as {
+    event_id: number;
+    event_creator_uid: string;
+    owner_type: string;
+    owner_uid: string;
+    destination_account_id: string;
+  };
 
   assert.equal(payout.event_id, 991101);
   assert.equal(payout.event_creator_uid, 'event_financial_creator');
+  assert.equal(payout.owner_type, 'event_creator');
+  assert.equal(payout.owner_uid, 'event_financial_creator');
   assert.equal(payout.destination_account_id, 'event-financial-destination-a');
+
+  assert.throws(() => {
+    db.prepare(`UPDATE payouts SET owner_uid = 'wrong-owner' WHERE id = 'event-financial-identity-test'`).run();
+  }, /ck_payout_owner_identity|payout owner/i);
 
   assert.throws(() => {
     db.prepare(`UPDATE payouts SET destination_account_id = 'event-financial-destination-b' WHERE id = 'event-financial-identity-test'`).run();

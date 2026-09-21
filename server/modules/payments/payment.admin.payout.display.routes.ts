@@ -31,6 +31,10 @@ function parseJson(value: unknown): unknown {
 function buildDiagnostics(row: Record<string, unknown>) {
   return {
     payoutId: normalizeText(row.id) ?? null,
+    ownerType: normalizeText(row.ownerType ?? row.owner_type) ?? null,
+    ownerUid: normalizeText(row.ownerUid ?? row.owner_uid) ?? null,
+    eventId: normalizeText(row.eventId ?? row.event_id) ?? null,
+    eventCreatorUid: normalizeText(row.eventCreatorUid ?? row.event_creator_uid) ?? null,
     sellerId: normalizeText(row.sellerId ?? row.seller_id) ?? null,
     orderId: normalizeText(row.orderId ?? row.order_id) ?? null,
     escrowId: normalizeText(row.escrowId ?? row.escrow_id) ?? null,
@@ -96,10 +100,17 @@ function hydratePayoutRow(db: ReturnType<typeof getPaymentDb>, row: Record<strin
     normalizeText(row.firstEventSellerId ?? row.first_event_seller_id) ??
     normalizeText(row.latestEventSellerId ?? row.latest_event_seller_id) ??
     '';
+  const ownerType = normalizeText(row.ownerType ?? row.owner_type) ?? (normalizeText(row.eventId ?? row.event_id) ? 'event_creator' : 'seller');
+  const ownerUid = normalizeText(row.ownerUid ?? row.owner_uid) ??
+    (ownerType === 'event_creator'
+      ? normalizeText(row.eventCreatorUid ?? row.event_creator_uid) ?? sellerId
+      : sellerId);
   const currentDestinationAccountId = normalizeText(row.destinationAccountId ?? row.destination_account_id) ?? null;
   const currentDestinationStatus = String(row.destinationVerificationStatus ?? row.destination_verification_status ?? 'missing').toLowerCase();
   const currentDestinationActive = Number(row.destinationActive ?? row.destination_active ?? row.destinationIsActive ?? row.destination_is_active ?? 0) === 1;
-  const fallbackDestination = sellerId ? findDefaultVerifiedDestination(db, sellerId) : undefined;
+  const fallbackDestination = ownerType === 'seller' && sellerId
+    ? findDefaultVerifiedDestination(db, sellerId)
+    : undefined;
 
   const currentDestinationIsUsable =
     !!currentDestinationAccountId &&
@@ -107,11 +118,16 @@ function hydratePayoutRow(db: ReturnType<typeof getPaymentDb>, row: Record<strin
     currentDestinationActive;
 
   const destination = !currentDestinationIsUsable && fallbackDestination ? fallbackDestination : undefined;
+  const ownerDisplayName = normalizeText(row.eventCreatorName ?? row.event_creator_name);
 
   return {
     ...row,
+    ownerType,
+    ownerUid,
+    eventId: normalizeText(row.eventId ?? row.event_id),
+    eventCreatorUid: normalizeText(row.eventCreatorUid ?? row.event_creator_uid),
     sellerId,
-    sellerBusinessName: normalizeText(row.sellerBusinessName ?? row.seller_business_name) ?? normalizeText(row.sellerEmail ?? row.seller_email) ?? (sellerId || null),
+    sellerBusinessName: ownerDisplayName ?? normalizeText(row.sellerBusinessName ?? row.seller_business_name) ?? normalizeText(row.sellerEmail ?? row.seller_email) ?? (sellerId || null),
     provider: normalizeText(row.provider) ?? normalizeText(row.destinationProviderName ?? row.destination_provider_name) ?? 'paychangu',
     destinationAccountId: destination?.id ?? currentDestinationAccountId,
     destinationMaskedAccount: destination?.maskedAccount ?? normalizeText(row.destinationMaskedAccount ?? row.destination_masked_account) ?? null,
@@ -122,7 +138,6 @@ function hydratePayoutRow(db: ReturnType<typeof getPaymentDb>, row: Record<strin
     destinationRecoveredFromFallback: Boolean(destination),
   };
 }
-
 function shapeRow(row: Record<string, unknown>) {
   const sellerId = normalizeText(row.sellerId ?? row.seller_id) ?? '';
   const sellerBusinessName = normalizeText(row.sellerBusinessName ?? row.seller_business_name) ?? normalizeText(row.sellerEmail ?? row.seller_email) ?? (sellerId || null);
@@ -215,8 +230,14 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
         `SELECT
           p.id,
           p.seller_id AS sellerId,
+          p.owner_type AS ownerType,
+          p.owner_uid AS ownerUid,
+          p.event_id AS eventId,
+          p.event_creator_uid AS eventCreatorUid,
           s.business_name AS sellerBusinessName,
           s.email AS sellerEmail,
+          ec.display_name AS eventCreatorName,
+          ec.email AS eventCreatorEmail,
           o.seller_id AS orderSellerId,
           p.order_id AS orderId,
           p.escrow_id AS escrowId,
@@ -273,9 +294,19 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
           (SELECT COUNT(*) FROM payout_adjustments pa WHERE pa.payout_id = p.id) AS adjustmentCount
          FROM payouts p
          LEFT JOIN orders o ON o.id = p.order_id
-         LEFT JOIN sellers s ON s.uid = COALESCE(NULLIF(p.seller_id, ''), o.seller_id)
+         LEFT JOIN sellers s
+           ON s.uid = CASE
+             WHEN COALESCE(p.owner_type, 'seller') = 'seller'
+             THEN COALESCE(NULLIF(p.seller_id, ''), o.seller_id)
+           END
+         LEFT JOIN event_creators ec
+           ON ec.uid = p.owner_uid
+          AND p.owner_type = 'event_creator'
          LEFT JOIN escrows e ON e.id = p.escrow_id
-         LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
+         LEFT JOIN seller_payout_accounts spa
+           ON spa.id = p.destination_account_id
+          AND spa.owner_type = COALESCE(p.owner_type, 'seller')
+          AND spa.owner_uid = COALESCE(p.owner_uid, p.seller_id)
          ORDER BY p.created_at DESC
          LIMIT ?
          OFFSET ?`,
@@ -315,8 +346,14 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
         `SELECT
           p.id,
           p.seller_id AS sellerId,
+          p.owner_type AS ownerType,
+          p.owner_uid AS ownerUid,
+          p.event_id AS eventId,
+          p.event_creator_uid AS eventCreatorUid,
           s.business_name AS sellerBusinessName,
           s.email AS sellerEmail,
+          ec.display_name AS eventCreatorName,
+          ec.email AS eventCreatorEmail,
           o.seller_id AS orderSellerId,
           p.order_id AS orderId,
           p.escrow_id AS escrowId,
@@ -373,9 +410,19 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
           (SELECT COUNT(*) FROM payout_adjustments pa WHERE pa.payout_id = p.id) AS adjustmentCount
          FROM payouts p
          LEFT JOIN orders o ON o.id = p.order_id
-         LEFT JOIN sellers s ON s.uid = COALESCE(NULLIF(p.seller_id, ''), o.seller_id)
+         LEFT JOIN sellers s
+           ON s.uid = CASE
+             WHEN COALESCE(p.owner_type, 'seller') = 'seller'
+             THEN COALESCE(NULLIF(p.seller_id, ''), o.seller_id)
+           END
+         LEFT JOIN event_creators ec
+           ON ec.uid = p.owner_uid
+          AND p.owner_type = 'event_creator'
          LEFT JOIN escrows e ON e.id = p.escrow_id
-         LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
+         LEFT JOIN seller_payout_accounts spa
+           ON spa.id = p.destination_account_id
+          AND spa.owner_type = COALESCE(p.owner_type, 'seller')
+          AND spa.owner_uid = COALESCE(p.owner_uid, p.seller_id)
          WHERE p.id = ?
          LIMIT 1`,
       ).get(payoutId) as Record<string, unknown> | undefined;

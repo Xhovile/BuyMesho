@@ -50,6 +50,10 @@ export type SellerPayoutLaunchStatus =
 export type PayoutRecord = {
   id: string;
   sellerId: string;
+  ownerType?: "seller" | "event_creator";
+  ownerUid?: string | null;
+  eventId?: string | null;
+  eventCreatorUid?: string | null;
   orderId: string | null;
   escrowId: string | null;
   releaseEntryId: string | null;

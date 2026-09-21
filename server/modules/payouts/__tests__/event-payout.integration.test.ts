@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { afterEach } from 'node:test';
 import { getPaymentDb } from '../../../postgresCompat.js';
 import { createEventPayoutCandidateAsync, resolveEventPayoutContext } from '../event-payout.integration.js';
 import { payoutService } from '../payout.service.js';
@@ -7,10 +7,12 @@ import { withTransaction } from '../../../postgres.js';
 
 const db = getPaymentDb();
 
+afterEach(cleanup);
+
 function cleanup() {
   db.prepare("DELETE FROM payout_attempts WHERE payout_id LIKE 'event-payout-test-%'").run();
   db.prepare("DELETE FROM payout_events WHERE payout_id LIKE 'event-payout-test-%'").run();
-  db.prepare("DELETE FROM payouts WHERE id LIKE 'event-payout-test-%'").run();
+  db.prepare("DELETE FROM payouts WHERE id LIKE 'event-payout-test-%' OR escrow_id = 'event-payout-test-escrow'").run();
   db.prepare("DELETE FROM event_tickets WHERE order_id = 'event-payout-test-order'").run();
   db.prepare("DELETE FROM escrows WHERE id = 'event-payout-test-escrow'").run();
   db.prepare("DELETE FROM orders WHERE id = 'event-payout-test-order'").run();
@@ -179,6 +181,44 @@ test('event payout replay uses the stored immutable fee snapshot', async () => {
   cleanup();
 });
 
+test('event payout candidate rejects an existing payout with a different financial owner identity', async () => {
+  seed();
+  const now = new Date().toISOString();
+
+  db.prepare(`
+    INSERT INTO payouts (
+      id, seller_id, owner_type, owner_uid, order_id, escrow_id, release_entry_id,
+      amount, gross_amount, platform_fee_amount, processing_fee_amount, reserve_amount, reserve_cap_amount,
+      manual_adjustment_amount, payout_fee_amount, seller_receives_amount, net_amount, formula_snapshot,
+      currency, status, provider, requested_by, requested_at, created_at, updated_at
+    ) VALUES (
+      'event-payout-conflicting-owner', 'event_payout_test_creator', 'seller', 'event_payout_test_creator',
+      'event-payout-test-order', 'event-payout-test-escrow', 'event-payout-test-release',
+      9700, 10000, 300, 0, 0, 0, 0, 0, 9700, 9700, '{}',
+      'MWK', 'pending_settlement', 'paychangu', 'system', ?, ?, ?
+    )
+  `).run(now, now, now);
+
+  await withTransaction(async (client) => {
+    const context = await resolveEventPayoutContext('event-payout-test-order', client);
+    assert.ok(context);
+
+    await assert.rejects(
+      () => createEventPayoutCandidateAsync({
+        orderId: 'event-payout-test-order',
+        escrowId: 'event-payout-test-escrow',
+        releaseEntryId: 'event-payout-test-release',
+        event: context,
+        grossAmount: 10000,
+        currency: 'MWK',
+        requestedBy: 'event_payout_test_creator',
+        requestedAt: now,
+      }, client),
+      /Existing payout for escrow does not match the event payout financial identity/,
+    );
+  });
+});
+
 test('event payout candidate stores event identity, bound destination, and immutable fee snapshot', async () => {
   seed();
   const now = new Date().toISOString();
@@ -199,6 +239,8 @@ test('event payout candidate stores event identity, bound destination, and immut
     }, client);
 
     assert.equal(result.created, true);
+    assert.equal(result.payout.ownerType, 'event_creator');
+    assert.equal(result.payout.ownerUid, 'event_payout_test_creator');
     assert.equal(result.payout.eventId, '992001');
     assert.equal(result.payout.eventCreatorUid, 'event_payout_test_creator');
     assert.equal(result.payout.destinationAccountId, 'event-payout-test-destination');
@@ -209,11 +251,13 @@ test('event payout candidate stores event identity, bound destination, and immut
     assert.equal(result.formulaSnapshot.scope, 'event');
     assert.equal(result.formulaSnapshot.eventId, '992001');
     assert.equal(result.formulaSnapshot.formulaVersion, 'event-payout-v1');
-
-    const genericRead = payoutService.findById(result.payout.id);
-    assert.equal(genericRead?.eventId, '992001');
-    assert.equal(genericRead?.eventCreatorUid, 'event_payout_test_creator');
   });
+
+  const genericRead = payoutService.findById(
+    db.prepare("SELECT id FROM payouts WHERE order_id = 'event-payout-test-order' LIMIT 1").get() as { id: string },
+  );
+  assert.equal(genericRead?.eventId, '992001');
+  assert.equal(genericRead?.eventCreatorUid, 'event_payout_test_creator');
 
   cleanup();
 });
