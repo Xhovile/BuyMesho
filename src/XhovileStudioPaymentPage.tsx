@@ -88,55 +88,46 @@ function formatMoney(amount: number, currency = "MWK") {
   }).format(amount);
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+async function downloadReceipt(
+  payment: ServicePayment,
+  setDownloading: (value: boolean) => void,
+  setError: (value: string | null) => void,
+) {
+  const reference = payment.paymentReference ?? payment.id;
+  setDownloading(true);
+  setError(null);
 
-function downloadReceipt(payment: ServicePayment) {
-  const issued = new Date(payment.paidAt ?? payment.updatedAt).toLocaleString("en-MW");
-  const html = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Xhovile Studio Receipt - ${escapeHtml(payment.paymentReference ?? payment.id)}</title>
-<style>
-body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;margin:0;padding:40px;color:#111}
-.receipt{max-width:680px;margin:auto;background:#fff;border:1px solid #ddd;padding:36px}
-.brand{font-size:26px;font-weight:800;letter-spacing:.04em}.muted{color:#666}
-.row{display:flex;justify-content:space-between;gap:24px;padding:12px 0;border-bottom:1px solid #eee}
-.total{font-size:22px;font-weight:800}.note{margin-top:28px;padding-top:18px;border-top:1px solid #eee}
-</style>
-</head>
-<body>
-<div class="receipt">
-<div class="brand">XHOVILE STUDIO</div>
-<p class="muted">Payment Receipt</p>
-<div class="row"><strong>Service</strong><span>${escapeHtml(SERVICE_LABELS[payment.serviceType])}</span></div>
-<div class="row"><strong>Customer</strong><span>${escapeHtml(payment.customerName)}</span></div>
-<div class="row"><strong>Description</strong><span>${escapeHtml(payment.description)}</span></div>
-<div class="row"><strong>Reference</strong><span>${escapeHtml(payment.paymentReference ?? payment.id)}</span></div>
-<div class="row"><strong>Paid</strong><span>${escapeHtml(issued)}</span></div>
-<div class="row total"><strong>Amount</strong><span>${escapeHtml(formatMoney(payment.amount, payment.currency))}</span></div>
-<div class="note"><p>Payment status: <strong>${escapeHtml(payment.status.toUpperCase())}</strong></p><p class="muted">Payment processing powered by BuyMesho and PayChangu.</p></div>
-</div>
-</body>
-</html>`;
+  try {
+    const response = await fetch(
+      apiUrl(`/api/public/service-payments/${encodeURIComponent(reference)}/receipt.pdf`),
+      { cache: "no-store" },
+    );
 
-  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `xhovile-studio-receipt-${payment.paymentReference ?? payment.id}.html`;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
+    if (!response.ok) {
+      let message = "Unable to download the receipt.";
+      try {
+        const data = (await response.json()) as { error?: string };
+        message = data.error || message;
+      } catch {
+        // Keep the generic download error when the response is not JSON.
+      }
+      throw new Error(message);
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `xhovile-studio-receipt-${reference.replace(/[^a-zA-Z0-9._-]/g, "_")}.pdf`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    setError(error instanceof Error ? error.message : "Unable to download the receipt.");
+  } finally {
+    setDownloading(false);
+  }
 }
 
 function StudioBackToTop() {
@@ -837,11 +828,14 @@ function ReceiptPage() {
   const [payment, setPayment] = useState<ServicePayment | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("Confirming your payment…");
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
 
   const reference = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("ref") ?? params.get("tx_ref") ?? params.get("reference");
   }, []);
+
+  const [receiptError, setReceiptError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!reference) {
@@ -956,11 +950,12 @@ function ReceiptPage() {
           {payment?.status === "paid" ? (
             <button
               type="button"
-              onClick={() => downloadReceipt(payment)}
-              className="flex items-center justify-center gap-2 rounded-xl bg-[#8f1528] px-5 py-3 text-sm font-black text-white hover:bg-[#7b1223]"
+              disabled={downloadingReceipt}
+              onClick={() => void downloadReceipt(payment, setDownloadingReceipt, setReceiptError)}
+              className="flex items-center justify-center gap-2 rounded-xl bg-[#8f1528] px-5 py-3 text-sm font-black text-white hover:bg-[#7b1223] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Download className="h-4 w-4" />
-              Download Receipt
+              {downloadingReceipt ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {downloadingReceipt ? "Preparing PDF…" : "Download Receipt"}
             </button>
           ) : null}
           <button
@@ -972,6 +967,10 @@ function ReceiptPage() {
             Start Another Payment
           </button>
         </div>
+
+        {receiptError ? (
+          <p className="mt-4 text-center text-xs text-red-600">{receiptError}</p>
+        ) : null}
 
         <p className="mt-4 text-center text-[10px] text-zinc-500">
           Keep your payment reference for your records.
