@@ -1,4 +1,4 @@
-import { studioQuery } from "./studio.database.js";
+import { ensureStudioDatabaseSchema, studioQuery } from "./studio.database.js";
 import type { ServicePaymentRecord } from "./service-payment.repository.js";
 
 export type StudioAdminCustomer = {
@@ -144,6 +144,7 @@ export async function getStudioAdminSnapshot(
   requestedLimit = 100,
 ): Promise<StudioAdminSnapshot> {
   const limit = clampLimit(requestedLimit);
+  await ensureStudioDatabaseSchema();
 
   const [
     summaryResult,
