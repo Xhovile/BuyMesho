@@ -198,7 +198,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       const quantity = body.quantity ?? 1;
       const items = Array.isArray(body.items) ? (body.items as CheckoutItemInput[]) : [];
       const method = body.method ?? "mobile_money";
-      const settlementRoute = body.settlementRoute ?? "escrow";
+      const requestedSettlementRoute = body.settlementRoute ?? "escrow";
       const returnUrl = body.returnUrl;
       const cancelUrl = body.cancelUrl;
       const buyerName = body.buyerName;
@@ -222,6 +222,9 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
 
       const containsEventTicket = requestedItems.some((item) => item?.eventId !== undefined && item?.eventId !== null && String(item.eventId).trim() !== "");
       const containsListingItem = requestedItems.some((item) => item?.listingId !== undefined && item?.listingId !== null && String(item.listingId).trim() !== "");
+      const settlementRoute = containsEventTicket && !containsListingItem
+        ? "direct"
+        : requestedSettlementRoute;
       const requestedEventIds = [...new Set(
         requestedItems
           .map((item) => item?.eventId == null ? "" : String(item.eventId).trim())
