@@ -13,18 +13,14 @@ import {
 export function PayChanguLogo() {
   return (
     <span className="inline-flex items-center gap-1.5" aria-label="PayChangu">
-      <svg
-        viewBox="0 0 40 40"
-        className="h-5 w-5 shrink-0"
-        role="img"
+      <img
+        src="/paychangu-logo.png"
+        alt=""
+        className="h-5 w-5 shrink-0 rounded-[5px] object-contain"
+        width={20}
+        height={20}
         aria-hidden="true"
-      >
-        <rect x="1" y="1" width="38" height="38" rx="10" fill="#19AEE8" />
-        <path
-          d="M11 10.5c0-1.25 1.43-1.98 2.45-1.25l7.2 5.15v8.1l-7.2-5.15A3.03 3.03 0 0 1 11 14.88v-4.38Zm0 15.55c0-1.25 1.43-1.98 2.45-1.25l7.2 5.15v3.2c0 1.25-1.43 1.98-2.45 1.25L13.45 31.2A3.03 3.03 0 0 1 11 28.82v-2.77Zm9.65-11.65 6.95-4.98c1.03-.73 2.4 0 2.4 1.25v7.9c0 1-.47 1.93-1.27 2.5l-8.08 5.78V22.7l5.02-3.58-5.02-3.6v-1.12Z"
-          fill="#fff"
-        />
-      </svg>
+      />
       <span className="text-sm font-black tracking-tight text-[#159fda]">PayChangu</span>
     </span>
   );
