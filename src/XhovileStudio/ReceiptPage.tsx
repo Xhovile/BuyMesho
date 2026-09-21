@@ -214,3 +214,6 @@ function ReceiptPage() {
   );
 }
 
+
+
+export default ReceiptPage;
