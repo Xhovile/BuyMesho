@@ -6,9 +6,44 @@ import MobileDrawerSwipe from "../components/MobileDrawerSwipe";
 import ScrollToTopFab from "../components/ScrollToTopFab";
 import { navigateToPath } from "../lib/appNavigation";
 import logoImage from "../../photos/LOGO.svg";
+import xsLogo from "../../photos/XSLOGO.svg";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 export function RouteLoader() {
+  const isStandaloneStudio = window.location.pathname.startsWith("/Services/XhovileStudio");
+
+  if (isStandaloneStudio) {
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center bg-[#f6f1ea] px-6 py-8"
+        role="status"
+        aria-live="polite"
+        aria-label="Loading Xhovilé Studio"
+      >
+        <div className="flex flex-col items-center text-center">
+          <div className="flex h-20 w-[112px] items-center justify-center rounded-[22px] bg-[#8f1528] px-3 shadow-[0_14px_35px_rgba(143,21,40,0.18)] sm:h-24 sm:w-[136px]">
+            <img
+              src={xsLogo}
+              alt="Xhovilé Studio"
+              className="h-14 w-full object-contain sm:h-16"
+              width={136}
+              height={96}
+            />
+          </div>
+          <h1 className="mt-5 text-2xl font-black uppercase tracking-[0.16em] text-[#8f1528] sm:text-3xl">
+            Xhovilé Studio
+          </h1>
+          <p className="mt-2 text-sm font-medium text-zinc-500">
+            Preparing your secure service payment…
+          </p>
+          <div className="mt-5 h-1 w-24 overflow-hidden rounded-full bg-[#8f1528]/10">
+            <div className="h-full w-1/2 animate-pulse rounded-full bg-[#8f1528]" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex min-h-screen items-center justify-center bg-white px-6 py-8"
