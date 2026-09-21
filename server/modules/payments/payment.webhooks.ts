@@ -252,9 +252,8 @@ async function handlePayChanguWebhookInternal(context: PayChanguWebhookContext):
       return { ok: true, status: "processed", reference: txRef };
     }
 
-    const nextServiceStatus = ["failed", "cancelled", "canceled", "expired", "declined"].includes(loweredServiceStatus)
-      ? "failed"
-      : servicePayment.status;
+    const isServiceFailure = ["failed", "cancelled", "canceled", "expired", "declined"].includes(loweredServiceStatus);
+    const nextServiceStatus = isServiceFailure ? "failed" : servicePayment.status;
     await paymentRepository.updateByReferenceAsync(resolvedReference, current => ({
       ...current,
       verified: false,
@@ -271,10 +270,12 @@ async function handlePayChanguWebhookInternal(context: PayChanguWebhookContext):
         failureReason: `PayChangu webhook reported ${status}`,
         orderId: servicePayment.id,
       },
-      status: nextServiceStatus === "failed" ? "failed" : current.status,
+      status: isServiceFailure && current.status !== "captured" ? "failed" : current.status,
       updatedAt: now,
     }));
-    if (nextServiceStatus === "failed") servicePaymentRepository.markFailed(resolvedReference);
+    if (isServiceFailure && servicePayment.status !== "paid") {
+      servicePaymentRepository.markFailed(resolvedReference);
+    }
     updatePaymentWebhookEventStatus(inserted.id, "processed", { processedAt: now, signatureValid: true });
     return { ok: true, status: "processed", reference: txRef };
   }
