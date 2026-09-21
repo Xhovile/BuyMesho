@@ -23,7 +23,7 @@ export interface CreateServicePaymentInput {
   graphicId?: string | null;
 }
 
-async function notifyXhovileStudioSuccessfulPayment(
+export async function notifyXhovileStudioSuccessfulPayment(
   reference: string,
 ): Promise<void> {
   const claimed = await servicePaymentRepository.claimSuccessNotification(reference);
