@@ -20,10 +20,12 @@ import { startEventOwnershipReconciliationScheduler } from "./modules/events/eve
 import { createEventTicketIdentityRouter } from "./modules/events/eventTicketIdentity.routes.js";
 import { createAdminEventTransactionRouter } from "./modules/admin/adminEventTransaction.routes.js";
 import { createAdminTicketTransactionSearchRouter } from "./modules/admin/adminTicketTransactionSearch.routes.js";
+import { createServicePaymentRouter } from "./modules/services/service-payment.routes.js";
 import { logGeminiConfiguration } from "./lib/gemini.js";
 import {
   checkoutRateLimit,
   publicPaymentStatusRateLimit,
+  publicServicePaymentRateLimit,
   paymentWebhookRateLimit,
   payoutWebhookRateLimit,
   messageSendRateLimit,
@@ -141,6 +143,7 @@ export async function startServer() {
 
   app.use("/api/payments/checkout", checkoutRateLimit);
   app.use("/api/payments/public-status", publicPaymentStatusRateLimit);
+  app.use("/api/public/service-payments", createServicePaymentRouter(publicServicePaymentRateLimit));
   app.use("/api/payments/webhooks/paychangu", paymentWebhookRateLimit);
   app.use("/api/payments/webhooks/payouts", payoutWebhookRateLimit);
   app.use("/api/validator", validatorRateLimit);
