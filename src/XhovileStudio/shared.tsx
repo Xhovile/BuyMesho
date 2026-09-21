@@ -9,6 +9,7 @@ import {
   GRAPHIC_SERVICES,
   formatMoney,
 } from "./config";
+import xsLogo from "../../photos/XSLOGO.svg";
 
 export function PayChanguLogo() {
   return (
@@ -57,7 +58,23 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <main className="min-h-screen bg-[#f6f1ea] px-3 py-5 text-zinc-900 sm:px-6 sm:py-8">
       <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] w-full max-w-2xl items-center justify-center sm:min-h-[calc(100vh-4rem)]">
-        <div className="w-full">{children}</div>
+        <div className="w-full">
+          <div className="mb-5 flex flex-col items-center text-center sm:mb-6">
+            <div className="flex h-12 w-[72px] items-center justify-center rounded-2xl bg-[#8f1528] px-2.5 shadow-[0_8px_24px_rgba(143,21,40,0.18)]">
+              <img
+                src={xsLogo}
+                alt="Xhovilé Studio logo"
+                className="h-8 w-full object-contain"
+                width={72}
+                height={48}
+              />
+            </div>
+            <p className="mt-3 text-[11px] font-black uppercase tracking-[0.26em] text-[#8f1528] sm:text-xs">
+              Xhovilé Studio
+            </p>
+          </div>
+          {children}
+        </div>
       </div>
       <StudioBackToTop />
     </main>
