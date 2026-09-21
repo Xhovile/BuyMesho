@@ -116,7 +116,7 @@ function ensureEventTicketStatsSchema() {
     RETURNS trigger AS $$
     DECLARE item JSONB; event_id_value BIGINT; quantity_value INTEGER; old_eligible BOOLEAN; new_eligible BOOLEAN;
     BEGIN
-      old_eligible := TG_OP = 'UPDATE' AND OLD.status IN ('paid','in_escrow','fulfilled');
+      old_eligible := TG_OP = 'UPDATE' AND OLD.status IN ('paid','fulfilled');
       new_eligible := NEW.status IN ('paid','in_escrow','fulfilled');
       IF old_eligible THEN
         FOR item IN SELECT value FROM jsonb_array_elements(COALESCE(NULLIF(OLD.items, '')::jsonb, '[]'::jsonb)) LOOP
