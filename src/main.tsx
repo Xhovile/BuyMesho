@@ -286,13 +286,17 @@ class AppErrorBoundary extends Component<
   }
 }
 
+const isStandaloneServicePage = window.location.pathname.startsWith("/Services/XhovileStudio");
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AppErrorBoundary>
       <ToastProvider>
-        <MarketplaceShell>
-          <RootRouter />
-        </MarketplaceShell>
+        {isStandaloneServicePage ? <RootRouter /> : (
+          <MarketplaceShell>
+            <RootRouter />
+          </MarketplaceShell>
+        )}
       </ToastProvider>
     </AppErrorBoundary>
   </StrictMode>,
