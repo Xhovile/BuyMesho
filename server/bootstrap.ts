@@ -144,8 +144,13 @@ export async function startServer() {
 
   app.use("/api/payments/checkout", checkoutRateLimit);
   app.use("/api/payments/public-status", publicPaymentStatusRateLimit);
-  app.get("/api/public/service-payments/:reference", publicServicePaymentStatusRateLimit);
-  app.use("/api/public/service-payments", createServicePaymentRouter(publicServicePaymentRateLimit));
+  app.use(
+    "/api/public/service-payments",
+    createServicePaymentRouter(
+      publicServicePaymentRateLimit,
+      publicServicePaymentStatusRateLimit,
+    ),
+  );
   app.use("/api/payments/webhooks/paychangu", paymentWebhookRateLimit);
   app.use("/api/payments/webhooks/payouts", payoutWebhookRateLimit);
   app.use("/api/validator", validatorRateLimit);
