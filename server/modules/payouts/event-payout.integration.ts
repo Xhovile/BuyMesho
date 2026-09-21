@@ -244,13 +244,12 @@ export async function createEventPayoutCandidateAsync(input: {
   manualAdjustmentAmount?: number;
 }, client: DbExecutor): Promise<{ payout: PayoutRecord; payoutFormula: ReturnType<typeof calculateEventPayoutFees>; formulaSnapshot: ReturnType<typeof buildEventPayoutFormulaSnapshot>; created: boolean }> {
   const existingResult = await client.query<Record<string, unknown>>(
-    \`SELECT *
+    `SELECT *
      FROM payouts
      WHERE order_id = $1
        AND event_id = $2
-       AND owner_type = 'event_creator'
      ORDER BY created_at ASC
-     LIMIT 1\`,
+     LIMIT 1`,
     [input.orderId, Number(input.event.eventId)],
   );
 
@@ -311,7 +310,7 @@ export async function createEventPayoutCandidateAsync(input: {
   const payoutId = randomUUID();
 
   await client.query(
-    \`INSERT INTO payouts (
+    `INSERT INTO payouts (
        id, seller_id, owner_type, owner_uid, event_id, event_creator_uid, order_id,
        destination_account_id, amount, gross_amount, platform_fee_amount, processing_fee_amount,
        reserve_amount, reserve_cap_amount, manual_adjustment_amount, payout_fee_amount,
@@ -321,7 +320,7 @@ export async function createEventPayoutCandidateAsync(input: {
        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
        'eligible','paychangu',NULL,$21,$22,$23,$22,$22
      )
-     ON CONFLICT (id) DO NOTHING\`,
+     ON CONFLICT (id) DO NOTHING`,
     [
       payoutId,
       input.event.eventCreatorUid,
@@ -358,10 +357,10 @@ export async function createEventPayoutCandidateAsync(input: {
   );
 
   const createdResult = await client.query<Record<string, unknown>>(
-    \`SELECT *
+    `SELECT *
      FROM payouts
      WHERE id = $1
-     LIMIT 1\`,
+     LIMIT 1`,
     [payoutId],
   );
   if (!createdResult.rows[0]) throw new Error('Failed to create event payout candidate');
