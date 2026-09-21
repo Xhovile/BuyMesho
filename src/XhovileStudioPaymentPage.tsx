@@ -394,9 +394,12 @@ function PaymentForm() {
       ? Number(graphicCustomTotal)
       : selectedGraphic?.price ?? 0;
   const websiteProjectTotal = Number(websiteTotal);
+  const needsGraphic = serviceType === "graphic_design" || serviceType === "both";
+  const needsWebsite = serviceType === "website_development" || serviceType === "both";
+
   const combinedProjectTotal =
-    (serviceType === "graphic_design" || serviceType === "both" ? graphicTotal : 0) +
-    (serviceType === "website_development" || serviceType === "both" ? websiteProjectTotal : 0);
+    (needsGraphic ? graphicTotal : 0) +
+    (needsWebsite ? websiteProjectTotal : 0);
 
   const amountDue = useMemo(() => {
     if (paymentMode === "balance") {
@@ -418,8 +421,6 @@ function PaymentForm() {
         ? "bg-[#ff1d25] hover:bg-[#ff363d]"
         : "bg-gradient-to-r from-[#168cff] to-[#ff1d25]";
 
-  const needsGraphic = serviceType === "graphic_design" || serviceType === "both";
-  const needsWebsite = serviceType === "website_development" || serviceType === "both";
   const hasValidProjectTotal =
     paymentMode === "balance" ||
     ((!needsGraphic || graphicTotal > 0) &&
