@@ -157,9 +157,9 @@ function StudioBackToTop() {
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Back to top"
       title="Back to top"
-      className="group fixed bottom-5 right-4 z-[120] flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#168cff] via-[#10151a] to-[#ff1d25] p-[1px] shadow-[0_10px_30px_rgba(0,0,0,0.45)] transition hover:-translate-y-0.5 sm:bottom-6 sm:right-6"
+      className="group fixed bottom-5 right-4 z-[120] flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#168cff] via-[#8f1528] to-[#ff1d25] p-[1px] shadow-[0_10px_30px_rgba(15,15,15,0.22)] transition hover:-translate-y-0.5 sm:bottom-6 sm:right-6"
     >
-      <span className="flex h-full w-full items-center justify-center rounded-full bg-[#10151a] text-white transition group-hover:bg-[#151b20]">
+      <span className="flex h-full w-full items-center justify-center rounded-full bg-white text-[#8f1528] transition group-hover:bg-[#fffaf5]">
         <ArrowUp className="h-5 w-5" />
       </span>
     </button>
@@ -168,7 +168,7 @@ function StudioBackToTop() {
 
 function Shell({ children }: { children: ReactNode }) {
   return (
-    <main className="min-h-screen bg-[#0a0f13] px-3 py-5 text-white sm:px-6 sm:py-8">
+    <main className="min-h-screen bg-[#f6f1ea] px-3 py-5 text-zinc-900 sm:px-6 sm:py-8">
       <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] w-full max-w-2xl items-center justify-center sm:min-h-[calc(100vh-4rem)]">
         <div className="w-full">{children}</div>
       </div>
@@ -194,10 +194,10 @@ function ServiceChoice({
 }) {
   const activeClass =
     color === "blue"
-      ? "border-[#168cff] bg-[#071828] shadow-[0_0_0_1px_rgba(22,140,255,0.25),0_10px_30px_rgba(0,0,0,0.25)]"
+      ? "border-[#168cff] bg-[#eef8ff] shadow-[0_0_0_1px_rgba(22,140,255,0.10),0_8px_22px_rgba(22,140,255,0.10)]"
       : color === "red"
-        ? "border-[#ff1d25] bg-[#24070a] shadow-[0_0_0_1px_rgba(255,29,37,0.25),0_10px_30px_rgba(0,0,0,0.25)]"
-        : "border-white bg-gradient-to-r from-[#071828] to-[#24070a] shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_10px_30px_rgba(0,0,0,0.25)]";
+        ? "border-[#ff1d25] bg-[#fff1f1] shadow-[0_0_0_1px_rgba(255,29,37,0.10),0_8px_22px_rgba(255,29,37,0.10)]"
+        : "border-[#8f1528] bg-gradient-to-r from-[#eef8ff] to-[#fff1f1] shadow-[0_0_0_1px_rgba(143,21,40,0.10),0_8px_22px_rgba(143,21,40,0.08)]";
 
   return (
     <button
@@ -206,31 +206,31 @@ function ServiceChoice({
       className={`flex min-h-[66px] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-2 text-center transition sm:min-h-[72px] sm:flex-row sm:items-center sm:justify-start sm:gap-3 sm:px-4 sm:text-left ${
         active
           ? activeClass
-          : "border-white/10 bg-white/[0.035] text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]"
+          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
       }`}
     >
       <span
         className={`rounded-xl p-2.5 sm:p-2 ${
           active
             ? color === "blue"
-              ? "bg-[#168cff]/15 text-[#168cff]"
+              ? "bg-[#168cff]/10 text-[#168cff]"
               : color === "red"
-                ? "bg-[#ff1d25]/15 text-[#ff5b61]"
-                : "bg-white/10 text-white"
-            : "bg-white/5 text-zinc-500"
+                ? "bg-[#ff1d25]/10 text-[#ff1d25]"
+                : "bg-[#8f1528]/10 text-[#8f1528]"
+            : "bg-zinc-100 text-zinc-500"
         }`}
       >
         {icon}
       </span>
       <span className="min-w-0 max-w-full">
-        <span className="block truncate text-[11px] font-black leading-4 text-white sm:hidden">{mobileTitle}</span>
-        <span className="hidden truncate text-sm font-black leading-5 text-white sm:block">{title}</span>
+        <span className="block truncate text-[11px] font-black leading-4 text-zinc-900 sm:hidden">{mobileTitle}</span>
+        <span className="hidden truncate text-sm font-black leading-5 text-zinc-900 sm:block">{title}</span>
         <span className="hidden text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:block">
           {active ? "Selected" : "Choose"}
         </span>
       </span>
-      <span className="hidden h-4 w-4 shrink-0 rounded-full border border-white/20 p-0.5 sm:block">
-        <span className={`block h-full w-full rounded-full ${active ? "bg-white" : "bg-transparent"}`} />
+      <span className="hidden h-4 w-4 shrink-0 rounded-full border border-zinc-300 p-0.5 sm:block">
+        <span className={`block h-full w-full rounded-full ${active ? "bg-[#8f1528]" : "bg-transparent"}`} />
       </span>
     </button>
   );
@@ -251,10 +251,10 @@ function ChoiceButton({
 }) {
   const activeClass =
     accent === "blue"
-      ? "border-[#168cff] bg-[#168cff]/10 text-white"
+      ? "border-[#168cff] bg-[#eef8ff] text-zinc-950"
       : accent === "red"
-        ? "border-[#ff1d25] bg-[#ff1d25]/10 text-white"
-        : "border-white/30 bg-white/10 text-white";
+        ? "border-[#ff1d25] bg-[#fff1f1] text-zinc-950"
+        : "border-[#8f1528]/30 bg-[#f8f3ef] text-zinc-950";
 
   return (
     <button
@@ -266,7 +266,7 @@ function ChoiceButton({
           : "border-white/10 bg-white/[0.025] text-zinc-400 hover:border-white/20 hover:text-white"
       }`}
     >
-      <span className="block text-xs font-black">{title}</span>
+      <span className="block text-xs font-black text-zinc-900">{title}</span>
       {subtitle ? <span className="mt-0.5 block text-[10px] text-zinc-500">{subtitle}</span> : null}
     </button>
   );
@@ -299,7 +299,7 @@ function GraphicServicePicker({
   }, [open]);
 
   const borderClass = accent === "blue" ? "focus-within:border-[#168cff]" : "focus-within:border-[#ff1d25]";
-  const highlightClass = accent === "blue" ? "bg-[#168cff]/10 text-white" : "bg-[#ff1d25]/10 text-white";
+  const highlightClass = accent === "blue" ? "bg-[#eef8ff] text-zinc-950" : "bg-[#fff1f1] text-zinc-950";
 
   return (
     <div className="relative">
@@ -308,13 +308,13 @@ function GraphicServicePicker({
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className={`flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#0b1116] px-3 py-2.5 text-left outline-none transition ${borderClass}`}
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-left outline-none transition ${borderClass}`}
       >
         <span className="min-w-0">
-          <span className="block truncate text-sm font-medium text-white">{label}</span>
+          <span className="block truncate text-sm font-medium text-zinc-900">{label}</span>
           <span className="mt-0.5 block text-[10px] text-zinc-500">{price}</span>
         </span>
-        <ChevronDown className={`h-4 w-4 shrink-0 text-zinc-600 transition ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-4 w-4 shrink-0 text-zinc-400 transition ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open ? (
@@ -327,7 +327,7 @@ function GraphicServicePicker({
           />
           <div
             role="listbox"
-            className="absolute left-0 right-0 top-[calc(100%+8px)] z-40 max-h-64 overflow-auto rounded-2xl border border-white/10 bg-[#10151a] p-1.5 shadow-[0_18px_45px_rgba(0,0,0,0.5)]"
+            className="absolute left-0 right-0 top-[calc(100%+8px)] z-40 max-h-64 overflow-auto rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-[0_18px_45px_rgba(30,25,20,0.18)]"
           >
             {GRAPHIC_SERVICES.map((item) => {
               const active = item.id === value;
@@ -342,7 +342,7 @@ function GraphicServicePicker({
                     setOpen(false);
                   }}
                   className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition ${
-                    active ? highlightClass : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                    active ? highlightClass : "text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950"
                   }`}
                 >
                   <span className="truncate text-sm">{item.label}</span>
@@ -359,7 +359,7 @@ function GraphicServicePicker({
                 setOpen(false);
               }}
               className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition ${
-                value === "custom" ? highlightClass : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                value === "custom" ? highlightClass : "text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950"
               }`}
             >
               <span className="truncate text-sm">Custom / multiple</span>
@@ -495,26 +495,28 @@ function PaymentForm() {
 
   return (
     <Shell>
-      <header className="mb-4 sm:mb-5">
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Xhovilé Studio</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
-          Service Payment
+      <header className="mb-5 text-center sm:mb-6">
+        <h1 className="text-3xl font-black uppercase tracking-[0.18em] text-[#8f1528] sm:text-5xl">
+          XHOVILÉ STUDIO
         </h1>
-        <p className="mt-2 max-w-xl text-xs leading-5 text-zinc-400">
+        <p className="mt-2 text-[11px] font-black uppercase tracking-[0.28em] text-zinc-500 sm:text-xs">
+          Service Payment
+        </p>
+        <p className="mx-auto mt-2 max-w-xl text-xs leading-5 text-zinc-500">
           Choose what you need, confirm the amount due today, then continue to PayChangu.
         </p>
       </header>
 
       <section
-        className={`overflow-hidden rounded-[26px] border bg-[#10151a] shadow-2xl transition ${
+        className={`overflow-hidden rounded-[26px] border bg-white shadow-[0_18px_55px_rgba(30,25,20,0.10)] transition ${
           theme === "blue"
-            ? "border-[#168cff]/40"
+            ? "border-[#168cff]/50"
             : theme === "red"
-              ? "border-[#ff1d25]/40"
-              : "border-white/15"
+              ? "border-[#ff1d25]/50"
+              : "border-zinc-300"
         }`}
       >
-        <div className="grid grid-cols-3 gap-2 border-b border-white/10 p-2">
+        <div className="grid grid-cols-3 gap-2 border-b border-zinc-200 p-2">
           <ServiceChoice
             active={serviceType === "graphic_design"}
             color="blue"
@@ -548,7 +550,7 @@ function PaymentForm() {
               <input
                 value={customerName}
                 onChange={(event) => setCustomerName(event.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/[0.045] px-3.5 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-white/30"
+                className="w-full rounded-xl border border-zinc-200 bg-[#fffdfa] px-3.5 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
                 placeholder="Your name"
                 autoComplete="name"
               />
@@ -558,7 +560,7 @@ function PaymentForm() {
               <input
                 value={customerPhone}
                 onChange={(event) => setCustomerPhone(event.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/[0.045] px-3.5 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-white/30"
+                className="w-full rounded-xl border border-zinc-200 bg-[#fffdfa] px-3.5 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
                 placeholder="0999 123 456"
                 autoComplete="tel"
               />
@@ -567,7 +569,7 @@ function PaymentForm() {
 
           <div className="space-y-3">
               {needsGraphic ? (
-                <div className="rounded-xl border border-[#168cff]/20 bg-[#168cff]/5 p-3">
+                <div className="rounded-xl border border-[#168cff]/25 bg-[#eef8ff] p-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#168cff]">Graphic Design</p>
@@ -583,7 +585,7 @@ function PaymentForm() {
                       <input
                         value={graphicCustomTotal}
                         onChange={(event) => setGraphicCustomTotal(event.target.value.replace(/[^0-9.]/g, ""))}
-                        className="w-32 rounded-xl border border-white/10 bg-[#0b1116] px-3 py-2.5 text-sm text-white outline-none focus:border-[#168cff]"
+                        className="w-32 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-white outline-none focus:border-[#168cff]"
                         placeholder="Total MWK"
                         inputMode="numeric"
                       />
@@ -596,7 +598,7 @@ function PaymentForm() {
               ) : null}
 
               {needsWebsite ? (
-                <div className="rounded-xl border border-[#ff1d25]/20 bg-[#ff1d25]/5 p-3">
+                <div className="rounded-xl border border-[#ff1d25]/25 bg-[#fff1f1] p-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#ff5b61]">Web Development</p>
@@ -609,7 +611,7 @@ function PaymentForm() {
                     <input
                       value={websiteTotal}
                       onChange={(event) => setWebsiteTotal(event.target.value.replace(/[^0-9.]/g, ""))}
-                      className="w-full rounded-xl border border-white/10 bg-[#0b1116] px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-[#ff1d25]"
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-[#ff1d25]"
                       placeholder="Agreed project price (MWK)"
                       inputMode="numeric"
                     />
@@ -622,7 +624,7 @@ function PaymentForm() {
                   <input
                     value={projectReference}
                     onChange={(event) => setProjectReference(event.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-white/30"
+                    className="w-full rounded-xl border border-zinc-200 bg-[#fffdfa] px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
                     placeholder="Project reference"
                   />
 
@@ -634,19 +636,19 @@ function PaymentForm() {
                       <input
                         value={balanceAmount}
                         onChange={(event) => setBalanceAmount(event.target.value.replace(/[^0-9.]/g, ""))}
-                        className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-white/30"
+                        className="w-full rounded-xl border border-zinc-200 bg-[#fffdfa] px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
                         placeholder="Enter website balance (MWK)"
                         inputMode="numeric"
                       />
-                      <p className="mt-1 text-[10px] text-zinc-600">
+                      <p className="mt-1 text-[10px] text-zinc-500">
                         Enter the agreed remaining website balance. Graphic balances remain 50%.
                       </p>
                     </div>
                   ) : (
                     <div className="rounded-xl border border-[#168cff]/20 bg-[#168cff]/5 px-3 py-2.5">
                       <p className="text-[10px] uppercase tracking-[0.14em] text-[#168cff]">Graphic balance</p>
-                      <p className="mt-0.5 text-sm font-black text-white">{formatMoney(graphicTotal / 2)}</p>
-                      <p className="mt-0.5 text-[10px] text-zinc-600">Fixed at 50% of the listed project price.</p>
+                      <p className="mt-0.5 text-sm font-black text-zinc-900">{formatMoney(graphicTotal / 2)}</p>
+                      <p className="mt-0.5 text-[10px] text-zinc-500">Fixed at 50% of the listed project price.</p>
                     </div>
                   )}
                 </div>
@@ -656,10 +658,10 @@ function PaymentForm() {
           <div>
             <div className="mb-2 flex items-center justify-between">
               <div>
-                <p className="text-xs font-black text-white">Payment</p>
-                <p className="mt-0.5 text-[10px] text-zinc-600">We start new work after a 50% deposit.</p>
+                <p className="text-xs font-black text-zinc-900">Payment</p>
+                <p className="mt-0.5 text-[10px] text-zinc-500">We start new work after a 50% deposit.</p>
               </div>
-              <span className="text-sm font-black text-white">{formatMoney(amountDue)}</span>
+              <span className="text-sm font-black text-zinc-900">{formatMoney(amountDue)}</span>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
@@ -695,31 +697,31 @@ function PaymentForm() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
+          <div className="rounded-xl border border-zinc-200 bg-[#fffdfa] p-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-black text-white">Your brief</p>
-                <p className="mt-0.5 text-[10px] text-zinc-600">A sentence or two is enough.</p>
+                <p className="text-xs font-black text-zinc-900">Your brief</p>
+                <p className="mt-0.5 text-[10px] text-zinc-500">A sentence or two is enough.</p>
               </div>
               <span className="text-[10px] text-zinc-700">Required</span>
             </div>
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              className="mt-2 min-h-16 w-full resize-none rounded-xl border border-white/10 bg-[#0b1116] px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-white/30"
+              className="mt-2 min-h-16 w-full resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-white/30"
               placeholder={needsWebsite && !needsGraphic ? "e.g. One-page business website for my clothing brand." : "e.g. Poster for a campus event."}
             />
           </div>
 
-          <details className="rounded-xl border border-white/10 bg-white/[0.02]">
+          <details className="rounded-xl border border-zinc-200 bg-[#fffdfa]">
             <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-bold text-zinc-400">
               Email address <span className="font-normal text-zinc-600">(optional)</span>
             </summary>
-            <div className="border-t border-white/10 p-3">
+            <div className="border-t border-zinc-200 p-3">
               <input
                 value={customerEmail}
                 onChange={(event) => setCustomerEmail(event.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/[0.045] px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-white/30"
+                className="w-full rounded-xl border border-zinc-200 bg-white/[0.045] px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-white/30"
                 placeholder="you@example.com"
                 type="email"
                 autoComplete="email"
@@ -734,13 +736,13 @@ function PaymentForm() {
             </div>
           ) : null}
 
-          <div className="rounded-2xl border border-white/10 bg-[#0b1116] p-3">
+          <div className="rounded-2xl border border-zinc-200 bg-[#f8f5f1] p-3">
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">Amount to pay now</p>
-                <p className="mt-1 text-2xl font-black text-white">{formatMoney(amountDue)}</p>
+                <p className="mt-1 text-2xl font-black text-zinc-950">{formatMoney(amountDue)}</p>
               </div>
-              <div className="text-right text-[10px] text-zinc-600">
+              <div className="text-right text-[10px] text-zinc-500">
                 <p>Project price</p>
                 <p className="mt-0.5 font-bold text-zinc-400">
                   {paymentMode === "balance"
@@ -757,14 +759,14 @@ function PaymentForm() {
             type="button"
             disabled={!canSubmit}
             onClick={() => void submit()}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black text-white shadow-lg transition disabled:cursor-not-allowed disabled:opacity-35 ${accentButtonClass}`}
+            className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black text-zinc-900 shadow-lg transition disabled:cursor-not-allowed disabled:opacity-35 ${accentButtonClass}`}
           >
             {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
             {submitting ? "Opening PayChangu…" : `Continue to Pay ${formatMoney(amountDue)}`}
             {!submitting ? <ChevronRight className="h-5 w-5" /> : null}
           </button>
 
-          <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-600">
+          <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500">
             <ShieldCheck className="h-3.5 w-3.5" />
             Secure checkout via PayChangu
           </div>
@@ -851,7 +853,7 @@ function ReceiptPage() {
 
   return (
     <Shell>
-      <section className="rounded-[26px] border border-white/10 bg-[#10151a] p-5 text-white shadow-2xl sm:p-7">
+      <section className="rounded-[26px] border border-zinc-200 bg-[#10151a] p-5 text-white shadow-2xl sm:p-7">
         <div className="text-center">
           {loading ? (
             <Loader2 className="mx-auto h-14 w-14 animate-spin text-zinc-500" />
@@ -869,7 +871,7 @@ function ReceiptPage() {
         </div>
 
         {payment ? (
-          <div className="mt-6 divide-y divide-white/10 overflow-hidden rounded-2xl border border-white/10">
+          <div className="mt-6 divide-y divide-white/10 overflow-hidden rounded-2xl border border-zinc-200">
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-zinc-500">Service</span>
               <span className="text-right font-bold">{SERVICE_LABELS[payment.serviceType]}</span>
@@ -907,14 +909,14 @@ function ReceiptPage() {
           <button
             type="button"
             onClick={() => window.location.assign("/Services/XhovileStudio")}
-            className="flex items-center justify-center gap-2 rounded-xl border border-white/10 px-5 py-3 text-sm font-black text-white hover:bg-white/5"
+            className="flex items-center justify-center gap-2 rounded-xl border border-zinc-200 px-5 py-3 text-sm font-black text-zinc-900 hover:bg-white/5"
           >
             <RotateCcw className="h-4 w-4" />
             Start Another Payment
           </button>
         </div>
 
-        <p className="mt-4 text-center text-[10px] text-zinc-600">
+        <p className="mt-4 text-center text-[10px] text-zinc-500">
           Keep your payment reference for your records.
         </p>
       </section>
