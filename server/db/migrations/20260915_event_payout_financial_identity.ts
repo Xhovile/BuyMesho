@@ -50,6 +50,13 @@ export function ensureEventPayoutFinancialIdentityMigration() {
       ON payouts (event_creator_uid, created_at DESC)
       WHERE event_creator_uid IS NOT NULL;
 
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_payouts_event_order_unique
+      ON payouts (event_id, order_id)
+      WHERE event_id IS NOT NULL
+        AND order_id IS NOT NULL
+        AND owner_type = 'event_creator'
+        AND release_entry_id IS NULL;
+
     CREATE OR REPLACE FUNCTION buymesho_validate_event_payout_financial_identity()
     RETURNS trigger
     LANGUAGE plpgsql
