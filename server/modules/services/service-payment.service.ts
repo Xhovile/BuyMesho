@@ -1,6 +1,8 @@
 import { paychanguProvider } from "../payments/paychangu.provider.js";
 import { createServerPaymentConfigFromEnv } from "../payments/payment.service.js";
 import type { PaymentVerificationResult } from "../../../src/modules/payments/types.js";
+import { sendEmail } from "../email/email.service.js";
+import { renderXhovileStudioPaymentSuccessEmail } from "../email/templates/xhovile-studio-payment-success.js";
 import {
   servicePaymentRepository,
   type ServicePaymentMode,
@@ -19,6 +21,37 @@ export interface CreateServicePaymentInput {
   projectTotal?: number | null;
   projectReference?: string | null;
   graphicId?: string | null;
+}
+
+async function notifyXhovileStudioSuccessfulPayment(
+  reference: string,
+): Promise<void> {
+  const claimed = await servicePaymentRepository.claimSuccessNotification(reference);
+  if (!claimed) return;
+
+  try {
+    const { text, html } = renderXhovileStudioPaymentSuccessEmail(claimed);
+
+    await sendEmail({
+      sender: "notifications",
+      to: {
+        email: "xhovilepublications@gmail.com",
+        name: "Xhovilé Studio",
+      },
+      subject: `Xhovilé Studio payment received — ${claimed.customerName}`,
+      text,
+      html,
+    });
+
+    await servicePaymentRepository.markSuccessNotificationSent(reference);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await servicePaymentRepository.markSuccessNotificationFailed(reference, message);
+    console.error(
+      "[XhovileStudio] Successful payment email failed:",
+      message,
+    );
+  }
 }
 
 export async function createXhovileStudioServicePayment(
@@ -130,6 +163,8 @@ export async function verifyXhovileStudioServicePayment(
   }
 
   if (servicePayment.status === "paid") {
+    await notifyXhovileStudioSuccessfulPayment(requestedReference);
+
     return {
       verified: true,
       provider: "paychangu",
@@ -171,6 +206,7 @@ export async function verifyXhovileStudioServicePayment(
   }
 
   await servicePaymentRepository.markPaid(requestedReference);
+  await notifyXhovileStudioSuccessfulPayment(requestedReference);
 
   return {
     ...verification,
