@@ -146,7 +146,7 @@ export async function ensureStudioDatabaseSchema(): Promise<void> {
       CREATE UNIQUE INDEX IF NOT EXISTS idx_studio_webhook_payload
       ON service_payment_webhook_events(payment_reference, event_type, payload_hash)
     `);
-  }).catch((error) => {
+  })().catch((error: unknown) => {
     schemaPromise = null;
     throw error;
   });
