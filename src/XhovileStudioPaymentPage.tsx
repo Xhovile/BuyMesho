@@ -157,9 +157,11 @@ function StudioBackToTop() {
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Back to top"
       title="Back to top"
-      className="fixed bottom-5 right-4 z-[120] flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-[#10151a]/95 text-white shadow-[0_10px_30px_rgba(0,0,0,0.45)] backdrop-blur transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#151b20] active:translate-y-0 sm:bottom-6 sm:right-6"
+      className="group fixed bottom-5 right-4 z-[120] flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#168cff] via-[#10151a] to-[#ff1d25] p-[1px] shadow-[0_10px_30px_rgba(0,0,0,0.45)] transition hover:-translate-y-0.5 sm:bottom-6 sm:right-6"
     >
-      <ArrowUp className="h-5 w-5" />
+      <span className="flex h-full w-full items-center justify-center rounded-full bg-[#10151a] text-white transition group-hover:bg-[#151b20]">
+        <ArrowUp className="h-5 w-5" />
+      </span>
     </button>
   );
 }
