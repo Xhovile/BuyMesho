@@ -117,14 +117,25 @@ export async function gateForSubmissionAsync(payoutId: string): Promise<PayoutEx
   }
 
   const orderStatus = String(row.order_status ?? '').toLowerCase();
-  if (orderStatus === 'disputed') return { allowed: false, reasonCode: 'order_disputed', reason: 'Order is disputed' };
-  if (!['paid', 'in_escrow', 'fulfilled'].includes(orderStatus)) {
-    return { allowed: false, reasonCode: 'order_not_releasable', reason: 'Order is not in a releasable state' };
+  const isEventPayout = row.event_id != null || String(row.owner_type ?? '').toLowerCase() === 'event_creator';
+
+  if (orderStatus === 'disputed') {
+    return { allowed: false, reasonCode: 'order_disputed', reason: 'Order is disputed' };
   }
 
-  const escrowState = String(row.escrow_state ?? '').toLowerCase();
-  if (escrowState && escrowState !== 'released') {
-    return { allowed: false, reasonCode: 'order_not_releasable', reason: 'Escrow must be released before payout submission' };
+  if (isEventPayout) {
+    if (orderStatus !== 'paid') {
+      return { allowed: false, reasonCode: 'payment_not_captured', reason: 'Event payout requires a verified paid order' };
+    }
+  } else {
+    if (!['paid', 'in_escrow', 'fulfilled'].includes(orderStatus)) {
+      return { allowed: false, reasonCode: 'order_not_releasable', reason: 'Order is not in a releasable state' };
+    }
+
+    const escrowState = String(row.escrow_state ?? '').toLowerCase();
+    if (escrowState && escrowState !== 'released') {
+      return { allowed: false, reasonCode: 'order_not_releasable', reason: 'Escrow must be released before payout submission' };
+    }
   }
   if (Number(row.seller_suspended ?? 0) === 1) {
     return { allowed: false, reasonCode: 'seller_suspended', reason: 'Seller is suspended' };
