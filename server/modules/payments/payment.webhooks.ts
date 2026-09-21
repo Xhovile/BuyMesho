@@ -271,8 +271,11 @@ async function handlePayChanguWebhookInternal(context: PayChanguWebhookContext):
     parsedPayload.status,
   ) || 'unknown';
   const { amount, currency } = readAmountAndCurrency(parsedPayload);
+  const isStudioReference = referenceCandidates.some((reference) =>
+    /^PAYCHANGU-svc_/i.test(reference),
+  );
 
-  if (eventType && txRef && isAcceptedPaychanguEventType(eventType)) {
+  if (txRef && isStudioReference) {
     const studioResult = await handleStudioPayChanguWebhook(
       txRef,
       referenceCandidates,
