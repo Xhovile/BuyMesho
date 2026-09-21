@@ -1,4 +1,4 @@
-import type { ServicePaymentRecord } from "../services/service-payment.repository.js";
+import type { ServicePaymentRecord } from "../../services/service-payment.repository.js";
 
 function escapeHtml(value: string): string {
   return value
