@@ -225,6 +225,7 @@ export function createEventCreatorPayoutDestination(input: {
         isDefault ? 1 : 0,
         now,
         now,
+        now,
       );
 
       db.prepare(
