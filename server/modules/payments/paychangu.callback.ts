@@ -34,7 +34,7 @@ export async function payChanguCallbackHandler(req: Request, res: Response): Pro
   }
 
   try {
-    if (servicePaymentRepository.findByReference(txRef)) {
+    if (await servicePaymentRepository.findByReference(txRef)) {
       const verification = await verifyXhovileStudioServicePayment(txRef);
       redirectToPaymentReturn(
         res,
@@ -58,7 +58,7 @@ export async function payChanguCallbackHandler(req: Request, res: Response): Pro
     redirectToPaymentReturn(
       res,
       { tx_ref: txRef, status: "failed" },
-      servicePaymentRepository.findByReference(txRef)
+      (await servicePaymentRepository.findByReference(txRef))
         ? "/Services/XhovileStudio/receipt"
         : "/payment/return",
     );
