@@ -121,10 +121,19 @@ export function createServicePaymentRouter(
         let expectedBalance = 0;
 
         if (needsGraphic) {
-          if (!graphicId || !Object.prototype.hasOwnProperty.call(GRAPHIC_SERVICE_PRICES, graphicId)) {
+          let graphicProjectTotal = 0;
+
+          if (graphicId === "custom") {
+            if (!Number.isFinite(graphicTotal) || graphicTotal <= 0) {
+              return res.status(400).json({ error: "Enter the agreed graphic design price." });
+            }
+            graphicProjectTotal = graphicTotal;
+          } else if (graphicId && Object.prototype.hasOwnProperty.call(GRAPHIC_SERVICE_PRICES, graphicId)) {
+            graphicProjectTotal = GRAPHIC_SERVICE_PRICES[graphicId];
+          } else {
             return res.status(400).json({ error: "Choose a valid graphic design service." });
           }
-          const graphicProjectTotal = GRAPHIC_SERVICE_PRICES[graphicId];
+
           expectedBalance += Math.round((graphicProjectTotal / 2) * 100) / 100;
         }
 
