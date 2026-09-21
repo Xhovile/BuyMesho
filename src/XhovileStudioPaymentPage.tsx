@@ -399,10 +399,16 @@ function PaymentForm() {
     (serviceType === "website_development" || serviceType === "both" ? websiteProjectTotal : 0);
 
   const amountDue = useMemo(() => {
-    if (paymentMode === "balance") return Number(balanceAmount);
+    if (paymentMode === "balance") {
+      const graphicBalance =
+        needsGraphic ? Math.round((graphicTotal / 2) * 100) / 100 : 0;
+      const websiteBalance =
+        needsWebsite ? Number(balanceAmount) : 0;
+      return graphicBalance + websiteBalance;
+    }
     if (paymentMode === "full") return combinedProjectTotal;
     return combinedProjectTotal / 2;
-  }, [balanceAmount, combinedProjectTotal, paymentMode]);
+  }, [balanceAmount, combinedProjectTotal, graphicTotal, needsGraphic, needsWebsite, paymentMode]);
 
   const theme = serviceType === "graphic_design" ? "blue" : serviceType === "website_development" ? "red" : "split";
   const accentButtonClass =
@@ -418,7 +424,10 @@ function PaymentForm() {
     paymentMode === "balance" ||
     ((!needsGraphic || graphicTotal > 0) &&
       (!needsWebsite || websiteProjectTotal >= 80000));
-  const hasValidBalance = paymentMode !== "balance" || (Number(balanceAmount) > 0 && projectReference.trim().length >= 3);
+  const hasValidBalance =
+    paymentMode !== "balance" ||
+    (projectReference.trim().length >= 3 &&
+      (!needsWebsite || (Number(balanceAmount) > 0 && Number(balanceAmount) <= websiteProjectTotal)));
 
   const canSubmit =
     !submitting &&
@@ -555,16 +564,7 @@ function PaymentForm() {
             </label>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-3.5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-black text-white">Project details</p>
-                <p className="mt-0.5 text-[10px] text-zinc-600">Only the relevant fields appear below.</p>
-              </div>
-              <ChevronDown className="h-4 w-4 text-zinc-600" />
-            </div>
-
-            <div className="mt-3 space-y-3">
+          <div className="space-y-3">
               {needsGraphic ? (
                 <div className="rounded-xl border border-[#168cff]/20 bg-[#168cff]/5 p-3">
                   <div className="flex items-center justify-between gap-3">
@@ -617,23 +617,39 @@ function PaymentForm() {
               ) : null}
 
               {paymentMode === "balance" ? (
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="space-y-2">
                   <input
                     value={projectReference}
                     onChange={(event) => setProjectReference(event.target.value)}
-                    className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-white/30"
+                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-white/30"
                     placeholder="Project reference"
                   />
-                  <input
-                    value={balanceAmount}
-                    onChange={(event) => setBalanceAmount(event.target.value.replace(/[^0-9.]/g, ""))}
-                    className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-white/30"
-                    placeholder="Balance due today (MWK)"
-                    inputMode="numeric"
-                  />
+
+                  {needsWebsite ? (
+                    <div>
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.14em] text-zinc-600">
+                        Website balance to pay
+                      </label>
+                      <input
+                        value={balanceAmount}
+                        onChange={(event) => setBalanceAmount(event.target.value.replace(/[^0-9.]/g, ""))}
+                        className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-white/30"
+                        placeholder="Enter website balance (MWK)"
+                        inputMode="numeric"
+                      />
+                      <p className="mt-1 text-[10px] text-zinc-600">
+                        Enter the agreed remaining website balance. Graphic balances remain 50%.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-[#168cff]/20 bg-[#168cff]/5 px-3 py-2.5">
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-[#168cff]">Graphic balance</p>
+                      <p className="mt-0.5 text-sm font-black text-white">{formatMoney(graphicTotal / 2)}</p>
+                      <p className="mt-0.5 text-[10px] text-zinc-600">Fixed at 50% of the listed project price.</p>
+                    </div>
+                  )}
                 </div>
               ) : null}
-            </div>
           </div>
 
           <div>
@@ -663,7 +679,15 @@ function PaymentForm() {
               <ChoiceButton
                 active={paymentMode === "balance"}
                 title="Final Balance"
-                subtitle="Existing project"
+                subtitle={
+                  paymentMode === "balance"
+                    ? needsWebsite
+                      ? "Enter website balance"
+                      : needsGraphic
+                        ? formatMoney(graphicTotal / 2)
+                        : "Existing project"
+                    : "Existing project"
+                }
                 onClick={() => setPaymentMode("balance")}
                 accent="neutral"
               />
@@ -718,7 +742,11 @@ function PaymentForm() {
               <div className="text-right text-[10px] text-zinc-600">
                 <p>Project price</p>
                 <p className="mt-0.5 font-bold text-zinc-400">
-                  {paymentMode === "balance" ? "Existing project" : formatMoney(combinedProjectTotal)}
+                  {paymentMode === "balance"
+                    ? needsWebsite
+                      ? "Website balance entered"
+                      : formatMoney(graphicTotal)
+                    : formatMoney(combinedProjectTotal)}
                 </p>
               </div>
             </div>
