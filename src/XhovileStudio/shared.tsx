@@ -319,7 +319,7 @@ export function StudioCheckoutButton({
       className={`flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 text-sm font-black text-white shadow-lg transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-35 ${accentClass}`}
     >
       {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-      {submitting ? "Opening PayChangu…" : "Pay Now"}
+      {submitting ? "Opening PayChangu…" : `Pay Now · ${formatMoney(amount)}`}
       {!submitting ? <ChevronRight className="h-5 w-5 shrink-0" /> : null}
     </button>
   );
