@@ -105,7 +105,7 @@ export function ensureEventPayoutDestinationLockMigration() {
     LANGUAGE plpgsql
     AS $$
     BEGIN
-      IF NEW.status IN ('paid', 'in_escrow', 'fulfilled', 'closed') OR NEW.paid_at IS NOT NULL THEN
+      IF NEW.status IN ('paid', 'fulfilled', 'closed') OR NEW.paid_at IS NOT NULL THEN
         PERFORM buymesho_lock_event_payout_destination_for_order_id(NEW.id);
       END IF;
       RETURN NEW;
