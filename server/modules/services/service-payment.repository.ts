@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { getPaymentDb } from "../../postgresCompat.js";
 
-export type ServicePaymentType = "graphic_design" | "website_development";
+export type ServicePaymentType = "graphic_design" | "website_development" | "both";
 export type ServicePaymentStatus = "pending" | "paid" | "failed" | "refunded";
 
 export interface ServicePaymentRecord {
