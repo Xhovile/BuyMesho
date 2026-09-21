@@ -25,7 +25,7 @@ export async function notifyTicketPurchaseConfirmation(
   input: TicketEmailInput,
   deps: NotificationDependencies = {},
 ): Promise<boolean> {
-  if (input.orderStatus !== "paid" && input.orderStatus !== "in_escrow") return false;
+  if (input.orderStatus !== "paid") return false;
 
   const key = deps.notificationKey ?? input.orderReference;
   const claim = deps.claim ?? ((dedupeKey: string) => claimEmailNotification("ticket_purchase_confirmation", dedupeKey));
