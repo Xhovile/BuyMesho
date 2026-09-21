@@ -32,10 +32,14 @@ export async function notifyXhovileStudioSuccessfulPayment(
   try {
     const { text, html } = renderXhovileStudioPaymentSuccessEmail(claimed);
 
+    const notificationEmail =
+      process.env.XHOVILE_STUDIO_NOTIFICATION_EMAIL?.trim() ||
+      "xhovilepublications@gmail.com";
+
     await sendEmail({
       sender: "notifications",
       to: {
-        email: "xhovilepublications@gmail.com",
+        email: notificationEmail,
         name: "Xhovilé Studio",
       },
       subject: `Xhovilé Studio payment received — ${claimed.customerName}`,
