@@ -182,6 +182,7 @@ export default function EventDetailsView() {
         body: JSON.stringify({
           items: [{ eventId: String(event.id), quantity: 1 }],
           method: "mobile_money",
+          settlementRoute: "direct",
           ticketHolder,
           returnUrl: `${window.location.origin}/payment/return`,
           cancelUrl: `${window.location.origin}/payment/return?cancelled=1`,
