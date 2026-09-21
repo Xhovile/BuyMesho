@@ -147,6 +147,9 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
     const activeOrder=confirmedOrder ?? await serverOrderService.setStatusAsync(order.id,'paid',client) ?? order;
 
     const eventContext=await resolveEventPayoutContext(activeOrder.id,client);
+    if(activeOrder.source==='event'&&!eventContext){
+      throw new Error('Event ticket order could not resolve its payout destination');
+    }
     if(eventContext){
       const eventPayout=await createEventPayoutCandidateAsync({
         orderId:activeOrder.id,
@@ -180,7 +183,7 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
     const escrowAmount=activeOrder.total.amount;const currency=normalizeReference(activeOrder.currency).toUpperCase();const escrow=await escrowRepository.createAsync(activeOrder.id,currency,escrowAmount,client);const escrowedOrder=await serverOrderService.markInEscrowAsync(activeOrder.id,escrow.id,client) ?? activeOrder;return{payment,order:escrowedOrder,verification,sellerPayoutQueued:false,eventPayoutQueued:false,payoutId:null,orderEnteredEscrow:escrowedOrder.status==='in_escrow'&&order.status!=='in_escrow'};
   });
 
-  if(settlement.eventPayoutQueued&&settlement.payoutId&&settlement.order){
+  if('eventPayoutQueued' in settlement && settlement.eventPayoutQueued&&settlement.payoutId&&settlement.order){
     await payoutService.executePayout({
       payoutId:settlement.payoutId,
       actorType:'system',
