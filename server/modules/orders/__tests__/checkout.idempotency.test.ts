@@ -24,6 +24,34 @@ test('checkout rejects mixed event tickets and marketplace listings before creat
 
 test('checkout rejects tickets from multiple events before creating an order', async () => { clearState(); seedEvent(992101, 'Event One'); seedEvent(992102, 'Event Two'); mockPayChangu(); const app = createApp(); const server = app.listen(0); const port = (server.address() as { port: number }).port; const base = `http://127.0.0.1:${port}`; try { const response = await postCheckout(base, 'checkout-scope-multi-001', { items: [{ eventId: '992101', quantity: 1 }, { eventId: '992102', quantity: 1 }], method: 'mobile_money', settlementRoute: 'escrow', ticketHolder: { fullName: 'Test Buyer', email: 'buyer@example.com', phone: '0999999999' } }); assert.equal(response.status, 400); const body = await response.json() as { code?: string }; assert.equal(body.code, 'MULTI_EVENT_CHECKOUT'); const orderCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM orders WHERE checkout_idempotency_key = ?').get('checkout-scope-multi-001') as { count: number }).count; assert.equal(orderCount, 0); } finally { server.close(); clearState(); global.fetch = originalFetch; } });
 
+test('checkout forces direct settlement for event-only orders', async () => {
+  clearState();
+  seedEvent(992101, 'Direct Event Checkout');
+  mockPayChangu();
+  const app = createApp();
+  const server = app.listen(0);
+  const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  try {
+    const response = await postCheckout(base, 'checkout-direct-event-001', {
+      items: [{ eventId: '992101', quantity: 1 }],
+      method: 'mobile_money',
+      settlementRoute: 'escrow',
+      ticketHolder: { fullName: 'Test Buyer', email: 'buyer@example.com', phone: '0999999999' },
+    });
+    assert.equal(response.status, 201);
+    const body = await response.json() as { orderId: string };
+    const order = orderRepository.findById(body.orderId);
+    assert.equal(order?.source, 'event');
+    assert.equal(order?.settlementRoute, 'direct');
+    assert.equal(order?.status, 'pending_payment');
+    assert.equal(order?.escrowId ?? null, null);
+  } finally {
+    server.close();
+    clearState();
+    global.fetch = originalFetch;
+  }
+});
+
 test('checkout idempotency: replay returns the same order and payment instead of creating another checkout', async () => { clearState(); const listingId = seedListing(); mockPayChangu(); const app = createApp(); const server = app.listen(0); const port = (server.address() as { port: number }).port; const base = `http://127.0.0.1:${port}`; const payload = { listingId, quantity: 1, method: 'mobile_money', settlementRoute: 'escrow', returnUrl: 'https://example.com/payment/return', cancelUrl: 'https://example.com/payment/return?cancelled=1' }; try { const first = await postCheckout(base, 'checkout-idem-001', payload); assert.equal(first.status, 201); const firstBody = await first.json() as { orderId: string; paymentId?: string; reference?: string }; const replay = await postCheckout(base, 'checkout-idem-001', payload); assert.equal(replay.status, 200); const replayBody = await replay.json() as { idempotentReplay?: boolean; orderId: string; paymentId?: string; reference?: string }; assert.equal(replayBody.idempotentReplay, true); assert.equal(replayBody.orderId, firstBody.orderId); assert.equal(replayBody.paymentId, firstBody.paymentId); assert.equal(replayBody.reference, firstBody.reference); const orderCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM orders WHERE buyer_id = ? AND checkout_idempotency_key = ?').get('buyer_idempotency_1', 'checkout-idem-001') as { count: number }).count; const paymentCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM payments').get() as { count: number }).count; assert.equal(orderCount, 1); assert.equal(paymentCount, 1); assert.equal(orderRepository.findById(firstBody.orderId)?.checkoutIdempotencyKey, 'checkout-idem-001'); assert.ok(paymentRepository.findByReference(firstBody.reference ?? '')); } finally { server.close(); clearState(); global.fetch = originalFetch; } });
 
 test('checkout idempotency: reusing a key for different checkout parameters is rejected', async () => { clearState(); const listingId = seedListing(); mockPayChangu(); const app = createApp(); const server = app.listen(0); const port = (server.address() as { port: number }).port; const base = `http://127.0.0.1:${port}`; try { const first = await postCheckout(base, 'checkout-idem-002', { listingId, quantity: 1, method: 'mobile_money', settlementRoute: 'escrow', returnUrl: 'https://example.com/payment/return', cancelUrl: 'https://example.com/payment/return?cancelled=1' }); assert.equal(first.status, 201); const conflicting = await postCheckout(base, 'checkout-idem-002', { listingId, quantity: 2, method: 'mobile_money', settlementRoute: 'escrow', returnUrl: 'https://example.com/payment/return', cancelUrl: 'https://example.com/payment/return?cancelled=1' }); assert.equal(conflicting.status, 409); const body = await conflicting.json() as { code?: string }; assert.equal(body.code, 'IDEMPOTENCY_KEY_REUSED'); const orderCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM orders WHERE buyer_id = ? AND checkout_idempotency_key = ?').get('buyer_idempotency_1', 'checkout-idem-002') as { count: number }).count; const paymentCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM payments').get() as { count: number }).count; assert.equal(orderCount, 1); assert.equal(paymentCount, 1); } finally { server.close(); clearState(); global.fetch = originalFetch; } });
