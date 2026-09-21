@@ -1,4 +1,5 @@
 import express, { type Request, type RequestHandler, type Router } from "express";
+import multer from "multer";
 import {
   createXhovileStudioServicePayment,
   verifyXhovileStudioServicePayment,
@@ -64,8 +65,52 @@ export function createServicePaymentRouter(
   statusRateLimit: RequestHandler,
 ): Router {
   const router = express.Router();
+  const referenceUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { files: 5, fileSize: 10 * 1024 * 1024, fields: 30 },
+    fileFilter: (_req, file, callback) => {
+      if (file.fieldname === "referenceImages" && file.mimetype.startsWith("image/")) {
+        callback(null, true);
+        return;
+      }
+      if (file.fieldname === "referenceVideo" && file.mimetype.startsWith("video/")) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(
+        file.fieldname === "referenceImages"
+          ? "Only image files can be added as image references."
+          : "Only one video reference is supported.",
+      ));
+    },
+  }).fields([
+    { name: "referenceImages", maxCount: 4 },
+    { name: "referenceVideo", maxCount: 1 },
+  ]);
 
-  router.post("/", createRateLimit, async (req: Request, res) => {
+  router.post(
+    "/",
+    createRateLimit,
+    (req: Request, res, next) => {
+      referenceUpload(req, res, (error) => {
+        if (error instanceof multer.MulterError) {
+          const message =
+            error.code === "LIMIT_FILE_SIZE"
+              ? "Each reference file must be 10 MB or smaller."
+              : error.code === "LIMIT_FILE_COUNT" || error.code === "LIMIT_UNEXPECTED_FILE"
+                ? "You can attach up to 4 images and 1 video."
+                : "Reference upload could not be processed.";
+          return res.status(400).json({ error: message });
+        }
+        if (error) {
+          return res.status(400).json({
+            error: error instanceof Error ? error.message : "Reference upload could not be processed.",
+          });
+        }
+        next();
+      });
+    },
+    async (req: Request, res) => {
     res.setHeader("Cache-Control", "no-store");
     try {
       const serviceType = cleanString(req.body?.serviceType, 40);
@@ -79,6 +124,18 @@ export function createServicePaymentRouter(
       const websiteTotal = Number(req.body?.websiteTotal);
       const paymentMode = cleanString(req.body?.paymentMode, 20);
       const projectReference = cleanString(req.body?.projectReference, 120);
+      const uploadedFiles = (req.files ?? {}) as {
+        referenceImages?: Express.Multer.File[];
+        referenceVideo?: Express.Multer.File[];
+      };
+      const referenceFiles = [
+        ...(uploadedFiles.referenceImages ?? []).map((file) => ({ file, kind: "image" as const })),
+        ...(uploadedFiles.referenceVideo ?? []).map((file) => ({ file, kind: "video" as const })),
+      ];
+
+      if (referenceFiles.length > 5) {
+        return res.status(400).json({ error: "You can attach up to 4 images and 1 video." });
+      }
 
       if (!isServiceType(serviceType)) {
         return res.status(400).json({ error: "Choose Graphic Design, Web Development, or Both." });
@@ -208,6 +265,7 @@ export function createServicePaymentRouter(
         ),
         projectReference: paymentMode === "balance" ? projectReference : null,
         graphicId: needsGraphic ? graphicId : null,
+        referenceFiles,
       });
 
       return res.status(201).json({

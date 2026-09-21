@@ -82,6 +82,7 @@ export async function ensureStudioDatabaseSchema(): Promise<void> {
         project_total DOUBLE PRECISION,
         project_reference TEXT,
         graphic_id TEXT,
+        reference_media JSONB NOT NULL DEFAULT '[]'::jsonb,
         provider_reference TEXT,
         payment_reference TEXT UNIQUE,
         paid_at TIMESTAMPTZ,
@@ -93,6 +94,11 @@ export async function ensureStudioDatabaseSchema(): Promise<void> {
     await studioQuery(`
       CREATE INDEX IF NOT EXISTS idx_studio_service_payments_status
       ON service_payments(status, created_at DESC)
+    `);
+
+    await studioQuery(`
+      ALTER TABLE service_payments
+      ADD COLUMN IF NOT EXISTS reference_media JSONB NOT NULL DEFAULT '[]'::jsonb
     `);
 
     await studioQuery(`

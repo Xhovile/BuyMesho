@@ -1,4 +1,5 @@
 import { paychanguProvider } from "../payments/paychangu.provider.js";
+import { uploadBufferToCloudinary } from "../../lib/cloudinaryUpload.js";
 import { createServerPaymentConfigFromEnv } from "../payments/payment.service.js";
 import type { PaymentVerificationResult } from "../../../src/modules/payments/types.js";
 import { sendEmail } from "../email/email.service.js";
@@ -21,6 +22,10 @@ export interface CreateServicePaymentInput {
   projectTotal?: number | null;
   projectReference?: string | null;
   graphicId?: string | null;
+  referenceFiles?: Array<{
+    file: Express.Multer.File;
+    kind: "image" | "video";
+  }>;
 }
 
 export async function notifyXhovileStudioSuccessfulPayment(
@@ -66,11 +71,42 @@ export async function createXhovileStudioServicePayment(
   reference: string;
 }> {
   const servicePayment = await servicePaymentRepository.create({
-    ...input,
+    serviceType: input.serviceType,
+    customerName: input.customerName,
+    customerPhone: input.customerPhone,
+    customerEmail: input.customerEmail,
+    description: input.description,
+    amount: input.amount,
     currency: "MWK",
+    paymentMode: input.paymentMode,
+    projectTotal: input.projectTotal,
+    projectReference: input.projectReference,
+    graphicId: input.graphicId,
   });
 
   try {
+    const referenceMedia = [];
+    for (const reference of input.referenceFiles ?? []) {
+      const url = await uploadBufferToCloudinary(
+        {
+          buffer: reference.file.buffer,
+          mimetype: reference.file.mimetype,
+        },
+        { folder: "xhovile-studio/references" },
+      );
+      referenceMedia.push({
+        kind: reference.kind,
+        url,
+        originalName: reference.file.originalname,
+        mimeType: reference.file.mimetype,
+        sizeBytes: reference.file.size,
+      });
+    }
+
+    if (referenceMedia.length) {
+      await servicePaymentRepository.updateReferenceMedia(servicePayment.id, referenceMedia);
+    }
+
     const payment = await paychanguProvider.createPayment(
       {
         orderId: servicePayment.id,

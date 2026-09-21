@@ -5,6 +5,40 @@ export type ServicePaymentType = "graphic_design" | "website_development" | "bot
 export type ServicePaymentStatus = "pending" | "paid" | "failed" | "refunded";
 export type ServicePaymentMode = "deposit" | "full" | "balance";
 
+export interface ServicePaymentReference {
+  kind: "image" | "video";
+  url: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+}
+
+export function parseReferenceMedia(value: unknown): ServicePaymentReference[] {
+  let parsed: unknown = value;
+  if (typeof parsed === "string") {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(parsed)) return [];
+  return parsed.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    const kind = row.kind === "video" ? "video" : row.kind === "image" ? "image" : null;
+    const url = typeof row.url === "string" ? row.url.trim() : "";
+    if (!kind || !url) return [];
+    return [{
+      kind,
+      url,
+      originalName: typeof row.originalName === "string" ? row.originalName : "Reference file",
+      mimeType: typeof row.mimeType === "string" ? row.mimeType : "",
+      sizeBytes: Number(row.sizeBytes ?? 0),
+    }];
+  });
+}
+
 export interface ServicePaymentRecord {
   id: string;
   serviceType: ServicePaymentType;
@@ -19,6 +53,7 @@ export interface ServicePaymentRecord {
   projectTotal: number | null;
   projectReference: string | null;
   graphicId: string | null;
+  referenceMedia: ServicePaymentReference[];
   providerReference: string | null;
   paymentReference: string | null;
   paidAt: string | null;
@@ -47,6 +82,7 @@ function rowToRecord(row: Record<string, unknown>): ServicePaymentRecord {
         : Number(row.project_total),
     projectReference: row.project_reference ? String(row.project_reference) : null,
     graphicId: row.graphic_id ? String(row.graphic_id) : null,
+    referenceMedia: parseReferenceMedia(row.reference_media),
     providerReference: row.provider_reference ? String(row.provider_reference) : null,
     paymentReference: row.payment_reference ? String(row.payment_reference) : null,
     paidAt: row.paid_at ? String(row.paid_at) : null,
@@ -104,6 +140,7 @@ export class ServicePaymentRepository {
       projectTotal: input.projectTotal ?? null,
       projectReference: input.projectReference || null,
       graphicId: input.graphicId || null,
+      referenceMedia: [],
       providerReference: null,
       paymentReference: null,
       paidAt: null,
@@ -119,10 +156,10 @@ export class ServicePaymentRepository {
         INSERT INTO service_payments (
           id, service_type, customer_name, customer_phone, customer_email,
           description, amount, currency, status, payment_mode, project_total,
-          project_reference, graphic_id, provider_reference, payment_reference,
+          project_reference, graphic_id, reference_media, provider_reference, payment_reference,
           paid_at, created_at, updated_at, success_notification_status,
           success_notification_sent_at, success_notification_error
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
       `,
       [
         record.id,
@@ -138,6 +175,7 @@ export class ServicePaymentRepository {
         record.projectTotal,
         record.projectReference,
         record.graphicId,
+        JSON.stringify(record.referenceMedia),
         record.providerReference,
         record.paymentReference,
         record.paidAt,
@@ -150,6 +188,23 @@ export class ServicePaymentRepository {
     );
 
     return record;
+  }
+
+  async updateReferenceMedia(
+    id: string,
+    referenceMedia: ServicePaymentReference[],
+  ): Promise<ServicePaymentRecord | undefined> {
+    await this.ready();
+    const now = new Date().toISOString();
+    await studioQuery(
+      `
+        UPDATE service_payments
+        SET reference_media = $1::jsonb, updated_at = $2
+        WHERE id = $3
+      `,
+      [JSON.stringify(referenceMedia.slice(0, 5)), now, id],
+    );
+    return this.findById(id);
   }
 
   async findById(id: string): Promise<ServicePaymentRecord | undefined> {

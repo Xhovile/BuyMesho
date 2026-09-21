@@ -1,5 +1,5 @@
 import { ensureStudioDatabaseSchema, studioQuery } from "./studio.database.js";
-import type { ServicePaymentRecord } from "./service-payment.repository.js";
+import { parseReferenceMedia, type ServicePaymentRecord } from "./service-payment.repository.js";
 
 export type StudioAdminCustomer = {
   customerPhone: string;
@@ -114,6 +114,7 @@ function rowToPayment(row: Record<string, unknown>): ServicePaymentRecord {
         : Number(row.project_total),
     projectReference: row.project_reference ? String(row.project_reference) : null,
     graphicId: row.graphic_id ? String(row.graphic_id) : null,
+    referenceMedia: parseReferenceMedia(row.reference_media),
     providerReference: row.provider_reference
       ? String(row.provider_reference)
       : null,

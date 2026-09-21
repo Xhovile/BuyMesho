@@ -58,6 +58,13 @@ type AdminPayment = {
   successNotificationStatus: "pending" | "sending" | "sent" | "failed";
   successNotificationSentAt: string | null;
   successNotificationError: string | null;
+  referenceMedia: Array<{
+    kind: "image" | "video";
+    url: string;
+    originalName: string;
+    mimeType: string;
+    sizeBytes: number;
+  }>;
 };
 
 type AdminCustomer = {
@@ -740,6 +747,39 @@ function AdminConsole() {
                   <p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">Customer brief</p>
                   <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-700">{selectedPayment.description}</p>
                 </div>
+
+                {selectedPayment.referenceMedia.length ? (
+                  <div className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">References</p>
+                    <p className="mt-1 text-xs text-zinc-500">{selectedPayment.referenceMedia.length} file{selectedPayment.referenceMedia.length === 1 ? "" : "s"} attached by the customer.</p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      {selectedPayment.referenceMedia.map((media, index) => (
+                        <a
+                          key={`${media.url}-${index}`}
+                          href={media.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="group overflow-hidden rounded-xl border border-zinc-200 bg-white"
+                        >
+                          {media.kind === "image" ? (
+                            <img
+                              src={media.url}
+                              alt={media.originalName || `Reference ${index + 1}`}
+                              className="aspect-square w-full object-cover transition group-hover:scale-[1.02]"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <video src={media.url} controls preload="metadata" className="aspect-square w-full bg-black object-cover" />
+                          )}
+                          <div className="border-t border-zinc-100 px-2.5 py-2">
+                            <p className="truncate text-[10px] font-bold text-zinc-800">{media.originalName}</p>
+                            <p className="mt-0.5 text-[9px] uppercase tracking-[0.12em] text-zinc-400">{media.kind}</p>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
 
                 {selectedPayment.successNotificationError ? (
                   <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
