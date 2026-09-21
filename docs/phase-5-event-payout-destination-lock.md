@@ -12,7 +12,7 @@ The event payout destination becomes locked after the first successful ticket sa
 - `payout_destination_locked_by`
 - `payout_destination_lock_reason`
 
-The system recognizes successful event sales from the existing order model (`paid`, `in_escrow`, `fulfilled`, `closed`, or a populated `paid_at`) and event-ticket order items.
+The system recognizes successful event sales from the existing order model (`paid`, `fulfilled`, `closed`, or a populated `paid_at`) and event-ticket order items.
 
 ## Database enforcement
 
