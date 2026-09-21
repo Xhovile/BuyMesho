@@ -7,6 +7,7 @@ import { escrowRepository } from '../escrow/escrow.repository.js';
 import { payoutRepository, payoutService } from '../payouts/payout.service.js';
 import { getConnectAccount } from '../connect/connect.service.js';
 import { calculatePayoutFormula } from '../payouts/payout.policy.js';
+import { createEventPayoutCandidateAsync, resolveEventPayoutContext } from '../payouts/event-payout.integration.js';
 import { withTransaction } from '../../postgres.js';
 import type { PoolClient } from 'pg';
 import { getPaymentDb } from '../../postgresCompat.js';
@@ -145,19 +146,46 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
     const confirmedOrder=await confirmOrderByReferences(referenceCandidates,client);
     const activeOrder=confirmedOrder ?? await serverOrderService.setStatusAsync(order.id,'paid',client) ?? order;
 
-    if(activeOrder.settlementRoute==='connect'){
-      const connectAccount=getConnectAccount(activeOrder.sellerId);
-      if(!connectAccount||connectAccount.status!=='connected')return{payment,order:activeOrder,verification,sellerPayoutQueued:false,payoutId:null,orderEnteredEscrow:false};
-      const destination=findSellerDefaultPayoutDestination(activeOrder.sellerId);const payoutMethod=derivePayoutMethod(destination);const grossAmount=activeOrder.total.amount;const currency=normalizeReference(activeOrder.currency).toUpperCase();
-      const payoutFormula=calculatePayoutFormula({grossAmount,currency,payoutMethod});
-      const {payout,created}=payoutService.createConnectPayoutCandidate({sellerId:activeOrder.sellerId,orderId:activeOrder.id,amount:payoutFormula.sellerReceivesAmount,grossAmount:payoutFormula.grossAmount,platformFeeAmount:payoutFormula.platformFeeAmount,processingFeeAmount:payoutFormula.processingFeeAmount,reserveAmount:payoutFormula.reserveAmount,reserveCapAmount:payoutFormula.reserveCapAmount,manualAdjustmentAmount:payoutFormula.manualAdjustmentAmount,payoutFeeAmount:payoutFormula.payoutFeeAmount,sellerReceivesAmount:payoutFormula.sellerReceivesAmount,netAmount:payoutFormula.netAmount,formulaSnapshot:payoutFormula,currency,requestedBy:'system',destinationAccountId:destination?.id??null,snapshot:{payoutFormula,settlementRoute:activeOrder.settlementRoute,paymentReference:reference,payChanguVerificationReference:verification.reference??verification.txRef??null,connectAccountId:connectAccount.id,connectStatus:connectAccount.status,connectMode:connectAccount.mode}});
-      if(created)payoutRepository.addEvent({payoutId:payout.id,sellerId:activeOrder.sellerId,eventType:'connect_payout_queued',actorType:'system',note:'Connect payment created seller payout candidate',payload:{settlementRoute:activeOrder.settlementRoute,payoutFormula,destinationAccountId:destination?.id??null,connectAccountId:connectAccount.id,connectStatus:connectAccount.status,connectMode:connectAccount.mode,payChanguVerificationReference:verification.reference??verification.txRef??null}});
-      return{payment,order:activeOrder,verification,sellerPayoutQueued:created,payoutId:payout.id,orderEnteredEscrow:false};
+    const eventContext=await resolveEventPayoutContext(activeOrder.id,client);
+    if(eventContext){
+      const eventPayout=await createEventPayoutCandidateAsync({
+        orderId:activeOrder.id,
+        event:eventContext,
+        grossAmount:activeOrder.total.amount,
+        currency:normalizeReference(activeOrder.currency).toUpperCase(),
+        requestedBy:'system',
+        requestedAt:activeOrder.paidAt ?? new Date().toISOString(),
+      },client);
+      return{
+        payment,
+        order:activeOrder,
+        verification,
+        sellerPayoutQueued:false,
+        eventPayoutQueued:eventPayout.created,
+        payoutId:eventPayout.payout.id,
+        orderEnteredEscrow:false,
+      };
     }
 
-    const escrowAmount=activeOrder.total.amount;const currency=normalizeReference(activeOrder.currency).toUpperCase();const escrow=await escrowRepository.createAsync(activeOrder.id,currency,escrowAmount,client);const escrowedOrder=await serverOrderService.markInEscrowAsync(activeOrder.id,escrow.id,client) ?? activeOrder;return{payment,order:escrowedOrder,verification,sellerPayoutQueued:false,payoutId:null,orderEnteredEscrow:escrowedOrder.status==='in_escrow'&&order.status!=='in_escrow'};
+    if(activeOrder.settlementRoute==='connect'){
+      const connectAccount=getConnectAccount(activeOrder.sellerId);
+      if(!connectAccount||connectAccount.status!=='connected')return{payment,order:activeOrder,verification,sellerPayoutQueued:false,eventPayoutQueued:false,payoutId:null,orderEnteredEscrow:false};
+      const destination=findSellerDefaultPayoutDestination(activeOrder.sellerId);const payoutMethod=derivePayoutMethod(destination);const grossAmount=activeOrder.total.amount;const currency=normalizeReference(activeOrder.currency).toUpperCase();
+      const payoutFormula=calculatePayoutFormula({grossAmount,currency,payoutMethod});
+      const {payout,created}=payoutService.createConnectPayoutCandidate({sellerId:activeOrder.sellerId,orderId:activeOrder.id,amount:payoutFormula.sellerReceivesAmount,grossAmount:payoutFormula.grossAmount,platformFeeAmount:payoutFormula.platformFeeAmount,processingFeeAmount:payoutFormula.processingFeeAmount,reserveAmount:payoutFormula.reserveAmount, reserveCapAmount:payoutFormula.reserveCapAmount,manualAdjustmentAmount:payoutFormula.manualAdjustmentAmount,payoutFeeAmount:payoutFormula.payoutFeeAmount,sellerReceivesAmount:payoutFormula.sellerReceivesAmount,netAmount:payoutFormula.netAmount,formulaSnapshot:payoutFormula,currency,requestedBy:'system',destinationAccountId:destination?.id??null,snapshot:{payoutFormula,settlementRoute:activeOrder.settlementRoute,paymentReference:reference,payChanguVerificationReference:verification.reference??verification.txRef??null,connectAccountId:connectAccount.id,connectStatus:connectAccount.status,connectMode:connectAccount.mode}});
+      if(created)payoutRepository.addEvent({payoutId:payout.id,sellerId:activeOrder.sellerId,eventType:'connect_payout_queued',actorType:'system',note:'Connect payment created seller payout candidate',payload:{settlementRoute:activeOrder.settlementRoute,payoutFormula,destinationAccountId:destination?.id??null,connectAccountId:connectAccount.id,connectStatus:connectAccount.status,connectMode:connectAccount.mode,payChanguVerificationReference:verification.reference??verification.txRef??null}});
+      return{payment,order:activeOrder,verification,sellerPayoutQueued:created,eventPayoutQueued:false,payoutId:payout.id,orderEnteredEscrow:false};
+    }
+
+    const escrowAmount=activeOrder.total.amount;const currency=normalizeReference(activeOrder.currency).toUpperCase();const escrow=await escrowRepository.createAsync(activeOrder.id,currency,escrowAmount,client);const escrowedOrder=await serverOrderService.markInEscrowAsync(activeOrder.id,escrow.id,client) ?? activeOrder;return{payment,order:escrowedOrder,verification,sellerPayoutQueued:false,eventPayoutQueued:false,payoutId:null,orderEnteredEscrow:escrowedOrder.status==='in_escrow'&&order.status!=='in_escrow'};
   });
 
+  if(settlement.eventPayoutQueued&&settlement.payoutId&&settlement.order){
+    await payoutService.executePayout({
+      payoutId:settlement.payoutId,
+      actorType:'system',
+    });
+  }
   if(settlement.sellerPayoutQueued&&settlement.payoutId&&settlement.order)emitSellerPayoutQueuedNotification(settlement.order.sellerId,settlement.order.id,settlement.payoutId);
   if(settlement.order){if(settlement.orderEnteredEscrow||settlement.order.status==='paid'){emitOrderPaidNotification(settlement.order);emitEventTicketNotifications(settlement.order);}}
   return{payment:settlement.payment,order:settlement.order,verification:settlement.verification};
