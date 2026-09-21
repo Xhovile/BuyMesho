@@ -24,6 +24,9 @@ export interface ServicePaymentRecord {
   paidAt: string | null;
   createdAt: string;
   updatedAt: string;
+  successNotificationStatus: "pending" | "sending" | "sent" | "failed";
+  successNotificationSentAt: string | null;
+  successNotificationError: string | null;
 }
 
 function rowToRecord(row: Record<string, unknown>): ServicePaymentRecord {
@@ -49,6 +52,20 @@ function rowToRecord(row: Record<string, unknown>): ServicePaymentRecord {
     paidAt: row.paid_at ? String(row.paid_at) : null,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
+    successNotificationStatus:
+      row.success_notification_status === "sent"
+        ? "sent"
+        : row.success_notification_status === "sending"
+          ? "sending"
+          : row.success_notification_status === "failed"
+            ? "failed"
+            : "pending",
+    successNotificationSentAt: row.success_notification_sent_at
+      ? String(row.success_notification_sent_at)
+      : null,
+    successNotificationError: row.success_notification_error
+      ? String(row.success_notification_error)
+      : null,
   };
 }
 
@@ -92,6 +109,9 @@ export class ServicePaymentRepository {
       paidAt: null,
       createdAt: now,
       updatedAt: now,
+      successNotificationStatus: "pending",
+      successNotificationSentAt: null,
+      successNotificationError: null,
     };
 
     await studioQuery(
@@ -100,8 +120,9 @@ export class ServicePaymentRepository {
           id, service_type, customer_name, customer_phone, customer_email,
           description, amount, currency, status, payment_mode, project_total,
           project_reference, graphic_id, provider_reference, payment_reference,
-          paid_at, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+          paid_at, created_at, updated_at, success_notification_status,
+          success_notification_sent_at, success_notification_error
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
       `,
       [
         record.id,
@@ -122,6 +143,9 @@ export class ServicePaymentRepository {
         record.paidAt,
         record.createdAt,
         record.updatedAt,
+        record.successNotificationStatus,
+        record.successNotificationSentAt,
+        record.successNotificationError,
       ],
     );
 
@@ -211,6 +235,68 @@ export class ServicePaymentRepository {
       [now, reference],
     );
     return this.findByReference(reference);
+  }
+
+  async claimSuccessNotification(reference: string): Promise<ServicePaymentRecord | undefined> {
+    await this.ready();
+    const now = new Date().toISOString();
+
+    const result = await studioQuery(
+      `
+        UPDATE service_payments
+        SET success_notification_status = 'sending',
+            success_notification_error = NULL,
+            updated_at = $1
+        WHERE payment_reference = $2
+          AND status = 'paid'
+          AND (
+            success_notification_status IN ('pending', 'failed')
+            OR (
+              success_notification_status = 'sending'
+              AND updated_at < CURRENT_TIMESTAMP - INTERVAL '10 minutes'
+            )
+          )
+        RETURNING *
+      `,
+      [now, reference],
+    );
+
+    return result.rows[0] ? rowToRecord(result.rows[0]) : undefined;
+  }
+
+  async markSuccessNotificationSent(
+    reference: string,
+    sentAt = new Date().toISOString(),
+  ): Promise<void> {
+    await this.ready();
+    await studioQuery(
+      `
+        UPDATE service_payments
+        SET success_notification_status = 'sent',
+            success_notification_sent_at = $1,
+            success_notification_error = NULL,
+            updated_at = $1
+        WHERE payment_reference = $2
+      `,
+      [sentAt, reference],
+    );
+  }
+
+  async markSuccessNotificationFailed(
+    reference: string,
+    error: string,
+  ): Promise<void> {
+    await this.ready();
+    await studioQuery(
+      `
+        UPDATE service_payments
+        SET success_notification_status = 'failed',
+            success_notification_error = $1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE payment_reference = $2
+      `,
+      [error.slice(0, 2000), reference],
+    );
   }
 
   async recordWebhookEvent(input: {
