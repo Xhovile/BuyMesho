@@ -1,5 +1,9 @@
 import type { Request, Response } from "express";
 import { serverPaymentService } from "./payment.service.js";
+import {
+  verifyXhovileStudioServicePayment,
+} from "../services/service-payment.service.js";
+import { servicePaymentRepository } from "../services/service-payment.repository.js";
 
 function getFrontendReturnBaseUrl(): string {
   return (
@@ -9,8 +13,12 @@ function getFrontendReturnBaseUrl(): string {
   ).replace(/\/$/, "");
 }
 
-function redirectToPaymentReturn(res: Response, params: Record<string, string | null | undefined>): void {
-  const url = new URL("/payment/return", getFrontendReturnBaseUrl());
+function redirectToPaymentReturn(
+  res: Response,
+  params: Record<string, string | null | undefined>,
+  pathname = "/payment/return",
+): void {
+  const url = new URL(pathname, getFrontendReturnBaseUrl());
   for (const [key, value] of Object.entries(params)) {
     if (value) url.searchParams.set(key, value);
   }
@@ -26,6 +34,20 @@ export async function payChanguCallbackHandler(req: Request, res: Response): Pro
   }
 
   try {
+    if (servicePaymentRepository.findByReference(txRef)) {
+      const verification = await verifyXhovileStudioServicePayment(txRef);
+      redirectToPaymentReturn(
+        res,
+        {
+          tx_ref: txRef,
+          reference: txRef,
+          status: verification.verified ? "success" : "failed",
+        },
+        "/Services/XhovileStudio/receipt",
+      );
+      return;
+    }
+
     const verification = await serverPaymentService.verifyPaychanguPayment(txRef);
     redirectToPaymentReturn(res, {
       tx_ref: txRef,
@@ -33,7 +55,13 @@ export async function payChanguCallbackHandler(req: Request, res: Response): Pro
     });
   } catch (error) {
     console.error("[PayChangu] Callback verification failed:", error);
-    redirectToPaymentReturn(res, { tx_ref: txRef, status: "failed" });
+    redirectToPaymentReturn(
+      res,
+      { tx_ref: txRef, status: "failed" },
+      servicePaymentRepository.findByReference(txRef)
+        ? "/Services/XhovileStudio/receipt"
+        : "/payment/return",
+    );
   }
 }
 
@@ -41,8 +69,14 @@ export function payChanguReturnHandler(req: Request, res: Response): void {
   const txRef = String(req.query.tx_ref ?? req.query.txRef ?? req.query.reference ?? "").trim();
   const status = String(req.query.status ?? "failed").trim().toLowerCase() || "failed";
 
-  redirectToPaymentReturn(res, {
-    tx_ref: txRef || undefined,
-    status,
-  });
+  redirectToPaymentReturn(
+    res,
+    {
+      tx_ref: txRef || undefined,
+      status,
+    },
+    servicePaymentRepository.findByReference(txRef)
+      ? "/Services/XhovileStudio/receipt"
+      : "/payment/return",
+  );
 }
