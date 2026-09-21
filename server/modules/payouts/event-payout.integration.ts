@@ -234,8 +234,6 @@ function rowToPayout(row: Record<string, unknown>): PayoutRecord {
 
 export async function createEventPayoutCandidateAsync(input: {
   orderId: string;
-  escrowId: string;
-  releaseEntryId: string;
   event: EventPayoutContext;
   grossAmount: number;
   currency: string;
@@ -246,13 +244,14 @@ export async function createEventPayoutCandidateAsync(input: {
   manualAdjustmentAmount?: number;
 }, client: DbExecutor): Promise<{ payout: PayoutRecord; payoutFormula: ReturnType<typeof calculateEventPayoutFees>; formulaSnapshot: ReturnType<typeof buildEventPayoutFormulaSnapshot>; created: boolean }> {
   const existingResult = await client.query<Record<string, unknown>>(
-    `SELECT *
+    \`SELECT *
      FROM payouts
-     WHERE escrow_id = $1
-       AND release_entry_id IS NOT NULL
+     WHERE order_id = $1
+       AND event_id = $2
+       AND owner_type = 'event_creator'
      ORDER BY created_at ASC
-     LIMIT 1`,
-    [input.escrowId],
+     LIMIT 1\`,
+    [input.orderId, Number(input.event.eventId)],
   );
 
   if (existingResult.rows[0]) {
@@ -263,19 +262,16 @@ export async function createEventPayoutCandidateAsync(input: {
       existing.eventId === input.event.eventId &&
       existing.eventCreatorUid === input.event.eventCreatorUid &&
       existing.orderId === input.orderId &&
-      existing.escrowId === input.escrowId &&
-      existing.releaseEntryId === input.releaseEntryId &&
+      existing.escrowId === null &&
+      existing.releaseEntryId === null &&
       existing.destinationAccountId === input.event.destinationAccountId;
 
     if (!identityMatches) {
-      throw new Error('Existing payout for escrow does not match the event payout financial identity');
+      throw new Error('Existing event payout does not match the event payout financial identity');
     }
 
     const storedFormula = parseStoredEventPayoutFormula(existingResult.rows[0].formula_snapshot);
-
-    if (!storedFormula) {
-      throw new Error('Existing event payout is missing a valid immutable fee snapshot');
-    }
+    if (!storedFormula) throw new Error('Existing event payout is missing a valid immutable fee snapshot');
 
     const formulaSnapshot = typeof existingResult.rows[0].formula_snapshot === 'string'
       ? JSON.parse(existingResult.rows[0].formula_snapshot)
@@ -315,17 +311,17 @@ export async function createEventPayoutCandidateAsync(input: {
   const payoutId = randomUUID();
 
   await client.query(
-    `INSERT INTO payouts (
-       id, seller_id, owner_type, owner_uid, event_id, event_creator_uid, order_id, escrow_id, release_entry_id,
+    \`INSERT INTO payouts (
+       id, seller_id, owner_type, owner_uid, event_id, event_creator_uid, order_id,
        destination_account_id, amount, gross_amount, platform_fee_amount, processing_fee_amount,
        reserve_amount, reserve_cap_amount, manual_adjustment_amount, payout_fee_amount,
        seller_receives_amount, net_amount, formula_snapshot, currency, status, provider,
        provider_charge_id, requested_by, requested_at, raw_request, created_at, updated_at
      ) VALUES (
-       $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,
-       'pending_settlement','paychangu',NULL,$23,$24,$25,$24,$24
+       $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
+       'eligible','paychangu',NULL,$21,$22,$23,$22,$22
      )
-     ON CONFLICT (id) DO NOTHING`,
+     ON CONFLICT (id) DO NOTHING\`,
     [
       payoutId,
       input.event.eventCreatorUid,
@@ -334,8 +330,6 @@ export async function createEventPayoutCandidateAsync(input: {
       Number(input.event.eventId),
       input.event.eventCreatorUid,
       input.orderId,
-      input.escrowId,
-      input.releaseEntryId,
       input.event.destinationAccountId,
       payoutFormula.sellerReceivesAmount,
       payoutFormula.grossAmount,
@@ -358,15 +352,16 @@ export async function createEventPayoutCandidateAsync(input: {
         destinationAccountId: input.event.destinationAccountId,
         payoutMethod: input.event.payoutMethod,
         payoutFormula,
+        settlementTiming: 'immediate',
       }),
     ],
   );
 
   const createdResult = await client.query<Record<string, unknown>>(
-    `SELECT *
+    \`SELECT *
      FROM payouts
      WHERE id = $1
-     LIMIT 1`,
+     LIMIT 1\`,
     [payoutId],
   );
   if (!createdResult.rows[0]) throw new Error('Failed to create event payout candidate');
