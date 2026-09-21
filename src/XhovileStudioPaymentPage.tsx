@@ -153,12 +153,14 @@ function ServiceChoice({
   color,
   icon,
   title,
+  mobileTitle,
   onClick,
 }: {
   active: boolean;
   color: "blue" | "red" | "split";
   icon: ReactNode;
   title: string;
+  mobileTitle: string;
   onClick: () => void;
 }) {
   const activeClass =
@@ -172,14 +174,14 @@ function ServiceChoice({
     <button
       type="button"
       onClick={onClick}
-      className={`flex min-h-16 w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition sm:min-h-[72px] sm:px-4 ${
+      className={`flex min-h-[66px] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-2 text-center transition sm:min-h-[72px] sm:flex-row sm:items-center sm:justify-start sm:gap-3 sm:px-4 sm:text-left ${
         active
           ? activeClass
           : "border-white/10 bg-white/[0.035] text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]"
       }`}
     >
       <span
-        className={`rounded-xl p-2 ${
+        className={`rounded-xl p-2.5 sm:p-2 ${
           active
             ? color === "blue"
               ? "bg-[#168cff]/15 text-[#168cff]"
@@ -191,13 +193,14 @@ function ServiceChoice({
       >
         {icon}
       </span>
-      <span className="min-w-0">
-        <span className="block text-sm font-black leading-5 text-white">{title}</span>
-        <span className="block text-[10px] uppercase tracking-[0.18em] text-zinc-500">
+      <span className="min-w-0 max-w-full">
+        <span className="block truncate text-[11px] font-black leading-4 text-white sm:hidden">{mobileTitle}</span>
+        <span className="hidden truncate text-sm font-black leading-5 text-white sm:block">{title}</span>
+        <span className="hidden text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:block">
           {active ? "Selected" : "Choose"}
         </span>
       </span>
-      <span className="ml-auto h-4 w-4 rounded-full border border-white/20 p-0.5">
+      <span className="hidden h-4 w-4 shrink-0 rounded-full border border-white/20 p-0.5 sm:block">
         <span className={`block h-full w-full rounded-full ${active ? "bg-white" : "bg-transparent"}`} />
       </span>
     </button>
@@ -237,6 +240,106 @@ function ChoiceButton({
       <span className="block text-xs font-black">{title}</span>
       {subtitle ? <span className="mt-0.5 block text-[10px] text-zinc-500">{subtitle}</span> : null}
     </button>
+  );
+}
+
+function GraphicServicePicker({
+  value,
+  onChange,
+  accent = "blue",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  accent?: "blue" | "red";
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = GRAPHIC_SERVICES.find((item) => item.id === value);
+  const label = value === "custom" ? "Custom / multiple" : selected?.label ?? "Choose a service";
+  const price = value === "custom" ? "Agreed price" : selected ? formatMoney(selected.price) : "";
+
+  useEffect(() => {
+    if (!open) return;
+
+    const close = () => setOpen(false);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
+  const borderClass = accent === "blue" ? "focus-within:border-[#168cff]" : "focus-within:border-[#ff1d25]";
+  const highlightClass = accent === "blue" ? "bg-[#168cff]/10 text-white" : "bg-[#ff1d25]/10 text-white";
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#0b1116] px-3 py-2.5 text-left outline-none transition ${borderClass}`}
+      >
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-medium text-white">{label}</span>
+          <span className="mt-0.5 block text-[10px] text-zinc-500">{price}</span>
+        </span>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-zinc-600 transition ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open ? (
+        <>
+          <button
+            type="button"
+            aria-label="Close graphic service menu"
+            className="fixed inset-0 z-30 cursor-default"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            role="listbox"
+            className="absolute left-0 right-0 top-[calc(100%+8px)] z-40 max-h-64 overflow-auto rounded-2xl border border-white/10 bg-[#10151a] p-1.5 shadow-[0_18px_45px_rgba(0,0,0,0.5)]"
+          >
+            {GRAPHIC_SERVICES.map((item) => {
+              const active = item.id === value;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="option"
+                  aria-selected={active}
+                  onClick={() => {
+                    onChange(item.id);
+                    setOpen(false);
+                  }}
+                  className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition ${
+                    active ? highlightClass : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <span className="truncate text-sm">{item.label}</span>
+                  <span className="shrink-0 text-[11px] font-bold text-zinc-500">{formatMoney(item.price)}</span>
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              role="option"
+              aria-selected={value === "custom"}
+              onClick={() => {
+                onChange("custom");
+                setOpen(false);
+              }}
+              className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition ${
+                value === "custom" ? highlightClass : "text-zinc-300 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <span className="truncate text-sm">Custom / multiple</span>
+              <span className="shrink-0 text-[11px] font-bold text-zinc-500">Agreed price</span>
+            </button>
+          </div>
+        </>
+      ) : null}
+    </div>
   );
 }
 
@@ -354,18 +457,10 @@ function PaymentForm() {
   return (
     <Shell>
       <header className="mb-4 sm:mb-5">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Xhovilé Studio</p>
-            <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
-              Service Payment
-            </h1>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-right">
-            <p className="text-[9px] uppercase tracking-[0.16em] text-zinc-600">Fast checkout</p>
-            <p className="text-xs font-bold text-zinc-300">Pay securely</p>
-          </div>
-        </div>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Xhovilé Studio</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
+          Service Payment
+        </h1>
         <p className="mt-2 max-w-xl text-xs leading-5 text-zinc-400">
           Choose what you need, confirm the amount due today, then continue to PayChangu.
         </p>
@@ -386,6 +481,7 @@ function PaymentForm() {
             color="blue"
             icon={<Palette className="h-4 w-4" />}
             title="Graphic Design"
+            mobileTitle="Graphics"
             onClick={() => selectService("graphic_design")}
           />
           <ServiceChoice
@@ -393,6 +489,7 @@ function PaymentForm() {
             color="red"
             icon={<Monitor className="h-4 w-4" />}
             title="Web Development"
+            mobileTitle="Web"
             onClick={() => selectService("website_development")}
           />
           <ServiceChoice
@@ -400,6 +497,7 @@ function PaymentForm() {
             color="split"
             icon={<span className="text-[13px] font-black">+</span>}
             title="Both"
+            mobileTitle="Both"
             onClick={() => selectService("both")}
           />
         </div>
@@ -448,20 +546,8 @@ function PaymentForm() {
                     <Palette className="h-4 w-4 text-[#168cff]" />
                   </div>
                   <div className="mt-2 flex gap-2">
-                    <div className="relative min-w-0 flex-1">
-                      <select
-                        value={graphicId}
-                        onChange={(event) => setGraphicId(event.target.value)}
-                        className="w-full appearance-none rounded-xl border border-white/10 bg-[#0b1116] px-3 py-2.5 pr-9 text-sm text-white outline-none focus:border-[#168cff]"
-                      >
-                        {GRAPHIC_SERVICES.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.label} — {formatMoney(item.price)}
-                          </option>
-                        ))}
-                        <option value="custom">Custom / multiple — agreed price</option>
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" />
+                    <div className="min-w-0 flex-1">
+                      <GraphicServicePicker value={graphicId} onChange={setGraphicId} />
                     </div>
                     {graphicId === "custom" ? (
                       <input
