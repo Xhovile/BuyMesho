@@ -133,7 +133,6 @@ function findExactWebhookDuplicate(providerEventId: string | null, reference: st
 async function handleStudioPayChanguWebhook(
   txRef: string,
   referenceCandidates: string[],
-  parsedPayload: Record<string, unknown>,
   eventType: string,
   eventId: string,
   status: string,
@@ -266,12 +265,17 @@ async function handlePayChanguWebhookInternal(context: PayChanguWebhookContext):
     return { ok: false, error: 'Invalid PayChangu webhook signature' };
   }
 
+  const status = readString(
+    extractNestedObject(parsedPayload.data)?.status,
+    extractNestedObject(extractNestedObject(parsedPayload.data)?.transaction)?.status,
+    parsedPayload.status,
+  ) || 'unknown';
+
   if (eventType && txRef && isAcceptedPaychanguEventType(eventType)) {
     const { amount, currency } = readAmountAndCurrency(parsedPayload);
     const studioResult = await handleStudioPayChanguWebhook(
       txRef,
       referenceCandidates,
-      parsedPayload,
       eventType,
       eventId,
       status,
@@ -301,7 +305,6 @@ async function handlePayChanguWebhookInternal(context: PayChanguWebhookContext):
     return { ok: true, status: 'ignored', reference: txRef || null };
   }
 
-  const status = readString(extractNestedObject(parsedPayload.data)?.status, extractNestedObject(extractNestedObject(parsedPayload.data)?.transaction)?.status, parsedPayload.status) || 'unknown';
   const payment = await findPaymentByReferenceCandidates(referenceCandidates);
   if (!payment) {
     updatePaymentWebhookEventStatus(inserted.id, 'ignored', { processedAt: now, error: `No stored payment found for reference ${txRef}`, signatureValid: true });
@@ -309,7 +312,7 @@ async function handlePayChanguWebhookInternal(context: PayChanguWebhookContext):
   }
   const resolvedReference = payment.reference;
 
-  if (isPaychanguSuccessStatus(status)) {if (isPaychanguSuccessStatus(status)) {
+  if (isPaychanguSuccessStatus(status)) {
     const order = await orderRepository.findByIdAsync(payment.orderId);
     const expectedCurrency = normalizeCurrency(order?.currency);
     const receivedCurrency = normalizeCurrency(amount?.currency ?? currency);
