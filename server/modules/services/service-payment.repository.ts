@@ -137,6 +137,16 @@ export class ServicePaymentRepository {
     return this.findByReference(reference);
   }
 
+  markFailedById(id: string): ServicePaymentRecord | undefined {
+    const now = new Date().toISOString();
+    this.db.prepare(`
+      UPDATE service_payments
+      SET status = 'failed', updated_at = ?
+      WHERE id = ?
+    `).run(now, id);
+    return this.findById(id);
+  }
+
   markFailed(reference: string): ServicePaymentRecord | undefined {
     const now = new Date().toISOString();
     this.db.prepare(`
