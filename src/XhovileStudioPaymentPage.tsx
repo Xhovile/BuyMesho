@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  ArrowUp,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -138,12 +139,38 @@ body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;margin:0;padding:
   URL.revokeObjectURL(url);
 }
 
+function StudioBackToTop() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setVisible(window.scrollY > 280);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      aria-label="Back to top"
+      title="Back to top"
+      className="fixed bottom-5 right-4 z-[120] flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-[#10151a]/95 text-white shadow-[0_10px_30px_rgba(0,0,0,0.45)] backdrop-blur transition hover:-translate-y-0.5 hover:border-white/40 hover:bg-[#151b20] active:translate-y-0 sm:bottom-6 sm:right-6"
+    >
+      <ArrowUp className="h-5 w-5" />
+    </button>
+  );
+}
+
 function Shell({ children }: { children: ReactNode }) {
   return (
     <main className="min-h-screen bg-[#0a0f13] px-3 py-5 text-white sm:px-6 sm:py-8">
       <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] w-full max-w-2xl items-center justify-center sm:min-h-[calc(100vh-4rem)]">
         <div className="w-full">{children}</div>
       </div>
+      <StudioBackToTop />
     </main>
   );
 }
