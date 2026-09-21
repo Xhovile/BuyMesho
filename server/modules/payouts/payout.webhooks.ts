@@ -78,26 +78,24 @@ async function handlePaychanguWebhookInternal(context:PayoutWebhookContext):Prom
   if(latestAttempt?.id)db.prepare(`UPDATE payout_attempts SET status=?,response_payload=?,completed_at=COALESCE(completed_at,?),updated_at=? WHERE id=?`).run(payoutState,rawPayload,now,now,latestAttempt.id);
   db.prepare(`INSERT INTO payout_events (payout_id,seller_id,event_type,actor_type,actor_id,note,payload,created_at) VALUES (?,?,?,'system',NULL,?,?,?)`).run(resolvedPayoutId,resolvedSellerId,payoutState==='paid'?'payout_reconciled':payoutState==='failed'?'payout_webhook_failed':'payout_webhook_pending',payoutState==='paid'?'PayChangu payout webhook confirmed payout completion':payoutState==='failed'?'PayChangu payout webhook reported payout failure':'PayChangu payout webhook reported pending payout status',rawPayload,now);
   if(payoutState==='paid'){
+    const ownerType=String(payoutRow.owner_type??'seller')==='event_creator'?'event_creator':'seller';
+    const ownerUid=String(payoutRow.owner_uid??payoutRow.event_creator_uid??payoutRow.seller_id??'').trim();
     const owner=db.prepare(`
       SELECT
         COALESCE(s.email, ec.email) AS email,
         COALESCE(NULLIF(s.business_name, ''), NULLIF(ec.organization_name, ''), ec.display_name) AS business_name
-      FROM (SELECT ? AS uid) owner
+      FROM (SELECT ?::text AS uid, ?::text AS owner_type) owner
       LEFT JOIN sellers s
         ON s.uid = owner.uid
-       AND CAST(? AS BIGINT) IS NULL
+       AND owner.owner_type = 'seller'
       LEFT JOIN event_creators ec
         ON ec.uid = owner.uid
-       AND CAST(? AS BIGINT) IS NOT NULL
-      WHERE (CAST(? AS BIGINT) IS NULL AND s.uid IS NOT NULL)
-         OR (CAST(? AS BIGINT) IS NOT NULL AND ec.uid IS NOT NULL)
+       AND owner.owner_type = 'event_creator'
+      WHERE s.uid IS NOT NULL OR ec.uid IS NOT NULL
       LIMIT 1
     `).get(
-      resolvedSellerId,
-      payoutRow.event_id ?? null,
-      payoutRow.event_id ?? null,
-      payoutRow.event_id ?? null,
-      payoutRow.event_id ?? null,
+      ownerUid,
+      ownerType,
     ) as {email?:string;business_name?:string}|undefined;
     const orderRow=payoutRow.order_id
       ? db.prepare(`SELECT items FROM orders WHERE id=? LIMIT 1`).get(String(payoutRow.order_id)) as {items?:unknown}|undefined
@@ -107,18 +105,13 @@ async function handlePaychanguWebhookInternal(context:PayoutWebhookContext):Prom
           SELECT masked_account
           FROM seller_payout_accounts
           WHERE id=?
-            AND (
-              (CAST(? AS BIGINT) IS NULL AND seller_uid=?)
-              OR
-              (CAST(? AS BIGINT) IS NOT NULL AND owner_type='event_creator' AND event_creator_uid=?)
-            )
+            AND owner_type=?
+            AND owner_uid=?
           LIMIT 1
         `).get(
           String(payoutRow.destination_account_id),
-          payoutRow.event_id ?? null,
-          resolvedSellerId,
-          payoutRow.event_id ?? null,
-          resolvedSellerId,
+          ownerType,
+          ownerUid,
         ) as {masked_account?:string}|undefined
       : undefined;
     const email=owner?.email?.trim();
