@@ -144,6 +144,7 @@ export function ensureEventPayoutDestinationLockMigration() {
     AS $$
     BEGIN
       IF TG_OP = 'UPDATE'
+         AND OLD.payout_destination_id IS NOT NULL
          AND NEW.payout_destination_id IS DISTINCT FROM OLD.payout_destination_id
          AND COALESCE(current_setting('buymesho.allow_event_payout_replacement', true), '0') <> '1'
       THEN
