@@ -7,6 +7,7 @@ import {
   servicePaymentRepository,
   type ServicePaymentType,
 } from "./service-payment.repository.js";
+import { buildXhovileStudioReceiptPdf } from "./service-payment.receipt.js";
 
 function cleanString(value: unknown, maxLength: number): string {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
@@ -60,6 +61,7 @@ function publicRecord(record: ReturnType<typeof servicePaymentRepository.findByI
 
 export function createServicePaymentRouter(
   createRateLimit: RequestHandler,
+  statusRateLimit?: RequestHandler,
 ): Router {
   const router = express.Router();
 
@@ -215,7 +217,49 @@ export function createServicePaymentRouter(
     }
   });
 
-  router.get("/:reference", async (req: Request, res) => {
+  router.get("/:reference/receipt.pdf", statusRateLimit, async (req: Request, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    const reference = cleanString(req.params.reference, 180);
+
+    if (!reference) {
+      return res.status(400).json({ error: "Payment reference is required." });
+    }
+
+    let servicePayment = servicePaymentRepository.findByReference(reference);
+    if (!servicePayment) {
+      return res.status(404).json({ error: "Service payment not found." });
+    }
+
+    if (servicePayment.status === "pending") {
+      try {
+        await verifyXhovileStudioServicePayment(reference);
+      } catch (error) {
+        console.warn("[ServicePayments] Receipt verification failed:", error);
+      }
+      servicePayment = servicePaymentRepository.findByReference(reference);
+    }
+
+    if (!servicePayment) {
+      return res.status(404).json({ error: "Service payment not found." });
+    }
+
+    if (servicePayment.status !== "paid") {
+      return res.status(409).json({
+        error: "This payment has not been confirmed as paid yet.",
+        status: servicePayment.status,
+      });
+    }
+
+    const pdf = buildXhovileStudioReceiptPdf(servicePayment);
+    const safeReference = reference.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="xhovile-studio-receipt-${safeReference}.pdf"`);
+    res.setHeader("Content-Length", String(pdf.length));
+    return res.status(200).send(pdf);
+  });
+
+  router.get("/:reference", statusRateLimit, async (req: Request, res) => {
     res.setHeader("Cache-Control", "no-store");
     const reference = cleanString(req.params.reference, 180);
 
