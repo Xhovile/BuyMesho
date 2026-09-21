@@ -26,6 +26,7 @@ export type PayoutRow = {
   sellerId: string;
   sellerBusinessName?: string | null;
   orderId: string | null;
+  eventId?: string | null;
   escrowId: string | null;
   escrowState?: string | null;
   releaseEntryId: string | null;
