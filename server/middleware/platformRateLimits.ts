@@ -34,6 +34,14 @@ export const publicServicePaymentRateLimit: RequestHandler = rateLimit({
   storeFailure: "fail-closed",
 });
 
+export const publicServicePaymentStatusRateLimit: RequestHandler = rateLimit({
+  name: "service-payment-status",
+  limit: 60,
+  windowMs: 60_000,
+  key: "ip",
+  storeFailure: "fail-closed",
+});
+
 export const paymentWebhookRateLimit: RequestHandler = rateLimit({
   name: "payment-webhook",
   limit: 200,
