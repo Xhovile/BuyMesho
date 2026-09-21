@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowUp,
   ChevronDown,
@@ -69,7 +69,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 height={48}
               />
             </div>
-            <p className="mt-3 text-[11px] font-black uppercase tracking-[0.26em] text-[#8f1528] sm:text-xs">
+            <p className="mt-3 text-lg font-black uppercase tracking-[0.22em] text-[#8f1528] sm:text-xl">
               Xhovilé Studio
             </p>
           </div>
@@ -289,24 +289,26 @@ export function StudioCheckoutButton({
   accentClass: string;
   onClick: () => void;
 }) {
-  const [floating, setFloating] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [floating, setFloating] = useState(true);
 
   useEffect(() => {
-    const updatePosition = () => {
-      const documentHeight = document.documentElement.scrollHeight;
-      const distanceToBottom = documentHeight - (window.scrollY + window.innerHeight);
-      const hasScrollableContent = documentHeight > window.innerHeight + 80;
-      setFloating(hasScrollableContent && distanceToBottom > 96);
-    };
+    const sentinel = sentinelRef.current;
+    if (!sentinel || typeof IntersectionObserver === "undefined") return;
 
-    updatePosition();
-    window.addEventListener("scroll", updatePosition, { passive: true });
-    window.addEventListener("resize", updatePosition);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setFloating(!entry.isIntersecting);
+      },
+      {
+        root: null,
+        rootMargin: "0px 0px -96px 0px",
+        threshold: 0,
+      },
+    );
 
-    return () => {
-      window.removeEventListener("scroll", updatePosition);
-      window.removeEventListener("resize", updatePosition);
-    };
+    observer.observe(sentinel);
+    return () => observer.disconnect();
   }, []);
 
   const button = (
@@ -314,16 +316,16 @@ export function StudioCheckoutButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 text-sm font-black text-white shadow-lg transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-35 ${accentClass}`}
+      className={`flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 text-sm font-black text-white shadow-lg transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-35 ${accentClass}`}
     >
       {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-      {submitting ? "Opening PayChangu…" : `Continue to Pay ${formatMoney(amount)}`}
+      {submitting ? "Opening PayChangu…" : "Pay Now"}
       {!submitting ? <ChevronRight className="h-5 w-5 shrink-0" /> : null}
     </button>
   );
 
   return (
-    <div className="relative h-12">
+    <div ref={sentinelRef} className="relative h-12">
       {floating ? (
         <div className="pointer-events-none fixed inset-x-3 bottom-3 z-[100] mx-auto w-auto max-w-2xl sm:bottom-5 sm:w-[calc(100%-3rem)]">
           <div className="pointer-events-auto rounded-[15px] border border-black bg-white/95 p-1.5 shadow-[0_12px_35px_rgba(30,25,20,0.18)] backdrop-blur-md">
@@ -336,4 +338,3 @@ export function StudioCheckoutButton({
     </div>
   );
 }
-
