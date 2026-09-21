@@ -372,6 +372,67 @@ function GraphicServicePicker({
   );
 }
 
+function StudioCheckoutButton({
+  disabled,
+  submitting,
+  amount,
+  accentClass,
+  onClick,
+}: {
+  disabled: boolean;
+  submitting: boolean;
+  amount: number;
+  accentClass: string;
+  onClick: () => void;
+}) {
+  const [floating, setFloating] = useState(false);
+
+  useEffect(() => {
+    const updatePosition = () => {
+      const documentHeight = document.documentElement.scrollHeight;
+      const distanceToBottom = documentHeight - (window.scrollY + window.innerHeight);
+      const hasScrollableContent = documentHeight > window.innerHeight + 80;
+      setFloating(hasScrollableContent && window.scrollY > 120 && distanceToBottom > 96);
+    };
+
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, { passive: true });
+    window.addEventListener("resize", updatePosition);
+
+    return () => {
+      window.removeEventListener("scroll", updatePosition);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, []);
+
+  const button = (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 text-sm font-black text-white shadow-lg transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-35 ${accentClass}`}
+    >
+      {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+      {submitting ? "Opening PayChangu…" : `Continue to Pay ${formatMoney(amount)}`}
+      {!submitting ? <ChevronRight className="h-5 w-5 shrink-0" /> : null}
+    </button>
+  );
+
+  return (
+    <div className="relative h-12">
+      {floating ? (
+        <div className="pointer-events-none fixed inset-x-3 bottom-3 z-[100] mx-auto w-auto max-w-2xl sm:bottom-5 sm:w-[calc(100%-3rem)]">
+          <div className="pointer-events-auto rounded-[15px] bg-white/90 p-1.5 shadow-[0_12px_35px_rgba(30,25,20,0.18)] backdrop-blur-md">
+            {button}
+          </div>
+        </div>
+      ) : (
+        <div className="absolute inset-0">{button}</div>
+      )}
+    </div>
+  );
+}
+
 function PaymentForm() {
   const [serviceType, setServiceType] = useState<ServiceType>("graphic_design");
   const [graphicId, setGraphicId] = useState("poster");
@@ -754,16 +815,13 @@ function PaymentForm() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <StudioCheckoutButton
             disabled={!canSubmit}
+            submitting={submitting}
+            amount={amountDue}
+            accentClass={accentButtonClass}
             onClick={() => void submit()}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black text-white shadow-lg transition disabled:cursor-not-allowed disabled:opacity-35 ${accentButtonClass}`}
-          >
-            {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-            {submitting ? "Opening PayChangu…" : `Continue to Pay ${formatMoney(amountDue)}`}
-            {!submitting ? <ChevronRight className="h-5 w-5" /> : null}
-          </button>
+          />
 
           <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500">
             <ShieldCheck className="h-3.5 w-3.5" />
