@@ -263,7 +263,7 @@ function ChoiceButton({
       className={`rounded-xl border px-3 py-2.5 text-left transition ${
         active
           ? activeClass
-          : "border-white/10 bg-white/[0.025] text-zinc-400 hover:border-white/20 hover:text-white"
+          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
       }`}
     >
       <span className="block text-xs font-black text-zinc-900">{title}</span>
@@ -384,7 +384,6 @@ function PaymentForm() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [description, setDescription] = useState("");
-  const [showEmail, setShowEmail] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -585,7 +584,7 @@ function PaymentForm() {
                       <input
                         value={graphicCustomTotal}
                         onChange={(event) => setGraphicCustomTotal(event.target.value.replace(/[^0-9.]/g, ""))}
-                        className="w-32 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-white outline-none focus:border-[#168cff]"
+                        className="w-32 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-[#168cff]"
                         placeholder="Total MWK"
                         inputMode="numeric"
                       />
@@ -611,7 +610,7 @@ function PaymentForm() {
                     <input
                       value={websiteTotal}
                       onChange={(event) => setWebsiteTotal(event.target.value.replace(/[^0-9.]/g, ""))}
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-[#ff1d25]"
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-700 focus:border-[#ff1d25]"
                       placeholder="Agreed project price (MWK)"
                       inputMode="numeric"
                     />
@@ -708,7 +707,7 @@ function PaymentForm() {
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              className="mt-2 min-h-16 w-full resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-white/30"
+              className="mt-2 min-h-16 w-full resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-700 focus:border-white/30"
               placeholder={needsWebsite && !needsGraphic ? "e.g. One-page business website for my clothing brand." : "e.g. Poster for a campus event."}
             />
           </div>
@@ -721,7 +720,7 @@ function PaymentForm() {
               <input
                 value={customerEmail}
                 onChange={(event) => setCustomerEmail(event.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-white/[0.045] px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-white/30"
+                className="w-full rounded-xl border border-zinc-200 bg-[#fffdfa] px-3.5 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
                 placeholder="you@example.com"
                 type="email"
                 autoComplete="email"
@@ -730,7 +729,7 @@ function PaymentForm() {
           </details>
 
           {error ? (
-            <div className="flex gap-2.5 rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-xs text-red-200">
+            <div className="flex gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
               <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
               <p>{error}</p>
             </div>
@@ -759,7 +758,7 @@ function PaymentForm() {
             type="button"
             disabled={!canSubmit}
             onClick={() => void submit()}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black text-zinc-900 shadow-lg transition disabled:cursor-not-allowed disabled:opacity-35 ${accentButtonClass}`}
+            className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-black text-white shadow-lg transition disabled:cursor-not-allowed disabled:opacity-35 ${accentButtonClass}`}
           >
             {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
             {submitting ? "Opening PayChangu…" : `Continue to Pay ${formatMoney(amountDue)}`}
@@ -863,7 +862,7 @@ function ReceiptPage() {
             <CircleAlert className="mx-auto h-16 w-16 text-amber-500" />
           )}
 
-          <p className="mt-4 text-[10px] font-black uppercase tracking-[0.28em] text-zinc-500">Xhovilé Studio</p>
+          <p className="mt-4 text-lg font-black uppercase tracking-[0.16em] text-[#8f1528]">XHOVILÉ STUDIO</p>
           <h1 className="mt-1 text-2xl font-black">
             {loading ? "Checking Payment" : payment?.status === "paid" ? "Payment Successful" : "Payment Status"}
           </h1>
@@ -874,23 +873,23 @@ function ReceiptPage() {
           <div className="mt-6 divide-y divide-white/10 overflow-hidden rounded-2xl border border-zinc-200">
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-zinc-500">Service</span>
-              <span className="text-right font-bold">{SERVICE_LABELS[payment.serviceType]}</span>
+              <span className="text-right font-bold text-zinc-900">{SERVICE_LABELS[payment.serviceType]}</span>
             </div>
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-zinc-500">Customer</span>
-              <span className="font-bold">{payment.customerName}</span>
+              <span className="font-bold text-zinc-900">{payment.customerName}</span>
             </div>
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-zinc-500">Reference</span>
-              <span className="break-all text-right font-mono text-xs font-bold text-zinc-300">{payment.paymentReference}</span>
+              <span className="break-all text-right font-mono text-xs font-bold text-zinc-900">{payment.paymentReference}</span>
             </div>
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-zinc-500">Amount</span>
-              <span className="font-black">{formatMoney(payment.amount, payment.currency)}</span>
+              <span className="font-black text-zinc-950">{formatMoney(payment.amount, payment.currency)}</span>
             </div>
             <div className="p-3.5 text-sm">
               <span className="text-zinc-500">Description</span>
-              <p className="mt-1 font-medium text-zinc-300">{payment.description}</p>
+              <p className="mt-1 font-medium text-zinc-800">{payment.description}</p>
             </div>
           </div>
         ) : null}
@@ -900,7 +899,7 @@ function ReceiptPage() {
             <button
               type="button"
               onClick={() => downloadReceipt(payment)}
-              className="flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-black text-zinc-950 hover:bg-zinc-100"
+              className="flex items-center justify-center gap-2 rounded-xl bg-[#8f1528] px-5 py-3 text-sm font-black text-white hover:bg-[#7b1223]"
             >
               <Download className="h-4 w-4" />
               Download Receipt
