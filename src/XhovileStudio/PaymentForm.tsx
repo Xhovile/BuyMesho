@@ -6,12 +6,14 @@ import {
 import {
   GRAPHIC_SERVICES,
   type CreateResponse,
+  type PaymentMode,
   type ServiceType,
   formatMoney,
 } from "./config";
 import {
   ChoiceButton,
   GraphicServicePicker,
+  PayChanguLogo,
   ServiceChoice,
   Shell,
   StudioCheckoutButton,
@@ -418,3 +420,6 @@ function PaymentForm() {
   );
 }
 
+
+
+export default PaymentForm;
