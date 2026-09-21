@@ -90,9 +90,6 @@ export class DebugErrorBoundary extends Component<{ children: ReactNode }, { has
 
 export default function RootRouterGlobalUI() {
   const isStandaloneStudio = window.location.pathname.startsWith("/Services/XhovileStudio");
-
-  if (isStandaloneStudio) return null;
-
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [copilotOpen, setCopilotOpen] = useState(false);
 
@@ -109,6 +106,8 @@ export default function RootRouterGlobalUI() {
       window.removeEventListener("open-buymesho-copilot", handleOpenCopilot);
     };
   }, []);
+
+  if (isStandaloneStudio) return null;
 
   return (
     <>
