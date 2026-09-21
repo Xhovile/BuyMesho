@@ -361,7 +361,7 @@ function PaymentForm() {
 
           <details className="rounded-xl border border-zinc-200 bg-[#fffdfa]">
             <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-bold text-zinc-400">
-              Email address <span className="font-normal text-zinc-600">(optional)</span>
+              Email address <span className="font-normal text-zinc-600">(optional · used for your PayChangu receipt)</span>
             </summary>
             <div className="border-t border-zinc-200 p-3">
               <input
