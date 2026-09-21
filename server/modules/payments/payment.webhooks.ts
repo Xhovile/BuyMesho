@@ -270,16 +270,16 @@ async function handlePayChanguWebhookInternal(context: PayChanguWebhookContext):
     extractNestedObject(extractNestedObject(parsedPayload.data)?.transaction)?.status,
     parsedPayload.status,
   ) || 'unknown';
+  const { amount, currency } = readAmountAndCurrency(parsedPayload);
 
   if (eventType && txRef && isAcceptedPaychanguEventType(eventType)) {
-    const { amount, currency } = readAmountAndCurrency(parsedPayload);
     const studioResult = await handleStudioPayChanguWebhook(
       txRef,
       referenceCandidates,
       eventType,
       eventId,
       status,
-      amount ?? (currency ? { amount: NaN, currency } : undefined),
+      amount,
       payloadHash,
     );
     if (studioResult) return studioResult;
