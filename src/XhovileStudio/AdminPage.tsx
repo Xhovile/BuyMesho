@@ -906,12 +906,12 @@ function AdminConsole() {
           <div className="grid gap-6 lg:grid-cols-2">
             <SectionCard title="Integration status" eyebrow="Configuration signals">
               <div className="grid gap-3 sm:grid-cols-2">
-                {[
+                {([
                   ["Studio database", system.databaseConnected, "Connection check completed successfully.", Database],
                   ["PayChangu secret", system.paychanguConfigured, "Server-side payment credentials are configured.", CreditCard],
                   ["Webhook secret", system.webhookSecretConfigured, "PayChangu webhook verification secret is present.", Webhook],
                   ["Brevo email", system.brevoConfigured, "Email transport credentials are configured.", Mail],
-                ].map(([label, ready, helper, Icon]) => (
+                ] as Array<[string, boolean, string, LucideIcon]>).map(([label, ready, helper, Icon]) => (
                   <div key={String(label)} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2">
