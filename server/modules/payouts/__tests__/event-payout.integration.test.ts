@@ -150,7 +150,7 @@ test('event payout replay uses the stored immutable fee snapshot', async () => {
       'event-payout-test-replay', 'event_payout_test_creator', 992001, 'event_payout_test_creator',
       'event-payout-test-order', NULL, NULL,
       'event-payout-test-destination', 9170, 10000, 300, 250, 100, 600, 0, 180,
-      9170, 9170, ?, 'MWK', 'pending_settlement', 'paychangu', NULL, 'event_payout_test_creator', ?, ?, ?
+      9170, 9170, ?, 'MWK', 'eligible', 'paychangu', NULL, 'event_payout_test_creator', ?, ?, ?
     )
   `).run(JSON.stringify(storedSnapshot), now, now, now);
 
@@ -225,8 +225,6 @@ test('event payout candidate stores event identity, bound destination, and immut
 
     const result = await createEventPayoutCandidateAsync({
       orderId: 'event-payout-test-order',
-      escrowId: 'event-payout-test-escrow',
-      releaseEntryId: 'event-payout-test-release',
       event: context,
       grossAmount: 10000,
       currency: 'MWK',
