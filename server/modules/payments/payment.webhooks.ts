@@ -6,6 +6,9 @@ import { serverOrderService } from "../orders/order.service.js";
 import { escrowRepository } from "../escrow/escrow.repository.js";
 import { applyVerifiedPayChanguPayment } from "./paychangu.flow.js";
 import { isAcceptedPaychanguEventType, isPaychanguSuccessStatus, paychanguProvider } from "./paychangu.provider.js";
+import {
+  servicePaymentRepository,
+} from "../services/service-payment.repository.js";
 import { getPaymentDb } from "../../postgresCompat.js";
 import { findPaymentWebhookDuplicate, getPaymentWebhookEventStatus, insertPaymentWebhookEvent, recordPaymentWebhookDuplicateAttempt, updatePaymentWebhookEventStatus } from "../../postgresCompat/webhooks.js";
 
@@ -177,8 +180,105 @@ async function handlePayChanguWebhookInternal(context: PayChanguWebhookContext):
     return { ok: true, status: 'ignored', reference: txRef };
   }
   const resolvedReference = payment.reference;
+  const servicePayment = servicePaymentRepository.findByReference(resolvedReference);
 
   const { amount, currency } = readAmountAndCurrency(parsedPayload);
+  if (servicePayment) {
+    const receivedCurrency = normalizeCurrency(amount?.currency ?? currency);
+    const receivedAmount = amount?.amount;
+
+    if (isPaychanguSuccessStatus(status)) {
+      if (
+        receivedAmount === undefined ||
+        receivedAmount !== servicePayment.amount ||
+        !receivedCurrency ||
+        receivedCurrency !== normalizeCurrency(servicePayment.currency)
+      ) {
+        updatePaymentWebhookEventStatus(inserted.id, "ignored", {
+          processedAt: now,
+          error: `Payment amount or currency does not exactly match service payment ${servicePayment.id}`,
+          signatureValid: true,
+        });
+        return { ok: true, status: "ignored", reference: txRef };
+      }
+
+      await paymentRepository.updateByReferenceAsync(resolvedReference, current => ({
+        ...current,
+        status: "captured",
+        verified: true,
+        paidAt: now,
+        verification: {
+          verified: true,
+          provider: "paychangu",
+          txRef: resolvedReference,
+          reference: txRef,
+          status,
+          currency: receivedCurrency,
+          amount: { amount: receivedAmount, currency: receivedCurrency },
+          checkoutUrl: null,
+          rawResponse: parsedPayload,
+          orderId: servicePayment.id,
+        },
+        updatedAt: now,
+      }));
+      servicePaymentRepository.markPaid(resolvedReference, now);
+      updatePaymentWebhookEventStatus(inserted.id, "processed", { processedAt: now, signatureValid: true });
+      return { ok: true, status: "processed", reference: txRef };
+    }
+
+    const loweredServiceStatus = status.toLowerCase();
+    if (["reversed", "refunded", "chargeback", "charged_back"].includes(loweredServiceStatus)) {
+      await paymentRepository.updateByReferenceAsync(resolvedReference, current => ({
+        ...current,
+        status: "refunded",
+        verified: false,
+        verification: {
+          verified: false,
+          provider: "paychangu",
+          txRef: resolvedReference,
+          reference: txRef,
+          status,
+          currency: receivedCurrency,
+          amount,
+          checkoutUrl: null,
+          rawResponse: parsedPayload,
+          failureReason: `PayChangu webhook reported ${status}`,
+          orderId: servicePayment.id,
+        },
+        updatedAt: now,
+      }));
+      servicePaymentRepository.markRefunded(resolvedReference);
+      updatePaymentWebhookEventStatus(inserted.id, "processed", { processedAt: now, signatureValid: true });
+      return { ok: true, status: "processed", reference: txRef };
+    }
+
+    const nextServiceStatus = ["failed", "cancelled", "canceled", "expired", "declined"].includes(loweredServiceStatus)
+      ? "failed"
+      : servicePayment.status;
+    await paymentRepository.updateByReferenceAsync(resolvedReference, current => ({
+      ...current,
+      verified: false,
+      verification: {
+        verified: false,
+        provider: "paychangu",
+        txRef: resolvedReference,
+        reference: txRef,
+        status,
+        currency: receivedCurrency,
+        amount,
+        checkoutUrl: null,
+        rawResponse: parsedPayload,
+        failureReason: `PayChangu webhook reported ${status}`,
+        orderId: servicePayment.id,
+      },
+      status: nextServiceStatus === "failed" ? "failed" : current.status,
+      updatedAt: now,
+    }));
+    if (nextServiceStatus === "failed") servicePaymentRepository.markFailed(resolvedReference);
+    updatePaymentWebhookEventStatus(inserted.id, "processed", { processedAt: now, signatureValid: true });
+    return { ok: true, status: "processed", reference: txRef };
+  }
+
   if (isPaychanguSuccessStatus(status)) {
     const order = await orderRepository.findByIdAsync(payment.orderId);
     const expectedCurrency = normalizeCurrency(order?.currency);
