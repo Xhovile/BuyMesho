@@ -250,7 +250,6 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           releaseTimestamp: released.releaseEntry.createdAt,
         };
       });
-      });
 
       releaseDebug('transaction:commit:end', { result: Boolean(result) });
 
