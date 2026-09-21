@@ -40,7 +40,7 @@ const GRAPHIC_SERVICE_PRICES: Record<string, number> = {
   banner_design: 10500,
 };
 
-function publicRecord(record: ReturnType<typeof servicePaymentRepository.findById>) {
+function publicRecord(record: Awaited<ReturnType<typeof servicePaymentRepository.findById>>) {
   if (!record) return null;
 
   return {
@@ -201,6 +201,13 @@ export function createServicePaymentRouter(
         customerEmail: customerEmail || null,
         description,
         amount,
+        paymentMode: paymentMode as "deposit" | "full" | "balance",
+        projectTotal: paymentMode === "balance" ? null : (
+          (needsGraphic ? graphicTotal : 0) +
+          (needsWebsite ? websiteTotal : 0)
+        ),
+        projectReference: paymentMode === "balance" ? projectReference : null,
+        graphicId: needsGraphic ? graphicId : null,
       });
 
       return res.status(201).json({
@@ -225,7 +232,7 @@ export function createServicePaymentRouter(
       return res.status(400).json({ error: "Payment reference is required." });
     }
 
-    let servicePayment = servicePaymentRepository.findByReference(reference);
+    let servicePayment = await servicePaymentRepository.findByReference(reference);
     if (!servicePayment) {
       return res.status(404).json({ error: "Service payment not found." });
     }
@@ -236,7 +243,7 @@ export function createServicePaymentRouter(
       } catch (error) {
         console.warn("[ServicePayments] Receipt verification failed:", error);
       }
-      servicePayment = servicePaymentRepository.findByReference(reference);
+      servicePayment = await servicePaymentRepository.findByReference(reference);
     }
 
     if (!servicePayment) {
@@ -267,7 +274,7 @@ export function createServicePaymentRouter(
       return res.status(400).json({ error: "Payment reference is required." });
     }
 
-    const servicePayment = servicePaymentRepository.findByReference(reference);
+    const servicePayment = await servicePaymentRepository.findByReference(reference);
     if (!servicePayment) {
       return res.status(404).json({ error: "Service payment not found." });
     }
@@ -280,7 +287,7 @@ export function createServicePaymentRouter(
       }
     }
 
-    const refreshed = servicePaymentRepository.findByReference(reference);
+    const refreshed = await servicePaymentRepository.findByReference(reference);
     return res.json({
       success: true,
       servicePayment: publicRecord(refreshed),
