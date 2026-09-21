@@ -1,4 +1,3 @@
-import { randomUUID } from "crypto";
 import { paychanguProvider } from "../payments/paychangu.provider.js";
 import {
   createServerPaymentConfigFromEnv,
@@ -73,7 +72,8 @@ export async function createXhovileStudioServicePayment(
       reference: payment.reference,
     };
   } catch (error) {
-    servicePaymentRepository.markFailed(servicePayment.paymentReference ?? servicePayment.id);
+    const failed = servicePaymentRepository.findById(servicePayment.id);
+    if (failed?.paymentReference) servicePaymentRepository.markFailed(failed.paymentReference);
     throw error;
   }
 }
@@ -186,6 +186,3 @@ export async function verifyXhovileStudioServicePayment(
   };
 }
 
-export function createServicePaymentReference(): string {
-  return `BM-SVC-${randomUUID().replace(/-/g, "").slice(0, 20).toUpperCase()}`;
-}
