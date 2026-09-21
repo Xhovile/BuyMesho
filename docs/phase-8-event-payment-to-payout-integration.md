@@ -2,30 +2,32 @@
 
 ## Purpose
 
-Phase 8 connects a successfully releasable event order to the event-specific payout destination and Phase 7 financial formula.
+Event ticket sales settle directly after successful payment verification. Events use the existing BuyMesho payout execution engine and do not enter the Listings escrow/release lifecycle.
 
 ## Flow
 
 ```text
-captured event order
+successful payment verification
         ↓
- escrow release
+confirm order as paid
         ↓
- identify event from order items
+identify event from order items
         ↓
- validate single-event ownership
+validate single-event ownership
         ↓
- load event-bound payout destination
+load event-bound payout destination
         ↓
- require destination active + verified + owned by event creator
+require destination active + verified + owned by event creator
         ↓
- calculate event payout fees
+calculate event payout fees
         ↓
- create payout candidate with event financial identity
+create eligible payout candidate with event financial identity
         ↓
- mark order fulfilled
+commit transaction
         ↓
- submit payout through existing PayChangu execution flow
+submit immediately through the shared PayChangu payout engine
+        ↓
+reuse normal payout retry timing if needed
 ```
 
 ## Event identity
