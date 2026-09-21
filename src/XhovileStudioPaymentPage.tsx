@@ -283,8 +283,9 @@ function PaymentForm() {
   const needsGraphic = serviceType === "graphic_design" || serviceType === "both";
   const needsWebsite = serviceType === "website_development" || serviceType === "both";
   const hasValidProjectTotal =
-    (!needsGraphic || graphicTotal > 0) &&
-    (!needsWebsite || websiteProjectTotal >= 80000);
+    paymentMode === "balance" ||
+    ((!needsGraphic || graphicTotal > 0) &&
+      (!needsWebsite || websiteProjectTotal >= 80000));
   const hasValidBalance = paymentMode !== "balance" || (Number(balanceAmount) > 0 && projectReference.trim().length >= 3);
 
   const canSubmit =
@@ -330,8 +331,9 @@ function PaymentForm() {
           customerEmail: customerEmail.trim(),
           amount: amountDue,
           description: `${serviceParts.join(" + ")} — ${paymentLabel}${referenceNote}. ${description.trim()}`,
-          graphicId: needsGraphic ? graphicId : undefined,
-          projectTotal: combinedProjectTotal,
+          graphicId: needsGraphic && paymentMode !== "balance" ? graphicId : undefined,
+          graphicTotal: needsGraphic && paymentMode !== "balance" ? graphicTotal : undefined,
+          websiteTotal: needsWebsite && paymentMode !== "balance" ? websiteProjectTotal : undefined,
           paymentMode,
           projectReference: paymentMode === "balance" ? projectReference.trim() : undefined,
         }),
