@@ -1,14 +1,14 @@
-type ServiceType = "graphic_design" | "website_development" | "both";
-type PaymentMode = "deposit" | "full" | "balance";
-type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
+export type ServiceType = "graphic_design" | "website_development" | "both";
+export type PaymentMode = "deposit" | "full" | "balance";
+export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 
-interface GraphicService {
+export interface GraphicService {
   id: string;
   label: string;
   price: number;
 }
 
-interface ServicePayment {
+export interface ServicePayment {
   id: string;
   serviceType: ServiceType;
   customerName: string;
@@ -23,19 +23,19 @@ interface ServicePayment {
   updatedAt: string;
 }
 
-interface CreateResponse {
+export interface CreateResponse {
   success: boolean;
   reference: string;
   checkoutUrl: string;
   servicePayment: ServicePayment;
 }
 
-interface StatusResponse {
+export interface StatusResponse {
   success: boolean;
   servicePayment: ServicePayment | null;
 }
 
-const GRAPHIC_SERVICES: GraphicService[] = [
+export const GRAPHIC_SERVICES: GraphicService[] = [
   { id: "music_artwork", label: "Music Artwork", price: 5500 },
   { id: "flyer", label: "Flyer", price: 6500 },
   { id: "wedding_card", label: "Wedding Card", price: 7500 },
@@ -50,7 +50,7 @@ const GRAPHIC_SERVICES: GraphicService[] = [
   { id: "banner_design", label: "Banner Design", price: 10500 },
 ];
 
-const SERVICE_LABELS: Record<ServiceType, string> = {
+export const SERVICE_LABELS: Record<ServiceType, string> = {
   graphic_design: "Graphic Design",
   website_development: "Website Development",
   both: "Graphic Design + Web Development",
@@ -61,11 +61,11 @@ const API_BASE_URL = String(
     ?.VITE_BUYMESHO_API_BASE_URL ?? "",
 ).replace(/\/$/, "");
 
-function apiUrl(path: string) {
+export function apiUrl(path: string) {
   return `${API_BASE_URL}${path}`;
 }
 
-function formatMoney(amount: number, currency = "MWK") {
+export function formatMoney(amount: number, currency = "MWK") {
   return new Intl.NumberFormat("en-MW", {
     style: "currency",
     currency,
