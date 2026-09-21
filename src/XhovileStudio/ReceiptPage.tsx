@@ -148,7 +148,7 @@ function ReceiptPage() {
             <CircleAlert className="mx-auto h-16 w-16 text-amber-500" />
           )}
 
-          <p className="mt-4 text-lg font-black uppercase tracking-[0.16em] text-[#8f1528]">XHOVILÉ STUDIO</p>
+          <p className="mt-4 text-[10px] font-black uppercase tracking-[0.24em] text-zinc-500">Service Payment</p>
           <h1 className="mt-1 text-2xl font-black">
             {loading ? "Checking Payment" : payment?.status === "paid" ? "Payment Successful" : "Payment Status"}
           </h1>
