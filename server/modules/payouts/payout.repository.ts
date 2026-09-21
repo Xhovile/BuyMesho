@@ -108,7 +108,7 @@ export class PayoutRepository {
   }
 
   findById(id: string): PayoutRecord | undefined {
-    const row = this.db.prepare('SELECT * FROM payouts WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+    const row = this.db.prepare('SELECT * FROM payouts WHERE id = $1').get(id) as Record<string, unknown> | undefined;
     if (!row) return undefined;
     return this.rowToPayout(row);
   }
