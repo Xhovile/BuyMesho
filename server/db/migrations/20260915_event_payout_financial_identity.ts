@@ -57,6 +57,15 @@ export function ensureEventPayoutFinancialIdentityMigration() {
         AND owner_type = 'event_creator'
         AND release_entry_id IS NULL;
 
+    UPDATE payouts
+    SET status = 'eligible',
+        updated_at = CURRENT_TIMESTAMP
+    WHERE event_id IS NOT NULL
+      AND owner_type = 'event_creator'
+      AND escrow_id IS NULL
+      AND release_entry_id IS NULL
+      AND status = 'pending_settlement';
+
     CREATE OR REPLACE FUNCTION buymesho_validate_event_payout_financial_identity()
     RETURNS trigger
     LANGUAGE plpgsql
