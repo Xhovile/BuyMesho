@@ -21,7 +21,7 @@ function isValidPhone(value: string): boolean {
 }
 
 function isServiceType(value: string): value is ServicePaymentType {
-  return value === "graphic_design" || value === "website_development";
+  return value === "graphic_design" || value === "website_development" || value === "both";
 }
 
 function publicRecord(record: ReturnType<typeof servicePaymentRepository.findById>) {
