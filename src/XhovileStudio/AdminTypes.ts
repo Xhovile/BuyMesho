@@ -4,9 +4,9 @@ import type {
   ServiceType,
 } from "../config";
 
-type ViewKey = "overview" | "payments" | "customers" | "projects" | "notifications" | "webhooks" | "system";
+export type ViewKey = "overview" | "payments" | "customers" | "projects" | "notifications" | "webhooks" | "system";
 
-type AdminPayment = {
+export type AdminPayment = {
   id: string;
   serviceType: ServiceType;
   customerName: string;
@@ -37,7 +37,7 @@ type AdminPayment = {
   }>;
 };
 
-type AdminCustomer = {
+export type AdminCustomer = {
   customerPhone: string;
   customerName: string;
   customerEmail: string | null;
@@ -48,7 +48,7 @@ type AdminCustomer = {
   lastActivityAt: string;
 };
 
-type AdminProject = {
+export type AdminProject = {
   projectReference: string;
   customerName: string;
   customerPhone: string;
@@ -58,7 +58,7 @@ type AdminProject = {
   latestStatus: PaymentStatus;
 };
 
-type AdminWebhook = {
+export type AdminWebhook = {
   id: number;
   providerEventId: string | null;
   paymentReference: string | null;
@@ -71,7 +71,7 @@ type AdminWebhook = {
   processedAt: string | null;
 };
 
-type AdminSnapshot = {
+export type AdminSnapshot = {
   success: boolean;
   summary: {
     totalPayments: number;
