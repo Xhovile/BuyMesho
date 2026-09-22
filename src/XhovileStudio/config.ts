@@ -12,7 +12,6 @@ export interface ServicePayment {
   id: string;
   serviceType: ServiceType;
   customerName: string;
-  customerPhone: string;
   customerEmail: string | null;
   description: string;
   amount: number;
@@ -35,6 +34,7 @@ export interface StudioReferenceMedia {
 }
 
 export interface StudioAdminPayment extends ServicePayment {
+  customerPhone: string;
   paymentMode: PaymentMode | null;
   projectTotal: number | null;
   projectReference: string | null;
