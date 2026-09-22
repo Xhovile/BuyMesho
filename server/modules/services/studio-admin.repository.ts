@@ -134,7 +134,10 @@ export async function getStudioAdminSnapshot(
         COUNT(DISTINCT (
           NULLIF(project_reference, ''),
           customer_phone
-        )) AS project_count,
+        )) FILTER (
+          WHERE project_reference IS NOT NULL
+            AND TRIM(project_reference) <> ''
+        ) AS project_count,
         COUNT(*) FILTER (
           WHERE success_notification_status IN ('pending', 'sending')
         ) AS notification_pending,
