@@ -77,7 +77,18 @@ type AdminSnapshot = {
   customers: AdminCustomer[];
   projects: AdminProject[];
   notifications: StudioAdminPayment[];
-  webhooks: AdminWebhook[];
+  webhooks: Array<{
+    id: number;
+    providerEventId: string | null;
+    paymentReference: string | null;
+    eventType: string | null;
+    payloadHash: string;
+    status: string;
+    signatureValid: boolean;
+    error: string | null;
+    createdAt: string;
+    processedAt: string | null;
+  }>;
   system: {
     databaseConnected: boolean;
     databaseCheckedAt: string | null;
