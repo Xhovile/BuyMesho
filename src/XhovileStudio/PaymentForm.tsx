@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from "react";
 import {
   CircleAlert,
+  Monitor,
+  Palette,
   ShieldCheck,
 } from "lucide-react";
 import {
