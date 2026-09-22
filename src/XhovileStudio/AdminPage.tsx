@@ -177,6 +177,7 @@ function EmptyState({ label }: { label: string }) {
 
 function AdminConsole() {
   const [view, setView] = useState<ViewKey>("overview");
+  const [focusedPaymentId, setFocusedPaymentId] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<AdminSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -209,20 +210,32 @@ function AdminConsole() {
 
   useEffect(() => {
     const handlePopState = () => {
-      const raw = new URLSearchParams(window.location.search).get("view") as ViewKey | null;
-      setView(raw && VIEW_LABELS[raw] ? raw : "overview");
+      const params = new URLSearchParams(window.location.search);
+      const rawView = params.get("view") as ViewKey | null;
+      setView(rawView && VIEW_LABELS[rawView] ? rawView : "overview");
+      setFocusedPaymentId(params.get("payment"));
     };
     handlePopState();
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  const selectView = (nextView: ViewKey) => {
+  const selectView = (nextView: ViewKey, paymentId: string | null = null) => {
     setView(nextView);
-    const url = nextView === "overview"
-      ? "/Services/XhovileStudio/Admin"
-      : "/Services/XhovileStudio/Admin?view=" + encodeURIComponent(nextView);
-    window.history.replaceState(window.history.state, "", url);
+    setFocusedPaymentId(paymentId);
+    const params = new URLSearchParams();
+    if (nextView !== "overview") params.set("view", nextView);
+    if (paymentId) params.set("payment", paymentId);
+    const query = params.toString();
+    window.history.replaceState(window.history.state, "", "/Services/XhovileStudio/Admin" + (query ? "?" + query : ""));
+  };
+
+  const clearFocusedPayment = () => {
+    setFocusedPaymentId(null);
+    const params = new URLSearchParams(window.location.search);
+    params.delete("payment");
+    const query = params.toString();
+    window.history.replaceState(window.history.state, "", "/Services/XhovileStudio/Admin" + (query ? "?" + query : ""));
   };
 
   if (loading && !snapshot) {
@@ -295,7 +308,7 @@ function AdminConsole() {
             </section>
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(300px,0.7fr)]">
               <SectionCard title="Recent payments" eyebrow="Live activity" action={<span className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-400">Latest 250 records</span>}>
-                {snapshot?.payments.length ? <div className="overflow-hidden rounded-2xl border border-zinc-200"><div className="hidden grid-cols-[minmax(150px,1.15fr)_minmax(140px,1fr)_auto_auto] gap-4 bg-zinc-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400 sm:grid sm:grid-cols-[minmax(170px,1.1fr)_minmax(200px,1fr)_auto_auto]"><span>Customer</span><span>Service / Project</span><span className="text-right">Amount / Time</span><span className="text-right">Status</span></div>{snapshot.payments.slice(0, 10).map(payment => <button key={payment.id} type="button" onClick={() => selectView("payments")} className="grid w-full grid-cols-[minmax(150px,1.15fr)_minmax(140px,1fr)_auto_auto] gap-4 border-b border-zinc-100 px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-zinc-50 sm:grid-cols-[minmax(170px,1.1fr)_minmax(200px,1fr)_auto_auto]"><div className="min-w-0"><p className="truncate text-sm font-black text-zinc-900">{payment.customerName}</p><p className="mt-0.5 truncate text-xs text-zinc-500">{payment.customerPhone}</p></div><div className="min-w-0"><p className="truncate text-xs font-bold text-zinc-800">{payment.serviceType}</p><p className="mt-0.5 truncate text-[11px] text-zinc-500">{payment.projectReference || "No project reference"}</p></div><div className="text-right"><p className="text-sm font-black text-zinc-950">{formatMoney(payment.amount, payment.currency)}</p><p className="mt-0.5 text-[10px] text-zinc-400">{formatDate(payment.createdAt)}</p></div><div className="flex items-center justify-end"><StatusPill value={payment.status} /></div></button>)}</div> : <EmptyState label="No Studio payments have been recorded yet." />}
+                {snapshot?.payments.length ? <div className="overflow-hidden rounded-2xl border border-zinc-200"><div className="hidden grid-cols-[minmax(150px,1.15fr)_minmax(140px,1fr)_auto_auto] gap-4 bg-zinc-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400 sm:grid sm:grid-cols-[minmax(170px,1.1fr)_minmax(200px,1fr)_auto_auto]"><span>Customer</span><span>Service / Project</span><span className="text-right">Amount / Time</span><span className="text-right">Status</span></div>{snapshot.payments.slice(0, 10).map(payment => <button key={payment.id} type="button" onClick={() => selectView("payments", String(payment.id))} className="grid w-full grid-cols-[minmax(150px,1.15fr)_minmax(140px,1fr)_auto_auto] gap-4 border-b border-zinc-100 px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-zinc-50 sm:grid-cols-[minmax(170px,1.1fr)_minmax(200px,1fr)_auto_auto]"><div className="min-w-0"><p className="truncate text-sm font-black text-zinc-900">{payment.customerName}</p><p className="mt-0.5 truncate text-xs text-zinc-500">{payment.customerPhone}</p></div><div className="min-w-0"><p className="truncate text-xs font-bold text-zinc-800">{payment.serviceType}</p><p className="mt-0.5 truncate text-[11px] text-zinc-500">{payment.projectReference || "No project reference"}</p></div><div className="text-right"><p className="text-sm font-black text-zinc-950">{formatMoney(payment.amount, payment.currency)}</p><p className="mt-0.5 text-[10px] text-zinc-400">{formatDate(payment.createdAt)}</p></div><div className="flex items-center justify-end"><StatusPill value={payment.status} /></div></button>)}</div> : <EmptyState label="No Studio payments have been recorded yet." />}
               </SectionCard>
               <SectionCard title="Attention" eyebrow="Operational signals"><div className="space-y-3"><div className="rounded-2xl border border-amber-200 bg-amber-50 p-4"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-amber-700">Pending payments</p><p className="mt-1 text-2xl font-black text-amber-900">{summary.pendingPayments}</p><p className="mt-1 text-xs leading-5 text-amber-800">Payments that have not yet reached a confirmed paid state.</p></div><div className="rounded-2xl border border-red-200 bg-red-50 p-4"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-red-700">Failed notifications</p><p className="mt-1 text-2xl font-black text-red-900">{summary.notificationFailed}</p><p className="mt-1 text-xs leading-5 text-red-800">Successful payments whose internal notification email needs attention.</p></div><div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">Webhook failures</p><p className="mt-1 text-2xl font-black text-zinc-900">{summary.webhookFailed}</p><p className="mt-1 text-xs leading-5 text-zinc-600">PayChangu webhook events recorded as failed.</p></div></div></SectionCard>
             </div>
@@ -303,13 +316,13 @@ function AdminConsole() {
           </>
         ) : null}
 
-        {view === "payments" && snapshot ? <AdminPayments payments={snapshot.payments} /> : null}
+        {view === "payments" && snapshot ? <AdminPayments payments={snapshot.payments} focusPaymentId={focusedPaymentId} onFocusConsumed={clearFocusedPayment} /> : null}
         {view === "customers" && snapshot ? <AdminCustomersProjects customers={snapshot.customers} projects={[]} /> : null}
         {view === "projects" && snapshot ? <AdminCustomersProjects customers={[]} projects={snapshot.projects} /> : null}
 
         {view === "notifications" && snapshot ? (
           <SectionCard title="Notifications" eyebrow="Internal payment email delivery" action={<span className="text-xs text-zinc-400">Recipient: {system?.notificationEmail}</span>}>
-            {snapshot.notifications.length ? <div className="overflow-hidden rounded-2xl border border-zinc-200">{snapshot.notifications.map(payment => <button key={payment.id} type="button" onClick={() => selectView("payments")} className="grid w-full gap-3 border-b border-zinc-100 px-4 py-3 text-left last:border-b-0 hover:bg-zinc-50 sm:grid-cols-[minmax(180px,1fr)_auto_minmax(150px,0.8fr)] sm:items-center"><div><p className="text-sm font-black text-zinc-900">{payment.customerName}</p><p className="mt-0.5 text-xs text-zinc-500">{payment.paymentReference || payment.id}</p></div><StatusPill value={payment.successNotificationStatus} /><div className="text-xs text-zinc-500"><p>{formatDate(payment.updatedAt)}</p>{payment.successNotificationError ? <p className="mt-1 truncate text-red-600">{payment.successNotificationError}</p> : null}</div></button>)}</div> : <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><div className="flex items-start gap-3"><BadgeCheck className="h-5 w-5 text-emerald-600" /><div><p className="font-black text-emerald-900">No notification issues in the latest records.</p><p className="mt-1 text-sm text-emerald-800">Successful Studio payments with unsent, sending, or failed internal notifications would appear here.</p></div></div></div>}
+            {snapshot.notifications.length ? <div className="overflow-hidden rounded-2xl border border-zinc-200">{snapshot.notifications.map(payment => <button key={payment.id} type="button" onClick={() => selectView("payments", String(payment.id))} className="grid w-full gap-3 border-b border-zinc-100 px-4 py-3 text-left last:border-b-0 hover:bg-zinc-50 sm:grid-cols-[minmax(180px,1fr)_auto_minmax(150px,0.8fr)] sm:items-center"><div><p className="text-sm font-black text-zinc-900">{payment.customerName}</p><p className="mt-0.5 text-xs text-zinc-500">{payment.paymentReference || payment.id}</p></div><StatusPill value={payment.successNotificationStatus} /><div className="text-xs text-zinc-500"><p>{formatDate(payment.updatedAt)}</p>{payment.successNotificationError ? <p className="mt-1 truncate text-red-600">{payment.successNotificationError}</p> : null}</div></button>)}</div> : <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><div className="flex items-start gap-3"><BadgeCheck className="h-5 w-5 text-emerald-600" /><div><p className="font-black text-emerald-900">No notification issues in the latest records.</p><p className="mt-1 text-sm text-emerald-800">Successful Studio payments with unsent, sending, or failed internal notifications would appear here.</p></div></div></div>}
           </SectionCard>
         ) : null}
 
