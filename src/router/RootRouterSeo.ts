@@ -58,6 +58,15 @@ function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
     };
   }
 
+  if (normalizedStudioPath === "/services/xhovilestudio/admin") {
+    return {
+      title: "Xhovile Studio — Admin",
+      description: "Xhovile Studio administration.",
+      canonicalPath: "/Services/XhovileStudio/Admin",
+      noindex: true,
+    };
+  }
+
   switch (pathname) {
     case "/":
     case "/home":
