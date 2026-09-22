@@ -254,8 +254,9 @@ export class ServicePaymentRepository {
     await studioQuery(
       `
         UPDATE service_payments
-        SET status = 'paid', paid_at = $1, updated_at = $2
+        SET status = 'paid', paid_at = COALESCE(paid_at, $1), updated_at = $2
         WHERE payment_reference = $3
+          AND status IN ('pending', 'failed', 'paid')
       `,
       [paidAt, now, reference],
     );
@@ -266,7 +267,7 @@ export class ServicePaymentRepository {
     await this.ready();
     const now = new Date().toISOString();
     await studioQuery(
-      "UPDATE service_payments SET status = 'failed', updated_at = $1 WHERE id = $2",
+      "UPDATE service_payments SET status = 'failed', updated_at = $1 WHERE id = $2 AND status IN ('pending', 'failed')",
       [now, id],
     );
     return this.findById(id);
@@ -276,7 +277,7 @@ export class ServicePaymentRepository {
     await this.ready();
     const now = new Date().toISOString();
     await studioQuery(
-      "UPDATE service_payments SET status = 'failed', updated_at = $1 WHERE payment_reference = $2",
+      "UPDATE service_payments SET status = 'failed', updated_at = $1 WHERE payment_reference = $2 AND status IN ('pending', 'failed')",
       [now, reference],
     );
     return this.findByReference(reference);
@@ -286,7 +287,7 @@ export class ServicePaymentRepository {
     await this.ready();
     const now = new Date().toISOString();
     await studioQuery(
-      "UPDATE service_payments SET status = 'refunded', paid_at = NULL, updated_at = $1 WHERE payment_reference = $2",
+      "UPDATE service_payments SET status = 'refunded', paid_at = NULL, updated_at = $1 WHERE payment_reference = $2 AND status IN ('paid', 'refunded')",
       [now, reference],
     );
     return this.findByReference(reference);

@@ -218,10 +218,29 @@ async function handleStudioPayChanguWebhook(
       return { ok: true, status: "ignored", reference: txRef };
     }
 
-    await servicePaymentRepository.markPaid(
+    const updatedPayment = await servicePaymentRepository.markPaid(
       servicePayment.paymentReference ?? txRef,
       new Date().toISOString(),
     );
+
+    if (updatedPayment?.status === "refunded") {
+      await servicePaymentRepository.updateWebhookEvent(
+        audit.id,
+        "ignored",
+        "Successful PayChangu event arrived after the Studio payment was refunded.",
+      );
+      return { ok: true, status: "ignored", reference: txRef };
+    }
+
+    if (!updatedPayment) {
+      await servicePaymentRepository.updateWebhookEvent(
+        audit.id,
+        "failed",
+        "Studio payment could not be updated after successful PayChangu verification.",
+      );
+      return { ok: false, error: "Studio payment could not be updated." };
+    }
+
     await notifyXhovileStudioSuccessfulPayment(
       servicePayment.paymentReference ?? txRef,
     );
@@ -237,9 +256,19 @@ async function handleStudioPayChanguWebhook(
   const loweredStatus = status.toLowerCase();
 
   if (["reversed", "refunded", "chargeback", "charged_back"].includes(loweredStatus)) {
-    await servicePaymentRepository.markRefunded(
+    const updatedPayment = await servicePaymentRepository.markRefunded(
       servicePayment.paymentReference ?? txRef,
     );
+
+    if (updatedPayment?.status !== "refunded") {
+      await servicePaymentRepository.updateWebhookEvent(
+        audit.id,
+        "ignored",
+        `PayChangu reported ${status}, but the Studio payment is not in a refundable state.`,
+      );
+      return { ok: true, status: "ignored", reference: txRef };
+    }
+
     await servicePaymentRepository.updateWebhookEvent(audit.id, "processed");
 
     return {
@@ -250,11 +279,31 @@ async function handleStudioPayChanguWebhook(
   }
 
   if (["failed", "cancelled", "canceled", "declined", "expired"].includes(loweredStatus)) {
-    if (servicePayment.status !== "paid") {
-      await servicePaymentRepository.markFailed(
-        servicePayment.paymentReference ?? txRef,
+    const updatedPayment =
+      servicePayment.status === "paid"
+        ? servicePayment
+        : await servicePaymentRepository.markFailed(
+            servicePayment.paymentReference ?? txRef,
+          );
+
+    if (updatedPayment?.status === "paid" || updatedPayment?.status === "refunded") {
+      await servicePaymentRepository.updateWebhookEvent(
+        audit.id,
+        "ignored",
+        `PayChangu reported ${status}, but the Studio payment is already ${updatedPayment.status}.`,
       );
+      return { ok: true, status: "ignored", reference: txRef };
     }
+
+    if (!updatedPayment) {
+      await servicePaymentRepository.updateWebhookEvent(
+        audit.id,
+        "failed",
+        "Studio payment could not be updated after PayChangu failure status.",
+      );
+      return { ok: false, error: "Studio payment could not be updated." };
+    }
+
     await servicePaymentRepository.updateWebhookEvent(audit.id, "processed");
 
     return {
