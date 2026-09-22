@@ -6,6 +6,7 @@ import { ToastProvider } from './components/Toast.tsx';
 import './index.css';
 import './payoutAccordions.ts';
 import logoImage from '../photos/LOGO.svg';
+import { isXhovileStudioPath } from './lib/appNavigation';
 
 const nativeFetch = window.fetch.bind(window);
 const APICACHE_PREFIX = '__buymesho_api_cache_v2:';
@@ -286,7 +287,7 @@ class AppErrorBoundary extends Component<
   }
 }
 
-const isStandaloneServicePage = window.location.pathname.startsWith("/Services/XhovileStudio");
+const isStandaloneServicePage = isXhovileStudioPath(window.location.pathname);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
