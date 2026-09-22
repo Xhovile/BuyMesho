@@ -2,6 +2,7 @@ import express, { type Request, type RequestHandler, type Router } from "express
 import multer from "multer";
 import {
   createXhovileStudioServicePayment,
+  ServicePaymentIdempotencyConflictError,
   verifyXhovileStudioServicePayment,
 } from "./service-payment.service.js";
 import {
@@ -113,6 +114,15 @@ export function createServicePaymentRouter(
     async (req: Request, res) => {
     res.setHeader("Cache-Control", "no-store");
     try {
+      const idempotencyKey = cleanString(req.headers["idempotency-key"], 200);
+
+      if (!idempotencyKey) {
+        return res.status(400).json({
+          error: "Idempotency-Key header is required for Studio payments.",
+          code: "IDEMPOTENCY_KEY_REQUIRED",
+        });
+      }
+
       const serviceType = cleanString(req.body?.serviceType, 40);
       const customerName = cleanString(req.body?.customerName, 120);
       const customerPhone = cleanString(req.body?.customerPhone, 32);
@@ -266,6 +276,7 @@ export function createServicePaymentRouter(
         projectReference: paymentMode === "balance" ? projectReference : null,
         graphicId: needsGraphic ? graphicId : null,
         referenceFiles,
+        idempotencyKey,
       });
 
       return res.status(201).json({
@@ -275,6 +286,13 @@ export function createServicePaymentRouter(
         checkoutUrl: result.checkoutUrl,
       });
     } catch (error) {
+      if (error instanceof ServicePaymentIdempotencyConflictError) {
+        return res.status(409).json({
+          error: error.message,
+          code: error.code,
+        });
+      }
+
       console.error("[ServicePayments] Failed to create Xhovile Studio payment:", error);
       return res.status(502).json({
         error: error instanceof Error ? error.message : "Unable to start payment checkout.",
