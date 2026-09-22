@@ -71,6 +71,7 @@ export type StudioAdminSnapshot = {
     cloudinaryConfigured: boolean;
     notificationEmail: string;
     environment: string;
+    cloudinaryConfigured: boolean;
   };
 };
 
@@ -168,6 +169,14 @@ export async function getStudioAdminSnapshot(
     ),
     studioQuery<Record<string, unknown>>(
       `
+        WITH latest_customer AS (
+          SELECT DISTINCT ON (customer_phone)
+            customer_phone,
+            customer_name,
+            customer_email
+          FROM service_payments
+          ORDER BY customer_phone, updated_at DESC, created_at DESC
+        )
         SELECT
           customer_phone,
           (ARRAY_AGG(customer_name ORDER BY updated_at DESC)
@@ -175,19 +184,35 @@ export async function getStudioAdminSnapshot(
           (ARRAY_AGG(customer_email ORDER BY updated_at DESC)
             FILTER (WHERE customer_email IS NOT NULL AND TRIM(customer_email) <> ''))[1] AS customer_email,
           COUNT(*) AS payment_count,
-          COUNT(*) FILTER (WHERE status = 'paid') AS paid_count,
-          COALESCE(SUM(amount) FILTER (WHERE status = 'paid'), 0) AS paid_amount,
-          COUNT(DISTINCT NULLIF(project_reference, '')) AS project_count,
-          MAX(updated_at) AS last_activity_at
-        FROM service_payments
-        GROUP BY customer_phone
-        ORDER BY MAX(updated_at) DESC
+          COUNT(*) FILTER (WHERE payments.status = 'paid') AS paid_count,
+          COALESCE(SUM(payments.amount) FILTER (WHERE payments.status = 'paid'), 0) AS paid_amount,
+          COUNT(DISTINCT NULLIF(payments.project_reference, '')) AS project_count,
+          MAX(payments.updated_at) AS last_activity_at
+        FROM service_payments payments
+        JOIN latest_customer
+          ON latest_customer.customer_phone = payments.customer_phone
+        GROUP BY
+          payments.customer_phone,
+          latest_customer.customer_name,
+          latest_customer.customer_email
+        ORDER BY MAX(payments.updated_at) DESC
         LIMIT $1
       `,
       [limit],
     ),
     studioQuery<Record<string, unknown>>(
       `
+        WITH latest_project_payment AS (
+          SELECT DISTINCT ON (project_reference, customer_phone)
+            project_reference,
+            customer_phone,
+            customer_name,
+            status
+          FROM service_payments
+          WHERE project_reference IS NOT NULL
+            AND TRIM(project_reference) <> ''
+          ORDER BY project_reference, customer_phone, updated_at DESC, created_at DESC
+        )
         SELECT
           project_reference,
           customer_phone,
@@ -304,6 +329,11 @@ export async function getStudioAdminSnapshot(
         process.env.XHOVILE_STUDIO_NOTIFICATION_EMAIL?.trim() ||
         "xhovilepublications@gmail.com",
       environment: process.env.NODE_ENV?.trim() || "development",
+      cloudinaryConfigured: Boolean(
+        process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
+        process.env.CLOUDINARY_API_KEY?.trim() &&
+        process.env.CLOUDINARY_API_SECRET?.trim()
+      ),
     },
   };
 }
