@@ -23,6 +23,28 @@ export interface ServicePayment {
   updatedAt: string;
 }
 
+export interface StudioReferenceMedia {
+  kind: "image" | "video";
+  url: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+}
+
+export interface StudioAdminPayment extends ServicePayment {
+  paymentMode: PaymentMode | null;
+  projectTotal: number | null;
+  projectReference: string | null;
+  graphicId: string | null;
+  providerReference: string | null;
+  referenceMedia: StudioReferenceMedia[];
+  successNotificationStatus: "pending" | "sending" | "sent" | "failed";
+  successNotificationSentAt: string | null;
+  successNotificationError: string | null;
+  checkoutUrl: string | null;
+  idempotencyKey: string | null;
+}
+
 export interface CreateResponse {
   success: boolean;
   reference: string;
