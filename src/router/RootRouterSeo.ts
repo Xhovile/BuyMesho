@@ -38,14 +38,30 @@ function upsertCanonical(href: string) {
 }
 
 function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
+  const normalizedStudioPath = pathname.replace(/\/+$/, "").toLowerCase();
+
+  if (normalizedStudioPath === "/services/xhovilestudio") {
+    return {
+      title: "Xhovile Studio — Service Payment",
+      description:
+        "Submit a Graphic Design or Website Development request and continue to secure payment checkout.",
+      canonicalPath: "/Services/XhovileStudio",
+    };
+  }
+
+  if (normalizedStudioPath === "/services/xhovilestudio/receipt") {
+    return {
+      title: "Xhovile Studio — Payment Receipt",
+      description: "View and download your Xhovile Studio payment receipt.",
+      canonicalPath: "/Services/XhovileStudio/receipt",
+      noindex: true,
+    };
+  }
+
   switch (pathname) {
     case "/":
     case "/home":
       return { title: HOMEPAGE_TITLE, description: HOMEPAGE_DESCRIPTION, canonicalPath: "/", keywords: HOMEPAGE_KEYWORDS };
-    case "/Services/XhovileStudio":
-      return { title: "Xhovile Studio — Service Payment", description: "Submit a Graphic Design or Website Development request and continue to secure payment checkout.", canonicalPath: "/Services/XhovileStudio" };
-    case "/Services/XhovileStudio/receipt":
-      return { title: "Xhovile Studio — Payment Receipt", description: "View and download your Xhovile Studio payment receipt.", canonicalPath: "/Services/XhovileStudio/receipt", noindex: true };
     case "/install":
       return { title: "Install BuyMesho", description: "Install BuyMesho on your phone for fast access to Malawi's secure e-commerce platform.", canonicalPath: "/install" };
     case "/signup":

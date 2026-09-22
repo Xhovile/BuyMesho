@@ -3,11 +3,13 @@ import ReceiptPage from "./ReceiptPage";
 import XhovileStudioAdminPage from "./AdminPage";
 
 export default function XhovileStudioPaymentPage() {
-  const normalizedPath = window.location.pathname.replace(/\/+$/, "") || "/";
-  if (normalizedPath === "/Services/XhovileStudio/Admin") {
+  const normalizedPath =
+    window.location.pathname.replace(/\/+$/, "").toLowerCase() || "/";
+
+  if (normalizedPath === "/services/xhovilestudio/admin") {
     return <XhovileStudioAdminPage />;
   }
-  if (normalizedPath === "/Services/XhovileStudio/receipt") {
+  if (normalizedPath === "/services/xhovilestudio/receipt") {
     return <ReceiptPage />;
   }
   return <PaymentForm />;
