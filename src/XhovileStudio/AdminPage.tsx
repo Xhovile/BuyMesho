@@ -31,41 +31,11 @@ import {
   type ServiceType,
   type PaymentMode,
   type PaymentStatus,
+  type StudioAdminPayment,
 } from "./config";
 import xsLogo from "../../photos/XSLOGO.svg";
 
 type ViewKey = "overview" | "payments" | "customers" | "projects" | "notifications" | "webhooks" | "system";
-
-type AdminPayment = {
-  id: string;
-  serviceType: ServiceType;
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string | null;
-  description: string;
-  amount: number;
-  currency: string;
-  status: PaymentStatus;
-  paymentMode: PaymentMode | null;
-  projectTotal: number | null;
-  projectReference: string | null;
-  graphicId: string | null;
-  providerReference: string | null;
-  paymentReference: string | null;
-  paidAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-  successNotificationStatus: "pending" | "sending" | "sent" | "failed";
-  successNotificationSentAt: string | null;
-  successNotificationError: string | null;
-  referenceMedia: Array<{
-    kind: "image" | "video";
-    url: string;
-    originalName: string;
-    mimeType: string;
-    sizeBytes: number;
-  }>;
-};
 
 type AdminCustomer = {
   customerPhone: string;
@@ -121,10 +91,10 @@ type AdminSnapshot = {
     lastPaymentAt: string | null;
     lastWebhookAt: string | null;
   };
-  payments: AdminPayment[];
+  payments: StudioAdminPayment[];
   customers: AdminCustomer[];
   projects: AdminProject[];
-  notifications: AdminPayment[];
+  notifications: StudioAdminPayment[];
   webhooks: AdminWebhook[];
   system: {
     databaseConnected: boolean;
