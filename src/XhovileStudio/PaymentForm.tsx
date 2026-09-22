@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   CircleAlert,
   Images,
@@ -58,6 +58,8 @@ function PaymentForm() {
   const [referenceError, setReferenceError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const idempotencyKeyRef = useRef<string | null>(null);
+  const referenceIdCounter = useRef(0);
 
   const selectedGraphic = GRAPHIC_SERVICES.find((item) => item.id === graphicId);
   const graphicTotal =
@@ -144,7 +146,7 @@ function PaymentForm() {
       if (duplicate) continue;
 
       accepted.push({
-        id: `${file.name}-${file.size}-${file.lastModified}-${Math.random()}`,
+        id: `${file.name}-${file.size}-${file.lastModified}-${referenceIdCounter.current++}`,
         file,
         previewUrl: URL.createObjectURL(file),
       });
@@ -204,6 +206,10 @@ function PaymentForm() {
     const referenceNote = paymentMode === "balance" ? ` | Project reference: ${projectReference.trim()}` : "";
 
     try {
+      const idempotencyKey =
+        idempotencyKeyRef.current ?? crypto.randomUUID();
+      idempotencyKeyRef.current = idempotencyKey;
+
       const formData = new FormData();
       formData.append("serviceType", serviceType);
       formData.append("customerName", customerName.trim());
@@ -231,11 +237,17 @@ function PaymentForm() {
 
       const response = await fetch(apiUrl("/api/public/service-payments"), {
         method: "POST",
+        headers: {
+          "Idempotency-Key": idempotencyKey,
+        },
         body: formData,
       });
 
       const data = (await response.json()) as Partial<CreateResponse> & { error?: string };
       if (!response.ok || !data.checkoutUrl) {
+        if (response.status === 409) {
+          idempotencyKeyRef.current = null;
+        }
         throw new Error(data.error || "Unable to start payment.");
       }
 
