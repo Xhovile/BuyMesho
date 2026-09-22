@@ -123,7 +123,7 @@ async function migrate(): Promise<void> {
           NULL,
           NULL
         )
-        ON CONFLICT (id) DO NOTHING
+        ON CONFLICT DO NOTHING
       `,
       [
         id,
