@@ -289,28 +289,6 @@ export function StudioCheckoutButton({
   accentClass: string;
   onClick: () => void;
 }) {
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const [floating, setFloating] = useState(true);
-
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel || typeof IntersectionObserver === "undefined") return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setFloating(!entry.isIntersecting);
-      },
-      {
-        root: null,
-        rootMargin: "0px 0px -96px 0px",
-        threshold: 0,
-      },
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, []);
-
   const button = (
     <button
       type="button"
@@ -325,16 +303,10 @@ export function StudioCheckoutButton({
   );
 
   return (
-    <div ref={sentinelRef} className="relative h-12">
-      {floating ? (
-        <div className="pointer-events-none fixed inset-x-3 bottom-3 z-[100] mx-auto w-auto max-w-2xl sm:bottom-5 sm:w-[calc(100%-3rem)]">
-          <div className="pointer-events-auto rounded-[15px] border border-black bg-white/95 p-1.5 shadow-[0_12px_35px_rgba(30,25,20,0.18)] backdrop-blur-md">
-            {button}
-          </div>
-        </div>
-      ) : (
-        <div className="absolute inset-0">{button}</div>
-      )}
+    <div className="sticky bottom-3 z-[100] -mx-1 px-1 sm:bottom-5">
+      <div className="rounded-[15px] border border-black bg-white/95 p-1.5 shadow-[0_12px_35px_rgba(30,25,20,0.18)] backdrop-blur-md">
+        {button}
+      </div>
     </div>
   );
 }
