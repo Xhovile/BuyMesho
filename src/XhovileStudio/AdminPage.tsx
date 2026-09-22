@@ -2,28 +2,26 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
-  BadgeCheck,
   Bell,
   CheckCircle2,
   CircleDollarSign,
   Clock3,
   CreditCard,
-  Database,
-  FileText,
   FolderKanban,
   LayoutDashboard,
   Loader2,
-  Mail,
   RefreshCw,
   Server,
   Users,
-  Webhook,
   XCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import AdminRouteGuard from "../components/AdminRouteGuard";
 import AdminPayments from "./admin/AdminPayments";
 import AdminCustomersProjects from "./admin/AdminCustomersProjects";
+import AdminNotifications from "./admin/AdminNotifications";
+import AdminWebhooks from "./admin/AdminWebhooks";
+import AdminSystem from "./admin/AdminSystem";
 import { apiFetch } from "../lib/api";
 import { navigateToPath } from "../lib/appNavigation";
 import { formatMoney, type PaymentStatus, type StudioAdminPayment } from "./config";
@@ -50,19 +48,6 @@ type AdminProject = {
   paidAmount: number;
   lastActivityAt: string;
   latestStatus: PaymentStatus;
-};
-
-type AdminWebhook = {
-  id: number;
-  providerEventId: string | null;
-  paymentReference: string | null;
-  eventType: string | null;
-  payloadHash: string;
-  status: string;
-  signatureValid: boolean;
-  error: string | null;
-  createdAt: string;
-  processedAt: string | null;
 };
 
 type AdminSnapshot = {
@@ -127,18 +112,6 @@ function formatDate(value: string | null | undefined, includeTime = true) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("en-MW", { dateStyle: "medium", timeStyle: includeTime ? "short" : undefined }).format(date);
-}
-
-function statusClasses(status: string) {
-  const normalized = status.toLowerCase();
-  if (normalized === "paid" || normalized === "processed" || normalized === "sent") return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  if (normalized === "pending" || normalized === "received" || normalized === "sending") return "border-amber-200 bg-amber-50 text-amber-700";
-  if (normalized === "failed" || normalized === "refunded") return "border-red-200 bg-red-50 text-red-700";
-  return "border-zinc-200 bg-zinc-100 text-zinc-700";
-}
-
-function StatusPill({ value }: { value: string }) {
-  return <span className={"inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] " + statusClasses(value)}>{value}</span>;
 }
 
 function StatCard({ icon: Icon, label, value, helper }: { icon: LucideIcon; label: string; value: string; helper?: string }) {
@@ -321,23 +294,30 @@ function AdminConsole() {
         {view === "projects" && snapshot ? <AdminCustomersProjects customers={[]} projects={snapshot.projects} /> : null}
 
         {view === "notifications" && snapshot ? (
-          <SectionCard title="Notifications" eyebrow="Internal payment email delivery" action={<span className="text-xs text-zinc-400">Recipient: {system?.notificationEmail}</span>}>
-            {snapshot.notifications.length ? <div className="overflow-hidden rounded-2xl border border-zinc-200">{snapshot.notifications.map(payment => <button key={payment.id} type="button" onClick={() => selectView("payments", String(payment.id))} className="grid w-full gap-3 border-b border-zinc-100 px-4 py-3 text-left last:border-b-0 hover:bg-zinc-50 sm:grid-cols-[minmax(180px,1fr)_auto_minmax(150px,0.8fr)] sm:items-center"><div><p className="text-sm font-black text-zinc-900">{payment.customerName}</p><p className="mt-0.5 text-xs text-zinc-500">{payment.paymentReference || payment.id}</p></div><StatusPill value={payment.successNotificationStatus} /><div className="text-xs text-zinc-500"><p>{formatDate(payment.updatedAt)}</p>{payment.successNotificationError ? <p className="mt-1 truncate text-red-600">{payment.successNotificationError}</p> : null}</div></button>)}</div> : <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><div className="flex items-start gap-3"><BadgeCheck className="h-5 w-5 text-emerald-600" /><div><p className="font-black text-emerald-900">No notification issues in the latest records.</p><p className="mt-1 text-sm text-emerald-800">Successful Studio payments with unsent, sending, or failed internal notifications would appear here.</p></div></div></div>}
-          </SectionCard>
+          <AdminNotifications
+            notifications={snapshot.notifications}
+            recipient={system?.notificationEmail ?? "—"}
+            onSelectPayment={(paymentId) => selectView("payments", paymentId)}
+          />
         ) : null}
 
-        {view === "webhooks" && snapshot ? <SectionCard title="Webhooks" eyebrow="PayChangu event audit"><div className="overflow-x-auto rounded-2xl border border-zinc-200"><table className="min-w-full text-left"><thead className="bg-zinc-50"><tr className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400"><th className="px-4 py-3">Event</th><th className="px-4 py-3">Payment reference</th><th className="px-4 py-3">Signature</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Created</th><th className="px-4 py-3">Error</th></tr></thead><tbody className="divide-y divide-zinc-100">{snapshot.webhooks.length ? snapshot.webhooks.map(webhook => <tr key={webhook.id} className="text-xs"><td className="px-4 py-3"><p className="font-black text-zinc-900">{webhook.eventType || "Unknown event"}</p><p className="mt-0.5 font-mono text-[10px] text-zinc-400">{webhook.providerEventId || "No provider event id"}</p></td><td className="px-4 py-3 font-mono text-[10px] text-zinc-700">{webhook.paymentReference || "—"}</td><td className="px-4 py-3"><StatusPill value={webhook.signatureValid ? "valid" : "invalid"} /></td><td className="px-4 py-3"><StatusPill value={webhook.status} /></td><td className="px-4 py-3 text-zinc-500">{formatDate(webhook.createdAt)}</td><td className="max-w-xs px-4 py-3 text-red-600">{webhook.error || "—"}</td></tr>) : <tr><td colSpan={6}><EmptyState label="No Studio webhook events have been recorded yet." /></td></tr>}</tbody></table></div></SectionCard> : null}
+        {view === "webhooks" && snapshot ? <AdminWebhooks webhooks={snapshot.webhooks} /> : null}
 
-        {view === "system" && system ? <div className="grid gap-6 lg:grid-cols-2"><SectionCard title="Integration status" eyebrow="Configuration signals"><div className="grid gap-3 sm:grid-cols-2">{[["Studio database", system.databaseConnected, "Connection check completed successfully.", Database],["PayChangu secret", system.paychanguConfigured, "Server-side payment credentials are configured.", CreditCard],["Webhook secret", system.webhookSecretConfigured, "PayChangu webhook verification secret is present.", Webhook],["Brevo email", system.brevoConfigured, "Email transport credentials are configured.", Mail],["Cloudinary media", system.cloudinaryConfigured, "Reference media storage credentials are configured.", FileText]].map(([label, ready, helper, Icon]) => <div key={String(label)} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4"><div className="flex items-start justify-between gap-3"><div className="flex items-center gap-2"><Icon className="h-4 w-4 text-zinc-500" /><p className="text-sm font-black text-zinc-900">{String(label)}</p></div>{Boolean(ready) ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <AlertTriangle className="h-5 w-5 text-amber-500" />}</div><p className="mt-2 text-xs leading-5 text-zinc-500">{String(helper)}</p></div>)}</div></SectionCard><SectionCard title="Runtime" eyebrow="Safe operational details"><div className="grid gap-3 sm:grid-cols-2"><DetailField label="Environment" value={system.environment} /><DetailField label="Notification recipient" value={system.notificationEmail} /><DetailField label="Database check" value={formatDate(system.databaseCheckedAt)} /><DetailField label="Latest webhook" value={formatDate(summary?.lastWebhookAt)} /><DetailField label="Latest payment activity" value={formatDate(summary?.lastPaymentAt)} /><DetailField label="Webhook events recorded" value={summary?.webhookReceived.toLocaleString() ?? "0"} /></div></SectionCard><SectionCard title="Monitoring notes" eyebrow="How to use this page"><div className="space-y-3 text-sm leading-6 text-zinc-600"><p>This control room is read-only. It does not approve, refund, resend, or otherwise mutate Studio payments.</p><p>Successful payment records are kept in the dedicated Xhovilé Studio PostgreSQL database rather than BuyMesho marketplace payment tables.</p><p>The page refreshes automatically while visible and can also be refreshed manually.</p></div></SectionCard><SectionCard title="Current endpoint" eyebrow="Admin API"><div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4"><p className="font-mono text-xs text-zinc-700">GET /api/admin/xhovile-studio</p><p className="mt-2 text-xs leading-5 text-zinc-500">Protected by BuyMesho authentication and backend admin authorization.</p></div></SectionCard></div> : null}
+        {view === "system" && system ? (
+          <AdminSystem
+            system={system}
+            summary={{
+              webhookReceived: summary?.webhookReceived ?? 0,
+              lastWebhookAt: summary?.lastWebhookAt ?? null,
+              lastPaymentAt: summary?.lastPaymentAt ?? null,
+            }}
+          />
+        ) : null}
 
         <footer className="pb-4 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-400">Xhovilé Studio Admin · {VIEW_LABELS[view]}</footer>
       </main>
     </div>
   );
-}
-
-function DetailField({ label, value, mono = false }: { label: string; value: ReactNode; mono?: boolean }) {
-  return <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">{label}</p><p className={(mono ? "font-mono text-[11px] " : "text-sm ") + "mt-1 break-words font-bold text-zinc-900"}>{value}</p></div>;
 }
 
 export default function XhovileStudioAdminPage() {
