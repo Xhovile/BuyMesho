@@ -119,7 +119,7 @@ async function migrate(): Promise<void> {
           $1, $2, $3, $4, $5, $6, $7, $8, $9,
           NULL, NULL, NULL, NULL, '[]'::jsonb, $10, $11,
           NULL, NULL, NULL, $12, $13, $14,
-          CASE WHEN $9 = 'paid' THEN 'pending' ELSE 'pending' END,
+          'pending',
           NULL,
           NULL
         )
