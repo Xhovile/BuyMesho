@@ -1,4 +1,5 @@
 import express, { type Request, type RequestHandler, type Router } from "express";
+import { createHash } from "node:crypto";
 import multer from "multer";
 import {
   GRAPHIC_SERVICE_PRICE_MAP,
@@ -25,6 +26,46 @@ function isValidEmail(value: string): boolean {
 
 function isValidPhone(value: string): boolean {
   return /^\+?[0-9][0-9\s-]{6,30}$/.test(value);
+}
+
+function getIdempotencyKey(req: Request): string {
+  const headerValue = req.headers["idempotency-key"];
+  const raw = Array.isArray(headerValue) ? headerValue[0] : headerValue;
+  return cleanString(raw ?? req.body?.idempotencyKey, 200);
+}
+
+function buildCheckoutRequestHash(input: {
+  serviceType: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  description: string;
+  amount: number;
+  graphicId: string;
+  graphicTotal: number;
+  websiteTotal: number;
+  paymentMode: string;
+  projectReference: string;
+  referenceFiles: Array<{
+    kind: "image" | "video";
+    originalName: string;
+    mimeType: string;
+    size: number;
+  }>;
+}): string {
+  return createHash("sha256")
+    .update(
+      JSON.stringify({
+        ...input,
+        referenceFiles: input.referenceFiles.map((file) => ({
+          kind: file.kind,
+          originalName: file.originalName,
+          mimeType: file.mimeType,
+          size: file.size,
+        })),
+      }),
+    )
+    .digest("hex");
 }
 
 function isServiceType(value: string): value is ServicePaymentType {
@@ -250,6 +291,69 @@ export function createServicePaymentRouter(
         }
       }
 
+      const idempotencyKey = getIdempotencyKey(req);
+      if (!idempotencyKey) {
+        return res.status(400).json({
+          error: "Idempotency-Key header is required to start a payment checkout.",
+          code: "IDEMPOTENCY_KEY_REQUIRED",
+        });
+      }
+
+      const requestHash = buildCheckoutRequestHash({
+        serviceType,
+        customerName,
+        customerPhone,
+        customerEmail,
+        description,
+        amount,
+        graphicId,
+        graphicTotal,
+        websiteTotal,
+        paymentMode,
+        projectReference,
+        referenceFiles: referenceFiles.map(({ file, kind }) => ({
+          kind,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+        })),
+      });
+
+      const existing = await servicePaymentRepository.findByIdempotencyKey(idempotencyKey);
+      if (existing) {
+        if (
+          existing.checkoutRequestHash &&
+          existing.checkoutRequestHash !== requestHash
+        ) {
+          return res.status(409).json({
+            error: "This Idempotency-Key was already used for a different checkout request.",
+            code: "IDEMPOTENCY_KEY_REUSED",
+          });
+        }
+
+        if (existing.checkoutUrl && existing.paymentReference) {
+          return res.status(200).json({
+            success: true,
+            idempotentReplay: true,
+            servicePayment: publicRecord(existing),
+            reference: existing.paymentReference,
+            checkoutUrl: existing.checkoutUrl,
+          });
+        }
+
+        if (existing.status === "failed") {
+          return res.status(409).json({
+            error: "The previous checkout attempt failed. Start a new checkout.",
+            code: "CHECKOUT_FAILED_RETRY",
+          });
+        }
+
+        return res.status(409).json({
+          error: "This checkout is still being initialized. Please try again shortly.",
+          code: "CHECKOUT_IN_PROGRESS",
+        });
+      }
+
       const result = await createXhovileStudioServicePayment({
         serviceType,
         customerName,
@@ -264,6 +368,8 @@ export function createServicePaymentRouter(
         ),
         projectReference: paymentMode === "balance" ? projectReference : null,
         graphicId: needsGraphic ? graphicId : null,
+        idempotencyKey,
+        requestHash,
         referenceFiles,
         idempotencyKey,
       });
