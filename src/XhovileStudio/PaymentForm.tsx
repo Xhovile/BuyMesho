@@ -38,14 +38,21 @@ let referenceIdCounter = 0;
 const MAX_REFERENCE_IMAGES = 4;
 const MAX_REFERENCE_FILE_SIZE = 10 * 1024 * 1024;
 
+let idempotencyCounter = 0;
+
 function createIdempotencyKey(): string {
   if (typeof globalThis.crypto?.randomUUID === "function") {
     return globalThis.crypto.randomUUID();
   }
 
-  const bytes = new Uint8Array(16);
-  globalThis.crypto?.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  if (typeof globalThis.crypto?.getRandomValues === "function") {
+    const bytes = new Uint8Array(16);
+    globalThis.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  idempotencyCounter += 1;
+  return `studio-${Date.now()}-${idempotencyCounter}`;
 }
 
 function buildCheckoutFingerprint(input: {
