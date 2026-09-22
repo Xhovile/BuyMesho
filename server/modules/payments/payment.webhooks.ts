@@ -154,7 +154,36 @@ async function handleStudioPayChanguWebhook(
     if (servicePayment) break;
   }
 
-  if (!servicePayment) return null;
+  if (!servicePayment) {
+    const studioReference = studioReferences[0] ?? txRef;
+    const audit = await servicePaymentRepository.recordWebhookEvent({
+      providerEventId: eventId || null,
+      paymentReference: studioReference,
+      eventType: eventType || null,
+      payloadHash,
+      signatureValid: true,
+    });
+
+    if (!audit.inserted) {
+      return {
+        ok: true,
+        status: "duplicate",
+        reference: studioReference,
+      };
+    }
+
+    await servicePaymentRepository.updateWebhookEvent(
+      audit.id,
+      "ignored",
+      `No stored Xhovilé Studio payment found for reference ${studioReference}.`,
+    );
+
+    return {
+      ok: true,
+      status: "ignored",
+      reference: studioReference,
+    };
+  }
 
   const audit = await servicePaymentRepository.recordWebhookEvent({
     providerEventId: eventId || null,
@@ -281,7 +310,7 @@ async function handlePayChanguWebhookInternal(context: PayChanguWebhookContext):
     /^PAYCHANGU-svc_/i.test(reference),
   );
 
-  if (txRef && isStudioReference) {
+  if (isStudioReference) {
     const studioResult = await handleStudioPayChanguWebhook(
       txRef,
       referenceCandidates,
