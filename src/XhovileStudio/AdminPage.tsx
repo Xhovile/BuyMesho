@@ -262,7 +262,7 @@ function PaymentRow({
   payment,
   onSelect,
 }: {
-  payment: AdminPayment;
+  payment: StudioAdminPayment;
   onSelect: () => void;
 }) {
   return (
@@ -310,7 +310,7 @@ function AdminConsole() {
   const [lastRefresh, setLastRefresh] = useState<string | null>(null);
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<"all" | PaymentStatus>("all");
   const [paymentQuery, setPaymentQuery] = useState("");
-  const [selectedPayment, setSelectedPayment] = useState<AdminPayment | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<StudioAdminPayment | null>(null);
 
   const load = useCallback(async (background = false) => {
     if (background) setRefreshing(true);
