@@ -36,6 +36,60 @@ type ReferenceImage = {
 const MAX_REFERENCE_IMAGES = 4;
 const MAX_REFERENCE_FILE_SIZE = 10 * 1024 * 1024;
 
+function createIdempotencyKey(): string {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  const bytes = new Uint8Array(16);
+  globalThis.crypto?.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function buildCheckoutFingerprint(input: {
+  serviceType: ServiceType;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  description: string;
+  amount: number;
+  graphicId: string;
+  graphicTotal: number;
+  websiteTotal: number;
+  paymentMode: PaymentMode;
+  projectReference: string;
+  referenceImages: ReferenceImage[];
+  referenceVideo: File | null;
+}): string {
+  return JSON.stringify({
+    serviceType: input.serviceType,
+    customerName: input.customerName,
+    customerPhone: input.customerPhone,
+    customerEmail: input.customerEmail,
+    description: input.description,
+    amount: input.amount,
+    graphicId: input.graphicId,
+    graphicTotal: input.graphicTotal,
+    websiteTotal: input.websiteTotal,
+    paymentMode: input.paymentMode,
+    projectReference: input.projectReference,
+    referenceImages: input.referenceImages.map((item) => ({
+      name: item.file.name,
+      type: item.file.type,
+      size: item.file.size,
+      lastModified: item.file.lastModified,
+    })),
+    referenceVideo: input.referenceVideo
+      ? {
+          name: input.referenceVideo.name,
+          type: input.referenceVideo.type,
+          size: input.referenceVideo.size,
+          lastModified: input.referenceVideo.lastModified,
+        }
+      : null,
+  });
+}
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -226,6 +280,30 @@ function PaymentForm() {
     setSubmitting(true);
     setError(null);
 
+    const fingerprint = buildCheckoutFingerprint({
+      serviceType,
+      customerName: customerName.trim(),
+      customerPhone: customerPhone.trim(),
+      customerEmail: customerEmail.trim(),
+      description: description.trim(),
+      amount: amountDue,
+      graphicId,
+      graphicTotal,
+      websiteTotal: websiteProjectTotal,
+      paymentMode,
+      projectReference: projectReference.trim(),
+      referenceImages,
+      referenceVideo,
+    });
+
+    if (!idempotencyRef.current || idempotencyRef.current.fingerprint !== fingerprint) {
+      idempotencyRef.current = {
+        fingerprint,
+        key: createIdempotencyKey(),
+      };
+    }
+
+    const idempotencyKey = idempotencyRef.current.key;
     const serviceParts: string[] = [];
     if (needsGraphic) {
       const label = graphicId === "custom" ? "Custom / multiple graphic design" : selectedGraphic?.label ?? "Graphic Design";
@@ -274,7 +352,10 @@ function PaymentForm() {
         body: formData,
       });
 
-      const data = (await response.json()) as Partial<CreateResponse> & { error?: string };
+      const data = (await response.json()) as Partial<CreateResponse> & {
+        error?: string;
+        code?: string;
+      };
       if (!response.ok || !data.checkoutUrl) {
         if (response.status === 409) {
           idempotencyKeyRef.current = null;
