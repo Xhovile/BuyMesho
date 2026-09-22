@@ -103,6 +103,7 @@ type AdminSnapshot = {
     cloudinaryConfigured: boolean;
     notificationEmail: string;
     environment: string;
+    cloudinaryConfigured: boolean;
   };
 };
 
