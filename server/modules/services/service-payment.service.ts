@@ -1,5 +1,10 @@
+import { createHash } from "node:crypto";
 import { paychanguProvider } from "../payments/paychangu.provider.js";
-import { uploadBufferToCloudinary } from "../../lib/cloudinaryUpload.js";
+import {
+  deleteCloudinaryAsset,
+  uploadBufferToCloudinaryAsset,
+  type CloudinaryUploadAsset,
+} from "../../lib/cloudinaryUpload.js";
 import { createServerPaymentConfigFromEnv } from "../payments/payment.service.js";
 import type { PaymentVerificationResult } from "../../../src/modules/payments/types.js";
 import { sendEmail } from "../email/email.service.js";
@@ -10,6 +15,15 @@ import {
   type ServicePaymentRecord,
   type ServicePaymentType,
 } from "./service-payment.repository.js";
+
+export class ServicePaymentIdempotencyConflictError extends Error {
+  readonly code = "STUDIO_IDEMPOTENCY_KEY_REUSED";
+
+  constructor() {
+    super("This payment attempt has already been used for different Studio checkout data.");
+    this.name = "ServicePaymentIdempotencyConflictError";
+  }
+}
 
 export interface CreateServicePaymentInput {
   serviceType: ServicePaymentType;
@@ -63,14 +77,64 @@ export async function notifyXhovileStudioSuccessfulPayment(
   }
 }
 
+function hashServicePaymentRequest(input: CreateServicePaymentInput): string {
+  const files = (input.referenceFiles ?? []).map((reference) => ({
+    kind: reference.kind,
+    originalName: reference.file.originalname,
+    mimeType: reference.file.mimetype,
+    sizeBytes: reference.file.size,
+    sha256: createHash("sha256").update(reference.file.buffer).digest("hex"),
+  }));
+
+  const payload = {
+    serviceType: input.serviceType,
+    customerName: input.customerName,
+    customerPhone: input.customerPhone,
+    customerEmail: input.customerEmail ?? null,
+    description: input.description,
+    amount: input.amount,
+    paymentMode: input.paymentMode ?? null,
+    projectTotal: input.projectTotal ?? null,
+    projectReference: input.projectReference ?? null,
+    graphicId: input.graphicId ?? null,
+    files,
+  };
+
+  return createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+}
+
+function isSameRequest(
+  payment: ServicePaymentRecord,
+  requestHash: string,
+): boolean {
+  return payment.idempotencyRequestHash === requestHash;
+}
+
 export async function createXhovileStudioServicePayment(
-  input: CreateServicePaymentInput,
+  input: CreateServicePaymentInput & { idempotencyKey: string },
 ): Promise<{
   servicePayment: ServicePaymentRecord;
   checkoutUrl: string;
   reference: string;
 }> {
-  const servicePayment = await servicePaymentRepository.create({
+  const requestHash = hashServicePaymentRequest(input);
+  const existing = await servicePaymentRepository.findByIdempotencyKey(input.idempotencyKey);
+
+  if (existing) {
+    if (!isSameRequest(existing, requestHash)) {
+      throw new ServicePaymentIdempotencyConflictError();
+    }
+
+    if (existing.checkoutUrl && existing.paymentReference) {
+      return {
+        servicePayment: existing,
+        checkoutUrl: existing.checkoutUrl,
+        reference: existing.paymentReference,
+      };
+    }
+  }
+
+  const servicePayment = existing ?? await servicePaymentRepository.create({
     serviceType: input.serviceType,
     customerName: input.customerName,
     customerPhone: input.customerPhone,
@@ -82,29 +146,45 @@ export async function createXhovileStudioServicePayment(
     projectTotal: input.projectTotal,
     projectReference: input.projectReference,
     graphicId: input.graphicId,
+    idempotencyKey: input.idempotencyKey,
+    idempotencyRequestHash: requestHash,
   });
 
-  try {
-    const referenceMedia = [];
-    for (const reference of input.referenceFiles ?? []) {
-      const url = await uploadBufferToCloudinary(
-        {
-          buffer: reference.file.buffer,
-          mimetype: reference.file.mimetype,
-        },
-        { folder: "xhovile-studio/references" },
-      );
-      referenceMedia.push({
-        kind: reference.kind,
-        url,
-        originalName: reference.file.originalname,
-        mimeType: reference.file.mimetype,
-        sizeBytes: reference.file.size,
-      });
-    }
+  const uploadedAssets: CloudinaryUploadAsset[] = [];
+  let mediaPersisted = false;
 
-    if (referenceMedia.length) {
-      await servicePaymentRepository.updateReferenceMedia(servicePayment.id, referenceMedia);
+  try {
+    if (!servicePayment.referenceMedia.length && (input.referenceFiles ?? []).length) {
+      const referenceMedia = [];
+
+      for (const reference of input.referenceFiles ?? []) {
+        const asset = await uploadBufferToCloudinaryAsset(
+          {
+            buffer: reference.file.buffer,
+            mimetype: reference.file.mimetype,
+          },
+          { folder: "xhovile-studio/references" },
+        );
+
+        uploadedAssets.push(asset);
+        referenceMedia.push({
+          kind: reference.kind,
+          url: asset.secureUrl,
+          originalName: reference.file.originalname,
+          mimeType: reference.file.mimetype,
+          sizeBytes: reference.file.size,
+          publicId: asset.publicId,
+          resourceType: asset.resourceType,
+        });
+      }
+
+      if (referenceMedia.length) {
+        await servicePaymentRepository.updateReferenceMedia(
+          servicePayment.id,
+          referenceMedia,
+        );
+        mediaPersisted = true;
+      }
     }
 
     const payment = await paychanguProvider.createPayment(
@@ -144,6 +224,7 @@ export async function createXhovileStudioServicePayment(
       id: servicePayment.id,
       reference: payment.reference,
       providerReference: payment.providerReference ?? null,
+      checkoutUrl,
     });
 
     if (!updated) {
@@ -156,6 +237,21 @@ export async function createXhovileStudioServicePayment(
       reference: payment.reference,
     };
   } catch (error) {
+    if (mediaPersisted && uploadedAssets.length) {
+      await servicePaymentRepository.updateReferenceMedia(servicePayment.id, []);
+    }
+
+    for (const asset of [...uploadedAssets].reverse()) {
+      try {
+        await deleteCloudinaryAsset(asset);
+      } catch (cleanupError) {
+        console.error(
+          "[XhovileStudio] Failed to clean up Cloudinary reference:",
+          cleanupError instanceof Error ? cleanupError.message : cleanupError,
+        );
+      }
+    }
+
     await servicePaymentRepository.markFailedById(servicePayment.id);
     throw error;
   }
@@ -176,10 +272,18 @@ function paymentVerificationMatchesService(
     verification.amount?.currency ?? verification.currency ?? "",
   ).trim().toUpperCase();
 
+  const expectedAmountCents = Number.isFinite(payment.amount)
+    ? Math.round(payment.amount * 100)
+    : NaN;
+  const actualAmountCents = Number.isFinite(actualAmount)
+    ? Math.round(actualAmount * 100)
+    : NaN;
+
   return (
     verification.verified === true &&
-    Number.isFinite(actualAmount) &&
-    actualAmount === payment.amount &&
+    Number.isSafeInteger(actualAmountCents) &&
+    Number.isSafeInteger(expectedAmountCents) &&
+    actualAmountCents === expectedAmountCents &&
     actualCurrency === payment.currency.toUpperCase()
   );
 }
