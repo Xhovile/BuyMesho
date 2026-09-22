@@ -417,7 +417,7 @@ export class ServicePaymentRepository {
         input.paymentReference || null,
         input.eventType || null,
         input.payloadHash,
-        input.signatureValid,
+        input.signatureValid ? 1 : 0,
       ],
     );
 
