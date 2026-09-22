@@ -28,8 +28,6 @@ import { navigateToPath } from "../lib/appNavigation";
 import {
   SERVICE_LABELS,
   formatMoney,
-  type ServiceType,
-  type PaymentMode,
   type PaymentStatus,
   type StudioAdminPayment,
 } from "./config";
