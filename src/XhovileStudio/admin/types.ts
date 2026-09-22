@@ -10,9 +10,9 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { PaymentStatus, StudioAdminPayment } from "../config";
 
-type ViewKey = "overview" | "payments" | "customers" | "projects" | "notifications" | "webhooks" | "system";
+export type ViewKey = "overview" | "payments" | "customers" | "projects" | "notifications" | "webhooks" | "system";
 
-type AdminCustomer = {
+export type AdminCustomer = {
   customerPhone: string;
   customerName: string;
   customerEmail: string | null;
@@ -23,7 +23,7 @@ type AdminCustomer = {
   lastActivityAt: string;
 };
 
-type AdminProject = {
+export type AdminProject = {
   projectReference: string;
   customerName: string;
   customerPhone: string;
@@ -33,7 +33,7 @@ type AdminProject = {
   latestStatus: PaymentStatus;
 };
 
-type AdminWebhook = {
+export type AdminWebhook = {
   id: number;
   providerEventId: string | null;
   paymentReference: string | null;
@@ -46,7 +46,7 @@ type AdminWebhook = {
   processedAt: string | null;
 };
 
-type AdminSnapshot = {
+export type AdminSnapshot = {
   success: boolean;
   summary: {
     totalPayments: number;
@@ -83,7 +83,7 @@ type AdminSnapshot = {
   };
 };
 
-const VIEW_LABELS: Record<ViewKey, string> = {
+export const VIEW_LABELS: Record<ViewKey, string> = {
   overview: "Overview",
   payments: "Payments",
   customers: "Customers",
@@ -93,7 +93,7 @@ const VIEW_LABELS: Record<ViewKey, string> = {
   system: "System",
 };
 
-const NAV_ITEMS: Array<{ key: ViewKey; label: string; description: string; icon: LucideIcon }> = [
+export const NAV_ITEMS: Array<{ key: ViewKey; label: string; description: string; icon: LucideIcon }> = [
   {
     key: "overview",
     label: "Overview",
