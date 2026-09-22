@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -22,6 +22,15 @@ import {
   XCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import {
+  DetailField,
+  EmptyState,
+  PaymentRow,
+  SectionCard,
+  StatCard,
+  StatusPill,
+} from "./AdminUi";
+import type { AdminPayment, AdminSnapshot, ViewKey } from "./AdminTypes";
 import AdminRouteGuard from "../components/AdminRouteGuard";
 import { apiFetch } from "../lib/api";
 import { navigateToPath } from "../lib/appNavigation";
