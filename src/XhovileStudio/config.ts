@@ -12,6 +12,7 @@ export interface ServicePayment {
   id: string;
   serviceType: ServiceType;
   customerName: string;
+  customerPhone: string;
   customerEmail: string | null;
   description: string;
   amount: number;
@@ -29,6 +30,8 @@ export interface StudioReferenceMedia {
   originalName: string;
   mimeType: string;
   sizeBytes: number;
+  publicId: string | null;
+  resourceType: "image" | "video" | null;
 }
 
 export interface StudioAdminPayment extends ServicePayment {
