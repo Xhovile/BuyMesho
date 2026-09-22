@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -15,7 +15,6 @@ import {
   Loader2,
   Mail,
   RefreshCw,
-  Search,
   Server,
   Users,
   Webhook,
@@ -23,10 +22,10 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import AdminRouteGuard from "../components/AdminRouteGuard";
+import AdminPayments from "./admin/AdminPayments";
 import { apiFetch } from "../lib/api";
 import { navigateToPath } from "../lib/appNavigation";
 import {
-  SERVICE_LABELS,
   formatMoney,
   type PaymentStatus,
   type StudioAdminPayment,
@@ -117,48 +116,13 @@ const VIEW_LABELS: Record<ViewKey, string> = {
 };
 
 const NAV_ITEMS: Array<{ key: ViewKey; label: string; description: string; icon: LucideIcon }> = [
-  {
-    key: "overview",
-    label: "Overview",
-    description: "Live operating picture for Xhovilé Studio.",
-    icon: LayoutDashboard,
-  },
-  {
-    key: "payments",
-    label: "Payments",
-    description: "Track every Studio checkout and payment status.",
-    icon: CreditCard,
-  },
-  {
-    key: "customers",
-    label: "Customers",
-    description: "See customer activity, spend, and project count.",
-    icon: Users,
-  },
-  {
-    key: "projects",
-    label: "Projects",
-    description: "Follow project references across payments.",
-    icon: FolderKanban,
-  },
-  {
-    key: "notifications",
-    label: "Notifications",
-    description: "Monitor internal payment email delivery.",
-    icon: Bell,
-  },
-  {
-    key: "webhooks",
-    label: "Webhooks",
-    description: "Inspect PayChangu webhook receipt and processing.",
-    icon: Webhook,
-  },
-  {
-    key: "system",
-    label: "System",
-    description: "Check Studio database and integration configuration.",
-    icon: Server,
-  },
+  { key: "overview", label: "Overview", description: "Live operating picture for Xhovilé Studio.", icon: LayoutDashboard },
+  { key: "payments", label: "Payments", description: "Track every Studio checkout and payment status.", icon: CreditCard },
+  { key: "customers", label: "Customers", description: "See customer activity, spend, and project count.", icon: Users },
+  { key: "projects", label: "Projects", description: "Follow project references across payments.", icon: FolderKanban },
+  { key: "notifications", label: "Notifications", description: "Monitor internal payment email delivery.", icon: Bell },
+  { key: "webhooks", label: "Webhooks", description: "Inspect PayChangu webhook receipt and processing.", icon: Webhook },
+  { key: "system", label: "System", description: "Check Studio database and integration configuration.", icon: Server },
 ];
 
 function formatDate(value: string | null | undefined, includeTime = true) {
@@ -173,26 +137,15 @@ function formatDate(value: string | null | undefined, includeTime = true) {
 
 function statusClasses(status: string) {
   const normalized = status.toLowerCase();
-  if (normalized === "paid" || normalized === "processed" || normalized === "sent") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  }
-  if (normalized === "pending" || normalized === "received" || normalized === "sending") {
-    return "border-amber-200 bg-amber-50 text-amber-700";
-  }
-  if (normalized === "failed" || normalized === "refunded") {
-    return "border-red-200 bg-red-50 text-red-700";
-  }
+  if (normalized === "paid" || normalized === "processed" || normalized === "sent") return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (normalized === "pending" || normalized === "received" || normalized === "sending") return "border-amber-200 bg-amber-50 text-amber-700";
+  if (normalized === "failed" || normalized === "refunded") return "border-red-200 bg-red-50 text-red-700";
   return "border-zinc-200 bg-zinc-100 text-zinc-700";
 }
 
 function StatusPill({ value }: { value: string }) {
   return (
-    <span
-      className={
-        "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] " +
-        statusClasses(value)
-      }
-    >
+    <span className={"inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] " + statusClasses(value)}>
       {value}
     </span>
   );
@@ -251,11 +204,7 @@ function SectionCard({
 }
 
 function EmptyState({ label }: { label: string }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-5 py-10 text-center text-sm text-zinc-500">
-      {label}
-    </div>
-  );
+  return <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-5 py-10 text-center text-sm text-zinc-500">{label}</div>;
 }
 
 function AdminConsole() {
@@ -265,16 +214,14 @@ function AdminConsole() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<string | null>(null);
+
   const load = useCallback(async (background = false) => {
     if (background) setRefreshing(true);
     else setLoading(true);
     setError(null);
 
     try {
-      const data = (await apiFetch("/api/admin/xhovile-studio?limit=250", {
-        retryAttempts: 2,
-      })) as AdminSnapshot;
-
+      const data = (await apiFetch("/api/admin/xhovile-studio?limit=250", { retryAttempts: 2 })) as AdminSnapshot;
       setSnapshot(data);
       setLastRefresh(new Date().toISOString());
     } catch (loadError) {
@@ -290,17 +237,14 @@ function AdminConsole() {
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") void load(true);
     }, 30_000);
-
     return () => window.clearInterval(timer);
   }, [load]);
 
   useEffect(() => {
     const handlePopState = () => {
       const raw = new URLSearchParams(window.location.search).get("view") as ViewKey | null;
-      if (raw && VIEW_LABELS[raw]) setView(raw);
-      else setView("overview");
+      setView(raw && VIEW_LABELS[raw] ? raw : "overview");
     };
-
     handlePopState();
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -308,9 +252,10 @@ function AdminConsole() {
 
   const selectView = (nextView: ViewKey) => {
     setView(nextView);
-    const url = nextView === "overview"
-      ? "/Services/XhovileStudio/Admin"
-      : "/Services/XhovileStudio/Admin?view=" + encodeURIComponent(nextView);
+    const url =
+      nextView === "overview"
+        ? "/Services/XhovileStudio/Admin"
+        : "/Services/XhovileStudio/Admin?view=" + encodeURIComponent(nextView);
     window.history.replaceState(window.history.state, "", url);
   };
 
@@ -319,8 +264,7 @@ function AdminConsole() {
       <div className="min-h-screen bg-[#f6f1ea] text-zinc-900">
         <div className="flex min-h-screen items-center justify-center p-6">
           <div className="inline-flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-sm font-bold text-zinc-700 shadow-sm">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            Loading Xhovilé Studio Admin…
+            <Loader2 className="h-5 w-5 animate-spin" /> Loading Xhovilé Studio Admin…
           </div>
         </div>
       </div>
@@ -341,8 +285,7 @@ function AdminConsole() {
               onClick={() => void load(false)}
               className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-black text-white hover:bg-zinc-800"
             >
-              <RefreshCw className="h-4 w-4" />
-              Try Again
+              <RefreshCw className="h-4 w-4" /> Try Again
             </button>
           </div>
         </div>
@@ -352,7 +295,6 @@ function AdminConsole() {
 
   const summary = snapshot?.summary;
   const system = snapshot?.system;
-
   const attentionCount =
     (summary?.pendingPayments ?? 0) +
     (summary?.failedPayments ?? 0) +
@@ -368,8 +310,7 @@ function AdminConsole() {
             onClick={() => window.location.assign("/Services/XhovileStudio")}
             className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Studio
+            <ArrowLeft className="h-4 w-4" /> Studio
           </button>
           <div className="flex items-center gap-2">
             <button
@@ -378,8 +319,7 @@ function AdminConsole() {
               disabled={refreshing}
               className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-black text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <RefreshCw className={(refreshing ? "animate-spin " : "") + "h-4 w-4"} />
-              Refresh
+              <RefreshCw className={(refreshing ? "animate-spin " : "") + "h-4 w-4"} /> Refresh
             </button>
             <button
               type="button"
@@ -405,7 +345,6 @@ function AdminConsole() {
                 Monitor payments, customers, project references, email notifications, and PayChangu webhook activity from one workspace.
               </p>
             </div>
-
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
@@ -420,24 +359,15 @@ function AdminConsole() {
 
         <section className="grid gap-3 md:grid-cols-3">
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-2">
-              <Database className="h-4 w-4 text-zinc-500" />
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">Studio database</span>
-            </div>
+            <div className="flex items-center gap-2"><Database className="h-4 w-4 text-zinc-500" /><span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">Studio database</span></div>
             <p className="mt-2 text-sm font-black text-zinc-900">{system?.databaseConnected ? "Connected" : "Unavailable"}</p>
           </div>
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-zinc-500" />
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">PayChangu</span>
-            </div>
+            <div className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-zinc-500" /><span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">PayChangu</span></div>
             <p className="mt-2 text-sm font-black text-zinc-900">{system?.paychanguConfigured ? "Configured" : "Not configured"}</p>
           </div>
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-zinc-500" />
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">Email transport</span>
-            </div>
+            <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-zinc-500" /><span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">Email transport</span></div>
             <p className="mt-2 text-sm font-black text-zinc-900">{system?.brevoConfigured ? "Brevo configured" : "Not configured"}</p>
           </div>
         </section>
@@ -463,22 +393,13 @@ function AdminConsole() {
                     (active ? "bg-zinc-50 " : "hover:bg-zinc-50")
                   }
                 >
-                  <span
-                    className={
-                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-colors " +
-                      (active ? "bg-[#8f1528] text-white" : "bg-zinc-100 text-zinc-800 group-hover:bg-zinc-900 group-hover:text-white")
-                    }
-                  >
+                  <span className={"flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-colors " + (active ? "bg-[#8f1528] text-white" : "bg-zinc-100 text-zinc-800 group-hover:bg-zinc-900 group-hover:text-white")}>
                     <Icon className="h-5 w-5" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
                       <span className="text-sm font-black text-zinc-900">{item.label}</span>
-                      {item.key === "overview" && attentionCount > 0 ? (
-                        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-black text-red-700 ring-1 ring-red-100">
-                          {attentionCount > 99 ? "99+" : attentionCount}
-                        </span>
-                      ) : null}
+                      {item.key === "overview" && attentionCount > 0 ? <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-black text-red-700 ring-1 ring-red-100">{attentionCount > 99 ? "99+" : attentionCount}</span> : null}
                     </span>
                     <span className="mt-1 block text-sm leading-5 text-zinc-500">{item.description}</span>
                   </span>
@@ -513,18 +434,13 @@ function AdminConsole() {
                 {snapshot?.payments.length ? (
                   <div className="overflow-hidden rounded-2xl border border-zinc-200">
                     <div className="hidden grid-cols-[minmax(150px,1.15fr)_minmax(140px,1fr)_auto_auto] gap-4 bg-zinc-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400 sm:grid sm:grid-cols-[minmax(170px,1.1fr)_minmax(200px,1fr)_auto_auto]">
-                      <span>Customer</span>
-                      <span>Service / Project</span>
-                      <span className="text-right">Amount / Time</span>
-                      <span className="text-right">Status</span>
+                      <span>Customer</span><span>Service / Project</span><span className="text-right">Amount / Time</span><span className="text-right">Status</span>
                     </div>
                     {snapshot.payments.slice(0, 10).map((payment) => (
-                      <PaymentRow key={payment.id} payment={payment} onSelect={() => setSelectedPayment(payment)} />
+                      <AdminPaymentRow key={payment.id} payment={payment} onSelect={() => selectView("payments")} />
                     ))}
                   </div>
-                ) : (
-                  <EmptyState label="No Studio payments have been recorded yet." />
-                )}
+                ) : <EmptyState label="No Studio payments have been recorded yet." />}
               </SectionCard>
 
               <SectionCard title="Attention" eyebrow="Operational signals">
@@ -550,26 +466,15 @@ function AdminConsole() {
 
             <SectionCard title="Today" eyebrow="Confirmed payment activity">
               <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">Paid today</p>
-                  <p className="mt-2 text-2xl font-black text-zinc-950">{summary.todayPaidPayments}</p>
-                </div>
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">Revenue today</p>
-                  <p className="mt-2 text-2xl font-black text-zinc-950">{formatMoney(summary.todayPaidRevenue)}</p>
-                </div>
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">Last payment activity</p>
-                  <p className="mt-2 text-sm font-black text-zinc-950">{formatDate(summary.lastPaymentAt)}</p>
-                </div>
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">Paid today</p><p className="mt-2 text-2xl font-black text-zinc-950">{summary.todayPaidPayments}</p></div>
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">Revenue today</p><p className="mt-2 text-2xl font-black text-zinc-950">{formatMoney(summary.todayPaidRevenue)}</p></div>
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">Last payment activity</p><p className="mt-2 text-sm font-black text-zinc-950">{formatDate(summary.lastPaymentAt)}</p></div>
               </div>
             </SectionCard>
           </>
         ) : null}
 
-        {view === "payments" && snapshot ? (
-          <AdminPayments payments={snapshot.payments} />
-        ) : null}
+        {view === "payments" && snapshot ? <AdminPayments payments={snapshot.payments} /> : null}
 
         {view === "customers" && snapshot ? (
           <SectionCard title="Customers" eyebrow="Customer activity">
@@ -577,30 +482,20 @@ function AdminConsole() {
               <table className="min-w-full text-left">
                 <thead className="bg-zinc-50">
                   <tr className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">
-                    <th className="px-4 py-3">Customer</th>
-                    <th className="px-4 py-3">Contact</th>
-                    <th className="px-4 py-3">Payments</th>
-                    <th className="px-4 py-3">Projects</th>
-                    <th className="px-4 py-3">Paid amount</th>
-                    <th className="px-4 py-3">Last activity</th>
+                    <th className="px-4 py-3">Customer</th><th className="px-4 py-3">Contact</th><th className="px-4 py-3">Payments</th><th className="px-4 py-3">Projects</th><th className="px-4 py-3">Paid amount</th><th className="px-4 py-3">Last activity</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
                   {snapshot.customers.length ? snapshot.customers.map((customer) => (
                     <tr key={customer.customerPhone} className="text-sm">
                       <td className="px-4 py-3 font-black text-zinc-900">{customer.customerName}</td>
-                      <td className="px-4 py-3 text-zinc-600">
-                        <p>{customer.customerPhone}</p>
-                        <p className="mt-0.5 text-xs text-zinc-400">{customer.customerEmail || "No email"}</p>
-                      </td>
+                      <td className="px-4 py-3 text-zinc-600"><p>{customer.customerPhone}</p><p className="mt-0.5 text-xs text-zinc-400">{customer.customerEmail || "No email"}</p></td>
                       <td className="px-4 py-3">{customer.paymentCount} <span className="text-xs text-zinc-400">({customer.paidCount} paid)</span></td>
                       <td className="px-4 py-3">{customer.projectCount}</td>
                       <td className="px-4 py-3 font-black">{formatMoney(customer.paidAmount)}</td>
                       <td className="px-4 py-3 text-xs text-zinc-500">{formatDate(customer.lastActivityAt)}</td>
                     </tr>
-                  )) : (
-                    <tr><td colSpan={6}><EmptyState label="No customers have been recorded yet." /></td></tr>
-                  )}
+                  )) : <tr><td colSpan={6}><EmptyState label="No customers have been recorded yet." /></td></tr>}
                 </tbody>
               </table>
             </div>
@@ -613,30 +508,20 @@ function AdminConsole() {
               <table className="min-w-full text-left">
                 <thead className="bg-zinc-50">
                   <tr className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">
-                    <th className="px-4 py-3">Project</th>
-                    <th className="px-4 py-3">Customer</th>
-                    <th className="px-4 py-3">Payments</th>
-                    <th className="px-4 py-3">Paid amount</th>
-                    <th className="px-4 py-3">Latest status</th>
-                    <th className="px-4 py-3">Last activity</th>
+                    <th className="px-4 py-3">Project</th><th className="px-4 py-3">Customer</th><th className="px-4 py-3">Payments</th><th className="px-4 py-3">Paid amount</th><th className="px-4 py-3">Latest status</th><th className="px-4 py-3">Last activity</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
                   {snapshot.projects.length ? snapshot.projects.map((project) => (
                     <tr key={`${project.projectReference}-${project.customerPhone}`} className="text-sm">
                       <td className="px-4 py-3 font-mono text-xs font-black text-zinc-900">{project.projectReference}</td>
-                      <td className="px-4 py-3">
-                        <p className="font-black text-zinc-900">{project.customerName}</p>
-                        <p className="mt-0.5 text-xs text-zinc-400">{project.customerPhone}</p>
-                      </td>
+                      <td className="px-4 py-3"><p className="font-black text-zinc-900">{project.customerName}</p><p className="mt-0.5 text-xs text-zinc-400">{project.customerPhone}</p></td>
                       <td className="px-4 py-3">{project.paymentCount}</td>
                       <td className="px-4 py-3 font-black">{formatMoney(project.paidAmount)}</td>
                       <td className="px-4 py-3"><StatusPill value={project.latestStatus} /></td>
                       <td className="px-4 py-3 text-xs text-zinc-500">{formatDate(project.lastActivityAt)}</td>
                     </tr>
-                  )) : (
-                    <tr><td colSpan={6}><EmptyState label="No project references have been recorded yet." /></td></tr>
-                  )}
+                  )) : <tr><td colSpan={6}><EmptyState label="No project references have been recorded yet." /></td></tr>}
                 </tbody>
               </table>
             </div>
@@ -651,20 +536,12 @@ function AdminConsole() {
                   <button
                     key={payment.id}
                     type="button"
-                    onClick={() => {
-                      selectView("payments");
-                    }}
+                    onClick={() => selectView("payments")}
                     className="grid w-full gap-3 border-b border-zinc-100 px-4 py-3 text-left last:border-b-0 hover:bg-zinc-50 sm:grid-cols-[minmax(180px,1fr)_auto_minmax(150px,0.8fr)] sm:items-center"
                   >
-                    <div>
-                      <p className="text-sm font-black text-zinc-900">{payment.customerName}</p>
-                      <p className="mt-0.5 text-xs text-zinc-500">{payment.paymentReference || payment.id}</p>
-                    </div>
+                    <div><p className="text-sm font-black text-zinc-900">{payment.customerName}</p><p className="mt-0.5 text-xs text-zinc-500">{payment.paymentReference || payment.id}</p></div>
                     <StatusPill value={payment.successNotificationStatus} />
-                    <div className="text-xs text-zinc-500">
-                      <p>{formatDate(payment.updatedAt)}</p>
-                      {payment.successNotificationError ? <p className="mt-1 truncate text-red-600">{payment.successNotificationError}</p> : null}
-                    </div>
+                    <div className="text-xs text-zinc-500"><p>{formatDate(payment.updatedAt)}</p>{payment.successNotificationError ? <p className="mt-1 truncate text-red-600">{payment.successNotificationError}</p> : null}</div>
                   </button>
                 ))}
               </div>
@@ -672,10 +549,7 @@ function AdminConsole() {
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
                 <div className="flex items-start gap-3">
                   <BadgeCheck className="h-5 w-5 text-emerald-600" />
-                  <div>
-                    <p className="font-black text-emerald-900">No notification issues in the latest records.</p>
-                    <p className="mt-1 text-sm text-emerald-800">Successful Studio payments with unsent, sending, or failed internal notifications would appear here.</p>
-                  </div>
+                  <div><p className="font-black text-emerald-900">No notification issues in the latest records.</p><p className="mt-1 text-sm text-emerald-800">Successful Studio payments with unsent, sending, or failed internal notifications would appear here.</p></div>
                 </div>
               </div>
             )}
@@ -686,34 +560,18 @@ function AdminConsole() {
           <SectionCard title="Webhooks" eyebrow="PayChangu event audit">
             <div className="overflow-x-auto rounded-2xl border border-zinc-200">
               <table className="min-w-full text-left">
-                <thead className="bg-zinc-50">
-                  <tr className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">
-                    <th className="px-4 py-3">Event</th>
-                    <th className="px-4 py-3">Payment reference</th>
-                    <th className="px-4 py-3">Signature</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Created</th>
-                    <th className="px-4 py-3">Error</th>
-                  </tr>
-                </thead>
+                <thead className="bg-zinc-50"><tr className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400"><th className="px-4 py-3">Event</th><th className="px-4 py-3">Payment reference</th><th className="px-4 py-3">Signature</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Created</th><th className="px-4 py-3">Error</th></tr></thead>
                 <tbody className="divide-y divide-zinc-100">
                   {snapshot.webhooks.length ? snapshot.webhooks.map((webhook) => (
                     <tr key={webhook.id} className="text-xs">
-                      <td className="px-4 py-3">
-                        <p className="font-black text-zinc-900">{webhook.eventType || "Unknown event"}</p>
-                        <p className="mt-0.5 font-mono text-[10px] text-zinc-400">{webhook.providerEventId || "No provider event id"}</p>
-                      </td>
+                      <td className="px-4 py-3"><p className="font-black text-zinc-900">{webhook.eventType || "Unknown event"}</p><p className="mt-0.5 font-mono text-[10px] text-zinc-400">{webhook.providerEventId || "No provider event id"}</p></td>
                       <td className="px-4 py-3 font-mono text-[10px] text-zinc-700">{webhook.paymentReference || "—"}</td>
-                      <td className="px-4 py-3">
-                        <StatusPill value={webhook.signatureValid ? "valid" : "invalid"} />
-                      </td>
+                      <td className="px-4 py-3"><StatusPill value={webhook.signatureValid ? "valid" : "invalid"} /></td>
                       <td className="px-4 py-3"><StatusPill value={webhook.status} /></td>
                       <td className="px-4 py-3 text-zinc-500">{formatDate(webhook.createdAt)}</td>
                       <td className="max-w-xs px-4 py-3 text-red-600">{webhook.error || "—"}</td>
                     </tr>
-                  )) : (
-                    <tr><td colSpan={6}><EmptyState label="No Studio webhook events have been recorded yet." /></td></tr>
-                  )}
+                  )) : <tr><td colSpan={6}><EmptyState label="No Studio webhook events have been recorded yet." /></td></tr>}
                 </tbody>
               </table>
             </div>
@@ -731,19 +589,12 @@ function AdminConsole() {
                   ["Brevo email", system.brevoConfigured, "Email transport credentials are configured.", Mail],
                   ["Cloudinary media", system.cloudinaryConfigured, "Reference media storage credentials are configured.", FileText],
                 ] as Array<[string, boolean, string, LucideIcon]>).map(([label, ready, helper, Icon]) => (
-                  <div key={String(label)} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                  <div key={label} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4 text-zinc-500" />
-                        <p className="text-sm font-black text-zinc-900">{String(label)}</p>
-                      </div>
-                      {Boolean(ready) ? (
-                        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                      ) : (
-                        <AlertTriangle className="h-5 w-5 text-amber-500" />
-                      )}
+                      <div className="flex items-center gap-2"><Icon className="h-4 w-4 text-zinc-500" /><p className="text-sm font-black text-zinc-900">{label}</p></div>
+                      {ready ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <AlertTriangle className="h-5 w-5 text-amber-500" />}
                     </div>
-                    <p className="mt-2 text-xs leading-5 text-zinc-500">{String(helper)}</p>
+                    <p className="mt-2 text-xs leading-5 text-zinc-500">{helper}</p>
                   </div>
                 ))}
               </div>
@@ -781,6 +632,45 @@ function AdminConsole() {
           Xhovilé Studio Admin · {VIEW_LABELS[view]}
         </footer>
       </main>
+    </div>
+  );
+}
+
+function AdminPaymentRow({
+  payment,
+  onSelect,
+}: {
+  payment: StudioAdminPayment;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="grid w-full grid-cols-[minmax(150px,1.15fr)_minmax(140px,1fr)_auto_auto] gap-4 border-b border-zinc-100 px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-zinc-50 sm:grid-cols-[minmax(170px,1.1fr)_minmax(200px,1fr)_auto_auto]"
+    >
+      <div className="min-w-0">
+        <p className="truncate text-sm font-black text-zinc-900">{payment.customerName}</p>
+        <p className="mt-0.5 truncate text-xs text-zinc-500">{payment.customerPhone}</p>
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-xs font-bold text-zinc-800">{payment.serviceType}</p>
+        <p className="mt-0.5 truncate text-[11px] text-zinc-500">{payment.projectReference || "No project reference"}</p>
+      </div>
+      <div className="text-right">
+        <p className="text-sm font-black text-zinc-950">{formatMoney(payment.amount, payment.currency)}</p>
+        <p className="mt-0.5 text-[10px] text-zinc-400">{formatDate(payment.createdAt)}</p>
+      </div>
+      <div className="flex items-center justify-end"><StatusPill value={payment.status} /></div>
+    </button>
+  );
+}
+
+function DetailField({ label, value, mono = false }: { label: string; value: ReactNode; mono?: boolean }) {
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3">
+      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">{label}</p>
+      <p className={(mono ? "font-mono text-[11px] " : "text-sm ") + "mt-1 break-words font-bold text-zinc-900"}>{value}</p>
     </div>
   );
 }
