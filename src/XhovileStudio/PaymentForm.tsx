@@ -33,6 +33,8 @@ type ReferenceImage = {
   previewUrl: string;
 };
 
+let referenceIdCounter = 0;
+
 const MAX_REFERENCE_IMAGES = 4;
 const MAX_REFERENCE_FILE_SIZE = 10 * 1024 * 1024;
 
