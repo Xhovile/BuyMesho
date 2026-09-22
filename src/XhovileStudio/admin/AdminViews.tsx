@@ -12,6 +12,7 @@ import {
   Mail,
   Search,
   Webhook,
+  Users,
   XCircle,
 } from "lucide-react";
 import {
@@ -20,6 +21,7 @@ import {
   type PaymentStatus,
   type StudioAdminPayment,
 } from "../config";
+import type { LucideIcon } from "lucide-react";
 import {
   DetailField,
   EmptyState,
