@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { Pool } from "pg";
+import { getPostgresSslOptions } from "../../lib/postgresSsl.js";
 
 let pool: Pool | null = null;
 let schemaPromise: Promise<void> | null = null;
@@ -19,7 +20,6 @@ function createStudioPool(): Pool {
 
   const connectionString = getStudioConnectionString();
   const url = new URL(connectionString);
-  const sslMode = url.searchParams.get("sslmode")?.toLowerCase();
   url.searchParams.delete("sslmode");
   url.searchParams.delete("ssl");
   url.searchParams.delete("sslcert");
@@ -28,12 +28,7 @@ function createStudioPool(): Pool {
 
   pool = new Pool({
     connectionString: url.toString(),
-    ssl:
-      sslMode === "disable"
-        ? false
-        : {
-            rejectUnauthorized: false,
-          },
+    ssl: getPostgresSslOptions(),
     max: Number(process.env.XHOVILE_STUDIO_DB_POOL_MAX ?? 5) || 5,
     idleTimeoutMillis:
       Number(process.env.XHOVILE_STUDIO_DB_IDLE_TIMEOUT_MS ?? 30000) || 30000,
