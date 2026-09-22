@@ -117,8 +117,7 @@ function serializeMeta(metadata: Record<string, unknown> | undefined): Array<{ k
 }
 
 function hasAtMostTwoDecimals(value: number): boolean {
-  const scaled = value * 100;
-  return Number.isInteger(scaled);
+  return Number.isFinite(value) && Number(value.toFixed(2)) === value;
 }
 
 function formatProviderErrorMessage(value: unknown): string | null {
