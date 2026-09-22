@@ -266,7 +266,7 @@ export class ServicePaymentRepository {
       "SELECT * FROM service_payments WHERE id = $1 LIMIT 1",
       [id],
     );
-    return result.rows[0] ? rowToRecord(result.rows[0]) : undefined;
+    return result.rows[0] ? servicePaymentRowToRecord(result.rows[0]) : undefined;
   }
 
   async findByIdempotencyKey(
@@ -277,7 +277,7 @@ export class ServicePaymentRepository {
       "SELECT * FROM service_payments WHERE checkout_idempotency_key = $1 LIMIT 1",
       [key],
     );
-    return result.rows[0] ? rowToRecord(result.rows[0]) : undefined;
+    return result.rows[0] ? servicePaymentRowToRecord(result.rows[0]) : undefined;
   }
 
   async findByReference(reference: string): Promise<ServicePaymentRecord | undefined> {
@@ -286,7 +286,7 @@ export class ServicePaymentRepository {
       "SELECT * FROM service_payments WHERE payment_reference = $1 LIMIT 1",
       [reference],
     );
-    return result.rows[0] ? rowToRecord(result.rows[0]) : undefined;
+    return result.rows[0] ? servicePaymentRowToRecord(result.rows[0]) : undefined;
   }
 
   async attachPayment(input: {
@@ -383,7 +383,7 @@ export class ServicePaymentRepository {
       [now, reference],
     );
 
-    return result.rows[0] ? rowToRecord(result.rows[0]) : undefined;
+    return result.rows[0] ? servicePaymentRowToRecord(result.rows[0]) : undefined;
   }
 
   async markSuccessNotificationSent(
