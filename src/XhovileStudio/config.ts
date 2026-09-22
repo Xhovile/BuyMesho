@@ -2,7 +2,11 @@ export type ServiceType = "graphic_design" | "website_development" | "both";
 export type PaymentMode = "deposit" | "full" | "balance";
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 
-export { GRAPHIC_SERVICES, type GraphicService } from "../shared/studioPricing";
+export {
+  GRAPHIC_SERVICES,
+  MIN_WEBSITE_PROJECT_TOTAL,
+  type GraphicService,
+} from "../shared/studioPricing";
 
 export interface ServicePayment {
   id: string;
