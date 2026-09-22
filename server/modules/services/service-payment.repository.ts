@@ -70,6 +70,9 @@ export interface ServicePaymentRecord {
   successNotificationStatus: "pending" | "sending" | "sent" | "failed";
   successNotificationSentAt: string | null;
   successNotificationError: string | null;
+  checkoutIdempotencyKey: string | null;
+  checkoutRequestHash: string | null;
+  checkoutUrl: string | null;
 }
 
 export function rowToRecord(row: Record<string, unknown>): ServicePaymentRecord {
@@ -115,6 +118,13 @@ export function rowToRecord(row: Record<string, unknown>): ServicePaymentRecord 
     successNotificationError: row.success_notification_error
       ? String(row.success_notification_error)
       : null,
+    checkoutIdempotencyKey: row.checkout_idempotency_key
+      ? String(row.checkout_idempotency_key)
+      : null,
+    checkoutRequestHash: row.checkout_request_hash
+      ? String(row.checkout_request_hash)
+      : null,
+    checkoutUrl: row.checkout_url ? String(row.checkout_url) : null,
   };
 }
 
@@ -167,6 +177,9 @@ export class ServicePaymentRepository {
       successNotificationStatus: "pending",
       successNotificationSentAt: null,
       successNotificationError: null,
+      checkoutIdempotencyKey: input.idempotencyKey ?? null,
+      checkoutRequestHash: input.requestHash ?? null,
+      checkoutUrl: null,
     };
 
     const result = await studioQuery(
@@ -207,6 +220,9 @@ export class ServicePaymentRepository {
         record.successNotificationStatus,
         record.successNotificationSentAt,
         record.successNotificationError,
+        record.checkoutIdempotencyKey,
+        record.checkoutRequestHash,
+        record.checkoutUrl,
       ],
     );
 
@@ -249,6 +265,17 @@ export class ServicePaymentRepository {
     const result = await studioQuery(
       "SELECT * FROM service_payments WHERE id = $1 LIMIT 1",
       [id],
+    );
+    return result.rows[0] ? rowToRecord(result.rows[0]) : undefined;
+  }
+
+  async findByIdempotencyKey(
+    key: string,
+  ): Promise<ServicePaymentRecord | undefined> {
+    await this.ready();
+    const result = await studioQuery(
+      "SELECT * FROM service_payments WHERE checkout_idempotency_key = $1 LIMIT 1",
+      [key],
     );
     return result.rows[0] ? rowToRecord(result.rows[0]) : undefined;
   }
