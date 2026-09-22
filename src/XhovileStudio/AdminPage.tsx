@@ -7,12 +7,15 @@ import {
   CircleDollarSign,
   Clock3,
   CreditCard,
+  Database,
   FolderKanban,
   LayoutDashboard,
   Loader2,
+  Mail,
   RefreshCw,
   Server,
   Users,
+  Webhook,
   XCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
