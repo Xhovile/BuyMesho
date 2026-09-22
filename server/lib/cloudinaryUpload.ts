@@ -9,8 +9,64 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+export type CloudinaryResourceType = "image" | "video";
+
+export type CloudinaryUploadAsset = {
+  secureUrl: string;
+  publicId: string;
+  resourceType: CloudinaryResourceType;
+};
+
 export function isSupportedUploadMime(mime: string): boolean {
   return mime.startsWith("image/") || mime.startsWith("video/");
+}
+
+export async function uploadBufferToCloudinaryAsset(
+  file: {
+    buffer: Buffer;
+    mimetype: string;
+  },
+  options: { folder?: string } = {},
+): Promise<CloudinaryUploadAsset> {
+  if (!file.mimetype || !isSupportedUploadMime(file.mimetype)) {
+    throw new Error("Unsupported file type");
+  }
+
+  const resourceType: CloudinaryResourceType = file.mimetype.startsWith("video/")
+    ? "video"
+    : "image";
+
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: resourceType,
+        folder: options.folder,
+      },
+      (error, result) => {
+        if (error) {
+          reject(
+            error instanceof Error
+              ? error
+              : new Error("Cloudinary upload failed"),
+          );
+          return;
+        }
+
+        if (!result?.secure_url || !result.public_id) {
+          reject(new Error("Cloudinary upload returned an incomplete asset"));
+          return;
+        }
+
+        resolve({
+          secureUrl: result.secure_url,
+          publicId: result.public_id,
+          resourceType,
+        });
+      },
+    );
+
+    uploadStream.end(file.buffer);
+  });
 }
 
 export async function uploadBufferToCloudinary(
@@ -20,17 +76,41 @@ export async function uploadBufferToCloudinary(
   },
   options: { folder?: string } = {},
 ): Promise<string> {
-  if (!file.mimetype || !isSupportedUploadMime(file.mimetype)) {
-    throw new Error("Unsupported file type");
-  }
+  const asset = await uploadBufferToCloudinaryAsset(file, options);
+  return asset.secureUrl;
+}
 
-  const b64 = Buffer.from(file.buffer).toString("base64");
-  const dataURI = `data:${file.mimetype};base64,${b64}`;
+export async function deleteCloudinaryAsset(asset: {
+  publicId: string;
+  resourceType: CloudinaryResourceType;
+}): Promise<void> {
+  if (!asset.publicId) return;
 
-  const result = await cloudinary.uploader.upload(dataURI, {
-    resource_type: "auto",
-    folder: options.folder,
+  await new Promise<void>((resolve, reject) => {
+    cloudinary.uploader.destroy(
+      asset.publicId,
+      {
+        resource_type: asset.resourceType,
+        invalidate: true,
+      },
+      (error, result) => {
+        if (error) {
+          reject(
+            error instanceof Error
+              ? error
+              : new Error("Cloudinary deletion failed"),
+          );
+          return;
+        }
+
+        const resultStatus = String(result?.result ?? "").toLowerCase();
+        if (resultStatus && !["ok", "not found"].includes(resultStatus)) {
+          reject(new Error(`Cloudinary deletion failed: ${resultStatus}`));
+          return;
+        }
+
+        resolve();
+      },
+    );
   });
-
-  return result.secure_url;
 }
