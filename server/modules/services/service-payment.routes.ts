@@ -175,7 +175,7 @@ export function createServicePaymentRouter(
         return res.status(400).json({ error: "Enter a valid amount between MWK 1 and MWK 100,000,000." });
       }
 
-      if (!Number.isInteger(amount * 100)) {
+      if (Number(amount.toFixed(2)) !== amount) {
         return res.status(400).json({ error: "Amount can have at most two decimal places." });
       }
 
