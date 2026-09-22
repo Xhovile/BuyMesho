@@ -3,7 +3,6 @@ import { serverPaymentService } from "./payment.service.js";
 import {
   verifyXhovileStudioServicePayment,
 } from "../services/service-payment.service.js";
-import { servicePaymentRepository } from "../services/service-payment.repository.js";
 
 function getFrontendReturnBaseUrl(): string {
   return (
@@ -33,8 +32,10 @@ export async function payChanguCallbackHandler(req: Request, res: Response): Pro
     return;
   }
 
+  const isStudioReference = /^PAYCHANGU-svc_/i.test(txRef);
+
   try {
-    if (/^PAYCHANGU-svc_/i.test(txRef) && await servicePaymentRepository.findByReference(txRef)) {
+    if (isStudioReference) {
       const verification = await verifyXhovileStudioServicePayment(txRef);
       redirectToPaymentReturn(
         res,
@@ -58,7 +59,7 @@ export async function payChanguCallbackHandler(req: Request, res: Response): Pro
     redirectToPaymentReturn(
       res,
       { tx_ref: txRef, status: "failed" },
-      /^PAYCHANGU-svc_/i.test(txRef) && (await servicePaymentRepository.findByReference(txRef))
+      isStudioReference
         ? "/Services/XhovileStudio/receipt"
         : "/payment/return",
     );
@@ -75,7 +76,7 @@ export async function payChanguReturnHandler(req: Request, res: Response): Promi
       tx_ref: txRef || undefined,
       status,
     },
-    /^PAYCHANGU-svc_/i.test(txRef) && await servicePaymentRepository.findByReference(txRef)
+    /^PAYCHANGU-svc_/i.test(txRef)
       ? "/Services/XhovileStudio/receipt"
       : "/payment/return",
   );
