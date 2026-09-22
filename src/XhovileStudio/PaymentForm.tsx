@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import {
   CircleAlert,
   ShieldCheck,
@@ -39,6 +39,9 @@ function PaymentForm() {
     images: [],
     video: null,
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const idempotencyKeyRef = useRef<string | null>(null);
 
   const selectedGraphic = GRAPHIC_SERVICES.find((item) => item.id === graphicId);
   const graphicTotal =
@@ -275,10 +278,7 @@ function PaymentForm() {
             />
           </div>
 
-          <ReferenceUploader
-            value={referenceFiles}
-            onChange={setReferenceFiles}
-          />
+          <ReferenceUploader onChange={setReferenceFiles} />
 
           <details className="rounded-xl border border-zinc-200 bg-[#fffdfa]">
             <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-bold text-zinc-400">
