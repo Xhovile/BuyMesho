@@ -7,6 +7,7 @@ import {
 } from "../server/modules/services/studio.database.js";
 
 type LegacyPayment = {
+  [key: string]: unknown;
   id?: string;
   service_type?: string;
   customer_name?: string;
@@ -26,6 +27,14 @@ type LegacyPayment = {
 function asString(value: unknown, fallback = ""): string {
   const text = String(value ?? "").trim();
   return text || fallback;
+}
+
+function getDatabaseName(connectionString: string): string {
+  try {
+    return decodeURIComponent(new URL(connectionString).pathname.replace(/^\/+/, ""));
+  } catch {
+    return "";
+  }
 }
 
 async function tableExists(): Promise<boolean> {
@@ -50,6 +59,14 @@ async function migrate(): Promise<void> {
   if (!process.env.XHOVILE_STUDIO_DATABASE_URL?.trim()) {
     throw new Error(
       "XHOVILE_STUDIO_DATABASE_URL is required for the legacy Studio payment migration.",
+    );
+  }
+
+  const sourceDatabase = getDatabaseName(process.env.DATABASE_URL);
+  const studioDatabase = getDatabaseName(process.env.XHOVILE_STUDIO_DATABASE_URL);
+  if (sourceDatabase && studioDatabase && sourceDatabase === studioDatabase) {
+    throw new Error(
+      "Legacy Studio migration requires DATABASE_URL and XHOVILE_STUDIO_DATABASE_URL to point to different PostgreSQL databases.",
     );
   }
 
