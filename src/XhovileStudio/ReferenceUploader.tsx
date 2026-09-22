@@ -21,7 +21,6 @@ function formatFileSize(bytes: number): string {
 }
 
 export interface ReferenceUploaderProps {
-  value: StudioReferenceSelection;
   onChange: (value: StudioReferenceSelection) => void;
 }
 
