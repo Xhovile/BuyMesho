@@ -328,6 +328,23 @@ export async function verifyXhovileStudioServicePayment(
     };
   }
 
+  if (servicePayment.status === "refunded") {
+    return {
+      verified: false,
+      provider: "paychangu",
+      txRef: requestedReference,
+      reference: requestedReference,
+      status: "refunded",
+      currency: servicePayment.currency,
+      amount: {
+        amount: servicePayment.amount,
+        currency: servicePayment.currency,
+      },
+      orderId: servicePayment.id,
+      failureReason: "Studio payment has already been refunded.",
+    };
+  }
+
   const verification = await paychanguProvider.verifyPayment(
     requestedReference,
     createServerPaymentConfigFromEnv(),
@@ -353,7 +370,19 @@ export async function verifyXhovileStudioServicePayment(
     };
   }
 
-  await servicePaymentRepository.markPaid(requestedReference);
+  const updatedPayment = await servicePaymentRepository.markPaid(requestedReference);
+
+  if (!updatedPayment || updatedPayment.status !== "paid") {
+    return {
+      ...verification,
+      verified: false,
+      reference: requestedReference,
+      txRef: requestedReference,
+      orderId: servicePayment.id,
+      failureReason: "Studio payment state prevented confirmation as paid.",
+    };
+  }
+
   await notifyXhovileStudioSuccessfulPayment(requestedReference);
 
   return {
