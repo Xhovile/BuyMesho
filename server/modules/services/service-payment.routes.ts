@@ -98,13 +98,25 @@ export function createServicePaymentRouter(
   const router = express.Router();
   const referenceUpload = multer({
     storage: multer.memoryStorage(),
-    limits: { files: 5, fileSize: 10 * 1024 * 1024, fields: 30 },
+    limits: {
+      files: 5,
+      fileSize: 10 * 1024 * 1024,
+      fields: 30,
+      parts: 35,
+    },
     fileFilter: (_req, file, callback) => {
-      if (file.fieldname === "referenceImages" && file.mimetype.startsWith("image/")) {
+      const mime = file.mimetype.toLowerCase();
+      if (
+        file.fieldname === "referenceImages" &&
+        ALLOWED_REFERENCE_IMAGE_MIMES.has(mime)
+      ) {
         callback(null, true);
         return;
       }
-      if (file.fieldname === "referenceVideo" && file.mimetype.startsWith("video/")) {
+      if (
+        file.fieldname === "referenceVideo" &&
+        ALLOWED_REFERENCE_VIDEO_MIMES.has(mime)
+      ) {
         callback(null, true);
         return;
       }
@@ -128,7 +140,9 @@ export function createServicePaymentRouter(
           const message =
             error.code === "LIMIT_FILE_SIZE"
               ? "Each reference file must be 10 MB or smaller."
-              : error.code === "LIMIT_FILE_COUNT" || error.code === "LIMIT_UNEXPECTED_FILE"
+              : error.code === "LIMIT_FILE_COUNT" ||
+                  error.code === "LIMIT_UNEXPECTED_FILE" ||
+                  error.code === "LIMIT_PART_COUNT"
                 ? "You can attach up to 4 images and 1 video."
                 : "Reference upload could not be processed.";
           return res.status(400).json({ error: message });
