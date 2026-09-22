@@ -7,15 +7,12 @@ import {
   CircleDollarSign,
   Clock3,
   CreditCard,
-  Database,
   FolderKanban,
   LayoutDashboard,
   Loader2,
-  Mail,
   RefreshCw,
   Server,
   Users,
-  Webhook,
   XCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -263,9 +260,9 @@ function AdminConsole() {
         </section>
 
         <section className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2"><Database className="h-4 w-4 text-zinc-500" /><span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">Studio database</span></div><p className="mt-2 text-sm font-black text-zinc-900">{system?.databaseConnected ? "Connected" : "Unavailable"}</p></div>
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2"><Server className="h-4 w-4 text-zinc-500" /><span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">Studio services</span></div><p className="mt-2 text-sm font-black text-zinc-900">{system?.databaseConnected && system?.paychanguConfigured ? "Core services ready" : "Check configuration"}</p></div>
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-zinc-500" /><span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">PayChangu</span></div><p className="mt-2 text-sm font-black text-zinc-900">{system?.paychanguConfigured ? "Configured" : "Not configured"}</p></div>
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2"><Mail className="h-4 w-4 text-zinc-500" /><span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">Email transport</span></div><p className="mt-2 text-sm font-black text-zinc-900">{system?.brevoConfigured ? "Brevo configured" : "Not configured"}</p></div>
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2"><Bell className="h-4 w-4 text-zinc-500" /><span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">Notifications</span></div><p className="mt-2 text-sm font-black text-zinc-900">{system?.brevoConfigured ? "Brevo configured" : "Not configured"}</p></div>
         </section>
 
         <nav className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm">
