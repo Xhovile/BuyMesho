@@ -81,7 +81,7 @@ export async function ensureStudioDatabaseSchema(): Promise<void> {
         provider_reference TEXT,
         payment_reference TEXT UNIQUE,
         checkout_url TEXT,
-        idempotency_key TEXT UNIQUE,
+        idempotency_key TEXT,
         idempotency_request_hash TEXT,
         paid_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -130,9 +130,8 @@ export async function ensureStudioDatabaseSchema(): Promise<void> {
     `);
 
     await studioQuery(`
-      CREATE INDEX IF NOT EXISTS idx_studio_service_payments_idempotency_key
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_studio_service_payments_idempotency_key
       ON service_payments(idempotency_key)
-      WHERE idempotency_key IS NOT NULL
     `);
 
     await studioQuery(`
