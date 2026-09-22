@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import {
   GRAPHIC_SERVICES,
+  MIN_WEBSITE_PROJECT_TOTAL,
   apiUrl,
   type CreateResponse,
   type PaymentMode,
@@ -113,7 +114,7 @@ function PaymentForm() {
   const hasValidProjectTotal =
     paymentMode === "balance" ||
     ((!needsGraphic || graphicTotal > 0) &&
-      (!needsWebsite || websiteProjectTotal >= 80000));
+      (!needsWebsite || websiteProjectTotal >= MIN_WEBSITE_PROJECT_TOTAL));
   const hasValidBalance =
     paymentMode !== "balance" ||
     (projectReference.trim().length >= 3 &&
