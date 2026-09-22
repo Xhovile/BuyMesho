@@ -132,6 +132,7 @@ type AdminSnapshot = {
     paychanguConfigured: boolean;
     webhookSecretConfigured: boolean;
     brevoConfigured: boolean;
+    cloudinaryConfigured: boolean;
     notificationEmail: string;
     environment: string;
   };
@@ -951,6 +952,7 @@ function AdminConsole() {
                   ["PayChangu secret", system.paychanguConfigured, "Server-side payment credentials are configured.", CreditCard],
                   ["Webhook secret", system.webhookSecretConfigured, "PayChangu webhook verification secret is present.", Webhook],
                   ["Brevo email", system.brevoConfigured, "Email transport credentials are configured.", Mail],
+                  ["Cloudinary media", system.cloudinaryConfigured, "Reference media storage credentials are configured.", FileText],
                 ] as Array<[string, boolean, string, LucideIcon]>).map(([label, ready, helper, Icon]) => (
                   <div key={String(label)} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
                     <div className="flex items-start justify-between gap-3">
