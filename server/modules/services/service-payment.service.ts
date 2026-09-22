@@ -150,6 +150,10 @@ export async function createXhovileStudioServicePayment(
     idempotencyRequestHash: requestHash,
   });
 
+  if (!isSameRequest(servicePayment, requestHash)) {
+    throw new ServicePaymentIdempotencyConflictError();
+  }
+
   const uploadedAssets: CloudinaryUploadAsset[] = [];
   let mediaPersisted = false;
 
