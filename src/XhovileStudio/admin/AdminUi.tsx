@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { formatMoney, SERVICE_LABELS, type StudioAdminPayment } from "../config";
 
-function formatDate(value: string | null | undefined, includeTime = true) {
+export function formatDate(value: string | null | undefined, includeTime = true) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
@@ -12,7 +12,7 @@ function formatDate(value: string | null | undefined, includeTime = true) {
   }).format(date);
 }
 
-function statusClasses(status: string) {
+export function statusClasses(status: string) {
   const normalized = status.toLowerCase();
   if (normalized === "paid" || normalized === "processed" || normalized === "sent") {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
@@ -26,7 +26,7 @@ function statusClasses(status: string) {
   return "border-zinc-200 bg-zinc-100 text-zinc-700";
 }
 
-function StatusPill({ value }: { value: string }) {
+export function StatusPill({ value }: { value: string }) {
   return (
     <span
       className={
@@ -39,7 +39,7 @@ function StatusPill({ value }: { value: string }) {
   );
 }
 
-function StatCard({
+export function StatCard({
   icon: Icon,
   label,
   value,
@@ -66,7 +66,7 @@ function StatCard({
   );
 }
 
-function SectionCard({
+export function SectionCard({
   title,
   eyebrow,
   children,
@@ -91,7 +91,7 @@ function SectionCard({
   );
 }
 
-function EmptyState({ label }: { label: string }) {
+export function EmptyState({ label }: { label: string }) {
   return (
     <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-5 py-10 text-center text-sm text-zinc-500">
       {label}
@@ -99,7 +99,7 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-function PaymentRow({
+export function PaymentRow({
   payment,
   onSelect,
 }: {
@@ -133,7 +133,7 @@ function PaymentRow({
   );
 }
 
-function DetailField({ label, value, mono = false }: { label: string; value: ReactNode; mono?: boolean }) {
+export function DetailField({ label, value, mono = false }: { label: string; value: ReactNode; mono?: boolean }) {
   return (
     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3">
       <p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">{label}</p>
