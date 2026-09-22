@@ -845,7 +845,7 @@ function AdminConsole() {
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
                   {snapshot.projects.length ? snapshot.projects.map((project) => (
-                    <tr key={project.projectReference} className="text-sm">
+                    <tr key={`${project.projectReference}-${project.customerPhone}`} className="text-sm">
                       <td className="px-4 py-3 font-mono text-xs font-black text-zinc-900">{project.projectReference}</td>
                       <td className="px-4 py-3">
                         <p className="font-black text-zinc-900">{project.customerName}</p>
