@@ -135,7 +135,7 @@ export async function ensureStudioDatabaseSchema(): Promise<void> {
     `);
 
     await studioQuery(`
-      DO $
+      DO $studio$
       BEGIN
         IF NOT EXISTS (
           SELECT 1 FROM pg_constraint
@@ -194,7 +194,7 @@ export async function ensureStudioDatabaseSchema(): Promise<void> {
           ADD CONSTRAINT chk_studio_service_payments_notification_status
           CHECK (success_notification_status IN ('pending', 'sending', 'sent', 'failed')) NOT VALID;
         END IF;
-      END $;
+      END $studio$;
     `);
 
     await studioQuery(`
