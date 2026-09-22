@@ -36,6 +36,8 @@ export interface CreateServicePaymentInput {
   projectTotal?: number | null;
   projectReference?: string | null;
   graphicId?: string | null;
+  idempotencyKey?: string | null;
+  requestHash?: string | null;
   referenceFiles?: Array<{
     file: Express.Multer.File;
     kind: "image" | "video";
