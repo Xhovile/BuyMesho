@@ -34,8 +34,8 @@ import type { AdminSnapshot, ViewKey } from "./types";
 export interface AdminWorkspaceViewsProps {
   view: ViewKey;
   snapshot: AdminSnapshot;
-  summary: AdminSnapshot["summary"];
-  system: AdminSnapshot["system"];
+  summary?: AdminSnapshot["summary"];
+  system?: AdminSnapshot["system"];
   filteredPayments: StudioAdminPayment[];
   paymentQuery: string;
   setPaymentQuery: (value: string) => void;
