@@ -89,10 +89,10 @@ type AdminSnapshot = {
     lastPaymentAt: string | null;
     lastWebhookAt: string | null;
   };
-  payments: StudioStudioAdminPayment[];
+  payments: StudioAdminPayment[];
   customers: AdminCustomer[];
   projects: AdminProject[];
-  notifications: StudioStudioAdminPayment[];
+  notifications: StudioAdminPayment[];
   webhooks: AdminWebhook[];
   system: {
     databaseConnected: boolean;
