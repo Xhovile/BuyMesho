@@ -50,11 +50,21 @@ export function ensureEventPayoutFinancialIdentityMigration() {
       ON payouts (event_creator_uid, created_at DESC)
       WHERE event_creator_uid IS NOT NULL;
 
+    DROP INDEX IF EXISTS idx_payouts_connect_order_unique;
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_payouts_connect_order_unique
+      ON payouts (order_id)
+      WHERE order_id IS NOT NULL
+        AND escrow_id IS NULL
+        AND COALESCE(owner_type, 'seller') = 'seller'
+        AND event_id IS NULL;
+
     CREATE UNIQUE INDEX IF NOT EXISTS idx_payouts_event_order_unique
       ON payouts (event_id, order_id)
       WHERE event_id IS NOT NULL
         AND order_id IS NOT NULL
         AND owner_type = 'event_creator'
+        AND escrow_id IS NULL
         AND release_entry_id IS NULL;
 
     UPDATE payouts

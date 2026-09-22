@@ -185,13 +185,13 @@ test('event payout candidate rejects an existing payout with a different financi
 
   db.prepare(`
     INSERT INTO payouts (
-      id, seller_id, owner_type, owner_uid, order_id, escrow_id, release_entry_id,
+      id, seller_id, owner_type, owner_uid, event_id, event_creator_uid, order_id, escrow_id, release_entry_id,
       amount, gross_amount, platform_fee_amount, processing_fee_amount, reserve_amount, reserve_cap_amount,
       manual_adjustment_amount, payout_fee_amount, seller_receives_amount, net_amount, formula_snapshot,
       currency, status, provider, requested_by, requested_at, created_at, updated_at
     ) VALUES (
       'event-payout-conflicting-owner', 'event_payout_test_creator', 'seller', 'event_payout_test_creator',
-      'event-payout-test-order', NULL, NULL,
+      992001, 'event_payout_test_creator', 'event-payout-test-order', NULL, NULL,
       9700, 10000, 300, 0, 0, 0, 0, 0, 9700, 9700, '{}',
       'MWK', 'pending_settlement', 'paychangu', 'system', ?, ?, ?
     )
@@ -217,6 +217,7 @@ test('event payout candidate rejects an existing payout with a different financi
 
 test('event payout candidate stores event identity, bound destination, and immutable fee snapshot without escrow', async () => {
   seed();
+  let resultPayoutId = '';
   const now = new Date().toISOString();
 
   await withTransaction(async (client) => {
@@ -233,6 +234,7 @@ test('event payout candidate stores event identity, bound destination, and immut
     }, client);
 
     assert.equal(result.created, true);
+    resultPayoutId = result.payout.id;
     assert.equal(result.payout.ownerType, 'event_creator');
     assert.equal(result.payout.ownerUid, 'event_payout_test_creator');
     assert.equal(result.payout.eventId, '992001');
@@ -250,11 +252,7 @@ test('event payout candidate stores event identity, bound destination, and immut
     assert.equal(result.formulaSnapshot.formulaVersion, 'event-payout-v1');
   });
 
-  const genericReadRow = db.prepare(
-    "SELECT id FROM payouts WHERE order_id = 'event-payout-test-order' LIMIT 1",
-  ).get() as { id: string } | undefined;
-  assert.ok(genericReadRow?.id);
-  const genericRead = payoutService.findById(genericReadRow.id);
+  const genericRead = payoutService.findById(resultPayoutId);
   assert.equal(genericRead?.eventId, '992001');
   assert.equal(genericRead?.eventCreatorUid, 'event_payout_test_creator');
 
