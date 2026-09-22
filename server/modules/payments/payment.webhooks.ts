@@ -117,7 +117,7 @@ function readAmountAndCurrency(payload: Record<string, unknown> | null): { amoun
   const nestedTransaction = extractNestedObject(nestedData?.transaction);
   const amountCandidate = (typeof directAmount === 'number' ? directAmount : Number(directAmount)) || Number(nestedTransaction?.amount ?? nestedData?.amount ?? payload?.amount ?? NaN);
   const currency = readString(nestedTransaction?.currency, nestedData?.currency, payload?.currency);
-  return Number.isFinite(amountCandidate) && amountCandidate > 0 ? { amount: { amount: Math.round(amountCandidate), currency }, currency } : { currency };
+  return Number.isFinite(amountCandidate) && amountCandidate > 0 ? { amount: { amount: amountCandidate, currency }, currency } : { currency };
 }
 
 function findExactWebhookDuplicate(providerEventId: string | null, reference: string | null, eventType: string | null, payloadHash: string): { id: number } | null {
