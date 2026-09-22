@@ -72,7 +72,7 @@ export interface ServicePaymentRecord {
   successNotificationError: string | null;
 }
 
-function rowToRecord(row: Record<string, unknown>): ServicePaymentRecord {
+export function rowToRecord(row: Record<string, unknown>): ServicePaymentRecord {
   return {
     id: String(row.id),
     serviceType: row.service_type as ServicePaymentType,
@@ -277,7 +277,7 @@ export class ServicePaymentRepository {
             provider_reference = $2,
             checkout_url = $3,
             updated_at = $4
-        WHERE id = $4
+        WHERE id = $5
       `,
       [input.reference, input.providerReference || null, input.checkoutUrl || null, now, input.id],
     );
