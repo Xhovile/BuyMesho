@@ -1,6 +1,10 @@
 import express, { type Request, type RequestHandler, type Router } from "express";
 import multer from "multer";
 import {
+  GRAPHIC_SERVICE_PRICE_MAP,
+  MIN_WEBSITE_PROJECT_TOTAL,
+} from "../../../src/shared/studioPricing.js";
+import {
   createXhovileStudioServicePayment,
   ServicePaymentIdempotencyConflictError,
   verifyXhovileStudioServicePayment,
@@ -26,21 +30,6 @@ function isValidPhone(value: string): boolean {
 function isServiceType(value: string): value is ServicePaymentType {
   return value === "graphic_design" || value === "website_development" || value === "both";
 }
-
-const GRAPHIC_SERVICE_PRICES: Record<string, number> = {
-  music_artwork: 5500,
-  flyer: 6500,
-  wedding_card: 7500,
-  business_card: 7500,
-  birthday_card: 7500,
-  poster: 9500,
-  logo_design: 9500,
-  tshirt_design: 9500,
-  sticker_design: 9500,
-  album_cover: 9500,
-  book_cover: 9500,
-  banner_design: 10500,
-};
 
 function publicRecord(record: Awaited<ReturnType<typeof servicePaymentRepository.findById>>) {
   if (!record) return null;
@@ -197,8 +186,8 @@ export function createServicePaymentRouter(
               return res.status(400).json({ error: "Enter the agreed graphic design price." });
             }
             graphicProjectTotal = graphicTotal;
-          } else if (graphicId && Object.prototype.hasOwnProperty.call(GRAPHIC_SERVICE_PRICES, graphicId)) {
-            graphicProjectTotal = GRAPHIC_SERVICE_PRICES[graphicId];
+          } else if (graphicId && Object.prototype.hasOwnProperty.call(GRAPHIC_SERVICE_PRICE_MAP, graphicId)) {
+            graphicProjectTotal = GRAPHIC_SERVICE_PRICE_MAP[graphicId];
           } else {
             return res.status(400).json({ error: "Choose a valid graphic design service." });
           }
@@ -207,7 +196,7 @@ export function createServicePaymentRouter(
         }
 
         if (needsWebsite) {
-          if (!Number.isFinite(websiteTotal) || websiteTotal < 80_000) {
+          if (!Number.isFinite(websiteTotal) || websiteTotal < MIN_WEBSITE_PROJECT_TOTAL) {
             return res.status(400).json({ error: "Enter the agreed website project price." });
           }
           if (!Number.isFinite(amount) || amount <= expectedBalance || amount > websiteTotal + expectedBalance) {
@@ -232,7 +221,7 @@ export function createServicePaymentRouter(
             }
             expectedProjectTotal += graphicTotal;
           } else {
-            const expectedGraphicPrice = GRAPHIC_SERVICE_PRICES[graphicId];
+            const expectedGraphicPrice = GRAPHIC_SERVICE_PRICE_MAP[graphicId];
             if (!expectedGraphicPrice) {
               return res.status(400).json({ error: "Choose a valid graphic design service." });
             }
@@ -241,7 +230,7 @@ export function createServicePaymentRouter(
         }
 
         if (needsWebsite) {
-          if (!Number.isFinite(websiteTotal) || websiteTotal < 80_000) {
+          if (!Number.isFinite(websiteTotal) || websiteTotal < MIN_WEBSITE_PROJECT_TOTAL) {
             return res.status(400).json({ error: "Website projects start at MWK 80,000." });
           }
           expectedProjectTotal += websiteTotal;
