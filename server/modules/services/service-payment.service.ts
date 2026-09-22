@@ -279,9 +279,10 @@ function paymentVerificationMatchesService(
   const expectedAmountCents = Number.isFinite(payment.amount)
     ? Math.round(payment.amount * 100)
     : NaN;
-  const actualAmountCents = Number.isFinite(actualAmount)
-    ? Math.round(actualAmount * 100)
-    : NaN;
+  const actualAmountCents =
+    typeof actualAmount === "number" && Number.isFinite(actualAmount)
+      ? Math.round(actualAmount * 100)
+      : NaN;
 
   return (
     verification.verified === true &&
