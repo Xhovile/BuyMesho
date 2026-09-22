@@ -1,7 +1,12 @@
 import express, { type Request, type RequestHandler, type Router } from "express";
 import multer from "multer";
 import {
+  GRAPHIC_SERVICE_PRICE_MAP,
+  MIN_WEBSITE_PROJECT_TOTAL,
+} from "../../../src/shared/studioPricing.js";
+import {
   createXhovileStudioServicePayment,
+  ServicePaymentIdempotencyConflictError,
   verifyXhovileStudioServicePayment,
 } from "./service-payment.service.js";
 import {
@@ -25,21 +30,6 @@ function isValidPhone(value: string): boolean {
 function isServiceType(value: string): value is ServicePaymentType {
   return value === "graphic_design" || value === "website_development" || value === "both";
 }
-
-const GRAPHIC_SERVICE_PRICES: Record<string, number> = {
-  music_artwork: 5500,
-  flyer: 6500,
-  wedding_card: 7500,
-  business_card: 7500,
-  birthday_card: 7500,
-  poster: 9500,
-  logo_design: 9500,
-  tshirt_design: 9500,
-  sticker_design: 9500,
-  album_cover: 9500,
-  book_cover: 9500,
-  banner_design: 10500,
-};
 
 function publicRecord(record: Awaited<ReturnType<typeof servicePaymentRepository.findById>>) {
   if (!record) return null;
@@ -113,6 +103,15 @@ export function createServicePaymentRouter(
     async (req: Request, res) => {
     res.setHeader("Cache-Control", "no-store");
     try {
+      const idempotencyKey = cleanString(req.headers["idempotency-key"], 200);
+
+      if (!idempotencyKey) {
+        return res.status(400).json({
+          error: "Idempotency-Key header is required for Studio payments.",
+          code: "IDEMPOTENCY_KEY_REQUIRED",
+        });
+      }
+
       const serviceType = cleanString(req.body?.serviceType, 40);
       const customerName = cleanString(req.body?.customerName, 120);
       const customerPhone = cleanString(req.body?.customerPhone, 32);
@@ -165,7 +164,7 @@ export function createServicePaymentRouter(
         return res.status(400).json({ error: "Enter a valid amount between MWK 1 and MWK 100,000,000." });
       }
 
-      if (!Number.isInteger(amount * 100)) {
+      if (Number(amount.toFixed(2)) !== amount) {
         return res.status(400).json({ error: "Amount can have at most two decimal places." });
       }
 
@@ -187,8 +186,8 @@ export function createServicePaymentRouter(
               return res.status(400).json({ error: "Enter the agreed graphic design price." });
             }
             graphicProjectTotal = graphicTotal;
-          } else if (graphicId && Object.prototype.hasOwnProperty.call(GRAPHIC_SERVICE_PRICES, graphicId)) {
-            graphicProjectTotal = GRAPHIC_SERVICE_PRICES[graphicId];
+          } else if (graphicId && Object.prototype.hasOwnProperty.call(GRAPHIC_SERVICE_PRICE_MAP, graphicId)) {
+            graphicProjectTotal = GRAPHIC_SERVICE_PRICE_MAP[graphicId];
           } else {
             return res.status(400).json({ error: "Choose a valid graphic design service." });
           }
@@ -197,7 +196,7 @@ export function createServicePaymentRouter(
         }
 
         if (needsWebsite) {
-          if (!Number.isFinite(websiteTotal) || websiteTotal < 80_000) {
+          if (!Number.isFinite(websiteTotal) || websiteTotal < MIN_WEBSITE_PROJECT_TOTAL) {
             return res.status(400).json({ error: "Enter the agreed website project price." });
           }
           if (!Number.isFinite(amount) || amount <= expectedBalance || amount > websiteTotal + expectedBalance) {
@@ -222,7 +221,7 @@ export function createServicePaymentRouter(
             }
             expectedProjectTotal += graphicTotal;
           } else {
-            const expectedGraphicPrice = GRAPHIC_SERVICE_PRICES[graphicId];
+            const expectedGraphicPrice = GRAPHIC_SERVICE_PRICE_MAP[graphicId];
             if (!expectedGraphicPrice) {
               return res.status(400).json({ error: "Choose a valid graphic design service." });
             }
@@ -231,7 +230,7 @@ export function createServicePaymentRouter(
         }
 
         if (needsWebsite) {
-          if (!Number.isFinite(websiteTotal) || websiteTotal < 80_000) {
+          if (!Number.isFinite(websiteTotal) || websiteTotal < MIN_WEBSITE_PROJECT_TOTAL) {
             return res.status(400).json({ error: "Website projects start at MWK 80,000." });
           }
           expectedProjectTotal += websiteTotal;
@@ -266,6 +265,7 @@ export function createServicePaymentRouter(
         projectReference: paymentMode === "balance" ? projectReference : null,
         graphicId: needsGraphic ? graphicId : null,
         referenceFiles,
+        idempotencyKey,
       });
 
       return res.status(201).json({
@@ -275,6 +275,13 @@ export function createServicePaymentRouter(
         checkoutUrl: result.checkoutUrl,
       });
     } catch (error) {
+      if (error instanceof ServicePaymentIdempotencyConflictError) {
+        return res.status(409).json({
+          error: error.message,
+          code: error.code,
+        });
+      }
+
       console.error("[ServicePayments] Failed to create Xhovile Studio payment:", error);
       return res.status(502).json({
         error: error instanceof Error ? error.message : "Unable to start payment checkout.",

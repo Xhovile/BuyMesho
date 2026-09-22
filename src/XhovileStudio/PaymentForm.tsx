@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CircleAlert,
   Images,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import {
   GRAPHIC_SERVICES,
+  MIN_WEBSITE_PROJECT_TOTAL,
   apiUrl,
   type CreateResponse,
   type PaymentMode,
@@ -58,6 +59,24 @@ function PaymentForm() {
   const [referenceError, setReferenceError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const idempotencyKeyRef = useRef<string | null>(null);
+  const referenceIdCounter = useRef(0);
+  const referencePreviewUrlsRef = useRef<Set<string>>(new Set());
+  const referenceVideoPreviewUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      for (const url of referencePreviewUrlsRef.current) {
+        URL.revokeObjectURL(url);
+      }
+      referencePreviewUrlsRef.current.clear();
+
+      if (referenceVideoPreviewUrlRef.current) {
+        URL.revokeObjectURL(referenceVideoPreviewUrlRef.current);
+        referenceVideoPreviewUrlRef.current = null;
+      }
+    };
+  }, []);
 
   const selectedGraphic = GRAPHIC_SERVICES.find((item) => item.id === graphicId);
   const graphicTotal =
@@ -95,7 +114,7 @@ function PaymentForm() {
   const hasValidProjectTotal =
     paymentMode === "balance" ||
     ((!needsGraphic || graphicTotal > 0) &&
-      (!needsWebsite || websiteProjectTotal >= 80000));
+      (!needsWebsite || websiteProjectTotal >= MIN_WEBSITE_PROJECT_TOTAL));
   const hasValidBalance =
     paymentMode !== "balance" ||
     (projectReference.trim().length >= 3 &&
@@ -143,10 +162,12 @@ function PaymentForm() {
       );
       if (duplicate) continue;
 
+      const previewUrl = URL.createObjectURL(file);
+      referencePreviewUrlsRef.current.add(previewUrl);
       accepted.push({
-        id: `${file.name}-${file.size}-${file.lastModified}-${Math.random()}`,
+        id: `${file.name}-${file.size}-${file.lastModified}-${referenceIdCounter.current++}`,
         file,
-        previewUrl: URL.createObjectURL(file),
+        previewUrl,
       });
     }
 
@@ -157,7 +178,10 @@ function PaymentForm() {
   function removeReferenceImage(id: string) {
     setReferenceImages((current) => {
       const target = current.find((item) => item.id === id);
-      if (target) URL.revokeObjectURL(target.previewUrl);
+      if (target) {
+        URL.revokeObjectURL(target.previewUrl);
+        referencePreviewUrlsRef.current.delete(target.previewUrl);
+      }
       return current.filter((item) => item.id !== id);
     });
     setReferenceError(null);
@@ -174,14 +198,23 @@ function PaymentForm() {
       return;
     }
 
-    if (referenceVideoPreviewUrl) URL.revokeObjectURL(referenceVideoPreviewUrl);
+    if (referenceVideoPreviewUrl) {
+      URL.revokeObjectURL(referenceVideoPreviewUrl);
+      referenceVideoPreviewUrlRef.current = null;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    referenceVideoPreviewUrlRef.current = previewUrl;
     setReferenceVideo(file);
-    setReferenceVideoPreviewUrl(URL.createObjectURL(file));
+    setReferenceVideoPreviewUrl(previewUrl);
     setReferenceError(null);
   }
 
   function removeReferenceVideo() {
-    if (referenceVideoPreviewUrl) URL.revokeObjectURL(referenceVideoPreviewUrl);
+    if (referenceVideoPreviewUrl) {
+      URL.revokeObjectURL(referenceVideoPreviewUrl);
+      referenceVideoPreviewUrlRef.current = null;
+    }
     setReferenceVideo(null);
     setReferenceVideoPreviewUrl(null);
     setReferenceError(null);
@@ -204,6 +237,10 @@ function PaymentForm() {
     const referenceNote = paymentMode === "balance" ? ` | Project reference: ${projectReference.trim()}` : "";
 
     try {
+      const idempotencyKey =
+        idempotencyKeyRef.current ?? crypto.randomUUID();
+      idempotencyKeyRef.current = idempotencyKey;
+
       const formData = new FormData();
       formData.append("serviceType", serviceType);
       formData.append("customerName", customerName.trim());
@@ -231,11 +268,17 @@ function PaymentForm() {
 
       const response = await fetch(apiUrl("/api/public/service-payments"), {
         method: "POST",
+        headers: {
+          "Idempotency-Key": idempotencyKey,
+        },
         body: formData,
       });
 
       const data = (await response.json()) as Partial<CreateResponse> & { error?: string };
       if (!response.ok || !data.checkoutUrl) {
+        if (response.status === 409) {
+          idempotencyKeyRef.current = null;
+        }
         throw new Error(data.error || "Unable to start payment.");
       }
 

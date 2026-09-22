@@ -203,11 +203,15 @@ async function handleStudioPayChanguWebhook(
 
   const receivedCurrency = normalizeCurrency(amount?.currency);
   const receivedAmount = amount?.amount;
+  const receivedAmountCents =
+    receivedAmount === undefined ? undefined : Math.round(receivedAmount * 100);
+  const expectedAmountCents = Math.round(servicePayment.amount * 100);
 
   if (isPaychanguSuccessStatus(status)) {
     if (
-      receivedAmount === undefined ||
-      receivedAmount !== servicePayment.amount ||
+      receivedAmountCents === undefined ||
+      !Number.isSafeInteger(receivedAmountCents) ||
+      receivedAmountCents !== expectedAmountCents ||
       receivedCurrency !== normalizeCurrency(servicePayment.currency)
     ) {
       await servicePaymentRepository.updateWebhookEvent(

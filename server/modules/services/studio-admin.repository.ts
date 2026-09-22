@@ -1,5 +1,8 @@
 import { ensureStudioDatabaseSchema, studioQuery } from "./studio.database.js";
-import { parseReferenceMedia, type ServicePaymentRecord } from "./service-payment.repository.js";
+import {
+  rowToRecord,
+  type ServicePaymentRecord,
+} from "./service-payment.repository.js";
 
 export type StudioAdminCustomer = {
   customerPhone: string;
@@ -65,6 +68,7 @@ export type StudioAdminSnapshot = {
     paychanguConfigured: boolean;
     webhookSecretConfigured: boolean;
     brevoConfigured: boolean;
+    cloudinaryConfigured: boolean;
     notificationEmail: string;
     environment: string;
   };
@@ -91,53 +95,6 @@ function rowToWebhook(row: Record<string, unknown>): StudioAdminWebhook {
     error: row.error ? String(row.error) : null,
     createdAt: String(row.created_at ?? ""),
     processedAt: row.processed_at ? String(row.processed_at) : null,
-  };
-}
-
-function rowToPayment(row: Record<string, unknown>): ServicePaymentRecord {
-  return {
-    id: String(row.id),
-    serviceType: row.service_type as ServicePaymentRecord["serviceType"],
-    customerName: String(row.customer_name ?? ""),
-    customerPhone: String(row.customer_phone ?? ""),
-    customerEmail: row.customer_email ? String(row.customer_email) : null,
-    description: String(row.description ?? ""),
-    amount: Number(row.amount ?? 0),
-    currency: String(row.currency ?? "MWK"),
-    status: row.status as ServicePaymentRecord["status"],
-    paymentMode: row.payment_mode
-      ? (row.payment_mode as ServicePaymentRecord["paymentMode"])
-      : null,
-    projectTotal:
-      row.project_total === null || row.project_total === undefined
-        ? null
-        : Number(row.project_total),
-    projectReference: row.project_reference ? String(row.project_reference) : null,
-    graphicId: row.graphic_id ? String(row.graphic_id) : null,
-    referenceMedia: parseReferenceMedia(row.reference_media),
-    providerReference: row.provider_reference
-      ? String(row.provider_reference)
-      : null,
-    paymentReference: row.payment_reference
-      ? String(row.payment_reference)
-      : null,
-    paidAt: row.paid_at ? String(row.paid_at) : null,
-    createdAt: String(row.created_at ?? ""),
-    updatedAt: String(row.updated_at ?? ""),
-    successNotificationStatus:
-      row.success_notification_status === "sent"
-        ? "sent"
-        : row.success_notification_status === "sending"
-          ? "sending"
-          : row.success_notification_status === "failed"
-            ? "failed"
-            : "pending",
-    successNotificationSentAt: row.success_notification_sent_at
-      ? String(row.success_notification_sent_at)
-      : null,
-    successNotificationError: row.success_notification_error
-      ? String(row.success_notification_error)
-      : null,
   };
 }
 
@@ -174,7 +131,13 @@ export async function getStudioAdminSnapshot(
           0
         ) AS today_paid_revenue,
         COUNT(DISTINCT customer_phone) AS customer_count,
-        COUNT(DISTINCT NULLIF(project_reference, '')) AS project_count,
+        COUNT(DISTINCT (
+          NULLIF(project_reference, ''),
+          customer_phone
+        )) FILTER (
+          WHERE project_reference IS NOT NULL
+            AND TRIM(project_reference) <> ''
+        ) AS project_count,
         COUNT(*) FILTER (
           WHERE success_notification_status IN ('pending', 'sending')
         ) AS notification_pending,
@@ -207,8 +170,10 @@ export async function getStudioAdminSnapshot(
       `
         SELECT
           customer_phone,
-          MAX(customer_name) AS customer_name,
-          MAX(customer_email) AS customer_email,
+          (ARRAY_AGG(customer_name ORDER BY updated_at DESC)
+            FILTER (WHERE customer_name IS NOT NULL AND TRIM(customer_name) <> ''))[1] AS customer_name,
+          (ARRAY_AGG(customer_email ORDER BY updated_at DESC)
+            FILTER (WHERE customer_email IS NOT NULL AND TRIM(customer_email) <> ''))[1] AS customer_email,
           COUNT(*) AS payment_count,
           COUNT(*) FILTER (WHERE status = 'paid') AS paid_count,
           COALESCE(SUM(amount) FILTER (WHERE status = 'paid'), 0) AS paid_amount,
@@ -225,8 +190,9 @@ export async function getStudioAdminSnapshot(
       `
         SELECT
           project_reference,
-          MAX(customer_name) AS customer_name,
-          MAX(customer_phone) AS customer_phone,
+          customer_phone,
+          (ARRAY_AGG(customer_name ORDER BY updated_at DESC)
+            FILTER (WHERE customer_name IS NOT NULL AND TRIM(customer_name) <> ''))[1] AS customer_name,
           COUNT(*) AS payment_count,
           COALESCE(SUM(amount) FILTER (WHERE status = 'paid'), 0) AS paid_amount,
           MAX(updated_at) AS last_activity_at,
@@ -234,7 +200,7 @@ export async function getStudioAdminSnapshot(
         FROM service_payments
         WHERE project_reference IS NOT NULL
           AND TRIM(project_reference) <> ''
-        GROUP BY project_reference
+        GROUP BY project_reference, customer_phone
         ORDER BY MAX(updated_at) DESC
         LIMIT $1
       `,
@@ -299,7 +265,7 @@ export async function getStudioAdminSnapshot(
         ? String(summaryRow.last_webhook_at)
         : null,
     },
-    payments: paymentResult.rows.map(rowToPayment),
+    payments: paymentResult.rows.map(rowToRecord),
     customers: customerResult.rows.map((row) => ({
       customerPhone: String(row.customer_phone ?? ""),
       customerName: String(row.customer_name ?? ""),
@@ -319,7 +285,7 @@ export async function getStudioAdminSnapshot(
       lastActivityAt: String(row.last_activity_at ?? ""),
       latestStatus: String(row.latest_status ?? "pending"),
     })),
-    notifications: notificationResult.rows.map(rowToPayment),
+    notifications: notificationResult.rows.map(rowToRecord),
     webhooks: webhookResult.rows.map(rowToWebhook),
     system: {
       databaseConnected: true,
@@ -329,6 +295,11 @@ export async function getStudioAdminSnapshot(
         process.env.PAYCHANGU_WEBHOOK_SECRET?.trim(),
       ),
       brevoConfigured: Boolean(process.env.BREVO_API_KEY?.trim()),
+      cloudinaryConfigured: Boolean(
+        process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
+        process.env.CLOUDINARY_API_KEY?.trim() &&
+        process.env.CLOUDINARY_API_SECRET?.trim(),
+      ),
       notificationEmail:
         process.env.XHOVILE_STUDIO_NOTIFICATION_EMAIL?.trim() ||
         "xhovilepublications@gmail.com",

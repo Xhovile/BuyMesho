@@ -1,8 +1,7 @@
 import "dotenv/config";
 
-import fs from "node:fs";
-import path from "node:path";
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
+import { getPostgresSslOptions } from "./lib/postgresSsl.js";
 
 function normalizeConnectionString(value: string): string {
   try {
@@ -104,41 +103,15 @@ const connectionString = rawConnectionString && !isPlaceholderDatabaseUrl(rawCon
   ? stripSslQueryParams(rawConnectionString)
   : "";
 
-const sslMode = process.env.PGSSLMODE?.trim().toLowerCase();
-const sslEnabled = sslMode !== "disable";
-const sslRejectUnauthorized = parseBoolean(process.env.PGSSL_REJECT_UNAUTHORIZED) ?? false;
 const allowMockDatabase = process.env.NODE_ENV === "test" || process.env.NODE_ENV !== "production" || parseBoolean(process.env.ALLOW_MOCK_DATABASE) === true;
 
-function loadSslCaCertificate(): string | undefined {
-  if (!sslEnabled || !sslRejectUnauthorized) return undefined;
-
-  const inlineCa = process.env.PGSSL_CA?.trim();
-  if (inlineCa) return inlineCa;
-
-  const caPath = process.env.PGSSL_CA_PATH?.trim() || path.resolve(process.cwd(), "ca.pem");
-  try {
-    return fs.readFileSync(caPath, "utf8");
-  } catch (error) {
-    const message =
-      `PostgreSQL SSL certificate verification is enabled, but the CA certificate could not be loaded from ${caPath}. ` +
-      "Set PGSSL_CA to the Aiven project CA or set PGSSL_CA_PATH to a readable CA file.";
-    throw new Error(`${message} ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
 
 let poolInstance: Pool | null = null;
 if (connectionString) {
   try {
-    const sslCa = loadSslCaCertificate();
-
     poolInstance = new Pool({
       connectionString,
-      ssl: sslEnabled
-        ? {
-            rejectUnauthorized: sslRejectUnauthorized,
-            ...(sslCa ? { ca: sslCa } : {}),
-          }
-        : false,
+      ssl: getPostgresSslOptions(),
       max: Number(process.env.PGPOOL_MAX ?? 10) || 10,
       idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT_MS ?? 30_000) || 30_000,
       connectionTimeoutMillis: Number(process.env.PGPOOL_CONNECTION_TIMEOUT_MS ?? 10_000) || 10_000,

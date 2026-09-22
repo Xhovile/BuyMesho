@@ -4,13 +4,13 @@ import AiIcon from "../components/ai/AiIcon";
 import PwaInstallPrompt from "../components/PwaInstallPrompt";
 import MobileDrawerSwipe from "../components/MobileDrawerSwipe";
 import ScrollToTopFab from "../components/ScrollToTopFab";
-import { navigateToPath } from "../lib/appNavigation";
+import { isXhovileStudioPath, navigateToPath } from "../lib/appNavigation";
 import logoImage from "../../photos/LOGO.svg";
 import xsLogo from "../../photos/XSLOGO.svg";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 export function RouteLoader() {
-  const isStandaloneStudio = window.location.pathname.startsWith("/Services/XhovileStudio");
+  const isStandaloneStudio = isXhovileStudioPath(window.location.pathname);
 
   if (isStandaloneStudio) {
     return (
@@ -124,7 +124,7 @@ export class DebugErrorBoundary extends Component<{ children: ReactNode }, { has
 }
 
 export default function RootRouterGlobalUI() {
-  const isStandaloneStudio = window.location.pathname.startsWith("/Services/XhovileStudio");
+  const isStandaloneStudio = isXhovileStudioPath(window.location.pathname);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [copilotOpen, setCopilotOpen] = useState(false);
 

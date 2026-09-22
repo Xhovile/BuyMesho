@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { Pool } from "pg";
+import { getPostgresSslOptions } from "../../lib/postgresSsl.js";
 
 let pool: Pool | null = null;
 let schemaPromise: Promise<void> | null = null;
@@ -19,7 +20,6 @@ function createStudioPool(): Pool {
 
   const connectionString = getStudioConnectionString();
   const url = new URL(connectionString);
-  const sslMode = url.searchParams.get("sslmode")?.toLowerCase();
   url.searchParams.delete("sslmode");
   url.searchParams.delete("ssl");
   url.searchParams.delete("sslcert");
@@ -28,12 +28,7 @@ function createStudioPool(): Pool {
 
   pool = new Pool({
     connectionString: url.toString(),
-    ssl:
-      sslMode === "disable"
-        ? false
-        : {
-            rejectUnauthorized: false,
-          },
+    ssl: getPostgresSslOptions(),
     max: Number(process.env.XHOVILE_STUDIO_DB_POOL_MAX ?? 5) || 5,
     idleTimeoutMillis:
       Number(process.env.XHOVILE_STUDIO_DB_IDLE_TIMEOUT_MS ?? 30000) || 30000,
@@ -85,6 +80,9 @@ export async function ensureStudioDatabaseSchema(): Promise<void> {
         reference_media JSONB NOT NULL DEFAULT '[]'::jsonb,
         provider_reference TEXT,
         payment_reference TEXT UNIQUE,
+        checkout_url TEXT,
+        idempotency_key TEXT,
+        idempotency_request_hash TEXT,
         paid_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -113,12 +111,90 @@ export async function ensureStudioDatabaseSchema(): Promise<void> {
 
     await studioQuery(`
       ALTER TABLE service_payments
+      ADD COLUMN IF NOT EXISTS checkout_url TEXT
+    `);
+
+    await studioQuery(`
+      ALTER TABLE service_payments
+      ADD COLUMN IF NOT EXISTS idempotency_key TEXT
+    `);
+
+    await studioQuery(`
+      ALTER TABLE service_payments
+      ADD COLUMN IF NOT EXISTS idempotency_request_hash TEXT
+    `);
+
+    await studioQuery(`
+      ALTER TABLE service_payments
       ADD COLUMN IF NOT EXISTS success_notification_error TEXT
     `);
 
     await studioQuery(`
-      CREATE INDEX IF NOT EXISTS idx_studio_service_payments_reference
-      ON service_payments(payment_reference)
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_studio_service_payments_idempotency_key
+      ON service_payments(idempotency_key)
+    `);
+
+    await studioQuery(`
+      DO $studio$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_service_payments_service_type'
+        ) THEN
+          ALTER TABLE service_payments
+          ADD CONSTRAINT chk_studio_service_payments_service_type
+          CHECK (service_type IN ('graphic_design', 'website_development', 'both')) NOT VALID;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_service_payments_status'
+        ) THEN
+          ALTER TABLE service_payments
+          ADD CONSTRAINT chk_studio_service_payments_status
+          CHECK (status IN ('pending', 'paid', 'failed', 'refunded')) NOT VALID;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_service_payments_payment_mode'
+        ) THEN
+          ALTER TABLE service_payments
+          ADD CONSTRAINT chk_studio_service_payments_payment_mode
+          CHECK (payment_mode IS NULL OR payment_mode IN ('deposit', 'full', 'balance')) NOT VALID;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_service_payments_amount'
+        ) THEN
+          ALTER TABLE service_payments
+          ADD CONSTRAINT chk_studio_service_payments_amount
+          CHECK (
+            amount > 0
+            AND amount <= 100000000
+            AND amount * 100 = ROUND(amount * 100)
+          ) NOT VALID;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_service_payments_reference_media'
+        ) THEN
+          ALTER TABLE service_payments
+          ADD CONSTRAINT chk_studio_service_payments_reference_media
+          CHECK (jsonb_typeof(reference_media) = 'array') NOT VALID;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_service_payments_notification_status'
+        ) THEN
+          ALTER TABLE service_payments
+          ADD CONSTRAINT chk_studio_service_payments_notification_status
+          CHECK (success_notification_status IN ('pending', 'sending', 'sent', 'failed')) NOT VALID;
+        END IF;
+      END $studio$;
     `);
 
     await studioQuery(`

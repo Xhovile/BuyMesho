@@ -11,6 +11,8 @@ export interface ServicePaymentReference {
   originalName: string;
   mimeType: string;
   sizeBytes: number;
+  publicId: string | null;
+  resourceType: "image" | "video" | null;
 }
 
 export function parseReferenceMedia(value: unknown): ServicePaymentReference[] {
@@ -35,6 +37,9 @@ export function parseReferenceMedia(value: unknown): ServicePaymentReference[] {
       originalName: typeof row.originalName === "string" ? row.originalName : "Reference file",
       mimeType: typeof row.mimeType === "string" ? row.mimeType : "",
       sizeBytes: Number(row.sizeBytes ?? 0),
+      publicId: typeof row.publicId === "string" && row.publicId.trim() ? row.publicId : null,
+      resourceType:
+        row.resourceType === "video" ? "video" : row.resourceType === "image" ? "image" : null,
     }];
   });
 }
@@ -56,6 +61,9 @@ export interface ServicePaymentRecord {
   referenceMedia: ServicePaymentReference[];
   providerReference: string | null;
   paymentReference: string | null;
+  checkoutUrl: string | null;
+  idempotencyKey: string | null;
+  idempotencyRequestHash: string | null;
   paidAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -64,7 +72,7 @@ export interface ServicePaymentRecord {
   successNotificationError: string | null;
 }
 
-function rowToRecord(row: Record<string, unknown>): ServicePaymentRecord {
+export function rowToRecord(row: Record<string, unknown>): ServicePaymentRecord {
   return {
     id: String(row.id),
     serviceType: row.service_type as ServicePaymentType,
@@ -85,6 +93,11 @@ function rowToRecord(row: Record<string, unknown>): ServicePaymentRecord {
     referenceMedia: parseReferenceMedia(row.reference_media),
     providerReference: row.provider_reference ? String(row.provider_reference) : null,
     paymentReference: row.payment_reference ? String(row.payment_reference) : null,
+    checkoutUrl: row.checkout_url ? String(row.checkout_url) : null,
+    idempotencyKey: row.idempotency_key ? String(row.idempotency_key) : null,
+    idempotencyRequestHash: row.idempotency_request_hash
+      ? String(row.idempotency_request_hash)
+      : null,
     paidAt: row.paid_at ? String(row.paid_at) : null,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
@@ -122,6 +135,8 @@ export class ServicePaymentRepository {
     projectTotal?: number | null;
     projectReference?: string | null;
     graphicId?: string | null;
+    idempotencyKey?: string | null;
+    idempotencyRequestHash?: string | null;
   }): Promise<ServicePaymentRecord> {
     await this.ready();
 
@@ -143,6 +158,9 @@ export class ServicePaymentRepository {
       referenceMedia: [],
       providerReference: null,
       paymentReference: null,
+      checkoutUrl: null,
+      idempotencyKey: input.idempotencyKey || null,
+      idempotencyRequestHash: input.idempotencyRequestHash || null,
       paidAt: null,
       createdAt: now,
       updatedAt: now,
@@ -151,15 +169,17 @@ export class ServicePaymentRepository {
       successNotificationError: null,
     };
 
-    await studioQuery(
+    const result = await studioQuery(
       `
         INSERT INTO service_payments (
           id, service_type, customer_name, customer_phone, customer_email,
           description, amount, currency, status, payment_mode, project_total,
           project_reference, graphic_id, reference_media, provider_reference, payment_reference,
-          paid_at, created_at, updated_at, success_notification_status,
-          success_notification_sent_at, success_notification_error
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+          checkout_url, idempotency_key, idempotency_request_hash, paid_at, created_at, updated_at,
+          success_notification_status, success_notification_sent_at, success_notification_error
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+        ON CONFLICT (idempotency_key) DO NOTHING
+        RETURNING id
       `,
       [
         record.id,
@@ -178,6 +198,9 @@ export class ServicePaymentRepository {
         JSON.stringify(record.referenceMedia),
         record.providerReference,
         record.paymentReference,
+        record.checkoutUrl,
+        record.idempotencyKey,
+        record.idempotencyRequestHash,
         record.paidAt,
         record.createdAt,
         record.updatedAt,
@@ -186,6 +209,11 @@ export class ServicePaymentRepository {
         record.successNotificationError,
       ],
     );
+
+    if (result.rowCount === 0 && record.idempotencyKey) {
+      const existing = await this.findByIdempotencyKey(record.idempotencyKey);
+      if (existing) return existing;
+    }
 
     return record;
   }
@@ -205,6 +233,15 @@ export class ServicePaymentRepository {
       [JSON.stringify(referenceMedia.slice(0, 5)), now, id],
     );
     return this.findById(id);
+  }
+
+  async findByIdempotencyKey(key: string): Promise<ServicePaymentRecord | undefined> {
+    await this.ready();
+    const result = await studioQuery(
+      "SELECT * FROM service_payments WHERE idempotency_key = $1 LIMIT 1",
+      [key],
+    );
+    return result.rows[0] ? rowToRecord(result.rows[0]) : undefined;
   }
 
   async findById(id: string): Promise<ServicePaymentRecord | undefined> {
@@ -229,6 +266,7 @@ export class ServicePaymentRepository {
     id: string;
     providerReference?: string | null;
     reference: string;
+    checkoutUrl?: string | null;
   }): Promise<ServicePaymentRecord | undefined> {
     await this.ready();
     const now = new Date().toISOString();
@@ -237,10 +275,11 @@ export class ServicePaymentRepository {
         UPDATE service_payments
         SET payment_reference = $1,
             provider_reference = $2,
-            updated_at = $3
-        WHERE id = $4
+            checkout_url = $3,
+            updated_at = $4
+        WHERE id = $5
       `,
-      [input.reference, input.providerReference || null, now, input.id],
+      [input.reference, input.providerReference || null, input.checkoutUrl || null, now, input.id],
     );
     return this.findById(input.id);
   }
@@ -378,7 +417,7 @@ export class ServicePaymentRepository {
         input.paymentReference || null,
         input.eventType || null,
         input.payloadHash,
-        input.signatureValid,
+        input.signatureValid ? 1 : 0,
       ],
     );
 

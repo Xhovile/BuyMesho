@@ -64,7 +64,7 @@ export const ORDER_TRACKING_BASE_PATH = "/orders";
 export const INSTALL_PATH = "/install";
 export const XHOVILE_STUDIO_PATH = "/Services/XhovileStudio";
 export const isXhovileStudioPath = (pathname: string): boolean =>
-  /^\/services\/xhovilestudio(?:\/|$)/i.test(pathname);
+  /^\/services\/xhovilestudio(?:\/receipt|\/admin)?\/?$/i.test(pathname);
 export const MARKET_CHIP_PATHS: Partial<Record<HeaderChip, string>> = {
   All: EXPLORE_PATH, Deals: `${EXPLORE_PATH}/deals`, "Lay-by": `${EXPLORE_PATH}/lay-by`, Events: `${EXPLORE_PATH}/events`, Wholesale: `${EXPLORE_PATH}/wholesale`, Gadgets: "/category?category=phones", Fashion: "/category?category=fashion", Food: "/category?category=food", Academics: "/category?category=books", Beauty: "/category?category=beauty", Sellers: `${EXPLORE_PATH}/sellers`, Innovation: `${EXPLORE_PATH}/innovation`, Accommodation: `${EXPLORE_PATH}/accommodation`, Lending: `${EXPLORE_PATH}/lending`,
 };

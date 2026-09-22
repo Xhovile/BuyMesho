@@ -28,44 +28,12 @@ import { navigateToPath } from "../lib/appNavigation";
 import {
   SERVICE_LABELS,
   formatMoney,
-  type ServiceType,
-  type PaymentMode,
   type PaymentStatus,
+  type StudioAdminPayment,
 } from "./config";
 import xsLogo from "../../photos/XSLOGO.svg";
 
 type ViewKey = "overview" | "payments" | "customers" | "projects" | "notifications" | "webhooks" | "system";
-
-type AdminPayment = {
-  id: string;
-  serviceType: ServiceType;
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string | null;
-  description: string;
-  amount: number;
-  currency: string;
-  status: PaymentStatus;
-  paymentMode: PaymentMode | null;
-  projectTotal: number | null;
-  projectReference: string | null;
-  graphicId: string | null;
-  providerReference: string | null;
-  paymentReference: string | null;
-  paidAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-  successNotificationStatus: "pending" | "sending" | "sent" | "failed";
-  successNotificationSentAt: string | null;
-  successNotificationError: string | null;
-  referenceMedia: Array<{
-    kind: "image" | "video";
-    url: string;
-    originalName: string;
-    mimeType: string;
-    sizeBytes: number;
-  }>;
-};
 
 type AdminCustomer = {
   customerPhone: string;
@@ -121,10 +89,10 @@ type AdminSnapshot = {
     lastPaymentAt: string | null;
     lastWebhookAt: string | null;
   };
-  payments: AdminPayment[];
+  payments: StudioAdminPayment[];
   customers: AdminCustomer[];
   projects: AdminProject[];
-  notifications: AdminPayment[];
+  notifications: StudioAdminPayment[];
   webhooks: AdminWebhook[];
   system: {
     databaseConnected: boolean;
@@ -132,6 +100,7 @@ type AdminSnapshot = {
     paychanguConfigured: boolean;
     webhookSecretConfigured: boolean;
     brevoConfigured: boolean;
+    cloudinaryConfigured: boolean;
     notificationEmail: string;
     environment: string;
   };
@@ -844,7 +813,7 @@ function AdminConsole() {
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
                   {snapshot.projects.length ? snapshot.projects.map((project) => (
-                    <tr key={project.projectReference} className="text-sm">
+                    <tr key={`${project.projectReference}-${project.customerPhone}`} className="text-sm">
                       <td className="px-4 py-3 font-mono text-xs font-black text-zinc-900">{project.projectReference}</td>
                       <td className="px-4 py-3">
                         <p className="font-black text-zinc-900">{project.customerName}</p>
@@ -951,6 +920,7 @@ function AdminConsole() {
                   ["PayChangu secret", system.paychanguConfigured, "Server-side payment credentials are configured.", CreditCard],
                   ["Webhook secret", system.webhookSecretConfigured, "PayChangu webhook verification secret is present.", Webhook],
                   ["Brevo email", system.brevoConfigured, "Email transport credentials are configured.", Mail],
+                  ["Cloudinary media", system.cloudinaryConfigured, "Reference media storage credentials are configured.", FileText],
                 ] as Array<[string, boolean, string, LucideIcon]>).map(([label, ready, helper, Icon]) => (
                   <div key={String(label)} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
                     <div className="flex items-start justify-between gap-3">
