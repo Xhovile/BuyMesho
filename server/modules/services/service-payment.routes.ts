@@ -19,6 +19,7 @@ import {
   type ServicePaymentType,
 } from "./service-payment.repository.js";
 import { buildXhovileStudioReceiptPdf } from "./service-payment.receipt.js";
+import { verifyXhovileStudioReceiptAccessToken } from "./studio-receipt-access.js";
 
 const STUDIO_REFERENCE_UPLOAD_DIR = path.join(
   os.tmpdir(),
@@ -39,6 +40,20 @@ function isValidPhone(value: string): boolean {
 
 function isServiceType(value: string): value is ServicePaymentType {
   return value === "graphic_design" || value === "website_development" || value === "both";
+}
+
+function getReceiptAccessToken(req: Request): string | null {
+  const authorization = req.headers.authorization;
+  if (typeof authorization === "string" && /^Bearer\s+/i.test(authorization)) {
+    return authorization.replace(/^Bearer\s+/i, "").trim() || null;
+  }
+
+  const token = cleanString(req.query.token, 500);
+  return token || null;
+}
+
+function hasReceiptAccess(req: Request, reference: string): boolean {
+  return verifyXhovileStudioReceiptAccessToken(reference, getReceiptAccessToken(req));
 }
 
 function getUploadedReferenceFiles(req: Request): Express.Multer.File[] {
@@ -343,6 +358,10 @@ export function createServicePaymentRouter(
       return res.status(400).json({ error: "Payment reference is required." });
     }
 
+    if (!hasReceiptAccess(req, reference)) {
+      return res.status(401).json({ error: "A valid receipt access token is required." });
+    }
+
     let servicePayment = await servicePaymentRepository.findByReference(reference);
     if (!servicePayment) {
       return res.status(404).json({ error: "Service payment not found." });
@@ -390,6 +409,8 @@ export function createServicePaymentRouter(
       return res.status(404).json({ error: "Service payment not found." });
     }
 
+    const receiptAccessGranted = hasReceiptAccess(req, reference);
+
     if (servicePayment.status === "pending") {
       try {
         await verifyXhovileStudioServicePayment(reference);
@@ -399,6 +420,26 @@ export function createServicePaymentRouter(
     }
 
     const refreshed = await servicePaymentRepository.findByReference(reference);
+
+    if (!receiptAccessGranted) {
+      return res.json({
+        success: true,
+        servicePayment: refreshed
+          ? {
+              id: refreshed.id,
+              serviceType: refreshed.serviceType,
+              amount: refreshed.amount,
+              currency: refreshed.currency,
+              status: refreshed.status,
+              paymentReference: refreshed.paymentReference,
+              paidAt: refreshed.paidAt,
+              createdAt: refreshed.createdAt,
+              updatedAt: refreshed.updatedAt,
+            }
+          : null,
+      });
+    }
+
     return res.json({
       success: true,
       servicePayment: toPublicRecord(refreshed),
