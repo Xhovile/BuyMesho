@@ -24,79 +24,11 @@ import AdminWebhooks from "./admin/AdminWebhooks";
 import AdminSystem from "./admin/AdminSystem";
 import { apiFetch } from "../lib/api";
 import { navigateToPath } from "../lib/appNavigation";
-import { formatMoney, type PaymentStatus, type StudioAdminPayment } from "./config";
+import { formatMoney, type StudioAdminPayment } from "./config";
 import xsLogo from "../../photos/XSLOGO.svg";
+import type { AdminSnapshot } from "./admin/types";
 
 type ViewKey = "overview" | "payments" | "customers" | "projects" | "notifications" | "webhooks" | "system";
-
-type AdminCustomer = {
-  customerPhone: string;
-  customerName: string;
-  customerEmail: string | null;
-  paymentCount: number;
-  paidCount: number;
-  paidAmount: number;
-  projectCount: number;
-  lastActivityAt: string;
-};
-
-type AdminProject = {
-  projectReference: string;
-  customerName: string;
-  customerPhone: string;
-  paymentCount: number;
-  paidAmount: number;
-  lastActivityAt: string;
-  latestStatus: PaymentStatus;
-};
-
-type AdminSnapshot = {
-  success: boolean;
-  summary: {
-    totalPayments: number;
-    paidPayments: number;
-    pendingPayments: number;
-    failedPayments: number;
-    refundedPayments: number;
-    paidRevenue: number;
-    todayPaidPayments: number;
-    todayPaidRevenue: number;
-    customerCount: number;
-    projectCount: number;
-    notificationPending: number;
-    notificationFailed: number;
-    webhookReceived: number;
-    webhookFailed: number;
-    lastPaymentAt: string | null;
-    lastWebhookAt: string | null;
-  };
-  payments: StudioAdminPayment[];
-  customers: AdminCustomer[];
-  projects: AdminProject[];
-  notifications: StudioAdminPayment[];
-  webhooks: Array<{
-    id: number;
-    providerEventId: string | null;
-    paymentReference: string | null;
-    eventType: string | null;
-    payloadHash: string;
-    status: string;
-    signatureValid: boolean;
-    error: string | null;
-    createdAt: string;
-    processedAt: string | null;
-  }>;
-  system: {
-    databaseConnected: boolean;
-    databaseCheckedAt: string | null;
-    paychanguConfigured: boolean;
-    webhookSecretConfigured: boolean;
-    brevoConfigured: boolean;
-    cloudinaryConfigured: boolean;
-    notificationEmail: string;
-    environment: string;
-  };
-};
 
 const VIEW_LABELS: Record<ViewKey, string> = {
   overview: "Overview",
