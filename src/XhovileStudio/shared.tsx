@@ -302,11 +302,37 @@ export function StudioCheckoutButton({
     </button>
   );
 
+  const [floating, setFloating] = useState(false);
+
+  useEffect(() => {
+    const updatePosition = () => {
+      const documentHeight = document.documentElement.scrollHeight;
+      const distanceToBottom = documentHeight - (window.scrollY + window.innerHeight);
+      const hasScrollableContent = documentHeight > window.innerHeight + 80;
+      setFloating(hasScrollableContent && distanceToBottom > 96);
+    };
+
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, { passive: true });
+    window.addEventListener("resize", updatePosition);
+
+    return () => {
+      window.removeEventListener("scroll", updatePosition);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, []);
+
   return (
-    <div className="sticky bottom-3 z-[100] -mx-1 px-1 sm:bottom-5">
-      <div className="rounded-[15px] border border-black bg-white/95 p-1.5 shadow-[0_12px_35px_rgba(30,25,20,0.18)] backdrop-blur-md">
-        {button}
-      </div>
+    <div className="relative h-12">
+      {floating ? (
+        <div className="pointer-events-none fixed inset-x-3 bottom-3 z-[100] mx-auto w-auto max-w-2xl sm:bottom-5 sm:w-[calc(100%-3rem)]">
+          <div className="pointer-events-auto rounded-[15px] border border-black bg-white/95 p-1.5 shadow-[0_12px_35px_rgba(30,25,20,0.18)] backdrop-blur-md">
+            {button}
+          </div>
+        </div>
+      ) : (
+        <div className="absolute inset-0">{button}</div>
+      )}
     </div>
   );
 }

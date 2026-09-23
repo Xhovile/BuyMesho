@@ -55,9 +55,18 @@ export interface CreateResponse {
   servicePayment: ServicePayment;
 }
 
+export type PublicServicePaymentStatus = Omit<
+  ServicePayment,
+  "customerName" | "customerEmail" | "description"
+> & {
+  customerName?: string;
+  customerEmail?: string | null;
+  description?: string;
+};
+
 export interface StatusResponse {
   success: boolean;
-  servicePayment: ServicePayment | null;
+  servicePayment: PublicServicePaymentStatus | null;
 }
 
 export const SERVICE_LABELS: Record<ServiceType, string> = {

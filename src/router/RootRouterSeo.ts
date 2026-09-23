@@ -38,36 +38,38 @@ function upsertCanonical(href: string) {
 }
 
 function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
-  const normalizedStudioPath = pathname.replace(/\/+$/, "").toLowerCase();
+  const normalizedPathname =
+    pathname === "/" ? "/" : pathname.replace(/\/+$/, "") || "/";
+  const normalizedStudioPath = normalizedPathname.toLowerCase();
 
-  if (normalizedStudioPath === "/services/xhovilestudio") {
+  if (normalizedStudioPath === "/xhovilestudio" || normalizedStudioPath === "/services/xhovilestudio") {
     return {
       title: "Xhovile Studio — Service Payment",
       description:
         "Submit a Graphic Design or Website Development request and continue to secure payment checkout.",
-      canonicalPath: "/Services/XhovileStudio",
+      canonicalPath: "/xhovilestudio",
     };
   }
 
-  if (normalizedStudioPath === "/services/xhovilestudio/receipt") {
+  if (normalizedStudioPath === "/xhovilestudio/receipt" || normalizedStudioPath === "/services/xhovilestudio/receipt") {
     return {
       title: "Xhovile Studio — Payment Receipt",
       description: "View and download your Xhovile Studio payment receipt.",
-      canonicalPath: "/Services/XhovileStudio/receipt",
+      canonicalPath: "/xhovilestudio/receipt",
       noindex: true,
     };
   }
 
-  if (normalizedStudioPath === "/services/xhovilestudio/admin") {
+  if (normalizedStudioPath === "/xhovilestudio/admin" || normalizedStudioPath === "/services/xhovilestudio/admin") {
     return {
       title: "Xhovile Studio — Admin",
       description: "Xhovile Studio administration.",
-      canonicalPath: "/Services/XhovileStudio/Admin",
+      canonicalPath: "/xhovilestudio/admin",
       noindex: true,
     };
   }
 
-  switch (pathname) {
+  switch (normalizedPathname) {
     case "/":
     case "/home":
       return { title: HOMEPAGE_TITLE, description: HOMEPAGE_DESCRIPTION, canonicalPath: "/", keywords: HOMEPAGE_KEYWORDS };
@@ -102,7 +104,12 @@ function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
     case "/transaction-json":
       return { title: "Transaction JSON — BuyMesho", description: "Deep-link JSON view for transaction debugging.", canonicalPath: "/transaction-json", noindex: true };
     default:
-      return { title: "BuyMesho", description: "BuyMesho marketplace.", canonicalPath: pathname || "/", noindex: true };
+      return {
+        title: "BuyMesho",
+        description: "BuyMesho marketplace.",
+        canonicalPath: normalizedPathname,
+        noindex: true,
+      };
   }
 }
 
