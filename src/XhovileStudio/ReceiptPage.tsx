@@ -194,7 +194,7 @@ function ReceiptPage() {
           ) : null}
           <button
             type="button"
-            onClick={() => window.location.assign("/Services/XhovileStudio")}
+            onClick={() => window.location.assign("/xhovilestudio")}
             className="flex items-center justify-center gap-2 rounded-xl border border-zinc-200 px-5 py-3 text-sm font-black text-zinc-900 hover:bg-white/5"
           >
             <RotateCcw className="h-4 w-4" />
