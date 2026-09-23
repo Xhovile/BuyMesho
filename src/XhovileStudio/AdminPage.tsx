@@ -22,7 +22,6 @@ import AdminWebhooks from "./admin/AdminWebhooks";
 import AdminSystem from "./admin/AdminSystem";
 import { apiFetch } from "../lib/api";
 import { navigateToPath } from "../lib/appNavigation";
-import { formatMoney } from "./config";
 import xsLogo from "../../photos/XSLOGO.svg";
 import AdminOverview from "./admin/AdminOverview";
 import type { AdminSnapshot } from "./admin/types";
@@ -48,6 +47,16 @@ const NAV_ITEMS: Array<{ key: ViewKey; label: string; description: string; icon:
   { key: "webhooks", label: "Webhooks", description: "Inspect PayChangu webhook receipt and processing.", icon: Webhook },
   { key: "system", label: "System", description: "Check Studio database and integration configuration.", icon: Server },
 ];
+
+function formatDate(value: string | null | undefined, includeTime = true) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-MW", {
+    dateStyle: "medium",
+    timeStyle: includeTime ? "short" : undefined,
+  }).format(date);
+}
 
 function AdminConsole() {
   const [view, setView] = useState<ViewKey>("overview");
