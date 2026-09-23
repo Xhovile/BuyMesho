@@ -130,10 +130,10 @@ export async function getStudioAdminSnapshot(
           ),
           0
         ) AS today_paid_revenue,
-        COUNT(DISTINCT customer_phone) AS customer_count,
+        COUNT(DISTINCT REGEXP_REPLACE(customer_phone, '[^0-9+]', '', 'g')) AS customer_count,
         COUNT(DISTINCT (
           NULLIF(project_reference, ''),
-          customer_phone
+          REGEXP_REPLACE(customer_phone, '[^0-9+]', '', 'g')
         )) FILTER (
           WHERE project_reference IS NOT NULL
             AND TRIM(project_reference) <> ''
@@ -171,7 +171,7 @@ export async function getStudioAdminSnapshot(
     studioQuery<Record<string, unknown>>(
       `
         SELECT
-          customer_phone,
+          (ARRAY_AGG(customer_phone ORDER BY updated_at DESC))[1] AS customer_phone,
           (ARRAY_AGG(customer_name ORDER BY updated_at DESC)
             FILTER (WHERE customer_name IS NOT NULL AND TRIM(customer_name) <> ''))[1] AS customer_name,
           (ARRAY_AGG(customer_email ORDER BY updated_at DESC)
@@ -182,7 +182,7 @@ export async function getStudioAdminSnapshot(
           COUNT(DISTINCT NULLIF(project_reference, '')) AS project_count,
           MAX(updated_at) AS last_activity_at
         FROM service_payments
-        GROUP BY customer_phone
+        GROUP BY REGEXP_REPLACE(customer_phone, '[^0-9+]', '', 'g')
         ORDER BY MAX(updated_at) DESC
         LIMIT $1
       `,
@@ -192,7 +192,7 @@ export async function getStudioAdminSnapshot(
       `
         SELECT
           project_reference,
-          customer_phone,
+          (ARRAY_AGG(customer_phone ORDER BY updated_at DESC))[1] AS customer_phone,
           (ARRAY_AGG(customer_name ORDER BY updated_at DESC)
             FILTER (WHERE customer_name IS NOT NULL AND TRIM(customer_name) <> ''))[1] AS customer_name,
           COUNT(*) AS payment_count,
@@ -202,7 +202,7 @@ export async function getStudioAdminSnapshot(
         FROM service_payments
         WHERE project_reference IS NOT NULL
           AND TRIM(project_reference) <> ''
-        GROUP BY project_reference, customer_phone
+        GROUP BY project_reference, REGEXP_REPLACE(customer_phone, '[^0-9+]', '', 'g')
         ORDER BY MAX(updated_at) DESC
         LIMIT $1
       `,
