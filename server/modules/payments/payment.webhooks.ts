@@ -148,6 +148,39 @@ async function handleStudioPayChanguWebhook(
 
   if (studioReferences.length === 0) return null;
 
+  if (!eventType || !isAcceptedPaychanguEventType(eventType)) {
+    const studioReference = studioReferences[0] ?? txRef;
+    const audit = await servicePaymentRepository.recordWebhookEvent({
+      providerEventId: eventId || null,
+      paymentReference: studioReference,
+      eventType: eventType || null,
+      payloadHash,
+      signatureValid: true,
+    });
+
+    if (!audit.inserted) {
+      return {
+        ok: true,
+        status: "duplicate",
+        reference: studioReference,
+      };
+    }
+
+    await servicePaymentRepository.updateWebhookEvent(
+      audit.id,
+      "ignored",
+      !eventType
+        ? "Missing PayChangu webhook event type."
+        : `Unhandled PayChangu webhook event type: ${eventType}`,
+    );
+
+    return {
+      ok: true,
+      status: "ignored",
+      reference: studioReference,
+    };
+  }
+
   let servicePayment = null;
   for (const reference of studioReferences) {
     servicePayment = await servicePaymentRepository.findByReference(reference);

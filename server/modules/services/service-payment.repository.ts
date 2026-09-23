@@ -44,6 +44,22 @@ export function parseReferenceMedia(value: unknown): ServicePaymentReference[] {
   });
 }
 
+export type ServicePaymentPublicRecord = Pick<
+  ServicePaymentRecord,
+  | "id"
+  | "serviceType"
+  | "customerName"
+  | "customerEmail"
+  | "description"
+  | "amount"
+  | "currency"
+  | "status"
+  | "paymentReference"
+  | "paidAt"
+  | "createdAt"
+  | "updatedAt"
+>;
+
 export interface ServicePaymentRecord {
   id: string;
   serviceType: ServicePaymentType;
@@ -70,6 +86,27 @@ export interface ServicePaymentRecord {
   successNotificationStatus: "pending" | "sending" | "sent" | "failed";
   successNotificationSentAt: string | null;
   successNotificationError: string | null;
+}
+
+export function toPublicRecord(
+  record: ServicePaymentRecord | null | undefined,
+): ServicePaymentPublicRecord | null {
+  if (!record) return null;
+
+  return {
+    id: record.id,
+    serviceType: record.serviceType,
+    customerName: record.customerName,
+    customerEmail: record.customerEmail,
+    description: record.description,
+    amount: record.amount,
+    currency: record.currency,
+    status: record.status,
+    paymentReference: record.paymentReference,
+    paidAt: record.paidAt,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+  };
 }
 
 export function rowToRecord(row: Record<string, unknown>): ServicePaymentRecord {
@@ -414,8 +451,8 @@ export class ServicePaymentRepository {
       `,
       [
         input.providerEventId || null,
-        input.paymentReference || null,
-        input.eventType || null,
+        input.paymentReference || "",
+        input.eventType || "",
         input.payloadHash,
         input.signatureValid ? 1 : 0,
       ],
@@ -436,8 +473,8 @@ export class ServicePaymentRepository {
       `,
       [
         input.providerEventId || null,
-        input.paymentReference || null,
-        input.eventType || null,
+        input.paymentReference || "",
+        input.eventType || "",
         input.payloadHash,
       ],
     );

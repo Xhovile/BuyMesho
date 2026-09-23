@@ -198,7 +198,7 @@ test('event payout candidate rejects an existing payout with a different financi
     ) VALUES (
       'event-payout-conflicting-owner', 'event_payout_test_creator', 'seller', 'event_payout_test_creator',
       992001, 'event_payout_test_creator', 'event-payout-test-order', NULL, NULL,
-      'event-payout-test-destination', 9700, 10000, 300, 0, 0, 0, 0, 0, 9700, 9700, '{}',
+      'event-payout-conflicting-destination', 9700, 10000, 300, 0, 0, 0, 0, 0, 9700, 9700, '{}',
       'MWK', 'pending_settlement', 'paychangu', 'system', ?, ?, ?
     )
   `).run(now, now, now);
