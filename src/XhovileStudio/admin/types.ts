@@ -10,7 +10,14 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { PaymentStatus, StudioAdminPayment } from "../config";
 
-export type ViewKey = "overview" | "payments" | "customers" | "projects" | "notifications" | "webhooks" | "system";
+export type ViewKey =
+  | "overview"
+  | "payments"
+  | "customers"
+  | "projects"
+  | "notifications"
+  | "webhooks"
+  | "system";
 
 export type AdminCustomer = {
   customerPhone: string;
@@ -46,41 +53,45 @@ export type AdminWebhook = {
   processedAt: string | null;
 };
 
+export type AdminSystemStatus = {
+  databaseConnected: boolean;
+  databaseCheckedAt: string | null;
+  paychanguConfigured: boolean;
+  webhookSecretConfigured: boolean;
+  brevoConfigured: boolean;
+  cloudinaryConfigured: boolean;
+  notificationEmail: string;
+  environment: string;
+};
+
+export type AdminSummary = {
+  totalPayments: number;
+  paidPayments: number;
+  pendingPayments: number;
+  failedPayments: number;
+  refundedPayments: number;
+  paidRevenue: number;
+  todayPaidPayments: number;
+  todayPaidRevenue: number;
+  customerCount: number;
+  projectCount: number;
+  notificationPending: number;
+  notificationFailed: number;
+  webhookReceived: number;
+  webhookFailed: number;
+  lastPaymentAt: string | null;
+  lastWebhookAt: string | null;
+};
+
 export type AdminSnapshot = {
   success: boolean;
-  summary: {
-    totalPayments: number;
-    paidPayments: number;
-    pendingPayments: number;
-    failedPayments: number;
-    refundedPayments: number;
-    paidRevenue: number;
-    todayPaidPayments: number;
-    todayPaidRevenue: number;
-    customerCount: number;
-    projectCount: number;
-    notificationPending: number;
-    notificationFailed: number;
-    webhookReceived: number;
-    webhookFailed: number;
-    lastPaymentAt: string | null;
-    lastWebhookAt: string | null;
-  };
+  summary: AdminSummary;
   payments: StudioAdminPayment[];
   customers: AdminCustomer[];
   projects: AdminProject[];
   notifications: StudioAdminPayment[];
   webhooks: AdminWebhook[];
-  system: {
-    databaseConnected: boolean;
-    databaseCheckedAt: string | null;
-    paychanguConfigured: boolean;
-    webhookSecretConfigured: boolean;
-    brevoConfigured: boolean;
-    cloudinaryConfigured: boolean;
-    notificationEmail: string;
-    environment: string;
-  };
+  system: AdminSystemStatus;
 };
 
 export const VIEW_LABELS: Record<ViewKey, string> = {
@@ -93,7 +104,12 @@ export const VIEW_LABELS: Record<ViewKey, string> = {
   system: "System",
 };
 
-export const NAV_ITEMS: Array<{ key: ViewKey; label: string; description: string; icon: LucideIcon }> = [
+export const NAV_ITEMS: Array<{
+  key: ViewKey;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+}> = [
   {
     key: "overview",
     label: "Overview",
@@ -137,4 +153,3 @@ export const NAV_ITEMS: Array<{ key: ViewKey; label: string; description: string
     icon: Server,
   },
 ];
-
