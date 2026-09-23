@@ -198,6 +198,10 @@ export async function ensureStudioDatabaseSchema(): Promise<void> {
     `);
 
     await studioQuery(`
+      DROP INDEX IF EXISTS idx_studio_service_payments_reference
+    `);
+
+    await studioQuery(`
       CREATE TABLE IF NOT EXISTS service_payment_webhook_events (
         id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
         provider_event_id TEXT,
@@ -210,6 +214,38 @@ export async function ensureStudioDatabaseSchema(): Promise<void> {
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
         processed_at TIMESTAMPTZ
       )
+    `);
+
+    await studioQuery(`
+      DO $studio_webhook$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_webhook_status'
+        ) THEN
+          ALTER TABLE service_payment_webhook_events
+          ADD CONSTRAINT chk_studio_webhook_status
+          CHECK (status IN ('received', 'processed', 'ignored', 'failed')) NOT VALID;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_webhook_signature'
+        ) THEN
+          ALTER TABLE service_payment_webhook_events
+          ADD CONSTRAINT chk_studio_webhook_signature
+          CHECK (signature_valid IN (0, 1)) NOT VALID;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_webhook_payload_hash'
+        ) THEN
+          ALTER TABLE service_payment_webhook_events
+          ADD CONSTRAINT chk_studio_webhook_payload_hash
+          CHECK (TRIM(payload_hash) <> '') NOT VALID;
+        END IF;
+      END $studio_webhook$;
     `);
 
     await studioQuery(`
