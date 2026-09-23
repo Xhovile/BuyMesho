@@ -12,6 +12,9 @@ import type { PaymentVerificationResult } from "../../../src/modules/payments/ty
 import { sendEmail } from "../email/email.service.js";
 import { renderXhovileStudioPaymentSuccessEmail } from "../email/templates/xhovile-studio-payment-success.js";
 import {
+  withStudioAdvisoryLock,
+} from "./studio.database.js";
+import {
   servicePaymentRepository,
   type ServicePaymentMode,
   type ServicePaymentRecord,
@@ -157,139 +160,159 @@ export async function createXhovileStudioServicePayment(
     }
   }
 
-  const servicePayment = existing ?? await servicePaymentRepository.create({
-    serviceType: input.serviceType,
-    customerName: input.customerName,
-    customerPhone: input.customerPhone,
-    customerEmail: input.customerEmail,
-    description: input.description,
-    amount: input.amount,
-    currency: "MWK",
-    paymentMode: input.paymentMode,
-    projectTotal: input.projectTotal,
-    projectReference: input.projectReference,
-    graphicId: input.graphicId,
-    idempotencyKey: input.idempotencyKey,
-    idempotencyRequestHash: requestHash,
-  });
-
-  if (!isSameRequest(servicePayment, requestHash)) {
-    throw new ServicePaymentIdempotencyConflictError();
-  }
-
-  const uploadedAssets: CloudinaryUploadAsset[] = [];
-  let mediaPersisted = false;
-
-  try {
-    if (!servicePayment.referenceMedia.length && (input.referenceFiles ?? []).length) {
-      const referenceMedia = [];
-
-      for (const reference of input.referenceFiles ?? []) {
-        const asset = reference.file.path
-          ? await uploadFileToCloudinaryAsset(
-              {
-                path: reference.file.path,
-                mimetype: reference.file.mimetype,
-              },
-              { folder: "xhovile-studio/references" },
-            )
-          : await uploadBufferToCloudinaryAsset(
-              {
-                buffer: reference.file.buffer,
-                mimetype: reference.file.mimetype,
-              },
-              { folder: "xhovile-studio/references" },
-            );
-
-        uploadedAssets.push(asset);
-        referenceMedia.push({
-          kind: reference.kind,
-          url: asset.secureUrl,
-          originalName: reference.file.originalname,
-          mimeType: reference.file.mimetype,
-          sizeBytes: reference.file.size,
-          publicId: asset.publicId,
-          resourceType: asset.resourceType,
-        });
-      }
-
-      if (referenceMedia.length) {
-        await servicePaymentRepository.updateReferenceMedia(
-          servicePayment.id,
-          referenceMedia,
-        );
-        mediaPersisted = true;
-      }
-    }
-
-    const payment = await paychanguProvider.createPayment(
-      {
-        orderId: servicePayment.id,
-        provider: "paychangu",
-        method: "mobile_money",
-        amount: { amount: input.amount, currency: "MWK" },
-        customer: {
-          name: input.customerName,
-          email: input.customerEmail || undefined,
-          phoneNumber: input.customerPhone,
-        },
-        metadata: {
-          paymentType: "xhovile_studio_service",
-          servicePaymentId: servicePayment.id,
-          serviceType: input.serviceType,
-          customerName: input.customerName,
-          customerPhone: input.customerPhone,
-          customerEmail: input.customerEmail || undefined,
-          description: input.description,
-          paymentMode: input.paymentMode || undefined,
-          projectTotal: input.projectTotal ?? undefined,
-          projectReference: input.projectReference || undefined,
-          graphicId: input.graphicId || undefined,
-        },
-      },
-      createServerPaymentConfigFromEnv(),
+  return withStudioAdvisoryLock(input.idempotencyKey, async () => {
+    const lockedExisting = await servicePaymentRepository.findByIdempotencyKey(
+      input.idempotencyKey,
     );
 
-    const checkoutUrl = payment.checkoutUrl?.trim();
-    if (!checkoutUrl) {
-      throw new Error("PayChangu did not return a checkout URL");
-    }
+    if (lockedExisting) {
+      if (!isSameRequest(lockedExisting, requestHash)) {
+        throw new ServicePaymentIdempotencyConflictError();
+      }
 
-    const updated = await servicePaymentRepository.attachPayment({
-      id: servicePayment.id,
-      reference: payment.reference,
-      providerReference: payment.providerReference ?? null,
-      checkoutUrl,
-    });
-
-    if (!updated) {
-      throw new Error("Studio payment record disappeared during checkout setup");
-    }
-
-    return {
-      servicePayment: updated,
-      checkoutUrl,
-      reference: payment.reference,
-    };
-  } catch (error) {
-    if (mediaPersisted && uploadedAssets.length) {
-      await servicePaymentRepository.updateReferenceMedia(servicePayment.id, []);
-    }
-
-    for (const asset of [...uploadedAssets].reverse()) {
-      try {
-        await deleteCloudinaryAsset(asset);
-      } catch (cleanupError) {
-        console.error(
-          "[XhovileStudio] Failed to clean up Cloudinary reference:",
-          cleanupError instanceof Error ? cleanupError.message : cleanupError,
-        );
+      if (lockedExisting.checkoutUrl && lockedExisting.paymentReference) {
+        return {
+          servicePayment: lockedExisting,
+          checkoutUrl: lockedExisting.checkoutUrl,
+          reference: lockedExisting.paymentReference,
+        };
       }
     }
 
-    await servicePaymentRepository.markFailedById(servicePayment.id);
-    throw error;
-  }
+    const servicePayment = lockedExisting ?? await servicePaymentRepository.create({
+      serviceType: input.serviceType,
+      customerName: input.customerName,
+      customerPhone: input.customerPhone,
+      customerEmail: input.customerEmail,
+      description: input.description,
+      amount: input.amount,
+      currency: "MWK",
+      paymentMode: input.paymentMode,
+      projectTotal: input.projectTotal,
+      projectReference: input.projectReference,
+      graphicId: input.graphicId,
+      idempotencyKey: input.idempotencyKey,
+      idempotencyRequestHash: requestHash,
+    });
+
+    if (!isSameRequest(servicePayment, requestHash)) {
+      throw new ServicePaymentIdempotencyConflictError();
+    }
+
+    const uploadedAssets: CloudinaryUploadAsset[] = [];
+    let mediaPersisted = false;
+
+    try {
+      if (!servicePayment.referenceMedia.length && (input.referenceFiles ?? []).length) {
+        const referenceMedia = [];
+
+        for (const reference of input.referenceFiles ?? []) {
+          const asset = reference.file.path
+            ? await uploadFileToCloudinaryAsset(
+                {
+                  path: reference.file.path,
+                  mimetype: reference.file.mimetype,
+                },
+                { folder: "xhovile-studio/references" },
+              )
+            : await uploadBufferToCloudinaryAsset(
+                {
+                  buffer: reference.file.buffer,
+                  mimetype: reference.file.mimetype,
+                },
+                { folder: "xhovile-studio/references" },
+              );
+
+          uploadedAssets.push(asset);
+          referenceMedia.push({
+            kind: reference.kind,
+            url: asset.secureUrl,
+            originalName: reference.file.originalname,
+            mimeType: reference.file.mimetype,
+            sizeBytes: reference.file.size,
+            publicId: asset.publicId,
+            resourceType: asset.resourceType,
+          });
+        }
+
+        if (referenceMedia.length) {
+          await servicePaymentRepository.updateReferenceMedia(
+            servicePayment.id,
+            referenceMedia,
+          );
+          mediaPersisted = true;
+        }
+      }
+
+      const payment = await paychanguProvider.createPayment(
+        {
+          orderId: servicePayment.id,
+          provider: "paychangu",
+          method: "mobile_money",
+          amount: { amount: input.amount, currency: "MWK" },
+          customer: {
+            name: input.customerName,
+            email: input.customerEmail || undefined,
+            phoneNumber: input.customerPhone,
+          },
+          metadata: {
+            paymentType: "xhovile_studio_service",
+            servicePaymentId: servicePayment.id,
+            serviceType: input.serviceType,
+            customerName: input.customerName,
+            customerPhone: input.customerPhone,
+            customerEmail: input.customerEmail || undefined,
+            description: input.description,
+            paymentMode: input.paymentMode || undefined,
+            projectTotal: input.projectTotal ?? undefined,
+            projectReference: input.projectReference || undefined,
+            graphicId: input.graphicId || undefined,
+          },
+        },
+        createServerPaymentConfigFromEnv(),
+      );
+
+      const checkoutUrl = payment.checkoutUrl?.trim();
+      if (!checkoutUrl) {
+        throw new Error("PayChangu did not return a checkout URL");
+      }
+
+      const updated = await servicePaymentRepository.attachPayment({
+        id: servicePayment.id,
+        reference: payment.reference,
+        providerReference: payment.providerReference ?? null,
+        checkoutUrl,
+      });
+
+      if (!updated) {
+        throw new Error("Studio payment record disappeared during checkout setup");
+      }
+
+      return {
+        servicePayment: updated,
+        checkoutUrl,
+        reference: payment.reference,
+      };
+    } catch (error) {
+      if (mediaPersisted && uploadedAssets.length) {
+        await servicePaymentRepository.updateReferenceMedia(servicePayment.id, []);
+      }
+
+      for (const asset of [...uploadedAssets].reverse()) {
+        try {
+          await deleteCloudinaryAsset(asset);
+        } catch (cleanupError) {
+          console.error(
+            "[XhovileStudio] Failed to clean up Cloudinary reference:",
+            cleanupError instanceof Error ? cleanupError.message : cleanupError,
+          );
+        }
+      }
+
+      await servicePaymentRepository.markFailedById(servicePayment.id);
+      throw error;
+    }
+  });
 }
 
 export async function isXhovileStudioServicePaymentReference(
