@@ -85,7 +85,7 @@ async function hashReferenceFile(file: Express.Multer.File): Promise<string> {
       const hash = createHash("sha256");
       const stream = createReadStream(file.path);
 
-      stream.on("data", (chunk: Buffer) => hash.update(chunk));
+      stream.on("data", (chunk) => hash.update(chunk));
       stream.on("error", reject);
       stream.on("end", () => resolve(hash.digest("hex")));
     });
