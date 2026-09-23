@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, unlink } from "node:fs/promises";
+import { mkdir, readdir, stat, unlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import express, { type Request, type RequestHandler, type Router } from "express";
@@ -67,6 +67,43 @@ function getUploadedReferenceFiles(req: Request): Express.Multer.File[] {
   ];
 }
 
+async function cleanupStaleReferenceTempFiles(maxAgeMs = 60 * 60 * 1000): Promise<void> {
+  try {
+    const entries = await readdir(STUDIO_REFERENCE_UPLOAD_DIR, {
+      withFileTypes: true,
+    });
+    const cutoff = Date.now() - maxAgeMs;
+
+    await Promise.all(
+      entries
+        .filter((entry) => entry.isFile())
+        .map(async (entry) => {
+          const filePath = path.join(STUDIO_REFERENCE_UPLOAD_DIR, entry.name);
+          try {
+            const fileStats = await stat(filePath);
+            if (fileStats.mtimeMs < cutoff) {
+              await unlink(filePath);
+            }
+          } catch (error) {
+            const code = error && typeof error === "object" && "code" in error
+              ? String((error as { code?: unknown }).code)
+              : "";
+            if (code !== "ENOENT") {
+              console.warn("[ServicePayments] Failed to remove stale reference file:", error);
+            }
+          }
+        }),
+    );
+  } catch (error) {
+    const code = error && typeof error === "object" && "code" in error
+      ? String((error as { code?: unknown }).code)
+      : "";
+    if (code !== "ENOENT") {
+      console.warn("[ServicePayments] Failed to scan stale reference files:", error);
+    }
+  }
+}
+
 async function cleanupReferenceTempFiles(req: Request): Promise<void> {
   await Promise.all(
     getUploadedReferenceFiles(req).map(async (file) => {
@@ -91,6 +128,8 @@ export function createServicePaymentRouter(
   statusRateLimit: RequestHandler,
 ): Router {
   const router = express.Router();
+
+  void cleanupStaleReferenceTempFiles();
 
   const referenceUpload = multer({
     storage: multer.diskStorage({
