@@ -451,8 +451,8 @@ export class ServicePaymentRepository {
       `,
       [
         input.providerEventId || null,
-        input.paymentReference || null,
-        input.eventType || null,
+        input.paymentReference || "",
+        input.eventType || "",
         input.payloadHash,
         input.signatureValid ? 1 : 0,
       ],
@@ -473,8 +473,8 @@ export class ServicePaymentRepository {
       `,
       [
         input.providerEventId || null,
-        input.paymentReference || null,
-        input.eventType || null,
+        input.paymentReference || "",
+        input.eventType || "",
         input.payloadHash,
       ],
     );
