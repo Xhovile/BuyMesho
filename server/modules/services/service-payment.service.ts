@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
 import { paychanguProvider } from "../payments/paychangu.provider.js";
 import {
   deleteCloudinaryAsset,
   uploadBufferToCloudinaryAsset,
+  uploadFileToCloudinaryAsset,
   type CloudinaryUploadAsset,
 } from "../../lib/cloudinaryUpload.js";
 import { createServerPaymentConfigFromEnv } from "../payments/payment.service.js";
@@ -77,14 +79,35 @@ export async function notifyXhovileStudioSuccessfulPayment(
   }
 }
 
-function hashServicePaymentRequest(input: CreateServicePaymentInput): string {
-  const files = (input.referenceFiles ?? []).map((reference) => ({
-    kind: reference.kind,
-    originalName: reference.file.originalname,
-    mimeType: reference.file.mimetype,
-    sizeBytes: reference.file.size,
-    sha256: createHash("sha256").update(reference.file.buffer).digest("hex"),
-  }));
+async function hashReferenceFile(file: Express.Multer.File): Promise<string> {
+  if (file.path) {
+    return new Promise((resolve, reject) => {
+      const hash = createHash("sha256");
+      const stream = createReadStream(file.path);
+
+      stream.on("data", (chunk: Buffer) => hash.update(chunk));
+      stream.on("error", reject);
+      stream.on("end", () => resolve(hash.digest("hex")));
+    });
+  }
+
+  if (Buffer.isBuffer(file.buffer)) {
+    return createHash("sha256").update(file.buffer).digest("hex");
+  }
+
+  throw new Error("Studio reference upload has no readable file content.");
+}
+
+async function hashServicePaymentRequest(input: CreateServicePaymentInput): Promise<string> {
+  const files = await Promise.all(
+    (input.referenceFiles ?? []).map(async (reference) => ({
+      kind: reference.kind,
+      originalName: reference.file.originalname,
+      mimeType: reference.file.mimetype,
+      sizeBytes: reference.file.size,
+      sha256: await hashReferenceFile(reference.file),
+    })),
+  );
 
   const payload = {
     serviceType: input.serviceType,
@@ -117,7 +140,7 @@ export async function createXhovileStudioServicePayment(
   checkoutUrl: string;
   reference: string;
 }> {
-  const requestHash = hashServicePaymentRequest(input);
+  const requestHash = await hashServicePaymentRequest(input);
   const existing = await servicePaymentRepository.findByIdempotencyKey(input.idempotencyKey);
 
   if (existing) {
@@ -162,13 +185,21 @@ export async function createXhovileStudioServicePayment(
       const referenceMedia = [];
 
       for (const reference of input.referenceFiles ?? []) {
-        const asset = await uploadBufferToCloudinaryAsset(
-          {
-            buffer: reference.file.buffer,
-            mimetype: reference.file.mimetype,
-          },
-          { folder: "xhovile-studio/references" },
-        );
+        const asset = reference.file.path
+          ? await uploadFileToCloudinaryAsset(
+              {
+                path: reference.file.path,
+                mimetype: reference.file.mimetype,
+              },
+              { folder: "xhovile-studio/references" },
+            )
+          : await uploadBufferToCloudinaryAsset(
+              {
+                buffer: reference.file.buffer,
+                mimetype: reference.file.mimetype,
+              },
+              { folder: "xhovile-studio/references" },
+            );
 
         uploadedAssets.push(asset);
         referenceMedia.push({
