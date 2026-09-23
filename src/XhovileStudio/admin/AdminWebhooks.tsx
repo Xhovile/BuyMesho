@@ -1,9 +1,6 @@
 import type { ReactNode } from "react";
 import type { AdminWebhook } from "./types";
 
-*/
-
-
 function formatDate(value: string | null | undefined) {
   if (!value) return "—";
   const date = new Date(value);
