@@ -9,7 +9,7 @@ function formatDate(value: string | null | undefined) {
   return new Intl.DateTimeFormat("en-MW", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-export function AdminStatusPill({ value }: { value: string }) {
+function AdminStatusPill({ value }: { value: string }) {
   const normalized = value.toLowerCase();
   const classes =
     normalized === "paid" || normalized === "processed" || normalized === "sent"
@@ -27,7 +27,7 @@ export function AdminStatusPill({ value }: { value: string }) {
   );
 }
 
-export function AdminDetailField({
+function AdminDetailField({
   label,
   value,
   mono = false,
