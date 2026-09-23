@@ -180,7 +180,6 @@ function AdminConsole() {
         {view === "overview" && summary && system ? (
           <AdminOverview
             summary={summary}
-            system={system}
             payments={snapshot?.payments ?? []}
             onSelectPayment={(paymentId) => selectView("payments", paymentId)}
           />
