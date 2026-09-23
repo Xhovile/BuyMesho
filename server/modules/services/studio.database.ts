@@ -58,6 +58,31 @@ export async function studioQuery<T extends Record<string, unknown> = Record<str
   };
 }
 
+export async function withStudioAdvisoryLock<T>(
+  key: string,
+  callback: () => Promise<T>,
+): Promise<T> {
+  const databasePool = createStudioPool();
+  const client = await databasePool.connect();
+
+  try {
+    await client.query(
+      "SELECT pg_advisory_lock(hashtextextended($1, 0))",
+      [key],
+    );
+    return await callback();
+  } finally {
+    try {
+      await client.query(
+        "SELECT pg_advisory_unlock(hashtextextended($1, 0))",
+        [key],
+      );
+    } finally {
+      client.release();
+    }
+  }
+}
+
 export async function ensureStudioDatabaseSchema(): Promise<void> {
   if (schemaPromise) return schemaPromise;
 
