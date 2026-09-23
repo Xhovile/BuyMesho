@@ -227,6 +227,7 @@ export function createServicePaymentRouter(
 
         const needsGraphic = serviceType === "graphic_design" || serviceType === "both";
         const needsWebsite = serviceType === "website_development" || serviceType === "both";
+        let projectTotalForStorage: number | null = null;
 
         if (paymentMode === "balance") {
           if (projectReference.length < 3) {
@@ -239,8 +240,14 @@ export function createServicePaymentRouter(
             let graphicProjectTotal = 0;
 
             if (graphicId === "custom") {
-              if (!Number.isFinite(graphicTotal) || graphicTotal <= 0) {
-                return res.status(400).json({ error: "Enter the agreed graphic design price." });
+              if (
+                !Number.isFinite(graphicTotal) ||
+                graphicTotal <= 0 ||
+                Number(graphicTotal.toFixed(2)) !== graphicTotal
+              ) {
+                return res.status(400).json({
+                  error: "Enter the agreed graphic design price using at most two decimal places.",
+                });
               }
               graphicProjectTotal = graphicTotal;
             } else if (graphicId && Object.prototype.hasOwnProperty.call(GRAPHIC_SERVICE_PRICE_MAP, graphicId)) {
@@ -253,8 +260,14 @@ export function createServicePaymentRouter(
           }
 
           if (needsWebsite) {
-            if (!Number.isFinite(websiteTotal) || websiteTotal < MIN_WEBSITE_PROJECT_TOTAL) {
-              return res.status(400).json({ error: "Enter the agreed website project price." });
+            if (
+              !Number.isFinite(websiteTotal) ||
+              websiteTotal < MIN_WEBSITE_PROJECT_TOTAL ||
+              Number(websiteTotal.toFixed(2)) !== websiteTotal
+            ) {
+              return res.status(400).json({
+                error: "Enter the agreed website project price using at most two decimal places.",
+              });
             }
             if (!Number.isFinite(amount) || amount <= expectedBalance || amount > websiteTotal + expectedBalance) {
               return res.status(400).json({ error: "Enter a valid remaining website balance." });
@@ -273,8 +286,14 @@ export function createServicePaymentRouter(
             }
 
             if (graphicId === "custom") {
-              if (!Number.isFinite(graphicTotal) || graphicTotal <= 0) {
-                return res.status(400).json({ error: "Enter the agreed graphic design price." });
+              if (
+                !Number.isFinite(graphicTotal) ||
+                graphicTotal <= 0 ||
+                Number(graphicTotal.toFixed(2)) !== graphicTotal
+              ) {
+                return res.status(400).json({
+                  error: "Enter the agreed graphic design price using at most two decimal places.",
+                });
               }
               expectedProjectTotal += graphicTotal;
             } else {
@@ -287,11 +306,20 @@ export function createServicePaymentRouter(
           }
 
           if (needsWebsite) {
-            if (!Number.isFinite(websiteTotal) || websiteTotal < MIN_WEBSITE_PROJECT_TOTAL) {
-              return res.status(400).json({ error: "Website projects start at MWK 80,000." });
+            if (
+              !Number.isFinite(websiteTotal) ||
+              websiteTotal < MIN_WEBSITE_PROJECT_TOTAL ||
+              Number(websiteTotal.toFixed(2)) !== websiteTotal
+            ) {
+              return res.status(400).json({
+                error: "Website projects must use an amount with at most two decimal places.",
+              });
             }
             expectedProjectTotal += websiteTotal;
           }
+
+          expectedProjectTotal = Math.round(expectedProjectTotal * 100) / 100;
+          projectTotalForStorage = expectedProjectTotal;
 
           const expectedAmount =
             paymentMode === "full"
@@ -315,10 +343,7 @@ export function createServicePaymentRouter(
           description,
           amount,
           paymentMode: paymentMode as "deposit" | "full" | "balance",
-          projectTotal: paymentMode === "balance" ? null : (
-            (needsGraphic ? graphicTotal : 0) +
-            (needsWebsite ? websiteTotal : 0)
-          ),
+          projectTotal: projectTotalForStorage,
           projectReference: paymentMode === "balance" ? projectReference : null,
           graphicId: needsGraphic ? graphicId : null,
           referenceFiles,
