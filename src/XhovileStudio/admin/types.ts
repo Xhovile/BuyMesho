@@ -1,4 +1,23 @@
+import {
+  Bell,
+  CreditCard,
+  FolderKanban,
+  LayoutDashboard,
+  Server,
+  Users,
+  Webhook,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { PaymentStatus, StudioAdminPayment } from "../config";
+
+export type ViewKey =
+  | "overview"
+  | "payments"
+  | "customers"
+  | "projects"
+  | "notifications"
+  | "webhooks"
+  | "system";
 
 export type AdminCustomer = {
   customerPhone: string;
@@ -74,3 +93,63 @@ export type AdminSnapshot = {
   webhooks: AdminWebhook[];
   system: AdminSystemStatus;
 };
+
+export const VIEW_LABELS: Record<ViewKey, string> = {
+  overview: "Overview",
+  payments: "Payments",
+  customers: "Customers",
+  projects: "Projects",
+  notifications: "Notifications",
+  webhooks: "Webhooks",
+  system: "System",
+};
+
+export const NAV_ITEMS: Array<{
+  key: ViewKey;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+}> = [
+  {
+    key: "overview",
+    label: "Overview",
+    description: "Live operating picture for Xhovilé Studio.",
+    icon: LayoutDashboard,
+  },
+  {
+    key: "payments",
+    label: "Payments",
+    description: "Track every Studio checkout and payment status.",
+    icon: CreditCard,
+  },
+  {
+    key: "customers",
+    label: "Customers",
+    description: "See customer activity, spend, and project count.",
+    icon: Users,
+  },
+  {
+    key: "projects",
+    label: "Projects",
+    description: "Follow project references across payments.",
+    icon: FolderKanban,
+  },
+  {
+    key: "notifications",
+    label: "Notifications",
+    description: "Monitor internal payment email delivery.",
+    icon: Bell,
+  },
+  {
+    key: "webhooks",
+    label: "Webhooks",
+    description: "Inspect PayChangu webhook receipt and processing.",
+    icon: Webhook,
+  },
+  {
+    key: "system",
+    label: "System",
+    description: "Check Studio database and integration configuration.",
+    icon: Server,
+  },
+];

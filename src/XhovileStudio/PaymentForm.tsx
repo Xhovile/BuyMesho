@@ -15,14 +15,15 @@ import {
   formatMoney,
 } from "./config";
 import {
-  ChoiceButton,
-  GraphicServicePicker,
   PayChanguLogo,
   ServiceChoice,
   Shell,
   StudioCheckoutButton,
 } from "./shared";
-import ReferenceUploader from "./ReferenceUploader";
+import ReferenceUploader, {
+  type StudioReferenceSelection,
+} from "./ReferenceUploader";
+import StudioPaymentOptions from "./StudioPaymentOptions";
 
 function PaymentForm() {
   const [serviceType, setServiceType] = useState<ServiceType>("graphic_design");
@@ -36,11 +37,14 @@ function PaymentForm() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [description, setDescription] = useState("");
-  const [referenceImages, setReferenceImages] = useState<File[]>([]);
-  const [referenceVideo, setReferenceVideo] = useState<File | null>(null);
+  const [referenceFiles, setReferenceFiles] = useState<StudioReferenceSelection>({
+    images: [],
+    video: null,
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const idempotencyKeyRef = useRef<string | null>(null);
+
   const selectedGraphic = GRAPHIC_SERVICES.find((item) => item.id === graphicId);
   const graphicTotal =
     graphicId === "custom"
@@ -138,11 +142,11 @@ function PaymentForm() {
       if (paymentMode === "balance") {
         formData.append("projectReference", projectReference.trim());
       }
-      referenceImages.forEach((file) => {
+      referenceFiles.images.forEach((file) => {
         formData.append("referenceImages", file, file.name);
       });
-      if (referenceVideo) {
-        formData.append("referenceVideo", referenceVideo, referenceVideo.name);
+  if (referenceFiles.video) {
+        formData.append("referenceVideo", referenceFiles.video, referenceFiles.video.name);
       }
 
       const response = await fetch(apiUrl("/api/public/service-payments"), {
@@ -239,135 +243,26 @@ function PaymentForm() {
             </label>
           </div>
 
-          <div className="space-y-3">
-              {needsGraphic ? (
-                <div className="rounded-xl border border-[#168cff]/25 bg-[#eef8ff] p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#168cff]">Graphic Design</p>
-                      <p className="mt-0.5 text-[10px] text-zinc-500">Choose a design from the poster.</p>
-                    </div>
-                    <Palette className="h-4 w-4 text-[#168cff]" />
-                  </div>
-                  <div className="mt-2 flex gap-2">
-                    <div className="min-w-0 flex-1">
-                      <GraphicServicePicker value={graphicId} onChange={setGraphicId} />
-                    </div>
-                    {graphicId === "custom" ? (
-                      <input
-                        value={graphicCustomTotal}
-                        onChange={(event) => setGraphicCustomTotal(event.target.value.replace(/[^0-9.]/g, ""))}
-                        className="w-32 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-[#168cff]"
-                        placeholder="Total MWK"
-                        inputMode="numeric"
-                      />
-                    ) : null}
-                  </div>
-                  <p className="mt-2 text-[10px] text-zinc-500">
-                    Project price: <span className="font-black text-white">{formatMoney(graphicTotal)}</span>
-                  </p>
-                </div>
-              ) : null}
-
-              {needsWebsite ? (
-                <div className="rounded-xl border border-[#ff1d25]/25 bg-[#fff1f1] p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#ff5b61]">Web Development</p>
-                      <p className="mt-0.5 text-[10px] text-zinc-500">Websites from MWK 80,000.</p>
-                    </div>
-                    <Monitor className="h-4 w-4 text-[#ff5b61]" />
-                  </div>
-                  <label className="mt-2 block">
-                    <span className="sr-only">Agreed website project price</span>
-                    <input
-                      value={websiteTotal}
-                      onChange={(event) => setWebsiteTotal(event.target.value.replace(/[^0-9.]/g, ""))}
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-700 focus:border-[#ff1d25]"
-                      placeholder="Agreed project price (MWK)"
-                      inputMode="numeric"
-                    />
-                  </label>
-                </div>
-              ) : null}
-
-              {paymentMode === "balance" ? (
-                <div className="space-y-2">
-                  <input
-                    value={projectReference}
-                    onChange={(event) => setProjectReference(event.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 bg-[#fffdfa] px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
-                    placeholder="Project reference"
-                  />
-
-                  {needsWebsite ? (
-                    <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.14em] text-zinc-600">
-                        Website balance to pay
-                      </label>
-                      <input
-                        value={balanceAmount}
-                        onChange={(event) => setBalanceAmount(event.target.value.replace(/[^0-9.]/g, ""))}
-                        className="w-full rounded-xl border border-zinc-200 bg-[#fffdfa] px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
-                        placeholder="Enter website balance (MWK)"
-                        inputMode="numeric"
-                      />
-                      <p className="mt-1 text-[10px] text-zinc-500">
-                        Enter the agreed remaining website balance. Graphic balances remain 50%.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-[#168cff]/20 bg-[#168cff]/5 px-3 py-2.5">
-                      <p className="text-[10px] uppercase tracking-[0.14em] text-[#168cff]">Graphic balance</p>
-                      <p className="mt-0.5 text-sm font-black text-zinc-900">{formatMoney(graphicTotal / 2)}</p>
-                      <p className="mt-0.5 text-[10px] text-zinc-500">Fixed at 50% of the listed project price.</p>
-                    </div>
-                  )}
-                </div>
-              ) : null}
-          </div>
-
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-black text-zinc-900">Payment</p>
-                <p className="mt-0.5 text-[10px] text-zinc-500">We start new work after a 50% deposit.</p>
-              </div>
-              <span className="text-sm font-black text-zinc-900">{formatMoney(amountDue)}</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <ChoiceButton
-                active={paymentMode === "deposit"}
-                title="50% Deposit"
-                subtitle={combinedProjectTotal > 0 ? formatMoney(combinedProjectTotal / 2) : "Half now"}
-                onClick={() => setPaymentMode("deposit")}
-                accent={theme === "blue" ? "blue" : theme === "red" ? "red" : "neutral"}
-              />
-              <ChoiceButton
-                active={paymentMode === "full"}
-                title="Full Payment"
-                subtitle={combinedProjectTotal > 0 ? formatMoney(combinedProjectTotal) : "Pay all"}
-                onClick={() => setPaymentMode("full")}
-                accent="neutral"
-              />
-              <ChoiceButton
-                active={paymentMode === "balance"}
-                title="Final Balance"
-                subtitle={
-                  paymentMode === "balance"
-                    ? needsWebsite
-                      ? "Enter website balance"
-                      : needsGraphic
-                        ? formatMoney(graphicTotal / 2)
-                        : "Existing project"
-                    : "Existing project"
-                }
-                onClick={() => setPaymentMode("balance")}
-                accent="neutral"
-              />
-            </div>
-          </div>
+          <StudioPaymentOptions
+            needsGraphic={needsGraphic}
+            needsWebsite={needsWebsite}
+            graphicId={graphicId}
+            graphicCustomTotal={graphicCustomTotal}
+            websiteTotal={websiteTotal}
+            paymentMode={paymentMode}
+            balanceAmount={balanceAmount}
+            projectReference={projectReference}
+            graphicTotal={graphicTotal}
+            combinedProjectTotal={combinedProjectTotal}
+            amountDue={amountDue}
+            theme={theme}
+            onGraphicIdChange={setGraphicId}
+            onGraphicCustomTotalChange={setGraphicCustomTotal}
+            onWebsiteTotalChange={setWebsiteTotal}
+            onPaymentModeChange={setPaymentMode}
+            onBalanceAmountChange={setBalanceAmount}
+            onProjectReferenceChange={setProjectReference}
+          />
 
           <div className="rounded-xl border border-zinc-200 bg-[#fffdfa] p-3">
             <div className="flex items-center justify-between gap-3">
@@ -385,12 +280,7 @@ function PaymentForm() {
             />
           </div>
 
-          <ReferenceUploader
-            onChange={({ images, video }) => {
-              setReferenceImages(images);
-              setReferenceVideo(video);
-            }}
-          />
+          <ReferenceUploader onChange={setReferenceFiles} />
 
           <details className="rounded-xl border border-zinc-200 bg-[#fffdfa]">
             <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-bold text-zinc-400">
@@ -452,5 +342,7 @@ function PaymentForm() {
     </Shell>
   );
 }
+
+
 
 export default PaymentForm;
