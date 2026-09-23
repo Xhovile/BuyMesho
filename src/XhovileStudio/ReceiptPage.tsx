@@ -70,18 +70,32 @@ function ReceiptPage() {
 
   const { reference, receiptToken } = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
+    const nextReference =
+      params.get("ref") ?? params.get("tx_ref") ?? params.get("reference");
+    const urlToken = params.get("token") ?? "";
+    const storedToken = nextReference
+      ? sessionStorage.getItem(`xhovile-studio-receipt-token:${nextReference}`) ?? ""
+      : "";
+
     return {
-      reference: params.get("ref") ?? params.get("tx_ref") ?? params.get("reference"),
-      receiptToken: params.get("token") ?? "",
+      reference: nextReference,
+      receiptToken: urlToken || storedToken,
     };
   }, []);
 
   useEffect(() => {
-    if (!receiptToken) return;
+    if (!receiptToken || !reference) return;
+
+    sessionStorage.setItem(
+      `xhovile-studio-receipt-token:${reference}`,
+      receiptToken,
+    );
+
+    if (!new URLSearchParams(window.location.search).has("token")) return;
     const url = new URL(window.location.href);
     url.searchParams.delete("token");
     window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
-  }, [receiptToken]);
+  }, [receiptToken, reference]);
 
   const [receiptError, setReceiptError] = useState<string | null>(null);
 
