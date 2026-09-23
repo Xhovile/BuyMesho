@@ -14,6 +14,7 @@ import {
   Server,
   Users,
   XCircle,
+  Webhook,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import AdminRouteGuard from "../components/AdminRouteGuard";
@@ -89,6 +90,18 @@ function SectionCard({ title, eyebrow, children, action }: { title: string; eyeb
 
 function EmptyState({ label }: { label: string }) {
   return <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-5 py-10 text-center text-sm text-zinc-500">{label}</div>;
+}
+
+function statusClasses(status: string) {
+  const normalized = status.toLowerCase();
+  if (normalized === "paid" || normalized === "processed" || normalized === "sent") return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (normalized === "pending" || normalized === "received" || normalized === "sending") return "border-amber-200 bg-amber-50 text-amber-700";
+  if (normalized === "failed" || normalized === "refunded") return "border-red-200 bg-red-50 text-red-700";
+  return "border-zinc-200 bg-zinc-100 text-zinc-700";
+}
+
+function StatusPill({ value }: { value: string }) {
+  return <span className={"inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] " + statusClasses(value)}>{value}</span>;
 }
 
 function AdminConsole() {
