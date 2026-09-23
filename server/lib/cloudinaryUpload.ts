@@ -84,23 +84,33 @@ export async function uploadFileToCloudinaryAsset(
   },
   options: { folder?: string } = {},
 ): Promise<CloudinaryUploadAsset> {
+  if (!file.mimetype || !isSupportedUploadMime(file.mimetype)) {
+    throw new Error("Unsupported file type");
+  }
+
   const readStream = createReadStream(file.path);
   const { stream: uploadStream, uploadPromise } = createCloudinaryUploadStream(
     file,
     options,
   );
 
-  const readError = new Promise<never>((_, reject) => {
-    readStream.once("error", (error) => {
-      const normalized =
-        error instanceof Error ? error : new Error("Unable to read upload file");
-      uploadStream.destroy(normalized);
-      reject(normalized);
-    });
-  });
+  try {
+    return await new Promise<CloudinaryUploadAsset>((resolve, reject) => {
+      const onReadError = (error: unknown) => {
+        const normalized =
+          error instanceof Error ? error : new Error("Unable to read upload file");
+        uploadStream.destroy(normalized);
+        reject(normalized);
+      };
 
-  readStream.pipe(uploadStream);
-  return Promise.race([uploadPromise, readError]);
+      readStream.once("error", onReadError);
+      readStream.pipe(uploadStream);
+      uploadPromise.then(resolve, reject);
+    });
+  } finally {
+    readStream.destroy();
+    uploadStream.destroy();
+  }
 }
 
 export async function uploadBufferToCloudinaryAsset(
