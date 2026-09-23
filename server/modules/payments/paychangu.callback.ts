@@ -19,9 +19,21 @@ function redirectToPaymentReturn(
   pathname = "/payment/return",
 ): void {
   const url = new URL(pathname, getFrontendReturnBaseUrl());
+  const fragmentParams = new URLSearchParams();
+
   for (const [key, value] of Object.entries(params)) {
-    if (value) url.searchParams.set(key, value);
+    if (!value) continue;
+    if (key === "token") {
+      fragmentParams.set(key, value);
+    } else {
+      url.searchParams.set(key, value);
+    }
   }
+
+  if (fragmentParams.size > 0) {
+    url.hash = fragmentParams.toString();
+  }
+
   res.redirect(303, url.toString());
 }
 
