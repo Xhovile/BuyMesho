@@ -72,6 +72,20 @@ export default function AdminPayments({
     }
   }, [focusPaymentId, onFocusConsumed, payments]);
 
+  useEffect(() => {
+    if (!selectedPayment) return;
+
+    const refreshedPayment = payments.find((item) => item.id === selectedPayment.id);
+    if (!refreshedPayment) {
+      setSelectedPayment(null);
+      return;
+    }
+
+    if (refreshedPayment !== selectedPayment) {
+      setSelectedPayment(refreshedPayment);
+    }
+  }, [payments, selectedPayment]);
+
   const filteredPayments = useMemo(() => {
     const q = paymentQuery.trim().toLowerCase();
     return payments.filter((payment) => {
