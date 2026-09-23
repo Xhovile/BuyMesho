@@ -356,8 +356,8 @@ function AdminConsole() {
   const selectView = (nextView: ViewKey) => {
     setView(nextView);
     const url = nextView === "overview"
-      ? "/Services/XhovileStudio/Admin"
-      : "/Services/XhovileStudio/Admin?view=" + encodeURIComponent(nextView);
+      ? "/xhovilestudio/Admin"
+      : "/xhovilestudio/Admin?view=" + encodeURIComponent(nextView);
     window.history.replaceState(window.history.state, "", url);
   };
 
@@ -435,7 +435,7 @@ function AdminConsole() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <button
             type="button"
-            onClick={() => window.location.assign("/Services/XhovileStudio")}
+            onClick={() => window.location.assign("/xhovilestudio")}
             className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
           >
             <ArrowLeft className="h-4 w-4" />
