@@ -1,22 +1,6 @@
 import type { ReactNode } from "react";
 import { AlertTriangle, CheckCircle2, CreditCard, Database, FileText, Mail, Webhook } from "lucide-react";
-
-type SystemStatus = {
-  databaseConnected: boolean;
-  databaseCheckedAt: string | null;
-  paychanguConfigured: boolean;
-  webhookSecretConfigured: boolean;
-  brevoConfigured: boolean;
-  cloudinaryConfigured: boolean;
-  notificationEmail: string;
-  environment: string;
-};
-
-type SystemSummary = {
-  webhookReceived: number;
-  lastWebhookAt: string | null;
-  lastPaymentAt: string | null;
-};
+import type { AdminSystemStatus, AdminSummary } from "./types";
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "—";
@@ -38,7 +22,7 @@ function DetailField({ label, value, mono = false }: { label: string; value: Rea
   return <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-3"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">{label}</p><p className={(mono ? "font-mono text-[11px] " : "text-sm ") + "mt-1 break-words font-bold text-zinc-900"}>{value}</p></div>;
 }
 
-export default function AdminSystem({ system, summary }: { system: SystemStatus; summary: SystemSummary }) {
+export default function AdminSystem({ system, summary }: { system: AdminSystemStatus; summary: Pick<AdminSummary, "webhookReceived" | "lastWebhookAt" | "lastPaymentAt"> }) {
   const integrations = [
     ["Studio database", system.databaseConnected, "Connection check completed successfully.", Database],
     ["PayChangu secret", system.paychanguConfigured, "Server-side payment credentials are configured.", CreditCard],
