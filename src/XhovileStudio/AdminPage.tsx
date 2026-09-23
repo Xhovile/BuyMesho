@@ -25,7 +25,7 @@ import AdminWebhooks from "./admin/AdminWebhooks";
 import AdminSystem from "./admin/AdminSystem";
 import { apiFetch } from "../lib/api";
 import { navigateToPath } from "../lib/appNavigation";
-import { formatMoney, type StudioAdminPayment } from "./config";
+import { formatMoney } from "./config";
 import xsLogo from "../../photos/XSLOGO.svg";
 import type { AdminSnapshot } from "./admin/types";
 
