@@ -63,16 +63,19 @@ async function downloadReceipt(
 
 
 function ReceiptPage() {
-  const [payment, setPayment] = useState<ServicePayment | null>(null);
+  const [payment, setPayment] = useState<StatusResponse["servicePayment"]>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("Confirming your payment…");
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
 
   const { reference, receiptToken } = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
+    const fragmentParams = new URLSearchParams(
+      window.location.hash.replace(/^#/, ""),
+    );
     const nextReference =
       params.get("ref") ?? params.get("tx_ref") ?? params.get("reference");
-    const urlToken = params.get("token") ?? "";
+    const urlToken = params.get("token") ?? fragmentParams.get("token") ?? "";
     const storedToken = nextReference
       ? sessionStorage.getItem(`xhovile-studio-receipt-token:${nextReference}`) ?? ""
       : "";
@@ -91,10 +94,28 @@ function ReceiptPage() {
       receiptToken,
     );
 
-    if (!new URLSearchParams(window.location.search).has("token")) return;
     const url = new URL(window.location.href);
-    url.searchParams.delete("token");
-    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+    let changed = false;
+
+    if (url.searchParams.has("token")) {
+      url.searchParams.delete("token");
+      changed = true;
+    }
+
+    const fragmentParams = new URLSearchParams(url.hash.replace(/^#/, ""));
+    if (fragmentParams.has("token")) {
+      fragmentParams.delete("token");
+      url.hash = fragmentParams.toString();
+      changed = true;
+    }
+
+    if (changed) {
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${url.pathname}${url.search}${url.hash}`,
+      );
+    }
   }, [receiptToken, reference]);
 
   const [receiptError, setReceiptError] = useState<string | null>(null);
@@ -196,23 +217,23 @@ function ReceiptPage() {
           <div className="mt-6 divide-y divide-white/10 overflow-hidden rounded-2xl border border-zinc-200">
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-zinc-500">Service</span>
-              <span className="text-right font-bold text-zinc-900">{SERVICE_LABELS[payment.serviceType]}</span>
+              <span className="text-right font-bold text-zinc-100">{SERVICE_LABELS[payment.serviceType]}</span>
             </div>
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-zinc-500">Customer</span>
-              <span className="font-bold text-zinc-900">{payment.customerName}</span>
+              <span className="font-bold text-zinc-100">{payment.customerName}</span>
             </div>
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-zinc-500">Reference</span>
-              <span className="break-all text-right font-mono text-xs font-bold text-zinc-900">{payment.paymentReference}</span>
+              <span className="break-all text-right font-mono text-xs font-bold text-zinc-100">{payment.paymentReference}</span>
             </div>
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-zinc-500">Amount</span>
-              <span className="font-black text-zinc-950">{formatMoney(payment.amount, payment.currency)}</span>
+              <span className="font-black text-white">{formatMoney(payment.amount, payment.currency)}</span>
             </div>
             <div className="p-3.5 text-sm">
-              <span className="text-zinc-500">Description</span>
-              <p className="mt-1 font-medium text-zinc-800">{payment.description}</p>
+              <span className="text-zinc-400">Description</span>
+              <p className="mt-1 font-medium text-zinc-200">{payment.description}</p>
             </div>
           </div>
         ) : null}
@@ -232,7 +253,7 @@ function ReceiptPage() {
           <button
             type="button"
             onClick={() => window.location.assign("/Services/XhovileStudio")}
-            className="flex items-center justify-center gap-2 rounded-xl border border-zinc-200 px-5 py-3 text-sm font-black text-zinc-900 hover:bg-white/5"
+            className="flex items-center justify-center gap-2 rounded-xl border border-white/20 px-5 py-3 text-sm font-black text-white hover:bg-white/5"
           >
             <RotateCcw className="h-4 w-4" />
             Start Another Payment
@@ -240,7 +261,7 @@ function ReceiptPage() {
         </div>
 
         {receiptError ? (
-          <p className="mt-4 text-center text-xs text-red-600">{receiptError}</p>
+          <p className="mt-4 text-center text-xs text-red-300">{receiptError}</p>
         ) : null}
 
         <p className="mt-4 text-center text-[10px] text-zinc-500">
