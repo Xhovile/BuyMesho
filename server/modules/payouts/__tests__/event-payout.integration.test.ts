@@ -185,7 +185,7 @@ test('event payout replay uses the stored immutable fee snapshot', async () => {
   cleanup();
 });
 
-test('event payout candidate rejects an existing payout with a different financial owner identity', async () => {
+test('event payout candidate rejects an existing payout when supplied financial identity differs', async () => {
   seed();
   const now = new Date().toISOString();
 
@@ -196,9 +196,9 @@ test('event payout candidate rejects an existing payout with a different financi
       manual_adjustment_amount, payout_fee_amount, seller_receives_amount, net_amount, formula_snapshot,
       currency, status, provider, requested_by, requested_at, created_at, updated_at
     ) VALUES (
-      'event-payout-conflicting-owner', 'event_payout_test_creator', 'seller', 'event_payout_test_creator',
+      'event-payout-conflicting-owner', 'event_payout_test_creator', 'event_creator', 'event_payout_test_creator',
       992001, 'event_payout_test_creator', 'event-payout-test-order', NULL, NULL,
-      'event-payout-conflicting-destination', 9700, 10000, 300, 0, 0, 0, 0, 0, 9700, 9700, '{}',
+      'event-payout-test-destination', 9700, 10000, 300, 0, 0, 0, 0, 0, 9700, 9700, '{}',
       'MWK', 'pending_settlement', 'paychangu', 'system', ?, ?, ?
     )
   `).run(now, now, now);
@@ -207,10 +207,15 @@ test('event payout candidate rejects an existing payout with a different financi
     const context = await resolveEventPayoutContext('event-payout-test-order', client);
     assert.ok(context);
 
+    const conflictingContext = {
+      ...context,
+      destinationAccountId: 'event-payout-conflicting-destination',
+    };
+
     await assert.rejects(
       () => createEventPayoutCandidateAsync({
         orderId: 'event-payout-test-order',
-        event: context,
+        event: conflictingContext,
         grossAmount: 10000,
         currency: 'MWK',
         requestedBy: 'event_payout_test_creator',
