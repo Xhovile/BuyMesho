@@ -78,6 +78,9 @@ export default function AdminCustomersProjects({
   return (
     <div className="space-y-6">
       <SectionCard title="Customers" eyebrow="Customer activity">
+        <p className="mb-4 text-[11px] text-zinc-400">
+          Showing the latest 250 customer groups. Summary totals cover the full Studio database.
+        </p>
         <div className="overflow-x-auto rounded-2xl border border-zinc-200">
           <table className="min-w-full text-left">
             <thead className="bg-zinc-50">
@@ -116,6 +119,9 @@ export default function AdminCustomersProjects({
       </SectionCard>
 
       <SectionCard title="Projects" eyebrow="Project references">
+        <p className="mb-4 text-[11px] text-zinc-400">
+          Showing the latest 250 project groups. Summary totals cover the full Studio database.
+        </p>
         <div className="overflow-x-auto rounded-2xl border border-zinc-200">
           <table className="min-w-full text-left">
             <thead className="bg-zinc-50">
