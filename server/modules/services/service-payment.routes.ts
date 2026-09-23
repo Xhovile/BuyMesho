@@ -11,6 +11,7 @@ import {
 } from "./service-payment.service.js";
 import {
   servicePaymentRepository,
+  toPublicRecord,
   type ServicePaymentType,
 } from "./service-payment.repository.js";
 import { buildXhovileStudioReceiptPdf } from "./service-payment.receipt.js";
@@ -29,25 +30,6 @@ function isValidPhone(value: string): boolean {
 
 function isServiceType(value: string): value is ServicePaymentType {
   return value === "graphic_design" || value === "website_development" || value === "both";
-}
-
-function publicRecord(record: Awaited<ReturnType<typeof servicePaymentRepository.findById>>) {
-  if (!record) return null;
-
-  return {
-    id: record.id,
-    serviceType: record.serviceType,
-    customerName: record.customerName,
-    customerEmail: record.customerEmail,
-    description: record.description,
-    amount: record.amount,
-    currency: record.currency,
-    status: record.status,
-    paymentReference: record.paymentReference,
-    paidAt: record.paidAt,
-    createdAt: record.createdAt,
-    updatedAt: record.updatedAt,
-  };
 }
 
 export function createServicePaymentRouter(
@@ -270,7 +252,7 @@ export function createServicePaymentRouter(
 
       return res.status(201).json({
         success: true,
-        servicePayment: publicRecord(result.servicePayment),
+        servicePayment: toPublicRecord(result.servicePayment),
         reference: result.reference,
         checkoutUrl: result.checkoutUrl,
       });
@@ -355,7 +337,7 @@ export function createServicePaymentRouter(
     const refreshed = await servicePaymentRepository.findByReference(reference);
     return res.json({
       success: true,
-      servicePayment: publicRecord(refreshed),
+      servicePayment: toPublicRecord(refreshed),
     });
   });
 
