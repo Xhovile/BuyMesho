@@ -59,7 +59,7 @@ export async function payChanguCallbackHandler(req: Request, res: Response): Pro
           token: receiptToken,
           status: verification.verified ? "success" : "failed",
         },
-        "/Services/XhovileStudio/receipt",
+        "/xhovilestudio/receipt",
       );
       return;
     }

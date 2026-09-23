@@ -42,29 +42,29 @@ function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
     pathname === "/" ? "/" : pathname.replace(/\/+$/, "") || "/";
   const normalizedStudioPath = normalizedPathname.toLowerCase();
 
-  if (normalizedStudioPath === "/services/xhovilestudio") {
+  if (normalizedStudioPath === "/xhovilestudio" || normalizedStudioPath === "/services/xhovilestudio") {
     return {
       title: "Xhovile Studio — Service Payment",
       description:
         "Submit a Graphic Design or Website Development request and continue to secure payment checkout.",
-      canonicalPath: "/Services/XhovileStudio",
+      canonicalPath: "/xhovilestudio",
     };
   }
 
-  if (normalizedStudioPath === "/services/xhovilestudio/receipt") {
+  if (normalizedStudioPath === "/xhovilestudio/receipt" || normalizedStudioPath === "/services/xhovilestudio/receipt") {
     return {
       title: "Xhovile Studio — Payment Receipt",
       description: "View and download your Xhovile Studio payment receipt.",
-      canonicalPath: "/Services/XhovileStudio/receipt",
+      canonicalPath: "/xhovilestudio/receipt",
       noindex: true,
     };
   }
 
-  if (normalizedStudioPath === "/services/xhovilestudio/admin") {
+  if (normalizedStudioPath === "/xhovilestudio/admin" || normalizedStudioPath === "/services/xhovilestudio/admin") {
     return {
       title: "Xhovile Studio — Admin",
       description: "Xhovile Studio administration.",
-      canonicalPath: "/Services/XhovileStudio/Admin",
+      canonicalPath: "/xhovilestudio/admin",
       noindex: true,
     };
   }
