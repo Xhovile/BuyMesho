@@ -1,6 +1,4 @@
 import "dotenv/config";
-import fs from "node:fs";
-import path from "node:path";
 import { Pool } from "pg";
 import { getPostgresSslOptions } from "../../lib/postgresSsl.js";
 
@@ -15,36 +13,6 @@ function getStudioConnectionString(): string {
     );
   }
   return value;
-}
-
-function parseBoolean(value: string | undefined): boolean | undefined {
-  if (value === undefined) return undefined;
-  const normalized = value.trim().toLowerCase();
-  if (["1", "true", "yes", "on"].includes(normalized)) return true;
-  if (["0", "false", "no", "off"].includes(normalized)) return false;
-  return undefined;
-}
-
-function loadSslCaCertificate(
-  sslEnabled: boolean,
-  sslRejectUnauthorized: boolean,
-): string | undefined {
-  if (!sslEnabled || !sslRejectUnauthorized) return undefined;
-
-  const inlineCa = process.env.PGSSL_CA?.trim();
-  if (inlineCa) return inlineCa;
-
-  const caPath =
-    process.env.PGSSL_CA_PATH?.trim() ||
-    path.resolve(process.cwd(), "ca.pem");
-
-  try {
-    return fs.readFileSync(caPath, "utf8");
-  } catch (error) {
-    throw new Error(
-      `PostgreSQL SSL certificate verification is enabled, but the CA certificate could not be loaded from ${caPath}. Set PGSSL_CA to the Aiven project CA or set PGSSL_CA_PATH to a readable CA file. ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
 }
 
 function createStudioPool(): Pool {
@@ -88,6 +56,31 @@ export async function studioQuery<T extends Record<string, unknown> = Record<str
     rows: result.rows,
     rowCount: result.rowCount ?? result.rows.length,
   };
+}
+
+export async function withStudioAdvisoryLock<T>(
+  key: string,
+  callback: () => Promise<T>,
+): Promise<T> {
+  const databasePool = createStudioPool();
+  const client = await databasePool.connect();
+
+  try {
+    await client.query(
+      "SELECT pg_advisory_lock(hashtextextended($1, 0))",
+      [key],
+    );
+    return await callback();
+  } finally {
+    try {
+      await client.query(
+        "SELECT pg_advisory_unlock(hashtextextended($1, 0))",
+        [key],
+      );
+    } finally {
+      client.release();
+    }
+  }
 }
 
 export async function ensureStudioDatabaseSchema(): Promise<void> {
@@ -226,7 +219,72 @@ export async function ensureStudioDatabaseSchema(): Promise<void> {
           ADD CONSTRAINT chk_studio_service_payments_notification_status
           CHECK (success_notification_status IN ('pending', 'sending', 'sent', 'failed')) NOT VALID;
         END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_service_payments_currency'
+        ) THEN
+          ALTER TABLE service_payments
+          ADD CONSTRAINT chk_studio_service_payments_currency
+          CHECK (currency = 'MWK') NOT VALID;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_service_payments_project_total'
+        ) THEN
+          ALTER TABLE service_payments
+          ADD CONSTRAINT chk_studio_service_payments_project_total
+          CHECK (
+            project_total IS NULL
+            OR (
+              project_total > 0
+              AND project_total <= 200000000
+              AND project_total * 100 = ROUND(project_total * 100)
+            )
+          ) NOT VALID;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_service_payments_customer_name'
+        ) THEN
+          ALTER TABLE service_payments
+          ADD CONSTRAINT chk_studio_service_payments_customer_name
+          CHECK (TRIM(customer_name) <> '') NOT VALID;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_service_payments_customer_phone'
+        ) THEN
+          ALTER TABLE service_payments
+          ADD CONSTRAINT chk_studio_service_payments_customer_phone
+          CHECK (TRIM(customer_phone) <> '') NOT VALID;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_service_payments_description'
+        ) THEN
+          ALTER TABLE service_payments
+          ADD CONSTRAINT chk_studio_service_payments_description
+          CHECK (TRIM(description) <> '') NOT VALID;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_service_payments_idempotency_key'
+        ) THEN
+          ALTER TABLE service_payments
+          ADD CONSTRAINT chk_studio_service_payments_idempotency_key
+          CHECK (idempotency_key IS NULL OR TRIM(idempotency_key) <> '') NOT VALID;
+        END IF;
       END $studio$;
+    `);
+
+    await studioQuery(`
+      DROP INDEX IF EXISTS idx_studio_service_payments_reference
     `);
 
     await studioQuery(`
@@ -242,6 +300,38 @@ export async function ensureStudioDatabaseSchema(): Promise<void> {
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
         processed_at TIMESTAMPTZ
       )
+    `);
+
+    await studioQuery(`
+      DO $studio_webhook$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_webhook_status'
+        ) THEN
+          ALTER TABLE service_payment_webhook_events
+          ADD CONSTRAINT chk_studio_webhook_status
+          CHECK (status IN ('received', 'processed', 'ignored', 'failed')) NOT VALID;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_webhook_signature'
+        ) THEN
+          ALTER TABLE service_payment_webhook_events
+          ADD CONSTRAINT chk_studio_webhook_signature
+          CHECK (signature_valid IN (0, 1)) NOT VALID;
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'chk_studio_webhook_payload_hash'
+        ) THEN
+          ALTER TABLE service_payment_webhook_events
+          ADD CONSTRAINT chk_studio_webhook_payload_hash
+          CHECK (TRIM(payload_hash) <> '') NOT VALID;
+        END IF;
+      END $studio_webhook$;
     `);
 
     await studioQuery(`

@@ -1,9 +1,8 @@
-import type { ReactNode } from "react";
+import { type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { SERVICE_LABELS, formatMoney } from "./config";
-import type { AdminPayment } from "./AdminTypes";
+import { formatMoney, SERVICE_LABELS, type StudioAdminPayment } from "../config";
 
-function formatDate(value: string | null | undefined, includeTime = true) {
+export function formatDate(value: string | null | undefined, includeTime = true) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
@@ -13,7 +12,7 @@ function formatDate(value: string | null | undefined, includeTime = true) {
   }).format(date);
 }
 
-function statusClasses(status: string) {
+export function statusClasses(status: string) {
   const normalized = status.toLowerCase();
   if (normalized === "paid" || normalized === "processed" || normalized === "sent") {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
@@ -104,7 +103,7 @@ export function PaymentRow({
   payment,
   onSelect,
 }: {
-  payment: AdminPayment;
+  payment: StudioAdminPayment;
   onSelect: () => void;
 }) {
   return (
@@ -142,5 +141,4 @@ export function DetailField({ label, value, mono = false }: { label: string; val
     </div>
   );
 }
-
 

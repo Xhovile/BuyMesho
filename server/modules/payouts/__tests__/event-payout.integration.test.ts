@@ -10,9 +10,15 @@ const db = getPaymentDb();
 afterEach(cleanup);
 
 function cleanup() {
-  db.prepare("DELETE FROM payout_attempts WHERE payout_id LIKE 'event-payout-test-%'").run();
-  db.prepare("DELETE FROM payout_events WHERE payout_id LIKE 'event-payout-test-%'").run();
-  db.prepare("DELETE FROM payouts WHERE id LIKE 'event-payout-test-%' OR escrow_id = 'event-payout-test-escrow'").run();
+  const payoutFilter = `
+    id LIKE 'event-payout-test-%'
+    OR escrow_id = 'event-payout-test-escrow'
+    OR event_id = 992001
+    OR order_id = 'event-payout-test-order'
+  `;
+  db.prepare(`DELETE FROM payout_attempts WHERE payout_id IN (SELECT id FROM payouts WHERE ${payoutFilter})`).run();
+  db.prepare(`DELETE FROM payout_events WHERE payout_id IN (SELECT id FROM payouts WHERE ${payoutFilter})`).run();
+  db.prepare(`DELETE FROM payouts WHERE ${payoutFilter}`).run();
   db.prepare("DELETE FROM event_tickets WHERE order_id = 'event-payout-test-order'").run();
   db.prepare("DELETE FROM escrows WHERE id = 'event-payout-test-escrow'").run();
   db.prepare("DELETE FROM orders WHERE id = 'event-payout-test-order'").run();
@@ -186,13 +192,13 @@ test('event payout candidate rejects an existing payout with a different financi
   db.prepare(`
     INSERT INTO payouts (
       id, seller_id, owner_type, owner_uid, event_id, event_creator_uid, order_id, escrow_id, release_entry_id,
-      amount, gross_amount, platform_fee_amount, processing_fee_amount, reserve_amount, reserve_cap_amount,
+      destination_account_id, amount, gross_amount, platform_fee_amount, processing_fee_amount, reserve_amount, reserve_cap_amount,
       manual_adjustment_amount, payout_fee_amount, seller_receives_amount, net_amount, formula_snapshot,
       currency, status, provider, requested_by, requested_at, created_at, updated_at
     ) VALUES (
       'event-payout-conflicting-owner', 'event_payout_test_creator', 'seller', 'event_payout_test_creator',
       992001, 'event_payout_test_creator', 'event-payout-test-order', NULL, NULL,
-      9700, 10000, 300, 0, 0, 0, 0, 0, 9700, 9700, '{}',
+      'event-payout-conflicting-destination', 9700, 10000, 300, 0, 0, 0, 0, 0, 9700, 9700, '{}',
       'MWK', 'pending_settlement', 'paychangu', 'system', ?, ?, ?
     )
   `).run(now, now, now);

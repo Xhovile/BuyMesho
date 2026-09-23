@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   CircleAlert,
   Monitor,
@@ -14,88 +14,16 @@ import {
   type ServiceType,
   formatMoney,
 } from "./config";
-import ReferenceUploader from "./ReferenceUploader";
-import type { ReferenceImage } from "./ReferenceUploader";
-
 import {
-  ChoiceButton,
-  GraphicServicePicker,
   PayChanguLogo,
   ServiceChoice,
   Shell,
   StudioCheckoutButton,
 } from "./shared";
-
-let referenceIdCounter = 0;
-
-const MAX_REFERENCE_IMAGES = 4;
-const MAX_REFERENCE_FILE_SIZE = 10 * 1024 * 1024;
-
-let idempotencyCounter = 0;
-
-function createIdempotencyKey(): string {
-  if (typeof globalThis.crypto?.randomUUID === "function") {
-    return globalThis.crypto.randomUUID();
-  }
-
-  if (typeof globalThis.crypto?.getRandomValues === "function") {
-    const bytes = new Uint8Array(16);
-    globalThis.crypto.getRandomValues(bytes);
-    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-  }
-
-  idempotencyCounter += 1;
-  return `studio-${Date.now()}-${idempotencyCounter}`;
-}
-
-function buildCheckoutFingerprint(input: {
-  serviceType: ServiceType;
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string;
-  description: string;
-  amount: number;
-  graphicId: string;
-  graphicTotal: number;
-  websiteTotal: number;
-  paymentMode: PaymentMode;
-  projectReference: string;
-  referenceImages: ReferenceImage[];
-  referenceVideo: File | null;
-}): string {
-  return JSON.stringify({
-    serviceType: input.serviceType,
-    customerName: input.customerName,
-    customerPhone: input.customerPhone,
-    customerEmail: input.customerEmail,
-    description: input.description,
-    amount: input.amount,
-    graphicId: input.graphicId,
-    graphicTotal: input.graphicTotal,
-    websiteTotal: input.websiteTotal,
-    paymentMode: input.paymentMode,
-    projectReference: input.projectReference,
-    referenceImages: input.referenceImages.map((item) => ({
-      name: item.file.name,
-      type: item.file.type,
-      size: item.file.size,
-      lastModified: item.file.lastModified,
-    })),
-    referenceVideo: input.referenceVideo
-      ? {
-          name: input.referenceVideo.name,
-          type: input.referenceVideo.type,
-          size: input.referenceVideo.size,
-          lastModified: input.referenceVideo.lastModified,
-        }
-      : null,
-  });
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+import ReferenceUploader, {
+  type StudioReferenceSelection,
+} from "./ReferenceUploader";
+import StudioPaymentOptions from "./StudioPaymentOptions";
 
 function PaymentForm() {
   const [serviceType, setServiceType] = useState<ServiceType>("graphic_design");
@@ -109,30 +37,13 @@ function PaymentForm() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [description, setDescription] = useState("");
-  const [referenceImages, setReferenceImages] = useState<ReferenceImage[]>([]);
-  const [referenceVideo, setReferenceVideo] = useState<File | null>(null);
-  const [referenceVideoPreviewUrl, setReferenceVideoPreviewUrl] = useState<string | null>(null);
-  const [referenceError, setReferenceError] = useState<string | null>(null);
+  const [referenceFiles, setReferenceFiles] = useState<StudioReferenceSelection>({
+    images: [],
+    video: null,
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const idempotencyKeyRef = useRef<string | null>(null);
-  const referenceIdCounter = useRef(0);
-  const referencePreviewUrlsRef = useRef<Set<string>>(new Set());
-  const referenceVideoPreviewUrlRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    return () => {
-      for (const url of referencePreviewUrlsRef.current) {
-        URL.revokeObjectURL(url);
-      }
-      referencePreviewUrlsRef.current.clear();
-
-      if (referenceVideoPreviewUrlRef.current) {
-        URL.revokeObjectURL(referenceVideoPreviewUrlRef.current);
-        referenceVideoPreviewUrlRef.current = null;
-      }
-    };
-  }, []);
 
   const selectedGraphic = GRAPHIC_SERVICES.find((item) => item.id === graphicId);
   const graphicTotal =
@@ -192,120 +103,12 @@ function PaymentForm() {
     setError(null);
   }
 
-  function addReferenceImages(files: FileList | null) {
-    if (!files?.length) return;
-
-    const incoming = Array.from(files);
-    const availableSlots = MAX_REFERENCE_IMAGES - referenceImages.length;
-    const accepted: ReferenceImage[] = [];
-    let nextError: string | null = incoming.length > availableSlots
-      ? `You can attach up to ${MAX_REFERENCE_IMAGES} images.`
-      : null;
-
-    for (const file of incoming.slice(0, Math.max(availableSlots, 0))) {
-      if (!file.type.startsWith("image/")) {
-        nextError = "Please choose image files for the image references.";
-        continue;
-      }
-      if (file.size > MAX_REFERENCE_FILE_SIZE) {
-        nextError = `${file.name} is larger than ${formatFileSize(MAX_REFERENCE_FILE_SIZE)}.`;
-        continue;
-      }
-      const duplicate = referenceImages.some((item) =>
-        item.file.name === file.name &&
-        item.file.size === file.size &&
-        item.file.lastModified === file.lastModified
-      );
-      if (duplicate) continue;
-
-      const previewUrl = URL.createObjectURL(file);
-      referencePreviewUrlsRef.current.add(previewUrl);
-      accepted.push({
-        id: `${file.name}-${file.size}-${file.lastModified}-${referenceIdCounter.current++}`,
-        file,
-        previewUrl,
-      });
-    }
-
-    setReferenceImages((current) => [...current, ...accepted].slice(0, MAX_REFERENCE_IMAGES));
-    setReferenceError(nextError);
-  }
-
-  function removeReferenceImage(id: string) {
-    setReferenceImages((current) => {
-      const target = current.find((item) => item.id === id);
-      if (target) {
-        URL.revokeObjectURL(target.previewUrl);
-        referencePreviewUrlsRef.current.delete(target.previewUrl);
-      }
-      return current.filter((item) => item.id !== id);
-    });
-    setReferenceError(null);
-  }
-
-  function addReferenceVideo(file: File | null) {
-    if (!file) return;
-    if (!file.type.startsWith("video/")) {
-      setReferenceError("Please choose a video file for the video reference.");
-      return;
-    }
-    if (file.size > MAX_REFERENCE_FILE_SIZE) {
-      setReferenceError(`The video is larger than ${formatFileSize(MAX_REFERENCE_FILE_SIZE)}.`);
-      return;
-    }
-
-    if (referenceVideoPreviewUrl) {
-      URL.revokeObjectURL(referenceVideoPreviewUrl);
-      referenceVideoPreviewUrlRef.current = null;
-    }
-
-    const previewUrl = URL.createObjectURL(file);
-    referenceVideoPreviewUrlRef.current = previewUrl;
-    setReferenceVideo(file);
-    setReferenceVideoPreviewUrl(previewUrl);
-    setReferenceError(null);
-  }
-
-  function removeReferenceVideo() {
-    if (referenceVideoPreviewUrl) {
-      URL.revokeObjectURL(referenceVideoPreviewUrl);
-      referenceVideoPreviewUrlRef.current = null;
-    }
-    setReferenceVideo(null);
-    setReferenceVideoPreviewUrl(null);
-    setReferenceError(null);
-  }
-
   async function submit() {
     if (!canSubmit) return;
 
     setSubmitting(true);
     setError(null);
 
-    const fingerprint = buildCheckoutFingerprint({
-      serviceType,
-      customerName: customerName.trim(),
-      customerPhone: customerPhone.trim(),
-      customerEmail: customerEmail.trim(),
-      description: description.trim(),
-      amount: amountDue,
-      graphicId,
-      graphicTotal,
-      websiteTotal: websiteProjectTotal,
-      paymentMode,
-      projectReference: projectReference.trim(),
-      referenceImages,
-      referenceVideo,
-    });
-
-    if (!idempotencyRef.current || idempotencyRef.current.fingerprint !== fingerprint) {
-      idempotencyRef.current = {
-        fingerprint,
-        key: createIdempotencyKey(),
-      };
-    }
-
-    const idempotencyKey = idempotencyRef.current.key;
     const serviceParts: string[] = [];
     if (needsGraphic) {
       const label = graphicId === "custom" ? "Custom / multiple graphic design" : selectedGraphic?.label ?? "Graphic Design";
@@ -339,11 +142,11 @@ function PaymentForm() {
       if (paymentMode === "balance") {
         formData.append("projectReference", projectReference.trim());
       }
-      referenceImages.forEach((item) => {
-        formData.append("referenceImages", item.file, item.file.name);
+      referenceFiles.images.forEach((file) => {
+        formData.append("referenceImages", file, file.name);
       });
-      if (referenceVideo) {
-        formData.append("referenceVideo", referenceVideo, referenceVideo.name);
+  if (referenceFiles.video) {
+        formData.append("referenceVideo", referenceFiles.video, referenceFiles.video.name);
       }
 
       const response = await fetch(apiUrl("/api/public/service-payments"), {
@@ -354,10 +157,7 @@ function PaymentForm() {
         body: formData,
       });
 
-      const data = (await response.json()) as Partial<CreateResponse> & {
-        error?: string;
-        code?: string;
-      };
+      const data = (await response.json()) as Partial<CreateResponse> & { error?: string };
       if (!response.ok || !data.checkoutUrl) {
         if (response.status === 409) {
           idempotencyKeyRef.current = null;
@@ -443,135 +243,26 @@ function PaymentForm() {
             </label>
           </div>
 
-          <div className="space-y-3">
-              {needsGraphic ? (
-                <div className="rounded-xl border border-[#168cff]/25 bg-[#eef8ff] p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#168cff]">Graphic Design</p>
-                      <p className="mt-0.5 text-[10px] text-zinc-500">Choose a design from the poster.</p>
-                    </div>
-                    <Palette className="h-4 w-4 text-[#168cff]" />
-                  </div>
-                  <div className="mt-2 flex gap-2">
-                    <div className="min-w-0 flex-1">
-                      <GraphicServicePicker value={graphicId} onChange={setGraphicId} />
-                    </div>
-                    {graphicId === "custom" ? (
-                      <input
-                        value={graphicCustomTotal}
-                        onChange={(event) => setGraphicCustomTotal(event.target.value.replace(/[^0-9.]/g, ""))}
-                        className="w-32 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-[#168cff]"
-                        placeholder="Total MWK"
-                        inputMode="numeric"
-                      />
-                    ) : null}
-                  </div>
-                  <p className="mt-2 text-[10px] text-zinc-500">
-                    Project price: <span className="font-black text-white">{formatMoney(graphicTotal)}</span>
-                  </p>
-                </div>
-              ) : null}
-
-              {needsWebsite ? (
-                <div className="rounded-xl border border-[#ff1d25]/25 bg-[#fff1f1] p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#ff5b61]">Web Development</p>
-                      <p className="mt-0.5 text-[10px] text-zinc-500">Websites from MWK 80,000.</p>
-                    </div>
-                    <Monitor className="h-4 w-4 text-[#ff5b61]" />
-                  </div>
-                  <label className="mt-2 block">
-                    <span className="sr-only">Agreed website project price</span>
-                    <input
-                      value={websiteTotal}
-                      onChange={(event) => setWebsiteTotal(event.target.value.replace(/[^0-9.]/g, ""))}
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-700 focus:border-[#ff1d25]"
-                      placeholder="Agreed project price (MWK)"
-                      inputMode="numeric"
-                    />
-                  </label>
-                </div>
-              ) : null}
-
-              {paymentMode === "balance" ? (
-                <div className="space-y-2">
-                  <input
-                    value={projectReference}
-                    onChange={(event) => setProjectReference(event.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 bg-[#fffdfa] px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
-                    placeholder="Project reference"
-                  />
-
-                  {needsWebsite ? (
-                    <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.14em] text-zinc-600">
-                        Website balance to pay
-                      </label>
-                      <input
-                        value={balanceAmount}
-                        onChange={(event) => setBalanceAmount(event.target.value.replace(/[^0-9.]/g, ""))}
-                        className="w-full rounded-xl border border-zinc-200 bg-[#fffdfa] px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
-                        placeholder="Enter website balance (MWK)"
-                        inputMode="numeric"
-                      />
-                      <p className="mt-1 text-[10px] text-zinc-500">
-                        Enter the agreed remaining website balance. Graphic balances remain 50%.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-[#168cff]/20 bg-[#168cff]/5 px-3 py-2.5">
-                      <p className="text-[10px] uppercase tracking-[0.14em] text-[#168cff]">Graphic balance</p>
-                      <p className="mt-0.5 text-sm font-black text-zinc-900">{formatMoney(graphicTotal / 2)}</p>
-                      <p className="mt-0.5 text-[10px] text-zinc-500">Fixed at 50% of the listed project price.</p>
-                    </div>
-                  )}
-                </div>
-              ) : null}
-          </div>
-
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-black text-zinc-900">Payment</p>
-                <p className="mt-0.5 text-[10px] text-zinc-500">We start new work after a 50% deposit.</p>
-              </div>
-              <span className="text-sm font-black text-zinc-900">{formatMoney(amountDue)}</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <ChoiceButton
-                active={paymentMode === "deposit"}
-                title="50% Deposit"
-                subtitle={combinedProjectTotal > 0 ? formatMoney(combinedProjectTotal / 2) : "Half now"}
-                onClick={() => setPaymentMode("deposit")}
-                accent={theme === "blue" ? "blue" : theme === "red" ? "red" : "neutral"}
-              />
-              <ChoiceButton
-                active={paymentMode === "full"}
-                title="Full Payment"
-                subtitle={combinedProjectTotal > 0 ? formatMoney(combinedProjectTotal) : "Pay all"}
-                onClick={() => setPaymentMode("full")}
-                accent="neutral"
-              />
-              <ChoiceButton
-                active={paymentMode === "balance"}
-                title="Final Balance"
-                subtitle={
-                  paymentMode === "balance"
-                    ? needsWebsite
-                      ? "Enter website balance"
-                      : needsGraphic
-                        ? formatMoney(graphicTotal / 2)
-                        : "Existing project"
-                    : "Existing project"
-                }
-                onClick={() => setPaymentMode("balance")}
-                accent="neutral"
-              />
-            </div>
-          </div>
+          <StudioPaymentOptions
+            needsGraphic={needsGraphic}
+            needsWebsite={needsWebsite}
+            graphicId={graphicId}
+            graphicCustomTotal={graphicCustomTotal}
+            websiteTotal={websiteTotal}
+            paymentMode={paymentMode}
+            balanceAmount={balanceAmount}
+            projectReference={projectReference}
+            graphicTotal={graphicTotal}
+            combinedProjectTotal={combinedProjectTotal}
+            amountDue={amountDue}
+            theme={theme}
+            onGraphicIdChange={setGraphicId}
+            onGraphicCustomTotalChange={setGraphicCustomTotal}
+            onWebsiteTotalChange={setWebsiteTotal}
+            onPaymentModeChange={setPaymentMode}
+            onBalanceAmountChange={setBalanceAmount}
+            onProjectReferenceChange={setProjectReference}
+          />
 
           <div className="rounded-xl border border-zinc-200 bg-[#fffdfa] p-3">
             <div className="flex items-center justify-between gap-3">
@@ -589,18 +280,7 @@ function PaymentForm() {
             />
           </div>
 
-          <ReferenceUploader
-            referenceImages={referenceImages}
-            referenceVideo={referenceVideo}
-            referenceVideoPreviewUrl={referenceVideoPreviewUrl}
-            referenceError={referenceError}
-            maxImages={MAX_REFERENCE_IMAGES}
-            formatFileSize={formatFileSize}
-            onAddImages={addReferenceImages}
-            onRemoveImage={removeReferenceImage}
-            onAddVideo={addReferenceVideo}
-            onRemoveVideo={removeReferenceVideo}
-          />
+          <ReferenceUploader onChange={setReferenceFiles} />
 
           <details className="rounded-xl border border-zinc-200 bg-[#fffdfa]">
             <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-bold text-zinc-400">

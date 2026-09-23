@@ -71,7 +71,6 @@ export type StudioAdminSnapshot = {
     cloudinaryConfigured: boolean;
     notificationEmail: string;
     environment: string;
-    cloudinaryConfigured: boolean;
   };
 };
 
@@ -131,19 +130,21 @@ export async function getStudioAdminSnapshot(
           ),
           0
         ) AS today_paid_revenue,
-        COUNT(DISTINCT customer_phone) AS customer_count,
+        COUNT(DISTINCT REGEXP_REPLACE(customer_phone, '[^0-9+]', '', 'g')) AS customer_count,
         COUNT(DISTINCT (
           NULLIF(project_reference, ''),
-          customer_phone
+          REGEXP_REPLACE(customer_phone, '[^0-9+]', '', 'g')
         )) FILTER (
           WHERE project_reference IS NOT NULL
             AND TRIM(project_reference) <> ''
         ) AS project_count,
         COUNT(*) FILTER (
-          WHERE success_notification_status IN ('pending', 'sending')
+          WHERE status = 'paid'
+            AND success_notification_status IN ('pending', 'sending')
         ) AS notification_pending,
         COUNT(*) FILTER (
-          WHERE success_notification_status = 'failed'
+          WHERE status = 'paid'
+            AND success_notification_status = 'failed'
         ) AS notification_failed,
         (SELECT COUNT(*) FROM service_payment_webhook_events) AS webhook_received,
         (
@@ -169,53 +170,29 @@ export async function getStudioAdminSnapshot(
     ),
     studioQuery<Record<string, unknown>>(
       `
-        WITH latest_customer AS (
-          SELECT DISTINCT ON (customer_phone)
-            customer_phone,
-            customer_name,
-            customer_email
-          FROM service_payments
-          ORDER BY customer_phone, updated_at DESC, created_at DESC
-        )
         SELECT
-          customer_phone,
+          (ARRAY_AGG(customer_phone ORDER BY updated_at DESC))[1] AS customer_phone,
           (ARRAY_AGG(customer_name ORDER BY updated_at DESC)
             FILTER (WHERE customer_name IS NOT NULL AND TRIM(customer_name) <> ''))[1] AS customer_name,
           (ARRAY_AGG(customer_email ORDER BY updated_at DESC)
             FILTER (WHERE customer_email IS NOT NULL AND TRIM(customer_email) <> ''))[1] AS customer_email,
           COUNT(*) AS payment_count,
-          COUNT(*) FILTER (WHERE payments.status = 'paid') AS paid_count,
-          COALESCE(SUM(payments.amount) FILTER (WHERE payments.status = 'paid'), 0) AS paid_amount,
-          COUNT(DISTINCT NULLIF(payments.project_reference, '')) AS project_count,
-          MAX(payments.updated_at) AS last_activity_at
-        FROM service_payments payments
-        JOIN latest_customer
-          ON latest_customer.customer_phone = payments.customer_phone
-        GROUP BY
-          payments.customer_phone,
-          latest_customer.customer_name,
-          latest_customer.customer_email
-        ORDER BY MAX(payments.updated_at) DESC
+          COUNT(*) FILTER (WHERE status = 'paid') AS paid_count,
+          COALESCE(SUM(amount) FILTER (WHERE status = 'paid'), 0) AS paid_amount,
+          COUNT(DISTINCT NULLIF(project_reference, '')) AS project_count,
+          MAX(updated_at) AS last_activity_at
+        FROM service_payments
+        GROUP BY REGEXP_REPLACE(customer_phone, '[^0-9+]', '', 'g')
+        ORDER BY MAX(updated_at) DESC
         LIMIT $1
       `,
       [limit],
     ),
     studioQuery<Record<string, unknown>>(
       `
-        WITH latest_project_payment AS (
-          SELECT DISTINCT ON (project_reference, customer_phone)
-            project_reference,
-            customer_phone,
-            customer_name,
-            status
-          FROM service_payments
-          WHERE project_reference IS NOT NULL
-            AND TRIM(project_reference) <> ''
-          ORDER BY project_reference, customer_phone, updated_at DESC, created_at DESC
-        )
         SELECT
           project_reference,
-          customer_phone,
+          (ARRAY_AGG(customer_phone ORDER BY updated_at DESC))[1] AS customer_phone,
           (ARRAY_AGG(customer_name ORDER BY updated_at DESC)
             FILTER (WHERE customer_name IS NOT NULL AND TRIM(customer_name) <> ''))[1] AS customer_name,
           COUNT(*) AS payment_count,
@@ -225,7 +202,7 @@ export async function getStudioAdminSnapshot(
         FROM service_payments
         WHERE project_reference IS NOT NULL
           AND TRIM(project_reference) <> ''
-        GROUP BY project_reference, customer_phone
+        GROUP BY project_reference, REGEXP_REPLACE(customer_phone, '[^0-9+]', '', 'g')
         ORDER BY MAX(updated_at) DESC
         LIMIT $1
       `,
@@ -235,7 +212,8 @@ export async function getStudioAdminSnapshot(
       `
         SELECT *
         FROM service_payments
-        WHERE success_notification_status <> 'sent'
+        WHERE status = 'paid'
+          AND success_notification_status <> 'sent'
         ORDER BY updated_at DESC
         LIMIT $1
       `,
@@ -329,11 +307,6 @@ export async function getStudioAdminSnapshot(
         process.env.XHOVILE_STUDIO_NOTIFICATION_EMAIL?.trim() ||
         "xhovilepublications@gmail.com",
       environment: process.env.NODE_ENV?.trim() || "development",
-      cloudinaryConfigured: Boolean(
-        process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
-        process.env.CLOUDINARY_API_KEY?.trim() &&
-        process.env.CLOUDINARY_API_SECRET?.trim()
-      ),
     },
   };
 }
