@@ -17,6 +17,7 @@ import { Shell } from "./shared";
 
 async function downloadReceipt(
   payment: ServicePayment,
+  receiptToken: string,
   setDownloading: (value: boolean) => void,
   setError: (value: string | null) => void,
 ) {
@@ -27,7 +28,10 @@ async function downloadReceipt(
   try {
     const response = await fetch(
       apiUrl(`/api/public/service-payments/${encodeURIComponent(reference)}/receipt.pdf`),
-      { cache: "no-store" },
+      {
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${receiptToken}` },
+      },
     );
 
     if (!response.ok) {
@@ -64,10 +68,20 @@ function ReceiptPage() {
   const [message, setMessage] = useState("Confirming your payment…");
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
 
-  const reference = useMemo(() => {
+  const { reference, receiptToken } = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get("ref") ?? params.get("tx_ref") ?? params.get("reference");
+    return {
+      reference: params.get("ref") ?? params.get("tx_ref") ?? params.get("reference"),
+      receiptToken: params.get("token") ?? "",
+    };
   }, []);
+
+  useEffect(() => {
+    if (!receiptToken) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("token");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+  }, [receiptToken]);
 
   const [receiptError, setReceiptError] = useState<string | null>(null);
 
@@ -78,10 +92,19 @@ function ReceiptPage() {
       return false;
     }
 
+    if (!receiptToken) {
+      setMessage("This receipt link is missing its secure access token. Return through the payment result to open it.");
+      setLoading(false);
+      return false;
+    }
+
     try {
       const response = await fetch(
         apiUrl(`/api/public/service-payments/${encodeURIComponent(reference)}`),
-        { cache: "no-store" },
+        {
+          cache: "no-store",
+          headers: { Authorization: `Bearer ${receiptToken}` },
+        },
       );
       const data = (await response.json()) as StatusResponse & { error?: string };
       if (!response.ok || !data.servicePayment) {
@@ -107,7 +130,7 @@ function ReceiptPage() {
       setMessage(error instanceof Error ? error.message : "Unable to load payment status.");
       return false;
     }
-  }, [reference]);
+  }, [receiptToken, reference]);
 
   useEffect(() => {
     let mounted = true;
@@ -185,7 +208,7 @@ function ReceiptPage() {
             <button
               type="button"
               disabled={downloadingReceipt}
-              onClick={() => void downloadReceipt(payment, setDownloadingReceipt, setReceiptError)}
+              onClick={() => void downloadReceipt(payment, receiptToken, setDownloadingReceipt, setReceiptError)}
               className="flex items-center justify-center gap-2 rounded-xl bg-[#8f1528] px-5 py-3 text-sm font-black text-white hover:bg-[#7b1223] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {downloadingReceipt ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
