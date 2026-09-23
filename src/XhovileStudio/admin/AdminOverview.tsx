@@ -5,7 +5,6 @@ import {
   Clock3,
   CreditCard,
   FolderKanban,
-  Server,
   Users,
   XCircle,
 } from "lucide-react";
@@ -116,12 +115,6 @@ export default function AdminOverview({
   payments: StudioAdminPayment[];
   onSelectPayment: (paymentId: string) => void;
 }) {
-  const attentionCount =
-    summary.pendingPayments +
-    summary.failedPayments +
-    summary.notificationFailed +
-    summary.webhookFailed;
-
   return (
     <>
       <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -212,11 +205,6 @@ export default function AdminOverview({
           </div>
         </div>
       </SectionCard>
-
-      <div className="sr-only" aria-hidden="true">
-        {attentionCount}
-        <Server />
-      </div>
     </>
   );
 }
