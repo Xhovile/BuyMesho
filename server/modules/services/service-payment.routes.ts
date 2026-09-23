@@ -44,12 +44,11 @@ function isServiceType(value: string): value is ServicePaymentType {
 
 function getReceiptAccessToken(req: Request): string | null {
   const authorization = req.headers.authorization;
-  if (typeof authorization === "string" && /^Bearer\s+/i.test(authorization)) {
-    return authorization.replace(/^Bearer\s+/i, "").trim() || null;
+  if (typeof authorization !== "string" || !/^Bearer\s+/i.test(authorization)) {
+    return null;
   }
 
-  const token = cleanString(req.query.token, 500);
-  return token || null;
+  return authorization.replace(/^Bearer\s+/i, "").trim() || null;
 }
 
 function hasReceiptAccess(req: Request, reference: string): boolean {
