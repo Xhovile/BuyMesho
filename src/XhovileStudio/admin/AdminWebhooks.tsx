@@ -1,17 +1,8 @@
 import type { ReactNode } from "react";
+import type { AdminWebhook } from "./types";
 
-type AdminWebhook = {
-  id: number;
-  providerEventId: string | null;
-  paymentReference: string | null;
-  eventType: string | null;
-  payloadHash: string;
-  status: string;
-  signatureValid: boolean;
-  error: string | null;
-  createdAt: string;
-  processedAt: string | null;
-};
+*/
+
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "—";
