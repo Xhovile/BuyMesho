@@ -44,7 +44,7 @@ export async function payChanguCallbackHandler(req: Request, res: Response): Pro
           reference: txRef,
           status: verification.verified ? "success" : "failed",
         },
-        "/Services/XhovileStudio/receipt",
+        "/xhovilestudio/receipt",
       );
       return;
     }
@@ -60,7 +60,7 @@ export async function payChanguCallbackHandler(req: Request, res: Response): Pro
       res,
       { tx_ref: txRef, status: "failed" },
       isStudioReference
-        ? "/Services/XhovileStudio/receipt"
+        ? "/xhovilestudio/receipt"
         : "/payment/return",
     );
   }
@@ -77,7 +77,7 @@ export async function payChanguReturnHandler(req: Request, res: Response): Promi
       status,
     },
     /^PAYCHANGU-svc_/i.test(txRef)
-      ? "/Services/XhovileStudio/receipt"
+      ? "/xhovilestudio/receipt"
       : "/payment/return",
   );
 }
