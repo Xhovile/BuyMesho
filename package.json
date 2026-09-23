@@ -38,7 +38,7 @@
     "test:order-state-transition": "NODE_ENV=test node --import tsx --test --test-concurrency=1 --experimental-test-isolation=none server/modules/orders/__tests__/order.state-transition.test.ts",
     "check:structure-gate": "tsx scripts/validate-structure-gate.ts",
     "check:payments": "npm run test:integration",
-    "test:studio-receipt-access": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/services/__tests__/studio-receipt-access.test.ts"
+    "test:studio-receipt-access": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/services/__tests__/studio-receipt-access.test.ts server/modules/services/__tests__/service-payment-public-record.test.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
