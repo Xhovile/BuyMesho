@@ -16,7 +16,7 @@ import {
 import { Shell } from "./shared";
 
 async function downloadReceipt(
-  payment: ServicePayment,
+  payment: Pick<ServicePayment, "id" | "paymentReference">,
   receiptToken: string,
   setDownloading: (value: boolean) => void,
   setError: (value: string | null) => void,
