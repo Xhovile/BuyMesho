@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import test from "node:test";
 import {
   createXhovileStudioReceiptAccessToken,
@@ -31,19 +32,43 @@ test("Studio receipt token verifies for the same reference", () => {
   }
 });
 
-test("expired Studio receipt token is rejected", () => {
+test("expired Studio receipt tokens are rejected by the verifier", () => {
+  const previous = process.env.XHOVILE_STUDIO_RECEIPT_SECRET;
+  const secret = "studio-receipt-test-secret";
+  process.env.XHOVILE_STUDIO_RECEIPT_SECRET = secret;
+
+  try {
+    const reference = "PAYCHANGU-svc-test-expired";
+    const expiresAt = Math.floor(Date.now() / 1000) - 1;
+    const signature = createHmac("sha256", secret)
+      .update(`${reference}.${expiresAt}`)
+      .digest("base64url");
+    const expired = `${expiresAt}.${signature}`;
+
+    assert.equal(
+      verifyXhovileStudioReceiptAccessToken(reference, expired),
+      false,
+    );
+  } finally {
+    if (previous === undefined) delete process.env.XHOVILE_STUDIO_RECEIPT_SECRET;
+    else process.env.XHOVILE_STUDIO_RECEIPT_SECRET = previous;
+  }
+});
+
+test("receipt token creation still rejects expired expirations", () => {
   const previous = process.env.XHOVILE_STUDIO_RECEIPT_SECRET;
   process.env.XHOVILE_STUDIO_RECEIPT_SECRET = "studio-receipt-test-secret";
 
   try {
-    const reference = "PAYCHANGU-svc-test-expired";
-    const expired = createXhovileStudioReceiptAccessToken(
-      reference,
-      Math.floor(Date.now() / 1000) - 1,
+    const reference = "PAYCHANGU-svc-test-expired-creation";
+    assert.throws(
+      () =>
+        createXhovileStudioReceiptAccessToken(
+          reference,
+          Math.floor(Date.now() / 1000) - 1,
+        ),
+      /Receipt token expiration must be in the future/,
     );
-    assert.fail("Expected token creation to reject an expired expiry.");
-  } catch (error) {
-    assert.match(String(error), /Receipt token expiration must be in the future/);
   } finally {
     if (previous === undefined) delete process.env.XHOVILE_STUDIO_RECEIPT_SECRET;
     else process.env.XHOVILE_STUDIO_RECEIPT_SECRET = previous;
