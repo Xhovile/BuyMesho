@@ -1,26 +1,6 @@
 import type { ReactNode } from "react";
-import { formatMoney, type PaymentStatus } from "../config";
-
-export type AdminCustomer = {
-  customerPhone: string;
-  customerName: string;
-  customerEmail: string | null;
-  paymentCount: number;
-  paidCount: number;
-  paidAmount: number;
-  projectCount: number;
-  lastActivityAt: string;
-};
-
-export type AdminProject = {
-  projectReference: string;
-  customerName: string;
-  customerPhone: string;
-  paymentCount: number;
-  paidAmount: number;
-  lastActivityAt: string;
-  latestStatus: PaymentStatus;
-};
+import { formatMoney } from "../config";
+import type { AdminCustomer, AdminProject } from "./types";
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "—";
