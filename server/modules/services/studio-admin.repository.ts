@@ -139,10 +139,12 @@ export async function getStudioAdminSnapshot(
             AND TRIM(project_reference) <> ''
         ) AS project_count,
         COUNT(*) FILTER (
-          WHERE success_notification_status IN ('pending', 'sending')
+          WHERE status = 'paid'
+            AND success_notification_status IN ('pending', 'sending')
         ) AS notification_pending,
         COUNT(*) FILTER (
-          WHERE success_notification_status = 'failed'
+          WHERE status = 'paid'
+            AND success_notification_status = 'failed'
         ) AS notification_failed,
         (SELECT COUNT(*) FROM service_payment_webhook_events) AS webhook_received,
         (
@@ -210,7 +212,8 @@ export async function getStudioAdminSnapshot(
       `
         SELECT *
         FROM service_payments
-        WHERE success_notification_status <> 'sent'
+        WHERE status = 'paid'
+          AND success_notification_status <> 'sent'
         ORDER BY updated_at DESC
         LIMIT $1
       `,
