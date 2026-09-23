@@ -11,7 +11,7 @@ import {
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { formatMoney, type StudioAdminPayment } from "../config";
-import type { AdminSystemStatus, AdminSummary } from "./types";
+import type { AdminSummary } from "./types";
 
 function formatDate(value: string | null | undefined, includeTime = true) {
   if (!value) return "—";
@@ -107,12 +107,10 @@ function StatusPill({ value }: { value: string }) {
 
 export default function AdminOverview({
   summary,
-  system,
   payments,
   onSelectPayment,
 }: {
   summary: AdminSummary;
-  system: AdminSystemStatus;
   payments: StudioAdminPayment[];
   onSelectPayment: (paymentId: string) => void;
 }) {
