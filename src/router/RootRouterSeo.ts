@@ -38,7 +38,9 @@ function upsertCanonical(href: string) {
 }
 
 function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
-  const normalizedStudioPath = pathname.replace(/\/+$/, "").toLowerCase();
+  const normalizedPathname =
+    pathname === "/" ? "/" : pathname.replace(/\/+$/, "") || "/";
+  const normalizedStudioPath = normalizedPathname.toLowerCase();
 
   if (normalizedStudioPath === "/services/xhovilestudio") {
     return {
@@ -67,7 +69,7 @@ function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
     };
   }
 
-  switch (pathname) {
+  switch (normalizedPathname) {
     case "/":
     case "/home":
       return { title: HOMEPAGE_TITLE, description: HOMEPAGE_DESCRIPTION, canonicalPath: "/", keywords: HOMEPAGE_KEYWORDS };
@@ -102,7 +104,12 @@ function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
     case "/transaction-json":
       return { title: "Transaction JSON — BuyMesho", description: "Deep-link JSON view for transaction debugging.", canonicalPath: "/transaction-json", noindex: true };
     default:
-      return { title: "BuyMesho", description: "BuyMesho marketplace.", canonicalPath: pathname || "/", noindex: true };
+      return {
+        title: "BuyMesho",
+        description: "BuyMesho marketplace.",
+        canonicalPath: normalizedPathname,
+        noindex: true,
+      };
   }
 }
 
