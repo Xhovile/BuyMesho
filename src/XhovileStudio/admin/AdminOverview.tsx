@@ -8,6 +8,7 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { formatMoney, type StudioAdminPayment } from "../config";
 import type { AdminSystemStatus, AdminSummary } from "./types";
@@ -57,8 +58,8 @@ function SectionCard({
 }: {
   title: string;
   eyebrow?: string;
-  children: React.ReactNode;
-  action?: React.ReactNode;
+  children: ReactNode;
+  action?: ReactNode;
 }) {
   return (
     <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
