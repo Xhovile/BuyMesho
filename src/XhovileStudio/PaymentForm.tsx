@@ -407,3 +407,50 @@ function PaymentForm() {
               />
             </div>
           </details>
+
+          {error ? (
+            <div className="flex gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+              <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>{error}</p>
+            </div>
+          ) : null}
+
+          <div className="rounded-2xl border border-zinc-200 bg-[#f8f5f1] p-3">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">Amount to pay now</p>
+                <p className="mt-1 text-2xl font-black text-zinc-950">{formatMoney(amountDue)}</p>
+              </div>
+              <div className="text-right text-[10px] text-zinc-500">
+                <p>Project price</p>
+                <p className="mt-0.5 font-bold text-zinc-400">
+                  {paymentMode === "balance"
+                    ? needsWebsite
+                      ? "Website balance entered"
+                      : formatMoney(graphicTotal)
+                    : formatMoney(combinedProjectTotal)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <StudioCheckoutButton
+            disabled={!canSubmit}
+            submitting={submitting}
+            amount={amountDue}
+            accentClass={accentButtonClass}
+            onClick={() => void submit()}
+          />
+
+          <div className="flex items-center justify-center gap-2.5 text-[10px] text-zinc-500">
+            <ShieldCheck className="h-3.5 w-3.5 text-zinc-500" />
+            <span>Secure payment by</span>
+            <PayChanguLogo />
+          </div>
+        </div>
+      </section>
+    </Shell>
+  );
+}
+
+export default PaymentForm;
