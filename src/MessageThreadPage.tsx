@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
 import {
   ArrowLeft,
+  FileText,
   Loader2,
   Paperclip,
   SendHorizontal,
   ShieldAlert,
+  X,
 } from "lucide-react";
 import type { Conversation, MessageThreadItem, MessageReportReason } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
@@ -97,6 +99,13 @@ function fileMatchesCategory(file: File, category: MessageAttachmentCategory) {
   return Object.values(FILE_MIME_BY_EXTENSION).includes(mime);
 }
 
+
+function formatFileSize(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 function timeLabel(value?: string | null) {
   if (!value) return "";
@@ -416,7 +425,7 @@ export default function MessageThreadPage() {
               <div key={msg.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[88%] rounded-3xl px-4 py-3 text-sm ${mine ? "bg-zinc-900 text-white" : "bg-zinc-200 text-zinc-900"}`}>
                   {msg.body ? <p className="whitespace-pre-wrap break-words">{msg.body}</p> : null}
-                  {renderMessageAttachment(msg, mine)}
+                  {msg.attachment_url ? <MessageAttachmentViewer message={msg} mine={mine} /> : null}
                   <p className={`mt-2 text-[11px] ${mine ? "text-zinc-300" : "text-zinc-500"}`}>{timeLabel(msg.created_at)}</p>
                 </div>
               </div>
