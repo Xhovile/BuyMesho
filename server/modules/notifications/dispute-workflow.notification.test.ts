@@ -70,6 +70,7 @@ test('dispute email includes checkout buyer, seller, order items, and correct CT
         claim: () => true,
         markSent: () => undefined,
         release: () => undefined,
+        lookupEvidence: async () => [],
       },
     );
 
@@ -97,6 +98,7 @@ test('dispute email includes checkout buyer, seller, order items, and correct CT
         claim: () => true,
         markSent: () => undefined,
         release: () => undefined,
+        lookupEvidence: async () => [],
       },
     );
     assert.equal(buyerMessages.length, 1);
