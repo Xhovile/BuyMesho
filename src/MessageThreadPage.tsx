@@ -3,12 +3,10 @@ import {
   ArrowLeft,
   Download,
   FileText,
-  Image as ImageIcon,
   Loader2,
   Paperclip,
   SendHorizontal,
   ShieldAlert,
-  Video,
   X,
 } from "lucide-react";
 import type { Conversation, MessageThreadItem, MessageReportReason } from "./types";
@@ -87,12 +85,6 @@ function resolveAttachmentMime(file: File) {
   const mime = String(file.type || "").trim().toLowerCase();
   if (mime && mime !== "application/octet-stream") return mime;
   return FILE_MIME_BY_EXTENSION[getFileExtension(file.name)] ?? mime;
-}
-
-function getCategoryForMime(mime: string): MessageAttachmentCategory {
-  if (mime.startsWith("image/")) return "image";
-  if (mime.startsWith("video/")) return "video";
-  return "file";
 }
 
 function fileMatchesCategory(file: File, category: MessageAttachmentCategory) {
