@@ -233,7 +233,13 @@ async function performApiFetch(
     ...(await authHeader(forceRefreshToken, shouldWaitForAuth(url, init))),
   };
 
-  if (init.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
+  if (
+    init.body &&
+    !headers["Content-Type"] &&
+    !(typeof FormData !== "undefined" && init.body instanceof FormData)
+  ) {
+    headers["Content-Type"] = "application/json";
+  }
 
   const { controller, wasCallerAborted } = createCombinedAbortSignal(init.signal);
   let timedOut = false;
