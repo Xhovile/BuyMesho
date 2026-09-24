@@ -18,6 +18,10 @@ export type CloudinaryUploadAsset = {
   resourceType: CloudinaryResourceType;
 };
 
+export type CloudinaryMediaUploadAsset = Omit<CloudinaryUploadAsset, "resourceType"> & {
+  resourceType: "image" | "video";
+};
+
 export function isSupportedUploadMime(mime: string): boolean {
   return mime.startsWith("image/") || mime.startsWith("video/");
 }
@@ -102,7 +106,7 @@ export async function uploadFileToCloudinaryAsset(
     mimetype: string;
   },
   options: { folder?: string } = {},
-): Promise<CloudinaryUploadAsset> {
+): Promise<CloudinaryMediaUploadAsset> {
   if (!file.mimetype || !isSupportedUploadMime(file.mimetype)) {
     throw new Error("Unsupported file type");
   }
@@ -138,14 +142,14 @@ export async function uploadBufferToCloudinaryAsset(
     mimetype: string;
   },
   options: { folder?: string } = {},
-): Promise<CloudinaryUploadAsset> {
+): Promise<CloudinaryMediaUploadAsset> {
   const { stream: uploadStream, uploadPromise } = createCloudinaryUploadStream(
     file,
     options,
   );
 
   uploadStream.end(file.buffer);
-  return uploadPromise;
+  return uploadPromise as Promise<CloudinaryMediaUploadAsset>;
 }
 
 export async function uploadBufferToCloudinary(
