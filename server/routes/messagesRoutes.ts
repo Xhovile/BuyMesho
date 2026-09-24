@@ -42,6 +42,25 @@ const MESSAGE_FILE_MIME_BY_EXTENSION: Record<string, string> = {
   txt: "text/plain",
 };
 
+const MESSAGE_IMAGE_MIME_BY_EXTENSION: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  gif: "image/gif",
+  webp: "image/webp",
+  bmp: "image/bmp",
+  avif: "image/avif",
+};
+
+const MESSAGE_VIDEO_MIME_BY_EXTENSION: Record<string, string> = {
+  mp4: "video/mp4",
+  m4v: "video/mp4",
+  webm: "video/webm",
+  mov: "video/quicktime",
+  ogv: "video/ogg",
+  avi: "video/x-msvideo",
+};
+
 function getExtension(filename: string) {
   const match = String(filename || "").toLowerCase().match(/\.([a-z0-9]{1,12})$/);
   return match?.[1] ?? "";
@@ -50,7 +69,11 @@ function getExtension(filename: string) {
 function resolveMessageAttachmentMime(mime: string, filename: string) {
   const normalized = String(mime || "").trim().toLowerCase();
   if (normalized && normalized !== "application/octet-stream") return normalized;
-  return MESSAGE_FILE_MIME_BY_EXTENSION[getExtension(filename)] ?? normalized;
+  const extension = getExtension(filename);
+  return MESSAGE_FILE_MIME_BY_EXTENSION[extension]
+    ?? MESSAGE_IMAGE_MIME_BY_EXTENSION[extension]
+    ?? MESSAGE_VIDEO_MIME_BY_EXTENSION[extension]
+    ?? normalized;
 }
 
 function messageTypeForMime(mime: string): MessageType {
