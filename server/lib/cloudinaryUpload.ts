@@ -118,7 +118,7 @@ export async function uploadFileToCloudinaryAsset(
   );
 
   try {
-    return await new Promise<CloudinaryUploadAsset>((resolve, reject) => {
+    const asset = await new Promise<CloudinaryUploadAsset>((resolve, reject) => {
       const onReadError = (error: unknown) => {
         const normalized =
           error instanceof Error ? error : new Error("Unable to read upload file");
@@ -130,6 +130,11 @@ export async function uploadFileToCloudinaryAsset(
       readStream.pipe(uploadStream);
       uploadPromise.then(resolve, reject);
     });
+
+    return {
+      ...asset,
+      resourceType: asset.resourceType === "video" ? "video" : "image",
+    };
   } finally {
     readStream.destroy();
     uploadStream.destroy();
@@ -149,7 +154,11 @@ export async function uploadBufferToCloudinaryAsset(
   );
 
   uploadStream.end(file.buffer);
-  return uploadPromise as Promise<CloudinaryMediaUploadAsset>;
+  const asset = await uploadPromise;
+  return {
+    ...asset,
+    resourceType: asset.resourceType === "video" ? "video" : "image",
+  };
 }
 
 export async function uploadBufferToCloudinary(
