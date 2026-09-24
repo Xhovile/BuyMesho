@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import { apiFetch } from "./lib/api";
+import EvidenceMedia from "./components/shared/EvidenceMedia";
 
 type CaseRow = {
   id: string;
@@ -510,13 +511,7 @@ export default function AdminDisputesPage() {
                 <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
                   <h3 className="font-black">Evidence & records</h3>
                   {detail?.case?.latest_evidence?.length ? (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {detail.case.latest_evidence.map((item: string) => (
-                        <span key={item} className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-600">
-                          {item}
-                        </span>
-                      ))}
-                    </div>
+                    <EvidenceMedia evidence={detail.case.latest_evidence as string[]} title="Submitted evidence" />
                   ) : (
                     <p className="mt-3 text-sm text-zinc-500">No evidence recorded.</p>
                   )}
