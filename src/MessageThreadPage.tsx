@@ -19,6 +19,7 @@ import ConversationActionsMenu from "./components/messages/ConversationActionsMe
 import ActionConfirmDialog from "./components/messages/ActionConfirmDialog";
 import MessageReportDialog from "./components/messages/MessageReportDialog";
 import MessageAttachmentPicker, { type MessageAttachmentCategory } from "./components/messages/MessageAttachmentPicker";
+import MessageAttachmentViewer from "./components/messages/MessageAttachmentViewer";
 
 const MAX_MESSAGE_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 const ACCEPT_BY_CATEGORY: Record<MessageAttachmentCategory, string> = {
@@ -67,87 +68,6 @@ function timeLabel(value?: string | null) {
 
 function hasBlockedState(conversation: Conversation | null) {
   return Boolean(conversation?.blocked_by_you || conversation?.blocked_by_other);
-}
-
-function formatFileSize(bytes: number) {
-  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function getFileExtension(filename: string) {
-  const match = String(filename || "").toLowerCase().match(/\.([a-z0-9]{1,12})$/);
-  return match?.[1] ?? "";
-}
-
-function resolveAttachmentMime(file: File) {
-  const mime = String(file.type || "").trim().toLowerCase();
-  if (mime && mime !== "application/octet-stream") return mime;
-  return FILE_MIME_BY_EXTENSION[getFileExtension(file.name)] ?? mime;
-}
-
-function fileMatchesCategory(file: File, category: MessageAttachmentCategory) {
-  const mime = resolveAttachmentMime(file);
-  if (!mime || mime === "image/svg+xml") return false;
-  if (category === "image") return mime.startsWith("image/");
-  if (category === "video") return mime.startsWith("video/");
-  return Object.values(FILE_MIME_BY_EXTENSION).includes(mime);
-}
-
-function renderMessageAttachment(message: MessageThreadItem, mine: boolean) {
-  if (!message.attachment_url) return null;
-
-  if (message.message_type === "image") {
-    return (
-      <a href={message.attachment_url} target="_blank" rel="noreferrer" className="mt-2 block overflow-hidden rounded-2xl">
-        <img src={message.attachment_url} alt={message.attachment_name || "Image attachment"} className="max-h-80 w-full max-w-[20rem] object-cover" loading="lazy" />
-      </a>
-    );
-  }
-
-  if (message.message_type === "video") {
-    return (
-      <video
-        className="mt-2 max-h-80 w-full max-w-[22rem] rounded-2xl bg-black"
-        controls
-        preload="metadata"
-        src={message.attachment_url}
-      >
-        Your browser does not support video playback.
-      </video>
-    );
-  }
-
-  return (
-    <a
-      href={message.attachment_url}
-      download={message.attachment_name || undefined}
-      target="_blank"
-      rel="noreferrer"
-      className={`mt-2 flex max-w-[22rem] items-center gap-3 rounded-2xl border px-3 py-3 transition-colors ${
-        mine ? "border-white/10 bg-white/10 hover:bg-white/15" : "border-zinc-300 bg-white hover:bg-zinc-50"
-      }`}
-    >
-      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-        mine ? "bg-white/10 text-white" : "bg-zinc-100 text-zinc-700"
-      }`}>
-        <FileText className="h-5 w-5" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-black">{message.attachment_name || "File attachment"}</span>
-        <span className={`mt-0.5 block text-[11px] font-semibold ${
-          mine ? "text-zinc-300" : "text-zinc-500"
-        }`}>{message.attachment_size ? formatFileSize(message.attachment_size) : "File"}</span>
-      </span>
-      <span className={`inline-flex shrink-0 items-center gap-1 rounded-xl px-2.5 py-2 text-xs font-black ${
-        mine ? "bg-white text-zinc-900" : "bg-zinc-900 text-white"
-      }`}>
-        <Download className="h-3.5 w-3.5" />
-        Download
-      </span>
-    </a>
-  );
 }
 
 export default function MessageThreadPage() {
