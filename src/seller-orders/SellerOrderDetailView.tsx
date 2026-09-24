@@ -1,5 +1,6 @@
 import { AlertCircle, ArrowLeft, CheckCircle2, Send, ShieldAlert } from "lucide-react";
 import SellerDisputeResolution from "./SellerDisputeResolution";
+import EvidenceMedia from "../components/shared/EvidenceMedia";
 import OrderTimeline from "./OrderTimeline";
 import type { OrderBundle, SellerResolution } from "./types";
 import {
@@ -204,6 +205,7 @@ export default function SellerOrderDetailView({
                       </p>
                     </div>
                   ) : null}
+                  <EvidenceMedia evidence={dispute?.evidence ?? dispute?.latestAttempt?.evidence} title="Buyer evidence" />
                 </div>
               </div>
             </div>
