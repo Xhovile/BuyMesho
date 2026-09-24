@@ -102,6 +102,9 @@ export async function sendMessage(
   try {
     const result = await apiFetch(`/api/messages/${conversationId}/messages`, {
       method: "POST",
+      headers: {
+        "Idempotency-Key": key,
+      },
       body: requestBody,
       timeoutMs: attachment ? 60_000 : undefined,
     });
