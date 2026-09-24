@@ -1,13 +1,10 @@
 import { useEffect, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
 import {
   ArrowLeft,
-  Download,
-  FileText,
   Loader2,
   Paperclip,
   SendHorizontal,
   ShieldAlert,
-  X,
 } from "lucide-react";
 import type { Conversation, MessageThreadItem, MessageReportReason } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
@@ -58,6 +55,48 @@ const FILE_MIME_BY_EXTENSION: Record<string, string> = {
   csv: "text/csv",
   txt: "text/plain",
 };
+const IMAGE_MIME_BY_EXTENSION: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  gif: "image/gif",
+  webp: "image/webp",
+  bmp: "image/bmp",
+  avif: "image/avif",
+};
+
+const VIDEO_MIME_BY_EXTENSION: Record<string, string> = {
+  mp4: "video/mp4",
+  m4v: "video/mp4",
+  webm: "video/webm",
+  mov: "video/quicktime",
+  ogv: "video/ogg",
+  avi: "video/x-msvideo",
+};
+
+function getFileExtension(filename: string) {
+  const match = String(filename || "").toLowerCase().match(/\.([a-z0-9]{1,12})$/);
+  return match?.[1] ?? "";
+}
+
+function resolveAttachmentMime(file: File) {
+  const mime = String(file.type || "").trim().toLowerCase();
+  if (mime && mime !== "application/octet-stream") return mime;
+  const extension = getFileExtension(file.name);
+  return FILE_MIME_BY_EXTENSION[extension]
+    ?? IMAGE_MIME_BY_EXTENSION[extension]
+    ?? VIDEO_MIME_BY_EXTENSION[extension]
+    ?? mime;
+}
+
+function fileMatchesCategory(file: File, category: MessageAttachmentCategory) {
+  const mime = resolveAttachmentMime(file);
+  if (!mime || mime === "image/svg+xml") return false;
+  if (category === "image") return mime.startsWith("image/");
+  if (category === "video") return mime.startsWith("video/");
+  return Object.values(FILE_MIME_BY_EXTENSION).includes(mime);
+}
+
 
 function timeLabel(value?: string | null) {
   if (!value) return "";
