@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, FileText, Loader2, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileText, Loader2, ShieldAlert, Upload, X } from "lucide-react";
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import { apiFetch } from "./lib/api";
 import { fetchOrderById, getOrderDisputeEligibility } from "./lib/orderApi";
@@ -29,9 +29,108 @@ export default function DisputesPage() { const ready = useRequireVerifiedUser();
 
 function DisputesPageContent() {
   const params = useMemo(() => new URLSearchParams(window.location.search), []); const initialReference = params.get("reference")?.trim() ?? ""; const initialTicketId = params.get("ticketId")?.trim() ?? "";
-  const [reference, setReference] = useState(initialReference); const [ticketId, setTicketId] = useState<string | null>(initialTicketId || null); const [bundle, setBundle] = useState<OrderBundle | null>(null); const [cases, setCases] = useState<DisputeListItem[]>([]); const [requestType, setRequestType] = useState(""); const [resolution, setResolution] = useState("review"); const [reason, setReason] = useState(""); const [amount, setAmount] = useState(""); const [paymentMethod, setPaymentMethod] = useState(""); const [refundDestination, setRefundDestination] = useState(""); const [evidence, setEvidence] = useState(""); const [loadingOrder, setLoadingOrder] = useState(false); const [loadingCases, setLoadingCases] = useState(true); const [submitting, setSubmitting] = useState(false); const [submitted, setSubmitted] = useState(false); const [error, setError] = useState<string | null>(null);
+  const [reference, setReference] = useState(initialReference); const [ticketId, setTicketId] = useState<string | null>(initialTicketId || null); const [bundle, setBundle] = useState<OrderBundle | null>(null); const [cases, setCases] = useState<DisputeListItem[]>([]); const [requestType, setRequestType] = useState(""); const [resolution, setResolution] = useState("review"); const [reason, setReason] = useState(""); const [amount, setAmount] = useState(""); const [paymentMethod, setPaymentMethod] = useState(""); const [refundDestination, setRefundDestination] = useState(""); const [evidence, setEvidence] = useState(""); const [evidenceMedia, setEvidenceMedia] = useState<Array<{ url: string; name: string; kind: "image" | "video" }>>([]); const [uploadingEvidence, setUploadingEvidence] = useState(false); const [evidenceError, setEvidenceError] = useState<string | null>(null); const [loadingOrder, setLoadingOrder] = useState(false); const [loadingCases, setLoadingCases] = useState(true); const [submitting, setSubmitting] = useState(false); const [submitted, setSubmitted] = useState(false); const [error, setError] = useState<string | null>(null);
   const [supportRequest, setSupportRequest] = useState<SupportRequest | null>(null); const [supportOverlayOpen, setSupportOverlayOpen] = useState(false); const [supportReason, setSupportReason] = useState(""); const [supportSubmitting, setSupportSubmitting] = useState(false); const [supportError, setSupportError] = useState<string | null>(null);
   const [lastSearchedReference, setLastSearchedReference] = useState("");
+  const MAX_EVIDENCE_FILE_SIZE = 10 * 1024 * 1024;
+  const MAX_EVIDENCE_PHOTOS = 3;
+  const MAX_EVIDENCE_VIDEOS = 1;
+
+  const uploadMediaFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    const response = await fetch("/api/upload/", { method: "POST", body: formData });
+    const text = await response.text();
+    let data: { url?: string; error?: string } | null = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+    if (!response.ok) throw new Error(data?.error || "Upload failed");
+    if (!data?.url) throw new Error("Upload succeeded but no URL was returned.");
+    return data.url;
+  };
+
+  const handleEvidenceMediaChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    if (!files.length) return;
+    setEvidenceError(null);
+
+    const currentPhotoCount = evidenceMedia.filter((item) => item.kind === "image").length;
+    const currentVideoCount = evidenceMedia.filter((item) => item.kind === "video").length;
+    let remainingPhotos = MAX_EVIDENCE_PHOTOS - currentPhotoCount;
+    let remainingVideos = MAX_EVIDENCE_VIDEOS - currentVideoCount;
+    const selectedFiles: Array<{ file: File; kind: "image" | "video" }> = [];
+    let skippedForLimit = 0;
+    let skippedForSize = 0;
+    let skippedForType = 0;
+
+    for (const file of files) {
+      const kind = file.type.startsWith("video/") ? "video" : file.type.startsWith("image/") ? "image" : null;
+      if (!kind) {
+        skippedForType += 1;
+        continue;
+      }
+      if (file.size > MAX_EVIDENCE_FILE_SIZE) {
+        skippedForSize += 1;
+        continue;
+      }
+      if (kind === "image") {
+        if (remainingPhotos <= 0) {
+          skippedForLimit += 1;
+          continue;
+        }
+        remainingPhotos -= 1;
+      } else {
+        if (remainingVideos <= 0) {
+          skippedForLimit += 1;
+          continue;
+        }
+        remainingVideos -= 1;
+      }
+      selectedFiles.push({ file, kind });
+    }
+
+    if (!selectedFiles.length) {
+      const reason = skippedForSize
+        ? "Each evidence file must be 10 MB or smaller."
+        : skippedForLimit
+          ? "Evidence is limited to 3 photos and 1 video."
+          : "Please select image or video files."; 
+      setEvidenceError(reason);
+      event.target.value = "";
+      return;
+    }
+
+    const skippedMessages = [
+      skippedForLimit ? `${skippedForLimit} file${skippedForLimit === 1 ? "" : "s"} skipped because the evidence limit was reached.` : "",
+      skippedForSize ? `${skippedForSize} file${skippedForSize === 1 ? "" : "s"} skipped because each file must be 10 MB or smaller.` : "",
+      skippedForType ? `${skippedForType} unsupported file${skippedForType === 1 ? "" : "s"} skipped.` : "",
+    ].filter(Boolean);
+    if (skippedMessages.length) setEvidenceError(skippedMessages.join(" "));
+
+    setUploadingEvidence(true);
+    try {
+      const uploaded: Array<{ url: string; name: string; kind: "image" | "video" }> = [];
+      for (const item of selectedFiles) {
+        const url = await uploadMediaFile(item.file);
+        uploaded.push({ url, name: item.file.name, kind: item.kind });
+      }
+      setEvidenceMedia((prev) => [...prev, ...uploaded]);
+      setEvidenceError(skippedMessages.length ? skippedMessages.join(" ") : null);
+    } catch (uploadError) {
+      setEvidenceError(uploadError instanceof Error ? uploadError.message : "We could not upload the selected evidence.");
+    } finally {
+      setUploadingEvidence(false);
+      event.target.value = "";
+    }
+  };
+
+  const removeEvidenceMedia = (url: string) => {
+    setEvidenceMedia((prev) => prev.filter((item) => item.url !== url));
+    setEvidenceError(null);
+  };
   const loadCases = async () => { try { setLoadingCases(true); const data = await apiFetch("/api/disputes/me"); setCases(sortDisputesNewestFirst(Array.isArray(data) ? (data as DisputeListItem[]) : [])); } catch { setCases([]); } finally { setLoadingCases(false); } };
   const loadOrder = async (value: string, requestedTicketId?: string | null) => { const trimmed = value.trim(); if (!trimmed) return; setLoadingOrder(true); setError(null); setSubmitted(false); setSupportRequest(null); try { const resolved = await resolveOrderIdentifier(trimmed); const data = await fetchOrderById(resolved); if (requestedTicketId) { const identity = (await apiFetch(`/api/event-tickets/${encodeURIComponent(requestedTicketId)}/identity`)) as { ticketId?: string; orderId?: string | null }; if (!identity?.ticketId || identity.orderId !== data.order.id) throw new Error("The Ticket ID does not belong to this order."); setTicketId(identity.ticketId); } else setTicketId(null); setBundle(data); setLastSearchedReference(trimmed); } catch (err) { setBundle(null); setTicketId(null); setError(err instanceof Error ? err.message : "Failed to load the order."); } finally { setLoadingOrder(false); } };
   useEffect(() => { void loadCases(); if (initialReference) void loadOrder(initialReference, initialTicketId || null); }, []);
@@ -41,7 +140,7 @@ function DisputesPageContent() {
   const settledCase = order ? cases.find((item) => String(item.order_id ?? "") === order.id && ["resolved", "closed", "rejected"].includes(String(item.status ?? "").trim().toLowerCase())) : null; const disputeSettled = Boolean(settledCase) || disputeEligibility?.phase === "settled"; const disputeActive = disputeEligibility?.phase === "active"; const disputeBlocked = Boolean(disputeEligibility) && !disputeEligibility.eligible;
   const refundStatus = String(settledCase?.refunded_status ?? "").trim().toLowerCase(); const hasSellerRefund = refundStatus === "refunded" || String(settledCase?.refunded_provider ?? "").trim().toLowerCase() === "seller_reported"; const sellerRefundAmount = Number(settledCase?.refunded_amount ?? 0); const sellerRefundCurrency = String(settledCase?.refunded_currency ?? currency); const sellerRefundReference = String(settledCase?.refunded_transaction_id_reference ?? "").trim();
   useEffect(() => { const caseId = String(settledCase?.id ?? "").trim(); if (!caseId) { setSupportRequest(null); return; } void (async () => { try { const data = await apiFetch(`/api/disputes/${encodeURIComponent(caseId)}/support`); setSupportRequest(data as SupportRequest); } catch { setSupportRequest(null); } })(); }, [settledCase?.id]);
-  const submitDispute = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!order || submitting || disputeSettled || disputeActive || !disputeEligibility?.eligible || !reason.trim() || !requestType) return; const numericAmount = amount.trim() ? Number(amount) : 0; if (!Number.isFinite(numericAmount) || numericAmount < 0 || numericAmount > totalAmount) { setError(`Requested amount must be between 0 and ${currency} ${totalAmount.toLocaleString()}.`); return; } try { setSubmitting(true); setError(null); await apiFetch("/api/disputes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: order.id, ticketId, requestType, requestedResolution: resolution, reason: reason.trim(), amountRequested: numericAmount, paymentMethod: paymentMethod || undefined, refundDestination: refundDestination.trim() || undefined, evidence: evidence.split("\n").map((line) => line.trim()).filter(Boolean) }) }); setSubmitted(true); await loadCases(); } catch (err) { setError(err instanceof Error ? err.message : "Failed to submit dispute."); } finally { setSubmitting(false); } };
+  const submitDispute = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!order || submitting || disputeSettled || disputeActive || !disputeEligibility?.eligible || !reason.trim() || !requestType) return; const numericAmount = amount.trim() ? Number(amount) : 0; if (!Number.isFinite(numericAmount) || numericAmount < 0 || numericAmount > totalAmount) { setError(`Requested amount must be between 0 and ${currency} ${totalAmount.toLocaleString()}.`); return; } try { setSubmitting(true); setError(null); await apiFetch("/api/disputes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: order.id, ticketId, requestType, requestedResolution: resolution, reason: reason.trim(), amountRequested: numericAmount, paymentMethod: paymentMethod || undefined, refundDestination: refundDestination.trim() || undefined, evidence: [...evidence.split("\n").map((line) => line.trim()).filter(Boolean), ...evidenceMedia.map((item) => item.url)] }) }); setSubmitted(true); await loadCases(); } catch (err) { setError(err instanceof Error ? err.message : "Failed to submit dispute."); } finally { setSubmitting(false); } };
   const submitSupportRequest = async () => { const caseId = String(settledCase?.id ?? "").trim(); if (!caseId || supportSubmitting || supportReason.trim().length < 10) return; try { setSupportSubmitting(true); setSupportError(null); const data = await apiFetch(`/api/disputes/${encodeURIComponent(caseId)}/support`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: supportReason.trim() }) }); setSupportRequest(data as SupportRequest); setSupportOverlayOpen(false); setSupportReason(""); } catch (err) { setSupportError(err instanceof Error ? err.message : "Failed to contact admin."); } finally { setSupportSubmitting(false); } };
   const supportStatus = String(supportRequest?.status ?? "").trim().toLowerCase();
   return <div className="min-h-screen bg-zinc-100 text-zinc-900"><MarketHeaderBar subtitle="Disputes" /><div className="mx-auto max-w-5xl px-4 py-6 sm:py-10"><header className="flex items-start gap-3"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-900 text-white"><ShieldAlert className="h-5 w-5" /></div><div><p className="text-xs font-black uppercase tracking-[0.28em] text-zinc-500 sm:text-sm">Disputes</p><h1 className="mt-1 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Report a problem</h1><p className="mt-2 max-w-2xl text-sm leading-7 text-zinc-600 sm:text-base">One place to request a return, request a refund, or ask BuyMesho to review any issue with an order or event ticket.</p></div></header>
@@ -56,7 +155,7 @@ function DisputesPageContent() {
         </div> : null}
         {disputeBlocked && !preDisputeDeadline && !disputeActive && !disputeSettled && disputeEligibility?.phase === "expired" ? <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 text-sm text-zinc-700"><div className="flex items-center gap-2 font-black text-zinc-900"><AlertTriangle className="h-4 w-4" />Dispute period has ended.</div><p className="mt-2 leading-6">The 30-day post-delivery dispute period has expired, so this order can no longer be disputed.</p></div> : null}
         {paidOut && !disputeSettled && !disputeActive ? <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950"><div className="flex items-center gap-2 font-black"><AlertTriangle className="h-4 w-4" /> Payment has already been released</div><p className="mt-2 leading-6">You can still report the issue. A post-payout request does not guarantee a refund; the seller may need to resolve it with you and BuyMesho may intervene where appropriate.</p></div> : null}
-        {!submitted && !disputeBlocked ? <form onSubmit={submitDispute} className="mt-5 space-y-4"><FormDropdown label="What happened?" value={requestType} onChange={setRequestType} placeholder="Select the issue" options={REQUEST_TYPES} searchable={false} disabled={submitting} /><FormDropdown label="What do you need?" value={resolution} onChange={setResolution} placeholder="Select the outcome you want" options={RESOLUTIONS} searchable={false} disabled={submitting} />{resolution === "refund" || resolution === "return_and_refund" ? <div className="grid gap-4 sm:grid-cols-2"><div><label className="block text-sm font-bold text-zinc-700">Amount requested</label><input type="number" min="0" max={totalAmount} step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder={String(totalAmount)} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" disabled={submitting} /></div><FormDropdown label="Original payment method" value={paymentMethod} onChange={setPaymentMethod} placeholder="Select payment method" options={PAYMENT_METHODS} searchable={false} disabled={submitting} /></div> : null}{resolution === "refund" || resolution === "return_and_refund" ? <div><label className="block text-sm font-bold text-zinc-700">Refund destination (optional)</label><input value={refundDestination} onChange={(event) => setRefundDestination(event.target.value)} placeholder="Mobile number, bank details reference, or other destination" className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" disabled={submitting} /></div> : null}<div><label className="block text-sm font-bold text-zinc-700">Explain the problem</label><textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={5} placeholder="Describe what happened and what you want BuyMesho to consider…" className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" disabled={submitting} /></div><div><label className="block text-sm font-bold text-zinc-700">Evidence links (optional)</label><textarea value={evidence} onChange={(event) => setEvidence(event.target.value)} rows={3} placeholder="Paste one photo/document link per line" className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" disabled={submitting} /></div><p className="text-xs leading-5 text-zinc-500">Requests are subject to BuyMesho's applicable dispute period. The request is recorded first; approval does not itself mean money has moved.</p><button disabled={submitting || !requestType || !reason.trim()} className="w-full rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-bold text-white disabled:opacity-50">{submitting ? "Submitting…" : "Submit dispute"}</button></form> : null}
+        {!submitted && !disputeBlocked ? <form onSubmit={submitDispute} className="mt-5 space-y-4"><FormDropdown label="What happened?" value={requestType} onChange={setRequestType} placeholder="Select the issue" options={REQUEST_TYPES} searchable={false} disabled={submitting} /><FormDropdown label="What do you need?" value={resolution} onChange={setResolution} placeholder="Select the outcome you want" options={RESOLUTIONS} searchable={false} disabled={submitting} />{resolution === "refund" || resolution === "return_and_refund" ? <div className="grid gap-4 sm:grid-cols-2"><div><label className="block text-sm font-bold text-zinc-700">Amount requested</label><input type="number" min="0" max={totalAmount} step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder={String(totalAmount)} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" disabled={submitting} /></div><FormDropdown label="Original payment method" value={paymentMethod} onChange={setPaymentMethod} placeholder="Select payment method" options={PAYMENT_METHODS} searchable={false} disabled={submitting} /></div> : null}{resolution === "refund" || resolution === "return_and_refund" ? <div><label className="block text-sm font-bold text-zinc-700">Refund destination (optional)</label><input value={refundDestination} onChange={(event) => setRefundDestination(event.target.value)} placeholder="Mobile number, bank details reference, or other destination" className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" disabled={submitting} /></div> : null}<div><label className="block text-sm font-bold text-zinc-700">Explain the problem</label><textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={5} placeholder="Describe what happened and what you want BuyMesho to consider…" className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" disabled={submitting} /></div><div><div className="flex flex-wrap items-center justify-between gap-2"><label className="block text-sm font-bold text-zinc-700">Evidence (optional)</label><span className="text-xs font-semibold text-zinc-400">{evidenceMedia.filter((item) => item.kind === "image").length}/3 photos · {evidenceMedia.filter((item) => item.kind === "video").length}/1 video</span></div><p className="mt-1 text-xs leading-5 text-zinc-500">Upload up to 3 photos and 1 video. Each file must be 10 MB or smaller.</p><div className="mt-3 flex flex-wrap gap-2"><label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm font-bold text-zinc-800 hover:bg-zinc-100"><Upload className="h-4 w-4" /><input type="file" accept="image/*,video/*" multiple className="sr-only" onChange={handleEvidenceMediaChange} disabled={submitting || uploadingEvidence || (evidenceMedia.filter((item) => item.kind === "image").length >= MAX_EVIDENCE_PHOTOS && evidenceMedia.filter((item) => item.kind === "video").length >= MAX_EVIDENCE_VIDEOS)} />{uploadingEvidence ? "Uploading…" : "Upload media"}</label></div>{evidenceMedia.length > 0 ? <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">{evidenceMedia.map((item) => <div key={item.url} className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 p-2">{item.kind === "image" ? <img src={item.url} alt={item.name} className="h-40 w-full rounded-xl object-cover" /> : <video src={item.url} controls className="h-40 w-full rounded-xl bg-black object-contain" />}<div className="mt-2 flex items-center justify-between gap-2"><p className="min-w-0 truncate text-xs font-semibold text-zinc-600">{item.name}</p><button type="button" onClick={() => removeEvidenceMedia(item.url)} disabled={submitting || uploadingEvidence} aria-label={`Remove ${item.name}`} className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white disabled:opacity-50"><X className="h-4 w-4" /></button></div></div>)}</div> : null}{evidenceError ? <p className="mt-2 text-xs font-semibold text-red-600">{evidenceError}</p> : null}<label className="mt-4 block text-sm font-bold text-zinc-700">Evidence links (optional)</label><textarea value={evidence} onChange={(event) => setEvidence(event.target.value)} rows={3} placeholder="Paste one photo/document link per line" className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-zinc-900" disabled={submitting} /></div><p className="text-xs leading-5 text-zinc-500">Requests are subject to BuyMesho's applicable dispute period. The request is recorded first; approval does not itself mean money has moved.</p><button disabled={submitting || !requestType || !reason.trim()} className="w-full rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-bold text-white disabled:opacity-50">{submitting ? "Submitting…" : "Submit dispute"}</button></form> : null}
         {submitted ? <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-950"><p className="font-black">Dispute received.</p><p className="mt-1 leading-6">Your request has been recorded and can now be tracked from this page.</p></div> : null}
       </> : null}
       {error ? <p className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-700">{error}</p> : null}
