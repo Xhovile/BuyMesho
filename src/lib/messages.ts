@@ -83,9 +83,9 @@ export async function sendMessage(
   idempotencyKey?: string,
 ): Promise<SendMessageResponse> {
   const attachmentFingerprint = attachment
-    ? ${attachment.name}:${attachment.size}:${attachment.lastModified}:${attachment.type}
+    ? `${attachment.name}:${attachment.size}:${attachment.lastModified}:${attachment.type}`
     : "";
-  const pendingKey = ${conversationId}:${body}:${attachmentFingerprint};
+  const pendingKey = `${conversationId}:${body}:${attachmentFingerprint}`;
   const key = idempotencyKey ?? pendingMessageIdempotencyKeys.get(pendingKey) ?? crypto.randomUUID();
   if (!idempotencyKey) pendingMessageIdempotencyKeys.set(pendingKey, key);
 
