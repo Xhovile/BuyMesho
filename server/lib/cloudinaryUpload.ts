@@ -10,7 +10,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export type CloudinaryResourceType = "image" | "video";
+export type CloudinaryResourceType = "image" | "video" | "raw";
 
 export type CloudinaryUploadAsset = {
   secureUrl: string;
@@ -22,23 +22,42 @@ export function isSupportedUploadMime(mime: string): boolean {
   return mime.startsWith("image/") || mime.startsWith("video/");
 }
 
+const MESSAGE_FILE_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/csv",
+  "text/plain",
+]);
+
+export function isSupportedMessageAttachmentMime(mime: string): boolean {
+  const normalized = String(mime || "").trim().toLowerCase();
+  if (!normalized || normalized === "image/svg+xml") return false;
+  return normalized.startsWith("image/") || normalized.startsWith("video/") || MESSAGE_FILE_MIME_TYPES.has(normalized);
+}
+
 function getResourceType(mimetype: string): CloudinaryResourceType {
-  return mimetype.startsWith("video/") ? "video" : "image";
+  if (mimetype.startsWith("video/")) return "video";
+  return mimetype.startsWith("image/") ? "image" : "raw";
 }
 
 function createCloudinaryUploadStream(
   file: { mimetype: string },
-  options: { folder?: string },
+  options: { folder?: string; resourceType?: CloudinaryResourceType; validator?: (mime: string) => boolean },
 ): {
   stream: ReturnType<typeof cloudinary.uploader.upload_stream>;
   resourceType: CloudinaryResourceType;
   uploadPromise: Promise<CloudinaryUploadAsset>;
 } {
-  if (!file.mimetype || !isSupportedUploadMime(file.mimetype)) {
+  if (!file.mimetype || !(options.validator ?? isSupportedUploadMime)(file.mimetype)) {
     throw new Error("Unsupported file type");
   }
 
-  const resourceType = getResourceType(file.mimetype);
+  const resourceType = options.resourceType ?? getResourceType(file.mimetype);
 
   let resolveUpload!: (asset: CloudinaryUploadAsset) => void;
   let rejectUpload!: (error: Error) => void;
@@ -138,6 +157,45 @@ export async function uploadBufferToCloudinary(
 ): Promise<string> {
   const asset = await uploadBufferToCloudinaryAsset(file, options);
   return asset.secureUrl;
+}
+
+export async function uploadBufferToCloudinaryMessageAttachment(
+  file: {
+    buffer: Buffer;
+    mimetype: string;
+  },
+  options: { folder?: string } = {},
+): Promise<CloudinaryUploadAsset> {
+  if (!file.mimetype || !isSupportedMessageAttachmentMime(file.mimetype)) {
+    throw new Error("Unsupported message attachment type");
+  }
+
+  return new Promise<CloudinaryUploadAsset>((resolve, reject) => {
+    try {
+      const { stream, uploadPromise } = createCloudinaryUploadStream(file, {
+        folder: options.folder,
+        resourceType: getResourceType(file.mimetype),
+        validator: isSupportedMessageAttachmentMime,
+      });
+      uploadPromise.then(resolve, reject);
+      stream.end(file.buffer);
+    } catch (error) {
+      reject(error instanceof Error ? error : new Error("Cloudinary upload failed"));
+    }
+  });
+}
+
+export function cloudinaryAttachmentDownloadUrl(secureUrl: string, filename: string): string {
+  const safeName = String(filename || "download")
+    .replace(/[\\/:*?"<>|\u0000-\u001F]/g, "_")
+    .trim()
+    .slice(0, 180) || "download";
+
+  if (!secureUrl.includes("/raw/upload/")) return secureUrl;
+  return secureUrl.replace(
+    "/raw/upload/",
+    "/raw/upload/fl_attachment:" + encodeURIComponent(safeName) + "/",
+  );
 }
 
 export async function deleteCloudinaryAsset(asset: {
