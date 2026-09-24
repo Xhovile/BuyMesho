@@ -218,6 +218,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
           da.request_type AS latest_request_type,
           da.requested_resolution AS latest_requested_resolution,
           da.reason AS latest_reason,
+          da.evidence AS latest_evidence,
           da.status AS latest_attempt_status,
           da.created_at AS latest_attempt_created_at,
           rt.id AS refund_transaction_id,
@@ -255,8 +256,18 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         const status = String(row.status ?? '').trim().toLowerCase();
         const requestType = String(row.latest_request_type ?? '').trim().toLowerCase();
         const resolution = String(row.latest_requested_resolution ?? '').trim().toLowerCase();
+        let latestEvidence: string[] = [];
+        try {
+          const parsed = typeof row.latest_evidence === 'string' ? JSON.parse(row.latest_evidence) : row.latest_evidence;
+          latestEvidence = Array.isArray(parsed)
+            ? parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map((item) => item.trim()).slice(0, 20)
+            : [];
+        } catch {
+          latestEvidence = [];
+        }
         return {
           ...row,
+          latest_evidence: latestEvidence,
           status: DISPUTE_STATUS_LABELS[status] ?? status.replace(/_/g, ' '),
           latest_request_type: DISPUTE_REQUEST_TYPE_LABELS[requestType] ?? requestType.replace(/_/g, ' '),
           latest_requested_resolution: DISPUTE_RESOLUTION_LABELS[resolution] ?? resolution.replace(/_/g, ' '),
