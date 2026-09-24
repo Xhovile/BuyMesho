@@ -22,6 +22,7 @@ test('seller resolution workflow notification targets the buyer only', async () 
       claim: () => true,
       markSent: () => undefined,
       release: () => undefined,
+      lookupEvidence: async () => [],
     },
   );
 
@@ -126,6 +127,7 @@ test('notification delivery is idempotent for the same case event recipient', as
     },
     markSent: () => undefined,
     release: () => undefined,
+    lookupEvidence: async () => [],
   };
 
   const input = {
