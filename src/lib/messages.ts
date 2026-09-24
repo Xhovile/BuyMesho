@@ -76,15 +76,34 @@ export async function startConversationWithSeller(sellerUid: string): Promise<Co
   return conversation;
 }
 
-export async function sendMessage(conversationId: number, body: string, idempotencyKey?: string): Promise<SendMessageResponse> {
-  const pendingKey = `${conversationId}:${body}`;
+export async function sendMessage(
+  conversationId: number,
+  body: string,
+  attachment?: File | null,
+  idempotencyKey?: string,
+): Promise<SendMessageResponse> {
+  const attachmentFingerprint = attachment
+    ? ${attachment.name}:${attachment.size}:${attachment.lastModified}:${attachment.type}
+    : "";
+  const pendingKey = ${conversationId}:${body}:${attachmentFingerprint};
   const key = idempotencyKey ?? pendingMessageIdempotencyKeys.get(pendingKey) ?? crypto.randomUUID();
   if (!idempotencyKey) pendingMessageIdempotencyKeys.set(pendingKey, key);
+
+  const requestBody = attachment
+    ? (() => {
+      const formData = new FormData();
+      formData.append("body", body);
+      formData.append("idempotencyKey", key);
+      formData.append("attachment", attachment, attachment.name);
+      return formData;
+    })()
+    : JSON.stringify({ body, idempotencyKey: key });
 
   try {
     const result = await apiFetch(`/api/messages/${conversationId}/messages`, {
       method: "POST",
-      body: JSON.stringify({ body, idempotencyKey: key }),
+      body: requestBody,
+      timeoutMs: attachment ? 60_000 : undefined,
     });
     pendingMessageIdempotencyKeys.delete(pendingKey);
     const response = unwrapData<SendMessageResponse>(result, {
@@ -102,7 +121,6 @@ export async function sendMessage(conversationId: number, body: string, idempote
     throw error;
   }
 }
-
 export async function markConversationRead(conversationId: number): Promise<void> {
   await apiFetch(`/api/messages/${conversationId}/read`, { method: "POST" });
   const uid = auth.currentUser?.uid;
