@@ -53,7 +53,21 @@ export interface Conversation {
   unread_count: number; blocked_by_you?: boolean; blocked_by_other?: boolean; can_reply?: boolean;
 }
 export interface MessageConversation extends Conversation {}
-export interface MessageThreadItem { id: number; conversation_id: number; sender_uid: string; body: string; is_read: boolean; created_at: string; read_at: string | null; }
+export type MessageType = "text" | "image" | "video" | "file";
+export interface MessageThreadItem {
+  id: number;
+  conversation_id: number;
+  sender_uid: string;
+  body: string;
+  message_type: MessageType;
+  attachment_url: string | null;
+  attachment_name: string | null;
+  attachment_mime: string | null;
+  attachment_size: number | null;
+  is_read: boolean;
+  created_at: string;
+  read_at: string | null;
+}
 export type MessageBlockScope = "messages" | "listing" | "all";
 export type MessageReportReason = "spam" | "scam" | "harassment" | "fake_listing" | "abusive_language" | "off_platform_fraud";
 export interface MessageReport {
