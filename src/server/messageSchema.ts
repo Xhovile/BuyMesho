@@ -40,6 +40,10 @@ export const MESSAGE_SCHEMA_SQL = `
     sender_uid TEXT NOT NULL,
     body TEXT NOT NULL,
     message_type TEXT NOT NULL DEFAULT 'text',
+    attachment_url TEXT,
+    attachment_name TEXT,
+    attachment_mime TEXT,
+    attachment_size INTEGER,
     is_read INTEGER NOT NULL DEFAULT 0,
     read_at DATETIME,
     is_spam INTEGER NOT NULL DEFAULT 0,
@@ -125,6 +129,10 @@ export const MESSAGE_SCHEMA_MIGRATIONS = [
     sender_uid TEXT NOT NULL,
     body TEXT NOT NULL,
     message_type TEXT NOT NULL DEFAULT 'text',
+    attachment_url TEXT,
+    attachment_name TEXT,
+    attachment_mime TEXT,
+    attachment_size INTEGER,
     is_read INTEGER NOT NULL DEFAULT 0,
     read_at DATETIME,
     is_spam INTEGER NOT NULL DEFAULT 0,
@@ -236,6 +244,10 @@ export function ensureMessageSchema(db: SchemaDbLike) {
   ensureColumn(db, "conversation_participants", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
 
   ensureColumn(db, "messages", "message_type", "TEXT NOT NULL DEFAULT 'text'");
+  ensureColumn(db, "messages", "attachment_url", "TEXT");
+  ensureColumn(db, "messages", "attachment_name", "TEXT");
+  ensureColumn(db, "messages", "attachment_mime", "TEXT");
+  ensureColumn(db, "messages", "attachment_size", "INTEGER");
   ensureColumn(db, "messages", "is_read", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "messages", "read_at", "DATETIME");
   ensureColumn(db, "messages", "is_spam", "INTEGER NOT NULL DEFAULT 0");
