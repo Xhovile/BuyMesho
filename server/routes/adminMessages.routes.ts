@@ -72,6 +72,11 @@ function ensureAdminMessageSchema(db: any) {
     ALTER TABLE message_reports ADD COLUMN IF NOT EXISTS resolved_by_email TEXT;
     ALTER TABLE message_reports ADD COLUMN IF NOT EXISTS resolved_at DATETIME;
 
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS message_type TEXT NOT NULL DEFAULT 'text';
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_url TEXT;
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_name TEXT;
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_mime TEXT;
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_size INTEGER;
     ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_spam INTEGER NOT NULL DEFAULT 0;
     ALTER TABLE messages ADD COLUMN IF NOT EXISTS spam_flag_count INTEGER NOT NULL DEFAULT 0;
     ALTER TABLE messages ADD COLUMN IF NOT EXISTS updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;
