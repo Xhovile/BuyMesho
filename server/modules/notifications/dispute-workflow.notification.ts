@@ -8,7 +8,7 @@ import { orderRepository } from "../orders/order.repository.js";
 type RecipientRole = "buyer" | "seller";
 type SendEmail = typeof sendEmail;
 type FirebaseUser = { email?: string | null; displayName?: string | null };
-type DeliveryDependencies = { send?: SendEmail; claim?: (notificationType: string, dedupeKey: string) => boolean; markSent?: (notificationType: string, dedupeKey: string) => void; release?: (notificationType: string, dedupeKey: string) => void; lookupUser?: (uid: string) => Promise<FirebaseUser>; lookupSellerBusinessName?: (uid: string) => Promise<string | null>; lookupOrder?: (orderId: string) => ReturnType<typeof orderRepository.findById> };
+type DeliveryDependencies = { send?: SendEmail; claim?: (notificationType: string, dedupeKey: string) => boolean; markSent?: (notificationType: string, dedupeKey: string) => void; release?: (notificationType: string, dedupeKey: string) => void; lookupUser?: (uid: string) => Promise<FirebaseUser>; lookupSellerBusinessName?: (uid: string) => Promise<string | null>; lookupOrder?: (orderId: string) => ReturnType<typeof orderRepository.findById>; lookupEvidence?: (caseId: string) => Promise<string[]> };
 export type DisputeWorkflowEvent = "submitted" | "under_review" | "more_information_requested" | "rejected" | "approved" | "refund_processing" | "refund_completed" | "seller_wins" | "buyer_wins" | "seller_refund_recorded" | "seller_replacement_recorded" | "seller_dispute_rejected";
 export type DisputeWorkflowNotificationInput = {
   caseId: string; orderId: string; buyerId: string; sellerId: string; event: DisputeWorkflowEvent; note?: string | null; amount?: number | null; currency?: string | null; transactionId?: string | null; refundMethod?: string | null; refundDate?: string | null; destination?: string | null; recipients?: RecipientRole[];
@@ -83,6 +83,22 @@ function getOrderItemSummary(order: ReturnType<typeof orderRepository.findById>)
   }).filter(Boolean);
 }
 
+async function getDisputeEvidence(caseId: string): Promise<string[]> {
+  try {
+    const result = await query<{ evidence?: string | null }>(
+      "SELECT evidence FROM dispute_attempts WHERE case_id = $1 ORDER BY created_at DESC LIMIT 1",
+      [caseId],
+    );
+    const raw = result.rows[0]?.evidence;
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim()).slice(0, 20)
+      : [];
+  } catch (error) {
+    console.warn("Failed to load dispute evidence for workflow email", error);
+    return [];
+  }
+}
 function actionUrl(role: RecipientRole, orderId: string): string {
   return role === "seller" ? `https://buymesho.app/seller/payouts?view=orders&order=${encodeURIComponent(orderId)}` : `https://buymesho.app/disputes?reference=${encodeURIComponent(orderId)}`;
 }
@@ -107,6 +123,7 @@ async function sendToRole(input: DisputeWorkflowNotificationInput, role: Recipie
   const sellerName = isEventOrder ? (eventCreatorDisplayName || "Event creator") : (sellerBusinessName || recipient.displayName.trim() || "BuyMesho seller");
   const buyerName = buyerCheckoutName || (role === "buyer" ? recipient.displayName.trim() : null) || "BuyMesho customer";
   const itemSummary = getOrderItemSummary(order);
+  const evidence = dependencies.lookupEvidence ? await dependencies.lookupEvidence(input.caseId) : await getDisputeEvidence(input.caseId);
   const { text, html } = renderDisputeWorkflowEmail({
     recipientName: role === "seller" ? sellerName : buyerName,
     title: eventCopy.label,
@@ -125,6 +142,7 @@ async function sendToRole(input: DisputeWorkflowNotificationInput, role: Recipie
     buyerName,
     sellerName,
     items: itemSummary,
+    evidence,
   });
   try {
     await (dependencies.send ?? sendEmail)({ sender: "notifications", to: { email, name: role === "seller" ? sellerName : buyerName }, subject: eventCopy.subject, text, html });
