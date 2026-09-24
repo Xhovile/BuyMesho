@@ -21,6 +21,7 @@ export type DisputeSummary = {
   outcome?: string | null;
   resolutionOwner?: DisputeResolutionOwner | null;
   payoutStatusAtSubmission?: string | null;
+  evidence?: string[];
   windowEndsAt?: string | null;
   openedAt?: string | null;
   resolvedAt?: string | null;
@@ -30,6 +31,7 @@ export type DisputeSummary = {
     reason?: string | null;
     resolution?: string | null;
     requestedResolution?: string | null;
+    evidence?: string[];
   } | null;
 };
 
