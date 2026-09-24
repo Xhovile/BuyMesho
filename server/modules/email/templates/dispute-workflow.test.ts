@@ -50,3 +50,24 @@ test("dispute email escapes user-controlled content", () => {
   assert.match(html, /&lt;script&gt;/i);
   assert.match(html, /&lt;b&gt;raw&lt;\/b&gt;/i);
 });
+test("dispute email renders safe evidence links", () => {
+  const { text, html } = renderDisputeWorkflowEmail({
+    recipientName: "Jordan",
+    title: "Dispute submitted",
+    intro: "A dispute was opened.",
+    orderId: "ord_123",
+    eventLabel: "Dispute submitted",
+    actionUrl: "https://buymesho.app/disputes?reference=ord_123",
+    evidence: [
+      "https://res.cloudinary.com/example/image/upload/evidence.jpg",
+      "https://res.cloudinary.com/example/video/upload/evidence.mp4",
+      "javascript:alert(1)",
+    ],
+  });
+
+  assert.match(html, /href="https://res\.cloudinary\.com/example/image/upload/evidence\.jpg"/);
+  assert.match(html, /href="https://res\.cloudinary\.com/example/video/upload/evidence\.mp4"/);
+  assert.doesNotMatch(html, /javascript:alert/);
+  assert.match(text, /Evidence 1: https://res\.cloudinary\.com/example/image/upload/evidence\.jpg/);
+  assert.match(text, /Evidence 2: https://res\.cloudinary\.com/example/video/upload/evidence\.mp4/);
+});
