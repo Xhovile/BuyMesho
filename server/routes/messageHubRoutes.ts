@@ -35,6 +35,11 @@ function initSchema() {
       conversation_id INTEGER NOT NULL,
       sender_uid TEXT NOT NULL,
       body TEXT NOT NULL,
+      message_type TEXT NOT NULL DEFAULT 'text',
+      attachment_url TEXT,
+      attachment_name TEXT,
+      attachment_mime TEXT,
+      attachment_size INTEGER,
       is_read INTEGER NOT NULL DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       read_at DATETIME,
@@ -95,6 +100,11 @@ function initSchema() {
   `);
 
   db.exec(`
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS message_type TEXT NOT NULL DEFAULT 'text';
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_url TEXT;
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_name TEXT;
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_mime TEXT;
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_size INTEGER;
     ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_spam INTEGER NOT NULL DEFAULT 0;
     ALTER TABLE messages ADD COLUMN IF NOT EXISTS spam_flag_count INTEGER NOT NULL DEFAULT 0;
     ALTER TABLE messages ADD COLUMN IF NOT EXISTS updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;
