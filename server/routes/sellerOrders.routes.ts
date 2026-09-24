@@ -36,6 +36,7 @@ type SellerOrderRow = Record<string, unknown> & {
   latest_attempt_reason?: string | null;
   latest_attempt_resolution?: string | null;
   latest_attempt_requested_resolution?: string | null;
+  latest_attempt_evidence?: string | null;
   refund_request_id?: string | null;
   refund_request_status?: string | null;
   refund_request_type?: string | null;
@@ -104,7 +105,7 @@ function buildPayment(row: SellerOrderRow) {
 function buildEscrow(row: SellerOrderRow) { if (!row.escrow_state) return null; return { state: row.escrow_state }; }
 function buildDispute(row: SellerOrderRow) {
   if (!row.dispute_id && !row.case_id) return null;
-  return { id: row.dispute_id ?? row.case_id, caseId: row.case_id ?? null, orderId: row.id, escrowId: row.dispute_escrow_id ?? null, openedBy: row.dispute_opened_by ?? null, status: row.case_status ?? row.dispute_state ?? null, state: row.dispute_state ?? row.case_status ?? null, reason: row.latest_attempt_reason ?? row.dispute_reason ?? null, requestedResolution: row.latest_attempt_requested_resolution ?? row.refund_requested_resolution ?? null, outcome: row.case_outcome ?? null, resolutionOwner: row.case_resolution_owner ?? null, payoutStatusAtSubmission: row.case_payout_status_at_submission ?? null, windowEndsAt: row.case_window_ends_at ?? row.refund_window_ends_at ?? null, openedAt: row.case_opened_at ?? row.dispute_created_at ?? null, resolvedAt: row.case_resolved_at ?? null, createdAt: row.dispute_created_at ?? row.case_opened_at ?? null, updatedAt: row.dispute_updated_at ?? null, latestAttempt: row.latest_attempt_id ? { id: row.latest_attempt_id, status: row.latest_attempt_status ?? null, reason: row.latest_attempt_reason ?? null, resolution: row.latest_attempt_resolution ?? null, requestedResolution: row.latest_attempt_requested_resolution ?? null } : null };
+  return { id: row.dispute_id ?? row.case_id, caseId: row.case_id ?? null, orderId: row.id, escrowId: row.dispute_escrow_id ?? null, openedBy: row.dispute_opened_by ?? null, status: row.case_status ?? row.dispute_state ?? null, state: row.dispute_state ?? row.case_status ?? null, reason: row.latest_attempt_reason ?? row.dispute_reason ?? null, requestedResolution: row.latest_attempt_requested_resolution ?? row.refund_requested_resolution ?? null, outcome: row.case_outcome ?? null, resolutionOwner: row.case_resolution_owner ?? null, payoutStatusAtSubmission: row.case_payout_status_at_submission ?? null, windowEndsAt: row.case_window_ends_at ?? row.refund_window_ends_at ?? null, openedAt: row.case_opened_at ?? row.dispute_created_at ?? null, resolvedAt: row.case_resolved_at ?? null, createdAt: row.dispute_created_at ?? row.case_opened_at ?? null, updatedAt: row.dispute_updated_at ?? null, latestAttempt: row.latest_attempt_id ? { id: row.latest_attempt_id, status: row.latest_attempt_status ?? null, reason: row.latest_attempt_reason ?? null, resolution: row.latest_attempt_resolution ?? null, requestedResolution: row.latest_attempt_requested_resolution ?? null, evidence: parseJsonArray<string>(row.latest_attempt_evidence) } : null, evidence: parseJsonArray<string>(row.latest_attempt_evidence) };
 }
 function buildRefundRequest(row: SellerOrderRow) {
   if (!row.refund_request_id) return null;
@@ -121,7 +122,7 @@ const SELLER_ORDER_SELECT = `
     e.state AS escrow_state,
     d.id AS dispute_id, d.escrow_id AS dispute_escrow_id, d.opened_by AS dispute_opened_by, d.status AS dispute_state, d.reason AS dispute_reason, d.created_at AS dispute_created_at, d.updated_at AS dispute_updated_at,
     dc.id AS case_id, dc.status AS case_status, dc.outcome AS case_outcome, dc.window_ends_at AS case_window_ends_at, dc.opened_at AS case_opened_at, dc.resolved_at AS case_resolved_at, dc.resolution_owner AS case_resolution_owner, dc.payout_status_at_submission AS case_payout_status_at_submission,
-    da.id AS latest_attempt_id, da.status AS latest_attempt_status, da.reason AS latest_attempt_reason, da.resolution_note AS latest_attempt_resolution, da.requested_resolution AS latest_attempt_requested_resolution,
+    da.id AS latest_attempt_id, da.status AS latest_attempt_status, da.reason AS latest_attempt_reason, da.resolution_note AS latest_attempt_resolution, da.requested_resolution AS latest_attempt_requested_resolution, da.evidence AS latest_attempt_evidence,
     rr.id AS refund_request_id, rr.status AS refund_request_status, rr.request_type AS refund_request_type, rr.amount_requested AS refund_requested_amount, rr.requested_resolution AS refund_requested_resolution, rr.window_ends_at AS refund_window_ends_at
   FROM orders o
   LEFT JOIN payments p ON p.reference = o.payment_reference
