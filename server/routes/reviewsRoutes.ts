@@ -1,5 +1,8 @@
 import type { Express, NextFunction, Request, Response } from "express";
+import multer from "multer";
 import { postgresDb as db } from "../db.js";
+import { deleteCloudinaryAsset, uploadBufferToCloudinaryReviewMedia } from "../lib/cloudinaryUpload.js";
+import { getReviewMediaType, REVIEW_MEDIA_MAX_COUNT, validateReviewMediaFiles } from "../lib/reviewMedia.js";
 import { attachOptionalAuth, requireAuth } from "../middleware/requireAuth.js";
 
 type VerifiedRequestUser = {
@@ -35,6 +38,17 @@ type ReviewRow = {
   reviewer_business_name?: string | null;
   reviewer_logo?: string | null;
   reviewer_is_verified?: number | null;
+};
+
+type ReviewMediaRow = {
+  id: number;
+  review_id: number;
+  media_type: "image" | "video";
+  secure_url: string;
+  public_id: string;
+  resource_type: "image" | "video";
+  sort_order: number;
+  created_at: string;
 };
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.reviewsRoutesInstalled");
@@ -74,6 +88,21 @@ function ensureReviewsSchema() {
 
       CREATE INDEX IF NOT EXISTS idx_listing_reviews_reviewer_uid
       ON listing_reviews (reviewer_uid, created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS listing_review_media (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        review_id INTEGER NOT NULL,
+        media_type TEXT NOT NULL,
+        secure_url TEXT NOT NULL,
+        public_id TEXT NOT NULL,
+        resource_type TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (review_id) REFERENCES listing_reviews(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_listing_review_media_review_id
+      ON listing_review_media (review_id, sort_order ASC, id ASC);
     `);
 
     reviewsSchemaEnsured = true;
@@ -114,7 +143,32 @@ function getReviewerDisplayName(profile: {
   return "Member";
 }
 
-function serializeReview(row: ReviewRow) {
+function getReviewMediaForIds(reviewIds: number[]) {
+  const ids = reviewIds.map(Number).filter((id) => Number.isInteger(id));
+  const grouped = new Map<number, ReviewMediaRow[]>();
+  if (!ids.length) return grouped;
+
+  const placeholders = ids.map(() => "?").join(", ");
+  const rows = db
+    .prepare(
+      `SELECT id, review_id, media_type, secure_url, public_id, resource_type, sort_order, created_at
+       FROM listing_review_media
+       WHERE review_id IN (${placeholders})
+       ORDER BY sort_order ASC, id ASC`
+    )
+    .all(...ids) as ReviewMediaRow[];
+
+  for (const row of rows) {
+    const key = Number(row.review_id);
+    const existing = grouped.get(key) ?? [];
+    existing.push(row);
+    grouped.set(key, existing);
+  }
+
+  return grouped;
+}
+
+function serializeReview(row: ReviewRow, mediaRows: ReviewMediaRow[] = []) {
   return {
     id: row.id,
     listing_id: row.listing_id,
@@ -127,12 +181,98 @@ function serializeReview(row: ReviewRow) {
     rating: row.rating,
     title: row.title,
     body: row.body,
+    media: mediaRows.map((media) => ({
+      id: Number(media.id),
+      media_type: media.media_type,
+      secure_url: media.secure_url,
+      sort_order: Number(media.sort_order),
+      created_at: media.created_at,
+    })),
     seller_reply: row.seller_reply,
     seller_reply_at: row.seller_reply_at,
     is_verified_purchase: !!row.is_verified_purchase,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
+}
+
+function serializeReviewWithMedia(row: ReviewRow | undefined | null) {
+  if (!row) return null;
+  return serializeReview(row, getReviewMediaForIds([Number(row.id)]).get(Number(row.id)) ?? []);
+}
+
+async function uploadReviewMediaFiles(files: Express.Multer.File[]) {
+  const uploaded: Array<Awaited<ReturnType<typeof uploadBufferToCloudinaryReviewMedia>>> = [];
+
+  try {
+    for (const file of files) {
+      uploaded.push(
+        await uploadBufferToCloudinaryReviewMedia(
+          { buffer: file.buffer, mimetype: file.mimetype || "" },
+          { folder: "buymesho/reviews" },
+        ),
+      );
+    }
+
+    return uploaded;
+  } catch (error) {
+    await Promise.allSettled(
+      uploaded.map((asset) =>
+        deleteCloudinaryAsset({
+          publicId: asset.publicId,
+          resourceType: asset.resourceType,
+        }),
+      ),
+    );
+    throw error;
+  }
+}
+
+function storeReviewMedia(reviewId: number, assets: Array<Awaited<ReturnType<typeof uploadBufferToCloudinaryReviewMedia>>>) {
+  const insertMedia = db.prepare(
+    `INSERT INTO listing_review_media (
+      review_id, media_type, secure_url, public_id, resource_type, sort_order, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+  );
+
+  assets.forEach((asset, index) => {
+    insertMedia.run(
+      reviewId,
+      asset.resourceType,
+      asset.secureUrl,
+      asset.publicId,
+      asset.resourceType,
+      index,
+    );
+  });
+}
+
+const reviewMediaUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    files: REVIEW_MEDIA_MAX_COUNT,
+    fileSize: 10 * 1024 * 1024,
+  },
+});
+
+function parseReviewMedia(req: Request, res: Response, next: NextFunction) {
+  reviewMediaUpload.array("media", REVIEW_MEDIA_MAX_COUNT)(req, res, (error) => {
+    if (!error) return next();
+
+    if (error instanceof multer.MulterError) {
+      if (error.code === "LIMIT_FILE_COUNT") {
+        return reviewError(res, 400, "A review can contain up to 3 media files.");
+      }
+      if (error.code === "LIMIT_FILE_SIZE") {
+        return reviewError(res, 400, "Each review media file must be 10 MB or smaller.");
+      }
+      if (error.code === "LIMIT_UNEXPECTED_FILE") {
+        return reviewError(res, 400, "Review media must be submitted in the media field.");
+      }
+    }
+
+    return reviewError(res, 400, error instanceof Error ? error.message : "Invalid review media upload.");
+  });
 }
 
 function getListingReviewSummary(listingId: number) {
@@ -275,13 +415,15 @@ async function listListingReviewsHandler(req: Request, res: Response) {
   const offset = clampInt(req.query.offset, 0, 0, 100000);
   const total = getReviewsTotal(listingId);
   const summary = getListingReviewSummary(listingId);
-  const items = getListingReviews(listingId, limit, offset).map(serializeReview);
+  const itemRows = getListingReviews(listingId, limit, offset);
+  const mediaByReviewId = getReviewMediaForIds(itemRows.map((row) => Number(row.id)));
+  const items = itemRows.map((row) => serializeReview(row, mediaByReviewId.get(Number(row.id)) ?? []));
 
   let viewerReview: ReturnType<typeof serializeReview> | null = null;
   const user = req.user as VerifiedRequestUser | undefined;
   if (user) {
     const mine = getReviewByListingAndReviewer(listingId, user.uid);
-    viewerReview = mine ? serializeReview(mine) : null;
+    viewerReview = serializeReviewWithMedia(mine);
   }
 
   return res.json({
@@ -332,47 +474,84 @@ async function createListingReviewHandler(req: Request, res: Response) {
 
   const title = normalizeText(req.body?.title, 120);
   const body = normalizeText(req.body?.body, 2000);
+  const mediaFiles = (req.files as Express.Multer.File[] | undefined) ?? [];
+  const mediaError = validateReviewMediaFiles(mediaFiles);
+  if (mediaError) return reviewError(res, 400, mediaError);
 
+  let uploadedMedia: Array<Awaited<ReturnType<typeof uploadBufferToCloudinaryReviewMedia>>> = [];
   try {
-    db.prepare(
-      `
-        INSERT INTO listing_reviews (
-          listing_id,
-          seller_uid,
-          reviewer_uid,
-          reviewer_email,
-          reviewer_name,
-          rating,
-          title,
-          body,
-          is_verified_purchase,
-          seller_reply,
-          seller_reply_at,
-          is_hidden,
-          created_at,
-          updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        ON CONFLICT(listing_id, reviewer_uid) DO UPDATE SET
-          rating = excluded.rating,
-          title = excluded.title,
-          body = excluded.body,
-          updated_at = CURRENT_TIMESTAMP
-      `
-    ).run(
-      listingId,
-      listing.seller_uid,
-      user.uid,
-      user.email ?? null,
-      user.email || "Member",
-      rating,
-      title,
-      body
-    );
+    uploadedMedia = await uploadReviewMediaFiles(mediaFiles);
 
-    const updated = getReviewByListingAndReviewer(listingId, user.uid);
-    return res.status(201).json({ success: true, review: updated ? serializeReview(updated) : null });
+    let updatedReview: ReviewRow | undefined;
+    const insertReviewAndMedia = db.transaction(() => {
+      db.prepare(
+        `
+          INSERT INTO listing_reviews (
+            listing_id,
+            seller_uid,
+            reviewer_uid,
+            reviewer_email,
+            reviewer_name,
+            rating,
+            title,
+            body,
+            is_verified_purchase,
+            seller_reply,
+            seller_reply_at,
+            is_hidden,
+            created_at,
+            updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          ON CONFLICT(listing_id, reviewer_uid) DO UPDATE SET
+            rating = excluded.rating,
+            title = excluded.title,
+            body = excluded.body,
+            updated_at = CURRENT_TIMESTAMP
+        `
+      ).run(
+        listingId,
+        listing.seller_uid,
+        user.uid,
+        user.email ?? null,
+        user.email || "Member",
+        rating,
+        title,
+        body
+      );
+
+      updatedReview = getReviewByListingAndReviewer(listingId, user.uid);
+      if (!updatedReview) throw new Error("Review was not saved.");
+
+      if (uploadedMedia.length) {
+        const existingMedia = getReviewMediaForIds([Number(updatedReview.id)]).get(Number(updatedReview.id)) ?? [];
+        db.prepare("DELETE FROM listing_review_media WHERE review_id = ?").run(Number(updatedReview.id));
+        storeReviewMedia(Number(updatedReview.id), uploadedMedia);
+
+        void Promise.allSettled(
+          existingMedia.map((asset) =>
+            deleteCloudinaryAsset({
+              publicId: asset.public_id,
+              resourceType: asset.resource_type,
+            }),
+          ),
+        );
+      }
+    });
+
+    insertReviewAndMedia();
+
+    const serialized = serializeReviewWithMedia(updatedReview);
+    return res.status(201).json({ success: true, review: serialized });
   } catch (error) {
     console.error("POST /api/listings/:listingId/reviews error:", error);
+    await Promise.allSettled(
+      uploadedMedia.map((asset) =>
+        deleteCloudinaryAsset({
+          publicId: asset.publicId,
+          resourceType: asset.resourceType,
+        }),
+      ),
+    );
     return reviewError(res, 500, "Failed to save review");
   }
 }
@@ -396,20 +575,55 @@ async function updateListingReviewHandler(req: Request, res: Response) {
   const rating = clampInt(req.body?.rating, review.rating, 1, 5);
   const title = normalizeText(req.body?.title, 120);
   const body = normalizeText(req.body?.body, 2000);
+  const mediaFiles = (req.files as Express.Multer.File[] | undefined) ?? [];
+  const mediaError = validateReviewMediaFiles(mediaFiles);
+  if (mediaError) return reviewError(res, 400, mediaError);
 
+  let uploadedMedia: Array<Awaited<ReturnType<typeof uploadBufferToCloudinaryReviewMedia>>> = [];
   try {
-    db.prepare(
-      `
-        UPDATE listing_reviews
-        SET rating = ?, title = ?, body = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE listing_id = ? AND reviewer_uid = ?
-      `
-    ).run(rating, title, body, listingId, user.uid);
+    uploadedMedia = await uploadReviewMediaFiles(mediaFiles);
+    const existingMedia = mediaFiles.length
+      ? getReviewMediaForIds([Number(review.id)]).get(Number(review.id)) ?? []
+      : [];
+
+    db.transaction(() => {
+      db.prepare(
+        `
+          UPDATE listing_reviews
+          SET rating = ?, title = ?, body = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE listing_id = ? AND reviewer_uid = ?
+        `
+      ).run(rating, title, body, listingId, user.uid);
+
+      if (mediaFiles.length) {
+        db.prepare("DELETE FROM listing_review_media WHERE review_id = ?").run(Number(review.id));
+        storeReviewMedia(Number(review.id), uploadedMedia);
+      }
+    })();
+
+    if (mediaFiles.length) {
+      await Promise.allSettled(
+        existingMedia.map((asset) =>
+          deleteCloudinaryAsset({
+            publicId: asset.public_id,
+            resourceType: asset.resource_type,
+          }),
+        ),
+      );
+    }
 
     const updated = getReviewByListingAndReviewer(listingId, user.uid);
-    return res.json({ success: true, review: updated ? serializeReview(updated) : null });
+    return res.json({ success: true, review: serializeReviewWithMedia(updated) });
   } catch (error) {
-    console.error("PUT /api/listings/:listingId/reviews error:", error);
+    console.error("PUT /api/listings/:id/reviews error:", error);
+    await Promise.allSettled(
+      uploadedMedia.map((asset) =>
+        deleteCloudinaryAsset({
+          publicId: asset.publicId,
+          resourceType: asset.resourceType,
+        }),
+      ),
+    );
     return reviewError(res, 500, "Failed to update review");
   }
 }
@@ -492,8 +706,8 @@ export function registerReviewsRoutes(app: Express) {
   ensureReviewsSchema();
 
   app.get("/api/listings/:listingId/reviews", attachOptionalAuth, (req, res) => void listListingReviewsHandler(req, res));
-  app.post("/api/listings/:listingId/reviews", requireAuth, (req, res) => void createListingReviewHandler(req, res));
-  app.put("/api/listings/:listingId/reviews", requireAuth, (req, res) => void updateListingReviewHandler(req, res));
+  app.post("/api/listings/:listingId/reviews", requireAuth, parseReviewMedia, (req, res) => void createListingReviewHandler(req, res));
+  app.put("/api/listings/:listingId/reviews", requireAuth, parseReviewMedia, (req, res) => void updateListingReviewHandler(req, res));
   app.post("/api/listings/:listingId/reviews/reply", requireAuth, (req, res) => void replyToListingReviewHandler(req, res));
   app.patch("/api/listings/:listingId/reviews/:reviewId/reply", requireAuth, (req, res) => void replyToListingReviewByIdHandler(req, res));
 
