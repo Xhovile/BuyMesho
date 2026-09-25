@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import multer from "multer";
 import { postgresDb as db } from "../db.js";
 import {
-  cloudinaryAttachmentDownloadUrl,
+  cloudinaryAttachmentSourceUrl,
   deleteCloudinaryAsset,
   isSupportedMessageAttachmentMime,
   uploadBufferToCloudinaryMessageAttachment,
@@ -233,9 +233,7 @@ async function sendMessage(req: Request, res: Response) {
         { buffer: file.buffer, mimetype: attachmentMime },
         { folder: "buymesho/messages" },
       );
-      attachmentUrl = messageType === "file"
-        ? cloudinaryAttachmentDownloadUrl(uploadedAsset.secureUrl, attachmentName)
-        : uploadedAsset.secureUrl;
+      attachmentUrl = uploadedAsset.secureUrl;
     }
 
     const preview = attachmentPreview(messageType, body, attachmentName);
@@ -289,6 +287,81 @@ async function sendMessage(req: Request, res: Response) {
   }
 }
 
+async function downloadMessageAttachment(req: Request, res: Response) {
+  const user = getUser(req);
+  if (!user) return res.status(401).json({ error: "Authentication required" });
+
+  const conversationId = Number(req.params.conversationId);
+  const messageId = Number(req.params.messageId);
+  if (!Number.isInteger(conversationId) || !Number.isInteger(messageId)) {
+    return res.status(400).json({ error: "Invalid message attachment request" });
+  }
+
+  const conversation = getConversationById(conversationId);
+  if (!conversation) return res.status(404).json({ error: "Conversation not found" });
+  if (!requireConversationAccess(conversation, user)) {
+    return res.status(403).json({ error: "You cannot access this attachment" });
+  }
+
+  const message = db.prepare(`
+    SELECT id, conversation_id, message_type, attachment_url, attachment_name,
+           attachment_mime, attachment_size
+    FROM messages
+    WHERE id = ? AND conversation_id = ?
+    LIMIT 1
+  `).get(messageId, conversationId) as {
+    id: number;
+    conversation_id: number;
+    message_type: MessageType;
+    attachment_url: string | null;
+    attachment_name: string | null;
+    attachment_mime: string | null;
+    attachment_size: number | string | null;
+  } | undefined;
+
+  if (!message?.attachment_url) return res.status(404).json({ error: "Attachment not found" });
+
+  let sourceUrl: URL;
+  try {
+    sourceUrl = new URL(cloudinaryAttachmentSourceUrl(String(message.attachment_url)));
+  } catch {
+    return res.status(502).json({ error: "Attachment storage URL is invalid" });
+  }
+
+  if (sourceUrl.protocol !== "https:" || sourceUrl.hostname !== "res.cloudinary.com") {
+    return res.status(502).json({ error: "Attachment storage URL is not supported" });
+  }
+
+  try {
+    const upstream = await fetch(sourceUrl, { signal: AbortSignal.timeout(30_000) });
+    if (!upstream.ok) {
+      console.error("Cloudinary attachment download failed", {
+        messageId,
+        status: upstream.status,
+        statusText: upstream.statusText,
+      });
+      return res.status(502).json({ error: "Attachment could not be downloaded from storage" });
+    }
+
+    const filename = sanitizeAttachmentName(message.attachment_name || "attachment");
+    const asciiFilename = filename.replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_") || "attachment";
+    const encodedFilename = encodeURIComponent(filename).replace(/\x27/g, "%27");
+    const contentType = String(message.attachment_mime || upstream.headers.get("content-type") || "application/octet-stream");
+    const buffer = Buffer.from(await upstream.arrayBuffer());
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Length", String(buffer.length));
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${asciiFilename}"; filename*=UTF-8\x27\x27${encodedFilename}`,
+    );
+    res.setHeader("Cache-Control", "private, no-store");
+    return res.end(buffer);
+  } catch (error) {
+    console.error("Message attachment download error", error);
+    return res.status(502).json({ error: "Attachment download failed" });
+  }
+}
 function parseMessageAttachment(req: Request, res: Response, next: () => void) {
   messageUpload.single("attachment")(req, res, (error) => {
     if (!error) {
@@ -309,4 +382,4 @@ function parseMessageAttachment(req: Request, res: Response, next: () => void) {
   });
 }
 async function markRead(req: Request, res: Response) { const user = getUser(req); if (!user) return res.status(401).json({ error: "Authentication required" }); const conversationId = Number(req.params.conversationId); if (!Number.isInteger(conversationId)) return res.status(400).json({ error: "Invalid conversation id" }); const conversation = getConversationById(conversationId); if (!conversation) return res.status(404).json({ error: "Conversation not found" }); if (!requireConversationAccess(conversation, user)) return res.status(403).json({ error: "You cannot access this conversation" }); const senderUid = conversation.buyer_uid === user.uid ? conversation.seller_uid : conversation.buyer_uid; db.prepare(`UPDATE messages SET is_read=1, read_at=COALESCE(read_at,CURRENT_TIMESTAMP) WHERE conversation_id=? AND sender_uid=?`).run(conversationId, senderUid); if (conversation.buyer_uid === user.uid) db.prepare(`UPDATE conversations SET buyer_unread_count=0, updated_at=CURRENT_TIMESTAMP WHERE id=?`).run(conversationId); else db.prepare(`UPDATE conversations SET seller_unread_count=0, updated_at=CURRENT_TIMESTAMP WHERE id=?`).run(conversationId); const updated = getConversationById(conversationId); return res.json({ success: true, conversation: updated ? { ...serializeConversation(updated), unread_count: updated.buyer_uid === user.uid ? updated.buyer_unread_count : updated.seller_unread_count } : null }); }
-export function registerMessagesRoutes(app: Express) { ensureMessagesSchema(); if ((app as any)[ROUTES_INSTALLED_FLAG]) return; app.get("/api/messages/inbox", requireAuth, (req,res) => void listInbox(req,res)); app.get("/api/messages/:conversationId", requireAuth, (req,res) => void getConversation(req,res)); app.post("/api/listings/:listingId/messages/start", requireAuth, (req,res) => void startConversationFromListing(req,res)); app.post("/api/events/:eventId/messages/start", requireAuth, (req,res) => void startConversationFromEvent(req,res)); app.post("/api/sellers/:sellerUid/messages/start", requireAuth, (req,res) => void startConversationWithSeller(req,res)); app.post("/api/orders/:orderId/messages/start", requireAuth, (req,res) => void startConversationForOrder(req,res)); app.post("/api/messages/:conversationId/messages", requireAuth, parseMessageAttachment, (req,res) => void sendMessage(req,res)); app.post("/api/messages/:conversationId/read", requireAuth, (req,res) => void markRead(req,res)); (app as any)[ROUTES_INSTALLED_FLAG] = true; }
+export function registerMessagesRoutes(app: Express) { ensureMessagesSchema(); if ((app as any)[ROUTES_INSTALLED_FLAG]) return; app.get("/api/messages/inbox", requireAuth, (req,res) => void listInbox(req,res)); app.get("/api/messages/:conversationId/messages/:messageId/attachment", requireAuth, (req,res) => void downloadMessageAttachment(req,res)); app.get("/api/messages/:conversationId", requireAuth, (req,res) => void getConversation(req,res)); app.post("/api/listings/:listingId/messages/start", requireAuth, (req,res) => void startConversationFromListing(req,res)); app.post("/api/events/:eventId/messages/start", requireAuth, (req,res) => void startConversationFromEvent(req,res)); app.post("/api/sellers/:sellerUid/messages/start", requireAuth, (req,res) => void startConversationWithSeller(req,res)); app.post("/api/orders/:orderId/messages/start", requireAuth, (req,res) => void startConversationForOrder(req,res)); app.post("/api/messages/:conversationId/messages", requireAuth, parseMessageAttachment, (req,res) => void sendMessage(req,res)); app.post("/api/messages/:conversationId/read", requireAuth, (req,res) => void markRead(req,res)); (app as any)[ROUTES_INSTALLED_FLAG] = true; }
