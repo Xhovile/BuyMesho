@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import type { ListingReview, ListingReviewFeedResponse, ListingReviewSummary } from "../../types";
 import { apiFetch } from "../../lib/api";
 import ListingReviewCard from "./ListingReviewCard";
+import ListingReviewSummaryView from "./ListingReviewSummary";
 
 type ReviewFeedMode = "preview" | "full";
 
@@ -166,6 +167,8 @@ export default function ListingReviewFeed({
         </div>
       ) : null}
 
+      {isFullPage && summary ? <ListingReviewSummaryView summary={summary} /> : null}
+
       {ownReview ? (
         <div className="space-y-4">
           <ListingReviewCard
@@ -218,6 +221,12 @@ export default function ListingReviewFeed({
             View all reviews
           </button>
         </div>
+      ) : null}
+
+      {isFullPage && !hasMore && items.length > 0 ? (
+        <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">
+          Showing {Math.min(items.length, total)} of {total} reviews
+        </p>
       ) : null}
 
       {compact && summary ? (
