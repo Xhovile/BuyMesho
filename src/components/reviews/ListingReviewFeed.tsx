@@ -98,6 +98,8 @@ export default function ListingReviewFeed({
 
       if (replace) {
         requestControllerRef.current?.abort();
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
       }
 
       const requestId = ++requestIdRef.current;
