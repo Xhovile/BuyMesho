@@ -4,6 +4,7 @@ import type { ListingReview, ListingReviewFeedResponse, ListingReviewSummary } f
 import { apiFetch } from "../../lib/api";
 import ListingReviewCard from "./ListingReviewCard";
 import ListingReviewSummaryView from "./ListingReviewSummary";
+import VirtualizedReviewList from "./VirtualizedReviewList";
 
 type ReviewFeedMode = "preview" | "full";
 
@@ -35,6 +36,7 @@ type ListingReviewFeedProps = {
 
 const PREVIEW_LIMIT = 3;
 const FULL_PAGE_SIZE = 20;
+const VIRTUALIZATION_THRESHOLD = 50;
 
 type ReviewFeedPayload = ListingReviewFeedResponse & {
   reviews?: ListingReview[];
@@ -194,17 +196,34 @@ export default function ListingReviewFeed({
       ) : null}
 
       {visibleItems.length > 0 ? (
-        <div className="space-y-4">
-          {visibleItems.map((review) => (
-            <ListingReviewCard
-              key={review.id}
-              review={review}
-              listingId={listingId}
-              canReply={canReply && review.reviewer_uid !== viewerUid}
-              onReviewChanged={handleReviewChanged}
-            />
-          ))}
-        </div>
+        isFullPage && visibleItems.length > VIRTUALIZATION_THRESHOLD ? (
+          <VirtualizedReviewList
+            count={visibleItems.length}
+            renderItem={(index) => {
+              const review = visibleItems[index];
+              return review ? (
+                <ListingReviewCard
+                  review={review}
+                  listingId={listingId}
+                  canReply={canReply && review.reviewer_uid !== viewerUid}
+                  onReviewChanged={handleReviewChanged}
+                />
+              ) : null;
+            }}
+          />
+        ) : (
+          <div className="space-y-4">
+            {visibleItems.map((review) => (
+              <ListingReviewCard
+                key={review.id}
+                review={review}
+                listingId={listingId}
+                canReply={canReply && review.reviewer_uid !== viewerUid}
+                onReviewChanged={handleReviewChanged}
+              />
+            ))}
+          </div>
+        )
       ) : !ownReview ? (
         <div className="rounded-[2rem] border border-dashed border-blue-200 bg-white px-5 py-6 text-sm text-zinc-500 shadow-sm">
           No written reviews yet.
