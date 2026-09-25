@@ -2,8 +2,6 @@ import { Search } from "lucide-react";
 import type { PaymentSortMode, WebhookSortMode } from "./adminPayments.utils";
 
 type ActiveTab = "payments" | "webhooks";
-type Tone = "zinc" | "emerald" | "amber" | "blue" | "rose";
-
 export type AdminPaymentsStats = {
   totalPayments: number;
   verifiedPayments: number;
