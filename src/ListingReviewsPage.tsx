@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuthUser } from "./hooks/useAuthUser";
 import type { ListingReviewSummary } from "./types";
@@ -9,13 +9,16 @@ import ListingReviewFeed from "./components/reviews/ListingReviewFeed";
 
 export default function ListingReviewsPage() {
   const { user: firebaseUser } = useAuthUser();
-  const listingId = useMemo(() => {
-    const value = new URLSearchParams(window.location.search).get("listing");
-    const parsed = Number(value);
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-  }, []);
+  const listingValue = new URLSearchParams(window.location.search).get("listing");
+  const parsedListingId = Number(listingValue);
+  const listingId = Number.isInteger(parsedListingId) && parsedListingId > 0 ? parsedListingId : null;
   const [summary, setSummary] = useState<ListingReviewSummary | null>(null);
   const [sellerUid, setSellerUid] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSummary(null);
+    setSellerUid(null);
+  }, [listingId]);
 
   if (!listingId) {
     return (
