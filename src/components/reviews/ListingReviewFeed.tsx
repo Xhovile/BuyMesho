@@ -19,7 +19,10 @@ type ListingReviewFeedProps = {
   mode?: ReviewFeedMode;
   compact?: boolean;
   initialSummary?: ListingReviewSummary | null;
-  refreshKey?: number;
+  initialItems?: ListingReview[];
+  initialViewerReview?: ListingReview | null;
+  initialTotal?: number;
+  initialHasMore?: boolean;
   canReply?: boolean;
   viewerUid?: string;
   ownReviewId?: number | null;
@@ -43,7 +46,10 @@ export default function ListingReviewFeed({
   mode = "preview",
   compact = false,
   initialSummary = null,
-  refreshKey = 0,
+  initialItems,
+  initialViewerReview = null,
+  initialTotal = 0,
+  initialHasMore = false,
   canReply = false,
   viewerUid,
   ownReviewId = null,
@@ -53,19 +59,20 @@ export default function ListingReviewFeed({
   onSummaryChange,
   onListingMetaLoaded,
 }: ListingReviewFeedProps) {
-  const [items, setItems] = useState<ListingReview[]>([]);
+  const isFullPage = mode === "full";
+  const hasInitialData = !isFullPage && initialItems !== undefined;
+  const [items, setItems] = useState<ListingReview[]>(initialItems ?? []);
   const [summary, setSummary] = useState<ListingReviewSummary | null>(initialSummary);
-  const [viewerReview, setViewerReview] = useState<ListingReview | null>(null);
-  const [offset, setOffset] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [viewerReview, setViewerReview] = useState<ListingReview | null>(initialViewerReview);
+  const [offset, setOffset] = useState(initialItems?.length ?? 0);
+  const [total, setTotal] = useState(initialTotal);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [loading, setLoading] = useState(!hasInitialData);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadingMoreRef = useRef(false);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const isFullPage = mode === "full";
   const canShowMore = useMemo(
     () => !isFullPage && hasMore && items.length < total && Boolean(onViewAll),
     [hasMore, isFullPage, items.length, onViewAll, total]
@@ -126,8 +133,9 @@ export default function ListingReviewFeed({
 
   useEffect(() => {
     loadingMoreRef.current = false;
+    if (hasInitialData) return;
     void loadReviews(0, true);
-  }, [loadReviews, refreshKey]);
+  }, [hasInitialData, loadReviews]);
 
   useEffect(() => {
     if (!isFullPage || !hasMore || loading || loadingMore) return;
@@ -150,7 +158,7 @@ export default function ListingReviewFeed({
 
   const handleReviewChanged = async (review: ListingReview) => {
     await onReviewChanged?.(review);
-    void loadReviews(0, true);
+    if (!hasInitialData) void loadReviews(0, true);
   };
 
   if (loading) {
