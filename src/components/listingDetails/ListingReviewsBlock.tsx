@@ -25,10 +25,12 @@ export default function ListingReviewsBlock({
   const { user: firebaseUser } = useAuthUser();
   const [summary, setSummary] = useState<ListingReviewSummary | null>(null);
   const [viewerReview, setViewerReview] = useState<ListingReview | null>(null);
+  const [previewReviews, setPreviewReviews] = useState<ListingReview[]>([]);
+  const [previewTotal, setPreviewTotal] = useState(0);
+  const [previewHasMore, setPreviewHasMore] = useState(false);
   const [canReview, setCanReview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [isEditingOwnReview, setIsEditingOwnReview] = useState(false);
 
   const canReplyAsSeller = !!firebaseUser?.uid && firebaseUser.uid === listing.seller_uid;
@@ -42,17 +44,28 @@ export default function ListingReviewsBlock({
     try {
       const result = (await apiFetch(`/api/listings/${listing.id}/reviews?limit=3&offset=0`)) as {
         summary: ListingReviewSummary;
+        items: ListingReview[];
         viewerReview: ListingReview | null;
         canReview: boolean;
+        pagination: {
+          total: number;
+          hasMore: boolean;
+        };
       };
 
       setSummary(result.summary ?? null);
       setViewerReview(result.viewerReview ?? null);
+      setPreviewReviews(result.items ?? []);
+      setPreviewTotal(result.pagination?.total ?? 0);
+      setPreviewHasMore(Boolean(result.pagination?.hasMore));
       setCanReview(Boolean(result.canReview));
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : "Failed to load reviews.");
       setSummary(null);
       setViewerReview(null);
+      setPreviewReviews([]);
+      setPreviewTotal(0);
+      setPreviewHasMore(false);
       setCanReview(false);
     } finally {
       setLoading(false);
@@ -66,13 +79,11 @@ export default function ListingReviewsBlock({
   const handleSaved = async (savedReview: ListingReview | null) => {
     setViewerReview(savedReview);
     setIsEditingOwnReview(false);
-    setRefreshKey((current) => current + 1);
     await loadReviews();
   };
 
   const handleReviewChanged = async (review: ListingReview) => {
     setViewerReview(review.reviewer_uid === firebaseUser?.uid ? review : viewerReview);
-    setRefreshKey((current) => current + 1);
     await loadReviews();
   };
 
@@ -118,7 +129,10 @@ export default function ListingReviewsBlock({
           <ListingReviewFeed
             listingId={listing.id}
             initialSummary={summary}
-            refreshKey={refreshKey}
+            initialItems={previewReviews}
+            initialViewerReview={viewerReview}
+            initialTotal={previewTotal}
+            initialHasMore={previewHasMore}
             canReply={canReplyAsSeller}
             viewerUid={firebaseUser?.uid}
             ownReviewId={viewerReview?.id ?? null}
