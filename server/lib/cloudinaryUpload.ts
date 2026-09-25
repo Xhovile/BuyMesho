@@ -16,6 +16,7 @@ export type CloudinaryUploadAsset = {
   secureUrl: string;
   publicId: string;
   resourceType: CloudinaryResourceType;
+  bytes: number;
 };
 
 export type CloudinaryMediaUploadAsset = Omit<CloudinaryUploadAsset, "resourceType"> & {
@@ -49,9 +50,21 @@ function getResourceType(mimetype: string): CloudinaryResourceType {
   return mimetype.startsWith("image/") ? "image" : "raw";
 }
 
+type CloudinaryMessageTransformation = {
+  width?: number;
+  height?: number;
+  crop?: string;
+  quality?: string;
+};
+
 function createCloudinaryUploadStream(
   file: { mimetype: string },
-  options: { folder?: string; resourceType?: CloudinaryResourceType; validator?: (mime: string) => boolean },
+  options: {
+    folder?: string;
+    resourceType?: CloudinaryResourceType;
+    validator?: (mime: string) => boolean;
+    transformation?: CloudinaryMessageTransformation[];
+  },
 ): {
   stream: ReturnType<typeof cloudinary.uploader.upload_stream>;
   resourceType: CloudinaryResourceType;
@@ -75,6 +88,7 @@ function createCloudinaryUploadStream(
     {
       resource_type: resourceType,
       folder: options.folder,
+      transformation: options.transformation,
     },
     (error, result) => {
       if (error) {
@@ -93,6 +107,7 @@ function createCloudinaryUploadStream(
         secureUrl: result.secure_url,
         publicId: result.public_id,
         resourceType,
+        bytes: Number(result.bytes ?? 0),
       });
     },
   );
@@ -183,12 +198,20 @@ export async function uploadBufferToCloudinaryMessageAttachment(
     throw new Error("Unsupported message attachment type");
   }
 
+  const resourceType = getResourceType(file.mimetype);
+  const transformation = resourceType === "image"
+    ? [{ width: 1280, crop: "limit", quality: "auto:good" }]
+    : resourceType === "video"
+      ? [{ width: 720, crop: "limit", quality: "auto:eco" }]
+      : undefined;
+
   return new Promise<CloudinaryUploadAsset>((resolve, reject) => {
     try {
       const { stream, uploadPromise } = createCloudinaryUploadStream(file, {
         folder: options.folder,
-        resourceType: getResourceType(file.mimetype),
+        resourceType,
         validator: isSupportedMessageAttachmentMime,
+        transformation,
       });
       uploadPromise.then(resolve, reject);
       stream.end(file.buffer);
