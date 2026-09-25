@@ -313,32 +313,36 @@ export default function AdminPaymentsPage() {
       {investigationLoading ? <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600"><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Investigating transactions…</div> : null}
 
       {lifecycleReference ? (
-        <section className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
+        <section className="overflow-hidden rounded-[2rem] border border-blue-100 bg-white shadow-sm">
           <button
             type="button"
             onClick={() => setIsLifecycleOpen((open) => !open)}
-            className="flex w-full items-center justify-between gap-4 p-6 text-left"
+            className={`flex w-full items-center justify-between gap-4 p-6 text-left transition-colors ${isLifecycleOpen ? "bg-blue-50/55" : "bg-white hover:bg-blue-50/35"}`}
             aria-expanded={isLifecycleOpen}
             aria-controls="latest-transaction-lifecycle-content"
           >
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 shrink-0" />
-                <h2 className="text-lg font-black">Latest Transaction Lifecycle</h2>
+            <div className="flex min-w-0 items-start gap-3">
+              <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${isLifecycleOpen ? "bg-blue-100 text-blue-700" : "bg-blue-50 text-blue-600"}`}>
+                <CreditCard className="h-5 w-5" />
               </div>
-              <p className="mt-2 break-all text-sm text-zinc-600">
-                Showing {selectedPayment ? "selected" : "latest"} payment reference: {lifecycleReference}
-              </p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-black text-zinc-950">Latest Transaction Lifecycle</h2>
+                </div>
+                <p className="mt-2 break-all text-sm text-zinc-600">
+                  Showing {selectedPayment ? "selected" : "latest"} payment reference: {lifecycleReference}
+                </p>
+              </div>
             </div>
             <ChevronDown
-              className={`h-5 w-5 shrink-0 text-zinc-500 transition-transform ${isLifecycleOpen ? "rotate-180" : ""}`}
+              className={`h-5 w-5 shrink-0 text-blue-600 transition-transform ${isLifecycleOpen ? "rotate-180" : ""}`}
             />
           </button>
 
           {isLifecycleOpen ? (
             <div
               id="latest-transaction-lifecycle-content"
-              className="border-t border-zinc-100 px-6 pb-6 pt-5"
+              className="border-t border-blue-100 px-6 pb-6 pt-5"
             >
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 {lifecycle.map((step) => <LifecycleNode key={step.number} {...step} />)}
