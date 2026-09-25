@@ -187,6 +187,43 @@ export async function uploadBufferToCloudinary(
   return asset.secureUrl;
 }
 
+export async function uploadBufferToCloudinaryReviewMedia(
+  file: {
+    buffer: Buffer;
+    mimetype: string;
+  },
+  options: { folder?: string } = {},
+): Promise<CloudinaryMediaUploadAsset> {
+  if (!file.mimetype || !(file.mimetype.startsWith("image/") || file.mimetype.startsWith("video/"))) {
+    throw new Error("Unsupported review media type");
+  }
+
+  const resourceType: "image" | "video" = file.mimetype.startsWith("video/") ? "video" : "image";
+  const transformation = resourceType === "image"
+    ? [{ width: 1280, crop: "limit", quality: "auto:good" }]
+    : [{ width: 720, crop: "limit", quality: "auto:eco" }];
+
+  const { stream, uploadPromise } = createCloudinaryUploadStream(file, {
+    folder: options.folder,
+    resourceType,
+    validator: (mime) => {
+      const normalized = String(mime || "").trim().toLowerCase();
+      return resourceType === "image"
+        ? normalized.startsWith("image/") && normalized !== "image/svg+xml"
+        : normalized.startsWith("video/");
+    },
+    transformation,
+  });
+
+  stream.end(file.buffer);
+  const asset = await uploadPromise;
+
+  return {
+    ...asset,
+    resourceType,
+  };
+}
+
 export async function uploadBufferToCloudinaryMessageAttachment(
   file: {
     buffer: Buffer;
