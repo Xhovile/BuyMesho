@@ -198,17 +198,9 @@ export async function uploadBufferToCloudinaryMessageAttachment(
   });
 }
 
-export function cloudinaryAttachmentDownloadUrl(secureUrl: string, filename: string): string {
-  const safeName = String(filename || "download")
-    .replace(/[\\/:*?"<>|\u0000-\u001F]/g, "_")
-    .trim()
-    .slice(0, 180) || "download";
-
+export function cloudinaryAttachmentSourceUrl(secureUrl: string): string {
   if (!secureUrl.includes("/raw/upload/")) return secureUrl;
-  return secureUrl.replace(
-    "/raw/upload/",
-    "/raw/upload/fl_attachment:" + encodeURIComponent(safeName) + "/",
-  );
+  return secureUrl.replace(/\/raw\/upload\/fl_attachment:[^/]+\//, "/raw/upload/");
 }
 
 export async function deleteCloudinaryAsset(asset: {
