@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, CircleAlert, CreditCard, Loader2, ShieldCheck } from "lucide-react";
+import { CircleAlert, Loader2, ShieldCheck } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import AdminPaymentDetailsDrawer from "./AdminPaymentDetailsDrawer";
@@ -17,15 +17,6 @@ import {
 } from "./adminPayments/adminPayments.utils";
 
 type ActiveTab = "payments" | "webhooks";
-type LifecycleState = "done" | "active" | "waiting" | "issue";
-
-type LifecycleStep = {
-  number: number;
-  title: string;
-  detail: string;
-  state: LifecycleState;
-};
-
 type InvestigationResponse = {
   query: string;
   payments: PaymentRow[];
@@ -47,125 +38,6 @@ type InvestigationResponse = {
   };
 };
 
-function lifecycleTone(state: LifecycleState): "emerald" | "blue" | "rose" | "zinc" {
-  if (state === "done") return "emerald";
-  if (state === "active") return "blue";
-  if (state === "issue") return "rose";
-  return "zinc";
-}
-
-function LifecycleNode({ number, title, detail, state }: LifecycleStep) {
-  const tone = lifecycleTone(state);
-  const classes = {
-    emerald: "border-emerald-200 bg-emerald-50 text-emerald-900",
-    blue: "border-blue-200 bg-blue-50 text-blue-900",
-    rose: "border-rose-200 bg-rose-50 text-rose-900",
-    zinc: "border-zinc-200 bg-zinc-50 text-zinc-700",
-  }[tone];
-  const dotClasses = {
-    emerald: "bg-emerald-500",
-    blue: "bg-blue-500",
-    rose: "bg-rose-500",
-    zinc: "bg-zinc-300",
-  }[tone];
-
-  return (
-    <div className={`rounded-2xl border p-4 ${classes}`}>
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">{String(number).padStart(2, "0")}</span>
-          <p className="text-sm font-black">{title}</p>
-        </div>
-        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dotClasses}`} />
-      </div>
-      <p className="mt-2 text-xs leading-5 opacity-75">{detail}</p>
-    </div>
-  );
-}
-
-function buildLifecycleSteps(payment?: PaymentRow | null, hooks: WebhookEventRow[] = []): LifecycleStep[] {
-  const hasPayment = !!payment;
-  const hasCheckout = !!payment?.checkout_url;
-  const hasWebhook = hooks.length > 0;
-  const hasValidWebhook = hooks.some((hook) => Number(hook.signature_valid) === 1);
-  const isPaid = !!payment && (["paid", "captured"].includes(String(payment.payment_status || "").toLowerCase()) || !!payment.paid_at);
-  const isEscrowActive = !!payment && (["in_escrow", "paid"].includes(String(payment.order_status || "").toLowerCase()) || !!payment.escrow_id);
-  const isDelivered = !!payment && String(payment.order_status || "").toLowerCase() === "fulfilled";
-  const escrowState = String(payment?.escrow_state || "").toLowerCase();
-  const isSettled = escrowState === "released" || escrowState === "refunded";
-  const isDisputed = escrowState === "disputed";
-
-  return [
-    {
-      number: 1,
-      title: "Payment created",
-      detail: hasPayment ? "BuyMesho stored a payment row for this checkout attempt." : "No payment row exists yet.",
-      state: hasPayment ? "done" : "waiting",
-    },
-    {
-      number: 2,
-      title: "Checkout opened",
-      detail: hasCheckout ? "The buyer was sent to the provider checkout URL." : "Waiting for checkout creation.",
-      state: hasCheckout ? "done" : hasPayment ? "active" : "waiting",
-    },
-    {
-      number: 3,
-      title: "Webhook received",
-      detail: hasWebhook ? "PayChangu callback delivery was captured." : "No webhook event has arrived yet.",
-      state: hasWebhook ? "active" : "waiting",
-    },
-    {
-      number: 4,
-      title: "Signature verified",
-      detail: hasValidWebhook ? "At least one webhook signature passed verification." : hasWebhook ? "Webhook arrived, but verification has not passed yet." : "Waiting for a webhook to verify.",
-      state: hasValidWebhook ? "done" : hasWebhook ? "active" : "waiting",
-    },
-    {
-      number: 5,
-      title: "Order confirmed",
-      detail: isPaid ? "The order was marked paid and moved into the confirmed flow." : "The order is still pending confirmation.",
-      state: isPaid ? "done" : "waiting",
-    },
-    {
-      number: 6,
-      title: "Escrow active",
-      detail: isEscrowActive ? "Funds are represented as active escrow for the order." : "Escrow has not started yet.",
-      state: isEscrowActive ? (isDisputed ? "issue" : "active") : "waiting",
-    },
-    {
-      number: 7,
-      title: "Buyer confirmed delivery",
-      detail: isDelivered ? "The order has been marked fulfilled after delivery confirmation." : "Waiting for delivery confirmation.",
-      state: isDelivered ? "done" : "waiting",
-    },
-    {
-      number: 8,
-      title: "Funds released or refunded",
-      detail: escrowState === "released" ? "Funds were released to the seller." : escrowState === "refunded" ? "Funds were refunded to the buyer." : "Final settlement has not happened yet.",
-      state: escrowState === "released" ? "done" : escrowState === "refunded" ? "issue" : "waiting",
-    },
-  ];
-}
-
-type LifecycleSelection = {
-  payment: PaymentRow | null;
-  hooks: WebhookEventRow[];
-};
-
-function useLifecycleSelection(
-  latestPayment: PaymentRow | null,
-  selectedPayment: PaymentRow | null,
-  selectedHooks: WebhookEventRow[],
-): LifecycleSelection {
-  return useMemo(
-    () => ({
-      payment: selectedPayment ?? latestPayment,
-      hooks: selectedPayment ? selectedHooks : latestPayment ? selectedHooks.length ? selectedHooks : [] : [],
-    }),
-    [latestPayment, selectedPayment, selectedHooks],
-  );
-}
-
 export default function AdminPaymentsPage() {
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [webhookEvents, setWebhookEvents] = useState<WebhookEventRow[]>([]);
@@ -182,7 +54,6 @@ export default function AdminPaymentsPage() {
   const [investigationLoading, setInvestigationLoading] = useState(false);
   const [investigationError, setInvestigationError] = useState<string | null>(null);
   const [selectedReference, setSelectedReference] = useState<string | null>(null);
-  const [isLifecycleOpen, setIsLifecycleOpen] = useState(false);
 
   const load = async () => {
     setError(null);
@@ -227,26 +98,12 @@ export default function AdminPaymentsPage() {
     invalidWebhooks: summary?.webhookSummary?.invalid_webhooks ?? webhookEvents.filter((e) => Number(e.signature_valid) === 0).length,
   }), [payments, webhookEvents, summary]);
 
-  const latestPayment = useMemo(() => {
-    return [...payments].sort((a, b) => Date.parse(b.updated_at || b.created_at || "") - Date.parse(a.updated_at || a.created_at || ""))[0] ?? null;
-  }, [payments]);
-
   const selectedPayment = selectedReference
     ? payments.find((payment) => payment.reference === selectedReference) ?? null
     : null;
   const selectedHooks = selectedReference
     ? webhookEvents.filter((event) => event.reference === selectedReference)
     : [];
-
-  const lifecycleSelection = useLifecycleSelection(
-    latestPayment,
-    selectedPayment,
-    selectedPayment ? selectedHooks : latestPayment ? webhookEvents.filter((event) => event.reference === latestPayment.reference) : [],
-  );
-  const lifecycle = useMemo(
-    () => buildLifecycleSteps(lifecycleSelection.payment, lifecycleSelection.hooks),
-    [lifecycleSelection],
-  );
 
   const sortedPayments = useMemo(() => sortPayments(payments, paymentSortMode), [payments, paymentSortMode]);
   const sortedWebhookEvents = useMemo(() => sortWebhooks(webhookEvents, webhookSortMode), [webhookEvents, webhookSortMode]);
@@ -285,7 +142,6 @@ export default function AdminPaymentsPage() {
   };
 
   const investigationCounts = investigation?.counts;
-  const lifecycleReference = lifecycleSelection.payment?.reference;
 
   return (
     <AdminWorkspaceLayout
@@ -311,46 +167,6 @@ export default function AdminPaymentsPage() {
       {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
       {investigationError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{investigationError}</div> : null}
       {investigationLoading ? <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600"><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Investigating transactions…</div> : null}
-
-      {lifecycleReference ? (
-        <section className="overflow-hidden rounded-[2rem] border border-blue-100 bg-white shadow-sm">
-          <button
-            type="button"
-            onClick={() => setIsLifecycleOpen((open) => !open)}
-            className={`flex w-full items-center justify-between gap-4 p-6 text-left transition-colors ${isLifecycleOpen ? "bg-blue-50/55" : "bg-white hover:bg-blue-50/35"}`}
-            aria-expanded={isLifecycleOpen}
-            aria-controls="latest-transaction-lifecycle-content"
-          >
-            <div className="flex min-w-0 items-start gap-3">
-              <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${isLifecycleOpen ? "bg-blue-100 text-blue-700" : "bg-blue-50 text-blue-600"}`}>
-                <CreditCard className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-black text-zinc-950">Latest Transaction Lifecycle</h2>
-                </div>
-                <p className="mt-2 break-all text-sm text-zinc-600">
-                  Showing {selectedPayment ? "selected" : "latest"} payment reference: {lifecycleReference}
-                </p>
-              </div>
-            </div>
-            <ChevronDown
-              className={`h-5 w-5 shrink-0 text-blue-600 transition-transform ${isLifecycleOpen ? "rotate-180" : ""}`}
-            />
-          </button>
-
-          {isLifecycleOpen ? (
-            <div
-              id="latest-transaction-lifecycle-content"
-              className="border-t border-blue-100 px-6 pb-6 pt-5"
-            >
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {lifecycle.map((step) => <LifecycleNode key={step.number} {...step} />)}
-              </div>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
 
       {submittedSearchQuery && investigation ? (
         <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
