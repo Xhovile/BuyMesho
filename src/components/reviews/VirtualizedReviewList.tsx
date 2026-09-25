@@ -118,7 +118,7 @@ export default function VirtualizedReviewList({
         const index = Number(element.dataset.virtualizedReviewIndex);
         if (!Number.isInteger(index)) continue;
 
-        const nextHeight = entry.contentRect.height;
+        const nextHeight = (entry.target as HTMLElement).getBoundingClientRect().height;
         if (!Number.isFinite(nextHeight) || nextHeight <= 0) continue;
 
         const previousHeight = heightsRef.current.get(index);
