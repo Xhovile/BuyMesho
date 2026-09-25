@@ -16,6 +16,7 @@ import { ensureEventPayoutDestinationLockMigration } from "./20260915_event_payo
 import { ensureEventPayoutFinancialIdentityMigration } from "./20260915_event_payout_financial_identity.js";
 import { ensurePayoutOwnershipRefactorMigration } from "./20260919_payout_ownership_refactor.js";
 import { ensurePayoutDestinationHistoryProtectionMigration } from "./20260919_payout_destination_history_protection.js";
+import { ensureListingReviewMediaMigration } from "./20260925_listing_review_media.js";
 
 function ensureExtraTables() {
   postgresDb.exec(`
@@ -162,5 +163,5 @@ function backfillOrderPaidAtFromPayments() { postgresDb.exec(`UPDATE orders SET 
 function backfillFulfilledAtFromUpdatedAt() { postgresDb.exec(`UPDATE orders SET fulfilled_at = updated_at WHERE status = 'fulfilled' AND fulfilled_at IS NULL AND updated_at IS NOT NULL AND updated_at >= COALESCE(paid_at, created_at);`); }
 
 export function runMigrations() {
-  ensureExtraTables(); ensureEventLifecycleSchema(); ensureEventOwnershipIntegrityMigration(); ensureMessageSchema(postgresDb); normalizeHardDeleteAfterColumn(); updateSellerPayoutAccountColumns(); ensurePayoutLifecycleSchema(); ensurePayoutDestinationOwnershipMigration(); ensureEventPayoutDestinationBindingMigration(); initPaymentSchema(postgresDb); ensureEventTicketStatsSchema(); ensureSellerOrdersIndexesMigration(); ensureRefundDisputeArchitectureMigration(); ensureDisputeSupportRequestsMigration(); ensureDisputeWindowsMigration(); ensureDisputeTimestampCompatibilityMigration(); ensureDisputeResolutionOwnershipMigration(); ensureEventPayoutDestinationLockMigration(); ensureEventPayoutFinancialIdentityMigration(); ensurePayoutOwnershipRefactorMigration(); ensurePayoutDestinationHistoryProtectionMigration(); backfillOrderPaidAtFromPayments(); backfillFulfilledAtFromUpdatedAt(); backfillEventTickets();
+  ensureExtraTables(); ensureListingReviewMediaMigration(); ensureEventLifecycleSchema(); ensureEventOwnershipIntegrityMigration(); ensureMessageSchema(postgresDb); normalizeHardDeleteAfterColumn(); updateSellerPayoutAccountColumns(); ensurePayoutLifecycleSchema(); ensurePayoutDestinationOwnershipMigration(); ensureEventPayoutDestinationBindingMigration(); initPaymentSchema(postgresDb); ensureEventTicketStatsSchema(); ensureSellerOrdersIndexesMigration(); ensureRefundDisputeArchitectureMigration(); ensureDisputeSupportRequestsMigration(); ensureDisputeWindowsMigration(); ensureDisputeTimestampCompatibilityMigration(); ensureDisputeResolutionOwnershipMigration(); ensureEventPayoutDestinationLockMigration(); ensureEventPayoutFinancialIdentityMigration(); ensurePayoutOwnershipRefactorMigration(); ensurePayoutDestinationHistoryProtectionMigration(); backfillOrderPaidAtFromPayments(); backfillFulfilledAtFromUpdatedAt(); backfillEventTickets();
 }
