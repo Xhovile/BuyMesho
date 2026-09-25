@@ -118,52 +118,37 @@ const isVerifiedPayment = (payment: PaymentRow) => Number(payment.verified) === 
 const isValidWebhook = (event: WebhookEventRow) => Number(event.signature_valid) === 1;
 
 export function sortPayments(payments: PaymentRow[], mode: PaymentSortMode): PaymentRow[] {
-  const ranked = [...payments];
-  ranked.sort((left, right) => {
+  const filtered = mode === "verified"
+    ? payments.filter(isVerifiedPayment)
+    : mode === "paid"
+      ? payments.filter(isPaidPayment)
+      : mode === "pending"
+        ? payments.filter(isPendingPayment)
+        : payments;
+
+  return [...filtered].sort((left, right) => {
     const leftTime = toTimestamp(left.updated_at);
     const rightTime = toTimestamp(right.updated_at);
 
-    let leftRank = 0;
-    let rightRank = 0;
-    if (mode === "verified") {
-      leftRank = isVerifiedPayment(left) ? 0 : 1;
-      rightRank = isVerifiedPayment(right) ? 0 : 1;
-    } else if (mode === "paid") {
-      leftRank = isPaidPayment(left) ? 0 : 1;
-      rightRank = isPaidPayment(right) ? 0 : 1;
-    } else if (mode === "pending") {
-      leftRank = isPendingPayment(left) ? 0 : 1;
-      rightRank = isPendingPayment(right) ? 0 : 1;
-    }
-
-    if (leftRank !== rightRank) return leftRank - rightRank;
     if (rightTime !== leftTime) return rightTime - leftTime;
     return String(left.reference ?? "").localeCompare(String(right.reference ?? ""));
   });
-  return ranked;
 }
 
 export function sortWebhooks(events: WebhookEventRow[], mode: WebhookSortMode): WebhookEventRow[] {
-  const ranked = [...events];
-  ranked.sort((left, right) => {
+  const filtered = mode === "valid"
+    ? events.filter(isValidWebhook)
+    : mode === "invalid"
+      ? events.filter((event) => !isValidWebhook(event))
+      : events;
+
+  return [...filtered].sort((left, right) => {
     const leftTime = toTimestamp(left.created_at);
     const rightTime = toTimestamp(right.created_at);
 
-    let leftRank = 0;
-    let rightRank = 0;
-    if (mode === "valid") {
-      leftRank = isValidWebhook(left) ? 0 : 1;
-      rightRank = isValidWebhook(right) ? 0 : 1;
-    } else if (mode === "invalid") {
-      leftRank = isValidWebhook(left) ? 1 : 0;
-      rightRank = isValidWebhook(right) ? 1 : 0;
-    }
-
-    if (leftRank !== rightRank) return leftRank - rightRank;
     if (rightTime !== leftTime) return rightTime - leftTime;
     return left.id - right.id;
   });
-  return ranked;
 }
 
 export function getPaymentTone(status: string): Tone {
