@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 import { useAuthUser } from "./hooks/useAuthUser";
 import type { ListingReviewSummary } from "./types";
 import { LISTING_PATH } from "./lib/appNavigation";
 import ListingHeaderBar from "./components/listingDetails/ListingHeaderBar";
-import ListingReviewSummaryView from "./components/reviews/ListingReviewSummary";
 import ListingReviewFeed from "./components/reviews/ListingReviewFeed";
 
 export default function ListingReviewsPage() {
@@ -60,15 +58,6 @@ export default function ListingReviewsPage() {
         </section>
 
         <div className="mt-6 space-y-6">
-          {summary ? (
-            <ListingReviewSummaryView summary={summary} />
-          ) : (
-            <div className="flex items-center gap-3 rounded-[2rem] border border-blue-200 bg-white px-5 py-4 text-sm text-zinc-500 shadow-sm">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading review summary...
-            </div>
-          )}
-
           <ListingReviewFeed
             listingId={listingId}
             mode="full"
