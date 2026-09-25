@@ -55,6 +55,7 @@ export default function ListingReviewFeed({
 }: ListingReviewFeedProps) {
   const [items, setItems] = useState<ListingReview[]>([]);
   const [summary, setSummary] = useState<ListingReviewSummary | null>(initialSummary);
+  const [viewerReview, setViewerReview] = useState<ListingReview | null>(null);
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -69,13 +70,14 @@ export default function ListingReviewFeed({
     () => !isFullPage && hasMore && items.length < total && Boolean(onViewAll),
     [hasMore, isFullPage, items.length, onViewAll, total]
   );
+  const resolvedOwnReviewId = ownReviewId ?? viewerReview?.id ?? null;
   const ownReview = useMemo(
-    () => items.find((review) => review.id === ownReviewId) ?? null,
-    [items, ownReviewId]
+    () => items.find((review) => review.id === resolvedOwnReviewId) ?? viewerReview,
+    [items, resolvedOwnReviewId, viewerReview]
   );
   const visibleItems = useMemo(
-    () => items.filter((review) => review.id !== ownReviewId),
-    [items, ownReviewId]
+    () => items.filter((review) => review.id !== resolvedOwnReviewId),
+    [items, resolvedOwnReviewId]
   );
 
   const loadReviews = useCallback(
@@ -103,6 +105,7 @@ export default function ListingReviewFeed({
         if (result.listing) onListingMetaLoaded?.(result.listing);
 
         const pageItems = (result.items ?? result.reviews ?? []) as ListingReview[];
+        setViewerReview(result.viewerReview ?? null);
         setTotal(result.pagination?.total ?? 0);
         setHasMore(Boolean(result.pagination?.hasMore));
         setOffset((result.pagination?.offset ?? 0) + pageItems.length);
