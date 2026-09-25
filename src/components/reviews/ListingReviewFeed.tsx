@@ -59,6 +59,7 @@ export default function ListingReviewFeed({
   onSummaryChange,
   onListingMetaLoaded,
 }: ListingReviewFeedProps) {
+  const isFullPage = mode === "full";
   const hasInitialData = !isFullPage && initialItems !== undefined;
   const [items, setItems] = useState<ListingReview[]>(initialItems ?? []);
   const [summary, setSummary] = useState<ListingReviewSummary | null>(initialSummary);
@@ -72,7 +73,6 @@ export default function ListingReviewFeed({
   const loadingMoreRef = useRef(false);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const isFullPage = mode === "full";
   const canShowMore = useMemo(
     () => !isFullPage && hasMore && items.length < total && Boolean(onViewAll),
     [hasMore, isFullPage, items.length, onViewAll, total]
