@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CircleAlert, CreditCard, Loader2, ShieldCheck } from "lucide-react";
+import { ChevronDown, CircleAlert, CreditCard, Loader2, ShieldCheck } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import AdminPaymentDetailsDrawer from "./AdminPaymentDetailsDrawer";
@@ -182,6 +182,7 @@ export default function AdminPaymentsPage() {
   const [investigationLoading, setInvestigationLoading] = useState(false);
   const [investigationError, setInvestigationError] = useState<string | null>(null);
   const [selectedReference, setSelectedReference] = useState<string | null>(null);
+  const [isLifecycleOpen, setIsLifecycleOpen] = useState(false);
 
   const load = async () => {
     setError(null);
@@ -312,12 +313,38 @@ export default function AdminPaymentsPage() {
       {investigationLoading ? <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600"><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Investigating transactions…</div> : null}
 
       {lifecycleReference ? (
-        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-2"><CreditCard className="h-5 w-5" /><h2 className="text-lg font-black">Transaction lifecycle</h2></div>
-          <p className="mt-2 text-sm text-zinc-600">
-            Showing {selectedPayment ? "selected" : "latest"} payment reference: {lifecycleReference}
-          </p>
-          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">{lifecycle.map((step) => <LifecycleNode key={step.number} {...step} />)}</div>
+        <section className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
+          <button
+            type="button"
+            onClick={() => setIsLifecycleOpen((open) => !open)}
+            className="flex w-full items-center justify-between gap-4 p-6 text-left"
+            aria-expanded={isLifecycleOpen}
+            aria-controls="latest-transaction-lifecycle-content"
+          >
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5 shrink-0" />
+                <h2 className="text-lg font-black">Latest Transaction Lifecycle</h2>
+              </div>
+              <p className="mt-2 break-all text-sm text-zinc-600">
+                Showing {selectedPayment ? "selected" : "latest"} payment reference: {lifecycleReference}
+              </p>
+            </div>
+            <ChevronDown
+              className={`h-5 w-5 shrink-0 text-zinc-500 transition-transform ${isLifecycleOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {isLifecycleOpen ? (
+            <div
+              id="latest-transaction-lifecycle-content"
+              className="border-t border-zinc-100 px-6 pb-6 pt-5"
+            >
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {lifecycle.map((step) => <LifecycleNode key={step.number} {...step} />)}
+              </div>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
