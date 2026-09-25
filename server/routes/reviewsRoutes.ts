@@ -2,7 +2,7 @@ import type { Express, NextFunction, Request, Response } from "express";
 import multer from "multer";
 import { postgresDb as db } from "../db.js";
 import { deleteCloudinaryAsset, uploadBufferToCloudinaryReviewMedia } from "../lib/cloudinaryUpload.js";
-import { getReviewMediaType, REVIEW_MEDIA_MAX_COUNT, validateReviewMediaFiles } from "../lib/reviewMedia.js";
+import { REVIEW_MEDIA_MAX_COUNT, validateReviewMediaFiles } from "../lib/reviewMedia.js";
 import { attachOptionalAuth, requireAuth } from "../middleware/requireAuth.js";
 
 type VerifiedRequestUser = {
@@ -483,6 +483,7 @@ async function createListingReviewHandler(req: Request, res: Response) {
     uploadedMedia = await uploadReviewMediaFiles(mediaFiles);
 
     let updatedReview: ReviewRow | undefined;
+    let existingMedia: ReviewMediaRow[] = [];
     const insertReviewAndMedia = db.transaction(() => {
       db.prepare(
         `
@@ -523,22 +524,24 @@ async function createListingReviewHandler(req: Request, res: Response) {
       if (!updatedReview) throw new Error("Review was not saved.");
 
       if (uploadedMedia.length) {
-        const existingMedia = getReviewMediaForIds([Number(updatedReview.id)]).get(Number(updatedReview.id)) ?? [];
+        existingMedia = getReviewMediaForIds([Number(updatedReview.id)]).get(Number(updatedReview.id)) ?? [];
         db.prepare("DELETE FROM listing_review_media WHERE review_id = ?").run(Number(updatedReview.id));
         storeReviewMedia(Number(updatedReview.id), uploadedMedia);
-
-        void Promise.allSettled(
-          existingMedia.map((asset) =>
-            deleteCloudinaryAsset({
-              publicId: asset.public_id,
-              resourceType: asset.resource_type,
-            }),
-          ),
-        );
       }
     });
 
     insertReviewAndMedia();
+
+    if (uploadedMedia.length && existingMedia.length) {
+      await Promise.allSettled(
+        existingMedia.map((asset) =>
+          deleteCloudinaryAsset({
+            publicId: asset.public_id,
+            resourceType: asset.resource_type,
+          }),
+        ),
+      );
+    }
 
     const serialized = serializeReviewWithMedia(updatedReview);
     return res.status(201).json({ success: true, review: serialized });
