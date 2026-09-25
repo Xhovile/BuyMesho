@@ -1,42 +1,36 @@
 import { auth } from "../firebase";
 import { clearSensitiveApiCache } from "./apiCache";
 import { getSellerCache, invalidateSellerCache, setSellerCache } from "./sellerWorkspaceCache";
-import { onAuthStateChanged } from "firebase/auth";
-
 clearSensitiveApiCache();
-const initialAuthState = new Promise<void>((resolve) => {
-  let settled = false;
-  const unsubscribe = onAuthStateChanged(auth, () => {
-    if (settled) return;
-    settled = true;
-    unsubscribe();
-    resolve();
-  });
-});
 
 async function authHeader(forceRefresh = false, waitForAuth = true) {
-  if (waitForAuth) await initialAuthState;
+  if (waitForAuth) await auth.authStateReady();
 
   const user = auth.currentUser;
   if (!user) return {} as Record<string, string>;
 
-  try {
-    const token = await user.getIdToken(forceRefresh);
-    if (token) return { Authorization: `Bearer ${token}` };
-  } catch (error) {
-    if (!forceRefresh) {
-      try {
-        const token = await user.getIdToken(true);
-        if (token) return { Authorization: `Bearer ${token}` };
-      } catch (refreshError) {
-        console.warn("Failed to retrieve refreshed ID token:", refreshError);
-      }
-    } else {
-      console.warn("Failed to refresh Firebase ID token:", error);
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const token = await user.getIdToken(forceRefresh || attempt === 1);
+      if (token) return { Authorization: `Bearer ${token}` };
+      lastError = new Error("Firebase returned an empty ID token.");
+    } catch (error) {
+      lastError = error;
+    }
+
+    if (attempt === 0) {
+      await sleep(250);
     }
   }
 
-  return {} as Record<string, string>;
+  console.error(
+    "Unable to obtain Firebase authentication token; refusing to send an authenticated request without it.",
+    lastError,
+  );
+
+  throw new Error("Unable to obtain Firebase authentication token. Please refresh the page or sign in again.");
 }
 
 const API_FETCH_TIMEOUT_MS = 15000;
