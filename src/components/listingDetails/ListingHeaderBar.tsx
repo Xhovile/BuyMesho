@@ -9,9 +9,10 @@ function getDefaultSubtitle() {
 
 type ListingHeaderBarProps = {
   subtitle?: string;
+  backPath?: string;
 };
 
-export default function ListingHeaderBar({ subtitle }: ListingHeaderBarProps) {
+export default function ListingHeaderBar({ subtitle, backPath }: ListingHeaderBarProps) {
   const resolvedSubtitle = subtitle ?? getDefaultSubtitle();
 
   return (
@@ -29,7 +30,7 @@ export default function ListingHeaderBar({ subtitle }: ListingHeaderBarProps) {
           </button>
           <button
             type="button"
-            onClick={() => navigateBackOrPath(EXPLORE_PATH)}
+            onClick={() => navigateBackOrPath(backPath ?? EXPLORE_PATH)}
             className="rounded-2xl border border-zinc-900 bg-black px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
           >
             <span className="inline-flex items-center gap-2">
