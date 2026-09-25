@@ -72,6 +72,11 @@ function ensureAdminMessageSchema(db: any) {
     ALTER TABLE message_reports ADD COLUMN IF NOT EXISTS resolved_by_email TEXT;
     ALTER TABLE message_reports ADD COLUMN IF NOT EXISTS resolved_at DATETIME;
 
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS message_type TEXT NOT NULL DEFAULT 'text';
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_url TEXT;
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_name TEXT;
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_mime TEXT;
+    ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_size INTEGER;
     ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_spam INTEGER NOT NULL DEFAULT 0;
     ALTER TABLE messages ADD COLUMN IF NOT EXISTS spam_flag_count INTEGER NOT NULL DEFAULT 0;
     ALTER TABLE messages ADD COLUMN IF NOT EXISTS updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;
@@ -354,7 +359,9 @@ export function createAdminMessagesRouter({ requireAuth, db }: AdminMessageRoute
       if (!conversation) return res.status(404).json({ error: "Conversation not found" });
 
       const messages = db.prepare(`
-        SELECT id, conversation_id, sender_uid, body, is_read, created_at, read_at
+        SELECT id, conversation_id, sender_uid, body, message_type,
+               attachment_url, attachment_name, attachment_mime, attachment_size,
+               is_read, created_at, read_at
         FROM messages
         WHERE conversation_id = ?
         ORDER BY created_at ASC, id ASC
@@ -400,7 +407,17 @@ export function createAdminMessagesRouter({ requireAuth, db }: AdminMessageRoute
           event: conversation.event_id ? { id: Number(conversation.event_id), name: String(conversation.event_title || "Event"), organizer_uid: String(conversation.seller_uid), organizer_name: String(conversation.organizer_name || "Organizer") } : null,
           state: state.conversation_state,
         },
-        messages: messages.map((message) => ({ ...message, is_read: !!message.is_read })),
+        messages: messages.map((message) => ({
+          ...message,
+          message_type: ["image", "video", "file"].includes(String(message.message_type))
+            ? String(message.message_type)
+            : "text",
+          attachment_url: message.attachment_url ? String(message.attachment_url) : null,
+          attachment_name: message.attachment_name ? String(message.attachment_name) : null,
+          attachment_mime: message.attachment_mime ? String(message.attachment_mime) : null,
+          attachment_size: message.attachment_size == null ? null : Number(message.attachment_size),
+          is_read: !!message.is_read,
+        })),
         reports,
         review: { state: review ? "Reviewed" : "Unread", reviewed_at: review?.reviewed_at ?? null },
         history: historyRows.map((row) => ({

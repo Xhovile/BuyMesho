@@ -65,9 +65,9 @@ test("dispute email renders safe evidence links", () => {
     ],
   });
 
-  assert.match(html, /href="https://res\.cloudinary\.com/example/image/upload/evidence\.jpg"/);
-  assert.match(html, /href="https://res\.cloudinary\.com/example/video/upload/evidence\.mp4"/);
+  assert.match(html, /href="https:\/\/res\.cloudinary\.com\/example\/image\/upload\/evidence\.jpg"/);
+  assert.match(html, /href="https:\/\/res\.cloudinary\.com\/example\/video\/upload\/evidence\.mp4"/);
   assert.doesNotMatch(html, /javascript:alert/);
-  assert.match(text, /Evidence 1: https://res\.cloudinary\.com/example/image/upload/evidence\.jpg/);
-  assert.match(text, /Evidence 2: https://res\.cloudinary\.com/example/video/upload/evidence\.mp4/);
+  assert.ok(text.includes("Evidence 1: https://res.cloudinary.com/example/image/upload/evidence.jpg"));
+  assert.ok(text.includes("Evidence 2: https://res.cloudinary.com/example/video/upload/evidence.mp4"));
 });
