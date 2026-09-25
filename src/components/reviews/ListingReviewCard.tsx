@@ -2,6 +2,7 @@ import { Edit3, MessageSquareReply, ShieldAlert, Star } from "lucide-react";
 import type { ListingReview } from "../../types";
 import { formatDate } from "../listingDetails/ListingDetailsShared";
 import ReviewActionsMenu from "./ReviewActionsMenu";
+import ListingReviewMedia from "./ListingReviewMedia";
 import ReviewReplyComposer from "./ReviewReplyComposer";
 import ReviewTextClamp from "./ReviewTextClamp";
 
@@ -70,6 +71,8 @@ export default function ListingReviewCard({
       <div className="mt-3">
         <ReviewTextClamp text={review.body} />
       </div>
+
+      <ListingReviewMedia media={review.media} />
 
       {review.seller_reply ? (
         <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
