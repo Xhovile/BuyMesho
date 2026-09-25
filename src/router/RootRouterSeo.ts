@@ -42,6 +42,15 @@ function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
     pathname === "/" ? "/" : pathname.replace(/\/+$/, "") || "/";
   const normalizedStudioPath = normalizedPathname.toLowerCase();
 
+  if (route === "listing_reviews") {
+    return {
+      title: "Listing Reviews — BuyMesho",
+      description: "Read ratings and reviews for a BuyMesho marketplace listing.",
+      canonicalPath: "/listing/reviews",
+      noindex: true,
+    };
+  }
+
   if (normalizedStudioPath === "/xhovilestudio" || normalizedStudioPath === "/services/xhovilestudio") {
     return {
       title: "Xhovile Studio — Service Payment",
