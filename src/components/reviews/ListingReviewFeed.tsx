@@ -74,6 +74,8 @@ export default function ListingReviewFeed({
   const [error, setError] = useState<string | null>(null);
   const loadingMoreRef = useRef(false);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+  const requestIdRef = useRef(0);
+  const requestControllerRef = useRef<AbortController | null>(null);
 
   const canShowMore = useMemo(
     () => !isFullPage && hasMore && items.length < total && Boolean(onViewAll),
@@ -95,6 +97,16 @@ export default function ListingReviewFeed({
       if (!replace && loadingMoreRef.current) return;
 
       if (replace) {
+        requestControllerRef.current?.abort();
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      }
+
+      const requestId = ++requestIdRef.current;
+      const controller = new AbortController();
+      requestControllerRef.current = controller;
+
+      if (replace) {
         setLoading(true);
       } else {
         loadingMoreRef.current = true;
@@ -105,8 +117,11 @@ export default function ListingReviewFeed({
       try {
         const limit = replace ? (isFullPage ? FULL_PAGE_SIZE : PREVIEW_LIMIT) : FULL_PAGE_SIZE;
         const result = (await apiFetch(
-          `/api/listings/${listingId}/reviews?limit=${limit}&offset=${nextOffset}`
+          `/api/listings/${listingId}/reviews?limit=${limit}&offset=${nextOffset}`,
+          { signal: controller.signal }
         )) as ReviewFeedPayload;
+
+        if (requestId !== requestIdRef.current) return;
 
         const nextSummary = result.summary ?? null;
         setSummary(nextSummary);
@@ -120,8 +135,16 @@ export default function ListingReviewFeed({
         setOffset((result.pagination?.offset ?? 0) + pageItems.length);
         setItems((previous) => (replace ? pageItems : [...previous, ...pageItems]));
       } catch (fetchError) {
+        if (requestId !== requestIdRef.current) return;
+        if (controller.signal.aborted) return;
         setError(fetchError instanceof Error ? fetchError.message : "Failed to load review feed.");
       } finally {
+        if (requestId !== requestIdRef.current) return;
+
+        if (requestControllerRef.current === controller) {
+          requestControllerRef.current = null;
+        }
+
         if (replace) {
           setLoading(false);
         } else {
@@ -136,7 +159,15 @@ export default function ListingReviewFeed({
   useEffect(() => {
     loadingMoreRef.current = false;
     if (hasInitialData) return;
+
     void loadReviews(0, true);
+
+    return () => {
+      requestIdRef.current += 1;
+      requestControllerRef.current?.abort();
+      requestControllerRef.current = null;
+      loadingMoreRef.current = false;
+    };
   }, [hasInitialData, loadReviews]);
 
   useEffect(() => {
