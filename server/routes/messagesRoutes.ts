@@ -227,12 +227,12 @@ async function sendMessage(req: Request, res: Response) {
       }
 
       attachmentName = sanitizeAttachmentName(file.originalname);
-      attachmentSize = file.size;
       messageType = messageTypeForMime(attachmentMime);
       uploadedAsset = await uploadBufferToCloudinaryMessageAttachment(
         { buffer: file.buffer, mimetype: attachmentMime },
         { folder: "buymesho/messages" },
       );
+      attachmentSize = uploadedAsset.bytes > 0 ? uploadedAsset.bytes : file.size;
       attachmentUrl = uploadedAsset.secureUrl;
     }
 

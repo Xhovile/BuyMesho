@@ -134,7 +134,8 @@ export default function MessageAttachmentViewer({ message, mine = false }: Props
       <video
         className="mt-2 max-h-80 w-full max-w-[22rem] rounded-2xl bg-black"
         controls
-        preload="metadata"
+        preload="none"
+        playsInline
         src={message.attachment_url}
       >
         Your browser does not support video playback.
