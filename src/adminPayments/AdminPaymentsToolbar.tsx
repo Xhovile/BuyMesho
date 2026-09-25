@@ -80,8 +80,8 @@ export default function AdminPaymentsToolbar({
   onRefresh: () => void;
 }) {
   const activeSortLabel = activeTab === "payments"
-    ? ({ recent: "Recent", verified: "Verified", paid: "Paid", pending: "Pending" } as const)[paymentSortMode]
-    : ({ recent: "Recent", valid: "Valid hooks", invalid: "Invalid hooks" } as const)[webhookSortMode];
+    ? ({ recent: "All", verified: "Verified", paid: "Paid", pending: "Pending" } as const)[paymentSortMode]
+    : ({ recent: "All", valid: "Valid hooks", invalid: "Invalid hooks" } as const)[webhookSortMode];
 
   return (
     <>
@@ -154,7 +154,7 @@ export default function AdminPaymentsToolbar({
         {activeTab === "payments" ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatButton
-              label="Recent"
+              label="All"
               value={stats.totalPayments}
               active={paymentSortMode === "recent"}
               onClick={() => onPaymentSortChange("recent")}
@@ -181,7 +181,7 @@ export default function AdminPaymentsToolbar({
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <StatButton
-              label="Recent"
+              label="All"
               value={stats.totalWebhooks}
               active={webhookSortMode === "recent"}
               onClick={() => onWebhookSortChange("recent")}
