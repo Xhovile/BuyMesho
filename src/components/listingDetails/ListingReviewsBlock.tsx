@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import type { Listing, ListingReview, ListingReviewSummary, RatingSummary } from "../../types";
 import { apiFetch } from "../../lib/api";
+import { navigateToListingReviews } from "../../lib/appNavigation";
 import { useAuthUser } from "../../hooks/useAuthUser";
 import { SectionHeading } from "./ListingDetailsShared";
 import ListingReviewSummaryView from "../reviews/ListingReviewSummary";
@@ -123,6 +124,7 @@ export default function ListingReviewsBlock({
             ownReviewId={viewerReview?.id ?? null}
             onEditOwnReview={handleEditOwnReview}
             onReviewChanged={handleReviewChanged}
+            onViewAll={() => navigateToListingReviews(listing.id)}
           />
         </div>
       )}
