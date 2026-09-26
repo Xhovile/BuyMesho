@@ -348,10 +348,10 @@ export default function SellerProfilePage() {
 
     if (!profile) {
       updateSEOMetaTags({
-        title: "BuyMesho Seller Profile",
-        description: "View a seller profile and marketplace listings on BuyMesho.",
+        title: "Seller Profile Unavailable | BuyMesho",
+        description: "This BuyMesho seller profile is unavailable or could not be loaded.",
         url: canonicalUrl,
-        noIndex: false,
+        noIndex: true,
       });
       return;
     }
