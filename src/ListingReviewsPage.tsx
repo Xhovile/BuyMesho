@@ -14,6 +14,7 @@ export default function ListingReviewsPage() {
   const [summary, setSummary] = useState<ListingReviewSummary | null>(null);
   const [sellerUid, setSellerUid] = useState<string | null>(null);
   const [editingReview, setEditingReview] = useState<ListingReview | null>(null);
+  const [reviewFeedVersion, setReviewFeedVersion] = useState(0);
   const handleListingMetaLoaded = useCallback((listing: { seller_uid: string }) => {
     setSellerUid(listing.seller_uid);
   }, []);
@@ -23,7 +24,8 @@ export default function ListingReviewsPage() {
   }, []);
   const handleReviewSaved = useCallback((review: ListingReview | null) => {
     setEditingReview(null);
-    if (review) setSummary((current) => current ?? null);
+    setReviewFeedVersion((version) => version + 1);
+    if (review) setSummary(null);
   }, []);
 
   useEffect(() => {
@@ -83,6 +85,7 @@ export default function ListingReviewsPage() {
           ) : null}
 
           <ListingReviewFeed
+            key={reviewFeedVersion}
             listingId={listingId}
             mode="full"
             canReply={canReplyAsSeller}
