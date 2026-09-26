@@ -3,11 +3,7 @@ import { ArrowRight, CalendarDays, PackageSearch, ShieldCheck, Store } from "luc
 import AppFooter from "./components/AppFooter";
 import BrandMark from "./components/BrandMark";
 import { navigateToPath } from "./lib/appNavigation";
-import {
-  EVENTS_PATH,
-  EXPLORE_PATH,
-  SELLER_PATH,
-} from "./lib/appNavigation.paths";
+import { EVENTS_PATH, EXPLORE_PATH } from "./lib/appNavigation.paths";
 
 const categoryLinks = [
   { label: "Phones & Gadgets", href: "/category?category=phones" },
