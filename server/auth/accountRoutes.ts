@@ -27,6 +27,7 @@ export function registerAccountRoutes(app: Express) {
     const studentNumber = nullable(req.body?.student_number);
     const studentEmail = nullable(req.body?.student_email);
     const profilePicture = text(req.body?.profile_picture);
+    const profilePictureThumbnail = text(req.body?.profile_picture_thumbnail);
     const profileSetupComplete = req.body?.profile_setup_complete === true;
     const buyerDetails = req.body?.buyer_details && typeof req.body.buyer_details === "object" ? req.body.buyer_details : null;
     const studentNumberProvided = Object.prototype.hasOwnProperty.call(req.body ?? {}, "student_number");
@@ -67,6 +68,7 @@ export function registerAccountRoutes(app: Express) {
           ...(studentNumberProvided ? { student_number: null } : {}),
         } : {}),
         profile_picture: profilePicture || null,
+        profile_picture_thumbnail: profilePictureThumbnail || null,
         ...(profileSetupComplete ? { profile_setup_complete: true } : {}),
         ...(buyerDetails ? {
           buyer_details: {
@@ -123,6 +125,7 @@ export function registerAccountRoutes(app: Express) {
           ...(studentNumberProvided ? { student_number: studentNumber } : {}),
           student_email: studentEmail,
           profile_picture: profilePicture || null,
+          profile_picture_thumbnail: profilePictureThumbnail || null,
           profile_setup_complete: profileSetupComplete,
           buyer_details: buyerDetails,
           business_name: seller?.business_name ?? null,
