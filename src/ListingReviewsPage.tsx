@@ -18,6 +18,7 @@ export default function ListingReviewsPage() {
   const [reviewFeedVersion, setReviewFeedVersion] = useState(0);
   const [reviewEditorOpen, setReviewEditorOpen] = useState(false);
   const [canReview, setCanReview] = useState(false);
+  const [viewerReview, setViewerReview] = useState<ListingReview | null>(null);
   const handleListingMetaLoaded = useCallback((listing: { seller_uid: string }) => {
     setSellerUid(listing.seller_uid);
   }, []);
@@ -40,10 +41,12 @@ export default function ListingReviewsPage() {
     setEditingReview(null);
     setReviewFeedVersion((version) => version + 1);
     setSummary(null);
+    setViewerReview(null);
   }, [listingId]);
   const handleReviewSaved = useCallback((review: ListingReview | null) => {
     setEditingReview(null);
     setReviewFeedVersion((version) => version + 1);
+    if (review) setViewerReview(review);
     if (review) setSummary(null);
   }, []);
 
@@ -92,7 +95,7 @@ export default function ListingReviewsPage() {
         </section>
 
         <div className="mt-6 space-y-6">
-          {!editingReview && firebaseUser && canReview ? (
+          {!editingReview && firebaseUser && canReview && !viewerReview ? (
             <div className="flex justify-end">
               <button
                 type="button"
@@ -128,6 +131,7 @@ export default function ListingReviewsPage() {
             onEditOwnReview={handleEditOwnReview}
             onDeleteOwnReview={handleDeleteOwnReview}
             onReviewEligibilityChange={setCanReview}
+            onViewerReviewChange={setViewerReview}
           />
         </div>
       </main>
