@@ -28,7 +28,7 @@ type ListingReviewFeedProps = {
   viewerUid?: string;
   ownReviewId?: number | null;
   onReviewChanged?: (review: ListingReview) => void | Promise<void>;
-  onEditOwnReview?: () => void;
+  onEditOwnReview?: (review: ListingReview) => void;
   onViewAll?: () => void;
   onSummaryChange?: (summary: ListingReviewSummary) => void;
   onListingMetaLoaded?: (listing: ReviewListingMeta) => void;
@@ -220,7 +220,7 @@ export default function ListingReviewFeed({
             listingId={listingId}
             canReply={false}
             isOwnReview
-            onEdit={onEditOwnReview}
+            onEdit={onEditOwnReview ? () => onEditOwnReview(ownReview) : undefined}
             onReviewChanged={handleReviewChanged}
           />
         </div>
