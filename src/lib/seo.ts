@@ -426,8 +426,14 @@ export function getSEOForListing(listing: Listing, sellerName?: string): SEOConf
 
   const primaryImage = listing.photos?.[0] || DEFAULT_SEO.image;
   const currentUrl = typeof window !== "undefined"
-    ? window.location.href
-    : `${SITE_URL}/listing/${listing.id}`;
+    ? (() => {
+        const url = new URL(window.location.href);
+        url.pathname = "/listing";
+        url.search = "";
+        url.searchParams.set("listing", String(listing.id));
+        return url.toString();
+      })()
+    : \`${SITE_URL}/listing?listing=\${encodeURIComponent(String(listing.id))}\`;
 
   return {
     title: `${itemTitle} - ${formattedPrice}`,
