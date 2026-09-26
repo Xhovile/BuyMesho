@@ -31,6 +31,7 @@ export default function ListingReviewCard({
 }: ListingReviewCardProps) {
   const badge = review.reviewer_badge ?? (review.is_verified_purchase ? "Verified buyer" : null);
   const showReplyComposer = Boolean(canReply && !isOwnReview);
+  const canReact = Boolean(viewerUid && viewerUid !== review.seller_uid);
 
   const [likeCount, setLikeCount] = useState(review.like_count ?? 0);
   const [dislikeCount, setDislikeCount] = useState(review.dislike_count ?? 0);
@@ -49,9 +50,27 @@ export default function ListingReviewCard({
   }, [review.id, review.like_count, review.dislike_count, review.viewer_reaction]);
 
   const handleReaction = async (reaction: ListingReviewReaction) => {
-    if (!viewerUid || reacting) return;
+    if (!canReact || reacting) return;
 
+    const previous = { likeCount, dislikeCount, viewerReaction };
     const removing = viewerReaction === reaction;
+    let nextReaction: ListingReviewReaction | null = reaction;
+
+    if (removing) {
+      nextReaction = null;
+    }
+
+    let nextLikeCount = likeCount;
+    let nextDislikeCount = dislikeCount;
+
+    if (viewerReaction === "like") nextLikeCount = Math.max(0, nextLikeCount - 1);
+    if (viewerReaction === "dislike") nextDislikeCount = Math.max(0, nextDislikeCount - 1);
+    if (nextReaction === "like") nextLikeCount += 1;
+    if (nextReaction === "dislike") nextDislikeCount += 1;
+
+    setLikeCount(nextLikeCount);
+    setDislikeCount(nextDislikeCount);
+    setViewerReaction(nextReaction);
     setReacting(true);
 
     try {
@@ -66,13 +85,15 @@ export default function ListingReviewCard({
       )) as { review?: ListingReview | null } | null;
 
       const updated = result?.review;
-      if (!updated) return;
+      if (!updated) throw new Error("Review reaction update failed.");
 
       setLikeCount(updated.like_count ?? 0);
       setDislikeCount(updated.dislike_count ?? 0);
       setViewerReaction(updated.viewer_reaction ?? null);
-      await onReviewChanged?.(updated);
     } catch (error) {
+      setLikeCount(previous.likeCount);
+      setDislikeCount(previous.dislikeCount);
+      setViewerReaction(previous.viewerReaction);
       console.warn("Failed to update review reaction:", error);
     } finally {
       setReacting(false);
@@ -167,10 +188,11 @@ export default function ListingReviewCard({
           <button
             type="button"
             onClick={() => void handleReaction("like")}
-            disabled={!viewerUid || reacting}
+            disabled={!canReact || reacting}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-semibold transition ${viewerReaction === "like" ? "text-zinc-950" : "text-zinc-500 hover:text-zinc-900"} disabled:cursor-not-allowed disabled:opacity-50`}
             aria-pressed={viewerReaction === "like"}
             aria-label={`Like review (${likeCount})`}
+            title={canReact ? "Like review" : "Listing sellers cannot react to reviews"}
           >
             <ThumbsUp className={`h-4 w-4 ${viewerReaction === "like" ? "fill-current" : ""}`} />
             <span>{likeCount}</span>
@@ -183,6 +205,7 @@ export default function ListingReviewCard({
             className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-semibold transition ${viewerReaction === "dislike" ? "text-zinc-950" : "text-zinc-500 hover:text-zinc-900"} disabled:cursor-not-allowed disabled:opacity-50`}
             aria-pressed={viewerReaction === "dislike"}
             aria-label={`Dislike review (${dislikeCount})`}
+            title={canReact ? "Dislike review" : "Listing sellers cannot react to reviews"}
           >
             <ThumbsDown className={`h-4 w-4 ${viewerReaction === "dislike" ? "fill-current" : ""}`} />
             <span>{dislikeCount}</span>
