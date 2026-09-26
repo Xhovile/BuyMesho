@@ -33,6 +33,7 @@ export default function ListingReviewComposer({
   const [retainedMediaIds, setRetainedMediaIds] = useState<number[]>(existingReview?.media?.map((media) => media.id) ?? []);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
+  const submitIdempotencyKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     setRating(existingReview?.rating ?? 0);
@@ -122,6 +123,13 @@ export default function ListingReviewComposer({
     setSubmitting(true);
     setError(null);
 
+    const idempotencyKey =
+      submitIdempotencyKeyRef.current ??
+      (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `review-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    submitIdempotencyKeyRef.current = idempotencyKey;
+
     try {
       const method = existingReview ? "PUT" : "POST";
       const requestBody = existingReview || mediaFiles.length
@@ -142,20 +150,39 @@ export default function ListingReviewComposer({
 
       const review = (await apiFetch(`/api/listings/${listingId}/reviews`, {
         method,
+        headers: {
+          "Idempotency-Key": idempotencyKey,
+        },
         body: requestBody,
+        timeoutMs: 120_000,
       })) as { review?: ListingReview | null } | null;
+
+      submitIdempotencyKeyRef.current = null;
 
       if (review?.review !== undefined) {
         setRating(review.review?.rating ?? rating);
         setBody(review.review?.body ?? body);
         setRetainedMediaIds(review.review?.media?.map((media) => media.id) ?? []);
         setMediaFiles([]);
-        await onSaved?.(review.review ?? null);
+        try {
+          await onSaved?.(review.review ?? null);
+        } catch (refreshError) {
+          console.warn("Review saved successfully, but refreshing the review feed failed:", refreshError);
+        }
       } else {
-        await onSaved?.(null);
+        try {
+          await onSaved?.(null);
+        } catch (refreshError) {
+          console.warn("Review saved successfully, but refreshing the review feed failed:", refreshError);
+        }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save review.");
+      const message = err instanceof Error ? err.message : "Failed to submit your review. Please try again.";
+      if (/request timed out/i.test(message) || /fetch/i.test(message)) {
+        setError("Failed to submit your review. Please try again.");
+      } else {
+        setError(message);
+      }
     } finally {
       setSubmitting(false);
     }
