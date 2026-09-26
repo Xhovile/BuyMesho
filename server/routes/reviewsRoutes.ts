@@ -498,14 +498,14 @@ function getListingIdCandidates(listingId: number): string[] {
 
 function getCapturedPurchaseRowsForListing(listingId: number) {
   const candidates = getListingIdCandidates(listingId);
-  const placeholders = candidates.map(() => "?").join(", ");
+  const matchClause = candidates.map(() => "o.items LIKE ?").join(" OR ");
   return db.prepare(
     `
       SELECT DISTINCT o.buyer_id, o.items
       FROM orders o
       INNER JOIN payments p ON p.order_id = o.id
       WHERE p.status = 'captured'
-        AND (o.items LIKE ${placeholders})
+        AND (${matchClause})
     `
   ).all(...candidates) as Array<{
     buyer_id: string;
