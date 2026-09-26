@@ -31,7 +31,7 @@ export default function ListingHeaderBar({ subtitle, backPath, onBack }: Listing
           </button>
           <button
             type="button"
-            onClick={() => onBack?.() ?? navigateBackOrPath(backPath ?? EXPLORE_PATH)}
+            onClick={() => {\n              if (onBack) onBack();\n              else navigateBackOrPath(backPath ?? EXPLORE_PATH);\n            }}
             className="rounded-2xl border border-zinc-900 bg-black px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
           >
             <span className="inline-flex items-center gap-2">
