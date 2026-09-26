@@ -58,6 +58,10 @@ export default function HomeHero({
               <span className="mt-1 block text-red-800">Everything <span className="text-zinc-950">Online.</span></span>
             </h1>
 
+            <p className="mt-5 max-w-xl text-sm leading-6 text-zinc-600 sm:text-base">
+              BuyMesho is a public online marketplace in Malawi for discovering products, services, deals, and event tickets.
+            </p>
+
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3 md:mt-10 lg:mt-12 md:justify-start">
               <button type="button" onClick={onBrowseMarket} className="inline-flex items-center justify-center gap-2 rounded-[1.05rem] bg-red-800 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(185,15,32,0.45)] ring-2 ring-red-700/30 ring-offset-2 ring-offset-white transition-all hover:-translate-y-0.5 hover:bg-red-900 hover:shadow-[0_20px_40px_-14px_rgba(185,15,32,0.5)] focus:outline-none">
                 Browse Market
