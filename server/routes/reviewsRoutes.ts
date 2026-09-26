@@ -4,6 +4,7 @@ import { postgresDb as db } from "../db.js";
 import { attachOptionalAuth, requireAuth } from "../middleware/requireAuth.js";
 import { REVIEW_MEDIA_MAX_COUNT, validateReviewMediaFiles } from "../lib/reviewMedia.js";
 import { deleteCloudinaryAsset, uploadBufferToCloudinaryReviewMedia } from "../lib/cloudinaryUpload.js";
+import { createIdempotencyMiddleware } from "../idempotency/middleware.js";
 
 type VerifiedRequestUser = {
   uid: string;
@@ -764,8 +765,8 @@ export function registerReviewsRoutes(app: Express) {
   };
 
   app.get("/api/listings/:listingId/reviews", attachOptionalAuth, (req, res) => void listListingReviewsHandler(req, res));
-  app.post("/api/listings/:listingId/reviews", requireAuth, parseReviewMedia, (req, res) => void createListingReviewHandler(req, res));
-  app.put("/api/listings/:listingId/reviews", requireAuth, parseReviewMedia, (req, res) => void updateListingReviewHandler(req, res));
+  app.post("/api/listings/:listingId/reviews", requireAuth, parseReviewMedia, createIdempotencyMiddleware("reviews.submit"), (req, res) => void createListingReviewHandler(req, res));
+  app.put("/api/listings/:listingId/reviews", requireAuth, parseReviewMedia, createIdempotencyMiddleware("reviews.submit"), (req, res) => void updateListingReviewHandler(req, res));
   app.post("/api/listings/:listingId/reviews/reply", requireAuth, (req, res) => void replyToListingReviewHandler(req, res));
   app.patch("/api/listings/:listingId/reviews/:reviewId/reply", requireAuth, (req, res) => void replyToListingReviewByIdHandler(req, res));
 
