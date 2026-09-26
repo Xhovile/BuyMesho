@@ -85,7 +85,7 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
     title: "Fashion & Clothing",
     subtitle: "Style for campus and everyday life",
     description:
-      "Find clothes, bags, shoes, and everyday style pieces listed by sellers across the BuyMesho marketplace.",
+      "Find clothes, bags, shoes, and everyday style pieces listed by sellers across BuyMesho's Malawi marketplace.",
     heroIcon: ShoppingBag,
     apiCategory: "Fashion & Clothing",
     accent: "from-zinc-900/10 to-zinc-100",
@@ -115,7 +115,7 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
     title: "Beauty & Personal Care",
     subtitle: "Beauty and personal care essentials",
     description:
-      "Browse beauty products, hair care, skincare, fragrances, and personal care essentials posted by sellers on BuyMesho.",
+      "Browse beauty products, hair care, skincare, fragrances, and personal care essentials posted by sellers on BuyMesho in Malawi.",
     heroIcon: Sparkles,
     apiCategory: "Beauty & Personal Care",
     accent: "from-pink-500/10 to-zinc-100",
