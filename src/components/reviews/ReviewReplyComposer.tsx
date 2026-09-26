@@ -13,7 +13,7 @@ type ReviewReplyComposerProps = {
 const MAX_REPLY_LENGTH = 500;
 
 export default function ReviewReplyComposer({ listingId, review, canReply, onSaved }: ReviewReplyComposerProps) {
-  const [open, setOpen] = useState(!review.seller_reply);
+  const [open, setOpen] = useState(false);
   const [reply, setReply] = useState(review.seller_reply ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +24,7 @@ export default function ReviewReplyComposer({ listingId, review, canReply, onSav
   }, [review.id, review.seller_reply]);
 
   useEffect(() => {
-    setOpen(!review.seller_reply);
+    setOpen(false);
   }, [review.id]);
 
   const handleSave = async () => {
