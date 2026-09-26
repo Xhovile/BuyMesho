@@ -134,6 +134,8 @@ export default function ListingReviewCard({
                     alt=""
                     className="h-full w-full object-cover"
                     loading="lazy"
+                    width={40}
+                    height={40}
                   />
                 ) : (
                   <UserRound className="h-5 w-5 text-zinc-400" />
@@ -230,7 +232,7 @@ export default function ListingReviewCard({
           <button
             type="button"
             onClick={() => void handleReaction("dislike")}
-            disabled={!viewerUid || reacting}
+            disabled={!canReact || reacting}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-semibold transition ${viewerReaction === "dislike" ? "text-zinc-950" : "text-zinc-500 hover:text-zinc-900"} disabled:cursor-not-allowed disabled:opacity-50`}
             aria-pressed={viewerReaction === "dislike"}
             aria-label={`Dislike review (${dislikeCount})`}
