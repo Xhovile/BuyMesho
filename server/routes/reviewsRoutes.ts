@@ -197,7 +197,44 @@ function getReviewMediaForIds(reviewIds: number[]) {
   return grouped;
 }
 
-function serializeReview(row: ReviewRow, mediaRows?: ReviewMediaRow[]) {
+function getReviewReactionStatsForIds(reviewIds: number[], viewerUid?: string) {
+  const ids = [...new Set(reviewIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+  const grouped = new Map<number, { likeCount: number; dislikeCount: number; viewerReaction: "like" | "dislike" | null }>();
+  if (!ids.length) return grouped;
+
+  const placeholders = ids.map(() => "?").join(", ");
+  const rows = db
+    .prepare(
+      `
+        SELECT
+          review_id,
+          COUNT(*) FILTER (WHERE reaction_type = 'like') AS like_count,
+          COUNT(*) FILTER (WHERE reaction_type = 'dislike') AS dislike_count,
+          MAX(CASE WHEN reviewer_uid = ? THEN reaction_type ELSE NULL END) AS viewer_reaction
+        FROM listing_review_reactions
+        WHERE review_id IN (${placeholders})
+        GROUP BY review_id
+      `
+    )
+    .all(viewerUid ?? "", ...ids) as Array<{
+      review_id: number | string;
+      like_count: number | string;
+      dislike_count: number | string;
+      viewer_reaction?: "like" | "dislike" | null;
+    }>;
+
+  for (const row of rows) {
+    grouped.set(Number(row.review_id), {
+      likeCount: Number(row.like_count ?? 0),
+      dislikeCount: Number(row.dislike_count ?? 0),
+      viewerReaction: row.viewer_reaction ?? null,
+    });
+  }
+
+  return grouped;
+}
+
+function serializeReview(row: ReviewRow, mediaRows?: ReviewMediaRow[], reactionStats?: { likeCount: number; dislikeCount: number; viewerReaction: "like" | "dislike" | null }) {
   const media = mediaRows ?? getReviewMedia(row.id);
   return {
     id: row.id,
@@ -222,6 +259,9 @@ function serializeReview(row: ReviewRow, mediaRows?: ReviewMediaRow[]) {
     is_verified_purchase: !!row.is_verified_purchase,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    like_count: reactionStats?.likeCount ?? 0,
+    dislike_count: reactionStats?.dislikeCount ?? 0,
+    viewer_reaction: reactionStats?.viewerReaction ?? null,
   };
 }
 
@@ -549,13 +589,26 @@ async function listListingReviewsHandler(req: Request, res: Response) {
   const summary = getListingReviewSummary(listingId);
   const itemRows = getListingReviews(listingId, limit, offset);
   const mediaByReviewId = getReviewMediaForIds(itemRows.map((row) => Number(row.id)));
-  const items = itemRows.map((row) => serializeReview(row, mediaByReviewId.get(Number(row.id)) ?? []));
+  const user = req.user as VerifiedRequestUser | undefined;
+  const reactionsByReviewId = getReviewReactionStatsForIds(
+    itemRows.map((row) => Number(row.id)),
+    user?.uid,
+  );
+  const items = itemRows.map((row) =>
+    serializeReview(
+      row,
+      mediaByReviewId.get(Number(row.id)) ?? [],
+      reactionsByReviewId.get(Number(row.id)),
+    )
+  );
 
   let viewerReview: ReturnType<typeof serializeReview> | null = null;
-  const user = req.user as VerifiedRequestUser | undefined;
   if (user) {
     const mine = getReviewByListingAndReviewer(listingId, user.uid);
-    viewerReview = mine ? serializeReview(mine) : null;
+    if (mine) {
+      const mineReactions = getReviewReactionStatsForIds([Number(mine.id)], user.uid);
+      viewerReview = serializeReview(mine, undefined, mineReactions.get(Number(mine.id)));
+    }
   }
 
   return res.json({
@@ -577,6 +630,85 @@ async function listListingReviewsHandler(req: Request, res: Response) {
       hasMore: offset + items.length < total,
     },
   });
+}
+
+async function setReviewReactionHandler(req: Request, res: Response) {
+  const user = req.user as VerifiedRequestUser | undefined;
+  if (!user) {
+    return reviewError(res, 401, "Authentication required");
+  }
+
+  const listingId = Number(req.params.listingId);
+  const reviewId = Number(req.params.reviewId);
+  if (!Number.isInteger(listingId) || !Number.isInteger(reviewId)) {
+    return reviewError(res, 400, "Invalid review id");
+  }
+
+  const review = getReviewById(listingId, reviewId);
+  if (!review) {
+    return reviewError(res, 404, "Review not found");
+  }
+
+  const reaction = req.body?.reaction;
+  if (reaction !== "like" && reaction !== "dislike") {
+    return reviewError(res, 400, "Reaction must be like or dislike");
+  }
+
+  try {
+    db.prepare(
+      `
+        INSERT INTO listing_review_reactions (review_id, reviewer_uid, reaction_type)
+        VALUES (?, ?, ?)
+        ON CONFLICT (review_id, reviewer_uid)
+        DO UPDATE SET reaction_type = EXCLUDED.reaction_type
+      `
+    ).run(reviewId, user.uid, reaction);
+
+    const reactions = getReviewReactionStatsForIds([reviewId], user.uid).get(reviewId);
+    return res.json({
+      success: true,
+      review: serializeReview(review, undefined, reactions),
+    });
+  } catch (error) {
+    console.error("PUT /api/listings/:listingId/reviews/:reviewId/reaction error:", error);
+    return reviewError(res, 500, "Failed to save review reaction");
+  }
+}
+
+async function deleteReviewReactionHandler(req: Request, res: Response) {
+  const user = req.user as VerifiedRequestUser | undefined;
+  if (!user) {
+    return reviewError(res, 401, "Authentication required");
+  }
+
+  const listingId = Number(req.params.listingId);
+  const reviewId = Number(req.params.reviewId);
+  if (!Number.isInteger(listingId) || !Number.isInteger(reviewId)) {
+    return reviewError(res, 400, "Invalid review id");
+  }
+
+  const review = getReviewById(listingId, reviewId);
+  if (!review) {
+    return reviewError(res, 404, "Review not found");
+  }
+
+  try {
+    db.prepare(
+      `
+        DELETE FROM listing_review_reactions
+        WHERE review_id = ? AND reviewer_uid = ?
+      `
+    ).run(reviewId, user.uid);
+
+    const reactions = getReviewReactionStatsForIds([reviewId], user.uid).get(reviewId);
+    return res.json({
+      success: true,
+      review: serializeReview(review, undefined, reactions),
+    });
+  } catch (error) {
+    console.error("DELETE /api/listings/:listingId/reviews/:reviewId/reaction error:", error);
+    return reviewError(res, 500, "Failed to remove review reaction");
+  }
 }
 
 async function createListingReviewHandler(req: Request, res: Response) {
@@ -820,6 +952,8 @@ export function registerReviewsRoutes(app: Express) {
   app.put("/api/listings/:listingId/reviews", requireAuth, parseReviewMedia, createIdempotencyMiddleware("reviews.submit"), (req, res) => void updateListingReviewHandler(req, res));
   app.post("/api/listings/:listingId/reviews/reply", requireAuth, (req, res) => void replyToListingReviewHandler(req, res));
   app.patch("/api/listings/:listingId/reviews/:reviewId/reply", requireAuth, (req, res) => void replyToListingReviewByIdHandler(req, res));
+  app.put("/api/listings/:listingId/reviews/:reviewId/reaction", requireAuth, (req, res) => void setReviewReactionHandler(req, res));
+  app.delete("/api/listings/:listingId/reviews/:reviewId/reaction", requireAuth, (req, res) => void deleteReviewReactionHandler(req, res));
   app.delete("/api/listings/:listingId/reviews/:reviewId", requireAuth, createIdempotencyMiddleware("reviews.delete"), (req, res) => void deleteListingReviewHandler(req, res));
 
   (app as any)[ROUTES_INSTALLED_FLAG] = true;
