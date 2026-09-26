@@ -90,7 +90,10 @@ test("index.html contains the static BuyMesho brand entity schema", () => {
 
   assert.ok(match, "BuyMesho entity JSON-LD should be present in index.html");
 
-  const graph = JSON.parse(match[1]) as {
+  const schemaJson = match[1];
+  assert.ok(schemaJson, "BuyMesho entity JSON-LD should contain JSON content");
+
+  const graph = JSON.parse(schemaJson) as {
     "@graph"?: Array<Record<string, unknown>>;
   }["graph"];
 
