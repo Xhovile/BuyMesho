@@ -539,7 +539,7 @@ async function createListingReviewHandler(req: Request, res: Response) {
 
     const existingReview = getReviewByListingAndReviewer(listingId, user.uid);
 
-    if (existingReview && existingMediaIdsToKeep.length === 0 && uploadedFiles.length === 0) {
+    if (existingReview && req.body?.existingMediaIds === undefined && uploadedFiles.length === 0) {
       existingMediaIdsToKeep = getReviewMedia(existingReview.id).map((media) => media.id);
     }
 
