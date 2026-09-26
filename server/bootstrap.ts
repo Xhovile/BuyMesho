@@ -11,6 +11,7 @@ import { ensurePaymentWebhookEventSchema } from "./modules/payments/payment.webh
 import { registerRoutes } from "./routes/index.js";
 import { registerMarketplaceRoutes } from "./routes/marketplace.routes.js";
 import { registerSellerProfileRoutes } from "./routes/sellerProfile.routes.js";
+import { registerSitemapRoutes } from "./routes/sitemap.routes.js";
 import { getConfiguredAdminEmails } from "./auth/adminAccess.js";
 import { requireAuth } from "./middleware/requireAuth.js";
 import { requireFirebaseUser } from "./middleware/requireFirebaseUser.js";
@@ -187,6 +188,7 @@ export async function startServer() {
 
   registerMarketplaceRoutes(app, { db });
   registerSellerProfileRoutes(app, { db });
+  registerSitemapRoutes(app, { db });
 
   let vite: ViteDevServer | null = null;
 
