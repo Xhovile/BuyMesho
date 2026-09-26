@@ -88,13 +88,8 @@ export default function ListingReviewComposer({
     historyEntryActiveRef.current = true;
 
     return () => {
-      if (!historyEntryActiveRef.current) return;
-
-      const state = window.history.state as Record<string, unknown> | null;
-      if (state?.__buymeshoReviewComposer) {
-        window.history.back();
-      }
-
+      // Do not navigate during cleanup. The close handler or popstate
+      // consumes the temporary history entry explicitly.
       historyEntryActiveRef.current = false;
     };
   }, [open]);
