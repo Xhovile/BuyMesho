@@ -28,8 +28,6 @@ export default function ListingReviewsPage() {
   }, []);
 
   const handleDeleteOwnReview = useCallback(async (review: ListingReview) => {
-    if (!window.confirm("Remove your review? This will also remove its attached media.")) return;
-
     await apiFetch(`/api/listings/${listingId}/reviews/${review.id}`, {
       method: "DELETE",
       headers: {
