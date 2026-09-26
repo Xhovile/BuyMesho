@@ -15,9 +15,7 @@ export function useRootRouterSeo(locationPath: string, route: AppRoute) {
       description: seo.description,
       url: `https://buymesho.app${seo.canonicalPath}`,
       noIndex: seo.noIndex,
-      keywords: seo.keywords
-        ? seo.keywords.split(",").map((keyword) => keyword.trim()).filter(Boolean)
-        : undefined,
+      keywords: seo.keywords,
       type: seo.type,
       image: seo.image,
       imageAlt: seo.imageAlt,
