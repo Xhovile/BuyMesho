@@ -17,6 +17,7 @@ import ListingHeaderBar from "./components/listingDetails/ListingHeaderBar";
 import { readPersistentPageCache, writePersistentPageCache } from "./lib/persistentPageCache";
 import { startConversationWithSeller } from "./lib/messages";
 import { navigateToConversation } from "./lib/messagesNavigation";
+import { resetSEOMetaTags, updateSEOMetaTags } from "./lib/seo";
 
 type SellerProfile = {
   uid?: string;
@@ -330,6 +331,74 @@ export default function SellerProfilePage() {
     );
   }, [listings, listingSearch]);
 
+  useEffect(() => {
+    const canonicalUrl = sellerUid
+      ? `https://buymesho.app/seller?uid=${encodeURIComponent(sellerUid)}`
+      : "https://buymesho.app/seller";
+
+    if (!sellerUid) {
+      updateSEOMetaTags({
+        title: "BuyMesho Seller Profile",
+        description: "View a seller profile and marketplace listings on BuyMesho.",
+        url: canonicalUrl,
+        noIndex: true,
+      });
+      return;
+    }
+
+    if (!profile) {
+      updateSEOMetaTags({
+        title: "BuyMesho Seller Profile",
+        description: "View a seller profile and marketplace listings on BuyMesho.",
+        url: canonicalUrl,
+        noIndex: false,
+      });
+      return;
+    }
+
+    const sellerName = profile.business_name?.trim() || "Seller Profile";
+    const description =
+      profile.bio?.trim().slice(0, 155) ||
+      `Browse ${listings.length} marketplace listing${listings.length === 1 ? "" : "s"} from ${sellerName} on BuyMesho.`;
+    const image = profile.business_logo?.trim() || undefined;
+    const entityType = profile.business_name?.trim() ? "Organization" : "Person";
+
+    updateSEOMetaTags({
+      title: `${sellerName} | BuyMesho Seller`,
+      description,
+      image,
+      imageAlt: `${sellerName} on BuyMesho`,
+      url: canonicalUrl,
+      noIndex: false,
+      jsonLd: {
+        "@context": "https://schema.org",
+        "@type": "ProfilePage",
+        "@id": `${canonicalUrl}#profile`,
+        "url": canonicalUrl,
+        "name": `${sellerName} | BuyMesho Seller`,
+        "mainEntity": {
+          "@type": entityType,
+          "@id": `${canonicalUrl}#seller`,
+          "name": sellerName,
+          "url": canonicalUrl,
+          ...(image ? { "image": image } : {}),
+          ...(profile.bio?.trim() ? { "description": profile.bio.trim() } : {}),
+        },
+      },
+      keywords: [
+        sellerName,
+        "BuyMesho seller",
+        "Malawi seller",
+        "Malawi marketplace",
+        "buy online Malawi",
+      ],
+    });
+
+    return () => {
+      resetSEOMetaTags();
+    };
+  }, [sellerUid, profile, listings.length]);
+  
   const canRateSeller = !!firebaseUser && !!sellerUid && firebaseUser.uid !== sellerUid;
 
   const handleMessageSeller = async () => {
