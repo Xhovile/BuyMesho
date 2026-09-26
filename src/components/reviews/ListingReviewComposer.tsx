@@ -38,6 +38,7 @@ export default function ListingReviewComposer({
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const submitIdempotencyKeyRef = useRef<string | null>(null);
+  const historyEntryActiveRef = useRef(false);
 
   const isEditing = Boolean(existingReview);
   const title = isEditing ? "Edit your review" : "Leave a review";
@@ -55,6 +56,26 @@ export default function ListingReviewComposer({
   }, [open, existingReview?.id]);
 
   useEffect(() => {
+    if (!open || historyEntryActiveRef.current) return;
+
+    window.history.pushState(
+      { ...(window.history.state ?? {}), __buymeshoReviewComposer: true },
+      "",
+      window.location.href,
+    );
+    historyEntryActiveRef.current = true;
+
+    return () => {
+      if (!historyEntryActiveRef.current) return;
+      const state = window.history.state as Record<string, unknown> | null;
+      if (state?.__buymeshoReviewComposer) {
+        window.history.back();
+      }
+      historyEntryActiveRef.current = false;
+    };
+  }, [open]);
+
+  useEffect(() => {
     if (!open) return;
 
     const previousOverflow = document.body.style.overflow;
@@ -67,13 +88,35 @@ export default function ListingReviewComposer({
   useEffect(() => {
     if (!open) return;
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !submitting) onClose();
+    const handlePopState = () => {
+      if (!historyEntryActiveRef.current) return;
+      historyEntryActiveRef.current = false;
+      onClose();
     };
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !submitting) {
+        event.preventDefault();
+        closeModal();
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [onClose, open, submitting]);
+
+  const closeModal = () => {
+    if (submitting) return;
+    if (historyEntryActiveRef.current) {
+      window.history.back();
+      return;
+    }
+    onClose();
+  };
 
   useEffect(() => {
     const urls = mediaFiles.map((file) => URL.createObjectURL(file));
@@ -204,7 +247,7 @@ export default function ListingReviewComposer({
         }
       }
 
-      onClose();
+      closeModal();
     } catch (err: unknown) {
       const status = typeof err === "object" && err !== null && "status" in err
         ? Number((err as { status?: unknown }).status)
@@ -242,15 +285,15 @@ export default function ListingReviewComposer({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-0 pt-2 backdrop-blur-[2px] sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="listing-review-composer-title"
       onMouseDown={(event) => {
-        if (event.currentTarget === event.target && !submitting) onClose();
+        if (event.currentTarget === event.target && !submitting) closeModal();
       }}
     >
-      <section className="flex max-h-[100dvh] w-full flex-col overflow-hidden bg-white shadow-2xl sm:max-h-[min(860px,calc(100dvh-2rem))] sm:max-w-xl sm:rounded-[2rem]">
+      <section className="flex h-[calc(100dvh-0.5rem)] max-h-[calc(100dvh-0.5rem)] w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-white shadow-2xl sm:h-auto sm:max-h-[min(860px,calc(100dvh-2rem))] sm:max-w-xl sm:rounded-[2rem]">
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white px-5 py-4 sm:px-6">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
@@ -262,7 +305,7 @@ export default function ListingReviewComposer({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={closeModal}
             disabled={submitting}
             className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close review editor"
@@ -433,7 +476,7 @@ export default function ListingReviewComposer({
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={onClose}
+              onClick={closeModal}
               disabled={submitting}
               className="flex-1 inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-5 py-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
