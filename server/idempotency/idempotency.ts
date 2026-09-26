@@ -108,6 +108,22 @@ export function beginIdempotentOperation(input: {
       };
     }
 
+    if (existing.status === "failed") {
+      const restarted = db.prepare(
+        `UPDATE idempotency_operations
+         SET status = 'processing',
+             response_status = NULL,
+             response_body = NULL,
+             completed_at = NULL,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ? AND status = 'failed'`,
+      ).run(existing.id);
+
+      if (restarted.changes === 1) {
+        return { kind: "started", id: String(existing.id) };
+      }
+    }
+
     return { kind: "processing" };
   }
 
