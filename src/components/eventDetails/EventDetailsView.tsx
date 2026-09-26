@@ -99,7 +99,22 @@ export default function EventDetailsView() {
   const shouldShowMenu = !!event && !canManageEvent;
 
   useEffect(() => {
-    if (!event) return;
+    const requestedEventId = eventId ? String(eventId) : "";
+    const unavailableCanonical = requestedEventId
+      ? `https://buymesho.app/explore/events?event=${encodeURIComponent(requestedEventId)}`
+      : "https://buymesho.app/explore/events";
+
+    if (!event) {
+      updateSEOMetaTags({
+        title: "Event unavailable | BuyMesho Events",
+        description: "This BuyMesho event is unavailable or could not be loaded.",
+        url: unavailableCanonical,
+        noIndex: true,
+      });
+      return () => {
+        resetSEOMetaTags();
+      };
+    }
 
     const canonicalUrl = `https://buymesho.app/explore/events?event=${encodeURIComponent(String(event.id))}`;
     const absolutePosterUrl = posterUrl
@@ -175,7 +190,7 @@ export default function EventDetailsView() {
     return () => {
       resetSEOMetaTags();
     };
-  }, [event, posterUrl]);
+  }, [event, eventId, posterUrl]);
   
   const clearNotice = () => setNotice(null);
 
