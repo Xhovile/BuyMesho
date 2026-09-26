@@ -40,92 +40,6 @@ export default function ListingReviewComposer({
   const submitIdempotencyKeyRef = useRef<string | null>(null);
   const historyEntryActiveRef = useRef(false);
 
-  const isEditing = Boolean(existingReview);
-  const title = isEditing ? "Edit your review" : "Leave a review";
-  const submitLabel = isEditing ? "Update review" : "Submit review";
-
-  useEffect(() => {
-    if (!open) return;
-
-    setRating(existingReview?.rating ?? 0);
-    setBody(existingReview?.body ?? "");
-    setRetainedMediaIds(existingReview?.media?.map((media) => media.id) ?? []);
-    setMediaFiles([]);
-    setError(null);
-    submitIdempotencyKeyRef.current = null;
-  }, [open, existingReview?.id]);
-
-  useEffect(() => {
-    if (!open || historyEntryActiveRef.current) return;
-
-    window.history.pushState(
-      { ...(window.history.state ?? {}), __buymeshoReviewComposer: true },
-      "",
-      window.location.href,
-    );
-    historyEntryActiveRef.current = true;
-
-    return () => {
-      if (!historyEntryActiveRef.current) return;
-      const state = window.history.state as Record<string, unknown> | null;
-      if (state?.__buymeshoReviewComposer) {
-        window.history.back();
-      }
-      historyEntryActiveRef.current = false;
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handlePopState = () => {
-      if (!historyEntryActiveRef.current) return;
-      historyEntryActiveRef.current = false;
-      onClose();
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !submitting) {
-        event.preventDefault();
-        closeModal();
-      }
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [closeModal, onClose, open, submitting]);
-
-
-  useEffect(() => {
-    const urls = mediaFiles.map((file) => URL.createObjectURL(file));
-    setPreviewUrls(urls);
-    return () => urls.forEach((url) => URL.revokeObjectURL(url));
-  }, [mediaFiles]);
-
-  const retainedMedia = useMemo(
-    () => existingReview?.media?.filter((media) => retainedMediaIds.includes(media.id)) ?? [],
-    [existingReview?.media, retainedMediaIds],
-  );
-
-  const totalSelectedMedia = retainedMedia.length + mediaFiles.length;
-  const hasMediaChanges = isEditing && (
-    retainedMediaIds.length !== (existingReview?.media?.length ?? 0) || mediaFiles.length > 0
-  );
-
   const closeModal = useCallback(() => {
     if (submitting) return;
     if (historyEntryActiveRef.current) {
@@ -217,6 +131,94 @@ export default function ListingReviewComposer({
             rating,
             body: body.trim() || null,
           });
+
+
+  const isEditing = Boolean(existingReview);
+  const title = isEditing ? "Edit your review" : "Leave a review";
+  const submitLabel = isEditing ? "Update review" : "Submit review";
+
+  useEffect(() => {
+    if (!open) return;
+
+    setRating(existingReview?.rating ?? 0);
+    setBody(existingReview?.body ?? "");
+    setRetainedMediaIds(existingReview?.media?.map((media) => media.id) ?? []);
+    setMediaFiles([]);
+    setError(null);
+    submitIdempotencyKeyRef.current = null;
+  }, [open, existingReview?.id]);
+
+  useEffect(() => {
+    if (!open || historyEntryActiveRef.current) return;
+
+    window.history.pushState(
+      { ...(window.history.state ?? {}), __buymeshoReviewComposer: true },
+      "",
+      window.location.href,
+    );
+    historyEntryActiveRef.current = true;
+
+    return () => {
+      if (!historyEntryActiveRef.current) return;
+      const state = window.history.state as Record<string, unknown> | null;
+      if (state?.__buymeshoReviewComposer) {
+        window.history.back();
+      }
+      historyEntryActiveRef.current = false;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePopState = () => {
+      if (!historyEntryActiveRef.current) return;
+      historyEntryActiveRef.current = false;
+      onClose();
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !submitting) {
+        event.preventDefault();
+        closeModal();
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeModal, onClose, open, submitting]);
+
+
+  useEffect(() => {
+    const urls = mediaFiles.map((file) => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
+  }, [mediaFiles]);
+
+  const retainedMedia = useMemo(
+    () => existingReview?.media?.filter((media) => retainedMediaIds.includes(media.id)) ?? [],
+    [existingReview?.media, retainedMediaIds],
+  );
+
+  const totalSelectedMedia = retainedMedia.length + mediaFiles.length;
+  const hasMediaChanges = isEditing && (
+    retainedMediaIds.length !== (existingReview?.media?.length ?? 0) || mediaFiles.length > 0
+  );
+
 
       const result = (await apiFetch(`/api/listings/${listingId}/reviews`, {
         method,
