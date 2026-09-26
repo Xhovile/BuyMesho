@@ -211,34 +211,44 @@ async function getReviewerIdentities(rows: ReviewRow[]): Promise<Map<string, Rev
       }
     });
 
-    await Promise.all(
-      uids.map(async (uid) => {
-        const profile = profileByUid.get(uid) ?? {};
-        const fallback = identities.get(uid);
-        const profileName = buildProfileDisplayName(profile);
-        const profileAvatar =
-          typeof profile.profile_picture === "string" ? profile.profile_picture.trim() :
-          typeof profile.photoURL === "string" ? profile.photoURL.trim() :
-          "";
-
-        let authName = "";
-        let authAvatar = "";
-        if (!profileName || !profileAvatar) {
-          try {
-            const record = await firebaseAdmin.auth().getUser(uid);
-            authName = typeof record.displayName === "string" ? record.displayName.trim() : "";
-            authAvatar = typeof record.photoURL === "string" ? record.photoURL.trim() : "";
-          } catch {
-            // The Firestore profile remains sufficient when an Auth record cannot be read.
-          }
-        }
-
-        identities.set(uid, {
-          name: profileName || authName || fallback?.name || "Member",
-          avatarUrl: profileAvatar || authAvatar || null,
-        });
-      }),
+    const authUsers = await firebaseAdmin.auth().getUsers(uids.map((uid) => ({ uid })));
+    const authByUid = new Map(
+      authUsers.users.map((record) => [
+        record.uid,
+        {
+          displayName: record.displayName ?? null,
+          photoURL: record.photoURL ?? null,
+        },
+      ]),
     );
+
+    for (const uid of uids) {
+      const profile = profileByUid.get(uid) ?? {};
+      const fallback = identities.get(uid);
+      const profileName = buildProfileDisplayName(profile);
+      const profileThumbnail =
+        typeof profile.profile_picture_thumbnail === "string"
+          ? profile.profile_picture_thumbnail.trim()
+          : "";
+      const profileAvatar =
+        typeof profile.profile_picture === "string" ? profile.profile_picture.trim() :
+        typeof profile.photoURL === "string" ? profile.photoURL.trim() :
+        "";
+
+      const authUser = authByUid.get(uid);
+      const authName = typeof authUser?.displayName === "string" ? authUser.displayName.trim() : "";
+      const authAvatar = typeof authUser?.photoURL === "string" ? authUser.photoURL.trim() : "";
+
+      const avatarSource = profileThumbnail || profileAvatar || authAvatar || "";
+      const avatarUrl = avatarSource.startsWith("data:")
+        ? (profileThumbnail.startsWith("data:") ? profileThumbnail : null)
+        : avatarSource || null;
+
+      identities.set(uid, {
+        name: profileName || authName || fallback?.name || "Member",
+        avatarUrl,
+      });
+    }
   } catch (error) {
     console.warn("Failed to load reviewer account profiles; using stored review identity", error);
   }
@@ -530,21 +540,41 @@ function orderItemsContainListing(items: string | null, listingId: number): bool
   }
 }
 
-function getCapturedPurchaseKeysForListing(listingId: number): Set<string> {
+async function getCapturedPurchaseKeysForListing(listingId: number): Promise<Set<string>> {
   const keys = new Set<string>();
+  const buyerIds = new Set<string>();
 
   for (const row of getCapturedPurchaseRowsForListing(listingId)) {
     if (orderItemsContainListing(row.items, listingId)) {
       const buyerId = String(row.buyer_id ?? "").trim();
-      if (buyerId) keys.add(buyerId.toLowerCase());
+      if (buyerId) {
+        const normalizedBuyerId = buyerId.toLowerCase();
+        keys.add(normalizedBuyerId);
+        buyerIds.add(buyerId);
+      }
     }
+  }
+
+  if (!buyerIds.size) return keys;
+
+  try {
+    const firebaseAdmin = getFirebaseAdmin();
+    const authUsers = await firebaseAdmin.auth().getUsers(
+      [...buyerIds].map((uid) => ({ uid })),
+    );
+    for (const record of authUsers.users) {
+      const email = String(record.email ?? "").trim().toLowerCase();
+      if (email) keys.add(email);
+    }
+  } catch (error) {
+    console.warn("Failed to resolve captured-purchase buyer emails; UID matching remains available", error);
   }
 
   return keys;
 }
 
-function hasCapturedPurchase(listingId: number, user: VerifiedRequestUser): boolean {
-  const capturedBuyers = getCapturedPurchaseKeysForListing(listingId);
+async function hasCapturedPurchase(listingId: number, user: VerifiedRequestUser): Promise<boolean> {
+  const capturedBuyers = await getCapturedPurchaseKeysForListing(listingId);
   if (!capturedBuyers.size) return false;
 
   if (capturedBuyers.has(user.uid.trim().toLowerCase())) return true;
@@ -557,8 +587,8 @@ function canUserReplyToListing(listing: ListingRow, user: VerifiedRequestUser) {
   return user.is_admin || listing.seller_uid === user.uid;
 }
 
-function canUserReviewListing(listing: ListingRow, user?: VerifiedRequestUser | undefined) {
-  return !!user && user.uid !== listing.seller_uid && hasCapturedPurchase(listing.id, user);
+async function canUserReviewListing(listing: ListingRow, user?: VerifiedRequestUser | undefined) {
+  return !!user && user.uid !== listing.seller_uid && await hasCapturedPurchase(listing.id, user);
 }
 
 function reviewError(res: Response, status: number, error: string) {
@@ -772,7 +802,7 @@ async function listListingReviewsHandler(req: Request, res: Response) {
   const mine = user ? getReviewByListingAndReviewer(listingId, user.uid) : null;
   const identityRows = mine ? [...itemRows, mine] : itemRows;
   const reviewerIdentities = await getReviewerIdentities(identityRows);
-  const capturedPurchaseKeys = getCapturedPurchaseKeysForListing(listingId);
+  const capturedPurchaseKeys = await getCapturedPurchaseKeysForListing(listingId);
 
   const items = itemRows.map((row) =>
     serializeReview(
@@ -829,7 +859,7 @@ async function listListingReviewsHandler(req: Request, res: Response) {
     items,
     reviews: items,
     viewerReview,
-    canReview: canUserReviewListing(listing, user),
+    canReview: await canUserReviewListing(listing, user),
     pagination: {
       limit,
       offset,
@@ -942,7 +972,7 @@ async function createListingReviewHandler(req: Request, res: Response) {
     return reviewError(res, 403, "Listing owners cannot review their own listing");
   }
 
-  if (!hasCapturedPurchase(listingId, user)) {
+  if (!await hasCapturedPurchase(listingId, user)) {
     return reviewError(res, 403, "You can only review a listing after purchasing it.");
   }
 
@@ -1043,7 +1073,7 @@ async function updateListingReviewHandler(req: Request, res: Response) {
     return reviewError(res, 404, "Review not found");
   }
 
-  if (!hasCapturedPurchase(listingId, user)) {
+  if (!await hasCapturedPurchase(listingId, user)) {
     return reviewError(res, 403, "You can only review a listing after purchasing it.");
   }
 
