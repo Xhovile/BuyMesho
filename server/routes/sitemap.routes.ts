@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Response } from "express";
 
 const SITE_URL = "https://buymesho.app";
 const SITEMAP_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -190,7 +190,7 @@ function loadSitemapData(db: any) {
 }
 
 export function registerSitemapRoutes(app: Express, { db }: { db: any }) {
-  const sendXml = (res: Parameters<Parameters<Express["get"]>[1]>[1], xml: string, status = 200) => {
+  const sendXml = (res: Response, xml: string, status = 200) => {
     res
       .status(status)
       .set({
