@@ -21,6 +21,7 @@ import { startConversationFromEvent } from "../../lib/messages";
 import { navigateToConversation } from "../../lib/messagesNavigation";
 import { useAuthUser } from "../../hooks/useAuthUser";
 import { upsertEventCartItem } from "../../lib/eventCart";
+import { resetSEOMetaTags, updateSEOMetaTags } from "../../lib/seo";
 import FeedbackModal from "../FeedbackModal";
 import ConfirmModal from "../ConfirmModal";
 import TicketHolderForm, { type TicketHolderInformation } from "../tickets/TicketHolderForm";
@@ -86,6 +87,85 @@ export default function EventDetailsView() {
     };
   }, [eventId]);
 
+  useEffect(() => {
+    if (!event) return;
+
+    const canonicalUrl = `https://buymesho.app/explore/events?event=${encodeURIComponent(String(event.id))}`;
+    const absolutePosterUrl = posterUrl
+      ? new URL(posterUrl, window.location.origin).toString()
+      : undefined;
+    const startDate = /^\\d{4}-\\d{2}-\\d{2}$/.test(event.event_date)
+      ? `${event.event_date}`
+      : undefined;
+    const timeMatch = (event.start_time || "").trim().match(/^(\\d{1,2}):(\\d{2})(?::(\\d{2}))?$/);
+    const schemaStartDate =
+      startDate && timeMatch
+        ? `${startDate}T${String(Number(timeMatch[1])).padStart(2, "0")}:${timeMatch[2]}:${timeMatch[3] || "00"}+02:00`
+        : startDate;
+    const isFree = event.ticket_price === null || Number(event.ticket_price) <= 0;
+
+    updateSEOMetaTags({
+      title: `${event.event_title} | BuyMesho Events`,
+      description:
+        event.description?.trim().slice(0, 160) ||
+        `${event.event_title} by ${event.organizer_name} in ${event.location}.`,
+      image: absolutePosterUrl,
+      imageAlt: event.poster_alt?.trim() || `${event.event_title} event poster`,
+      url: canonicalUrl,
+      noIndex: false,
+      jsonLd: {
+        "@context": "https://schema.org",
+        "@type": "Event",
+        "@id": `${canonicalUrl}#event`,
+        "name": event.event_title,
+        "description": event.description?.trim() || undefined,
+        ...(schemaStartDate ? { "startDate": schemaStartDate } : {}),
+        ...(absolutePosterUrl ? { "image": [absolutePosterUrl] } : {}),
+        "eventStatus":
+          event.status === "cancelled"
+            ? "https://schema.org/EventCancelled"
+            : "https://schema.org/EventScheduled",
+        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        "location": {
+          "@type": "Place",
+          "name": event.venue,
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": event.location,
+            "addressCountry": "MW",
+          },
+        },
+        ...(event.organizer_name?.trim()
+          ? {
+              "organizer": {
+                "@type": "Organization",
+                "name": event.organizer_name.trim(),
+              },
+            }
+          : {}),
+        "offers": {
+          "@type": "Offer",
+          "url": canonicalUrl,
+          "price": isFree ? 0 : Number(event.ticket_price),
+          "priceCurrency": "MWK",
+          "availability": "https://schema.org/InStock",
+        },
+        ...(isFree ? { "isAccessibleForFree": true } : {}),
+      },
+      keywords: [
+        event.event_title,
+        event.event_type,
+        "BuyMesho events",
+        "events Malawi",
+        "event tickets Malawi",
+      ].filter(Boolean),
+    });
+
+    return () => {
+      resetSEOMetaTags();
+    };
+  }, [event, posterUrl]);
+  
   const price = formatMoney(event?.ticket_price);
   const posterUrl = event ? getPosterUrl(event) : "";
   const posterAlt = event ? getPosterAlt(event) : "Event poster";
