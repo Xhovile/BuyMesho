@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuthUser } from "./hooks/useAuthUser";
 import type { ListingReview, ListingReviewSummary } from "./types";
-import { LISTING_PATH } from "./lib/appNavigation";
+import { LISTING_PATH, navigateToLoginWithReturnPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
 import ListingHeaderBar from "./components/listingDetails/ListingHeaderBar";
 import ListingReviewFeed from "./components/reviews/ListingReviewFeed";
 import ListingReviewComposer from "./components/reviews/ListingReviewComposer";
+import FeedbackModal from "./components/FeedbackModal";
 
 export default function ListingReviewsPage() {
   const { user: firebaseUser } = useAuthUser();
@@ -19,6 +20,11 @@ export default function ListingReviewsPage() {
   const [reviewEditorOpen, setReviewEditorOpen] = useState(false);
   const [canReview, setCanReview] = useState(false);
   const [viewerReview, setViewerReview] = useState<ListingReview | null>(null);
+  const [reviewAccessFeedback, setReviewAccessFeedback] = useState<{
+    title: string;
+    message: string;
+    actions?: Array<{ label: string; onClick: () => void; variant?: "primary" | "secondary" }>;
+  } | null>(null);
   const handleListingMetaLoaded = useCallback((listing: { seller_uid: string }) => {
     setSellerUid(listing.seller_uid);
   }, []);
@@ -26,6 +32,37 @@ export default function ListingReviewsPage() {
     setEditingReview(review);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  const handleOpenReview = useCallback(() => {
+    if (!firebaseUser) {
+      const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      setReviewAccessFeedback({
+        title: "Log in to review",
+        message: "You need to log in before you can submit a review.",
+        actions: [
+          { label: "Cancel", variant: "secondary", onClick: () => setReviewAccessFeedback(null) },
+          {
+            label: "Log in",
+            onClick: () => {
+              setReviewAccessFeedback(null);
+              navigateToLoginWithReturnPath(returnPath);
+            },
+          },
+        ],
+      });
+      return;
+    }
+
+    if (!canReview) {
+      setReviewAccessFeedback({
+        title: "Purchase required",
+        message: "You can only review this listing after purchasing it.",
+      });
+      return;
+    }
+
+    setReviewEditorOpen(true);
+  }, [canReview, firebaseUser]);
 
   const handleDeleteOwnReview = useCallback(async (review: ListingReview) => {
     await apiFetch(`/api/listings/${listingId}/reviews/${review.id}`, {
@@ -93,11 +130,11 @@ export default function ListingReviewsPage() {
         </section>
 
         <div className="mt-6 space-y-6">
-          {!editingReview && firebaseUser && canReview && !viewerReview ? (
+          {!editingReview && !viewerReview && !(firebaseUser && sellerUid && firebaseUser.uid === sellerUid) ? (
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => setReviewEditorOpen(true)}
+                onClick={handleOpenReview}
                 className="rounded-full bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800"
               >
                 Leave a review
@@ -116,6 +153,15 @@ export default function ListingReviewsPage() {
               setReviewEditorOpen(false);
               setEditingReview(null);
             }}
+          />
+
+          <FeedbackModal
+            open={Boolean(reviewAccessFeedback)}
+            type="info"
+            title={reviewAccessFeedback?.title ?? ""}
+            message={reviewAccessFeedback?.message ?? ""}
+            actions={reviewAccessFeedback?.actions}
+            onClose={() => setReviewAccessFeedback(null)}
           />
 
           <ListingReviewFeed
