@@ -130,7 +130,7 @@ export default function ListingReviewsPage() {
         </section>
 
         <div className="mt-6 space-y-6">
-          {!editingReview && !viewerReview && !(firebaseUser && sellerUid && firebaseUser.uid === sellerUid) ? (
+          {!editingReview && !viewerReview && (!firebaseUser || sellerUid !== null) && !(firebaseUser && sellerUid && firebaseUser.uid === sellerUid) ? (
             <div className="flex justify-end">
               <button
                 type="button"
