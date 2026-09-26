@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, Edit3, MessageSquareReply, ShieldAlert, Star, ThumbsDown, ThumbsUp, Trash2, X } from "lucide-react";
+import { AlertTriangle, Edit3, MessageSquareReply, ShieldAlert, Star, ThumbsDown, ThumbsUp, Trash2, UserRound, X } from "lucide-react";
 import type { ListingReview, ListingReviewReaction } from "../../types";
 import { formatDate } from "../listingDetails/ListingDetailsShared";
 import ReviewActionsMenu from "./ReviewActionsMenu";
@@ -126,28 +126,59 @@ export default function ListingReviewCard({
       <article className="border-b-2 border-zinc-200 py-7 first:pt-0">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h4 className="truncate text-sm font-extrabold text-zinc-950">{review.reviewer_name}</h4>
-              {badge ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">
-                  {badge}
-                </span>
-              ) : null}
-              {isOwnReview ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-zinc-950 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white">
-                  Your review
-                </span>
-              ) : null}
+            <div className="flex items-start gap-3">
+              <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-zinc-200 bg-zinc-50">
+                {review.reviewer_avatar_url ? (
+                  <img
+                    src={review.reviewer_avatar_url}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    width={40}
+                    height={40}
+                  />
+                ) : (
+                  <UserRound className="h-5 w-5 text-zinc-400" />
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h4 className="truncate text-sm font-extrabold text-zinc-950">{review.reviewer_name}</h4>
+                  {badge ? (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">
+                      {badge}
+                    </span>
+                  ) : null}
+                  {isOwnReview ? (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-zinc-950 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white">
+                      Your review
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                    {formatDate(review.created_at)}
+                  </p>
+                  <div
+                    className="flex items-center gap-0.5"
+                    aria-label={`${review.rating} out of 5 stars`}
+                    title={`${review.rating} out of 5 stars`}
+                  >
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-4 w-4 ${star <= review.rating ? "fill-amber-400 text-amber-500" : "text-zinc-300"}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">{formatDate(review.created_at)}</p>
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-extrabold text-zinc-900">
-              <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
-              {review.rating.toFixed(1)}
-            </div>
-
             {isOwnReview && onEdit ? (
               <div className="flex items-center gap-2">
                 <button
@@ -201,7 +232,7 @@ export default function ListingReviewCard({
           <button
             type="button"
             onClick={() => void handleReaction("dislike")}
-            disabled={!viewerUid || reacting}
+            disabled={!canReact || reacting}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-semibold transition ${viewerReaction === "dislike" ? "text-zinc-950" : "text-zinc-500 hover:text-zinc-900"} disabled:cursor-not-allowed disabled:opacity-50`}
             aria-pressed={viewerReaction === "dislike"}
             aria-label={`Dislike review (${dislikeCount})`}

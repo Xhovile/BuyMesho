@@ -24,6 +24,7 @@ type FormState = {
   townOrDistrict: string;
   landmark: string;
   profilePicture: string;
+  profilePictureThumbnail: string;
 };
 
 type FeedbackState = { open: boolean; type: "success" | "error" | "info"; title: string; message: string } | null;
@@ -33,11 +34,72 @@ const SIGNUP_PROFILE_DRAFT_KEY = "__buymesho_signup_profile_draft";
 
 const emptyForm: FormState = {
   firstName: "", surname: "", otherNames: "", userType: "", phone: "", university: "", campus: "",
-  studentId: "", studentEmail: "", addressLine: "", area: "", townOrDistrict: "", landmark: "", profilePicture: "",
+  studentId: "", studentEmail: "", addressLine: "", area: "", townOrDistrict: "", landmark: "",
+  profilePicture: "", profilePictureThumbnail: "",
 };
 
 function normalize(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => typeof reader.result === "string"
+      ? resolve(reader.result)
+      : reject(new Error("Could not read image"));
+    reader.onerror = () => reject(new Error("Could not read image"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function createProfileThumbnail(dataUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const size = 96;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        reject(new Error("Could not prepare image thumbnail"));
+        return;
+      }
+
+      const sourceRatio = image.width / Math.max(image.height, 1);
+      const targetRatio = 1;
+      let sourceWidth = image.width;
+      let sourceHeight = image.height;
+      let sourceX = 0;
+      let sourceY = 0;
+
+      if (sourceRatio > targetRatio) {
+        sourceWidth = image.height;
+        sourceX = (image.width - sourceWidth) / 2;
+      } else if (sourceRatio < targetRatio) {
+        sourceHeight = image.width;
+        sourceY = (image.height - sourceHeight) / 2;
+      }
+
+      context.drawImage(
+        image,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        size,
+        size,
+      );
+
+      resolve(canvas.toDataURL("image/jpeg", 0.72));
+    };
+    image.onerror = () => reject(new Error("Could not prepare image thumbnail"));
+    image.src = dataUrl;
+  });
 }
 
 function readSignupDraft(): SignupProfileDraft {
@@ -82,6 +144,7 @@ export default function AccountSetupPage() {
           townOrDistrict: normalize(profile?.buyer_details?.townOrDistrict),
           landmark: normalize(profile?.buyer_details?.landmark),
           profilePicture: normalize(profile?.profile_picture) || normalize(firebaseUser.photoURL),
+          profilePictureThumbnail: normalize(profile?.profile_picture_thumbnail),
         });
       })
       .catch(() => {
@@ -110,13 +173,18 @@ export default function AccountSetupPage() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") setField("profilePicture", reader.result);
-    };
-    reader.onerror = () => setFeedback({ open: true, type: "error", title: "Could not read image", message: "Please choose the image again and try again." });
-    reader.readAsDataURL(file);
-    event.target.value = "";
+    void (async () => {
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
+        const thumbnail = await createProfileThumbnail(dataUrl);
+        setField("profilePicture", dataUrl);
+        setField("profilePictureThumbnail", thumbnail);
+      } catch {
+        setFeedback({ open: true, type: "error", title: "Could not prepare image", message: "Please choose the image again and try again." });
+      } finally {
+        event.target.value = "";
+      }
+    })();
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -168,6 +236,7 @@ export default function AccountSetupPage() {
           student_id: isStudent ? form.studentId.trim() : null,
           student_email: isStudent ? form.studentEmail.trim() : null,
           profile_picture: form.profilePicture.trim() || null,
+          profile_picture_thumbnail: form.profilePictureThumbnail.trim() || null,
           buyer_details: buyerDetails,
           profile_setup_complete: true,
         }),
