@@ -94,6 +94,23 @@ export default function ListingReviewsBlock({
     setReviewEditorOpen(true);
   };
 
+  const handleDeleteOwnReview = async (review: ListingReview) => {
+    if (!window.confirm("Remove your review? This will also remove its attached media.")) return;
+
+    await apiFetch(`/api/listings/${listing.id}/reviews/${review.id}`, {
+      method: "DELETE",
+      headers: {
+        "Idempotency-Key": `review-delete-${review.id}-${Date.now()}`,
+      },
+      timeoutMs: 120_000,
+    });
+
+    setViewerReview(null);
+    setReviewBeingEdited(null);
+    setReviewEditorOpen(false);
+    await loadReviews();
+  };
+
   const handleOpenCreateReview = () => {
     setReviewBeingEdited(null);
     setReviewEditorOpen(true);
@@ -155,6 +172,7 @@ export default function ListingReviewsBlock({
             viewerUid={firebaseUser?.uid}
             ownReviewId={viewerReview?.id ?? null}
             onEditOwnReview={handleEditOwnReview}
+            onDeleteOwnReview={handleDeleteOwnReview}
             onReviewChanged={handleReviewChanged}
             onViewAll={() => navigateToListingReviews(listing.id)}
           />
