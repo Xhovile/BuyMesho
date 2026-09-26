@@ -16,8 +16,9 @@ import ListingHeaderBar from "./ListingHeaderBar";
 import ListingStatusPanel from "./ListingStatusPanel";
 import CheckoutModal from "../CheckoutModal";
 import FloatingCartButton from "../FloatingCartButton";
-import { navigateToMessages, navigateToPath } from "../../lib/appNavigation";
+import { navigateBackOrPath, navigateToMessages, navigateToPath, EXPLORE_PATH } from "../../lib/appNavigation";
 import type { ListingDetailsPageState } from "../../hooks/useListingDetailsPage";
+import { clearListingDetailsCache } from "../../hooks/useListingDetailsData";
 
 const BUYER_CART_KEY = "__buymesho_buyer_cart";
 const BUYER_CART_UPDATED_EVENT = "buymesho:buyer-cart-updated";
@@ -163,7 +164,12 @@ export default function ListingDetailsContent({
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <FloatingCartButton isLoggedIn={isLoggedIn} />
-      <ListingHeaderBar />
+      <ListingHeaderBar
+        onBack={() => {
+          clearListingDetailsCache(listingId);
+          navigateBackOrPath(EXPLORE_PATH);
+        }}
+      />
 
       <main className="mx-auto max-w-[1500px] px-4 pb-24 pt-6 sm:pt-8">
         {loading ? (
