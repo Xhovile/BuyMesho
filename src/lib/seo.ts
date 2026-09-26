@@ -262,6 +262,17 @@ function absoluteUrl(value: string): string {
   }
 }
 
+export function getListingCanonicalUrl(listingId: string | number, currentHref?: string): string {
+  const url = new URL(
+    currentHref || (typeof window !== "undefined" ? window.location.href : SITE_URL),
+    SITE_URL,
+  );
+  url.pathname = "/listing";
+  url.search = "";
+  url.searchParams.set("listing", String(listingId));
+  return url.toString();
+}
+
 function normalizeTitle(title?: string): string {
   if (!title) return DEFAULT_SEO.title;
   const cleaned = title.trim();
@@ -425,15 +436,7 @@ export function getSEOForListing(listing: Listing, sellerName?: string): SEOConf
     : `Discover ${itemTitle} for ${formattedPrice} ${locationText} on BuyMesho, Malawi's secure marketplace.`;
 
   const primaryImage = listing.photos?.[0] || DEFAULT_SEO.image;
-  const currentUrl = typeof window !== "undefined"
-    ? (() => {
-        const url = new URL(window.location.href);
-        url.pathname = "/listing";
-        url.search = "";
-        url.searchParams.set("listing", String(listing.id));
-        return url.toString();
-      })()
-    : \`${SITE_URL}/listing?listing=\${encodeURIComponent(String(listing.id))}\`;
+  const currentUrl = getListingCanonicalUrl(listing.id);
 
   return {
     title: `${itemTitle} - ${formattedPrice}`,
