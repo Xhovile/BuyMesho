@@ -36,7 +36,7 @@ export type RouteSEOConfig = SEOConfig & {
  * everything else defaults to noindex so private application surfaces do not
  * accidentally become searchable.
  */
-export function getRouteSEO(pathname: string, route: AppRoute): RouteSEOConfig {
+export function getRouteSEO(pathname: string, route: AppRoute, search = ""): RouteSEOConfig {
   const normalizedPathname =
     pathname === "/" ? "/" : pathname.replace(/\/+$/, "") || "/";
   const normalizedStudioPath = normalizedPathname.toLowerCase();
@@ -56,6 +56,26 @@ export function getRouteSEO(pathname: string, route: AppRoute): RouteSEOConfig {
       title: DEFAULT_SEO.title,
       description: DEFAULT_SEO.description,
       canonicalPath: normalizedPathname,
+      noIndex: false,
+      managedByPage: true,
+    };
+  }
+
+  if (route === "seller") {
+    const sellerUid = new URLSearchParams(search).get("uid")?.trim();
+    if (!sellerUid) {
+      return {
+        title: "BuyMesho Seller Profile",
+        description: "View a seller profile on BuyMesho.",
+        canonicalPath: "/seller",
+        noIndex: true,
+      };
+    }
+
+    return {
+      title: "BuyMesho Seller Profile",
+      description: "View a seller profile and marketplace listings on BuyMesho.",
+      canonicalPath: `/seller?uid=${encodeURIComponent(sellerUid)}`,
       noIndex: false,
       managedByPage: true,
     };
@@ -104,6 +124,24 @@ export function getRouteSEO(pathname: string, route: AppRoute): RouteSEOConfig {
       description: "Xhovile Studio administration.",
       canonicalPath: "/xhovilestudio/admin",
       noIndex: true,
+    };
+  }
+
+  if (
+    normalizedPathname === "/explore/events" &&
+    new URLSearchParams(search).has("event")
+  ) {
+    const eventId = new URLSearchParams(search).get("event")?.trim();
+    return {
+      title: eventId ? "BuyMesho Event" : "BuyMesho Events in Malawi",
+      description: eventId
+        ? "View event details, ticket information, location, and organizer details on BuyMesho."
+        : "Discover public events and event listings in Malawi on BuyMesho.",
+      canonicalPath: eventId
+        ? `/explore/events?event=${encodeURIComponent(eventId)}`
+        : "/explore/events",
+      noIndex: false,
+      managedByPage: true,
     };
   }
 
@@ -409,7 +447,9 @@ export function updateSEOMetaTags(config: Partial<SEOConfig> = {}) {
     document.head.querySelector('meta[property="product:price:currency"]')?.remove();
   }
 
-  if (config.price !== undefined || config.category) {
+  if (config.jsonLd) {
+    updateJsonLdSchema(config.jsonLd);
+  } else if (config.price !== undefined || config.category) {
     const itemCondition = config.condition
       ? config.condition.toLowerCase().includes("new")
         ? "https://schema.org/NewCondition"
@@ -419,6 +459,7 @@ export function updateSEOMetaTags(config: Partial<SEOConfig> = {}) {
     const jsonLdProduct = {
       "@context": "https://schema.org",
       "@type": "Product",
+      "@id": `${url}#product`,
       name: config.title || DEFAULT_SEO.siteName,
       image: [image],
       description,
@@ -428,6 +469,7 @@ export function updateSEOMetaTags(config: Partial<SEOConfig> = {}) {
         "@type": "Brand",
         name: DEFAULT_SEO.siteName,
       },
+      mainEntityOfPage: url,
       offers: {
         "@type": "Offer",
         url,
