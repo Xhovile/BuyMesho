@@ -2,6 +2,7 @@ import type { Express, NextFunction, Request, Response } from "express";
 import multer from "multer";
 import { postgresDb as db } from "../db.js";
 import { attachOptionalAuth, requireAuth } from "../middleware/requireAuth.js";
+import { REVIEW_MEDIA_MAX_COUNT, validateReviewMediaFiles } from "../lib/reviewMedia.js";
 import { deleteCloudinaryAsset, uploadBufferToCloudinaryReviewMedia } from "../lib/cloudinaryUpload.js";
 
 type VerifiedRequestUser = {
@@ -50,7 +51,7 @@ type ReviewMediaRow = {
   created_at: string;
 };
 
-const MAX_REVIEW_MEDIA = 3;
+const MAX_REVIEW_MEDIA = REVIEW_MEDIA_MAX_COUNT;
 const MAX_REVIEW_IMAGES = 3;
 const MAX_REVIEW_VIDEOS = 1;
 const MAX_REVIEW_MEDIA_FILE_SIZE = 10 * 1024 * 1024;
@@ -168,7 +169,35 @@ function getReviewMedia(reviewId: number) {
     .all(reviewId) as ReviewMediaRow[];
 }
 
-function serializeReview(row: ReviewRow) {
+function getReviewMediaForIds(reviewIds: number[]) {
+  const ids = [...new Set(reviewIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+  const grouped = new Map<number, ReviewMediaRow[]>();
+  if (!ids.length) return grouped;
+
+  const placeholders = ids.map(() => "?").join(", ");
+  const rows = db
+    .prepare(
+      `
+        SELECT id, review_id, listing_id, media_type, url, public_id, resource_type, created_at
+        FROM listing_review_media
+        WHERE review_id IN (${placeholders})
+        ORDER BY created_at ASC, id ASC
+      `
+    )
+    .all(...ids) as ReviewMediaRow[];
+
+  for (const row of rows) {
+    const key = Number(row.review_id);
+    const list = grouped.get(key) ?? [];
+    list.push(row);
+    grouped.set(key, list);
+  }
+
+  return grouped;
+}
+
+function serializeReview(row: ReviewRow, mediaRows?: ReviewMediaRow[]) {
+  const media = mediaRows ?? getReviewMedia(row.id);
   return {
     id: row.id,
     listing_id: row.listing_id,
@@ -181,9 +210,9 @@ function serializeReview(row: ReviewRow) {
     rating: row.rating,
     title: row.title,
     body: row.body,
-    media: getReviewMedia(row.id).map((item) => ({
-      id: item.id,
-      review_id: item.review_id,
+    media: media.map((item) => ({
+      id: Number(item.id),
+      review_id: Number(item.review_id),
       media_type: item.media_type,
       url: item.url,
     })),
@@ -337,18 +366,16 @@ function parseReviewMediaIds(value: unknown): number[] {
 
 function parseUploadedReviewMedia(req: Request) {
   const files = Array.isArray(req.files) ? req.files : [];
-  const imageFiles = files.filter((file) => String(file.mimetype || "").toLowerCase().startsWith("image/"));
-  const videoFiles = files.filter((file) => String(file.mimetype || "").toLowerCase().startsWith("video/"));
+  const validationError = validateReviewMediaFiles(
+    files.map((file) => ({ mimetype: file.mimetype, size: file.size })),
+  );
+  if (validationError) throw new Error(validationError);
 
-  if (files.length > MAX_REVIEW_MEDIA) throw new Error("A review can contain up to 3 media items.");
-  if (imageFiles.some((file) => String(file.mimetype || "").toLowerCase() === "image/svg+xml")) {
-    throw new Error("SVG images are not supported in reviews.");
-  }
-  if (imageFiles.length > MAX_REVIEW_IMAGES) throw new Error("A review can contain up to 3 images.");
-  if (videoFiles.length > MAX_REVIEW_VIDEOS) throw new Error("A review can contain only 1 video.");
-  if (imageFiles.length + videoFiles.length !== files.length) {
-    throw new Error("Only image and video files can be attached to reviews.");
-  }
+  const imageCount = files.filter((file) => String(file.mimetype || "").toLowerCase().startsWith("image/")).length;
+  const videoCount = files.filter((file) => String(file.mimetype || "").toLowerCase().startsWith("video/")).length;
+
+  if (imageCount > MAX_REVIEW_IMAGES) throw new Error("A review can contain up to 3 images.");
+  if (videoCount > MAX_REVIEW_VIDEOS) throw new Error("A review can contain only 1 video.");
 
   return files;
 }
@@ -468,7 +495,9 @@ async function listListingReviewsHandler(req: Request, res: Response) {
   const offset = clampInt(req.query.offset, 0, 0, 100000);
   const total = getReviewsTotal(listingId);
   const summary = getListingReviewSummary(listingId);
-  const items = getListingReviews(listingId, limit, offset).map(serializeReview);
+  const itemRows = getListingReviews(listingId, limit, offset);
+  const mediaByReviewId = getReviewMediaForIds(itemRows.map((row) => Number(row.id)));
+  const items = itemRows.map((row) => serializeReview(row, mediaByReviewId.get(Number(row.id)) ?? []));
 
   let viewerReview: ReturnType<typeof serializeReview> | null = null;
   const user = req.user as VerifiedRequestUser | undefined;
@@ -612,8 +641,12 @@ async function updateListingReviewHandler(req: Request, res: Response) {
   const body = normalizeText(req.body?.body, 2000);
 
   try {
-    const existingMediaIdsToKeep = parseReviewMediaIds(req.body?.existingMediaIds);
+    let existingMediaIdsToKeep = parseReviewMediaIds(req.body?.existingMediaIds);
     const uploadedFiles = parseUploadedReviewMedia(req);
+
+    if (req.body?.existingMediaIds === undefined && uploadedFiles.length === 0) {
+      existingMediaIdsToKeep = getReviewMedia(review.id).map((media) => media.id);
+    }
 
     if (existingMediaIdsToKeep.length + uploadedFiles.length > MAX_REVIEW_MEDIA) {
       return reviewError(res, 400, "A review can contain up to 3 media items.");

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ImagePlus, Star, Trash2, Video } from "lucide-react";
-import type { ListingReview, ListingReviewMedia } from "../../types";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { Star, X } from "lucide-react";
+import type { ListingReview } from "../../types";
 import { apiFetch } from "../../lib/api";
 
 type ListingReviewComposerProps = {
@@ -13,31 +13,9 @@ type ListingReviewComposerProps = {
 };
 
 const MAX_BODY_LENGTH = 500;
-const MAX_MEDIA = 3;
-const MAX_IMAGES = 3;
-const MAX_VIDEOS = 1;
+const MAX_MEDIA_COUNT = 3;
+const MAX_VIDEO_COUNT = 1;
 const MAX_MEDIA_FILE_SIZE = 10 * 1024 * 1024;
-
-type NewReviewMedia = {
-  file: File;
-  url: string;
-  media_type: "image" | "video";
-};
-
-function mediaCounts(existingMedia: ListingReviewMedia[], newMedia: NewReviewMedia[]) {
-  const imageCount =
-    existingMedia.filter((media) => media.media_type === "image").length +
-    newMedia.filter((media) => media.media_type === "image").length;
-  const videoCount =
-    existingMedia.filter((media) => media.media_type === "video").length +
-    newMedia.filter((media) => media.media_type === "video").length;
-
-  return {
-    total: existingMedia.length + newMedia.length,
-    images: imageCount,
-    videos: videoCount,
-  };
-}
 
 export default function ListingReviewComposer({
   listingId,
@@ -49,39 +27,71 @@ export default function ListingReviewComposer({
 }: ListingReviewComposerProps) {
   const [rating, setRating] = useState<number>(existingReview?.rating ?? 0);
   const [body, setBody] = useState(existingReview?.body ?? "");
-  const [existingMedia, setExistingMedia] = useState<ListingReviewMedia[]>(existingReview?.media ?? []);
-  const [newMedia, setNewMedia] = useState<NewReviewMedia[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const mediaInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setRating(existingReview?.rating ?? 0);
     setBody(existingReview?.body ?? "");
-    setExistingMedia(existingReview?.media ?? []);
-    setNewMedia((previous) => {
-      previous.forEach((item) => URL.revokeObjectURL(item.url));
-      return [];
-    });
     setError(null);
-  }, [existingReview?.id, existingReview?.rating, existingReview?.body, existingReview?.media]);
+  }, [existingReview?.id, existingReview?.rating, existingReview?.body]);
 
   useEffect(() => {
-    return () => {
-      newMedia.forEach((item) => URL.revokeObjectURL(item.url));
-    };
-  }, [newMedia]);
+    setMediaFiles([]);
+    setError(null);
+  }, [existingReview?.id]);
+
+  useEffect(() => {
+    const urls = mediaFiles.map((file) => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
+  }, [mediaFiles]);
+
+  const handleMediaChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (!files.length) return;
+
+    if (files.length > MAX_MEDIA_COUNT) {
+      setError("A review can contain up to 3 media files.");
+      return;
+    }
+
+    const videoCount = files.filter((file) => file.type.toLowerCase().startsWith("video/")).length;
+    if (videoCount > MAX_VIDEO_COUNT) {
+      setError("A review can contain only 1 video.");
+      return;
+    }
+
+    if (files.some((file) => file.size > MAX_MEDIA_FILE_SIZE)) {
+      setError("Each review media file must be 10 MB or smaller.");
+      return;
+    }
+
+    if (files.some((file) => {
+      const type = file.type.toLowerCase();
+      return type === "image/svg+xml" || (!type.startsWith("image/") && !type.startsWith("video/"));
+    })) {
+      setError("Reviews support image and video files only.");
+      return;
+    }
+
+    setError(null);
+    setMediaFiles(files.slice(0, MAX_MEDIA_COUNT));
+  };
+
+  const removeMediaFile = (index: number) => {
+    setMediaFiles((current) => current.filter((_, mediaIndex) => mediaIndex !== index));
+  };
 
   const bodyCount = body.length;
-  const submitLabel = useMemo(
-    () => (existingReview ? "Update review" : "Post review"),
-    [existingReview]
-  );
-
-  const counts = useMemo(
-    () => mediaCounts(existingMedia, newMedia),
-    [existingMedia, newMedia]
-  );
+  const submitLabel = useMemo(() => {
+    if (existingReview) return "Update review";
+    return "Post review";
+  }, [existingReview]);
 
   const helperText = useMemo(() => {
     if (!isAuthenticated) return "Log in to leave a rating.";
@@ -89,75 +99,6 @@ export default function ListingReviewComposer({
     if (rating === 0) return "Tap a star to rate this listing.";
     return "A short review is optional.";
   }, [canReview, isAuthenticated, rating]);
-
-  const removeNewMedia = (url: string) => {
-    setNewMedia((previous) => {
-      const item = previous.find((media) => media.url === url);
-      if (item) URL.revokeObjectURL(item.url);
-      return previous.filter((media) => media.url !== url);
-    });
-  };
-
-  const removeExistingMedia = (id: number) => {
-    setExistingMedia((previous) => previous.filter((media) => media.id !== id));
-  };
-
-  const handleMediaChange = (files: FileList | null) => {
-    if (!files?.length) return;
-
-    const incoming = Array.from(files);
-
-    const oversized = incoming.find((file) => file.size > MAX_MEDIA_FILE_SIZE);
-    if (oversized) {
-      setError(`Each media file must be 10 MB or smaller: ${oversized.name}`);
-      return;
-    }
-
-    const incomingImages = incoming.filter((file) => file.type.startsWith("image/"));
-    const incomingVideos = incoming.filter((file) => file.type.startsWith("video/"));
-
-    if (incoming.some((file) => !file.type.startsWith("image/") && !file.type.startsWith("video/"))) {
-      setError("Only image and video files can be attached.");
-      return;
-    }
-
-    if (incoming.some((file) => file.type === "image/svg+xml")) {
-      setError("SVG images are not supported in reviews.");
-      return;
-    }
-
-    const nextImages = existingMedia.filter((media) => media.media_type === "image").length +
-      newMedia.filter((media) => media.media_type === "image").length +
-      incomingImages.length;
-    const nextVideos = existingMedia.filter((media) => media.media_type === "video").length +
-      newMedia.filter((media) => media.media_type === "video").length +
-      incomingVideos.length;
-    const nextTotal = existingMedia.length + newMedia.length + incoming.length;
-
-    if (nextTotal > MAX_MEDIA) {
-      setError("A review can contain up to 3 media items.");
-      return;
-    }
-    if (nextImages > MAX_IMAGES) {
-      setError("A review can contain up to 3 images.");
-      return;
-    }
-    if (nextVideos > MAX_VIDEOS) {
-      setError("A review can contain only 1 video.");
-      return;
-    }
-
-    const mapped = incoming.map((file) => ({
-      file,
-      url: URL.createObjectURL(file),
-      media_type: file.type.startsWith("video/") ? "video" as const : "image" as const,
-    }));
-
-    setNewMedia((previous) => [...previous, ...mapped]);
-    setError(null);
-
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
 
   const handleSubmit = async () => {
     if (!isAuthenticated || !canReview) return;
@@ -170,33 +111,30 @@ export default function ListingReviewComposer({
     setError(null);
 
     try {
-      const requestBody = new FormData();
-      requestBody.append("rating", String(rating));
-      if (body.trim()) requestBody.append("body", body.trim());
-      requestBody.append(
-        "existingMediaIds",
-        JSON.stringify(existingMedia.map((media) => media.id)),
-      );
-      newMedia.forEach((media) => {
-        requestBody.append("media", media.file, media.file.name);
-      });
-
       const method = existingReview ? "PUT" : "POST";
-      const result = (await apiFetch(`/api/listings/${listingId}/reviews`, {
+      const requestBody = mediaFiles.length
+        ? (() => {
+            const formData = new FormData();
+            formData.append("rating", String(rating));
+            formData.append("body", body.trim());
+            mediaFiles.forEach((file) => formData.append("media", file, file.name));
+            return formData;
+          })()
+        : JSON.stringify({
+            rating,
+            body: body.trim() || null,
+          });
+
+      const review = (await apiFetch(`/api/listings/${listingId}/reviews`, {
         method,
         body: requestBody,
-        timeoutMs: 60_000,
       })) as { review?: ListingReview | null } | null;
 
-      if (result?.review !== undefined) {
-        setRating(result.review?.rating ?? rating);
-        setBody(result.review?.body ?? body);
-        setExistingMedia(result.review?.media ?? []);
-        setNewMedia((previous) => {
-          previous.forEach((item) => URL.revokeObjectURL(item.url));
-          return [];
-        });
-        await onSaved?.(result.review ?? null);
+      if (review?.review !== undefined) {
+        setRating(review.review?.rating ?? rating);
+        setBody(review.review?.body ?? body);
+        setMediaFiles([]);
+        await onSaved?.(review.review ?? null);
       } else {
         await onSaved?.(null);
       }
@@ -245,7 +183,7 @@ export default function ListingReviewComposer({
       <p className="mt-3 text-sm text-zinc-500">{helperText}</p>
 
       {rating > 0 ? (
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 space-y-3">
           <div>
             <label className="mb-2 block text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">
               Add a short review (optional)
@@ -261,91 +199,82 @@ export default function ListingReviewComposer({
             />
           </div>
 
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+          <div className="flex items-center justify-between gap-3 text-xs font-semibold text-zinc-500">
+            <span>
+              {bodyCount} / {MAX_BODY_LENGTH}
+            </span>
+            <span>Keep it honest and useful.</span>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Media</p>
-                <p className="mt-1 text-xs font-semibold text-zinc-500">Up to 3 items · max 1 video · up to 3 images.</p>
+                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Media (optional)</p>
+                <p className="mt-1 text-xs font-semibold text-zinc-500">Up to 3 total files, with only 1 video.</p>
               </div>
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={!isAuthenticated || !canReview || submitting || counts.total >= MAX_MEDIA}
-                className="inline-flex items-center gap-2 rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-bold text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => mediaInputRef.current?.click()}
+                disabled={!isAuthenticated || !canReview || submitting}
+                className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <ImagePlus className="h-4 w-4" />
-                Add media
+                {existingReview ? "Replace media" : "Add media"}
               </button>
               <input
-                ref={fileInputRef}
+                ref={mediaInputRef}
                 type="file"
-                accept="image/*,video/*"
                 multiple
+                accept="image/*,video/*"
+                onChange={handleMediaChange}
                 className="hidden"
-                onChange={(event) => handleMediaChange(event.target.files)}
               />
             </div>
 
-            {(existingMedia.length > 0 || newMedia.length > 0) ? (
-              <div className="mt-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
-                <div className="flex w-max gap-3">
-                  {existingMedia.map((media) => (
-                    <div key={media.id} className="relative h-32 w-32 shrink-0 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100">
+            {existingReview?.media?.length && !mediaFiles.length ? (
+              <div className="mt-3">
+                <p className="mb-2 text-xs font-semibold text-zinc-500">Current media</p>
+                <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
+                  {existingReview.media.map((media) => (
+                    <div key={media.id} className="w-28 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-black">
                       {media.media_type === "image" ? (
-                        <img src={media.url} alt="Selected review media" className="h-full w-full object-cover" loading="lazy" />
+                        <img src={media.secure_url} alt="Current review media" className="h-24 w-full object-cover" loading="lazy" />
                       ) : (
-                        <video src={media.url} preload="none" playsInline className="h-full w-full object-cover" />
+                        <video src={media.secure_url} className="h-24 w-full object-cover" preload="none" muted playsInline />
                       )}
-                      <button
-                        type="button"
-                        onClick={() => removeExistingMedia(media.id)}
-                        disabled={submitting}
-                        className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white"
-                        aria-label="Remove review media"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                      {media.media_type === "video" ? (
-                        <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-white">
-                          <Video className="h-3 w-3" />
-                          Video
-                        </span>
-                      ) : null}
-                    </div>
-                  ))}
-
-                  {newMedia.map((media) => (
-                    <div key={media.url} className="relative h-32 w-32 shrink-0 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100">
-                      {media.media_type === "image" ? (
-                        <img src={media.url} alt={media.file.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <video src={media.url} preload="none" playsInline controls className="h-full w-full object-cover" />
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeNewMedia(media.url)}
-                        disabled={submitting}
-                        className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white"
-                        aria-label="Remove review media"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
                     </div>
                   ))}
                 </div>
+                <p className="mt-2 text-[11px] font-semibold text-zinc-400">Selecting new media replaces the current media on this review.</p>
               </div>
-            ) : (
-              <p className="mt-3 text-xs font-semibold text-zinc-400">No media attached.</p>
-            )}
+            ) : null}
 
-            <p className="mt-3 text-xs font-semibold text-zinc-500">
-              {counts.total} / {MAX_MEDIA} media · {counts.images} image{counts.images === 1 ? "" : "s"} · {counts.videos} video{counts.videos === 1 ? "" : "s"}
-            </p>
-          </div>
-
-          <div className="flex items-center justify-between gap-3 text-xs font-semibold text-zinc-500">
-            <span>{bodyCount} / {MAX_BODY_LENGTH}</span>
-            <span>Keep it honest and useful.</span>
+            {previewUrls.length ? (
+              <div className="mt-3 flex gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
+                {previewUrls.map((url, index) => {
+                  const file = mediaFiles[index];
+                  if (!file) return null;
+                  const isVideo = file.type.toLowerCase().startsWith("video/");
+                  return (
+                    <div key={url} className="relative w-32 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-black">
+                      {isVideo ? (
+                        <video src={url} className="h-24 w-full object-cover" preload="metadata" muted playsInline />
+                      ) : (
+                        <img src={url} alt={file.name} className="h-24 w-full object-cover" />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeMediaFile(index)}
+                        disabled={submitting}
+                        className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white"
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
