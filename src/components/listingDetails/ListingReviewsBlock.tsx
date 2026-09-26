@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import type { Listing, ListingReview, ListingReviewSummary, RatingSummary } from "../../types";
 import { apiFetch } from "../../lib/api";
-import { navigateToListingReviews } from "../../lib/appNavigation";
+import { navigateToListingReviews, navigateToLoginWithReturnPath } from "../../lib/appNavigation";
 import { useAuthUser } from "../../hooks/useAuthUser";
 import { SectionHeading } from "./ListingDetailsShared";
 import ListingReviewSummaryView from "../reviews/ListingReviewSummary";
 import ListingReviewComposer from "../reviews/ListingReviewComposer";
 import ListingReviewFeed from "../reviews/ListingReviewFeed";
+import FeedbackModal from "../FeedbackModal";
 
 export default function ListingReviewsBlock({
   sellerUid,
@@ -33,6 +34,11 @@ export default function ListingReviewsBlock({
   const [error, setError] = useState<string | null>(null);
   const [reviewEditorOpen, setReviewEditorOpen] = useState(false);
   const [reviewBeingEdited, setReviewBeingEdited] = useState<ListingReview | null>(null);
+  const [reviewAccessFeedback, setReviewAccessFeedback] = useState<{
+    title: string;
+    message: string;
+    actions?: Array<{ label: string; onClick: () => void; variant?: "primary" | "secondary" }>;
+  } | null>(null);
 
   const canReplyAsSeller = !!firebaseUser?.uid && firebaseUser.uid === listing.seller_uid;
 
@@ -110,6 +116,33 @@ export default function ListingReviewsBlock({
   };
 
   const handleOpenCreateReview = () => {
+    if (!firebaseUser) {
+      const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      setReviewAccessFeedback({
+        title: "Log in to review",
+        message: "You need to log in before you can submit a review.",
+        actions: [
+          { label: "Cancel", variant: "secondary", onClick: () => setReviewAccessFeedback(null) },
+          {
+            label: "Log in",
+            onClick: () => {
+              setReviewAccessFeedback(null);
+              navigateToLoginWithReturnPath(returnPath);
+            },
+          },
+        ],
+      });
+      return;
+    }
+
+    if (!canReview) {
+      setReviewAccessFeedback({
+        title: "Purchase required",
+        message: "You can only review this listing after purchasing it.",
+      });
+      return;
+    }
+
     setReviewBeingEdited(null);
     setReviewEditorOpen(true);
   };
@@ -129,7 +162,7 @@ export default function ListingReviewsBlock({
         <div className="space-y-5">
           <ListingReviewSummaryView summary={summary} />
 
-          {!viewerReview ? (
+          {!viewerReview && !(firebaseUser && firebaseUser.uid === listing.seller_uid) ? (
             <div className="flex items-center justify-between gap-3 rounded-[2rem] border border-blue-200 bg-white p-5 shadow-sm">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Your review</p>
@@ -138,13 +171,21 @@ export default function ListingReviewsBlock({
               <button
                 type="button"
                 onClick={handleOpenCreateReview}
-                disabled={!firebaseUser || !canReview}
-                className="shrink-0 rounded-full bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                className="shrink-0 rounded-full bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800"
               >
                 Leave a review
               </button>
             </div>
           ) : null}
+
+          <FeedbackModal
+            open={Boolean(reviewAccessFeedback)}
+            type="info"
+            title={reviewAccessFeedback?.title ?? ""}
+            message={reviewAccessFeedback?.message ?? ""}
+            actions={reviewAccessFeedback?.actions}
+            onClose={() => setReviewAccessFeedback(null)}
+          />
 
           <ListingReviewComposer
             listingId={listing.id}
