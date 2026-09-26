@@ -1,4 +1,4 @@
-import { Edit3, MessageSquareReply, ShieldAlert, Star } from "lucide-react";
+import { Edit3, MessageSquareReply, ShieldAlert, Star, Trash2 } from "lucide-react";
 import type { ListingReview } from "../../types";
 import { formatDate } from "../listingDetails/ListingDetailsShared";
 import ReviewActionsMenu from "./ReviewActionsMenu";
@@ -12,6 +12,7 @@ type ListingReviewCardProps = {
   canReply?: boolean;
   isOwnReview?: boolean;
   onEdit?: () => void;
+  onDelete?: () => void | Promise<void>;
   onReviewChanged?: (review: ListingReview) => void | Promise<void>;
 };
 
@@ -21,6 +22,7 @@ export default function ListingReviewCard({
   canReply = false,
   isOwnReview = false,
   onEdit,
+  onDelete,
   onReviewChanged,
 }: ListingReviewCardProps) {
   const badge = review.reviewer_badge ?? (review.is_verified_purchase ? "Verified buyer" : null);
@@ -52,14 +54,27 @@ export default function ListingReviewCard({
             {review.rating.toFixed(1)}
           </div>
           {isOwnReview && onEdit ? (
-            <button
-              type="button"
-              onClick={onEdit}
-              className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-3 py-1.5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
-            >
-              <Edit3 className="h-4 w-4" />
-              Edit
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onEdit}
+                className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-3 py-1.5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+              >
+                <Edit3 className="h-4 w-4" />
+                Edit
+              </button>
+              {onDelete ? (
+                <button
+                  type="button"
+                  onClick={() => void onDelete()}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-white text-red-600 transition hover:bg-red-50"
+                  aria-label="Remove your review"
+                  title="Remove review"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              ) : null}
+            </div>
           ) : (
             <ReviewActionsMenu canReport={false} />
           )}
@@ -74,15 +89,13 @@ export default function ListingReviewCard({
       {review.media?.length ? <ReviewMediaGallery media={review.media} /> : null}
 
       {review.seller_reply ? (
-        <div className="mt-5 border-t border-zinc-100 pt-4">
-          <div className="border-l-2 border-blue-200 pl-4">
-            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-500">
-              <MessageSquareReply className="h-4 w-4" />
-              Seller reply
-            </div>
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-700">{review.seller_reply}</p>
-            {review.seller_reply_at ? <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">{formatDate(review.seller_reply_at)}</p> : null}
+        <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-500">
+            <MessageSquareReply className="h-4 w-4" />
+            Seller reply
           </div>
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-zinc-700">{review.seller_reply}</p>
+          {review.seller_reply_at ? <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">{formatDate(review.seller_reply_at)}</p> : null}
         </div>
       ) : null}
 
