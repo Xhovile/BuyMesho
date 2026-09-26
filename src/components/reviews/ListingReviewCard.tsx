@@ -74,13 +74,15 @@ export default function ListingReviewCard({
       {review.media?.length ? <ReviewMediaGallery media={review.media} /> : null}
 
       {review.seller_reply ? (
-        <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-500">
-            <MessageSquareReply className="h-4 w-4" />
-            Seller reply
+        <div className="mt-5 border-t border-zinc-100 pt-4">
+          <div className="border-l-2 border-blue-200 pl-4">
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-500">
+              <MessageSquareReply className="h-4 w-4" />
+              Seller reply
+            </div>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-700">{review.seller_reply}</p>
+            {review.seller_reply_at ? <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">{formatDate(review.seller_reply_at)}</p> : null}
           </div>
-          <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-zinc-700">{review.seller_reply}</p>
-          {review.seller_reply_at ? <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">{formatDate(review.seller_reply_at)}</p> : null}
         </div>
       ) : null}
 
