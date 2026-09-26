@@ -226,6 +226,7 @@ export default function ListingReviewFeed({
           <ListingReviewCard
             review={ownReview}
             listingId={listingId}
+            viewerUid={viewerUid}
             canReply={false}
             isOwnReview
             onEdit={onEditOwnReview ? () => onEditOwnReview(ownReview) : undefined}
@@ -245,6 +246,7 @@ export default function ListingReviewFeed({
                 <ListingReviewCard
                   review={review}
                   listingId={listingId}
+                  viewerUid={viewerUid}
                   canReply={canReply && review.reviewer_uid !== viewerUid}
                   onReviewChanged={handleReviewChanged}
                 />
@@ -258,6 +260,7 @@ export default function ListingReviewFeed({
                 key={review.id}
                 review={review}
                 listingId={listingId}
+                viewerUid={viewerUid}
                 canReply={canReply && review.reviewer_uid !== viewerUid}
                 onReviewChanged={handleReviewChanged}
               />
