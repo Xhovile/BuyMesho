@@ -18,6 +18,8 @@ export interface SEOConfig {
   sellerName?: string;
   campus?: string;
   condition?: string;
+  /** Optional page-owned JSON-LD schema. */
+  jsonLd?: object | null;
 }
 
 const SITE_URL = "https://buymesho.app";
