@@ -2,9 +2,9 @@ import { useEffect } from "react";
 import type { AppRoute } from "../lib/appNavigation";
 import { getRouteSEO, updateSEOMetaTags, type RouteSEOConfig } from "../lib/seo";
 
-export function useRootRouterSeo(locationPath: string, route: AppRoute) {
+export function useRootRouterSeo(locationPath: string, route: AppRoute, locationSearch = "") {
   useEffect(() => {
-    const seo: RouteSEOConfig = getRouteSEO(locationPath, route);
+    const seo: RouteSEOConfig = getRouteSEO(locationPath, route, locationSearch);
 
     // Dedicated page components such as category and listing detail pages
     // own their final SEO metadata. The root router must not overwrite it.
@@ -20,5 +20,5 @@ export function useRootRouterSeo(locationPath: string, route: AppRoute) {
       image: seo.image,
       imageAlt: seo.imageAlt,
     });
-  }, [locationPath, route]);
+  }, [locationPath, locationSearch, route]);
 }
