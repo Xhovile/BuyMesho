@@ -24,7 +24,7 @@ import {
 } from "../lib/hiddenCollections";
 import { type ListingActionResponse, type SectionKey, type SellerProfile, specValue } from "../components/listingDetails/listingDetailsUtils";
 import { setBuyerCartItem } from "../lib/buyerState";
-import { useListingDetailsData } from "./useListingDetailsData";
+import { clearListingDetailsCache, useListingDetailsData } from "./useListingDetailsData";
 
 export type ListingDetailsPageState = {
   firebaseUser: ReturnType<typeof useAuthUser>["user"];
@@ -310,6 +310,7 @@ export function useListingDetailsPage(): ListingDetailsPageState {
     if (!window.confirm("Delete this listing?")) return;
     try {
       await apiFetch(`/api/listings/${id}`, { method: "DELETE" });
+      clearListingDetailsCache(id);
       navigateBackOrPath(EXPLORE_PATH);
     } catch (error: any) {
       openShareNotice(error?.message || "Failed to delete listing.");
@@ -369,6 +370,7 @@ export function useListingDetailsPage(): ListingDetailsPageState {
 
   const handleDetailHideListing = (listingIdToHide: number) => {
     hideListingId(listingIdToHide);
+    clearListingDetailsCache(listingIdToHide);
     navigateBackOrPath(EXPLORE_PATH);
   };
 
