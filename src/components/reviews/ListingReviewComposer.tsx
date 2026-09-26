@@ -8,8 +8,9 @@ type ListingReviewComposerProps = {
   isAuthenticated: boolean;
   canReview: boolean;
   existingReview?: ListingReview | null;
+  open: boolean;
   onSaved?: (review: ListingReview | null) => void | Promise<void>;
-  onCancel?: () => void;
+  onClose: () => void;
 };
 
 const MAX_BODY_LENGTH = 500;
@@ -22,30 +23,57 @@ export default function ListingReviewComposer({
   isAuthenticated,
   canReview,
   existingReview,
+  open,
   onSaved,
-  onCancel,
+  onClose,
 }: ListingReviewComposerProps) {
   const [rating, setRating] = useState<number>(existingReview?.rating ?? 0);
   const [body, setBody] = useState(existingReview?.body ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
-  const [retainedMediaIds, setRetainedMediaIds] = useState<number[]>(existingReview?.media?.map((media) => media.id) ?? []);
+  const [retainedMediaIds, setRetainedMediaIds] = useState<number[]>(
+    existingReview?.media?.map((media) => media.id) ?? [],
+  );
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const submitIdempotencyKeyRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    setRating(existingReview?.rating ?? 0);
-    setBody(existingReview?.body ?? "");
-    setError(null);
-  }, [existingReview?.id, existingReview?.rating, existingReview?.body]);
+  const isEditing = Boolean(existingReview);
+  const title = isEditing ? "Edit your review" : "Leave a review";
+  const submitLabel = isEditing ? "Update review" : "Submit review";
 
   useEffect(() => {
+    if (!open) return;
+
+    setRating(existingReview?.rating ?? 0);
+    setBody(existingReview?.body ?? "");
     setRetainedMediaIds(existingReview?.media?.map((media) => media.id) ?? []);
     setMediaFiles([]);
     setError(null);
-  }, [existingReview?.id]);
+    submitIdempotencyKeyRef.current = null;
+  }, [open, existingReview?.id]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !submitting) onClose();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, open, submitting]);
 
   useEffect(() => {
     const urls = mediaFiles.map((file) => URL.createObjectURL(file));
@@ -53,12 +81,21 @@ export default function ListingReviewComposer({
     return () => urls.forEach((url) => URL.revokeObjectURL(url));
   }, [mediaFiles]);
 
+  const retainedMedia = useMemo(
+    () => existingReview?.media?.filter((media) => retainedMediaIds.includes(media.id)) ?? [],
+    [existingReview?.media, retainedMediaIds],
+  );
+
+  const totalSelectedMedia = retainedMedia.length + mediaFiles.length;
+  const hasMediaChanges = isEditing && (
+    retainedMediaIds.length !== (existingReview?.media?.length ?? 0) || mediaFiles.length > 0
+  );
+
   const handleMediaChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
     if (!files.length) return;
 
-    const retainedMedia = existingReview?.media?.filter((media) => retainedMediaIds.includes(media.id)) ?? [];
     const nextFiles = [...mediaFiles, ...files];
 
     if (retainedMedia.length + nextFiles.length > MAX_MEDIA_COUNT) {
@@ -69,6 +106,7 @@ export default function ListingReviewComposer({
     const videoCount =
       retainedMedia.filter((media) => media.media_type === "video").length +
       nextFiles.filter((file) => file.type.toLowerCase().startsWith("video/")).length;
+
     if (videoCount > MAX_VIDEO_COUNT) {
       setError("A review can contain only 1 video.");
       return;
@@ -100,21 +138,9 @@ export default function ListingReviewComposer({
     setError(null);
   };
 
-  const bodyCount = body.length;
-  const submitLabel = useMemo(() => {
-    if (existingReview) return "Update review";
-    return "Post review";
-  }, [existingReview]);
-
-  const helperText = useMemo(() => {
-    if (!isAuthenticated) return "Log in to leave a rating.";
-    if (!canReview) return "You cannot review your own listing.";
-    if (rating === 0) return "Tap a star to rate this listing.";
-    return "A short review is optional.";
-  }, [canReview, isAuthenticated, rating]);
-
   const handleSubmit = async () => {
-    if (!isAuthenticated || !canReview) return;
+    if (!isAuthenticated || !canReview || submitting) return;
+
     if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
       setError("Pick a star rating before submitting.");
       return;
@@ -148,7 +174,7 @@ export default function ListingReviewComposer({
             body: body.trim() || null,
           });
 
-      const review = (await apiFetch(`/api/listings/${listingId}/reviews`, {
+      const result = (await apiFetch(`/api/listings/${listingId}/reviews`, {
         method,
         headers: {
           "Idempotency-Key": idempotencyKey,
@@ -159,13 +185,14 @@ export default function ListingReviewComposer({
 
       submitIdempotencyKeyRef.current = null;
 
-      if (review?.review !== undefined) {
-        setRating(review.review?.rating ?? rating);
-        setBody(review.review?.body ?? body);
-        setRetainedMediaIds(review.review?.media?.map((media) => media.id) ?? []);
+      if (result?.review !== undefined) {
+        setRating(result.review?.rating ?? rating);
+        setBody(result.review?.body ?? body);
+        setRetainedMediaIds(result.review?.media?.map((media) => media.id) ?? []);
         setMediaFiles([]);
+
         try {
-          await onSaved?.(review.review ?? null);
+          await onSaved?.(result.review ?? null);
         } catch (refreshError) {
           console.warn("Review saved successfully, but refreshing the review feed failed:", refreshError);
         }
@@ -176,6 +203,8 @@ export default function ListingReviewComposer({
           console.warn("Review saved successfully, but refreshing the review feed failed:", refreshError);
         }
       }
+
+      onClose();
     } catch (err: unknown) {
       const status = typeof err === "object" && err !== null && "status" in err
         ? Number((err as { status?: unknown }).status)
@@ -183,7 +212,10 @@ export default function ListingReviewComposer({
       const code = typeof err === "object" && err !== null && "code" in err
         ? String((err as { code?: unknown }).code ?? "")
         : "";
-      const message = err instanceof Error ? err.message : "Failed to submit your review. Please try again.";
+      const message = err instanceof Error
+        ? err.message
+        : "Failed to submit your review. Please try again.";
+
       const retryableSubmissionFailure =
         /request timed out/i.test(message)
         || /fetch/i.test(message)
@@ -196,173 +228,234 @@ export default function ListingReviewComposer({
         submitIdempotencyKeyRef.current = null;
       }
 
-      if (retryableSubmissionFailure && code !== "IDEMPOTENCY_IN_PROGRESS") {
-        setError("Failed to submit your review. Please try again.");
-      } else {
-        setError(message);
-      }
+      setError(
+        retryableSubmissionFailure
+          ? "Failed to submit your review. Please try again."
+          : message,
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
+  if (!open) return null;
+
   return (
-    <section className="rounded-[2rem] border border-blue-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Leave a rating</p>
-          <p className="mt-1 text-sm text-zinc-500">Short and simple. The star rating matters most.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => void handleSubmit()}
-          disabled={!isAuthenticated || !canReview || rating === 0 || submitting}
-          className="inline-flex items-center justify-center rounded-full bg-zinc-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {submitting ? "Saving..." : submitLabel}
-        </button>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => {
-          const active = rating >= star;
-          return (
-            <button
-              key={star}
-              type="button"
-              onClick={() => setRating(star)}
-              disabled={!isAuthenticated || !canReview || submitting}
-              className={`rounded-md p-1 transition-colors ${active ? "text-amber-500" : "text-zinc-300"} ${!isAuthenticated || !canReview || submitting ? "opacity-60" : "hover:text-amber-500"}`}
-              aria-label={`Rate ${star} star${star === 1 ? "" : "s"}`}
-            >
-              <Star className={`h-7 w-7 ${active ? "fill-amber-400" : ""}`} />
-            </button>
-          );
-        })}
-      </div>
-
-      <p className="mt-3 text-sm text-zinc-500">{helperText}</p>
-
-      {rating > 0 ? (
-        <div className="mt-4 space-y-3">
+    <div
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="listing-review-composer-title"
+      onMouseDown={(event) => {
+        if (event.currentTarget === event.target && !submitting) onClose();
+      }}
+    >
+      <section className="flex max-h-[100dvh] w-full flex-col overflow-hidden bg-white shadow-2xl sm:max-h-[min(860px,calc(100dvh-2rem))] sm:max-w-xl sm:rounded-[2rem]">
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white px-5 py-4 sm:px-6">
           <div>
-            <label className="mb-2 block text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-              Add a short review (optional)
-            </label>
-            <textarea
-              value={body}
-              onChange={(event) => setBody(event.target.value.slice(0, MAX_BODY_LENGTH))}
-              maxLength={MAX_BODY_LENGTH}
-              rows={4}
-              disabled={!isAuthenticated || !canReview || submitting}
-              placeholder="What should other buyers know?"
-              className="min-h-[120px] w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm leading-6 text-zinc-900 outline-none transition focus:border-zinc-900 disabled:bg-zinc-50 disabled:text-zinc-500"
-            />
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+              {isEditing ? "Your review" : "Listing review"}
+            </p>
+            <h2 id="listing-review-composer-title" className="mt-1 text-xl font-bold tracking-tight text-zinc-950">
+              {title}
+            </h2>
           </div>
-
-          <div className="flex items-center justify-between gap-3 text-xs font-semibold text-zinc-500">
-            <span>
-              {bodyCount} / {MAX_BODY_LENGTH}
-            </span>
-            <span>Keep it honest and useful.</span>
-          </div>
-
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Media (optional)</p>
-                <p className="mt-1 text-xs font-semibold text-zinc-500">Up to 3 total files, with only 1 video.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => mediaInputRef.current?.click()}
-                disabled={!isAuthenticated || !canReview || submitting}
-                className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Add media
-              </button>
-              <input
-                ref={mediaInputRef}
-                type="file"
-                multiple
-                accept="image/*,video/*"
-                onChange={handleMediaChange}
-                className="hidden"
-              />
-            </div>
-
-            {retainedMediaIds.length ? (
-              <div className="mt-3">
-                <p className="mb-2 text-xs font-semibold text-zinc-500">Current media</p>
-                <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
-                  {(existingReview?.media ?? []).filter((media) => retainedMediaIds.includes(media.id)).map((media) => (
-                    <div key={media.id} className="relative w-28 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-black">
-                      {media.media_type === "image" ? (
-                        <img src={media.url} alt="Current review media" className="h-24 w-full object-cover" loading="lazy" />
-                      ) : (
-                        <video src={media.url} className="h-24 w-full object-cover" preload="none" muted playsInline />
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeExistingMedia(media.id)}
-                        disabled={submitting}
-                        className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-white"
-                        aria-label="Remove current review media"
-                        title="Remove media"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {previewUrls.length ? (
-              <div className="mt-3 flex gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
-                {previewUrls.map((url, index) => {
-                  const file = mediaFiles[index];
-                  if (!file) return null;
-                  const isVideo = file.type.toLowerCase().startsWith("video/");
-                  return (
-                    <div key={url} className="relative w-32 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-black">
-                      {isVideo ? (
-                        <video src={url} className="h-24 w-full object-cover" preload="metadata" muted playsInline />
-                      ) : (
-                        <img src={url} alt={file.name} className="h-24 w-full object-cover" />
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeMediaFile(index)}
-                        disabled={submitting}
-                        className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white"
-                        aria-label={`Remove ${file.name}`}
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
-      {error ? <p className="mt-4 text-sm font-semibold text-red-600">{error}</p> : null}
-
-      {onCancel ? (
-        <div className="mt-5">
           <button
             type="button"
-            onClick={onCancel}
+            onClick={onClose}
             disabled={submitting}
-            className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-white px-5 py-2.5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Close review editor"
           >
-            Cancel edit
+            <X className="h-5 w-5" />
           </button>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6 sm:py-6">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Leave a rating</p>
+            <p className="mt-1 text-sm text-zinc-500">Short and simple. The star rating matters most.</p>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-1">
+            {[1, 2, 3, 4, 5].map((star) => {
+              const active = rating >= star;
+              return (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  disabled={!isAuthenticated || !canReview || submitting}
+                  className={`rounded-md p-1 transition-colors ${active ? "text-amber-500" : "text-zinc-300"} ${!isAuthenticated || !canReview || submitting ? "opacity-60" : "hover:text-amber-500"}`}
+                  aria-label={`Rate ${star} star${star === 1 ? "" : "s"}`}
+                >
+                  <Star className={`h-7 w-7 ${active ? "fill-amber-400" : ""}`} />
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="mt-3 text-sm text-zinc-500">
+            {!isAuthenticated
+              ? "Log in to leave a rating."
+              : !canReview
+                ? "You cannot review your own listing."
+                : rating === 0
+                  ? "Tap a star to rate this listing."
+                  : "A short review is optional."}
+          </p>
+
+          {rating > 0 ? (
+            <div className="mt-5 space-y-4">
+              <div>
+                <label className="mb-2 block text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+                  Add a short review (optional)
+                </label>
+                <textarea
+                  value={body}
+                  onChange={(event) => setBody(event.target.value.slice(0, MAX_BODY_LENGTH))}
+                  maxLength={MAX_BODY_LENGTH}
+                  rows={5}
+                  disabled={!isAuthenticated || !canReview || submitting}
+                  placeholder="What should other buyers know?"
+                  className="min-h-[130px] w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm leading-6 text-zinc-900 outline-none transition focus:border-zinc-900 disabled:bg-zinc-50 disabled:text-zinc-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-3 text-xs font-semibold text-zinc-500">
+                <span>{body.length} / {MAX_BODY_LENGTH}</span>
+                <span>Keep it honest and useful.</span>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Media (optional)</p>
+                    <p className="mt-1 text-xs font-semibold text-zinc-500">Up to 3 total files, with only 1 video.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => mediaInputRef.current?.click()}
+                    disabled={!isAuthenticated || !canReview || submitting || totalSelectedMedia >= MAX_MEDIA_COUNT}
+                    className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Add media
+                  </button>
+                  <input
+                    ref={mediaInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,video/*"
+                    onChange={handleMediaChange}
+                    className="hidden"
+                  />
+                </div>
+
+                {retainedMedia.length ? (
+                  <div className="mt-4">
+                    <p className="mb-2 text-xs font-semibold text-zinc-500">Current media</p>
+                    <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
+                      {retainedMedia.map((media) => (
+                        <div key={media.id} className="relative w-28 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-black">
+                          {media.media_type === "image" ? (
+                            <img
+                              src={media.url}
+                              alt="Current review media"
+                              className="h-24 w-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <video
+                              src={media.url}
+                              className="h-24 w-full object-cover"
+                              preload="none"
+                              muted
+                              playsInline
+                            />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeExistingMedia(media.id)}
+                            disabled={submitting}
+                            className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-white"
+                            aria-label="Remove current review media"
+                            title="Remove media"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {previewUrls.length ? (
+                  <div className="mt-4">
+                    <p className="mb-2 text-xs font-semibold text-zinc-500">New media</p>
+                    <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
+                      {previewUrls.map((url, index) => {
+                        const file = mediaFiles[index];
+                        if (!file) return null;
+                        const isVideo = file.type.toLowerCase().startsWith("video/");
+                        return (
+                          <div key={url} className="relative w-32 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-black">
+                            {isVideo ? (
+                              <video src={url} className="h-24 w-full object-cover" preload="metadata" muted playsInline />
+                            ) : (
+                              <img src={url} alt={file.name} className="h-24 w-full object-cover" />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => removeMediaFile(index)}
+                              disabled={submitting}
+                              className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white"
+                              aria-label={`Remove ${file.name}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+
+                {isEditing && !retainedMedia.length && !previewUrls.length ? (
+                  <p className="mt-3 text-xs font-semibold text-zinc-400">No media attached to this review.</p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
         </div>
-      ) : null}
-    </section>
+
+        <footer className="sticky bottom-0 z-10 border-t border-zinc-200 bg-white px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6">
+          {error ? <p className="mb-3 text-sm font-semibold text-red-600">{error}</p> : null}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="flex-1 inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-5 py-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={!isAuthenticated || !canReview || rating === 0 || submitting}
+              className="flex-1 inline-flex items-center justify-center rounded-full bg-zinc-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {submitting ? "Saving..." : submitLabel}
+            </button>
+          </div>
+
+          {isEditing && hasMediaChanges ? (
+            <p className="mt-2 text-center text-[11px] font-semibold text-zinc-400">
+              Media changes are applied when you update the review.
+            </p>
+          ) : null}
+        </footer>
+      </section>
+    </div>
   );
 }
