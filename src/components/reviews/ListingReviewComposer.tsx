@@ -30,6 +30,7 @@ export default function ListingReviewComposer({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [retainedMediaIds, setRetainedMediaIds] = useState<number[]>(existingReview?.media?.map((media) => media.id) ?? []);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -40,6 +41,7 @@ export default function ListingReviewComposer({
   }, [existingReview?.id, existingReview?.rating, existingReview?.body]);
 
   useEffect(() => {
+    setRetainedMediaIds(existingReview?.media?.map((media) => media.id) ?? []);
     setMediaFiles([]);
     setError(null);
   }, [existingReview?.id]);
@@ -55,12 +57,17 @@ export default function ListingReviewComposer({
     event.target.value = "";
     if (!files.length) return;
 
-    if (files.length > MAX_MEDIA_COUNT) {
+    const retainedMedia = existingReview?.media?.filter((media) => retainedMediaIds.includes(media.id)) ?? [];
+    const nextFiles = [...mediaFiles, ...files];
+
+    if (retainedMedia.length + nextFiles.length > MAX_MEDIA_COUNT) {
       setError("A review can contain up to 3 media files.");
       return;
     }
 
-    const videoCount = files.filter((file) => file.type.toLowerCase().startsWith("video/")).length;
+    const videoCount =
+      retainedMedia.filter((media) => media.media_type === "video").length +
+      nextFiles.filter((file) => file.type.toLowerCase().startsWith("video/")).length;
     if (videoCount > MAX_VIDEO_COUNT) {
       setError("A review can contain only 1 video.");
       return;
@@ -80,11 +87,16 @@ export default function ListingReviewComposer({
     }
 
     setError(null);
-    setMediaFiles(files.slice(0, MAX_MEDIA_COUNT));
+    setMediaFiles(nextFiles);
   };
 
   const removeMediaFile = (index: number) => {
     setMediaFiles((current) => current.filter((_, mediaIndex) => mediaIndex !== index));
+
+  const removeExistingMedia = (mediaId: number) => {
+    setRetainedMediaIds((current) => current.filter((id) => id !== mediaId));
+    setError(null);
+  };
   };
 
   const bodyCount = body.length;
@@ -112,11 +124,14 @@ export default function ListingReviewComposer({
 
     try {
       const method = existingReview ? "PUT" : "POST";
-      const requestBody = mediaFiles.length
+      const requestBody = existingReview || mediaFiles.length
         ? (() => {
             const formData = new FormData();
             formData.append("rating", String(rating));
             formData.append("body", body.trim());
+            if (existingReview) {
+              formData.append("existingMediaIds", JSON.stringify(retainedMediaIds));
+            }
             mediaFiles.forEach((file) => formData.append("media", file, file.name));
             return formData;
           })()
@@ -218,7 +233,7 @@ export default function ListingReviewComposer({
                 disabled={!isAuthenticated || !canReview || submitting}
                 className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {existingReview ? "Replace media" : "Add media"}
+                Add media
               </button>
               <input
                 ref={mediaInputRef}
@@ -230,12 +245,12 @@ export default function ListingReviewComposer({
               />
             </div>
 
-            {existingReview?.media?.length && !mediaFiles.length ? (
+            {retainedMediaIds.length ? (
               <div className="mt-3">
                 <p className="mb-2 text-xs font-semibold text-zinc-500">Current media</p>
                 <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
-                  {existingReview.media.map((media) => (
-                    <div key={media.id} className="w-28 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-black">
+                  {(existingReview?.media ?? []).filter((media) => retainedMediaIds.includes(media.id)).map((media) => (
+                    <div key={media.id} className="relative w-28 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-black">
                       {media.media_type === "image" ? (
                         <img src={media.url} alt="Current review media" className="h-24 w-full object-cover" loading="lazy" />
                       ) : (
@@ -244,7 +259,6 @@ export default function ListingReviewComposer({
                     </div>
                   ))}
                 </div>
-                <p className="mt-2 text-[11px] font-semibold text-zinc-400">Selecting new media replaces the current media on this review.</p>
               </div>
             ) : null}
 
