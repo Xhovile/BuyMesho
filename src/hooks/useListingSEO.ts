@@ -8,7 +8,18 @@ import { getSEOForListing, resetSEOMetaTags, updateSEOMetaTags, type SEOConfig }
  */
 export function useListingSEO(listing: Listing | null, sellerName?: string) {
   useEffect(() => {
-    if (!listing) return;
+    if (!listing) {
+      updateSEOMetaTags({
+        title: "Listing unavailable | BuyMesho",
+        description: "This BuyMesho marketplace listing is unavailable or could not be loaded.",
+        url: typeof window !== "undefined" ? window.location.href : undefined,
+        noIndex: true,
+      });
+
+      return () => {
+        resetSEOMetaTags();
+      };
+    }
 
     const seoConfig = getSEOForListing(listing, sellerName);
     updateSEOMetaTags(seoConfig);
