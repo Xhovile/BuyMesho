@@ -127,7 +127,40 @@ test("seller profile and event detail routes are page-managed and indexable", ()
   assert.equal(eventDirectory.noIndex, false);
 });
 
-test("dynamic sitemap XML helpers produce valid escaped output", () => {\n  const urlset = buildUrlsetXml([\n    {\n      loc: "https://buymesho.app/listing?listing=12&mode=deal",\n      lastmod: "2026-09-27T00:00:00Z",\n    },\n  ]);\n  assert.match(urlset, /<urlset[^>]*>/);\n  assert.match(urlset, /listing\\?listing=12&amp;mode=deal/);\n  assert.match(urlset, /<lastmod>2026-09-27T00:00:00.000Z<\\/lastmod>/);\n\n  const index = buildSitemapIndexXml([\n    "https://buymesho.app/sitemap-1.xml",\n    "https://buymesho.app/sitemap-2.xml",\n  ]);\n  assert.match(index, /<sitemapindex[^>]*>/);\n  assert.equal((index.match(/<loc>/g) || []).length, 2);\n});\n\ntest("static sitemap is removed so dynamic sitemap data cannot drift", () => {\n  assert.equal(existsSync(resolve(process.cwd(), "public/sitemap.xml")), false);\n});\n\ntest("vercel routes canonical sitemap requests to the dynamic backend", () => {\n  const vercel = JSON.parse(readFileSync(resolve(process.cwd(), "vercel.json"), "utf8")) as {\n    routes: Array<{ src?: string; dest?: string }>;\n  };\n  const sitemapRoute = vercel.routes.find((route) => route.src === "/sitemap\\\\.xml");\n  const sitemapChunkRoute = vercel.routes.find((route) => route.src === "/sitemap-(.*)\\\\.xml");\n  assert.equal(sitemapRoute?.dest, "https://buymesho.onrender.com/api/seo/sitemap.xml");\n  assert.equal(sitemapChunkRoute?.dest, "https://buymesho.onrender.com/api/seo/sitemap-$1.xml");\n});\n\ntest("index.html contains the static BuyMesho brand entity schema", () => {
+test("dynamic sitemap XML helpers produce valid escaped output", () => {
+  const urlset = buildUrlsetXml([
+    {
+      loc: "https://buymesho.app/listing?listing=12&mode=deal",
+      lastmod: "2026-09-27T00:00:00Z",
+    },
+  ]);
+  assert.match(urlset, /<urlset[^>]*>/);
+  assert.match(urlset, /listing\?listing=12&amp;mode=deal/);
+  assert.match(urlset, /<lastmod>2026-09-27T00:00:00.000Z<\/lastmod>/);
+
+  const index = buildSitemapIndexXml([
+    "https://buymesho.app/sitemap-1.xml",
+    "https://buymesho.app/sitemap-2.xml",
+  ]);
+  assert.match(index, /<sitemapindex[^>]*>/);
+  assert.equal((index.match(/<loc>/g) || []).length, 2);
+});
+
+test("static sitemap is removed so dynamic sitemap data cannot drift", () => {
+  assert.equal(existsSync(resolve(process.cwd(), "public/sitemap.xml")), false);
+});
+
+test("vercel routes canonical sitemap requests to the dynamic backend", () => {
+  const vercel = JSON.parse(readFileSync(resolve(process.cwd(), "vercel.json"), "utf8")) as {
+    routes: Array<{ src?: string; dest?: string }>;
+  };
+  const sitemapRoute = vercel.routes.find((route) => route.src === "/sitemap\\.xml");
+  const sitemapChunkRoute = vercel.routes.find((route) => route.src === "/sitemap-(.*)\\.xml");
+  assert.equal(sitemapRoute?.dest, "https://buymesho.onrender.com/api/seo/sitemap.xml");
+  assert.equal(sitemapChunkRoute?.dest, "https://buymesho.onrender.com/api/seo/sitemap-$1.xml");
+});
+
+test("index.html contains the static BuyMesho brand entity schema", () => {
   const indexHtml = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
   const match = indexHtml.match(
     /<script type="application\/ld\+json" id="buymesho-entity-schema">([\s\S]*?)<\/script>/,
