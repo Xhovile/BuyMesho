@@ -214,31 +214,27 @@ async function getReviewerIdentities(rows: ReviewRow[]): Promise<Map<string, Rev
     await Promise.all(
       uids.map(async (uid) => {
         const profile = profileByUid.get(uid) ?? {};
-        let authUser: { displayName?: string | null; photoURL?: string | null } | null = null;
-
-        try {
-          const record = await firebaseAdmin.auth().getUser(uid);
-          authUser = {
-            displayName: record.displayName ?? null,
-            photoURL: record.photoURL ?? null,
-          };
-        } catch {
-          // The Firestore profile remains sufficient when an Auth record cannot be read.
-        }
-
         const fallback = identities.get(uid);
         const profileName = buildProfileDisplayName(profile);
-        const authName = typeof authUser?.displayName === "string" ? authUser.displayName.trim() : "";
-        const name = profileName || authName || fallback?.name || "Member";
-
         const profileAvatar =
           typeof profile.profile_picture === "string" ? profile.profile_picture.trim() :
           typeof profile.photoURL === "string" ? profile.photoURL.trim() :
           "";
-        const authAvatar = typeof authUser?.photoURL === "string" ? authUser.photoURL.trim() : "";
+
+        let authName = "";
+        let authAvatar = "";
+        if (!profileName || !profileAvatar) {
+          try {
+            const record = await firebaseAdmin.auth().getUser(uid);
+            authName = typeof record.displayName === "string" ? record.displayName.trim() : "";
+            authAvatar = typeof record.photoURL === "string" ? record.photoURL.trim() : "";
+          } catch {
+            // The Firestore profile remains sufficient when an Auth record cannot be read.
+          }
+        }
 
         identities.set(uid, {
-          name,
+          name: profileName || authName || fallback?.name || "Member",
           avatarUrl: profileAvatar || authAvatar || null,
         });
       }),
@@ -768,20 +764,14 @@ async function listListingReviewsHandler(req: Request, res: Response) {
   const reviewerIdentities = await getReviewerIdentities(identityRows);
   const capturedPurchaseKeys = getCapturedPurchaseKeysForListing(listingId);
 
-  const items = itemRows.map((row) => {
-    const reviewerUidKey = String(row.reviewer_uid ?? "").trim().toLowerCase();
-    const reviewerEmailKey = String(row.reviewer_email ?? "").trim().toLowerCase();
-    const verifiedPurchase =
-      capturedPurchaseKeys.has(reviewerUidKey) ||
-      Boolean(reviewerEmailKey && capturedPurchaseKeys.has(reviewerEmailKey));
-
-    return serializeReview(
+  const items = itemRows.map((row) =>
+    serializeReview(
       row,
       mediaByReviewId.get(Number(row.id)) ?? [],
       reactionsByReviewId.get(Number(row.id)),
       reviewerIdentities.get(String(row.reviewer_uid)),
-    );
-  }).map((review) => {
+    )
+  ).map((review) => {
     const verifiedPurchase =
       capturedPurchaseKeys.has(String(review.reviewer_uid ?? "").trim().toLowerCase()) ||
       Boolean(
@@ -1017,7 +1007,10 @@ async function createListingReviewHandler(req: Request, res: Response) {
     }
 
     const finalReview = updated ? getReviewByListingAndReviewer(listingId, user.uid) : null;
-    return res.status(201).json({ success: true, review: finalReview ? serializeReview(finalReview) : null });
+    return res.status(201).json({
+      success: true,
+      review: finalReview ? serializeReview(finalReview, undefined, undefined, reviewerIdentity) : null,
+    });
   } catch (error) {
     console.error("POST /api/listings/:listingId/reviews error:", error);
     return reviewError(res, 400, error instanceof Error ? error.message : "Failed to save review");
@@ -1073,7 +1066,10 @@ async function updateListingReviewHandler(req: Request, res: Response) {
     await replaceReviewMedia(review.id, listingId, uploadedFiles, existingMediaIdsToKeep);
 
     const updated = getReviewByListingAndReviewer(listingId, user.uid);
-    return res.json({ success: true, review: updated ? serializeReview(updated) : null });
+    return res.json({
+      success: true,
+      review: updated ? serializeReview(updated, undefined, undefined, reviewerIdentity) : null,
+    });
   } catch (error) {
     console.error("PUT /api/listings/:listingId/reviews error:", error);
     return reviewError(res, 400, error instanceof Error ? error.message : "Failed to update review");
