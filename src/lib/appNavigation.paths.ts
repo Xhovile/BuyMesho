@@ -1,11 +1,11 @@
 import type { HeaderChip } from "../constants";
 
 export type AppRoute =
-  | "home" | "about" | "category" | "explore" | "saved" | "hidden" | "settings" | "privacy" | "terms" | "safety" | "report" | "seller" | "seller_dashboard" | "seller_hub" | "seller_orders" | "seller_payouts" | "listing_details" | "listing_reviews" | "messages" | "create" | "edit" | "login" | "signup" | "forgot_password" | "profile" | "verify_email" | "account_setup" | "edit_profile" | "edit_account" | "become_seller" | "change_password" | "change_email" | "email_action" | "my_listings" | "event_creator_dashboard" | "event_creator_overview" | "tickets" | "admin" | "admin_events" | "admin_payments" | "admin_transaction_inspector" | "admin_payouts" | "admin_reports" | "admin_seller_applications" | "admin_moderation_queue" | "admin_audit" | "admin_balance" | "admin_setup" | "admin_messages" | "admin_disputes" | "payment_return" | "install";
+  | "home" | "about" | "category" | "explore" | "saved" | "hidden" | "settings" | "privacy" | "terms" | "safety" | "report" | "seller" | "seller_dashboard" | "seller_hub" | "seller_orders" | "seller_payouts" | "listing_details" | "listing_reviews" | "messages" | "create" | "edit" | "login" | "signup" | "forgot_password" | "profile" | "verify_email" | "account_setup" | "edit_profile" | "edit_account" | "become_seller" | "change_password" | "change_email" | "email_action" | "my_listings" | "event_creator_dashboard" | "event_creator_overview" | "tickets" | "admin" | "admin_events" | "admin_payments" | "admin_transaction_inspector" | "admin_payouts" | "admin_reports" | "admin_seller_applications" | "admin_moderation_queue" | "admin_audit" | "admin_balance" | "admin_setup" | "admin_messages" | "admin_disputes" | "payment_return" | "install" | "buy_online_malawi" | "sell_online_malawi";
 export const ADMIN_EVENTS_PATH = "/admin/events";
 export const HOME_PATH = "/";
 export const ABOUT_PATH = "/about";
-export const EXPLORE_PATH = "/explore";
+export const EXPLORE_PATH = "/explore";\nexport const BUY_ONLINE_MALAWI_PATH = "/buy-online-malawi";\nexport const SELL_ONLINE_MALAWI_PATH = "/sell-online-malawi";
 export const EVENTS_PATH = "/explore/events";
 export const EVENTS_CREATE_PATH = "/explore/events/create";
 export const EVENTS_MANAGE_PATH = "/explore/events/manage";
