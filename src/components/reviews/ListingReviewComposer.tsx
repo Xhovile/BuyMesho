@@ -38,7 +38,6 @@ export default function ListingReviewComposer({
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const submitIdempotencyKeyRef = useRef<string | null>(null);
-  const historyEntryActiveRef = useRef(false);
 
   const isEditing = Boolean(existingReview);
   const title = isEditing ? "Edit your review" : "Leave a review";
@@ -57,12 +56,6 @@ export default function ListingReviewComposer({
 
   const closeModal = useCallback(() => {
     if (submitting) return;
-
-    if (historyEntryActiveRef.current) {
-      window.history.back();
-      return;
-    }
-
     onClose();
   }, [onClose, submitting]);
 
@@ -78,35 +71,6 @@ export default function ListingReviewComposer({
   }, [open, existingReview?.id]);
 
   useEffect(() => {
-    if (!open || historyEntryActiveRef.current) return;
-
-    const currentState =
-      window.history.state && typeof window.history.state === "object"
-        ? window.history.state
-        : {};
-
-    // Replace the current entry with the stable "base" state first. Then add
-    // one modal-only entry. Back from the modal can therefore only return to
-    // this same Reviews/listing page, never to an earlier app route.
-    window.history.replaceState(
-      { ...(currentState as Record<string, unknown>), __buymeshoReviewModalBase: true },
-      "",
-      window.location.href,
-    );
-    window.history.pushState(
-      { ...(currentState as Record<string, unknown>), __buymeshoReviewModal: true },
-      "",
-      window.location.href,
-    );
-    historyEntryActiveRef.current = true;
-
-    return () => {
-      // Never navigate from effect cleanup. Explicit close and popstate own
-      // the history entry lifecycle.
-    };
-  }, [open]);
-
-  useEffect(() => {
     if (!open) return;
 
     const previousOverflow = document.body.style.overflow;
@@ -120,13 +84,6 @@ export default function ListingReviewComposer({
   useEffect(() => {
     if (!open) return;
 
-    const handlePopState = () => {
-      if (!historyEntryActiveRef.current) return;
-
-      historyEntryActiveRef.current = false;
-      onClose();
-    };
-
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || submitting) return;
 
@@ -134,14 +91,12 @@ export default function ListingReviewComposer({
       closeModal();
     };
 
-    window.addEventListener("popstate", handlePopState);
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener("popstate", handlePopState);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [closeModal, onClose, open, submitting]);
+  }, [closeModal, open, submitting]);
 
   useEffect(() => {
     const urls = mediaFiles.map((file) => URL.createObjectURL(file));
