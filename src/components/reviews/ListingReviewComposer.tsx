@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { Star, X } from "lucide-react";
 import type { ListingReview } from "../../types";
 import { apiFetch } from "../../lib/api";
@@ -107,16 +107,8 @@ export default function ListingReviewComposer({
       window.removeEventListener("popstate", handlePopState);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose, open, submitting]);
+  }, [closeModal, onClose, open, submitting]);
 
-  const closeModal = () => {
-    if (submitting) return;
-    if (historyEntryActiveRef.current) {
-      window.history.back();
-      return;
-    }
-    onClose();
-  };
 
   useEffect(() => {
     const urls = mediaFiles.map((file) => URL.createObjectURL(file));
@@ -133,6 +125,15 @@ export default function ListingReviewComposer({
   const hasMediaChanges = isEditing && (
     retainedMediaIds.length !== (existingReview?.media?.length ?? 0) || mediaFiles.length > 0
   );
+  const closeModal = useCallback(() => {
+    if (submitting) return;
+    if (historyEntryActiveRef.current) {
+      window.history.back();
+      return;
+    }
+    onClose();
+  }, [onClose, submitting]);
+
 
   const handleMediaChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
