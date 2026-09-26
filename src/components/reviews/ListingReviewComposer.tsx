@@ -40,18 +40,115 @@ export default function ListingReviewComposer({
   const submitIdempotencyKeyRef = useRef<string | null>(null);
   const historyEntryActiveRef = useRef(false);
 
+  const isEditing = Boolean(existingReview);
+  const title = isEditing ? "Edit your review" : "Leave a review";
+  const submitLabel = isEditing ? "Update review" : "Submit review";
+
+  const retainedMedia = useMemo(
+    () => existingReview?.media?.filter((media) => retainedMediaIds.includes(media.id)) ?? [],
+    [existingReview?.media, retainedMediaIds],
+  );
+
+  const totalSelectedMedia = retainedMedia.length + mediaFiles.length;
+
+  const hasMediaChanges = isEditing && (
+    retainedMediaIds.length !== (existingReview?.media?.length ?? 0) || mediaFiles.length > 0
+  );
+
   const closeModal = useCallback(() => {
     if (submitting) return;
+
     if (historyEntryActiveRef.current) {
       window.history.back();
       return;
     }
+
     onClose();
   }, [onClose, submitting]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    setRating(existingReview?.rating ?? 0);
+    setBody(existingReview?.body ?? "");
+    setRetainedMediaIds(existingReview?.media?.map((media) => media.id) ?? []);
+    setMediaFiles([]);
+    setError(null);
+    submitIdempotencyKeyRef.current = null;
+  }, [open, existingReview?.id]);
+
+  useEffect(() => {
+    if (!open || historyEntryActiveRef.current) return;
+
+    window.history.pushState(
+      { ...(window.history.state ?? {}), __buymeshoReviewComposer: true },
+      "",
+      window.location.href,
+    );
+    historyEntryActiveRef.current = true;
+
+    return () => {
+      if (!historyEntryActiveRef.current) return;
+
+      const state = window.history.state as Record<string, unknown> | null;
+      if (state?.__buymeshoReviewComposer) {
+        window.history.back();
+      }
+
+      historyEntryActiveRef.current = false;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePopState = () => {
+      if (!historyEntryActiveRef.current) return;
+
+      historyEntryActiveRef.current = false;
+      onClose();
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || submitting) return;
+
+      event.preventDefault();
+      closeModal();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeModal, onClose, open, submitting]);
+
+  useEffect(() => {
+    const urls = mediaFiles.map((file) => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [mediaFiles]);
 
   const handleMediaChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
+
     if (!files.length) return;
 
     const nextFiles = [...mediaFiles, ...files];
@@ -112,6 +209,7 @@ export default function ListingReviewComposer({
       (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
         ? crypto.randomUUID()
         : `review-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+
     submitIdempotencyKeyRef.current = idempotencyKey;
 
     try {
@@ -121,9 +219,11 @@ export default function ListingReviewComposer({
             const formData = new FormData();
             formData.append("rating", String(rating));
             formData.append("body", body.trim());
+
             if (existingReview) {
               formData.append("existingMediaIds", JSON.stringify(retainedMediaIds));
             }
+
             mediaFiles.forEach((file) => formData.append("media", file, file.name));
             return formData;
           })()
@@ -131,94 +231,6 @@ export default function ListingReviewComposer({
             rating,
             body: body.trim() || null,
           });
-
-
-  const isEditing = Boolean(existingReview);
-  const title = isEditing ? "Edit your review" : "Leave a review";
-  const submitLabel = isEditing ? "Update review" : "Submit review";
-
-  useEffect(() => {
-    if (!open) return;
-
-    setRating(existingReview?.rating ?? 0);
-    setBody(existingReview?.body ?? "");
-    setRetainedMediaIds(existingReview?.media?.map((media) => media.id) ?? []);
-    setMediaFiles([]);
-    setError(null);
-    submitIdempotencyKeyRef.current = null;
-  }, [open, existingReview?.id]);
-
-  useEffect(() => {
-    if (!open || historyEntryActiveRef.current) return;
-
-    window.history.pushState(
-      { ...(window.history.state ?? {}), __buymeshoReviewComposer: true },
-      "",
-      window.location.href,
-    );
-    historyEntryActiveRef.current = true;
-
-    return () => {
-      if (!historyEntryActiveRef.current) return;
-      const state = window.history.state as Record<string, unknown> | null;
-      if (state?.__buymeshoReviewComposer) {
-        window.history.back();
-      }
-      historyEntryActiveRef.current = false;
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handlePopState = () => {
-      if (!historyEntryActiveRef.current) return;
-      historyEntryActiveRef.current = false;
-      onClose();
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !submitting) {
-        event.preventDefault();
-        closeModal();
-      }
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [closeModal, onClose, open, submitting]);
-
-
-  useEffect(() => {
-    const urls = mediaFiles.map((file) => URL.createObjectURL(file));
-    setPreviewUrls(urls);
-    return () => urls.forEach((url) => URL.revokeObjectURL(url));
-  }, [mediaFiles]);
-
-  const retainedMedia = useMemo(
-    () => existingReview?.media?.filter((media) => retainedMediaIds.includes(media.id)) ?? [],
-    [existingReview?.media, retainedMediaIds],
-  );
-
-  const totalSelectedMedia = retainedMedia.length + mediaFiles.length;
-  const hasMediaChanges = isEditing && (
-    retainedMediaIds.length !== (existingReview?.media?.length ?? 0) || mediaFiles.length > 0
-  );
-
 
       const result = (await apiFetch(`/api/listings/${listingId}/reviews`, {
         method,
@@ -255,9 +267,11 @@ export default function ListingReviewComposer({
       const status = typeof err === "object" && err !== null && "status" in err
         ? Number((err as { status?: unknown }).status)
         : null;
+
       const code = typeof err === "object" && err !== null && "code" in err
         ? String((err as { code?: unknown }).code ?? "")
         : "";
+
       const message = err instanceof Error
         ? err.message
         : "Failed to submit your review. Please try again.";
@@ -306,6 +320,7 @@ export default function ListingReviewComposer({
               {title}
             </h2>
           </div>
+
           <button
             type="button"
             onClick={closeModal}
@@ -326,6 +341,7 @@ export default function ListingReviewComposer({
           <div className="mt-4 flex flex-wrap items-center gap-1">
             {[1, 2, 3, 4, 5].map((star) => {
               const active = rating >= star;
+
               return (
                 <button
                   key={star}
@@ -357,6 +373,7 @@ export default function ListingReviewComposer({
                 <label className="mb-2 block text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">
                   Add a short review (optional)
                 </label>
+
                 <textarea
                   value={body}
                   onChange={(event) => setBody(event.target.value.slice(0, MAX_BODY_LENGTH))}
@@ -379,6 +396,7 @@ export default function ListingReviewComposer({
                     <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Media (optional)</p>
                     <p className="mt-1 text-xs font-semibold text-zinc-500">Up to 3 total files, with only 1 video.</p>
                   </div>
+
                   <button
                     type="button"
                     onClick={() => mediaInputRef.current?.click()}
@@ -387,6 +405,7 @@ export default function ListingReviewComposer({
                   >
                     Add media
                   </button>
+
                   <input
                     ref={mediaInputRef}
                     type="file"
@@ -400,9 +419,13 @@ export default function ListingReviewComposer({
                 {retainedMedia.length ? (
                   <div className="mt-4">
                     <p className="mb-2 text-xs font-semibold text-zinc-500">Current media</p>
+
                     <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
                       {retainedMedia.map((media) => (
-                        <div key={media.id} className="relative w-28 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-black">
+                        <div
+                          key={media.id}
+                          className="relative w-28 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-black"
+                        >
                           {media.media_type === "image" ? (
                             <img
                               src={media.url}
@@ -419,6 +442,7 @@ export default function ListingReviewComposer({
                               playsInline
                             />
                           )}
+
                           <button
                             type="button"
                             onClick={() => removeExistingMedia(media.id)}
@@ -438,18 +462,35 @@ export default function ListingReviewComposer({
                 {previewUrls.length ? (
                   <div className="mt-4">
                     <p className="mb-2 text-xs font-semibold text-zinc-500">New media</p>
+
                     <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
                       {previewUrls.map((url, index) => {
                         const file = mediaFiles[index];
                         if (!file) return null;
+
                         const isVideo = file.type.toLowerCase().startsWith("video/");
+
                         return (
-                          <div key={url} className="relative w-32 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-black">
+                          <div
+                            key={url}
+                            className="relative w-32 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-black"
+                          >
                             {isVideo ? (
-                              <video src={url} className="h-24 w-full object-cover" preload="metadata" muted playsInline />
+                              <video
+                                src={url}
+                                className="h-24 w-full object-cover"
+                                preload="metadata"
+                                muted
+                                playsInline
+                              />
                             ) : (
-                              <img src={url} alt={file.name} className="h-24 w-full object-cover" />
+                              <img
+                                src={url}
+                                alt={file.name}
+                                className="h-24 w-full object-cover"
+                              />
                             )}
+
                             <button
                               type="button"
                               onClick={() => removeMediaFile(index)}
@@ -476,6 +517,7 @@ export default function ListingReviewComposer({
 
         <footer className="sticky bottom-0 z-10 border-t border-zinc-200 bg-white px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6">
           {error ? <p className="mb-3 text-sm font-semibold text-red-600">{error}</p> : null}
+
           <div className="flex gap-3">
             <button
               type="button"
@@ -485,6 +527,7 @@ export default function ListingReviewComposer({
             >
               Cancel
             </button>
+
             <button
               type="button"
               onClick={() => void handleSubmit()}
