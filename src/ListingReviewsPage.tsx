@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuthUser } from "./hooks/useAuthUser";
-import type { ListingReviewSummary } from "./types";
+import type { ListingReview, ListingReviewSummary } from "./types";
 import { LISTING_PATH } from "./lib/appNavigation";
 import ListingHeaderBar from "./components/listingDetails/ListingHeaderBar";
 import ListingReviewFeed from "./components/reviews/ListingReviewFeed";
+import ListingReviewComposer from "./components/reviews/ListingReviewComposer";
 
 export default function ListingReviewsPage() {
   const { user: firebaseUser } = useAuthUser();
@@ -12,8 +13,17 @@ export default function ListingReviewsPage() {
   const listingId = Number.isInteger(parsedListingId) && parsedListingId > 0 ? parsedListingId : null;
   const [summary, setSummary] = useState<ListingReviewSummary | null>(null);
   const [sellerUid, setSellerUid] = useState<string | null>(null);
+  const [editingReview, setEditingReview] = useState<ListingReview | null>(null);
   const handleListingMetaLoaded = useCallback((listing: { seller_uid: string }) => {
     setSellerUid(listing.seller_uid);
+  }, []);
+  const handleEditOwnReview = useCallback((review: ListingReview) => {
+    setEditingReview(review);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+  const handleReviewSaved = useCallback((review: ListingReview | null) => {
+    setEditingReview(null);
+    if (review) setSummary((current) => current ?? null);
   }, []);
 
   useEffect(() => {
@@ -61,6 +71,17 @@ export default function ListingReviewsPage() {
         </section>
 
         <div className="mt-6 space-y-6">
+          {editingReview ? (
+            <ListingReviewComposer
+              listingId={listingId}
+              isAuthenticated={!!firebaseUser}
+              canReview={true}
+              existingReview={editingReview}
+              onSaved={handleReviewSaved}
+              onCancel={() => setEditingReview(null)}
+            />
+          ) : null}
+
           <ListingReviewFeed
             listingId={listingId}
             mode="full"
@@ -68,6 +89,7 @@ export default function ListingReviewsPage() {
             viewerUid={firebaseUser?.uid}
             onSummaryChange={setSummary}
             onListingMetaLoaded={handleListingMetaLoaded}
+            onEditOwnReview={handleEditOwnReview}
           />
         </div>
       </main>
