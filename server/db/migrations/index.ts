@@ -16,23 +16,12 @@ import { ensureEventPayoutDestinationLockMigration } from "./20260915_event_payo
 import { ensureEventPayoutFinancialIdentityMigration } from "./20260915_event_payout_financial_identity.js";
 import { ensurePayoutOwnershipRefactorMigration } from "./20260919_payout_ownership_refactor.js";
 import { ensurePayoutDestinationHistoryProtectionMigration } from "./20260919_payout_destination_history_protection.js";
+import { ensureListingReviewMediaMigration } from "./20260925_listing_review_media.js";
 
 function ensureExtraTables() {
   postgresDb.exec(`
     CREATE TABLE IF NOT EXISTS seller_applications (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, applicant_uid TEXT NOT NULL, applicant_email TEXT, full_legal_name TEXT NOT NULL, institution TEXT NOT NULL, applicant_type TEXT NOT NULL, institution_id_number TEXT NOT NULL, whatsapp_number TEXT, business_name TEXT NOT NULL, what_to_sell TEXT NOT NULL, business_description TEXT NOT NULL, reason_for_applying TEXT NOT NULL, proof_document_url TEXT NOT NULL, agreed_to_rules INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'pending', reviewed_by_uid TEXT, review_notes TEXT, reviewed_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS listing_reviews (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, listing_id BIGINT NOT NULL, seller_uid TEXT NOT NULL, reviewer_uid TEXT NOT NULL, reviewer_email TEXT, reviewer_name TEXT NOT NULL, rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5), title TEXT, body TEXT, is_verified_purchase INTEGER NOT NULL DEFAULT 0, seller_reply TEXT, seller_reply_at TIMESTAMPTZ, is_hidden INTEGER NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE (listing_id, reviewer_uid));
-    CREATE TABLE IF NOT EXISTS listing_review_media (
-      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-      review_id BIGINT NOT NULL REFERENCES listing_reviews(id) ON DELETE CASCADE,
-      listing_id BIGINT NOT NULL,
-      media_type TEXT NOT NULL CHECK (media_type IN ('image', 'video')),
-      url TEXT NOT NULL,
-      public_id TEXT NOT NULL,
-      resource_type TEXT NOT NULL CHECK (resource_type IN ('image', 'video')),
-      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE INDEX IF NOT EXISTS idx_listing_review_media_review_id
-      ON listing_review_media (review_id, created_at ASC);
     CREATE TABLE IF NOT EXISTS reports (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, type TEXT NOT NULL DEFAULT 'listing', listing_id BIGINT, subject TEXT, reason TEXT NOT NULL, details TEXT, reporter_uid TEXT, reporter_email TEXT, status TEXT NOT NULL DEFAULT 'open', created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS event_creators (uid TEXT PRIMARY KEY, email TEXT NOT NULL, display_name TEXT NOT NULL, organization_name TEXT NOT NULL, organization_type TEXT NOT NULL, contact_whatsapp TEXT, event_types TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'approved', active_until TIMESTAMPTZ, approved_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS event_creator_applications (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, applicant_uid TEXT NOT NULL, applicant_email TEXT, display_name TEXT NOT NULL, organization_name TEXT NOT NULL, organization_type TEXT NOT NULL, contact_whatsapp TEXT, event_types TEXT NOT NULL, reason TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', reviewed_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
@@ -174,5 +163,5 @@ function backfillOrderPaidAtFromPayments() { postgresDb.exec(`UPDATE orders SET 
 function backfillFulfilledAtFromUpdatedAt() { postgresDb.exec(`UPDATE orders SET fulfilled_at = updated_at WHERE status = 'fulfilled' AND fulfilled_at IS NULL AND updated_at IS NOT NULL AND updated_at >= COALESCE(paid_at, created_at);`); }
 
 export function runMigrations() {
-  ensureExtraTables(); ensureEventLifecycleSchema(); ensureEventOwnershipIntegrityMigration(); ensureMessageSchema(postgresDb); normalizeHardDeleteAfterColumn(); updateSellerPayoutAccountColumns(); ensurePayoutLifecycleSchema(); ensurePayoutDestinationOwnershipMigration(); ensureEventPayoutDestinationBindingMigration(); initPaymentSchema(postgresDb); ensureEventTicketStatsSchema(); ensureSellerOrdersIndexesMigration(); ensureRefundDisputeArchitectureMigration(); ensureDisputeSupportRequestsMigration(); ensureDisputeWindowsMigration(); ensureDisputeTimestampCompatibilityMigration(); ensureDisputeResolutionOwnershipMigration(); ensureEventPayoutDestinationLockMigration(); ensureEventPayoutFinancialIdentityMigration(); ensurePayoutOwnershipRefactorMigration(); ensurePayoutDestinationHistoryProtectionMigration(); backfillOrderPaidAtFromPayments(); backfillFulfilledAtFromUpdatedAt(); backfillEventTickets();
+  ensureExtraTables(); ensureListingReviewMediaMigration(); ensureEventLifecycleSchema(); ensureEventOwnershipIntegrityMigration(); ensureMessageSchema(postgresDb); normalizeHardDeleteAfterColumn(); updateSellerPayoutAccountColumns(); ensurePayoutLifecycleSchema(); ensurePayoutDestinationOwnershipMigration(); ensureEventPayoutDestinationBindingMigration(); initPaymentSchema(postgresDb); ensureEventTicketStatsSchema(); ensureSellerOrdersIndexesMigration(); ensureRefundDisputeArchitectureMigration(); ensureDisputeSupportRequestsMigration(); ensureDisputeWindowsMigration(); ensureDisputeTimestampCompatibilityMigration(); ensureDisputeResolutionOwnershipMigration(); ensureEventPayoutDestinationLockMigration(); ensureEventPayoutFinancialIdentityMigration(); ensurePayoutOwnershipRefactorMigration(); ensurePayoutDestinationHistoryProtectionMigration(); backfillOrderPaidAtFromPayments(); backfillFulfilledAtFromUpdatedAt(); backfillEventTickets();
 }
