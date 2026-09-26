@@ -16,6 +16,7 @@ const MAX_BODY_LENGTH = 500;
 const MAX_MEDIA = 3;
 const MAX_IMAGES = 3;
 const MAX_VIDEOS = 1;
+const MAX_MEDIA_FILE_SIZE = 10 * 1024 * 1024;
 
 type NewReviewMedia = {
   file: File;
@@ -105,6 +106,13 @@ export default function ListingReviewComposer({
     if (!files?.length) return;
 
     const incoming = Array.from(files);
+
+    const oversized = incoming.find((file) => file.size > MAX_MEDIA_FILE_SIZE);
+    if (oversized) {
+      setError(`Each media file must be 10 MB or smaller: ${oversized.name}`);
+      return;
+    }
+
     const incomingImages = incoming.filter((file) => file.type.startsWith("image/"));
     const incomingVideos = incoming.filter((file) => file.type.startsWith("video/"));
 
