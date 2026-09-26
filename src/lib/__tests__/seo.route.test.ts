@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getRouteSEO, getSEOForListing } from "../seo";
+import { getRouteSEO, getListingCanonicalUrl } from "../seo";
 import type { AppRoute } from "../../lib/appNavigation.paths";
 
 test("public routes are explicitly indexable", () => {
@@ -63,32 +63,9 @@ test("homepage keeps the canonical root URL and core keyword set", () => {
   assert.ok(seo.keywords.includes("event tickets Malawi"));
 });
 
-test("listing SEO canonical removes the gallery image query parameter", () => {
-  const listing = {
-    id: 123,
-    seller_uid: "seller-1",
-    name: "Test Phone",
-    price: 250000,
-    description: "A test listing.",
-    category: "Electronics & Gadgets",
-    university: "LUANAR",
-    photos: [],
-    status: "available",
-    created_at: "2026-09-27T00:00:00.000Z",
-    is_verified: true,
-  } as any;
-
-  const previousWindow = globalThis.window;
-  globalThis.window = new URL("https://buymesho.app/listing?listing=123&image=2").origin
-    ? ({
-        location: new URL("https://buymesho.app/listing?listing=123&image=2"),
-      } as any)
-    : undefined;
-
-  try {
-    const seo = getSEOForListing(listing);
-    assert.equal(seo.url, "https://buymesho.app/listing?listing=123");
-  } finally {
-    globalThis.window = previousWindow;
-  }
+test("listing canonical removes the gallery image query parameter", () => {
+  assert.equal(
+    getListingCanonicalUrl(123, "https://buymesho.app/listing?listing=123&image=2"),
+    "https://buymesho.app/listing?listing=123",
+  );
 });
