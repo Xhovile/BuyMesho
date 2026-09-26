@@ -155,6 +155,45 @@ export function getRouteSEO(pathname: string, route: AppRoute): RouteSEOConfig {
         description: "Explore BuyMesho, an online marketplace in Malawi for products, services, deals, sellers, and events.",
         canonicalPath: "/explore",
         noIndex: false,
+        keywords: [
+          "BuyMesho",
+          "online marketplace Malawi",
+          "Malawi marketplace",
+          "buy online Malawi",
+          "sell online Malawi",
+          "products Malawi",
+          "services Malawi",
+          "event tickets Malawi",
+        ],
+      };
+    case "/buy-online-malawi":
+      return {
+        title: "Buy Online in Malawi | BuyMesho",
+        description: "Buy online in Malawi with BuyMesho. Discover products, services, deals, sellers, and event tickets from across the country.",
+        canonicalPath: "/buy-online-malawi",
+        noIndex: false,
+        keywords: [
+          "buy online Malawi",
+          "online shopping Malawi",
+          "BuyMesho",
+          "Malawi marketplace",
+          "buy products Malawi",
+          "event tickets Malawi",
+        ],
+      };
+    case "/sell-online-malawi":
+      return {
+        title: "Sell Online in Malawi | BuyMesho",
+        description: "Sell online in Malawi with BuyMesho. Create a seller presence and publish products or services for buyers to discover.",
+        canonicalPath: "/sell-online-malawi",
+        noIndex: false,
+        keywords: [
+          "sell online Malawi",
+          "sell products online Malawi",
+          "BuyMesho sellers",
+          "Malawi marketplace",
+          "online selling Malawi",
+        ],
       };
     case "/explore/deals":
       return {
