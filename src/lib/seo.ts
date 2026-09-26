@@ -7,6 +7,7 @@ export interface SEOConfig {
   image?: string;
   imageAlt?: string;
   url?: string;
+  canonicalPath?: string;
   type?: "website" | "product";
   keywords?: string[];
   noIndex?: boolean;
