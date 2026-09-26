@@ -92,11 +92,11 @@ export default function ListingReviewComposer({
 
   const removeMediaFile = (index: number) => {
     setMediaFiles((current) => current.filter((_, mediaIndex) => mediaIndex !== index));
+  };
 
   const removeExistingMedia = (mediaId: number) => {
     setRetainedMediaIds((current) => current.filter((id) => id !== mediaId));
     setError(null);
-  };
   };
 
   const bodyCount = body.length;
@@ -148,6 +148,7 @@ export default function ListingReviewComposer({
       if (review?.review !== undefined) {
         setRating(review.review?.rating ?? rating);
         setBody(review.review?.body ?? body);
+        setRetainedMediaIds(review.review?.media?.map((media) => media.id) ?? []);
         setMediaFiles([]);
         await onSaved?.(review.review ?? null);
       } else {
@@ -256,6 +257,16 @@ export default function ListingReviewComposer({
                       ) : (
                         <video src={media.url} className="h-24 w-full object-cover" preload="none" muted playsInline />
                       )}
+                      <button
+                        type="button"
+                        onClick={() => removeExistingMedia(media.id)}
+                        disabled={submitting}
+                        className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-white"
+                        aria-label="Remove current review media"
+                        title="Remove media"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
                     </div>
                   ))}
                 </div>
