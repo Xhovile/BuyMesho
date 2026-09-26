@@ -4,6 +4,7 @@ import { formatDate } from "../listingDetails/ListingDetailsShared";
 import ReviewActionsMenu from "./ReviewActionsMenu";
 import ReviewReplyComposer from "./ReviewReplyComposer";
 import ReviewTextClamp from "./ReviewTextClamp";
+import ReviewMediaGallery from "./ReviewMediaGallery";
 
 type ListingReviewCardProps = {
   review: ListingReview;
@@ -70,6 +71,7 @@ export default function ListingReviewCard({
       <div className="mt-3">
         <ReviewTextClamp text={review.body} />
       </div>
+      {review.media?.length ? <ReviewMediaGallery media={review.media} /> : null}
 
       {review.seller_reply ? (
         <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
