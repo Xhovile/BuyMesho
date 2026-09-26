@@ -34,6 +34,7 @@ type ListingReviewFeedProps = {
   onSummaryChange?: (summary: ListingReviewSummary) => void;
   onListingMetaLoaded?: (listing: ReviewListingMeta) => void;
   onReviewEligibilityChange?: (canReview: boolean) => void;
+  onViewerReviewChange?: (review: ListingReview | null) => void;
 };
 
 const PREVIEW_LIMIT = 3;
@@ -64,6 +65,7 @@ export default function ListingReviewFeed({
   onSummaryChange,
   onListingMetaLoaded,
   onReviewEligibilityChange,
+  onViewerReviewChange,
 }: ListingReviewFeedProps) {
   const isFullPage = mode === "full";
   const hasInitialData = !isFullPage && initialItems !== undefined;
@@ -135,6 +137,7 @@ export default function ListingReviewFeed({
 
         const pageItems = (result.items ?? result.reviews ?? []) as ListingReview[];
         setViewerReview(result.viewerReview ?? null);
+        onViewerReviewChange?.(result.viewerReview ?? null);
         setTotal(result.pagination?.total ?? 0);
         setHasMore(Boolean(result.pagination?.hasMore));
         setOffset((result.pagination?.offset ?? 0) + pageItems.length);
