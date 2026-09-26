@@ -15,6 +15,8 @@ export default function ListingReviewsPage() {
   const [sellerUid, setSellerUid] = useState<string | null>(null);
   const [editingReview, setEditingReview] = useState<ListingReview | null>(null);
   const [reviewFeedVersion, setReviewFeedVersion] = useState(0);
+  const [reviewEditorOpen, setReviewEditorOpen] = useState(false);
+  const [canReview, setCanReview] = useState(false);
   const handleListingMetaLoaded = useCallback((listing: { seller_uid: string }) => {
     setSellerUid(listing.seller_uid);
   }, []);
@@ -73,16 +75,30 @@ export default function ListingReviewsPage() {
         </section>
 
         <div className="mt-6 space-y-6">
-          {editingReview ? (
-            <ListingReviewComposer
-              listingId={listingId}
-              isAuthenticated={!!firebaseUser}
-              canReview={true}
-              existingReview={editingReview}
-              onSaved={handleReviewSaved}
-              onCancel={() => setEditingReview(null)}
-            />
+          {!editingReview && firebaseUser && canReview ? (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setReviewEditorOpen(true)}
+                className="rounded-full bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800"
+              >
+                Leave a review
+              </button>
+            </div>
           ) : null}
+
+          <ListingReviewComposer
+            listingId={listingId}
+            isAuthenticated={!!firebaseUser}
+            canReview={editingReview ? true : canReview}
+            existingReview={editingReview}
+            open={reviewEditorOpen || Boolean(editingReview)}
+            onSaved={handleReviewSaved}
+            onClose={() => {
+              setReviewEditorOpen(false);
+              setEditingReview(null);
+            }}
+          />
 
           <ListingReviewFeed
             key={reviewFeedVersion}
@@ -93,7 +109,7 @@ export default function ListingReviewsPage() {
             onSummaryChange={setSummary}
             onListingMetaLoaded={handleListingMetaLoaded}
             onEditOwnReview={handleEditOwnReview}
-            showOwnReview={!editingReview}
+            onReviewEligibilityChange={setCanReview}
           />
         </div>
       </main>
