@@ -151,8 +151,8 @@ export function getRouteSEO(pathname: string, route: AppRoute): RouteSEOConfig {
       };
     case "/explore":
       return {
-        title: "Explore BuyMesho Marketplace",
-        description: "Browse listings, deals, sellers, events, and more on BuyMesho.",
+        title: "BuyMesho: Online Marketplace in Malawi",
+        description: "Explore BuyMesho, an online marketplace in Malawi for products, services, deals, sellers, and events.",
         canonicalPath: "/explore",
         noIndex: false,
       };
@@ -172,8 +172,8 @@ export function getRouteSEO(pathname: string, route: AppRoute): RouteSEOConfig {
       };
     case "/explore/events":
       return {
-        title: "BuyMesho Events",
-        description: "Discover public events and event listings on BuyMesho.",
+        title: "BuyMesho Events in Malawi",
+        description: "Discover public events and event listings in Malawi on BuyMesho.",
         canonicalPath: "/explore/events",
         noIndex: false,
       };
@@ -193,8 +193,8 @@ export function getRouteSEO(pathname: string, route: AppRoute): RouteSEOConfig {
       };
     case "/explore/sellers":
       return {
-        title: "BuyMesho Sellers",
-        description: "Browse seller profiles on BuyMesho.",
+        title: "BuyMesho Sellers in Malawi",
+        description: "Browse seller profiles and businesses on BuyMesho's Malawi marketplace.",
         canonicalPath: "/explore/sellers",
         noIndex: false,
       };
