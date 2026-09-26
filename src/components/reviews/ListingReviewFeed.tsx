@@ -29,6 +29,7 @@ type ListingReviewFeedProps = {
   ownReviewId?: number | null;
   onReviewChanged?: (review: ListingReview) => void | Promise<void>;
   onEditOwnReview?: (review: ListingReview) => void;
+  onDeleteOwnReview?: (review: ListingReview) => void | Promise<void>;
   onViewAll?: () => void;
   onSummaryChange?: (summary: ListingReviewSummary) => void;
   onListingMetaLoaded?: (listing: ReviewListingMeta) => void;
@@ -58,6 +59,7 @@ export default function ListingReviewFeed({
   ownReviewId = null,
   onReviewChanged,
   onEditOwnReview,
+  onDeleteOwnReview,
   onViewAll,
   onSummaryChange,
   onListingMetaLoaded,
@@ -224,6 +226,7 @@ export default function ListingReviewFeed({
             canReply={false}
             isOwnReview
             onEdit={onEditOwnReview ? () => onEditOwnReview(ownReview) : undefined}
+            onDelete={onDeleteOwnReview ? () => onDeleteOwnReview(ownReview) : undefined}
             onReviewChanged={handleReviewChanged}
           />
         </div>
