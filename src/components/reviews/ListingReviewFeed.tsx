@@ -27,12 +27,12 @@ type ListingReviewFeedProps = {
   canReply?: boolean;
   viewerUid?: string;
   ownReviewId?: number | null;
-  showOwnReview?: boolean;
   onReviewChanged?: (review: ListingReview) => void | Promise<void>;
   onEditOwnReview?: (review: ListingReview) => void;
   onViewAll?: () => void;
   onSummaryChange?: (summary: ListingReviewSummary) => void;
   onListingMetaLoaded?: (listing: ReviewListingMeta) => void;
+  onReviewEligibilityChange?: (canReview: boolean) => void;
 };
 
 const PREVIEW_LIMIT = 3;
@@ -56,12 +56,12 @@ export default function ListingReviewFeed({
   canReply = false,
   viewerUid,
   ownReviewId = null,
-  showOwnReview = true,
   onReviewChanged,
   onEditOwnReview,
   onViewAll,
   onSummaryChange,
   onListingMetaLoaded,
+  onReviewEligibilityChange,
 }: ListingReviewFeedProps) {
   const isFullPage = mode === "full";
   const hasInitialData = !isFullPage && initialItems !== undefined;
@@ -129,6 +129,7 @@ export default function ListingReviewFeed({
         setSummary(nextSummary);
         if (nextSummary) onSummaryChange?.(nextSummary);
         if (result.listing) onListingMetaLoaded?.(result.listing);
+        onReviewEligibilityChange?.(Boolean(result.canReview));
 
         const pageItems = (result.items ?? result.reviews ?? []) as ListingReview[];
         setViewerReview(result.viewerReview ?? null);
@@ -215,7 +216,7 @@ export default function ListingReviewFeed({
 
       {isFullPage && summary ? <ListingReviewSummaryView summary={summary} /> : null}
 
-      {showOwnReview && ownReview ? (
+      {ownReview ? (
         <div className="space-y-4">
           <ListingReviewCard
             review={ownReview}
@@ -257,7 +258,7 @@ export default function ListingReviewFeed({
             ))}
           </div>
         )
-      ) : !ownReview || !showOwnReview ? (
+      ) : !ownReview ? (
         <div className="rounded-[2rem] border border-dashed border-blue-200 bg-white px-5 py-6 text-sm text-zinc-500 shadow-sm">
           No written reviews yet.
         </div>
