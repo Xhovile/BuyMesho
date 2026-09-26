@@ -102,6 +102,8 @@ function loadSitemapData(db: any) {
 
   const publicPages: SitemapUrl[] = [
     { loc: `${SITE_URL}/` },
+    { loc: `${SITE_URL}/install` },
+    { loc: `${SITE_URL}/signup` },
     { loc: `${SITE_URL}/about` },
     { loc: `${SITE_URL}/explore` },
     { loc: `${SITE_URL}/buy-online-malawi` },
