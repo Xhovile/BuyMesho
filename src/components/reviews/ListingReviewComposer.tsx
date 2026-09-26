@@ -176,9 +176,27 @@ export default function ListingReviewComposer({
           console.warn("Review saved successfully, but refreshing the review feed failed:", refreshError);
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      const status = typeof err === "object" && err !== null && "status" in err
+        ? Number((err as { status?: unknown }).status)
+        : null;
+      const code = typeof err === "object" && err !== null && "code" in err
+        ? String((err as { code?: unknown }).code ?? "")
+        : "";
       const message = err instanceof Error ? err.message : "Failed to submit your review. Please try again.";
-      if (/request timed out/i.test(message) || /fetch/i.test(message)) {
+      const retryableSubmissionFailure =
+        /request timed out/i.test(message)
+        || /fetch/i.test(message)
+        || status === 502
+        || status === 503
+        || status === 504
+        || code === "IDEMPOTENCY_IN_PROGRESS";
+
+      if (!retryableSubmissionFailure) {
+        submitIdempotencyKeyRef.current = null;
+      }
+
+      if (retryableSubmissionFailure && code !== "IDEMPOTENCY_IN_PROGRESS") {
         setError("Failed to submit your review. Please try again.");
       } else {
         setError(message);
