@@ -166,9 +166,9 @@ export function getRouteSEO(pathname: string, route: AppRoute): RouteSEOConfig {
     case "/explore/lay-by":
       return {
         title: "BuyMesho Lay-by",
-        description: "Browse lay-by friendly listings on BuyMesho.",
+        description: "Lay-by on BuyMesho is coming soon.",
         canonicalPath: "/explore/lay-by",
-        noIndex: false,
+        noIndex: true,
       };
     case "/explore/events":
       return {
