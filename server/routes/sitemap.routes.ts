@@ -190,56 +190,55 @@ function loadSitemapData(db: any) {
 }
 
 export function registerSitemapRoutes(app: Express, { db }: { db: any }) {
-  app.get("/api/seo/sitemap.xml", (req, res) => {
+  const sendXml = (res: Parameters<Parameters<Express["get"]>[1]>[1], xml: string, status = 200) => {
+    res
+      .status(status)
+      .set({
+        "Content-Type": "application/xml; charset=utf-8",
+        "Cache-Control": "public, max-age=300, s-maxage=300",
+      })
+      .send(xml);
+  };
+
+  const getData = () => loadSitemapData(db);
+
+  app.get("/api/seo/sitemap.xml", (_req, res) => {
     try {
-      const data = loadSitemapData(db);
+      const data = getData();
       const allUrls = [...data.publicPages, ...data.urls];
-
-      if (req.query.type === "index") {
-        const chunks = chunk(allUrls, SITEMAP_CHUNK_SIZE);
-        const childUrls = chunks.map(
-          (_chunk, index) =>
-            `${SITE_URL}/sitemap-${index + 1}.xml`
-        );
-        res
-          .status(200)
-          .set({
-            "Content-Type": "application/xml; charset=utf-8",
-            "Cache-Control": "public, max-age=300, s-maxage=300",
-          })
-          .send(buildSitemapIndexXml(childUrls));
-        return;
-      }
-
-      const chunkNumber = Number(req.query.chunk ?? 1);
       const chunks = chunk(allUrls, SITEMAP_CHUNK_SIZE);
-      const index = Number.isInteger(chunkNumber) ? chunkNumber - 1 : 0;
 
-      if (chunks.length > 1 || req.query.chunk !== undefined) {
-        if (index < 0 || index >= chunks.length) {
-          res.status(404).type("text/plain").send("Sitemap chunk not found");
-          return;
-        }
-
-        res
-          .status(200)
-          .set({
-            "Content-Type": "application/xml; charset=utf-8",
-            "Cache-Control": "public, max-age=300, s-maxage=300",
-          })
-          .send(buildUrlsetXml(chunks[index]));
+      if (chunks.length > 1) {
+        const childUrls = chunks.map(
+          (_chunk, index) => `${SITE_URL}/sitemap-${index + 1}.xml`
+        );
+        sendXml(res, buildSitemapIndexXml(childUrls));
         return;
       }
 
-      res
-        .status(200)
-        .set({
-          "Content-Type": "application/xml; charset=utf-8",
-          "Cache-Control": "public, max-age=300, s-maxage=300",
-        })
-        .send(buildUrlsetXml(allUrls));
+      sendXml(res, buildUrlsetXml(allUrls));
     } catch (error) {
       console.error("Failed to build sitemap", error);
+      res.status(500).type("text/plain").send("Sitemap generation failed");
+    }
+  });
+
+  app.get("/api/seo/sitemap-:chunk.xml", (req, res) => {
+    try {
+      const data = getData();
+      const allUrls = [...data.publicPages, ...data.urls];
+      const chunks = chunk(allUrls, SITEMAP_CHUNK_SIZE);
+      const chunkNumber = Number(req.params.chunk);
+      const index = Number.isInteger(chunkNumber) ? chunkNumber - 1 : -1;
+
+      if (index < 0 || index >= chunks.length) {
+        res.status(404).type("text/plain").send("Sitemap chunk not found");
+        return;
+      }
+
+      sendXml(res, buildUrlsetXml(chunks[index]));
+    } catch (error) {
+      console.error("Failed to build sitemap chunk", error);
       res.status(500).type("text/plain").send("Sitemap generation failed");
     }
   });
