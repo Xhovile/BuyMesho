@@ -99,7 +99,7 @@ test("index.html contains the static BuyMesho brand entity schema", () => {
 
   assert.ok(Array.isArray(graph));
 
-  const organization = graph.find((entry) => entry["@type"] === "Organization");
+  const organization = graph.find((entry) => entry["@type"] === "OnlineMarketplace");
   assert.ok(organization);
   assert.equal(organization.name, "BuyMesho");
   assert.equal(organization.alternateName, "Buy Mesho");
