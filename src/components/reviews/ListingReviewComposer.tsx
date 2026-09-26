@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { Star, X } from "lucide-react";
+import { Star, Upload, X } from "lucide-react";
 import type { ListingReview } from "../../types";
 import { apiFetch } from "../../lib/api";
 
@@ -401,8 +401,9 @@ export default function ListingReviewComposer({
                     type="button"
                     onClick={() => mediaInputRef.current?.click()}
                     disabled={!isAuthenticated || !canReview || submitting || totalSelectedMedia >= MAX_MEDIA_COUNT}
-                    className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-none border border-zinc-300 bg-white px-4 py-2 text-xs font-bold text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
                   >
+                    <Upload className="h-4 w-4" />
                     Add media
                   </button>
 
