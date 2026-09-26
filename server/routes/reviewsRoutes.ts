@@ -482,6 +482,56 @@ async function replaceReviewMedia(reviewId: number, listingId: number, files: Ex
 }
 
 
+async function deleteListingReviewHandler(req: Request, res: Response) {
+  const user = req.user as VerifiedRequestUser | undefined;
+  if (!user) {
+    return reviewError(res, 401, "Authentication required");
+  }
+
+  const listingId = Number(req.params.listingId);
+  const reviewId = Number(req.params.reviewId);
+  if (!Number.isInteger(listingId) || !Number.isInteger(reviewId)) {
+    return reviewError(res, 400, "Invalid review id");
+  }
+
+  const review = getReviewById(listingId, reviewId);
+  if (!review) {
+    return reviewError(res, 404, "Review not found");
+  }
+
+  if (review.reviewer_uid !== user.uid && !user.is_admin) {
+    return reviewError(res, 403, "You can only remove your own review");
+  }
+
+  const media = getReviewMedia(reviewId);
+
+  try {
+    db.prepare(
+      `DELETE FROM listing_reviews WHERE id = ? AND listing_id = ?`
+    ).run(reviewId, listingId);
+
+    await Promise.all(
+      media.map((item) =>
+        deleteCloudinaryAsset({
+          publicId: item.public_id,
+          resourceType: item.resource_type,
+        }).catch((error) => {
+          console.warn("Failed to delete review media from Cloudinary after review removal", {
+            reviewId,
+            mediaId: item.id,
+            error,
+          });
+        }),
+      ),
+    );
+
+    return res.json({ success: true, reviewId });
+  } catch (error) {
+    console.error("DELETE /api/listings/:listingId/reviews/:reviewId error:", error);
+    return reviewError(res, 500, "Failed to remove review");
+  }
+}
+
 async function listListingReviewsHandler(req: Request, res: Response) {
   const listingId = Number(req.params.listingId);
   if (!Number.isInteger(listingId)) {
@@ -770,6 +820,7 @@ export function registerReviewsRoutes(app: Express) {
   app.put("/api/listings/:listingId/reviews", requireAuth, parseReviewMedia, createIdempotencyMiddleware("reviews.submit"), (req, res) => void updateListingReviewHandler(req, res));
   app.post("/api/listings/:listingId/reviews/reply", requireAuth, (req, res) => void replyToListingReviewHandler(req, res));
   app.patch("/api/listings/:listingId/reviews/:reviewId/reply", requireAuth, (req, res) => void replyToListingReviewByIdHandler(req, res));
+  app.delete("/api/listings/:listingId/reviews/:reviewId", requireAuth, createIdempotencyMiddleware("reviews.delete"), (req, res) => void deleteListingReviewHandler(req, res));
 
   (app as any)[ROUTES_INSTALLED_FLAG] = true;
 }
