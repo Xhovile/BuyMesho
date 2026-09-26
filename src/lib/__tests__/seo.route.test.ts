@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import test from "node:test";
 
 import { getRouteSEO, getListingCanonicalUrl } from "../seo";
@@ -68,4 +70,38 @@ test("listing canonical removes the gallery image query parameter", () => {
     getListingCanonicalUrl(123, "https://buymesho.app/listing?listing=123&image=2"),
     "https://buymesho.app/listing?listing=123",
   );
+});
+
+test("homepage route metadata identifies BuyMesho as a Malawi marketplace", () => {
+  const seo = getRouteSEO("/explore", "explore");
+
+  assert.match(seo.title, /BuyMesho/i);
+  assert.match(seo.title, /Malawi/i);
+  assert.match(seo.description, /online marketplace/i);
+  assert.match(seo.description, /Malawi/i);
+  assert.equal(seo.noIndex, false);
+});
+
+test("index.html contains the static BuyMesho brand entity schema", () => {
+  const indexHtml = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
+  const match = indexHtml.match(
+    /<script type="application\/ld\+json" id="buymesho-entity-schema">([\s\S]*?)<\/script>/,
+  );
+
+  assert.ok(match, "BuyMesho entity JSON-LD should be present in index.html");
+
+  const graph = JSON.parse(match[1]) as {
+    "@graph"?: Array<Record<string, unknown>>;
+  }["graph"];
+
+  assert.ok(Array.isArray(graph));
+
+  const organization = graph.find((entry) => entry["@type"] === "Organization");
+  assert.ok(organization);
+  assert.equal(organization.name, "BuyMesho");
+  assert.equal(organization.alternateName, "Buy Mesho");
+
+  const website = graph.find((entry) => entry["@type"] === "WebSite");
+  assert.ok(website);
+  assert.equal(website.name, "BuyMesho");
 });
