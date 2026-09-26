@@ -182,7 +182,7 @@ export function getRouteSEO(pathname: string, route: AppRoute): RouteSEOConfig {
         title: "BuyMesho Tickets",
         description: "View your event tickets, download PDFs, and share passes on WhatsApp.",
         canonicalPath: "/tickets",
-        noIndex: false,
+        noIndex: true,
       };
     case "/explore/wholesale":
       return {
