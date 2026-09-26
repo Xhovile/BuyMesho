@@ -27,6 +27,7 @@ type ListingReviewFeedProps = {
   canReply?: boolean;
   viewerUid?: string;
   ownReviewId?: number | null;
+  showOwnReview?: boolean;
   onReviewChanged?: (review: ListingReview) => void | Promise<void>;
   onEditOwnReview?: (review: ListingReview) => void;
   onViewAll?: () => void;
@@ -55,6 +56,7 @@ export default function ListingReviewFeed({
   canReply = false,
   viewerUid,
   ownReviewId = null,
+  showOwnReview = true,
   onReviewChanged,
   onEditOwnReview,
   onViewAll,
@@ -213,7 +215,7 @@ export default function ListingReviewFeed({
 
       {isFullPage && summary ? <ListingReviewSummaryView summary={summary} /> : null}
 
-      {ownReview ? (
+      {showOwnReview && ownReview ? (
         <div className="space-y-4">
           <ListingReviewCard
             review={ownReview}
@@ -255,7 +257,7 @@ export default function ListingReviewFeed({
             ))}
           </div>
         )
-      ) : !ownReview ? (
+      ) : !ownReview || !showOwnReview ? (
         <div className="rounded-[2rem] border border-dashed border-blue-200 bg-white px-5 py-6 text-sm text-zinc-500 shadow-sm">
           No written reviews yet.
         </div>
