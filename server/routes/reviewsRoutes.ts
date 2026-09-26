@@ -178,7 +178,7 @@ function toReviewerThumbnailUrl(value: string): string | null {
     return url.includes("=s") ? url.replace(/=s\\d+.*$/i, "=s96-c") : `${url}${separator}sz=96`;
   }
 
-  return url;
+  return null;
 }
 
 function buildProfileDisplayName(profile: Record<string, unknown>): string {
