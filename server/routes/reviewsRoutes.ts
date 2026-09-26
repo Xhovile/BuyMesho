@@ -157,6 +157,30 @@ type ReviewerIdentity = {
   avatarUrl: string | null;
 };
 
+function toReviewerThumbnailUrl(value: string): string | null {
+  const url = value.trim();
+  if (!url) return null;
+
+  if (url.startsWith("data:")) return url;
+
+  if (url.includes("res.cloudinary.com/") && url.includes("/image/upload/")) {
+    return url.replace(
+      "/image/upload/",
+      "/image/upload/c_fill,w_96,h_96,q_auto,f_auto/",
+    );
+  }
+
+  if (url.includes("googleusercontent.com/")) {
+    const separator = url.includes("?") ? "&" : "?";
+    if (/[?&]sz=/.test(url)) {
+      return url.replace(/([?&]sz=)\\d+/i, "$196");
+    }
+    return url.includes("=s") ? url.replace(/=s\\d+.*$/i, "=s96-c") : `${url}${separator}sz=96`;
+  }
+
+  return url;
+}
+
 function buildProfileDisplayName(profile: Record<string, unknown>): string {
   const directName =
     [profile.display_name, profile.displayName, profile.full_name]
@@ -240,9 +264,9 @@ async function getReviewerIdentities(rows: ReviewRow[]): Promise<Map<string, Rev
       const authAvatar = typeof authUser?.photoURL === "string" ? authUser.photoURL.trim() : "";
 
       const avatarSource = profileThumbnail || profileAvatar || authAvatar || "";
-      const avatarUrl = avatarSource.startsWith("data:")
-        ? (profileThumbnail.startsWith("data:") ? profileThumbnail : null)
-        : avatarSource || null;
+      const avatarUrl = profileThumbnail
+        ? toReviewerThumbnailUrl(profileThumbnail)
+        : toReviewerThumbnailUrl(avatarSource);
 
       identities.set(uid, {
         name: profileName || authName || fallback?.name || "Member",
@@ -559,8 +583,11 @@ async function getCapturedPurchaseKeysForListing(listingId: number): Promise<Set
 
   try {
     const firebaseAdmin = getFirebaseAdmin();
+    const authIds = [...buyerIds].filter((buyerId) => !buyerId.includes("@"));
+    if (!authIds.length) return keys;
+
     const authUsers = await firebaseAdmin.auth().getUsers(
-      [...buyerIds].map((uid) => ({ uid })),
+      authIds.map((uid) => ({ uid })),
     );
     for (const record of authUsers.users) {
       const email = String(record.email ?? "").trim().toLowerCase();
