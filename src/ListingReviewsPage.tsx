@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuthUser } from "./hooks/useAuthUser";
 import type { ListingReviewSummary } from "./types";
 import { LISTING_PATH } from "./lib/appNavigation";
@@ -12,6 +12,9 @@ export default function ListingReviewsPage() {
   const listingId = Number.isInteger(parsedListingId) && parsedListingId > 0 ? parsedListingId : null;
   const [summary, setSummary] = useState<ListingReviewSummary | null>(null);
   const [sellerUid, setSellerUid] = useState<string | null>(null);
+  const handleListingMetaLoaded = useCallback((listing: { seller_uid: string }) => {
+    setSellerUid(listing.seller_uid);
+  }, []);
 
   useEffect(() => {
     setSummary(null);
@@ -64,7 +67,7 @@ export default function ListingReviewsPage() {
             canReply={canReplyAsSeller}
             viewerUid={firebaseUser?.uid}
             onSummaryChange={setSummary}
-            onListingMetaLoaded={(listing) => setSellerUid(listing.seller_uid)}
+            onListingMetaLoaded={handleListingMetaLoaded}
           />
         </div>
       </main>
