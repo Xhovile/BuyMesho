@@ -87,6 +87,17 @@ export default function EventDetailsView() {
     };
   }, [eventId]);
 
+  const price = formatMoney(event?.ticket_price);
+  const posterUrl = event ? getPosterUrl(event) : "";
+  const posterAlt = event ? getPosterAlt(event) : "Event poster";
+  const accent = posterAccent(event?.event_type || "");
+  const eventPageUrl = typeof window !== "undefined" && event ? `${window.location.origin}${EVENTS_PATH}?event=${event.id}` : "";
+  const isPublished = event?.status === "published";
+  const canManageEvent = !!firebaseUser?.uid && !!event?.creator_uid && event.creator_uid === firebaseUser.uid;
+  const canMessageEvent = !!event?.creator_uid && isPublished;
+  const canBuyOrCart = !!event && isPublished;
+  const shouldShowMenu = !!event && !canManageEvent;
+
   useEffect(() => {
     if (!event) return;
 
@@ -94,10 +105,10 @@ export default function EventDetailsView() {
     const absolutePosterUrl = posterUrl
       ? new URL(posterUrl, window.location.origin).toString()
       : undefined;
-    const startDate = /^\\d{4}-\\d{2}-\\d{2}$/.test(event.event_date)
+    const startDate = /^\d{4}-\d{2}-\d{2}$/.test(event.event_date)
       ? `${event.event_date}`
       : undefined;
-    const timeMatch = (event.start_time || "").trim().match(/^(\\d{1,2}):(\\d{2})(?::(\\d{2}))?$/);
+    const timeMatch = (event.start_time || "").trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
     const schemaStartDate =
       startDate && timeMatch
         ? `${startDate}T${String(Number(timeMatch[1])).padStart(2, "0")}:${timeMatch[2]}:${timeMatch[3] || "00"}+02:00`
@@ -166,17 +177,6 @@ export default function EventDetailsView() {
     };
   }, [event, posterUrl]);
   
-  const price = formatMoney(event?.ticket_price);
-  const posterUrl = event ? getPosterUrl(event) : "";
-  const posterAlt = event ? getPosterAlt(event) : "Event poster";
-  const accent = posterAccent(event?.event_type || "");
-  const eventPageUrl = typeof window !== "undefined" && event ? `${window.location.origin}${EVENTS_PATH}?event=${event.id}` : "";
-  const isPublished = event?.status === "published";
-  const canManageEvent = !!firebaseUser?.uid && !!event?.creator_uid && event.creator_uid === firebaseUser.uid;
-  const canMessageEvent = !!event?.creator_uid && isPublished;
-  const canBuyOrCart = !!event && isPublished;
-  const shouldShowMenu = !!event && !canManageEvent;
-
   const clearNotice = () => setNotice(null);
 
   const openAuthPrompt = (action: "message" | "buy" | "cart") => {
