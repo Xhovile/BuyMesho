@@ -136,6 +136,7 @@ export default function ListingReviewsBlock({
             canReply={canReplyAsSeller}
             viewerUid={firebaseUser?.uid}
             ownReviewId={viewerReview?.id ?? null}
+            showOwnReview={!isEditingOwnReview}
             onEditOwnReview={handleEditOwnReview}
             onReviewChanged={handleReviewChanged}
             onViewAll={() => navigateToListingReviews(listing.id)}
