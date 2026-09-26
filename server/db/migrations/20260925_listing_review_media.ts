@@ -13,6 +13,39 @@ export function ensureListingReviewMediaMigration(): void {
       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'listing_review_media'
+          AND column_name = 'secure_url'
+      )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'listing_review_media'
+          AND column_name = 'url'
+      ) THEN
+        ALTER TABLE listing_review_media RENAME COLUMN secure_url TO url;
+      END IF;
+    END;
+    $$;
+
+    ALTER TABLE listing_review_media
+      ADD COLUMN IF NOT EXISTS listing_id BIGINT;
+
+    UPDATE listing_review_media AS media
+    SET listing_id = reviews.listing_id
+    FROM listing_reviews AS reviews
+    WHERE media.review_id = reviews.id
+      AND media.listing_id IS NULL;
+
+    ALTER TABLE listing_review_media
+      ALTER COLUMN listing_id SET NOT NULL;
+
     CREATE INDEX IF NOT EXISTS idx_listing_review_media_review_id
       ON listing_review_media (review_id, created_at ASC);
   `);
