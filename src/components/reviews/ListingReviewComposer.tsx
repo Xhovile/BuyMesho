@@ -125,6 +125,7 @@ export default function ListingReviewComposer({
   const hasMediaChanges = isEditing && (
     retainedMediaIds.length !== (existingReview?.media?.length ?? 0) || mediaFiles.length > 0
   );
+
   const closeModal = useCallback(() => {
     if (submitting) return;
     if (historyEntryActiveRef.current) {
@@ -133,7 +134,6 @@ export default function ListingReviewComposer({
     }
     onClose();
   }, [onClose, submitting]);
-
 
   const handleMediaChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
