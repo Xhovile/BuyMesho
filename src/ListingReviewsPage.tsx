@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuthUser } from "./hooks/useAuthUser";
 import type { ListingReview, ListingReviewSummary } from "./types";
 import { LISTING_PATH } from "./lib/appNavigation";
+import { apiFetch } from "./lib/api";
 import ListingHeaderBar from "./components/listingDetails/ListingHeaderBar";
 import ListingReviewFeed from "./components/reviews/ListingReviewFeed";
 import ListingReviewComposer from "./components/reviews/ListingReviewComposer";
