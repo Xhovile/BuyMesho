@@ -383,11 +383,12 @@ function parseUploadedReviewMedia(req: Request) {
 
 async function replaceReviewMedia(reviewId: number, listingId: number, files: Express.Multer.File[], existingMediaIdsToKeep: number[]) {
   const existing = getReviewMedia(reviewId);
-  const existingIds = new Set(existing.map((media) => media.id));
-  const unknownIds = existingMediaIdsToKeep.filter((id) => !existingIds.has(id));
+  const requestedKeepIds = new Set(existingMediaIdsToKeep.map(Number));
+  const existingIds = new Set(existing.map((media) => Number(media.id)));
+  const unknownIds = [...requestedKeepIds].filter((id) => !existingIds.has(id));
   if (unknownIds.length > 0) throw new Error("One or more selected review media items are invalid.");
 
-  const retained = existing.filter((media) => existingMediaIdsToKeep.includes(media.id));
+  const retained = existing.filter((media) => requestedKeepIds.has(Number(media.id)));
   const newImageCount = files.filter((file) => String(file.mimetype || "").toLowerCase().startsWith("image/")).length;
   const newVideoCount = files.filter((file) => String(file.mimetype || "").toLowerCase().startsWith("video/")).length;
 
@@ -419,7 +420,7 @@ async function replaceReviewMedia(reviewId: number, listingId: number, files: Ex
       });
     }
 
-    const removed = existing.filter((media) => !existingMediaIdsToKeep.includes(media.id));
+    const removed = existing.filter((media) => !requestedKeepIds.has(Number(media.id)));
 
     db.exec("BEGIN");
     try {
