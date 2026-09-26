@@ -106,6 +106,26 @@ test("marketplace intent paths resolve to their public app routes", () => {
   assert.equal(getAppRouteFromLocation({ pathname: "/sell-online-malawi", search: "" }), "sell_online_malawi");
 });
 
+
+test("seller profile and event detail routes are page-managed and indexable", () => {
+  const seller = getRouteSEO("/seller", "seller", "?uid=seller-123");
+  assert.equal(seller.noIndex, false);
+  assert.equal(seller.managedByPage, true);
+  assert.equal(seller.canonicalPath, "/seller?uid=seller-123");
+
+  const missingSeller = getRouteSEO("/seller", "seller", "");
+  assert.equal(missingSeller.noIndex, true);
+
+  const event = getRouteSEO("/explore/events", "explore", "?event=42");
+  assert.equal(event.noIndex, false);
+  assert.equal(event.managedByPage, true);
+  assert.equal(event.canonicalPath, "/explore/events?event=42");
+
+  const eventDirectory = getRouteSEO("/explore/events", "explore", "");
+  assert.equal(eventDirectory.managedByPage, undefined);
+  assert.equal(eventDirectory.noIndex, false);
+});
+
 test("index.html contains the static BuyMesho brand entity schema", () => {
   const indexHtml = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
   const match = indexHtml.match(
