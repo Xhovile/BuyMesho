@@ -161,7 +161,7 @@ export default function ListingReviewFeed({
         }
       }
     },
-    [isFullPage, listingId, onListingMetaLoaded, onSummaryChange]
+    [isFullPage, listingId, onListingMetaLoaded, onReviewEligibilityChange, onSummaryChange, onViewerReviewChange]
   );
 
   useEffect(() => {
