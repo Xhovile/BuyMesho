@@ -649,6 +649,10 @@ async function setReviewReactionHandler(req: Request, res: Response) {
     return reviewError(res, 404, "Review not found");
   }
 
+  if (review.seller_uid === user.uid) {
+    return reviewError(res, 403, "Listing sellers cannot react to reviews");
+  }
+
   const reaction = req.body?.reaction;
   if (reaction !== "like" && reaction !== "dislike") {
     return reviewError(res, 400, "Reaction must be like or dislike");
