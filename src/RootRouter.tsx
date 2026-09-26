@@ -49,7 +49,7 @@ export default function RootRouter() {
     return () => window.clearTimeout(timeoutId);
   }, [authLoading, firebaseUser]);
 
-  useRootRouterSeo(locationPath, route);
+  useRootRouterSeo(locationPath, route, locationSearch);
   useRootRouterAuthGuard({
     authLoading,
     firebaseUser,
