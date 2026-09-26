@@ -5,6 +5,7 @@ import { attachOptionalAuth, requireAuth } from "../middleware/requireAuth.js";
 import { REVIEW_MEDIA_MAX_COUNT, validateReviewMediaFiles } from "../lib/reviewMedia.js";
 import { deleteCloudinaryAsset, uploadBufferToCloudinaryReviewMedia } from "../lib/cloudinaryUpload.js";
 import { createIdempotencyMiddleware } from "../idempotency/middleware.js";
+import { getFirebaseAdmin } from "../auth/firebaseAdmin.js";
 
 type VerifiedRequestUser = {
   uid: string;
@@ -140,21 +141,129 @@ function normalizeText(input: unknown, maxLength: number): string | null {
   return trimmed.slice(0, maxLength);
 }
 
-function getReviewerDisplayName(profile: {
+function getStoredReviewerFallback(profile: {
   reviewer_name?: string | null;
-  reviewer_business_name?: string | null;
   reviewer_email?: string | null;
 }) {
   const stored = typeof profile.reviewer_name === "string" ? profile.reviewer_name.trim() : "";
-  if (stored) return stored;
-
-  const businessName = typeof profile.reviewer_business_name === "string" ? profile.reviewer_business_name.trim() : "";
-  if (businessName) return businessName;
+  if (stored && !stored.includes("@")) return stored;
 
   const email = typeof profile.reviewer_email === "string" ? profile.reviewer_email.trim() : "";
-  if (email && email.includes("@")) return email.split("@")[0] || "Member";
+  return email || stored || "Member";
+}
 
-  return "Member";
+type ReviewerIdentity = {
+  name: string;
+  avatarUrl: string | null;
+};
+
+function buildProfileDisplayName(profile: Record<string, unknown>): string {
+  const directName =
+    [profile.display_name, profile.displayName, profile.full_name]
+      .map((value) => typeof value === "string" ? value.trim() : "")
+      .find(Boolean) ?? "";
+
+  if (directName) return directName;
+
+  const composed = [profile.first_name, profile.other_names, profile.surname]
+    .map((value) => typeof value === "string" ? value.trim() : "")
+    .filter(Boolean)
+    .join(" ");
+
+  return composed;
+}
+
+async function getReviewerIdentities(rows: ReviewRow[]): Promise<Map<string, ReviewerIdentity>> {
+  const uids = [...new Set(
+    rows
+      .map((row) => String(row.reviewer_uid ?? "").trim())
+      .filter(Boolean),
+  )];
+
+  const identities = new Map<string, ReviewerIdentity>();
+  if (!uids.length) return identities;
+
+  const fallbackByUid = new Map(
+    rows.map((row) => [
+      String(row.reviewer_uid),
+      {
+        name: getStoredReviewerFallback(row),
+        avatarUrl: null,
+      },
+    ]),
+  );
+
+  for (const [uid, fallback] of fallbackByUid) {
+    identities.set(uid, fallback);
+  }
+
+  try {
+    const firebaseAdmin = getFirebaseAdmin();
+    const userRefs = uids.map((uid) =>
+      firebaseAdmin.firestore().collection("users").doc(uid),
+    );
+    const profileSnapshots = await firebaseAdmin.firestore().getAll(...userRefs);
+    const profileByUid = new Map<string, Record<string, unknown>>();
+
+    profileSnapshots.forEach((snapshot) => {
+      if (snapshot.exists) {
+        profileByUid.set(snapshot.id, snapshot.data() ?? {});
+      }
+    });
+
+    await Promise.all(
+      uids.map(async (uid) => {
+        const profile = profileByUid.get(uid) ?? {};
+        let authUser: { displayName?: string | null; photoURL?: string | null } | null = null;
+
+        try {
+          const record = await firebaseAdmin.auth().getUser(uid);
+          authUser = {
+            displayName: record.displayName ?? null,
+            photoURL: record.photoURL ?? null,
+          };
+        } catch {
+          // The Firestore profile remains sufficient when an Auth record cannot be read.
+        }
+
+        const fallback = identities.get(uid);
+        const profileName = buildProfileDisplayName(profile);
+        const authName = typeof authUser?.displayName === "string" ? authUser.displayName.trim() : "";
+        const name = profileName || authName || fallback?.name || "Member";
+
+        const profileAvatar =
+          typeof profile.profile_picture === "string" ? profile.profile_picture.trim() :
+          typeof profile.photoURL === "string" ? profile.photoURL.trim() :
+          "";
+        const authAvatar = typeof authUser?.photoURL === "string" ? authUser.photoURL.trim() : "";
+
+        identities.set(uid, {
+          name,
+          avatarUrl: profileAvatar || authAvatar || null,
+        });
+      }),
+    );
+  } catch (error) {
+    console.warn("Failed to load reviewer account profiles; using stored review identity", error);
+  }
+
+  return identities;
+}
+
+async function getReviewerIdentity(uid: string, fallback: {
+  reviewer_name?: string | null;
+  reviewer_email?: string | null;
+}): Promise<ReviewerIdentity> {
+  const identity = await getReviewerIdentities([{
+    reviewer_uid: uid,
+    reviewer_name: fallback.reviewer_name ?? null,
+    reviewer_email: fallback.reviewer_email ?? null,
+  } as ReviewRow]);
+
+  return identity.get(uid) ?? {
+    name: getStoredReviewerFallback(fallback),
+    avatarUrl: null,
+  };
 }
 
 function getReviewMedia(reviewId: number) {
@@ -234,16 +343,16 @@ function getReviewReactionStatsForIds(reviewIds: number[], viewerUid?: string) {
   return grouped;
 }
 
-function serializeReview(row: ReviewRow, mediaRows?: ReviewMediaRow[], reactionStats?: { likeCount: number; dislikeCount: number; viewerReaction: "like" | "dislike" | null }) {
+function serializeReview(row: ReviewRow, mediaRows?: ReviewMediaRow[], reactionStats?: { likeCount: number; dislikeCount: number; viewerReaction: "like" | "dislike" | null }, identity?: ReviewerIdentity) {
   const media = mediaRows ?? getReviewMedia(row.id);
   return {
     id: row.id,
     listing_id: row.listing_id,
     seller_uid: row.seller_uid,
     reviewer_uid: row.reviewer_uid,
-    reviewer_name: getReviewerDisplayName(row),
+    reviewer_name: identity?.name ?? getStoredReviewerFallback(row),
     reviewer_email: row.reviewer_email,
-    reviewer_avatar_url: row.reviewer_logo || null,
+    reviewer_avatar_url: identity?.avatarUrl ?? null,
     reviewer_badge: row.is_verified_purchase ? "Verified buyer" : null,
     rating: row.rating,
     title: row.title,
@@ -378,12 +487,72 @@ function getReviewsTotal(listingId: number) {
   return Number(row?.total ?? 0);
 }
 
+function getListingIdCandidates(listingId: number): [string, string] {
+  return [`%"listingId":"${listingId}"%`, `%"listingId":${listingId}%`];
+}
+
+function getCapturedPurchaseRowsForListing(listingId: number) {
+  const [stringPattern, numericPattern] = getListingIdCandidates(listingId);
+  return db.prepare(
+    `
+      SELECT DISTINCT o.buyer_id, o.items
+      FROM orders o
+      INNER JOIN payments p ON p.order_id = o.id
+      WHERE p.status = 'captured'
+        AND (o.items LIKE ? OR o.items LIKE ?)
+    `
+  ).all(stringPattern, numericPattern) as Array<{
+    buyer_id: string;
+    items: string | null;
+  }>;
+}
+
+function orderItemsContainListing(items: string | null, listingId: number): boolean {
+  if (!items) return false;
+
+  try {
+    const parsed = JSON.parse(items);
+    if (!Array.isArray(parsed)) return false;
+
+    return parsed.some((item) => {
+      if (!item || typeof item !== "object") return false;
+      const record = item as Record<string, unknown>;
+      return String(record.listingId ?? record.listing_id ?? "").trim() === String(listingId);
+    });
+  } catch {
+    return false;
+  }
+}
+
+function getCapturedPurchaseKeysForListing(listingId: number): Set<string> {
+  const keys = new Set<string>();
+
+  for (const row of getCapturedPurchaseRowsForListing(listingId)) {
+    if (orderItemsContainListing(row.items, listingId)) {
+      const buyerId = String(row.buyer_id ?? "").trim();
+      if (buyerId) keys.add(buyerId.toLowerCase());
+    }
+  }
+
+  return keys;
+}
+
+function hasCapturedPurchase(listingId: number, user: VerifiedRequestUser): boolean {
+  const capturedBuyers = getCapturedPurchaseKeysForListing(listingId);
+  if (!capturedBuyers.size) return false;
+
+  if (capturedBuyers.has(user.uid.trim().toLowerCase())) return true;
+
+  const email = String(user.email ?? "").trim().toLowerCase();
+  return Boolean(email && capturedBuyers.has(email));
+}
+
 function canUserReplyToListing(listing: ListingRow, user: VerifiedRequestUser) {
   return user.is_admin || listing.seller_uid === user.uid;
 }
 
 function canUserReviewListing(listing: ListingRow, user?: VerifiedRequestUser | undefined) {
-  return !!user && user.uid !== listing.seller_uid;
+  return !!user && user.uid !== listing.seller_uid && hasCapturedPurchase(listing.id, user);
 }
 
 function reviewError(res: Response, status: number, error: string) {
@@ -594,21 +763,59 @@ async function listListingReviewsHandler(req: Request, res: Response) {
     itemRows.map((row) => Number(row.id)),
     user?.uid,
   );
-  const items = itemRows.map((row) =>
-    serializeReview(
+  const mine = user ? getReviewByListingAndReviewer(listingId, user.uid) : null;
+  const identityRows = mine ? [...itemRows, mine] : itemRows;
+  const reviewerIdentities = await getReviewerIdentities(identityRows);
+  const capturedPurchaseKeys = getCapturedPurchaseKeysForListing(listingId);
+
+  const items = itemRows.map((row) => {
+    const reviewerUidKey = String(row.reviewer_uid ?? "").trim().toLowerCase();
+    const reviewerEmailKey = String(row.reviewer_email ?? "").trim().toLowerCase();
+    const verifiedPurchase =
+      capturedPurchaseKeys.has(reviewerUidKey) ||
+      Boolean(reviewerEmailKey && capturedPurchaseKeys.has(reviewerEmailKey));
+
+    return serializeReview(
       row,
       mediaByReviewId.get(Number(row.id)) ?? [],
       reactionsByReviewId.get(Number(row.id)),
-    )
-  );
+      reviewerIdentities.get(String(row.reviewer_uid)),
+    );
+  }).map((review) => {
+    const verifiedPurchase =
+      capturedPurchaseKeys.has(String(review.reviewer_uid ?? "").trim().toLowerCase()) ||
+      Boolean(
+        String(review.reviewer_email ?? "").trim() &&
+        capturedPurchaseKeys.has(String(review.reviewer_email).trim().toLowerCase()),
+      );
+
+    return {
+      ...review,
+      is_verified_purchase: verifiedPurchase,
+      reviewer_badge: verifiedPurchase ? "Verified buyer" : null,
+    };
+  });
 
   let viewerReview: ReturnType<typeof serializeReview> | null = null;
-  if (user) {
-    const mine = getReviewByListingAndReviewer(listingId, user.uid);
-    if (mine) {
-      const mineReactions = getReviewReactionStatsForIds([Number(mine.id)], user.uid);
-      viewerReview = serializeReview(mine, undefined, mineReactions.get(Number(mine.id)));
-    }
+  if (mine) {
+    const mineReactions = getReviewReactionStatsForIds([Number(mine.id)], user?.uid);
+    const mineVerifiedPurchase =
+      capturedPurchaseKeys.has(String(mine.reviewer_uid ?? "").trim().toLowerCase()) ||
+      Boolean(
+        String(mine.reviewer_email ?? "").trim() &&
+        capturedPurchaseKeys.has(String(mine.reviewer_email).trim().toLowerCase()),
+      );
+
+    viewerReview = {
+      ...serializeReview(
+        mine,
+        undefined,
+        mineReactions.get(Number(mine.id)),
+        reviewerIdentities.get(String(mine.reviewer_uid)),
+      ),
+      is_verified_purchase: mineVerifiedPurchase,
+      reviewer_badge: mineVerifiedPurchase ? "Verified buyer" : null,
+    };
   }
 
   return res.json({
@@ -731,9 +938,18 @@ async function createListingReviewHandler(req: Request, res: Response) {
     return reviewError(res, 404, "Listing not found");
   }
 
-  if (!canUserReviewListing(listing, user)) {
-    return reviewError(res, 403, "You cannot review your own listing");
+  if (user.uid === listing.seller_uid) {
+    return reviewError(res, 403, "Listing owners cannot review their own listing");
   }
+
+  if (!hasCapturedPurchase(listingId, user)) {
+    return reviewError(res, 403, "You can only review a listing after purchasing it.");
+  }
+
+  const reviewerIdentity = await getReviewerIdentity(user.uid, {
+    reviewer_name: user.email ?? "Member",
+    reviewer_email: user.email ?? null,
+  });
 
   const rating = clampInt(req.body?.rating, 0, 1, 5);
   if (!rating) {
@@ -777,7 +993,7 @@ async function createListingReviewHandler(req: Request, res: Response) {
           is_hidden,
           created_at,
           updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, NULL, NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT(listing_id, reviewer_uid) DO UPDATE SET
           rating = excluded.rating,
           title = excluded.title,
@@ -789,7 +1005,7 @@ async function createListingReviewHandler(req: Request, res: Response) {
       listing.seller_uid,
       user.uid,
       user.email ?? null,
-      user.email || "Member",
+      reviewerIdentity.name,
       rating,
       title,
       body
@@ -824,6 +1040,11 @@ async function updateListingReviewHandler(req: Request, res: Response) {
     return reviewError(res, 404, "Review not found");
   }
 
+  if (!hasCapturedPurchase(listingId, user)) {
+    return reviewError(res, 403, "You can only review a listing after purchasing it.");
+  }
+
+  const reviewerIdentity = await getReviewerIdentity(user.uid, review);
   const rating = clampInt(req.body?.rating, review.rating, 1, 5);
   const title = normalizeText(req.body?.title, 120);
   const body = normalizeText(req.body?.body, 2000);
@@ -843,10 +1064,11 @@ async function updateListingReviewHandler(req: Request, res: Response) {
     db.prepare(
       `
         UPDATE listing_reviews
-        SET rating = ?, title = ?, body = ?, updated_at = CURRENT_TIMESTAMP
+        SET reviewer_name = ?, reviewer_email = ?, is_verified_purchase = 1,
+            rating = ?, title = ?, body = ?, updated_at = CURRENT_TIMESTAMP
         WHERE listing_id = ? AND reviewer_uid = ?
       `
-    ).run(rating, title, body, listingId, user.uid);
+    ).run(reviewerIdentity.name, user.email ?? review.reviewer_email ?? null, rating, title, body, listingId, user.uid);
 
     await replaceReviewMedia(review.id, listingId, uploadedFiles, existingMediaIdsToKeep);
 
