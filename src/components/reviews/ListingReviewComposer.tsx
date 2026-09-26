@@ -237,9 +237,9 @@ export default function ListingReviewComposer({
                   {existingReview.media.map((media) => (
                     <div key={media.id} className="w-28 shrink-0 overflow-hidden rounded-xl border border-zinc-200 bg-black">
                       {media.media_type === "image" ? (
-                        <img src={media.secure_url} alt="Current review media" className="h-24 w-full object-cover" loading="lazy" />
+                        <img src={media.url} alt="Current review media" className="h-24 w-full object-cover" loading="lazy" />
                       ) : (
-                        <video src={media.secure_url} className="h-24 w-full object-cover" preload="none" muted playsInline />
+                        <video src={media.url} className="h-24 w-full object-cover" preload="none" muted playsInline />
                       )}
                     </div>
                   ))}
