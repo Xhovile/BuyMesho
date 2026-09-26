@@ -1,4 +1,5 @@
 import type { Listing } from "../types";
+import type { AppRoute } from "../lib/appNavigation.paths";
 
 export interface SEOConfig {
   title: string;
@@ -19,6 +20,227 @@ export interface SEOConfig {
 }
 
 const SITE_URL = "https://buymesho.app";
+
+export type RouteSEOConfig = SEOConfig & {
+  /**
+   * When true, a dedicated page owns SEO for this route (for example,
+   * category pages and listing detail pages). The root router should not
+   * overwrite that page-level metadata.
+   */
+  managedByPage?: boolean;
+};
+
+/**
+ * Central route-level SEO registry. Public/indexable routes are explicit;
+ * everything else defaults to noindex so private application surfaces do not
+ * accidentally become searchable.
+ */
+export function getRouteSEO(pathname: string, route: AppRoute): RouteSEOConfig {
+  const normalizedPathname =
+    pathname === "/" ? "/" : pathname.replace(/\/+$/, "") || "/";
+  const normalizedStudioPath = normalizedPathname.toLowerCase();
+
+  if (route === "listing_details") {
+    return {
+      title: DEFAULT_SEO.title,
+      description: DEFAULT_SEO.description,
+      canonicalPath: "/listing",
+      noIndex: false,
+      managedByPage: true,
+    };
+  }
+
+  if (route === "category") {
+    return {
+      title: DEFAULT_SEO.title,
+      description: DEFAULT_SEO.description,
+      canonicalPath: normalizedPathname,
+      noIndex: false,
+      managedByPage: true,
+    };
+  }
+
+  if (route === "listing_reviews") {
+    return {
+      title: "Listing Reviews — BuyMesho",
+      description: "Read ratings and reviews for a BuyMesho marketplace listing.",
+      canonicalPath: "/listing/reviews",
+      noIndex: true,
+    };
+  }
+
+  if (
+    normalizedStudioPath === "/xhovilestudio" ||
+    normalizedStudioPath === "/services/xhovilestudio"
+  ) {
+    return {
+      title: "Xhovile Studio — Service Payment",
+      description:
+        "Submit a Graphic Design or Website Development request and continue to secure payment checkout.",
+      canonicalPath: "/xhovilestudio",
+      noIndex: true,
+    };
+  }
+
+  if (
+    normalizedStudioPath === "/xhovilestudio/receipt" ||
+    normalizedStudioPath === "/services/xhovilestudio/receipt"
+  ) {
+    return {
+      title: "Xhovile Studio — Payment Receipt",
+      description: "View and download your Xhovile Studio payment receipt.",
+      canonicalPath: "/xhovilestudio/receipt",
+      noIndex: true,
+    };
+  }
+
+  if (
+    normalizedStudioPath === "/xhovilestudio/admin" ||
+    normalizedStudioPath === "/services/xhovilestudio/admin"
+  ) {
+    return {
+      title: "Xhovile Studio — Admin",
+      description: "Xhovile Studio administration.",
+      canonicalPath: "/xhovilestudio/admin",
+      noIndex: true,
+    };
+  }
+
+  switch (normalizedPathname) {
+    case "/":
+    case "/home":
+      return {
+        title: DEFAULT_SEO.title,
+        description: DEFAULT_SEO.description,
+        canonicalPath: "/",
+        noIndex: false,
+        keywords: [
+          "BuyMesho",
+          "Malawi e-commerce",
+          "Malawi marketplace",
+          "online shopping Malawi",
+          "buy and sell Malawi",
+          "Malawi sellers",
+          "products Malawi",
+          "services Malawi",
+          "event tickets Malawi",
+        ].join(", "),
+      };
+    case "/install":
+      return {
+        title: "Install BuyMesho",
+        description:
+          "Install BuyMesho on your phone for fast access to Malawi's secure e-commerce platform.",
+        canonicalPath: "/install",
+        noIndex: false,
+      };
+    case "/signup":
+      return {
+        title: "Create a BuyMesho Account",
+        description: "Join BuyMesho to buy, sell, and manage your marketplace activity.",
+        canonicalPath: "/signup",
+        noIndex: false,
+      };
+    case "/about":
+      return {
+        title: "About BuyMesho — Malawi's Secure E-commerce Platform",
+        description: "Learn what BuyMesho is, who it serves, and how the e-commerce platform works.",
+        canonicalPath: "/about",
+        noIndex: false,
+      };
+    case "/explore":
+      return {
+        title: "Explore BuyMesho Marketplace",
+        description: "Browse listings, deals, sellers, events, and more on BuyMesho.",
+        canonicalPath: "/explore",
+        noIndex: false,
+      };
+    case "/explore/deals":
+      return {
+        title: "BuyMesho Deals",
+        description: "Find current deals and value listings on BuyMesho.",
+        canonicalPath: "/explore/deals",
+        noIndex: false,
+      };
+    case "/explore/lay-by":
+      return {
+        title: "BuyMesho Lay-by",
+        description: "Browse lay-by friendly listings on BuyMesho.",
+        canonicalPath: "/explore/lay-by",
+        noIndex: false,
+      };
+    case "/explore/events":
+      return {
+        title: "BuyMesho Events",
+        description: "Discover public events and event listings on BuyMesho.",
+        canonicalPath: "/explore/events",
+        noIndex: false,
+      };
+    case "/tickets":
+      return {
+        title: "BuyMesho Tickets",
+        description: "View your event tickets, download PDFs, and share passes on WhatsApp.",
+        canonicalPath: "/tickets",
+        noIndex: false,
+      };
+    case "/explore/wholesale":
+      return {
+        title: "BuyMesho Wholesale",
+        description: "Browse wholesale listings and supplier options on BuyMesho.",
+        canonicalPath: "/explore/wholesale",
+        noIndex: false,
+      };
+    case "/explore/sellers":
+      return {
+        title: "BuyMesho Sellers",
+        description: "Browse seller profiles on BuyMesho.",
+        canonicalPath: "/explore/sellers",
+        noIndex: false,
+      };
+    case "/explore/lending":
+      return {
+        title: "BuyMesho Lending",
+        description: "Lending on BuyMesho is coming soon.",
+        canonicalPath: "/explore/lending",
+        noIndex: true,
+      };
+    case "/privacy":
+      return {
+        title: "BuyMesho Privacy Policy",
+        description: "Read the BuyMesho privacy policy.",
+        canonicalPath: "/privacy",
+        noIndex: false,
+      };
+    case "/terms":
+      return {
+        title: "BuyMesho Terms of Service",
+        description: "Read the BuyMesho terms of service.",
+        canonicalPath: "/terms",
+        noIndex: false,
+      };
+    case "/safety":
+      return {
+        title: "BuyMesho Safety Tips",
+        description: "Read safety tips for using BuyMesho.",
+        canonicalPath: "/safety",
+        noIndex: false,
+      };
+    case "/transaction-json":
+      return {
+        title: "Transaction JSON — BuyMesho",
+        description: "Deep-link JSON view for transaction debugging.",
+        canonicalPath: "/transaction-json",
+        noIndex: true,
+      };
+    default:
+      return {
+        title: "BuyMesho",
+        description: "BuyMesho marketplace.",
+        canonicalPath: normalizedPathname,
+        noIndex: true,
+      };
+  }
+}
 
 export const DEFAULT_SEO = {
   title: "BuyMesho: Malawi's Secure E-commerce Platform",
@@ -108,9 +330,8 @@ export function updateSEOMetaTags(config: Partial<SEOConfig> = {}) {
   updateMetaTag("name", "robots", robots);
   updateMetaTag("name", "application-name", DEFAULT_SEO.siteName);
 
-  if (config.keywords?.length) {
-    updateMetaTag("name", "keywords", config.keywords.filter(Boolean).join(", "));
-  }
+  const keywords = config.keywords?.filter(Boolean).join(", ") || "";
+  updateMetaTag("name", "keywords", keywords);
 
   updateLinkTag("canonical", url);
 
@@ -132,6 +353,9 @@ export function updateSEOMetaTags(config: Partial<SEOConfig> = {}) {
   if (config.price !== undefined) {
     updateMetaTag("property", "product:price:amount", String(config.price));
     updateMetaTag("property", "product:price:currency", config.currency || DEFAULT_SEO.currency);
+  } else {
+    document.head.querySelector('meta[property="product:price:amount"]')?.remove();
+    document.head.querySelector('meta[property="product:price:currency"]')?.remove();
   }
 
   if (config.price !== undefined || config.category) {
@@ -223,5 +447,11 @@ export function getSEOForListing(listing: Listing, sellerName?: string): SEOConf
 }
 
 export function resetSEOMetaTags() {
-  updateSEOMetaTags({});
+  updateSEOMetaTags({
+    title: DEFAULT_SEO.title,
+    description: DEFAULT_SEO.description,
+    url: SITE_URL,
+    type: DEFAULT_SEO.type,
+    noIndex: false,
+  });
 }
