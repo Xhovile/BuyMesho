@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 import { getRouteSEO, getListingCanonicalUrl } from "../seo";
+import { getAppRouteFromLocation } from "../../lib/appNavigation.query";
 import type { AppRoute } from "../../lib/appNavigation.paths";
 
 test("public routes are explicitly indexable", () => {
@@ -11,6 +12,8 @@ test("public routes are explicitly indexable", () => {
     ["/", "home"],
     ["/about", "about"],
     ["/explore", "explore"],
+    ["/buy-online-malawi", "buy_online_malawi"],
+    ["/sell-online-malawi", "sell_online_malawi"],
     ["/explore/events", "explore"],
     ["/explore/sellers", "explore"],
     ["/privacy", "privacy"],
@@ -80,6 +83,27 @@ test("homepage route metadata identifies BuyMesho as a Malawi marketplace", () =
   assert.match(seo.description, /online marketplace/i);
   assert.match(seo.description, /Malawi/i);
   assert.equal(seo.noIndex, false);
+});
+
+test("marketplace intent pages have distinct indexable metadata", () => {
+  const buy = getRouteSEO("/buy-online-malawi", "buy_online_malawi");
+  assert.equal(buy.canonicalPath, "/buy-online-malawi");
+  assert.equal(buy.noIndex, false);
+  assert.match(buy.title, /buy online/i);
+  assert.match(buy.title, /Malawi/i);
+  assert.match(buy.description, /BuyMesho/i);
+
+  const sell = getRouteSEO("/sell-online-malawi", "sell_online_malawi");
+  assert.equal(sell.canonicalPath, "/sell-online-malawi");
+  assert.equal(sell.noIndex, false);
+  assert.match(sell.title, /sell online/i);
+  assert.match(sell.title, /Malawi/i);
+  assert.match(sell.description, /seller|selling/i);
+});
+
+test("marketplace intent paths resolve to their public app routes", () => {
+  assert.equal(getAppRouteFromLocation({ pathname: "/buy-online-malawi", search: "" }), "buy_online_malawi");
+  assert.equal(getAppRouteFromLocation({ pathname: "/sell-online-malawi", search: "" }), "sell_online_malawi");
 });
 
 test("index.html contains the static BuyMesho brand entity schema", () => {
