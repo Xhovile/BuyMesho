@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import { Star } from "lucide-react";
-import type { ListingReview } from "../../types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ImagePlus, Star, Trash2, Video } from "lucide-react";
+import type { ListingReview, ListingReviewMedia } from "../../types";
 import { apiFetch } from "../../lib/api";
 
 type ListingReviewComposerProps = {
@@ -13,6 +13,30 @@ type ListingReviewComposerProps = {
 };
 
 const MAX_BODY_LENGTH = 500;
+const MAX_MEDIA = 3;
+const MAX_IMAGES = 3;
+const MAX_VIDEOS = 1;
+
+type NewReviewMedia = {
+  file: File;
+  url: string;
+  media_type: "image" | "video";
+};
+
+function mediaCounts(existingMedia: ListingReviewMedia[], newMedia: NewReviewMedia[]) {
+  const imageCount =
+    existingMedia.filter((media) => media.media_type === "image").length +
+    newMedia.filter((media) => media.media_type === "image").length;
+  const videoCount =
+    existingMedia.filter((media) => media.media_type === "video").length +
+    newMedia.filter((media) => media.media_type === "video").length;
+
+  return {
+    total: existingMedia.length + newMedia.length,
+    images: imageCount,
+    videos: videoCount,
+  };
+}
 
 export default function ListingReviewComposer({
   listingId,
@@ -24,20 +48,39 @@ export default function ListingReviewComposer({
 }: ListingReviewComposerProps) {
   const [rating, setRating] = useState<number>(existingReview?.rating ?? 0);
   const [body, setBody] = useState(existingReview?.body ?? "");
+  const [existingMedia, setExistingMedia] = useState<ListingReviewMedia[]>(existingReview?.media ?? []);
+  const [newMedia, setNewMedia] = useState<NewReviewMedia[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setRating(existingReview?.rating ?? 0);
     setBody(existingReview?.body ?? "");
+    setExistingMedia(existingReview?.media ?? []);
+    setNewMedia((previous) => {
+      previous.forEach((item) => URL.revokeObjectURL(item.url));
+      return [];
+    });
     setError(null);
-  }, [existingReview?.id, existingReview?.rating, existingReview?.body]);
+  }, [existingReview?.id, existingReview?.rating, existingReview?.body, existingReview?.media]);
+
+  useEffect(() => {
+    return () => {
+      newMedia.forEach((item) => URL.revokeObjectURL(item.url));
+    };
+  }, [newMedia]);
 
   const bodyCount = body.length;
-  const submitLabel = useMemo(() => {
-    if (existingReview) return "Update review";
-    return "Post review";
-  }, [existingReview]);
+  const submitLabel = useMemo(
+    () => (existingReview ? "Update review" : "Post review"),
+    [existingReview]
+  );
+
+  const counts = useMemo(
+    () => mediaCounts(existingMedia, newMedia),
+    [existingMedia, newMedia]
+  );
 
   const helperText = useMemo(() => {
     if (!isAuthenticated) return "Log in to leave a rating.";
@@ -45,6 +88,68 @@ export default function ListingReviewComposer({
     if (rating === 0) return "Tap a star to rate this listing.";
     return "A short review is optional.";
   }, [canReview, isAuthenticated, rating]);
+
+  const removeNewMedia = (url: string) => {
+    setNewMedia((previous) => {
+      const item = previous.find((media) => media.url === url);
+      if (item) URL.revokeObjectURL(item.url);
+      return previous.filter((media) => media.url !== url);
+    });
+  };
+
+  const removeExistingMedia = (id: number) => {
+    setExistingMedia((previous) => previous.filter((media) => media.id !== id));
+  };
+
+  const handleMediaChange = (files: FileList | null) => {
+    if (!files?.length) return;
+
+    const incoming = Array.from(files);
+    const incomingImages = incoming.filter((file) => file.type.startsWith("image/"));
+    const incomingVideos = incoming.filter((file) => file.type.startsWith("video/"));
+
+    if (incoming.some((file) => !file.type.startsWith("image/") && !file.type.startsWith("video/"))) {
+      setError("Only image and video files can be attached.");
+      return;
+    }
+
+    if (incoming.some((file) => file.type === "image/svg+xml")) {
+      setError("SVG images are not supported in reviews.");
+      return;
+    }
+
+    const nextImages = existingMedia.filter((media) => media.media_type === "image").length +
+      newMedia.filter((media) => media.media_type === "image").length +
+      incomingImages.length;
+    const nextVideos = existingMedia.filter((media) => media.media_type === "video").length +
+      newMedia.filter((media) => media.media_type === "video").length +
+      incomingVideos.length;
+    const nextTotal = existingMedia.length + newMedia.length + incoming.length;
+
+    if (nextTotal > MAX_MEDIA) {
+      setError("A review can contain up to 3 media items.");
+      return;
+    }
+    if (nextImages > MAX_IMAGES) {
+      setError("A review can contain up to 3 images.");
+      return;
+    }
+    if (nextVideos > MAX_VIDEOS) {
+      setError("A review can contain only 1 video.");
+      return;
+    }
+
+    const mapped = incoming.map((file) => ({
+      file,
+      url: URL.createObjectURL(file),
+      media_type: file.type.startsWith("video/") ? "video" as const : "image" as const,
+    }));
+
+    setNewMedia((previous) => [...previous, ...mapped]);
+    setError(null);
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const handleSubmit = async () => {
     if (!isAuthenticated || !canReview) return;
@@ -57,18 +162,33 @@ export default function ListingReviewComposer({
     setError(null);
 
     try {
-      const review = (await apiFetch(`/api/listings/${listingId}/reviews`, {
-        method: "POST",
-        body: JSON.stringify({
-          rating,
-          body: body.trim() || null,
-        }),
+      const requestBody = new FormData();
+      requestBody.append("rating", String(rating));
+      if (body.trim()) requestBody.append("body", body.trim());
+      requestBody.append(
+        "existingMediaIds",
+        JSON.stringify(existingMedia.map((media) => media.id)),
+      );
+      newMedia.forEach((media) => {
+        requestBody.append("media", media.file, media.file.name);
+      });
+
+      const method = existingReview ? "PUT" : "POST";
+      const result = (await apiFetch(`/api/listings/${listingId}/reviews`, {
+        method,
+        body: requestBody,
+        timeoutMs: 60_000,
       })) as { review?: ListingReview | null } | null;
 
-      if (review?.review !== undefined) {
-        setRating(review.review?.rating ?? rating);
-        setBody(review.review?.body ?? body);
-        await onSaved?.(review.review ?? null);
+      if (result?.review !== undefined) {
+        setRating(result.review?.rating ?? rating);
+        setBody(result.review?.body ?? body);
+        setExistingMedia(result.review?.media ?? []);
+        setNewMedia((previous) => {
+          previous.forEach((item) => URL.revokeObjectURL(item.url));
+          return [];
+        });
+        await onSaved?.(result.review ?? null);
       } else {
         await onSaved?.(null);
       }
@@ -117,7 +237,7 @@ export default function ListingReviewComposer({
       <p className="mt-3 text-sm text-zinc-500">{helperText}</p>
 
       {rating > 0 ? (
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-4">
           <div>
             <label className="mb-2 block text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">
               Add a short review (optional)
@@ -133,10 +253,90 @@ export default function ListingReviewComposer({
             />
           </div>
 
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Media</p>
+                <p className="mt-1 text-xs font-semibold text-zinc-500">Up to 3 items · max 1 video · up to 3 images.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!isAuthenticated || !canReview || submitting || counts.total >= MAX_MEDIA}
+                className="inline-flex items-center gap-2 rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-bold text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ImagePlus className="h-4 w-4" />
+                Add media
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                className="hidden"
+                onChange={(event) => handleMediaChange(event.target.files)}
+              />
+            </div>
+
+            {(existingMedia.length > 0 || newMedia.length > 0) ? (
+              <div className="mt-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
+                <div className="flex w-max gap-3">
+                  {existingMedia.map((media) => (
+                    <div key={media.id} className="relative h-32 w-32 shrink-0 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100">
+                      {media.media_type === "image" ? (
+                        <img src={media.url} alt="Selected review media" className="h-full w-full object-cover" loading="lazy" />
+                      ) : (
+                        <video src={media.url} preload="none" playsInline className="h-full w-full object-cover" />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeExistingMedia(media.id)}
+                        disabled={submitting}
+                        className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white"
+                        aria-label="Remove review media"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      {media.media_type === "video" ? (
+                        <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-white">
+                          <Video className="h-3 w-3" />
+                          Video
+                        </span>
+                      ) : null}
+                    </div>
+                  ))}
+
+                  {newMedia.map((media) => (
+                    <div key={media.url} className="relative h-32 w-32 shrink-0 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100">
+                      {media.media_type === "image" ? (
+                        <img src={media.url} alt={media.file.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <video src={media.url} preload="none" playsInline controls className="h-full w-full object-cover" />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeNewMedia(media.url)}
+                        disabled={submitting}
+                        className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white"
+                        aria-label="Remove review media"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-3 text-xs font-semibold text-zinc-400">No media attached.</p>
+            )}
+
+            <p className="mt-3 text-xs font-semibold text-zinc-500">
+              {counts.total} / {MAX_MEDIA} media · {counts.images} image{counts.images === 1 ? "" : "s"} · {counts.videos} video{counts.videos === 1 ? "" : "s"}
+            </p>
+          </div>
+
           <div className="flex items-center justify-between gap-3 text-xs font-semibold text-zinc-500">
-            <span>
-              {bodyCount} / {MAX_BODY_LENGTH}
-            </span>
+            <span>{bodyCount} / {MAX_BODY_LENGTH}</span>
             <span>Keep it honest and useful.</span>
           </div>
         </div>
