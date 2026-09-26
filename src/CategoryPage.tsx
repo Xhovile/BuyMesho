@@ -73,9 +73,9 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
   phones: {
     key: "phones",
     title: "Phones & Gadgets",
-    subtitle: "Campus tech that moves fast",
+    subtitle: "Devices, accessories, and everyday tech",
     description:
-      "Browse devices, chargers, earphones, accessories, and practical student tech posted in the marketplace.",
+      "Browse phones, chargers, earphones, accessories, and everyday tech posted by sellers on the Malawi marketplace.",
     heroIcon: Smartphone,
     apiCategory: "Electronics & Gadgets",
     accent: "from-red-900/10 to-zinc-100",
@@ -83,9 +83,9 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
   fashion: {
     key: "fashion",
     title: "Fashion & Clothing",
-    subtitle: "Style for campus life",
+    subtitle: "Style for campus and everyday life",
     description:
-      "Find clothes, bags, shoes, and everyday style pieces listed by students and campus sellers.",
+      "Find clothes, bags, shoes, and everyday style pieces listed by sellers across the BuyMesho marketplace.",
     heroIcon: ShoppingBag,
     apiCategory: "Fashion & Clothing",
     accent: "from-zinc-900/10 to-zinc-100",
@@ -93,9 +93,9 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
   books: {
     key: "books",
     title: "Books & Study Tools",
-    subtitle: "Academic essentials",
+    subtitle: "Books, calculators, and study essentials",
     description:
-      "Books, calculators, stationery, and useful study tools grouped into one clean category page.",
+      "Browse books, calculators, stationery, and useful study tools available through the BuyMesho marketplace in Malawi.",
     heroIcon: BookOpen,
     apiCategory: "Academic Services",
     accent: "from-amber-500/10 to-zinc-100",
@@ -103,9 +103,9 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
   food: {
     key: "food",
     title: "Eatery & Fast Foods",
-    subtitle: "Campus meals, fast foods, and drinks",
+    subtitle: "Meals, fast foods, and drinks",
     description:
-      "Browse eatery options, fast foods, and drinks that students can discover quickly without digging through filters.",
+      "Browse eatery options, fast foods, and drinks that buyers can discover quickly on BuyMesho in Malawi.",
     heroIcon: Store,
     apiCategory: "Food & Snacks",
     accent: "from-emerald-500/10 to-zinc-100",
@@ -113,9 +113,9 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
   beauty: {
     key: "beauty",
     title: "Beauty & Personal Care",
-    subtitle: "Beauty products and personal care",
+    subtitle: "Beauty and personal care essentials",
     description:
-      "Browse beauty products, hair care, skincare, fragrances, and personal care essentials posted by campus sellers.",
+      "Browse beauty products, hair care, skincare, fragrances, and personal care essentials posted by sellers on BuyMesho.",
     heroIcon: Sparkles,
     apiCategory: "Beauty & Personal Care",
     accent: "from-pink-500/10 to-zinc-100",
