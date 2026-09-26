@@ -31,7 +31,8 @@ export default function ListingReviewsBlock({
   const [canReview, setCanReview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isEditingOwnReview, setIsEditingOwnReview] = useState(false);
+  const [reviewEditorOpen, setReviewEditorOpen] = useState(false);
+  const [reviewBeingEdited, setReviewBeingEdited] = useState<ListingReview | null>(null);
 
   const canReplyAsSeller = !!firebaseUser?.uid && firebaseUser.uid === listing.seller_uid;
 
@@ -78,7 +79,8 @@ export default function ListingReviewsBlock({
 
   const handleSaved = async (savedReview: ListingReview | null) => {
     setViewerReview(savedReview);
-    setIsEditingOwnReview(false);
+    setReviewBeingEdited(null);
+    setReviewEditorOpen(false);
     await loadReviews();
   };
 
@@ -87,11 +89,15 @@ export default function ListingReviewsBlock({
     await loadReviews();
   };
 
-  const handleEditOwnReview = () => {
-    setIsEditingOwnReview(true);
+  const handleEditOwnReview = (review: ListingReview) => {
+    setReviewBeingEdited(review);
+    setReviewEditorOpen(true);
   };
 
-  const showComposer = !viewerReview || isEditingOwnReview;
+  const handleOpenCreateReview = () => {
+    setReviewBeingEdited(null);
+    setReviewEditorOpen(true);
+  };
 
   return (
     <div className="space-y-5 border-t border-blue-100 pt-6">
@@ -108,23 +114,35 @@ export default function ListingReviewsBlock({
         <div className="space-y-5">
           <ListingReviewSummaryView summary={summary} />
 
-          {showComposer ? (
-            <ListingReviewComposer
-              listingId={listing.id}
-              isAuthenticated={!!firebaseUser}
-              canReview={canReview}
-              existingReview={viewerReview}
-              onSaved={handleSaved}
-              onCancel={viewerReview ? () => setIsEditingOwnReview(false) : undefined}
-            />
-          ) : (
-            <div className="rounded-[2rem] border border-blue-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Your review</p>
-              <p className="mt-2 text-sm text-zinc-500">
-                Your review is pinned at the top. Tap <span className="font-bold text-zinc-900">Edit</span> on the review card to update it.
-              </p>
+          {!viewerReview ? (
+            <div className="flex items-center justify-between gap-3 rounded-[2rem] border border-blue-200 bg-white p-5 shadow-sm">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Your review</p>
+                <p className="mt-2 text-sm text-zinc-500">Share a rating and a short review for this listing.</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenCreateReview}
+                disabled={!firebaseUser || !canReview}
+                className="shrink-0 rounded-full bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Leave a review
+              </button>
             </div>
-          )}
+          ) : null}
+
+          <ListingReviewComposer
+            listingId={listing.id}
+            isAuthenticated={!!firebaseUser}
+            canReview={reviewBeingEdited ? true : canReview}
+            existingReview={reviewBeingEdited}
+            open={reviewEditorOpen}
+            onSaved={handleSaved}
+            onClose={() => {
+              setReviewEditorOpen(false);
+              setReviewBeingEdited(null);
+            }}
+          />
 
           <ListingReviewFeed
             listingId={listing.id}
@@ -136,7 +154,6 @@ export default function ListingReviewsBlock({
             canReply={canReplyAsSeller}
             viewerUid={firebaseUser?.uid}
             ownReviewId={viewerReview?.id ?? null}
-            showOwnReview={!isEditingOwnReview}
             onEditOwnReview={handleEditOwnReview}
             onReviewChanged={handleReviewChanged}
             onViewAll={() => navigateToListingReviews(listing.id)}
