@@ -156,7 +156,7 @@ export default function BuyOnlineMalawiPage() {
                 <a href={EVENTS_PATH} className="flex items-center justify-between rounded-2xl bg-white/10 px-4 py-3 text-sm font-bold hover:bg-white/15">
                   Events in Malawi <ArrowRight className="h-4 w-4" />
                 </a>
-                <a href={SELLER_PATH} className="flex items-center justify-between rounded-2xl bg-white/10 px-4 py-3 text-sm font-bold hover:bg-white/15">
+                <a href="/explore/sellers" className="flex items-center justify-between rounded-2xl bg-white/10 px-4 py-3 text-sm font-bold hover:bg-white/15">
                   Seller profiles <ArrowRight className="h-4 w-4" />
                 </a>
                 <a href="/sell-online-malawi" className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 text-sm font-black text-zinc-950 hover:bg-zinc-100">
