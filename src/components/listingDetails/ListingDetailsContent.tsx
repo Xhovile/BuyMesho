@@ -166,7 +166,7 @@ export default function ListingDetailsContent({
       <FloatingCartButton isLoggedIn={isLoggedIn} />
       <ListingHeaderBar
         onBack={() => {
-          clearListingDetailsCache(listingId);
+          clearListingDetailsCache(listing ? String(listing.id) : undefined);
           navigateBackOrPath(EXPLORE_PATH);
         }}
       />
