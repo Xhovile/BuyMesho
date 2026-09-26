@@ -5,7 +5,9 @@ export type AppRoute =
 export const ADMIN_EVENTS_PATH = "/admin/events";
 export const HOME_PATH = "/";
 export const ABOUT_PATH = "/about";
-export const EXPLORE_PATH = "/explore";\nexport const BUY_ONLINE_MALAWI_PATH = "/buy-online-malawi";\nexport const SELL_ONLINE_MALAWI_PATH = "/sell-online-malawi";
+export const EXPLORE_PATH = "/explore";
+export const BUY_ONLINE_MALAWI_PATH = "/buy-online-malawi";
+export const SELL_ONLINE_MALAWI_PATH = "/sell-online-malawi";
 export const EVENTS_PATH = "/explore/events";
 export const EVENTS_CREATE_PATH = "/explore/events/create";
 export const EVENTS_MANAGE_PATH = "/explore/events/manage";
