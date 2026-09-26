@@ -24,6 +24,22 @@ export default function ListingReviewsPage() {
     setEditingReview(review);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  const handleDeleteOwnReview = useCallback(async (review: ListingReview) => {
+    if (!window.confirm("Remove your review? This will also remove its attached media.")) return;
+
+    await apiFetch(`/api/listings/${listingId}/reviews/${review.id}`, {
+      method: "DELETE",
+      headers: {
+        "Idempotency-Key": `review-delete-${review.id}-${Date.now()}`,
+      },
+      timeoutMs: 120_000,
+    });
+
+    setEditingReview(null);
+    setReviewFeedVersion((version) => version + 1);
+    setSummary(null);
+  }, [listingId]);
   const handleReviewSaved = useCallback((review: ListingReview | null) => {
     setEditingReview(null);
     setReviewFeedVersion((version) => version + 1);
@@ -109,6 +125,7 @@ export default function ListingReviewsPage() {
             onSummaryChange={setSummary}
             onListingMetaLoaded={handleListingMetaLoaded}
             onEditOwnReview={handleEditOwnReview}
+            onDeleteOwnReview={handleDeleteOwnReview}
             onReviewEligibilityChange={setCanReview}
           />
         </div>
