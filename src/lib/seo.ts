@@ -125,7 +125,7 @@ export function getRouteSEO(pathname: string, route: AppRoute): RouteSEOConfig {
           "products Malawi",
           "services Malawi",
           "event tickets Malawi",
-        ].join(", "),
+        ],
       };
     case "/install":
       return {
