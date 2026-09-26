@@ -80,17 +80,29 @@ export default function ListingReviewComposer({
   useEffect(() => {
     if (!open || historyEntryActiveRef.current) return;
 
+    const currentState =
+      window.history.state && typeof window.history.state === "object"
+        ? window.history.state
+        : {};
+
+    // Replace the current entry with the stable "base" state first. Then add
+    // one modal-only entry. Back from the modal can therefore only return to
+    // this same Reviews/listing page, never to an earlier app route.
+    window.history.replaceState(
+      { ...(currentState as Record<string, unknown>), __buymeshoReviewModalBase: true },
+      "",
+      window.location.href,
+    );
     window.history.pushState(
-      { ...(window.history.state ?? {}), __buymeshoReviewComposer: true },
+      { ...(currentState as Record<string, unknown>), __buymeshoReviewModal: true },
       "",
       window.location.href,
     );
     historyEntryActiveRef.current = true;
 
     return () => {
-      // Do not navigate during cleanup. The close handler or popstate
-      // consumes the temporary history entry explicitly.
-      historyEntryActiveRef.current = false;
+      // Never navigate from effect cleanup. Explicit close and popstate own
+      // the history entry lifecycle.
     };
   }, [open]);
 
