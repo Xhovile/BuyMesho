@@ -483,21 +483,31 @@ function getReviewsTotal(listingId: number) {
   return Number(row?.total ?? 0);
 }
 
-function getListingIdCandidates(listingId: number): [string, string] {
-  return [`%"listingId":"${listingId}"%`, `%"listingId":${listingId}%`];
+function getListingIdCandidates(listingId: number): string[] {
+  return [
+    `%"listingId":"${listingId}"%`,
+    `%"listingId": "${listingId}"%`,
+    `%"listingId":${listingId}%`,
+    `%"listingId": ${listingId}%`,
+    `%"listing_id":"${listingId}"%`,
+    `%"listing_id": "${listingId}"%`,
+    `%"listing_id":${listingId}%`,
+    `%"listing_id": ${listingId}%`,
+  ];
 }
 
 function getCapturedPurchaseRowsForListing(listingId: number) {
-  const [stringPattern, numericPattern] = getListingIdCandidates(listingId);
+  const candidates = getListingIdCandidates(listingId);
+  const placeholders = candidates.map(() => "?").join(", ");
   return db.prepare(
     `
       SELECT DISTINCT o.buyer_id, o.items
       FROM orders o
       INNER JOIN payments p ON p.order_id = o.id
       WHERE p.status = 'captured'
-        AND (o.items LIKE ? OR o.items LIKE ?)
+        AND (o.items LIKE ${placeholders})
     `
-  ).all(stringPattern, numericPattern) as Array<{
+  ).all(...candidates) as Array<{
     buyer_id: string;
     items: string | null;
   }>;
