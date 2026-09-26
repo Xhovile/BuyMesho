@@ -93,6 +93,7 @@ export default function ListingReviewsPage() {
             onSummaryChange={setSummary}
             onListingMetaLoaded={handleListingMetaLoaded}
             onEditOwnReview={handleEditOwnReview}
+            showOwnReview={!editingReview}
           />
         </div>
       </main>
