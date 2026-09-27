@@ -422,9 +422,39 @@ test("phase 8 Search Console verification and measurement hooks are wired", () =
   assert.match(analytics, /logEvent\(analytics, "screen_view"/);
   assert.match(analytics, /firebase_screen/);
   assert.match(routerSeo, /trackPublicPageView/);
-  assert.match(routerSeo, /!seo\.noIndex/);
+  assert.match(routerSeo, /!seo\.noIndex && !seo\.managedByPage/);
+  assert.doesNotMatch(routerSeo, /if \(!seo\.noIndex\) \{/);
   assert.match(guide, /sitemap\.xml/);
   assert.match(guide, /VITE_GOOGLE_SITE_VERIFICATION/);
+});
+
+test("dynamic public page analytics wait for verified page content", () => {
+  const listingSeoHook = readFileSync(resolve(process.cwd(), "src/hooks/useListingSEO.ts"), "utf8");
+  const sellerPage = readFileSync(resolve(process.cwd(), "src/SellerProfilePage.tsx"), "utf8");
+  const eventPage = readFileSync(resolve(process.cwd(), "src/components/eventDetails/EventDetailsView.tsx"), "utf8");
+
+  assert.match(listingSeoHook, /trackPublicPageView/);
+  assert.match(listingSeoHook, /new URLSearchParams\(window\.location\.search\)\.get\("listing"\)/);
+  assert.match(listingSeoHook, /urlListingId === String\(listing\.id\)/);
+
+  assert.match(sellerPage, /trackPublicPageView/);
+  assert.match(sellerPage, /new URLSearchParams\(window\.location\.search\)\.get\("uid"\)/);
+  assert.match(sellerPage, /profile\.uid/);
+
+  assert.match(eventPage, /trackPublicPageView/);
+  assert.match(eventPage, /event\.id === eventId/);
+  assert.match(eventPage, /new URLSearchParams\(window\.location\.search\)\.get\("event"\)/);
+  assert.match(eventPage, /liveEventId === String\(event\.id\)/);
+});
+
+test("dynamic analytics use canonical public route paths without volatile query parameters", () => {
+  const listingSeoHook = readFileSync(resolve(process.cwd(), "src/hooks/useListingSEO.ts"), "utf8");
+  const sellerPage = readFileSync(resolve(process.cwd(), "src/SellerProfilePage.tsx"), "utf8");
+  const eventPage = readFileSync(resolve(process.cwd(), "src/components/eventDetails/EventDetailsView.tsx"), "utf8");
+
+  assert.match(listingSeoHook, /const listingPath = `\\/listing\\?listing=\\$\\{encodeURIComponent\(String\(listing\.id\)\)\\}`/);
+  assert.match(sellerPage, /const sellerPath = `\\/seller\\?uid=\\$\\{encodeURIComponent\(sellerUid\)\\}`/);
+  assert.match(eventPage, /const eventPath = `\\$\\{EVENTS_PATH\\}\\?event=\\$\\{encodeURIComponent\(String\(event\.id\)\)\\}`/);
 });
 test("dynamic sitemap XML helpers produce valid escaped output", () => {
   const urlset = buildUrlsetXml([
