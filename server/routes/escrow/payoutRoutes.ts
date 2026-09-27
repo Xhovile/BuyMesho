@@ -372,6 +372,13 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
       const sellerId = normalizeDestinationId(req.params.sellerId);
       assertRetryAccess(req, sellerId);
       const payoutId = normalizeDestinationId(req.body?.payoutId);
+      const payout = payoutService.findById(payoutId);
+      if (!payout) {
+        return res.status(404).json({ error: 'Payout not found' });
+      }
+      if ((payout.ownerType ?? 'seller') !== 'seller' || String(payout.sellerId) !== sellerId) {
+        return res.status(403).json({ error: 'This payout is not owned by the requested seller' });
+      }
       if (PAYOUT_POLICY.launchMode === 'admin_approved' && !req.user?.is_admin) {
         return res.status(403).json({ error: 'Seller retry is disabled while launch mode is admin-approved' });
       }
