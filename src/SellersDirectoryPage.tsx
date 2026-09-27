@@ -3,6 +3,7 @@ import { Loader2, ShieldCheck, Star } from "lucide-react";
 
 import Header from "./components/Header";
 import AppFooter from "./components/AppFooter";
+import SeoInternalLinks from "./components/SeoInternalLinks";
 import { apiFetch } from "./lib/api";
 import {
   getMarketChipFromLocation,
@@ -319,10 +320,13 @@ export default function SellersDirectoryPage() {
         ) : (
           <section className="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 pb-8 sm:grid-cols-2 xl:grid-cols-3">
             {filteredCards.map((card) => (
-              <button
+              <a
                 key={card.uid}
-                type="button"
-                onClick={() => navigateToSellerProfile(card.uid)}
+                href={`/seller?uid=${encodeURIComponent(card.uid)}`}
+                onClick={(event) => {
+                  event.preventDefault();
+                  navigateToSellerProfile(card.uid);
+                }}
                 className="group relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-5 text-left shadow-[0_18px_50px_-28px_rgba(0,0,0,0.28)] transition-all duration-200 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-[0_26px_70px_-30px_rgba(0,0,0,0.38)]"
               >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(127,29,29,0.10),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(24,24,27,0.05),transparent_26%)]" />
@@ -383,11 +387,13 @@ export default function SellersDirectoryPage() {
                     </p>
                   </div>
                 </div>
-              </button>
+              </a>
             ))}
           </section>
         )}
       </main>
+
+      <SeoInternalLinks title="Explore more of the Malawi marketplace" />
 
       <AppFooter />
     </div>
