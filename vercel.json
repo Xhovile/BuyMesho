@@ -21,68 +21,136 @@
       "dest": "https://buymesho.onrender.com/home"
     },
     {
+      "src": "/home/",
+      "dest": "https://buymesho.onrender.com/home/"
+    },
+    {
       "src": "/install",
       "dest": "https://buymesho.onrender.com/install"
+    },
+    {
+      "src": "/install/",
+      "dest": "https://buymesho.onrender.com/install/"
     },
     {
       "src": "/signup",
       "dest": "https://buymesho.onrender.com/signup"
     },
     {
+      "src": "/signup/",
+      "dest": "https://buymesho.onrender.com/signup/"
+    },
+    {
       "src": "/about",
       "dest": "https://buymesho.onrender.com/about"
+    },
+    {
+      "src": "/about/",
+      "dest": "https://buymesho.onrender.com/about/"
     },
     {
       "src": "/explore",
       "dest": "https://buymesho.onrender.com/explore"
     },
     {
+      "src": "/explore/",
+      "dest": "https://buymesho.onrender.com/explore/"
+    },
+    {
       "src": "/explore/deals",
       "dest": "https://buymesho.onrender.com/explore/deals"
+    },
+    {
+      "src": "/explore/deals/",
+      "dest": "https://buymesho.onrender.com/explore/deals/"
     },
     {
       "src": "/explore/events",
       "dest": "https://buymesho.onrender.com/explore/events"
     },
     {
+      "src": "/explore/events/",
+      "dest": "https://buymesho.onrender.com/explore/events/"
+    },
+    {
       "src": "/explore/wholesale",
       "dest": "https://buymesho.onrender.com/explore/wholesale"
+    },
+    {
+      "src": "/explore/wholesale/",
+      "dest": "https://buymesho.onrender.com/explore/wholesale/"
     },
     {
       "src": "/explore/sellers",
       "dest": "https://buymesho.onrender.com/explore/sellers"
     },
     {
+      "src": "/explore/sellers/",
+      "dest": "https://buymesho.onrender.com/explore/sellers/"
+    },
+    {
       "src": "/buy-online-malawi",
       "dest": "https://buymesho.onrender.com/buy-online-malawi"
+    },
+    {
+      "src": "/buy-online-malawi/",
+      "dest": "https://buymesho.onrender.com/buy-online-malawi/"
     },
     {
       "src": "/sell-online-malawi",
       "dest": "https://buymesho.onrender.com/sell-online-malawi"
     },
     {
+      "src": "/sell-online-malawi/",
+      "dest": "https://buymesho.onrender.com/sell-online-malawi/"
+    },
+    {
       "src": "/category",
       "dest": "https://buymesho.onrender.com/category"
+    },
+    {
+      "src": "/category/",
+      "dest": "https://buymesho.onrender.com/category/"
     },
     {
       "src": "/listing",
       "dest": "https://buymesho.onrender.com/listing"
     },
     {
+      "src": "/listing/",
+      "dest": "https://buymesho.onrender.com/listing/"
+    },
+    {
       "src": "/seller",
       "dest": "https://buymesho.onrender.com/seller"
+    },
+    {
+      "src": "/seller/",
+      "dest": "https://buymesho.onrender.com/seller/"
     },
     {
       "src": "/privacy",
       "dest": "https://buymesho.onrender.com/privacy"
     },
     {
+      "src": "/privacy/",
+      "dest": "https://buymesho.onrender.com/privacy/"
+    },
+    {
       "src": "/terms",
       "dest": "https://buymesho.onrender.com/terms"
     },
     {
+      "src": "/terms/",
+      "dest": "https://buymesho.onrender.com/terms/"
+    },
+    {
       "src": "/safety",
       "dest": "https://buymesho.onrender.com/safety"
+    },
+    {
+      "src": "/safety/",
+      "dest": "https://buymesho.onrender.com/safety/"
     },
     {
       "handle": "filesystem"
