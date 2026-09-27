@@ -167,7 +167,7 @@ test("server SEO shell replaces index defaults with route-specific metadata", ()
   assert.match(html, /name="description"/);
   assert.match(html, /name="robots" content="index, follow"/);
   assert.match(html, /<link rel="canonical" href="https:\/\/buymesho\.app\/buy-online-malawi">/);
-  assert.match(html, /<div id="root"><div/);
+  assert.match(html, /<div id="seo-prerender"><div/);
   assert.match(html, /href="\/explore"/);
   assert.equal((html.match(/<title>/g) || []).length, 1);
 });
