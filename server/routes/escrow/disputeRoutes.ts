@@ -222,8 +222,19 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
           da.evidence AS latest_evidence,
           da.status AS latest_attempt_status,
           da.created_at AS latest_attempt_created_at,
+          rr.id AS refund_request_id,
+          rr.status AS refund_request_status,
+          rr.amount_requested AS refund_requested_amount,
+          rr.currency AS refund_currency,
+          rr.item_id AS refund_ticket_id,
           rt.id AS refund_transaction_id,
-          rt.executed_at AS refund_executed_at
+          rt.amount AS refunded_amount,
+          rt.currency AS refunded_currency,
+          rt.payment_method AS refunded_payment_method,
+          rt.provider AS refunded_provider,
+          rt.transaction_id AS refunded_transaction_id_reference,
+          rt.status AS refunded_status,
+          rt.executed_at AS refunded_at
         FROM dispute_cases dc
         LEFT JOIN LATERAL (
           SELECT *
@@ -232,6 +243,13 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
           ORDER BY created_at DESC
           LIMIT 1
         ) da ON true
+        LEFT JOIN LATERAL (
+          SELECT *
+          FROM refund_requests
+          WHERE dispute_case_id = dc.id
+          ORDER BY created_at DESC
+          LIMIT 1
+        ) rr ON true
         LEFT JOIN LATERAL (
           SELECT *
           FROM refund_transactions
