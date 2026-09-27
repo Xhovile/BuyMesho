@@ -21,7 +21,7 @@ import { startConversationFromEvent } from "../../lib/messages";
 import { navigateToConversation } from "../../lib/messagesNavigation";
 import { useAuthUser } from "../../hooks/useAuthUser";
 import { upsertEventCartItem } from "../../lib/eventCart";
-import { resetSEOMetaTags, updateSEOMetaTags } from "../../lib/seo";
+import { resetSEOMetaTags, truncateSeoDescription, updateSEOMetaTags } from "../../lib/seo";
 import { getEventAttendanceMode } from "../../lib/seoEvent";
 import { trackPublicPageView } from "../../lib/analytics";
 import FeedbackModal from "../FeedbackModal";
@@ -163,12 +163,14 @@ export default function EventDetailsView() {
         ? `${startDate}T${String(Number(timeMatch[1])).padStart(2, "0")}:${timeMatch[2]}:${timeMatch[3] || "00"}+02:00`
         : startDate;
     const isFree = event.ticket_price === null || Number(event.ticket_price) <= 0;
+    const description = truncateSeoDescription(
+      event.description?.trim() ||
+        `${event.event_title} by ${event.organizer_name} in ${event.location}.`,
+    );
 
     updateSEOMetaTags({
       title: `${event.event_title} | BuyMesho Events`,
-      description:
-        event.description?.trim().slice(0, 160) ||
-        `${event.event_title} by ${event.organizer_name} in ${event.location}.`,
+      description,
       image: absolutePosterUrl,
       imageAlt: event.poster_alt?.trim() || `${event.event_title} event poster`,
       url: canonicalUrl,
