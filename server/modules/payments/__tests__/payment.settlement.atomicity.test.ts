@@ -57,8 +57,8 @@ async function seedEventDirect():Promise<void>{
   await query('INSERT INTO event_creators (uid,email,display_name,organization_name,organization_type,event_types,status,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8,$8)',[eventCreatorUid,'creator@example.com','Event Creator','Direct Settlement Org','events','concert','approved',now]);
   await query('INSERT INTO seller_payout_accounts (id,seller_uid,event_creator_uid,owner_type,owner_uid,destination_type,provider_name,provider_ref_id,currency,account_name,mobile_encrypted,masked_account,destination_fingerprint,is_default,verification_status,verification_attempts,is_active,verified_at,created_at,updated_at) VALUES ($1,NULL,$2,$3,$2,$4,$5,$6,$7,$8,$9,$10,$11,1,$12,0,1,$13,$13,$13)',[eventDestinationId,eventCreatorUid,'event_creator','mobile_money','Airtel Money','airtel_money','MWK','Event Creator','encrypted-mobile','******9999',`event-direct-fingerprint-${eventId}`,'verified',now]);
   await query('INSERT INTO events (id,creator_uid,event_type,event_title,organizer_name,event_date,start_time,venue,location,ticket_mode,ticket_price,description,spec_values,status,payout_destination_id,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$16)',[eventId,eventCreatorUid,'concert','Direct Settlement Test','Event Creator','2026-10-01','18:00','Test Venue','Lilongwe','paid',10000,'Direct settlement test','{}','published',eventDestinationId,now]);
-  await query('INSERT INTO orders (id,buyer_id,seller_id,source,status,delivery_status,currency,subtotal_amount,subtotal_currency,total_amount,total_currency,payment_provider,settlement_route,payment_reference,items,placed_at,paid_at,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NULL,$16,$16)',[eventOrderId,'buyer-direct',eventCreatorUid,'event','pending_payment','action_required','MWK',10000,'MWK',10000,'MWK','paychangu','direct',eventPaymentReference,'[{"kind":"event_ticket","eventId":"998901","quantity":1,"unitPrice":{"amount":10000,"currency":"MWK"}}]',now]);
-  await paymentRepository.saveAsync({id:'event-direct-payment-1',orderId:eventOrderId,provider:'paychangu',method:'mobile_money',status:'pending',amount:{amount:10000,currency:'MWK'},reference:eventPaymentReference,providerReference:null,checkoutUrl:null,paidAt:null,rawResponse:{},verified:false,createdAt:now,updatedAt:now});
+  await query('INSERT INTO orders (id,buyer_id,seller_id,source,status,delivery_status,currency,subtotal_amount,subtotal_currency,total_amount,total_currency,payment_provider,settlement_route,payment_reference,items,placed_at,paid_at,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NULL,$16,$16)',[eventOrderId,'buyer-direct',eventCreatorUid,'event','pending_payment','action_required','MWK',10000,'MWK',10300,'MWK','paychangu','direct',eventPaymentReference,'[{"kind":"event_ticket","eventId":"998901","quantity":1,"unitPrice":{"amount":10000,"currency":"MWK"}}]',now]);
+  await paymentRepository.saveAsync({id:'event-direct-payment-1',orderId:eventOrderId,provider:'paychangu',method:'mobile_money',status:'pending',amount:{amount:10300,currency:'MWK'},reference:eventPaymentReference,providerReference:null,checkoutUrl:null,paidAt:null,rawResponse:{},verified:false,createdAt:now,updatedAt:now});
 }
 
 
@@ -99,7 +99,7 @@ test('verified event payment creates and immediately submits an escrow-free payo
   const calls:Array<{payoutId:string;actorType?:string;actorId?:string|null}>=[];
   payoutService.executePayout=async(input)=>{calls.push(input);return {} as any;};
   try{
-    const result=await applyVerifiedPayChanguPayment({verified:true,provider:'paychangu',status:'successful',reference:eventPaymentReference,txRef:eventPaymentReference,amount:{amount:10000,currency:'MWK'},currency:'MWK'});
+    const result=await applyVerifiedPayChanguPayment({verified:true,provider:'paychangu',status:'successful',reference:eventPaymentReference,txRef:eventPaymentReference,amount:{amount:10300,currency:'MWK'},currency:'MWK'});
     assert.equal(result.order?.status,'paid');
     assert.equal(await escrowRepository.findByOrderIdAsync(eventOrderId),undefined);
     const payout=await query('SELECT id,status,owner_type,owner_uid,event_id,event_creator_uid,order_id,escrow_id,release_entry_id,destination_account_id FROM payouts WHERE order_id = $1 LIMIT 1',[eventOrderId]);
@@ -112,11 +112,36 @@ test('verified event payment creates and immediately submits an escrow-free payo
     assert.equal(payout.rows[0].escrow_id,null);
     assert.equal(payout.rows[0].release_entry_id,null);
     assert.equal(payout.rows[0].destination_account_id,eventDestinationId);
+    const financials=await query('SELECT gross_amount,platform_fee_amount,payout_fee_amount,net_amount FROM payouts WHERE order_id = $1 LIMIT 1',[eventOrderId]);
+    assert.equal(Number(financials.rows[0].gross_amount),10000);
+    assert.equal(Number(financials.rows[0].platform_fee_amount),300);
+    assert.equal(Number(financials.rows[0].payout_fee_amount),180);
+    assert.equal(Number(financials.rows[0].net_amount),9520);
     assert.equal(calls.length,1);
     assert.equal(calls[0].payoutId,payout.rows[0].id);
     assert.equal(calls[0].actorType,'system');
   }finally{
     payoutService.executePayout=originalExecute;
+    await cleanupEventDirect();
+  }
+});
+
+
+test('successful event payment remains paid when payout setup fails after capture commit',async()=>{
+  await seedEventDirect();
+  await query('UPDATE events SET payout_destination_id = NULL WHERE id = $1',[eventId]);
+  try{
+    await assert.rejects(
+      ()=>applyVerifiedPayChanguPayment({verified:true,provider:'paychangu',status:'successful',reference:eventPaymentReference,txRef:eventPaymentReference,amount:{amount:10300,currency:'MWK'},currency:'MWK'}),
+      /Event ticket order could not resolve its payout destination/,
+    );
+    assert.equal((await paymentRepository.findByReferenceAsync(eventPaymentReference))?.status,'captured');
+    assert.equal((await paymentRepository.findByReferenceAsync(eventPaymentReference))?.verified,true);
+    assert.equal((await orderRepository.findByIdAsync(eventOrderId))?.status,'paid');
+    assert.equal(await escrowRepository.findByOrderIdAsync(eventOrderId),undefined);
+    const payout=await query('SELECT COUNT(*)::int AS count FROM payouts WHERE order_id = $1',[eventOrderId]);
+    assert.equal(Number(payout.rows[0].count),0);
+  }finally{
     await cleanupEventDirect();
   }
 });
