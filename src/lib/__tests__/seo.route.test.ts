@@ -489,6 +489,21 @@ test("server SEO shell renders a public listing snapshot from the database", () 
   assert.match(rendered.body, /seller\?uid=seller-42/);
   assert.equal(rendered.jsonLd?.["@type"], "Product");
 });
+test("public SEO navigation and PWA shell references use crawlable or existing assets", () => {
+  const buyer = readFileSync(resolve(process.cwd(), "src/BuyOnlineMalawiPage.tsx"), "utf8");
+  const seller = readFileSync(resolve(process.cwd(), "src/SellOnlineMalawiPage.tsx"), "utf8");
+  const internalLinks = readFileSync(resolve(process.cwd(), "src/components/SeoInternalLinks.tsx"), "utf8");
+  const serviceWorker = readFileSync(resolve(process.cwd(), "public/service-worker.js"), "utf8");
+
+  assert.match(buyer, /<a href=\{EXPLORE_PATH\} aria-label="Open BuyMesho marketplace">/);
+  assert.match(seller, /<a href=\{EXPLORE_PATH\} aria-label="Open BuyMesho marketplace">/);
+  assert.match(internalLinks, /context\?: SeoInternalLinksContext/);
+  assert.match(internalLinks, /CONTEXTUAL_LINKS/);
+  assert.ok(serviceWorker.includes("/apple-touch-icon.svg"));
+  assert.equal(serviceWorker.includes("/apple-touch-icon.png"), false);
+  assert.equal(existsSync(resolve(process.cwd(), "public/_redirects")), false);
+});
+
 test("phase 8 Search Console verification and measurement hooks are wired", () => {
   const viteConfig = readFileSync(resolve(process.cwd(), "vite.config.ts"), "utf8");
   const analytics = readFileSync(resolve(process.cwd(), "src/lib/analytics.ts"), "utf8");
