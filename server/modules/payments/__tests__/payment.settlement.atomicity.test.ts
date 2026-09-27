@@ -6,6 +6,7 @@ import { paymentRepository } from '../payment.repository.js';
 import { orderRepository } from '../../orders/order.repository.js';
 import { escrowRepository } from '../../escrow/escrow.repository.js';
 import { payoutService } from '../../payouts/payout.service.js';
+import { getPaymentDb } from '../../../postgresCompat.js';
 
 const orderId='atomic-settlement-order-1';
 const paymentReference='atomic-settlement-ref-1';
@@ -40,6 +41,7 @@ const eventCreatorUid='event-direct-settlement-creator-1';
 const eventDestinationId='event-direct-settlement-destination-1';
 
 async function cleanupEventDirect():Promise<void>{
+  getPaymentDb().prepare('DELETE FROM event_tickets WHERE order_id = ?').run(eventOrderId);
   await query('DELETE FROM payout_events WHERE payout_id IN (SELECT id FROM payouts WHERE order_id = $1)',[eventOrderId]);
   await query('DELETE FROM payout_attempts WHERE payout_id IN (SELECT id FROM payouts WHERE order_id = $1)',[eventOrderId]);
   await query('DELETE FROM payouts WHERE order_id = $1',[eventOrderId]);
