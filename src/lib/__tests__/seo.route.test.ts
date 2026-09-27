@@ -451,12 +451,16 @@ test("dynamic analytics use canonical public route paths without volatile query 
   const listingSeoHook = readFileSync(resolve(process.cwd(), "src/hooks/useListingSEO.ts"), "utf8");
   const sellerPage = readFileSync(resolve(process.cwd(), "src/SellerProfilePage.tsx"), "utf8");
   const eventPage = readFileSync(resolve(process.cwd(), "src/components/eventDetails/EventDetailsView.tsx"), "utf8");
+
   assert.match(listingSeoHook, /const listingPath/);
   assert.match(listingSeoHook, /encodeURIComponent/);
   assert.match(sellerPage, /const sellerPath/);
   assert.match(sellerPage, /encodeURIComponent/);
   assert.match(eventPage, /const eventPath/);
   assert.match(eventPage, /encodeURIComponent/);
+});
+
+test("dynamic sitemap XML helpers produce valid escaped output", () => {
   const urlset = buildUrlsetXml([
     {
       loc: "https://buymesho.app/listing?listing=12&mode=deal",
