@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AlertTriangle, CheckCircle2, Clock3, RefreshCw, RotateCcw, ShieldCheck, Wallet, XCircle } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
@@ -204,7 +204,7 @@ export default function AdminEventPayoutRecoveryPage() {
   );
 }
 
-function Stat({ icon, title, value }: { icon: React.ReactNode; title: string; value: number }) {
+function Stat({ icon, title, value }: { icon: ReactNode; title: string; value: number }) {
   return <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-zinc-400">{icon}{title}</div><p className="mt-2 text-2xl font-black">{value}</p></div>;
 }
 function Metric({ title, value }: { title: string; value: string }) {
