@@ -118,14 +118,15 @@ export async function startServer() {
     const host = (forwardedHost ?? req.get("host") ?? "").split(",")[0].trim().toLowerCase();
     const isLegacyHost = host === "www.buymesho.app" || host.startsWith("www.buymesho.app:");
     const normalizedPath = (req.path || "/").replace(/\/+$/, "") || "/";
+    const hasTrailingSlash = req.path !== "/" && req.path.endsWith("/") && !/\.[^/]+\/$/.test(req.path);
     const isLegacyHomePath = normalizedPath === "/home";
 
-    if (!isLegacyHost && !isLegacyHomePath) {
+    if (!isLegacyHost && !isLegacyHomePath && !hasTrailingSlash) {
       next();
       return;
     }
 
-    const targetPath = isLegacyHomePath ? "/" : req.path;
+    const targetPath = isLegacyHomePath ? "/" : normalizedPath;
     const query = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
     res.redirect(308, `https://buymesho.app${targetPath}${query}`);
   });
