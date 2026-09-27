@@ -494,7 +494,7 @@ export function updateSEOMetaTags(config: Partial<SEOConfig> = {}) {
 }
 
 /**
- * Generate SEO metadata for a BuyMesho listing.
+ * Keep SEO descriptions within the configured metadata length.
  */
 export function truncateSeoDescription(value: string, maxLength = 160): string {
   const normalized = value.trim();
@@ -503,6 +503,9 @@ export function truncateSeoDescription(value: string, maxLength = 160): string {
   return normalized.slice(0, maxLength - 1).trimEnd() + "…";
 }
 
+/**
+ * Generate SEO metadata for a BuyMesho listing.
+ */
 export function getSEOForListing(listing: Listing, sellerName?: string): SEOConfig {
   const itemTitle = listing.name?.trim() || "Marketplace listing";
   const price = listing.price || 0;
