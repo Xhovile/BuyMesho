@@ -494,6 +494,23 @@ test("server SEO shell renders a public listing snapshot from the database", () 
   assert.equal(offers.availability, "https://schema.org/OutOfStock");
   assert.equal(String(rendered.description).length <= 160, true);
 });
+test("SSR and hydration keep a single page-level JSON-LD schema", () => {
+  const seo = readFileSync(resolve(process.cwd(), "src/lib/seo.ts"), "utf8");
+  const shell = readFileSync(resolve(process.cwd(), "server/seo/publicSeoShell.ts"), "utf8");
+
+  assert.match(seo, /querySelector<HTMLScriptElement>\("#server-seo-schema"\)/);
+  assert.match(shell, /id="server-seo-schema"/);
+  assert.equal((seo.match(/schemaId = "buymesho-jsonld-schema"/g) || []).length, 1);
+});
+
+test("legacy homepage redirect also canonicalizes /home/ URLs", () => {
+  const bootstrap = readFileSync(resolve(process.cwd(), "server/bootstrap.ts"), "utf8");
+
+  assert.match(bootstrap, /const normalizedPath = \(req\.path \|\| "\/"\)\.replace\(\/\\\\\+\$\/g, ""\) \|\| "\/";/);
+  assert.match(bootstrap, /const isLegacyHomePath = normalizedPath === "\/home";/);
+  assert.match(bootstrap, /const targetPath = isLegacyHomePath \? "\/" : req\.path;/);
+});
+
 test("public SEO navigation and PWA shell references use crawlable or existing assets", () => {
   const buyer = readFileSync(resolve(process.cwd(), "src/BuyOnlineMalawiPage.tsx"), "utf8");
   const seller = readFileSync(resolve(process.cwd(), "src/SellOnlineMalawiPage.tsx"), "utf8");
