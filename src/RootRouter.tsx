@@ -8,17 +8,25 @@ import RootRouterRoutes, { prefetchWorkspaceRoutes } from "./router/RootRouterRo
 import { useRootRouterAuthGuard } from "./router/RootRouterAuth";
 import { useRootRouterSeo } from "./router/RootRouterSeo";
 
+function normalizeLocationPath(pathname: string) {
+  return pathname === "/" ? "/" : pathname.replace(/\/+$/, "") || "/";
+}
+
 export default function RootRouter() {
-  const [route, setRoute] = useState<AppRoute>(() => getAppRouteFromLocation(window.location));
+  const initialPath = normalizeLocationPath(window.location.pathname);
+  const [route, setRoute] = useState<AppRoute>(() =>
+    getAppRouteFromLocation({ ...window.location, pathname: initialPath }),
+  );
   const [locationSearch, setLocationSearch] = useState(() => window.location.search);
-  const [locationPath, setLocationPath] = useState(() => window.location.pathname);
+  const [locationPath, setLocationPath] = useState(() => initialPath);
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
 
   useEffect(() => {
     const handleRouteChange = () => {
-      setRoute(getAppRouteFromLocation(window.location));
+      const pathname = normalizeLocationPath(window.location.pathname);
+      setRoute(getAppRouteFromLocation({ ...window.location, pathname }));
       setLocationSearch(window.location.search);
-      setLocationPath(window.location.pathname);
+      setLocationPath(pathname);
     };
     window.addEventListener("popstate", handleRouteChange);
     return () => window.removeEventListener("popstate", handleRouteChange);
