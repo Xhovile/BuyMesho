@@ -127,6 +127,20 @@ test("seller profile and event detail routes are page-managed and indexable", ()
   assert.equal(eventDirectory.noIndex, false);
 });
 
+test("public marketplace surfaces expose crawlable internal links", () => {
+  const sources = [
+    readFileSync(resolve(process.cwd(), "src/components/ListingCard.tsx"), "utf8"),
+    readFileSync(resolve(process.cwd(), "src/components/listingDetails/ListingDetailsShared.tsx"), "utf8"),
+    readFileSync(resolve(process.cwd(), "src/components/events/EventCard.tsx"), "utf8"),
+    readFileSync(resolve(process.cwd(), "src/components/home/EventsStrip.tsx"), "utf8"),
+    readFileSync(resolve(process.cwd(), "src/SellerProfilePage.tsx"), "utf8"),
+    readFileSync(resolve(process.cwd(), "src/SellersDirectoryPage.tsx"), "utf8"),
+  ].join("\n");
+
+  assert.ok(sources.includes("href={` + "`" + `/listing?listing=`));
+  assert.ok(sources.includes("href={` + "`" + `/seller?uid=`));
+  assert.ok(sources.includes("href={` + "`" + `${EVENTS_PATH}?event=`));
+});
 test("dynamic sitemap XML helpers produce valid escaped output", () => {
   const urlset = buildUrlsetXml([
     {
