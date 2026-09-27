@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
+import { assertRefundTransition } from "../disputes/state-machine.js";
 
 type DbExecutor = Pick<PoolClient, "query">;
 
@@ -304,6 +305,7 @@ export async function recordEventRefundRecovery(
     };
   }
   if (liability.status !== "due") throw new Error(`Event refund liability is ${liability.status}`);
+  assertRefundTransition("owed", "refunded", "admin");
   if (!Number.isFinite(input.amount) || Math.abs(input.amount - liability.amount) > 0.000001) {
     throw new Error("Recovery amount must exactly match the outstanding event refund liability");
   }
