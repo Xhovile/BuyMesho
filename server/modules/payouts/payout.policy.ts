@@ -6,8 +6,6 @@ export const PAYOUT_POLICY = {
     bank_transfer: 170,
   },
   bankPayoutFlatFeeAmount: 700,
-  buyerFeeBps: 0,
-  payChanguCustomerFeeBps: 0,
   reserveCapBps: 600,
   disputeWindowHours: 72,
   minimumPayoutAmount: 1,
@@ -42,9 +40,6 @@ export const PAYOUT_POLICY = {
 
 export type PayoutLaunchMode = typeof PAYOUT_POLICY.launchMode;
 
-// Shared money-normalisation and result contracts are kept here because both
-// marketplace and event payout flows consume the same financial primitives.
-
 export type PayoutFormulaInput = {
   grossAmount: number;
   processingFeeAmount?: number;
@@ -54,22 +49,8 @@ export type PayoutFormulaInput = {
   currency?: string;
 };
 
-export type CustomerCheckoutFeeInput = {
-  itemTotalAmount: number;
-  currency?: string;
-};
-
-export type CustomerCheckoutFeeBreakdown = {
-  itemTotalAmount: number;
-  buyerFeeAmount: number;
-  payChanguTransactionFeeAmount: number;
-  finalTotalAmount: number;
-  currency: string;
-};
-
 /**
- * Shared payout result contract consumed by marketplace and event payout flows.
- * Keep this contract explicit in the branch so PR merge resolution cannot drop it.
+ * Shared payout result contract used by marketplace and event payout flows.
  */
 export interface PayoutFormulaResult {
   grossAmount: number;
@@ -89,21 +70,6 @@ export function toFixedMoney(amount: number): number {
   if (!Number.isFinite(amount)) return 0;
   const normalized = Math.round(amount);
   return normalized < 0 ? 0 : normalized;
-}
-
-export function calculateCustomerCheckoutFees(input: CustomerCheckoutFeeInput): CustomerCheckoutFeeBreakdown {
-  const itemTotalAmount = toFixedMoney(input.itemTotalAmount);
-  const buyerFeeAmount = toFixedMoney((itemTotalAmount * PAYOUT_POLICY.buyerFeeBps) / 10_000);
-  const payChanguTransactionFeeAmount = 0;
-  const finalTotalAmount = toFixedMoney(itemTotalAmount + buyerFeeAmount);
-
-  return {
-    itemTotalAmount,
-    buyerFeeAmount,
-    payChanguTransactionFeeAmount,
-    finalTotalAmount,
-    currency: (input.currency ?? 'MWK').toUpperCase(),
-  };
 }
 
 export function calculatePayoutFee(amount: number, payoutMethod?: PayoutFormulaInput['payoutMethod']): number {
