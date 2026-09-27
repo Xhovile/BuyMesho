@@ -137,9 +137,9 @@ test("public marketplace surfaces expose crawlable internal links", () => {
     readFileSync(resolve(process.cwd(), "src/SellersDirectoryPage.tsx"), "utf8"),
   ].join("\n");
 
-  assert.ok(sources.includes("href={` + "`" + `/listing?listing=`));
-  assert.ok(sources.includes("href={` + "`" + `/seller?uid=`));
-  assert.ok(sources.includes("href={` + "`" + `${EVENTS_PATH}?event=`));
+  assert.ok(sources.includes("href={`/listing?listing="));
+  assert.ok(sources.includes("href={`/seller?uid="));
+  assert.ok(sources.includes("EVENTS_PATH}?event=${encodeURIComponent"));
 });
 test("dynamic sitemap XML helpers produce valid escaped output", () => {
   const urlset = buildUrlsetXml([
