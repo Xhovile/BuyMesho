@@ -261,7 +261,7 @@ test("index.html contains the static BuyMesho brand entity schema", () => {
 
   const graph = JSON.parse(schemaJson) as {
     "@graph"?: Array<Record<string, unknown>>;
-  }["graph"];
+  ]["@graph"];
 
   assert.ok(Array.isArray(graph));
 
