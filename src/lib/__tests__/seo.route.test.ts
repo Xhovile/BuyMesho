@@ -29,6 +29,24 @@ test("public routes are explicitly indexable", () => {
   }
 });
 
+test("category routes require a known category key", () => {
+  const valid = getRouteSEO("/category", "category", "?category=phones");
+  assert.equal(valid.noIndex, false);
+  assert.equal(valid.managedByPage, true);
+  assert.equal(valid.canonicalPath, "/category?category=phones");
+
+  const bare = getRouteSEO("/category", "category", "");
+  assert.equal(bare.noIndex, true);
+  assert.equal(bare.canonicalPath, "/category");
+
+  const invalid = getRouteSEO("/category", "category", "?category=banana");
+  assert.equal(invalid.noIndex, true);
+  assert.equal(invalid.canonicalPath, "/category");
+
+  assert.equal(getAppRouteFromLocation({ pathname: "/category", search: "" }), "category");
+  assert.equal(getAppRouteFromLocation({ pathname: "/category", search: "?category=banana" }), "category");
+});
+
 test("page-managed public pages are not overwritten by root SEO", () => {
   const listingSeo = getRouteSEO("/listing", "listing_details");
   assert.equal(listingSeo.noIndex, false);
@@ -150,6 +168,26 @@ test("server SEO shell classifies document routes separately from assets", () =>
   assert.equal(isSeoDocumentPath("/sitemap.xml"), false);
 });
 
+test("server SEO shell noindexes bare and invalid category documents", () => {
+  const bare = renderSeoDocument({ path: "/category", originalUrl: "/category" } as any, {});
+  assert.equal(bare.noIndex, true);
+  assert.equal(bare.canonicalUrl, "/category");
+
+  const invalid = renderSeoDocument(
+    { path: "/category", originalUrl: "/category?category=banana" } as any,
+    {},
+  );
+  assert.equal(invalid.noIndex, true);
+  assert.equal(invalid.canonicalUrl, "/category");
+
+  const valid = renderSeoDocument(
+    { path: "/category", originalUrl: "/category?category=phones" } as any,
+    {},
+  );
+  assert.equal(valid.noIndex, false);
+  assert.equal(valid.canonicalUrl, "/category?category=phones");
+});
+
 test("server SEO shell keeps every public static route indexable", () => {
   const publicStaticRoutes: Array<[string, AppRoute]> = [
     ["/", "home"],
@@ -199,6 +237,14 @@ test("server SEO shell replaces index defaults with route-specific metadata", ()
   assert.match(html, /<div id="seo-prerender"><div/);
   assert.match(html, /href="\/explore"/);
   assert.equal((html.match(/<title>/g) || []).length, 1);
+});
+
+test("category page does not silently default invalid URLs to phones", () => {
+  const source = readFileSync(resolve(process.cwd(), "src/CategoryPage.tsx"), "utf8");
+  assert.match(source, /isMarketplaceCategoryKey/);
+  assert.match(source, /Category not found/);
+  assert.match(source, /noIndex: true/);
+  assert.match(source, /requestedCategory/);
 });
 
 test("server SEO shell renders a public listing snapshot from the database", () => {
