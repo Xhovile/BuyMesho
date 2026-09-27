@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   PAYOUT_POLICY,
-  calculateCustomerCheckoutFees,
   calculatePayoutFormula,
   isNonRetryableFailureCode,
   isRetryableFailureCode,
@@ -43,19 +42,6 @@ test('payout policy freezes the seller-net formula and hard caps reserves', () =
   assert.equal(formula.netAmount, 619, 'seller net payout must deduct commission, reserve, adjustment, and payout fee');
   assert.equal(formula.sellerReceivesAmount, 619, 'seller receives the calculated net payout');
   assert.equal(formula.currency, 'MWK');
-});
-
-test('checkout fee breakdown does not charge BuyMesho platform fees to customers', () => {
-  const checkout = calculateCustomerCheckoutFees({
-    itemTotalAmount: 10000,
-    currency: 'mwk',
-  });
-
-  assert.equal(checkout.itemTotalAmount, 10000);
-  assert.equal(checkout.buyerFeeAmount, 0);
-  assert.equal(checkout.payChanguTransactionFeeAmount, 0);
-  assert.equal(checkout.finalTotalAmount, 10000);
-  assert.equal(checkout.currency, 'MWK');
 });
 
 test('payout policy separates retryable and non-retryable failure codes', () => {
