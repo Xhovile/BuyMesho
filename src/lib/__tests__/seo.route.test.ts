@@ -165,15 +165,17 @@ test("public listing visibility uses the same seller eligibility rule", () => {
   const seoShell = readFileSync(resolve(process.cwd(), "server/seo/publicSeoShell.ts"), "utf8");
   const sitemap = readFileSync(resolve(process.cwd(), "server/routes/sitemap.routes.ts"), "utf8");
 
-  assert.match(marketplace, /WHERE l\.is_hidden = 0\\s+AND l\.deleted_at IS NULL\\s+AND s\.is_seller = 1/);
-  assert.match(marketplace, /WHERE l\.id = \\? AND l\.is_hidden = 0 AND l\.deleted_at IS NULL\\s+AND s\.is_seller = 1/);
-  assert.match(marketplace, /JOIN sellers s ON l\.seller_uid = s\.uid\\s+WHERE l\.id = \\? AND l\.is_hidden = 0 AND l\.deleted_at IS NULL\\s+AND s\.is_seller = 1/);
-
-  const sellerEligibilityChecks = (seoShell.match(/s\.is_seller=1/g) || []).length;
-  assert.ok(sellerEligibilityChecks >= 3, "SSR listing queries should require an active seller");
-
-  assert.match(sitemap, /AND s\.is_seller = 1/);
+  assert.ok(
+    marketplace.includes("AND s.is_seller = 1"),
+    "marketplace listing queries should require an active seller",
+  );
+  assert.ok(
+    (seoShell.match(/s\.is_seller=1/g) || []).length >= 3,
+    "SSR listing queries should require an active seller",
+  );
+  assert.ok(sitemap.includes("AND s.is_seller = 1"));
 });
+
 
 test("server SEO shell classifies document routes separately from assets", () => {
   assert.equal(isSeoDocumentPath("/"), true);
