@@ -290,10 +290,18 @@ export default function EventDetailsView() {
   }, [canBuyOrCart, event, firebaseUser?.uid]);
 
   useEffect(() => {
-    if (!autoBuyRequested || authLoading || !event || autoBuyHandledRef.current) return;
+    if (
+      !autoBuyRequested ||
+      authLoading ||
+      !event ||
+      event.id !== eventId ||
+      autoBuyHandledRef.current
+    ) {
+      return;
+    }
     autoBuyHandledRef.current = true;
     handleBuyTicket();
-  }, [autoBuyRequested, authLoading, event, handleBuyTicket]);
+  }, [autoBuyRequested, authLoading, event, eventId, handleBuyTicket]);
 
   const submitTicketHolder = async (ticketHolder: TicketHolderInformation) => {
     if (!event || !firebaseUser?.uid) return;
