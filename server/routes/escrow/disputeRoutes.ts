@@ -1,6 +1,7 @@
 import express, { type RequestHandler } from 'express';
 import { randomUUID } from 'crypto';
 import { query, withTransaction } from '../../postgres.js';
+import { withOrderFinancialLock } from '../../modules/financial/orderFinancialLock.js';
 import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import { notifyDisputeWorkflowEvent } from '../../modules/notifications/dispute-workflow.notification.js';
 import { assertAllowedDisputeTransition, type DisputeStatus } from './disputeState.js';
@@ -97,7 +98,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       const evidence = cleanEvidence(body.evidence);
       if (!Number.isFinite(amountRequested) || amountRequested < 0) return res.status(400).json({ error: 'amountRequested must be a non-negative number' });
 
-      const result = await withTransaction(async (client) => {
+      const result = await withOrderFinancialLock(orderId, () => withTransaction(async (client) => {
         const orderResult = await client.query<Record<string, unknown>>(`SELECT id, buyer_id, seller_id, status, escrow_id, total_currency, paid_at, placed_at, fulfilled_at, delivery_period_days, delivery_deadline FROM orders WHERE id = $1 LIMIT 1`, [orderId]);
         const order = orderResult.rows[0];
         if (!order) throw new Error('Order not found');
@@ -191,7 +192,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         }
         await client.query(`INSERT INTO audit_events (id, entity_type, entity_id, event_type, performed_by, timestamp, previous_state, new_state, metadata) VALUES ($1,'dispute_case',$2,'dispute_submitted',$3,$4,NULL,'open',$5)`, [`audit_${randomUUID()}`, caseId, openedBy, nowIso, JSON.stringify({ attemptId, refundRequestId, orderId, ticketId: resolvedTicketId, requestType, requestedResolution, phase, eligibleAt, windowEndsAt, resolutionOwner, payoutStatusAtSubmission })]);
         return { duplicate: false, settled: false, timingError: null, caseId, attemptId, refundRequestId, windowEndsAt, eligibleAt, phase, buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: 'open', resolutionOwner, payoutStatusAtSubmission };
-      });
+       }));
 
       if (result.settled) return res.status(409).json({ error: 'Dispute already settled.', code: 'DISPUTE_ALREADY_SETTLED', caseId: result.caseId, status: result.status, windowEndsAt: result.windowEndsAt, orderId });
       if (result.duplicate) return res.status(409).json({ error: 'This order already has an active dispute. Please wait for the current dispute to be resolved before submitting another one.', code: 'ACTIVE_DISPUTE_EXISTS', caseId: result.caseId, status: result.status, windowEndsAt: result.windowEndsAt, orderId });
