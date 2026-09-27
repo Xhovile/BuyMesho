@@ -196,6 +196,7 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
               throw new Error('Event payout is still being processed; reconcile the payout before approving this refund.');
             }
 
+            assertRefundTransition('approved', 'owed', 'admin');
             const liability = await createEventRefundLiability(client, {
               orderId: String(current.order_id),
               refundRequestId: String(refund.id),
