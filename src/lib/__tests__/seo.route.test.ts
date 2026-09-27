@@ -471,6 +471,8 @@ test("server SEO shell renders a public listing snapshot from the database", () 
     university: "LUANAR",
     condition: "Used",
     status: "available",
+    quantity: 1,
+    sold_quantity: 1,
     photos: "[]",
     seller_uid: "seller-42",
     business_name: "Sample Seller",
@@ -488,6 +490,9 @@ test("server SEO shell renders a public listing snapshot from the database", () 
   assert.match(rendered.body, /Sample Phone/);
   assert.match(rendered.body, /seller\?uid=seller-42/);
   assert.equal(rendered.jsonLd?.["@type"], "Product");
+  const offers = rendered.jsonLd?.offers as Record<string, unknown>;
+  assert.equal(offers.availability, "https://schema.org/OutOfStock");
+  assert.equal(String(rendered.description).length <= 160, true);
 });
 test("public SEO navigation and PWA shell references use crawlable or existing assets", () => {
   const buyer = readFileSync(resolve(process.cwd(), "src/BuyOnlineMalawiPage.tsx"), "utf8");
