@@ -13,8 +13,83 @@
       "dest": "https://buymesho.onrender.com/api/seo/sitemap-$1.xml"
     },
     {
+      "src": "/",
+      "dest": "https://buymesho.onrender.com/"
+    },
+    {
+      "src": "/home",
+      "dest": "https://buymesho.onrender.com/home"
+    },
+    {
+      "src": "/install",
+      "dest": "https://buymesho.onrender.com/install"
+    },
+    {
+      "src": "/signup",
+      "dest": "https://buymesho.onrender.com/signup"
+    },
+    {
+      "src": "/about",
+      "dest": "https://buymesho.onrender.com/about"
+    },
+    {
+      "src": "/explore",
+      "dest": "https://buymesho.onrender.com/explore"
+    },
+    {
+      "src": "/explore/deals",
+      "dest": "https://buymesho.onrender.com/explore/deals"
+    },
+    {
+      "src": "/explore/events",
+      "dest": "https://buymesho.onrender.com/explore/events"
+    },
+    {
+      "src": "/explore/wholesale",
+      "dest": "https://buymesho.onrender.com/explore/wholesale"
+    },
+    {
+      "src": "/explore/sellers",
+      "dest": "https://buymesho.onrender.com/explore/sellers"
+    },
+    {
+      "src": "/buy-online-malawi",
+      "dest": "https://buymesho.onrender.com/buy-online-malawi"
+    },
+    {
+      "src": "/sell-online-malawi",
+      "dest": "https://buymesho.onrender.com/sell-online-malawi"
+    },
+    {
+      "src": "/category",
+      "dest": "https://buymesho.onrender.com/category"
+    },
+    {
+      "src": "/listing",
+      "dest": "https://buymesho.onrender.com/listing"
+    },
+    {
+      "src": "/seller",
+      "dest": "https://buymesho.onrender.com/seller"
+    },
+    {
+      "src": "/privacy",
+      "dest": "https://buymesho.onrender.com/privacy"
+    },
+    {
+      "src": "/terms",
+      "dest": "https://buymesho.onrender.com/terms"
+    },
+    {
+      "src": "/safety",
+      "dest": "https://buymesho.onrender.com/safety"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
-      "dest": "https://buymesho.onrender.com/$1"
+      "dest": "/index.html"
     }
   ],
   "headers": [
