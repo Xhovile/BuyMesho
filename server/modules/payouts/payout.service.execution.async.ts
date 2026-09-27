@@ -535,7 +535,7 @@ export async function executePayoutFlow(
   });
 
   return lockedResult;
-
+}
 
 export async function getProviderBalance(currency = 'MWK') {
   return getPayChanguPayoutBalance(currency);
