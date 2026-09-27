@@ -2,7 +2,6 @@ import { ArrowRight, ClipboardList, Search, Store } from "lucide-react";
 
 import AppFooter from "./components/AppFooter";
 import BrandMark from "./components/BrandMark";
-import { navigateToPath } from "./lib/appNavigation";
 import { EXPLORE_PATH } from "./lib/appNavigation.paths";
 
 const sellingSteps = [
@@ -28,13 +27,9 @@ export default function SellOnlineMalawiPage() {
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="border-b border-zinc-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
-          <button
-            type="button"
-            onClick={() => navigateToPath(EXPLORE_PATH)}
-            aria-label="Open BuyMesho marketplace"
-          >
+          <a href={EXPLORE_PATH} aria-label="Open BuyMesho marketplace">
             <BrandMark subtitle="seller marketplace" />
-          </button>
+          </a>
           <a
             href={EXPLORE_PATH}
             className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-zinc-800"
