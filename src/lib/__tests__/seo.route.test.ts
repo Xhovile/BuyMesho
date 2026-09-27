@@ -150,6 +150,35 @@ test("server SEO shell classifies document routes separately from assets", () =>
   assert.equal(isSeoDocumentPath("/sitemap.xml"), false);
 });
 
+test("server SEO shell keeps every public static route indexable", () => {
+  const publicStaticRoutes: Array<[string, AppRoute]> = [
+    ["/", "home"],
+    ["/home", "home"],
+    ["/install", "home"],
+    ["/signup", "home"],
+    ["/about", "about"],
+    ["/explore", "explore"],
+    ["/buy-online-malawi", "buy_online_malawi"],
+    ["/sell-online-malawi", "sell_online_malawi"],
+    ["/explore/deals", "explore"],
+    ["/explore/events", "explore"],
+    ["/explore/wholesale", "explore"],
+    ["/explore/sellers", "explore"],
+    ["/privacy", "privacy"],
+    ["/terms", "terms"],
+    ["/safety", "safety"],
+  ];
+
+  for (const [pathname, route] of publicStaticRoutes) {
+    const rendered = renderSeoDocument({ path: pathname, originalUrl: pathname } as any, {});
+    assert.equal(rendered.noIndex, false, pathname + " should be indexable on the server");
+
+    const clientSeo = getRouteSEO(pathname, route);
+    assert.equal(clientSeo.noIndex, false, pathname + " should also be indexable on the client");
+    assert.equal(rendered.canonicalUrl, clientSeo.canonicalPath);
+  }
+});
+
 test("server SEO shell replaces index defaults with route-specific metadata", () => {
   const template =
     "<!DOCTYPE html><html><head><title>Old title</title>" +
