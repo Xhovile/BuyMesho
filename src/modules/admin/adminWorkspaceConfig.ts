@@ -14,6 +14,7 @@ export const ADMIN_HUB_ACTIONS: AdminWorkspaceItem[] = [
   { label: "Transaction Inspector", path: ADMIN_TRANSACTION_INSPECTOR_PATH, icon: CreditCard, description: "Deep-dive into payouts, reconciliation, and seller payout history." },
   { label: "Balance", path: ADMIN_BALANCE_PATH, icon: Wallet, description: "Check PayChangu wallet balance before payouts." },
   { label: "Payouts", path: ADMIN_PAYOUTS_PATH, icon: Wallet, description: "Review payout requests and settlement activity." },
+  { label: "Event Recovery", path: ADMIN_EVENT_PAYOUT_RECOVERY_PATH, icon: RefreshCw, description: "Reconcile direct event payouts and record outstanding event refund recoveries." },
   { label: "Admin Setup", path: ADMIN_SETUP_PATH, icon: Wrench, description: "Manage feature flags, settings, and internal setup." },
 ];
 export const ADMIN_WORKSPACE_NAV_ITEMS: AdminWorkspaceItem[] = [
