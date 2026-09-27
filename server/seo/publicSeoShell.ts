@@ -177,7 +177,7 @@ function buildHead(result: SeoRenderResult): string {
   ].join("\n");
 }
 
-function staticSeoResult(pathname: string, search: string): SeoRenderResult {
+function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderResult {
   const normalized = pathname === "/" ? "/" : pathname.replace(/\/+$/, "") || "/";
   const route = normalized === "/category"
     ? getRouteSEO(normalized, "category", search)
@@ -194,6 +194,28 @@ function staticSeoResult(pathname: string, search: string): SeoRenderResult {
     };
     if (category && labels[category]) {
       const labelText = labels[category];
+      const categoryDbValues: Record<string, string> = {
+        phones: "Electronics & Gadgets",
+        fashion: "Fashion & Clothing",
+        books: "Academic Services",
+        food: "Food & Snacks",
+        beauty: "Beauty & Personal Care",
+      };
+      const categoryListings = db
+        ? db.prepare(
+            "SELECT id,name FROM listings WHERE category=? AND is_hidden=0 AND deleted_at IS NULL ORDER BY updated_at DESC,id DESC LIMIT 8"
+          ).all(categoryDbValues[category!]) as Array<{ id: number; name?: string | null }>
+        : [];
+      const listingLinks = categoryListings
+        .map((item) =>
+          '<li style="margin:0 0 8px"><a href="/listing?listing=' +
+          encodeURIComponent(String(item.id)) +
+          '">' +
+          esc(item.name || "Listing " + item.id) +
+          "</a></li>"
+        )
+        .join("");
+
       return {
         title: labelText + " in Malawi",
         description: "Browse " + labelText.toLowerCase() + " from sellers on BuyMesho's Malawi marketplace.",
@@ -207,6 +229,11 @@ function staticSeoResult(pathname: string, search: string): SeoRenderResult {
             { href: "/explore", label: "Explore all listings" },
             { href: "/buy-online-malawi", label: "Buy online in Malawi" },
             { href: "/sell-online-malawi", label: "Sell online in Malawi" },
+          ],
+          [
+            categoryListings.length
+              ? '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">Current listings</h2><ul style="padding-left:20px">' + listingLinks + "</ul></section>"
+              : "",
           ],
         ),
       };
@@ -227,6 +254,72 @@ function staticSeoResult(pathname: string, search: string): SeoRenderResult {
   };
 
   const selected = copy[normalized] || { eyebrow: "BuyMesho", text: route.description };
+  const sections: string[] = [
+    '<section style="margin-top:24px"><p style="color:#52525b;line-height:1.7">' + esc(selected.text) + "</p></section>",
+  ];
+
+  if (db && (normalized === "/" || normalized === "/explore")) {
+    const listings = db.prepare(
+      "SELECT id,name,price FROM listings WHERE is_hidden=0 AND deleted_at IS NULL ORDER BY updated_at DESC,id DESC LIMIT 8"
+    ).all() as Array<{ id: number; name?: string | null; price?: number | string | null }>;
+    if (listings.length) {
+      const listingLinks = listings.map((item) =>
+        '<li style="margin:0 0 8px"><a href="/listing?listing=' +
+        encodeURIComponent(String(item.id)) +
+        '">' +
+        esc(item.name || "Listing " + item.id) +
+        " · " +
+        esc(formatMoney(item.price)) +
+        "</a></li>"
+      ).join("");
+      sections.push(
+        '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">Current marketplace listings</h2><ul style="padding-left:20px">' +
+        listingLinks +
+        "</ul></section>",
+      );
+    }
+  }
+
+  if (db && normalized === "/explore/sellers") {
+    const sellers = db.prepare(
+      "SELECT uid,business_name FROM sellers WHERE is_seller=1 ORDER BY updated_at DESC,uid ASC LIMIT 8"
+    ).all() as Array<{ uid: string; business_name?: string | null }>;
+    if (sellers.length) {
+      const sellerLinks = sellers.map((item) =>
+        '<li style="margin:0 0 8px"><a href="/seller?uid=' +
+        encodeURIComponent(String(item.uid)) +
+        '">' +
+        esc(item.business_name?.trim() || "Seller profile") +
+        "</a></li>"
+      ).join("");
+      sections.push(
+        '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">Public seller profiles</h2><ul style="padding-left:20px">' +
+        sellerLinks +
+        "</ul></section>",
+      );
+    }
+  }
+
+  if (db && normalized === "/explore/events") {
+    const events = db.prepare(
+      "SELECT id,event_title FROM events WHERE deleted_at IS NULL AND publication_status='published' AND (publication_mode='immediate' OR (publication_mode='scheduled' AND publication_at IS NOT NULL AND publication_at<=CURRENT_TIMESTAMP)) ORDER BY updated_at DESC,id DESC LIMIT 8"
+    ).all() as Array<{ id: number; event_title?: string | null }>;
+    if (events.length) {
+      const eventLinks = events.map((item) =>
+        '<li style="margin:0 0 8px"><a href="/explore/events?event=' +
+        encodeURIComponent(String(item.id)) +
+        '">' +
+        esc(item.event_title || "Event " + item.id) +
+        "</a></li>"
+      ).join("");
+      sections.push(
+        '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">Public events</h2><ul style="padding-left:20px">' +
+        eventLinks +
+        "</ul></section>",
+      );
+    }
+  }
+
   return {
     title: route.title,
     description: route.description,
@@ -243,6 +336,7 @@ function staticSeoResult(pathname: string, search: string): SeoRenderResult {
         { href: "/explore/sellers", label: "Browse sellers" },
         { href: "/explore/events", label: "Events in Malawi" },
       ],
+      sections,
     ),
   };
 }
@@ -574,7 +668,7 @@ export function renderSeoDocument(request: Request, db: any): SeoRenderResult {
     ]);
 
     if (publicPaths.has(pathname)) {
-      return staticSeoResult(pathname, search);
+      return staticSeoResult(pathname, search, db);
     }
 
     return {
