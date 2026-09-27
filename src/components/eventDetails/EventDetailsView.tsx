@@ -23,6 +23,7 @@ import { useAuthUser } from "../../hooks/useAuthUser";
 import { upsertEventCartItem } from "../../lib/eventCart";
 import { resetSEOMetaTags, updateSEOMetaTags } from "../../lib/seo";
 import { getEventAttendanceMode } from "../../lib/seoEvent";
+import { trackPublicPageView } from "../../lib/analytics";
 import FeedbackModal from "../FeedbackModal";
 import ConfirmModal from "../ConfirmModal";
 import TicketHolderForm, { type TicketHolderInformation } from "../tickets/TicketHolderForm";
@@ -53,6 +54,7 @@ export default function EventDetailsView() {
   const eventId = eventRouteState.eventId;
   const autoBuyRequested = eventRouteState.autoBuyRequested;
   const autoBuyHandledRef = useRef(false);
+  const trackedEventPathRef = useRef<string | null>(null);
 
   useEffect(() => {
     const syncEventRouteState = () => {
@@ -218,6 +220,22 @@ export default function EventDetailsView() {
         "event tickets Malawi",
       ].filter(Boolean),
     });
+
+    const liveEventId =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("event")?.trim() || ""
+        : "";
+
+    if (event.id === eventId && liveEventId === String(event.id)) {
+      const eventPath = `${EVENTS_PATH}?event=${encodeURIComponent(String(event.id))}`;
+      if (trackedEventPathRef.current !== eventPath) {
+        trackPublicPageView({
+          pathname: eventPath,
+          route: "explore",
+        });
+        trackedEventPathRef.current = eventPath;
+      }
+    }
 
     return () => {
       resetSEOMetaTags();
