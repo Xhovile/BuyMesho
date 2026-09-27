@@ -6,7 +6,6 @@ import { orderRepository } from "../orders/order.repository.js";
 import { paymentRepository } from "./payment.repository.js";
 import { escrowRepository } from "../escrow/escrow.repository.js";
 import { getPaymentDb } from "../../postgresCompat.js";
-import { calculateCustomerCheckoutFees } from "../payouts/payout.policy.js";
 import { paymentWebhookHandler } from "./payment.webhooks.js";
 import { payoutWebhookHandler } from "../payouts/payout.webhooks.js";
 
@@ -408,7 +407,6 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
 
       const source = hasListing && hasEvent ? "mixed" : hasEvent ? "event" : "listing";
       const primarySellerId = sellerIds.values().next().value ?? "multiple-sellers";
-      const feeBreakdown = calculateCustomerCheckoutFees({ itemTotalAmount: total, currency });
 
       try {
         serverOrderService.create({
@@ -419,7 +417,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           status: "pending_payment",
           currency,
           subtotal: { amount: total, currency },
-          total: { amount: feeBreakdown.finalTotalAmount, currency },
+          total: { amount: total, currency },
           paymentProvider: "paychangu",
           settlementRoute,
           checkoutIdempotencyKey: idempotencyKey,
@@ -446,7 +444,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         provider: "paychangu",
         method,
         settlementRoute,
-        amount: { amount: feeBreakdown.finalTotalAmount, currency },
+        amount: { amount: total, currency },
         customer: {
           id: buyerUid,
           name: buyerName || ticketHolder.fullName || buyerEmail || buyerUid,
@@ -485,8 +483,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         order: orderRepository.findById(orderId),
         totals: {
           subtotal: total,
-          total: feeBreakdown.finalTotalAmount,
-          fees: feeBreakdown.payChanguTransactionFeeAmount,
+          total,
         },
       });
     } catch (error) {

@@ -5,7 +5,6 @@ import type { Listing } from "../types";
 import { apiFetch } from "../lib/api";
 import { ENDPOINTS } from "../shared/api/endpoints";
 import { touchBuyerPaymentFromCheckout } from "../lib/buyerState";
-import { calculateCustomerCheckoutFees } from "../../server/modules/payouts/payout.policy";
 import BuyerDetailsForm, { type BuyerDeliveryDetails } from "./checkout/BuyerDetailsForm";
 
 type CheckoutStep = "form" | "loading" | "success" | "error";
@@ -118,10 +117,6 @@ export default function CheckoutModal({
   );
   const unitPrice = Number(listing.price);
   const total = unitPrice * quantity;
-  const feeBreakdown = calculateCustomerCheckoutFees({
-    itemTotalAmount: total,
-    currency: "MWK",
-  });
 
   useEffect(() => {
     if (isOpen) {
@@ -213,7 +208,7 @@ export default function CheckoutModal({
         checkoutItems: [{ listingId: String(listing.id), quantity }],
         listingTitle: listing.name,
         quantity,
-        totalPrice: feeBreakdown.itemTotalAmount,
+        totalPrice: total,
         checkoutUrl,
         txRef: reference,
       });
@@ -350,15 +345,11 @@ export default function CheckoutModal({
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center justify-between gap-4 text-zinc-600">
                         <span>Item total</span>
-                        <span className="font-bold text-zinc-900">{formatPrice(feeBreakdown.itemTotalAmount)}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-4 text-zinc-600">
-                        <span>Fees</span>
-                        <span className="font-bold text-zinc-900">{formatPrice(feeBreakdown.buyerFeeAmount)}</span>
+                        <span className="font-bold text-zinc-900">{formatPrice(total)}</span>
                       </div>
                       <div className="flex items-center justify-between gap-4 border-t border-zinc-200 pt-2 text-base font-black text-zinc-900">
                         <span>Total</span>
-                        <span>{formatPrice(feeBreakdown.finalTotalAmount)}</span>
+                        <span>{formatPrice(total)}</span>
                       </div>
                     </div>
                   </div>
