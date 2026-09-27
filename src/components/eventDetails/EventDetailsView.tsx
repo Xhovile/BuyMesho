@@ -22,6 +22,7 @@ import { navigateToConversation } from "../../lib/messagesNavigation";
 import { useAuthUser } from "../../hooks/useAuthUser";
 import { upsertEventCartItem } from "../../lib/eventCart";
 import { resetSEOMetaTags, updateSEOMetaTags } from "../../lib/seo";
+import { getEventAttendanceMode } from "../../lib/seoEvent";
 import FeedbackModal from "../FeedbackModal";
 import ConfirmModal from "../ConfirmModal";
 import TicketHolderForm, { type TicketHolderInformation } from "../tickets/TicketHolderForm";
@@ -182,7 +183,7 @@ export default function EventDetailsView() {
           event.status === "cancelled"
             ? "https://schema.org/EventCancelled"
             : "https://schema.org/EventScheduled",
-        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+        ...(getEventAttendanceMode(event.spec_values) ? { "eventAttendanceMode": getEventAttendanceMode(event.spec_values) } : {}),
         "location": {
           "@type": "Place",
           "name": event.venue,
