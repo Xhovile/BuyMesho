@@ -4,12 +4,22 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 import { getRouteSEO, getListingCanonicalUrl, getSEOForListing } from "../seo";
-import { buildProductJsonLd, getProductSchemaCondition } from "../seoProduct";
+import { buildProductJsonLd, getProductSchemaCondition, isListingOutOfStock } from "../seoProduct";
 import { getEventAttendanceMode } from "../seoEvent";
 import { getAppRouteFromLocation } from "../../lib/appNavigation.query";
 import type { AppRoute } from "../../lib/appNavigation.paths";
 import { buildSitemapIndexXml, buildUrlsetXml } from "../../../server/routes/sitemap.routes";
 import { injectSeoDocument, isSeoDocumentPath, renderSeoDocument } from "../../../server/seo/publicSeoShell.js";
+
+const emptySeoDb = {
+  prepare() {
+    return {
+      get: () => undefined,
+      all: () => [],
+    };
+  },
+};
+
 
 test("public routes are explicitly indexable", () => {
   const publicRoutes: Array<[string, AppRoute]> = [
@@ -260,6 +270,31 @@ test("product condition mapping is explicit", () => {
   assert.equal(getProductSchemaCondition("Unknown condition"), undefined);
 });
 
+test("listing SEO availability follows marketplace quantity semantics", () => {
+  assert.equal(isListingOutOfStock({ status: "available", quantity: 5, soldQuantity: 4 }), false);
+  assert.equal(isListingOutOfStock({ status: "available", quantity: 5, soldQuantity: 5 }), true);
+  assert.equal(isListingOutOfStock({ status: "sold", quantity: 5, soldQuantity: 0 }), true);
+
+  const longListing = {
+    id: 99,
+    name: "Long Description Phone",
+    price: 250000,
+    description: "A".repeat(500),
+    category: "Electronics & Gadgets",
+    university: "LUANAR",
+    photos: [],
+    status: "available",
+    quantity: 1,
+    sold_quantity: 1,
+    condition: "Used",
+    business_name: "Sample Seller",
+  } as any;
+
+  const seo = getSEOForListing(longListing);
+  assert.equal(seo.availability, "OutOfStock");
+  assert.equal(seo.description.length <= 160, true);
+});
+
 test("seller directory is backed by the public seller endpoint", () => {
   const directory = readFileSync(resolve(process.cwd(), "src/SellersDirectoryPage.tsx"), "utf8");
   const sellerRoutes = readFileSync(resolve(process.cwd(), "server/routes/sellerProfile.routes.ts"), "utf8");
@@ -305,20 +340,20 @@ test("server SEO shell classifies document routes separately from assets", () =>
 });
 
 test("server SEO shell noindexes bare and invalid category documents", () => {
-  const bare = renderSeoDocument({ path: "/category", originalUrl: "/category" } as any, {});
+  const bare = renderSeoDocument({ path: "/category", originalUrl: "/category" } as any, emptySeoDb);
   assert.equal(bare.noIndex, true);
   assert.equal(bare.canonicalUrl, "/category");
 
   const invalid = renderSeoDocument(
     { path: "/category", originalUrl: "/category?category=banana" } as any,
-    {},
+    emptySeoDb,
   );
   assert.equal(invalid.noIndex, true);
   assert.equal(invalid.canonicalUrl, "/category");
 
   const valid = renderSeoDocument(
     { path: "/category", originalUrl: "/category?category=phones" } as any,
-    {},
+    emptySeoDb,
   );
   assert.equal(valid.noIndex, false);
   assert.equal(valid.canonicalUrl, "/category?category=phones");
@@ -344,13 +379,56 @@ test("server SEO shell keeps every public static route indexable", () => {
   ];
 
   for (const [pathname, route] of publicStaticRoutes) {
-    const rendered = renderSeoDocument({ path: pathname, originalUrl: pathname } as any, {});
+    const rendered = renderSeoDocument({ path: pathname, originalUrl: pathname } as any, emptySeoDb);
     assert.equal(rendered.noIndex, false, pathname + " should be indexable on the server");
 
     const clientSeo = getRouteSEO(pathname, route);
     assert.equal(clientSeo.noIndex, false, pathname + " should also be indexable on the client");
     assert.equal(rendered.canonicalUrl, clientSeo.canonicalPath);
   }
+});
+
+test("server SEO shell normalizes trailing slashes for public and dynamic routes", () => {
+  const explore = renderSeoDocument(
+    { path: "/explore/", originalUrl: "/explore/" } as any,
+    emptySeoDb,
+  );
+  assert.equal(explore.noIndex, false);
+  assert.equal(explore.canonicalUrl, "/explore");
+
+  const category = renderSeoDocument(
+    { path: "/category/", originalUrl: "/category/?category=phones" } as any,
+    emptySeoDb,
+  );
+  assert.equal(category.noIndex, false);
+  assert.equal(category.canonicalUrl, "/category?category=phones");
+
+  const fakeListing = {
+    id: 42,
+    name: "Sample Phone",
+    price: 250000,
+    description: "A public phone listing.",
+    category: "Electronics & Gadgets",
+    university: "LUANAR",
+    condition: "Used",
+    status: "available",
+    quantity: 1,
+    sold_quantity: 0,
+    photos: "[]",
+    seller_uid: "seller-42",
+    business_name: "Sample Seller",
+  };
+  const listingDb = {
+    prepare() {
+      return { get: () => fakeListing };
+    },
+  };
+  const listing = renderSeoDocument(
+    { path: "/listing/", originalUrl: "/listing/?listing=42" } as any,
+    listingDb,
+  );
+  assert.equal(listing.noIndex, false);
+  assert.equal(listing.canonicalUrl, "/listing?listing=42");
 });
 
 test("server SEO shell replaces index defaults with route-specific metadata", () => {
