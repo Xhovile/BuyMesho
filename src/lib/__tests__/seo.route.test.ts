@@ -7,6 +7,7 @@ import { getRouteSEO, getListingCanonicalUrl } from "../seo";
 import { getAppRouteFromLocation } from "../../lib/appNavigation.query";
 import type { AppRoute } from "../../lib/appNavigation.paths";
 import { buildSitemapIndexXml, buildUrlsetXml } from "../../../server/routes/sitemap.routes";
+import { injectSeoDocument, isSeoDocumentPath, renderSeoDocument } from "../../../server/seo/publicSeoShell.js";
 
 test("public routes are explicitly indexable", () => {
   const publicRoutes: Array<[string, AppRoute]> = [
@@ -140,6 +141,64 @@ test("public marketplace surfaces expose crawlable internal links", () => {
   assert.ok(sources.includes("href={`/listing?listing="));
   assert.ok(sources.includes("href={`/seller?uid="));
   assert.ok(sources.includes("EVENTS_PATH}?event=${encodeURIComponent"));
+});
+test("server SEO shell classifies document routes separately from assets", () => {
+  assert.equal(isSeoDocumentPath("/"), true);
+  assert.equal(isSeoDocumentPath("/listing"), true);
+  assert.equal(isSeoDocumentPath("/assets/app.js"), false);
+  assert.equal(isSeoDocumentPath("/robots.txt"), false);
+  assert.equal(isSeoDocumentPath("/sitemap.xml"), false);
+});
+
+test("server SEO shell replaces index defaults with route-specific metadata", () => {
+  const template =
+    "<!DOCTYPE html><html><head><title>Old title</title>" +
+    "<meta name=\"description\" content=\"Old description\">" +
+    "<link rel=\"canonical\" href=\"https://buymesho.app/\"></head>" +
+    "<body><div id=\"root\"></div></body></html>";
+  const request = {
+    path: "/buy-online-malawi",
+    originalUrl: "/buy-online-malawi",
+  } as any;
+  const rendered = renderSeoDocument(request, {});
+  const html = injectSeoDocument(template, rendered);
+
+  assert.match(html, /<title>Buy Online in Malawi/);
+  assert.match(html, /name="description"/);
+  assert.match(html, /name="robots" content="index, follow"/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/buymesho\.app\/buy-online-malawi">/);
+  assert.match(html, /<div id="root"><div/);
+  assert.match(html, /href="\/explore"/);
+  assert.equal((html.match(/<title>/g) || []).length, 1);
+});
+
+test("server SEO shell renders a public listing snapshot from the database", () => {
+  const fakeListing = {
+    id: 42,
+    name: "Sample Phone",
+    price: 250000,
+    description: "A public phone listing.",
+    category: "Electronics & Gadgets",
+    university: "LUANAR",
+    condition: "Used",
+    status: "available",
+    photos: "[]",
+    seller_uid: "seller-42",
+    business_name: "Sample Seller",
+  };
+  const db = {
+    prepare() {
+      return { get: () => fakeListing };
+    },
+  };
+  const rendered = renderSeoDocument({ path: "/listing", originalUrl: "/listing?listing=42" } as any, db);
+
+  assert.equal(rendered.noIndex, false);
+  assert.match(rendered.title, /Sample Phone/);
+  assert.equal(rendered.canonicalUrl, "/listing?listing=42");
+  assert.match(rendered.body, /Sample Phone/);
+  assert.match(rendered.body, /seller\?uid=seller-42/);
+  assert.equal(rendered.jsonLd?.["@type"], "Product");
 });
 test("dynamic sitemap XML helpers produce valid escaped output", () => {
   const urlset = buildUrlsetXml([
