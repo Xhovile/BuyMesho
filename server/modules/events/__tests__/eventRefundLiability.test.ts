@@ -6,6 +6,7 @@ import { ensureEventRefundLiabilityMigration } from "../../../db/migrations/2026
 import {
   createEventRefundLiability,
   recordEventRefundRecovery,
+  validateEventRefundRequest,
 } from "../eventRefundLiability.js";
 import { projectEventTickets } from "../../orders/eventTicketProjection.js";
 import type { StoredOrder } from "../../orders/order.repository.js";
@@ -151,6 +152,28 @@ test("event refund liability creation preserves event identity and is idempotent
     );
     assert.equal(row.rows[0]?.status, "due");
     assert.equal(row.rows[0]?.event_liability_id, null);
+  } finally {
+    await cleanup();
+  }
+});
+
+test("event refund amount cannot exceed the selected ticket value", async () => {
+  await seed();
+  try {
+    await assert.rejects(
+      () => withTransaction(async (client) => validateEventRefundRequest(client, {
+        orderId,
+        ticketId,
+        amount: 5001,
+      })),
+      /selected ticket value/i,
+    );
+
+    const existing = await query<{ id: string }>(
+      "SELECT id FROM event_refund_liabilities WHERE refund_request_id = $1 LIMIT 1",
+      [refundRequestId],
+    );
+    assert.equal(existing.rows.length, 0);
   } finally {
     await cleanup();
   }
