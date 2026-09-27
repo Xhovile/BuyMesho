@@ -646,7 +646,7 @@ export default function SellerProfilePage() {
               </div>
             </section>
 
-            <SeoInternalLinks title="Explore more of BuyMesho" />
+            <SeoInternalLinks context="seller" />
           </>
         )}
       </main>
