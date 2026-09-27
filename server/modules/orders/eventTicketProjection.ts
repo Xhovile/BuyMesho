@@ -97,6 +97,7 @@ export function projectEventTickets(order: StoredOrder): void {
           holder_phone = excluded.holder_phone,
           seat_or_zone = excluded.seat_or_zone,
           status = CASE
+            WHEN event_tickets.status IN ('Cancelled','Refunded','Blocked') THEN event_tickets.status
             WHEN event_tickets.status IN ('Inside','Outside') AND excluded.status NOT IN ('Cancelled','Refunded','Blocked')
               THEN event_tickets.status
             ELSE excluded.status
