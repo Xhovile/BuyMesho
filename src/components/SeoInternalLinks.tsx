@@ -155,7 +155,7 @@ export default function SeoInternalLinks({
         </div>
 
         <nav
-          className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
+          className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
           aria-label="Contextual BuyMesho links"
         >
           {links.map(({ href, label, description, icon: Icon }) => (
