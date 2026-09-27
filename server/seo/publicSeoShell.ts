@@ -567,8 +567,10 @@ function buildEventResult(db: any, eventId: string): SeoRenderResult {
   const eventAttendanceMode = getEventAttendanceMode(spec);
   const posterValue = spec.poster_image_url || spec.poster_url || spec.poster;
   const poster = typeof posterValue === "string" && posterValue.trim() ? absoluteUrl(posterValue.trim()) : undefined;
-  const description = event.description?.trim().slice(0, 160) ||
-    event.event_title + " by " + event.organizer_name + " in " + event.location + " on BuyMesho.";
+  const description = truncateSeoDescription(
+    event.description?.trim() ||
+      event.event_title + " by " + event.organizer_name + " in " + event.location + " on BuyMesho."
+  );
   const free = event.ticket_price == null || Number(event.ticket_price) <= 0;
   const time = (event.start_time || "").trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
   const startDate = time
