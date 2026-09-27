@@ -520,6 +520,17 @@ test("SPA route state also strips trailing slashes", () => {
   assert.ok(rootRouter.includes('const initialPath = normalizeLocationPath(window.location.pathname);'));
 });
 
+test("event structured data keeps cancellation state consistent across client and server", () => {
+  const client = readFileSync(resolve(process.cwd(), "src/components/eventDetails/EventDetailsView.tsx"), "utf8");
+  const server = readFileSync(resolve(process.cwd(), "server/seo/publicSeoShell.ts"), "utf8");
+
+  assert.match(client, /event\.status === "cancelled"/);
+  assert.match(client, /"https:\/\/schema\.org\/OutOfStock"/);
+  assert.match(server, /event\.status === "cancelled"/);
+  assert.match(server, /"https:\/\/schema\.org\/EventCancelled"/);
+  assert.match(server, /"https:\/\/schema\.org\/OutOfStock"/);
+});
+
 test("dynamic public meta descriptions are bounded", () => {
   const sellerPage = readFileSync(resolve(process.cwd(), "src/SellerProfilePage.tsx"), "utf8");
   const eventPage = readFileSync(resolve(process.cwd(), "src/components/eventDetails/EventDetailsView.tsx"), "utf8");
