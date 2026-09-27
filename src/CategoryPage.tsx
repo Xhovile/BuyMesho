@@ -33,6 +33,7 @@ import FloatingCartButton from "./components/FloatingCartButton";
 import ScrollToTopFab from "./components/ScrollToTopFab";
 import AiIcon from "./components/ai/AiIcon";
 import BuyMeshoCopilotDrawer from "./components/ai/BuyMeshoCopilotDrawer";
+import SeoInternalLinks from "./components/SeoInternalLinks";
 import { getListingSubcategories } from "./listingSchemas/registry";
 import ListingCard from "./components/ListingCard";
 import FormDropdown from "./components/FormDropdown";
@@ -514,6 +515,8 @@ export default function CategoryPage() {
             )}
           </div>
         </section>
+
+        <SeoInternalLinks title="Explore more of the Malawi marketplace" />
 
         <section className="max-w-7xl mx-auto px-4 pb-16">
           <div className="rounded-[2rem] bg-zinc-900 text-white p-6 sm:p-8 shadow-xl">
