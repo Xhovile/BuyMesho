@@ -7,7 +7,7 @@ export function useRootRouterSeo(locationPath: string, route: AppRoute, location
   useEffect(() => {
     const seo: RouteSEOConfig = getRouteSEO(locationPath, route, locationSearch);
 
-    if (!seo.noIndex) {
+    if (!seo.noIndex && !seo.managedByPage) {
       trackPublicPageView({
         pathname: seo.canonicalPath || locationPath || "/",
         route,
