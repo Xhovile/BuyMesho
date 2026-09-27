@@ -396,7 +396,7 @@ function buildListingResult(db: any, listingId: string): SeoRenderResult {
 
   const jsonLd = buildProductJsonLd({
     name,
-    description: sourceDescription || description,
+    description,
     url: canonicalAbsolute,
     image: image || DEFAULT_SEO.image,
     category: row.category,
