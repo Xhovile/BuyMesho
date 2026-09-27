@@ -18,7 +18,7 @@ import SeoInternalLinks from "./components/SeoInternalLinks";
 import { readPersistentPageCache, writePersistentPageCache } from "./lib/persistentPageCache";
 import { startConversationWithSeller } from "./lib/messages";
 import { navigateToConversation } from "./lib/messagesNavigation";
-import { resetSEOMetaTags, updateSEOMetaTags } from "./lib/seo";
+import { resetSEOMetaTags, truncateSeoDescription, updateSEOMetaTags } from "./lib/seo";
 import { trackPublicPageView } from "./lib/analytics";
 
 type SellerProfile = {
@@ -360,9 +360,10 @@ export default function SellerProfilePage() {
     }
 
     const sellerName = profile.business_name?.trim() || "Seller Profile";
-    const description =
-      profile.bio?.trim().slice(0, 155) ||
+    const rawDescription =
+      profile.bio?.trim() ||
       `Browse ${listings.length} marketplace listing${listings.length === 1 ? "" : "s"} from ${sellerName} on BuyMesho.`;
+    const description = truncateSeoDescription(rawDescription);
     const image = profile.business_logo?.trim() || undefined;
     const entityType = profile.business_name?.trim() ? "Organization" : "Person";
 
