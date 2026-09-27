@@ -200,6 +200,21 @@ test("server SEO shell renders a public listing snapshot from the database", () 
   assert.match(rendered.body, /seller\?uid=seller-42/);
   assert.equal(rendered.jsonLd?.["@type"], "Product");
 });
+test("phase 8 Search Console verification and measurement hooks are wired", () => {
+  const viteConfig = readFileSync(resolve(process.cwd(), "vite.config.ts"), "utf8");
+  const analytics = readFileSync(resolve(process.cwd(), "src/lib/analytics.ts"), "utf8");
+  const routerSeo = readFileSync(resolve(process.cwd(), "src/router/RootRouterSeo.ts"), "utf8");
+  const guide = readFileSync(resolve(process.cwd(), "docs/seo-phase-8-search-console.md"), "utf8");
+
+  assert.match(viteConfig, /VITE_GOOGLE_SITE_VERIFICATION/);
+  assert.match(viteConfig, /google-site-verification/);
+  assert.match(analytics, /logEvent\(analytics, "screen_view"/);
+  assert.match(analytics, /firebase_screen/);
+  assert.match(routerSeo, /trackPublicPageView/);
+  assert.match(routerSeo, /!seo\.noIndex/);
+  assert.match(guide, /sitemap\.xml/);
+  assert.match(guide, /VITE_GOOGLE_SITE_VERIFICATION/);
+});
 test("dynamic sitemap XML helpers produce valid escaped output", () => {
   const urlset = buildUrlsetXml([
     {
