@@ -4,6 +4,7 @@ import { apiFetch } from "./lib/api";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 
 type Row = Record<string, unknown>;
+type Detail = { payout?: Row; attempts?: Row[]; payoutEvents?: Row[]; refundLiabilities?: Row[] };
 const text = (value: unknown) => String(value ?? "").trim();
 const amount = (value: unknown, currency = "MWK") => `${currency} ${Number.isFinite(Number(value)) ? Number(value).toLocaleString() : "0"}`;
 const label = (value: unknown) => text(value).replaceAll("_", " ") || "—";
@@ -13,7 +14,7 @@ export default function AdminEventPayoutRecoveryPage() {
   const [payouts, setPayouts] = useState<Row[]>([]);
   const [liabilities, setLiabilities] = useState<Row[]>([]);
   const [selectedPayout, setSelectedPayout] = useState<Row | null>(null);
-  const [detail, setDetail] = useState<Row | null>(null);
+  const [detail, setDetail] = useState<Detail | null>(null);
   const [selectedLiability, setSelectedLiability] = useState<Row | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -50,7 +51,7 @@ export default function AdminEventPayoutRecoveryPage() {
   const openPayout = async (row: Row) => {
     setSelectedPayout(row); setDetail(null); setError(null);
     try {
-      setDetail(await apiFetch(`/api/admin/event-payouts/${encodeURIComponent(text(row.id))}`) as Row);
+      setDetail(await apiFetch(`/api/admin/event-payouts/${encodeURIComponent(text(row.id))}`) as Detail);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load payout details.");
     }
