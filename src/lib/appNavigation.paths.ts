@@ -1,7 +1,7 @@
 import type { HeaderChip } from "../constants";
 
 export type AppRoute =
-  | "home" | "about" | "category" | "explore" | "saved" | "hidden" | "settings" | "privacy" | "terms" | "safety" | "report" | "seller" | "seller_dashboard" | "seller_hub" | "seller_orders" | "seller_payouts" | "listing_details" | "listing_reviews" | "messages" | "create" | "edit" | "login" | "signup" | "forgot_password" | "profile" | "verify_email" | "account_setup" | "edit_profile" | "edit_account" | "become_seller" | "change_password" | "change_email" | "email_action" | "my_listings" | "event_creator_dashboard" | "event_creator_overview" | "tickets" | "admin" | "admin_events" | "admin_payments" | "admin_transaction_inspector" | "admin_payouts" | "admin_reports" | "admin_seller_applications" | "admin_moderation_queue" | "admin_audit" | "admin_balance" | "admin_setup" | "admin_messages" | "admin_disputes" | "payment_return" | "install";
+  | "home" | "about" | "category" | "explore" | "saved" | "hidden" | "settings" | "privacy" | "terms" | "safety" | "report" | "seller" | "seller_dashboard" | "seller_hub" | "seller_orders" | "seller_payouts" | "listing_details" | "listing_reviews" | "messages" | "create" | "edit" | "login" | "signup" | "forgot_password" | "profile" | "verify_email" | "account_setup" | "edit_profile" | "edit_account" | "become_seller" | "change_password" | "change_email" | "email_action" | "my_listings" | "event_creator_dashboard" | "event_creator_overview" | "tickets" | "admin" | "admin_events" | "admin_payments" | "admin_transaction_inspector" | "admin_payouts" | "admin_reports" | "admin_seller_applications" | "admin_moderation_queue" | "admin_audit" | "admin_balance" | "admin_setup" | "admin_messages" | "admin_disputes" | "admin_event_payout_recovery" | "payment_return" | "install";
 export const ADMIN_EVENTS_PATH = "/admin/events";
 export const HOME_PATH = "/";
 export const ABOUT_PATH = "/about";
@@ -55,6 +55,7 @@ export const ADMIN_AUDIT_PATH = "/admin/audit";
 export const ADMIN_BALANCE_PATH = "/admin/balance";
 export const ADMIN_SETUP_PATH = "/admin/setup";
 export const ADMIN_DISPUTES_PATH = "/admin/disputes";
+export const ADMIN_EVENT_PAYOUT_RECOVERY_PATH = "/admin/event-payout-recovery";
 export const PAYMENT_RETURN_PATH = "/payment/return";
 export const PAYMENTS_HUB_PATH = "/payments";
 export const TRACK_ORDER_PATH = "/payments/track-order";
