@@ -157,7 +157,8 @@ test("event details derive route state from live URL changes", () => {
   assert.match(source, /setEventRouteState\(getEventRouteState\(window\.location\.search\)\)/);
   assert.match(source, /setEvent\(null\)/);
   assert.match(source, /autoBuyHandledRef\.current = false/);
-  assert.match(source, /\[eventId, autoBuyRequested\]/);
+  assert.match(source, /event\.id !== eventId/);
+  assert.match(source, /\[autoBuyRequested, authLoading, event, eventId, handleBuyTicket\]/);
 });
 
 test("public marketplace surfaces expose crawlable internal links", () => {
