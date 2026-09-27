@@ -602,8 +602,22 @@ export function renderSeoDocument(request: Request, db: any): SeoRenderResult {
 
 export function injectSeoDocument(template: string, rendered: SeoRenderResult): string {
   const head = buildHead(rendered);
-  const withHead = template.replace("</head>", head + "\n  </head>");
-  return withHead.replace('<div id="root"></div>', '<div id="root">' + rendered.body + "</div>");
+  let documentHtml = template
+    .replace(/<title>[\\s\\S]*?<\\/title>/i, "")
+    .replace(/<meta[^>]+name=["']description["'][^>]*>/i, "")
+    .replace(/<meta[^>]+name=["']robots["'][^>]*>/i, "")
+    .replace(/<meta[^>]+name=["']application-name["'][^>]*>/i, "")
+    .replace(/<link[^>]+rel=["']canonical["'][^>]*>/i, "")
+    .replace(/<meta[^>]+property=["']og:(site_name|title|description|type|url|image|image:alt|locale)["'][^>]*>/gi, "")
+    .replace(/<meta[^>]+name=["']twitter:(card|title|description|image|image:alt)["'][^>]*>/gi, "")
+    .replace("</head>", head + "\n  </head>");
+
+  documentHtml = documentHtml.replace(
+    '<div id="root"></div>',
+    '<div id="root">' + rendered.body + "</div>",
+  );
+
+  return documentHtml;
 }
 
 export function isSeoDocumentPath(pathname: string): boolean {
