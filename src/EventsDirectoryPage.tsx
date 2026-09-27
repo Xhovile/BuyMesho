@@ -8,6 +8,7 @@ import FormDropdown from "./components/FormDropdown";
 import FloatingCartButton from "./components/FloatingCartButton";
 import Header from "./components/Header";
 import AppFooter from "./components/AppFooter";
+import SeoInternalLinks from "./components/SeoInternalLinks";
 import { EventCard, type EventRecord } from "./components/events/EventCard";
 import { API_CACHE_TTL_MS, isCachedApiResponseFresh, readCachedApiJson } from "./lib/apiCache";
 import {
@@ -424,6 +425,8 @@ export default function EventsDirectoryPage() {
           )}
         </section>
       </main>
+
+      <SeoInternalLinks title="Explore more of the Malawi marketplace" />
 
       <AppFooter />
     </div>
