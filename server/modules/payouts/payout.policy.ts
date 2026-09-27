@@ -53,6 +53,7 @@ export type PayoutFormulaInput = {
  * Shared payout result contract used by marketplace and event payout flows.
  */
 export interface PayoutFormulaResult {
+  [key: string]: unknown;
   grossAmount: number;
   platformFeeAmount: number;
   processingFeeAmount: number;
