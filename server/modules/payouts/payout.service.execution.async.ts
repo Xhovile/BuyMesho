@@ -27,6 +27,15 @@ import {
   updatePayoutStatus,
 } from './payout.execution-repository.js';
 
+type PayoutExecutionFlowResult = {
+  payout: PayoutRecord | undefined;
+  attempt: PayoutAttemptRecord | null;
+  execution: PayChanguPayoutExecutionResult | null;
+  reasonCode: string | null;
+  reason: string;
+  nextAction: PayoutNextAction;
+};
+
 type ExecutionDestination = {
   destinationType: string | null;
   providerRefId: string | null;
@@ -247,14 +256,7 @@ async function holdPayoutForReviewAsync(
 export async function executePayoutFlow(
   _repository: unknown,
   input: ExecutePayoutInput,
-): Promise<{
-  payout: PayoutRecord | undefined;
-  attempt: PayoutAttemptRecord | null;
-  execution: PayChanguPayoutExecutionResult | null;
-  reasonCode: string | null;
-  reason: string;
-  nextAction: PayoutNextAction;
-}> {
+): Promise<PayoutExecutionFlowResult> {
   const actor = { actorType: input.actorType ?? 'system', actorId: input.actorId ?? null };
   const gate = await gateForSubmissionAsync(input.payoutId);
 
@@ -317,7 +319,7 @@ export async function executePayoutFlow(
     return { payout, attempt: null, execution: null, reasonCode: failureReason, reason, nextAction: 'manual_review' as PayoutNextAction };
   }
 
-  const lockedResult = await withOrderFinancialLock(String(gate.orderId), async () => {
+  const lockedResult = await withOrderFinancialLock<PayoutExecutionFlowResult>(String(gate.orderId), async (): Promise<PayoutExecutionFlowResult> => {
     const lockedGate = await gateForSubmissionAsync(input.payoutId);
 
     if (!lockedGate.allowed || !lockedGate.sellerId || !lockedGate.orderId || !lockedGate.amount || !lockedGate.currency || !lockedGate.provider) {
@@ -339,7 +341,13 @@ export async function executePayoutFlow(
       };
     }
 
-    const gate = lockedGate;
+    const gate = lockedGate as PayoutExecutionGate & {
+      sellerId: string;
+      orderId: string;
+      amount: number;
+      currency: string;
+      provider: string;
+    };
 
     const reservedAttempt = await reserveRetryAttempt({
       payoutId: input.payoutId,
