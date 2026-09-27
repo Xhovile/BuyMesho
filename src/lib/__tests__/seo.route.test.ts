@@ -52,7 +52,7 @@ test("page-managed public pages are not overwritten by root SEO", () => {
   assert.equal(listingSeo.noIndex, false);
   assert.equal(listingSeo.managedByPage, true);
 
-  const categorySeo = getRouteSEO("/category", "category");
+  const categorySeo = getRouteSEO("/category", "category", "?category=phones");
   assert.equal(categorySeo.noIndex, false);
   assert.equal(categorySeo.managedByPage, true);
 });
