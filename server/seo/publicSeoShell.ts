@@ -603,7 +603,7 @@ export function renderSeoDocument(request: Request, db: any): SeoRenderResult {
 export function injectSeoDocument(template: string, rendered: SeoRenderResult): string {
   const head = buildHead(rendered);
   let documentHtml = template
-    .replace(/<title>[\\s\\S]*?<\\/title>/i, "")
+    .replace(/<title>[\s\S]*?<\/title>/i, "")
     .replace(/<meta[^>]+name=["']description["'][^>]*>/i, "")
     .replace(/<meta[^>]+name=["']robots["'][^>]*>/i, "")
     .replace(/<meta[^>]+name=["']application-name["'][^>]*>/i, "")
