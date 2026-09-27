@@ -196,7 +196,6 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
               throw new Error('Event payout is still being processed; reconcile the payout before approving this refund.');
             }
 
-            const now = new Date().toISOString();
             await client.query(
               `UPDATE refund_requests
                   SET status='approved',
