@@ -404,6 +404,13 @@ function updateJsonLdSchema(data: object | null) {
   const schemaId = "buymesho-jsonld-schema";
   let scriptTag = document.head.querySelector<HTMLScriptElement>(`script#${schemaId}`);
 
+  // Reuse the server-rendered schema after hydration instead of leaving a
+  // duplicate Product, Event, or ProfilePage script in the document head.
+  if (!scriptTag) {
+    scriptTag = document.head.querySelector<HTMLScriptElement>("#server-seo-schema");
+    if (scriptTag) scriptTag.id = schemaId;
+  }
+
   if (!data) {
     scriptTag?.remove();
     return;
