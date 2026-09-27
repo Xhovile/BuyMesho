@@ -1,6 +1,7 @@
 
 import type { Request } from "express";
 import { DEFAULT_SEO, getRouteSEO } from "../../src/lib/seo.js";
+import { buildProductJsonLd } from "../../src/lib/seoProduct.js";
 
 const SITE_URL = "https://buymesho.app";
 const MAX_SEO_LISTINGS = 12;
@@ -393,30 +394,20 @@ function buildListingResult(db: any, listingId: string): SeoRenderResult {
   const sellerHref = row.seller_uid ? "/seller?uid=" + encodeURIComponent(row.seller_uid) : "";
   const canonicalAbsolute = SITE_URL + canonicalUrl;
 
-  const jsonLd: Record<string, unknown> = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "@id": canonicalAbsolute + "#product",
+  const jsonLd = buildProductJsonLd({
     name,
     description: sourceDescription || description,
-    ...(image ? { image: [image] } : {}),
-    ...(row.category ? { category: row.category } : {}),
-    ...(row.condition
-      ? { itemCondition: row.condition.toLowerCase().includes("new")
-          ? "https://schema.org/NewCondition"
-          : "https://schema.org/UsedCondition" }
-      : {}),
-    brand: { "@type": "Brand", name: "BuyMesho" },
-    mainEntityOfPage: canonicalAbsolute,
-    offers: {
-      "@type": "Offer",
-      url: canonicalAbsolute,
-      priceCurrency: "MWK",
-      price: Number(row.price) || 0,
-      availability: row.status === "sold" ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
-      seller: { "@type": "Organization", name: sellerName },
-    },
-  };
+    url: canonicalAbsolute,
+    image: image || DEFAULT_SEO.image,
+    category: row.category,
+    condition: row.condition,
+    price: Number(row.price) || 0,
+    currency: "MWK",
+    availability: row.status === "sold" ? "OutOfStock" : "InStock",
+    sellerName,
+    sellerType: row.business_name?.trim() ? "Organization" : "Person",
+    areaServed: row.university?.trim() ? `${row.university.trim()}, Malawi` : "Malawi",
+  });
 
   const section = '<section style="margin-top:28px;padding:22px;border:1px solid #e4e4e7;border-radius:20px;background:#fff">' +
     '<h2 style="margin:0 0 12px;font-size:24px">' + esc(price) + "</h2>" +
