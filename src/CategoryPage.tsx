@@ -546,7 +546,7 @@ export default function CategoryPage() {
           </div>
         </section>
 
-        <SeoInternalLinks title="Explore more of the Malawi marketplace" />
+        <SeoInternalLinks context="category" />
 
         <section className="max-w-7xl mx-auto px-4 pb-16">
           <div className="rounded-[2rem] bg-zinc-900 text-white p-6 sm:p-8 shadow-xl">
