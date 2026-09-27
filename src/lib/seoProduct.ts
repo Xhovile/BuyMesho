@@ -1,5 +1,22 @@
 export type ProductSchemaSellerType = "Person" | "Organization";
 
+export type ListingAvailabilityInput = {
+  status?: string | null;
+  quantity?: number | string | null;
+  soldQuantity?: number | string | null;
+};
+
+export function isListingOutOfStock(input: ListingAvailabilityInput): boolean {
+  if (input.status?.trim().toLowerCase() === "sold") return true;
+
+  const quantity = Number(input.quantity);
+  const soldQuantity = Number(input.soldQuantity);
+  return Number.isFinite(quantity) &&
+    Number.isFinite(soldQuantity) &&
+    quantity > 0 &&
+    soldQuantity >= quantity;
+}
+
 export type ProductSchemaInput = {
   name: string;
   description: string;
