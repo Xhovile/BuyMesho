@@ -503,12 +503,31 @@ test("SSR and hydration keep a single page-level JSON-LD schema", () => {
   assert.equal((seo.match(/schemaId = "buymesho-jsonld-schema"/g) || []).length, 1);
 });
 
-test("legacy homepage redirect also canonicalizes /home/ URLs", () => {
+test("public document URLs canonicalize trailing slashes before the SEO shell", () => {
   const bootstrap = readFileSync(resolve(process.cwd(), "server/bootstrap.ts"), "utf8");
 
-  assert.match(bootstrap, /const normalizedPath = \(req\.path \|\| "\/"\)\.replace\(\/\\\\\+\$\/g, ""\) \|\| "\/";/);
-  assert.match(bootstrap, /const isLegacyHomePath = normalizedPath === "\/home";/);
-  assert.match(bootstrap, /const targetPath = isLegacyHomePath \? "\/" : req\.path;/);
+  assert.ok(bootstrap.includes('const normalizedPath = (req.path || "/").replace(/\\/+$/, "") || "/";'));
+  assert.ok(bootstrap.includes('const hasTrailingSlash = req.path !== "/" && req.path.endsWith("/")'));
+  assert.ok(bootstrap.includes('const isLegacyHomePath = normalizedPath === "/home";'));
+  assert.ok(bootstrap.includes('const targetPath = isLegacyHomePath ? "/" : normalizedPath;'));
+});
+
+test("SPA route state also strips trailing slashes", () => {
+  const rootRouter = readFileSync(resolve(process.cwd(), "src/RootRouter.tsx"), "utf8");
+
+  assert.ok(rootRouter.includes('function normalizeLocationPath(pathname: string)'));
+  assert.ok(rootRouter.includes('pathname.replace(/\\/+$/, "") || "/"'));
+  assert.ok(rootRouter.includes('const initialPath = normalizeLocationPath(window.location.pathname);'));
+});
+
+test("dynamic public meta descriptions are bounded", () => {
+  const sellerPage = readFileSync(resolve(process.cwd(), "src/SellerProfilePage.tsx"), "utf8");
+  const eventPage = readFileSync(resolve(process.cwd(), "src/components/eventDetails/EventDetailsView.tsx"), "utf8");
+  const seo = readFileSync(resolve(process.cwd(), "src/lib/seo.ts"), "utf8");
+
+  assert.match(sellerPage, /truncateSeoDescription/);
+  assert.match(eventPage, /truncateSeoDescription/);
+  assert.match(seo, /export function truncateSeoDescription/);
 });
 
 test("public SEO navigation and PWA shell references use crawlable or existing assets", () => {
