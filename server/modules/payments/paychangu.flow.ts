@@ -14,6 +14,7 @@ import { getPaymentDb } from '../../postgresCompat.js';
 import { isPaychanguSuccessStatus } from './paychangu.provider.js';
 import { notifyOrderPaid } from '../notifications/order-paid.notification.js';
 import { notifyTicketDelivery, notifyTicketPurchaseConfirmation } from '../notifications/event-ticket.notification.js';
+import { projectEventTickets } from '../orders/eventTicketProjection.js';
 
 export interface ApplyPayChanguResult {
   payment?: ReturnType<typeof paymentRepository.findByReference>;
@@ -174,6 +175,13 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
     const escrowAmount=activeOrder.total.amount;const currency=normalizeReference(activeOrder.currency).toUpperCase();const escrow=await escrowRepository.createAsync(activeOrder.id,currency,escrowAmount,client);const escrowedOrder=await serverOrderService.markInEscrowAsync(activeOrder.id,escrow.id,client) ?? activeOrder;return{payment,order:escrowedOrder,verification,sellerPayoutQueued:false,eventPayoutQueued:false,payoutId:null,orderEnteredEscrow:escrowedOrder.status==='in_escrow'&&order.status!=='in_escrow'};
   });
 
+  if(settlement.order?.source==='event'){
+    try{
+      projectEventTickets(settlement.order);
+    }catch(error){
+      console.error('[event-ticket] ticket projection failed after successful payment:',error);
+    }
+  }
   if('eventPayoutRequired' in settlement && settlement.eventPayoutRequired && settlement.order){
     const eventPayout=await withTransaction(async(client)=>{
       const eventContext=await resolveEventPayoutContext(settlement.order!.id,client);
