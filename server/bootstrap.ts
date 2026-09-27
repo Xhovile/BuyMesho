@@ -117,7 +117,8 @@ export async function startServer() {
     const forwardedHost = req.get("x-forwarded-host");
     const host = (forwardedHost ?? req.get("host") ?? "").split(",")[0].trim().toLowerCase();
     const isLegacyHost = host === "www.buymesho.app" || host.startsWith("www.buymesho.app:");
-    const isLegacyHomePath = req.path === "/home";
+    const normalizedPath = (req.path || "/").replace(/\/+$/, "") || "/";
+    const isLegacyHomePath = normalizedPath === "/home";
 
     if (!isLegacyHost && !isLegacyHomePath) {
       next();
