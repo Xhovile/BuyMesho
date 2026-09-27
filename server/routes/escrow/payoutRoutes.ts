@@ -400,6 +400,13 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
       assertOverrideAccess(req);
       const sellerId = normalizeDestinationId(req.params.sellerId);
       const payoutId = normalizeDestinationId(req.body?.payoutId);
+      const payoutRecord = payoutService.findById(payoutId);
+      if (!payoutRecord) {
+        return res.status(404).json({ error: 'Payout not found' });
+      }
+      if ((payoutRecord.ownerType ?? 'seller') !== 'seller' || String(payoutRecord.sellerId) !== sellerId) {
+        return res.status(403).json({ error: 'This payout is not owned by the requested seller' });
+      }
       const reason = normalizeText(req.body?.reason);
       if (!reason) {
         return res.status(400).json({ error: 'reason is required' });
