@@ -13,11 +13,8 @@
       "dest": "https://buymesho.onrender.com/api/seo/sitemap-$1.xml"
     },
     {
-      "handle": "filesystem"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "https://buymesho.onrender.com/$1"
     }
   ],
   "headers": [
