@@ -6,8 +6,6 @@ export const PAYOUT_POLICY = {
     bank_transfer: 170,
   },
   bankPayoutFlatFeeAmount: 700,
-  buyerFeeBps: 0,
-  payChanguCustomerFeeBps: 0,
   reserveCapBps: 600,
   disputeWindowHours: 72,
   minimumPayoutAmount: 1,
@@ -50,52 +48,6 @@ export type PayoutFormulaInput = {
   payoutMethod?: 'airtel_money' | 'tnm_mpamba' | 'bank_transfer' | null;
   currency?: string;
 };
-
-export type CustomerCheckoutFeeInput = {
-  itemTotalAmount: number;
-  currency?: string;
-};
-
-export type CustomerCheckoutFeeBreakdown = {
-  itemTotalAmount: number;
-  buyerFeeAmount: number;
-  payChanguTransactionFeeAmount: number;
-  finalTotalAmount: number;
-  currency: string;
-};
-
-export type PayoutFormulaResult = {
-  grossAmount: number;
-  platformFeeAmount: number;
-  processingFeeAmount: number;
-  reserveAmount: number;
-  reserveCapAmount: number;
-  manualAdjustmentAmount: number;
-  payoutFeeAmount: number;
-  sellerReceivesAmount: number;
-  netAmount: number;
-  currency: string;
-};
-
-export function toFixedMoney(amount: number): number {
-  if (!Number.isFinite(amount)) return 0;
-  return Math.max(0, Math.round(amount));
-}
-
-export function calculateCustomerCheckoutFees(input: CustomerCheckoutFeeInput): CustomerCheckoutFeeBreakdown {
-  const itemTotalAmount = toFixedMoney(input.itemTotalAmount);
-  const buyerFeeAmount = toFixedMoney((itemTotalAmount * PAYOUT_POLICY.buyerFeeBps) / 10_000);
-  const payChanguTransactionFeeAmount = 0;
-  const finalTotalAmount = toFixedMoney(itemTotalAmount + buyerFeeAmount);
-
-  return {
-    itemTotalAmount,
-    buyerFeeAmount,
-    payChanguTransactionFeeAmount,
-    finalTotalAmount,
-    currency: (input.currency ?? 'MWK').toUpperCase(),
-  };
-}
 
 export function calculatePayoutFee(amount: number, payoutMethod?: PayoutFormulaInput['payoutMethod']): number {
   const payoutAmount = toFixedMoney(amount);
