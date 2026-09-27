@@ -6,13 +6,13 @@ The repository supports Google Search Console HTML-tag verification through the 
 
 `VITE_GOOGLE_SITE_VERIFICATION`
 
-Set this variable in the Vercel project, then redeploy. The Vite build adds:
+Set this variable in the **Vercel frontend project and the Render backend project** before their respective builds, then redeploy. Vercel serves the frontend assets and SPA fallback, while selected public document requests are routed through Render so the server-rendered SEO shell can use the same build-time metadata. The Vite build adds:
 
 `<meta name="google-site-verification" content="YOUR_TOKEN" />`
 
 to the homepage HTML when the variable is present.
 
-Do not commit the verification token to the repository.
+Do not commit the verification token to the repository. The Render value is required for the server-rendered public HTML; keeping the same value on Vercel also keeps the static frontend shell consistent.
 
 Google documents the HTML-tag method as a supported URL-prefix verification method and notes that the tag must be present in the homepage `<head>`.
 
