@@ -69,6 +69,48 @@ function hasNonEventItems(items: unknown): boolean {
   return parsed.length > 0 && parsed.some((item) => !isEventTicketItem(item));
 }
 
+function numberFromMoney(value: unknown): number | null {
+  if (value && typeof value === "object" && !Array.isArray(value) && "amount" in value) {
+    const amount = Number((value as Record<string, unknown>).amount);
+    return Number.isFinite(amount) ? amount : null;
+  }
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : null;
+}
+
+function itemUnitPrice(item: OrderItem, fallbackTicketPrice: number): number | null {
+  const amount = numberFromMoney(item.unitPrice);
+  if (amount != null && amount >= 0) return amount;
+  const ticketPrice = numberFromMoney(item.ticketPrice);
+  if (ticketPrice != null && ticketPrice >= 0) return ticketPrice;
+  return fallbackTicketPrice >= 0 ? fallbackTicketPrice : null;
+}
+
+function findTicketValue(items: unknown, eventId: string, orderId: string, ticketId: string, fallbackTicketPrice: number): number | null {
+  for (const item of parseOrderItems(items).filter(isEventTicketItem)) {
+    if (String(item.eventId ?? item.event_id ?? "").trim() !== eventId) continue;
+    const unitPrice = itemUnitPrice(item, fallbackTicketPrice);
+    if (unitPrice == null) continue;
+    const nestedTickets = Array.isArray(item.tickets)
+      ? item.tickets.filter((ticket): ticket is Record<string, unknown> => Boolean(ticket) && typeof ticket === "object" && !Array.isArray(ticket))
+      : [];
+    if (nestedTickets.length > 0) {
+      for (const ticket of nestedTickets) {
+        const candidateIds = [ticket.ticketId, ticket.ticket_id, ticket.id, ticket.code]
+          .map((value) => String(value ?? "").trim())
+          .filter(Boolean);
+        if (candidateIds.includes(ticketId)) return unitPrice;
+      }
+      continue;
+    }
+    const itemTicketId = String(item.ticketId ?? item.ticket_id ?? "").trim();
+    if (itemTicketId && itemTicketId === ticketId) return unitPrice;
+    const fallbackId = `${orderId}-${eventId}`;
+    if (!itemTicketId && ticketId === fallbackId) return unitPrice;
+  }
+  return null;
+}
+
 function rowToLiability(row: Record<string, unknown>): EventRefundLiability {
   return {
     id: String(row.id),
@@ -175,8 +217,9 @@ export async function validateEventRefundRequest(
   const context = await resolveEventRefundContext(input.orderId, client);
   const orderResult = await client.query<{
     total_amount: number | string | null;
+    items: string | null;
   }>(
-    "SELECT total_amount FROM orders WHERE id = $1 LIMIT 1",
+    "SELECT total_amount, items FROM orders WHERE id = $1 LIMIT 1",
     [input.orderId],
   );
   const totalAmount = Number(orderResult.rows[0]?.total_amount ?? 0);
@@ -197,6 +240,20 @@ export async function validateEventRefundRequest(
     );
     if (!ticketResult.rows[0]) throw new Error("Event refund ticket does not belong to the order");
     ticketId = String(ticketResult.rows[0].id);
+    const eventResult = await client.query<{ ticket_price: number | string | null }>(
+      "SELECT ticket_price FROM events WHERE id = $1 LIMIT 1",
+      [Number(context.eventId)],
+    );
+    const fallbackTicketPrice = Number(eventResult.rows[0]?.ticket_price ?? NaN);
+    const ticketValue = findTicketValue(
+      orderResult.rows[0]?.items,
+      context.eventId,
+      input.orderId,
+      ticketId,
+      fallbackTicketPrice,
+    );
+    if (ticketValue == null) throw new Error("Unable to determine the value of the selected event ticket");
+    if (input.amount > ticketValue + 0.000001) throw new Error("Event refund amount cannot exceed the selected ticket value");
   } else if (Math.abs(input.amount - totalAmount) > 0.000001) {
     throw new Error("Partial event refunds require a specific ticket");
   }
