@@ -53,6 +53,7 @@ type EventRow = {
   venue: string;
   location: string;
   ticket_price?: number | string | null;
+  status?: string | null;
   description?: string | null;
   poster_alt?: string | null;
   spec_values?: unknown;
@@ -439,7 +440,7 @@ function buildListingResult(db: any, listingId: string): SeoRenderResult {
     body: bodyFrame(
       name,
       "BuyMesho marketplace listing",
-      name + " is available for " + price + " on BuyMesho, " + (row.university?.trim() ? row.university.trim() + ", Malawi." : "Malawi."),
+      name + " is listed for " + price + " on BuyMesho, " + (row.university?.trim() ? row.university.trim() + ", Malawi." : "Malawi."),
       [
         { href: "/explore", label: "Explore marketplace" },
         ...(sellerHref ? [{ href: sellerHref, label: "View seller profile" }] : []),
@@ -545,7 +546,7 @@ function buildEventResult(db: any, eventId: string): SeoRenderResult {
   }
 
   const event = db.prepare(
-    "SELECT id,event_title,event_type,organizer_name,event_date,start_time,venue,location,ticket_price,description,poster_alt,spec_values " +
+    "SELECT id,event_title,event_type,organizer_name,event_date,start_time,venue,location,ticket_price,status,description,poster_alt,spec_values " +
     "FROM events WHERE id=? AND deleted_at IS NULL AND publication_status='published' AND " +
     "(publication_mode='immediate' OR (publication_mode='scheduled' AND publication_at IS NOT NULL AND publication_at<=CURRENT_TIMESTAMP)) LIMIT 1"
   ).get(id) as EventRow | undefined;
@@ -593,7 +594,9 @@ function buildEventResult(db: any, eventId: string): SeoRenderResult {
       description: event.description?.trim() || undefined,
       ...(startDate ? { startDate } : {}),
       ...(poster ? { image: [poster] } : {}),
-      eventStatus: "https://schema.org/EventScheduled",
+      eventStatus: event.status === "cancelled"
+        ? "https://schema.org/EventCancelled"
+        : "https://schema.org/EventScheduled",
       ...(eventAttendanceMode ? { eventAttendanceMode } : {}),
       location: {
         "@type": "Place",
@@ -610,7 +613,10 @@ function buildEventResult(db: any, eventId: string): SeoRenderResult {
         url: canonicalAbsolute,
         price: free ? 0 : Number(event.ticket_price),
         priceCurrency: "MWK",
-        availability: "https://schema.org/InStock",
+        availability:
+          event.status === "cancelled"
+            ? "https://schema.org/OutOfStock"
+            : "https://schema.org/InStock",
       },
       ...(free ? { isAccessibleForFree: true } : {}),
     },
