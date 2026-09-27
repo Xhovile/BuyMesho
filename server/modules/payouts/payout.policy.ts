@@ -67,7 +67,11 @@ export type CustomerCheckoutFeeBreakdown = {
   currency: string;
 };
 
-export type PayoutFormulaResult = {
+/**
+ * Shared payout result contract consumed by marketplace and event payout flows.
+ * Keep this contract explicit in the branch so PR merge resolution cannot drop it.
+ */
+export interface PayoutFormulaResult {
   grossAmount: number;
   platformFeeAmount: number;
   processingFeeAmount: number;
@@ -78,11 +82,13 @@ export type PayoutFormulaResult = {
   sellerReceivesAmount: number;
   netAmount: number;
   currency: string;
-};
+}
 
+/** Normalize a financial amount to the application's whole-MWK storage unit. */
 export function toFixedMoney(amount: number): number {
   if (!Number.isFinite(amount)) return 0;
-  return Math.max(0, Math.round(amount));
+  const normalized = Math.round(amount);
+  return normalized < 0 ? 0 : normalized;
 }
 
 export function calculateCustomerCheckoutFees(input: CustomerCheckoutFeeInput): CustomerCheckoutFeeBreakdown {
