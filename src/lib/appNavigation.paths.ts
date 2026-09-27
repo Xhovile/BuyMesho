@@ -69,6 +69,11 @@ export const XHOVILE_STUDIO_PATH = "/xhovilestudio";
 export const LEGACY_XHOVILE_STUDIO_PATH = "/services/xhovilestudio";
 export const isXhovileStudioPath = (pathname: string): boolean =>
   /^(?:\/xhovilestudio|\/services\/xhovilestudio)(?:\/receipt|\/admin)?\/?$/i.test(pathname);
+export const MARKETPLACE_CATEGORY_KEYS = ["phones", "fashion", "books", "food", "beauty"] as const;
+export type MarketplaceCategoryKey = (typeof MARKETPLACE_CATEGORY_KEYS)[number];
+export const isMarketplaceCategoryKey = (value: string | null | undefined): value is MarketplaceCategoryKey =>
+  typeof value === "string" && (MARKETPLACE_CATEGORY_KEYS as readonly string[]).includes(value.trim().toLowerCase());
+
 export const MARKET_CHIP_PATHS: Partial<Record<HeaderChip, string>> = {
   All: EXPLORE_PATH, Deals: `${EXPLORE_PATH}/deals`, "Lay-by": `${EXPLORE_PATH}/lay-by`, Events: `${EXPLORE_PATH}/events`, Wholesale: `${EXPLORE_PATH}/wholesale`, Gadgets: "/category?category=phones", Fashion: "/category?category=fashion", Food: "/category?category=food", Academics: "/category?category=books", Beauty: "/category?category=beauty", Sellers: `${EXPLORE_PATH}/sellers`, Innovation: `${EXPLORE_PATH}/innovation`, Accommodation: `${EXPLORE_PATH}/accommodation`, Lending: `${EXPLORE_PATH}/lending`,
 };
