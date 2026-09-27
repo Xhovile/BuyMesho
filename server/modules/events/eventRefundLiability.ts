@@ -35,6 +35,9 @@ type OrderItem = {
   kind?: unknown;
   ticketId?: unknown;
   ticket_id?: unknown;
+  unitPrice?: unknown;
+  ticketPrice?: unknown;
+  tickets?: unknown;
 };
 
 function parseOrderItems(items: unknown): OrderItem[] {
