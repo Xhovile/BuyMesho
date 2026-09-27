@@ -25,6 +25,7 @@ import {
   navigateToProfile,
   navigateToMarketChip,
   pushExploreStateInUrl,
+  isMarketplaceCategoryKey,
 } from "./lib/appNavigation";
 import type { HeaderChip } from "./constants";
 import Header from "./components/Header";
@@ -157,26 +158,49 @@ export default function CategoryPage() {
     readHiddenListingIds()
   );
 
-  const categoryKey = useMemo(() => {
-    const params = new URLSearchParams(window.location.search);
-    const value = params.get("category");
-    if (
-      value === "phones" ||
-      value === "fashion" ||
-      value === "books" ||
-      value === "food" ||
-      value === "beauty"
-    ) {
-      return value;
-    }
-    return "phones";
+  const requestedCategory = useMemo(() => {
+    const value = new URLSearchParams(window.location.search).get("category")?.trim().toLowerCase() || null;
+    return isMarketplaceCategoryKey(value) ? value : null;
   }, []);
 
+  const categoryKey = requestedCategory || "phones";
   const config = CATEGORY_CONFIG[categoryKey];
   const activeCategoryChip = CATEGORY_CHIP_BY_KEY[categoryKey];
 
   useEffect(() => {
-    const canonicalUrl = `https://buymesho.app/category?category=${encodeURIComponent(categoryKey)}`;
+    if (!requestedCategory) {
+      updateSEOMetaTags({
+        title: "BuyMesho Category",
+        description: "Select a valid marketplace category on BuyMesho.",
+        url: "https://buymesho.app/category",
+        noIndex: true,
+      });
+      if (!requestedCategory) {
+    return (
+      <main className="min-h-screen bg-zinc-100 px-4 py-10 text-zinc-950">
+        <div className="mx-auto max-w-2xl rounded-[2rem] border border-zinc-200 bg-white p-8 text-center shadow-sm sm:p-12">
+          <h1 className="text-3xl font-black tracking-tight">Category not found</h1>
+          <p className="mt-3 text-sm leading-6 text-zinc-600">
+            That marketplace category does not exist. Choose a category from the BuyMesho marketplace.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigateToPath("/explore")}
+            className="mt-6 inline-flex rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-black text-white"
+          >
+            Explore marketplace
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  return () => {
+        updateSEOMetaTags();
+      };
+    }
+
+    const canonicalUrl = `https://buymesho.app/category?category=${encodeURIComponent(requestedCategory)}`;
 
     updateSEOMetaTags({
       title: `${config.title} in Malawi`,
@@ -194,12 +218,18 @@ export default function CategoryPage() {
     return () => {
       updateSEOMetaTags();
     };
-  }, [categoryKey, config.description, config.subtitle, config.title]);
+  }, [requestedCategory, config.description, config.subtitle, config.title]);
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
+      if (!requestedCategory) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
@@ -225,7 +255,7 @@ export default function CategoryPage() {
     return () => {
       cancelled = true;
     };
-  }, [config.apiCategory]);
+  }, [requestedCategory, config.apiCategory]);
 
   useEffect(() => {
     const syncHiddenCollections = () => {
