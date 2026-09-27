@@ -5,6 +5,7 @@ import test from "node:test";
 
 import { getRouteSEO, getListingCanonicalUrl, getSEOForListing } from "../seo";
 import { buildProductJsonLd, getProductSchemaCondition } from "../seoProduct";
+import { getEventAttendanceMode } from "../seoEvent";
 import { getAppRouteFromLocation } from "../../lib/appNavigation.query";
 import type { AppRoute } from "../../lib/appNavigation.paths";
 import { buildSitemapIndexXml, buildUrlsetXml } from "../../../server/routes/sitemap.routes";
@@ -176,6 +177,33 @@ test("public marketplace surfaces expose crawlable internal links", () => {
   assert.ok(sources.includes("href={`/seller?uid="));
   assert.ok(sources.includes("EVENTS_PATH}?event=${encodeURIComponent"));
 });
+test("event attendance schema is explicit and shared between client and server", () => {
+  const client = readFileSync(resolve(process.cwd(), "src/components/eventDetails/EventDetailsView.tsx"), "utf8");
+  const server = readFileSync(resolve(process.cwd(), "server/seo/publicSeoShell.ts"), "utf8");
+  const eventCore = readFileSync(resolve(process.cwd(), "src/eventSchemas/core.ts"), "utf8");
+
+  assert.match(client, /getEventAttendanceMode\(event\.spec_values\)/);
+  assert.match(server, /getEventAttendanceMode\(spec\)/);
+  assert.ok(!client.includes('eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode"'));
+  assert.ok(!server.includes('eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode"'));
+  assert.match(eventCore, /key: "delivery_mode"/);
+  assert.match(eventCore, /EVENT_DELIVERY_MODE_OPTIONS/);
+
+  assert.equal(
+    getEventAttendanceMode({ delivery_mode: "In Person" }),
+    "https://schema.org/OfflineEventAttendanceMode",
+  );
+  assert.equal(
+    getEventAttendanceMode({ delivery_mode: "Online" }),
+    "https://schema.org/OnlineEventAttendanceMode",
+  );
+  assert.equal(
+    getEventAttendanceMode({ delivery_mode: "Hybrid" }),
+    "https://schema.org/MixedEventAttendanceMode",
+  );
+  assert.equal(getEventAttendanceMode({}), undefined);
+});
+
 test("client and server listing SEO use the shared product schema", () => {
   const clientSeo = readFileSync(resolve(process.cwd(), "src/lib/seo.ts"), "utf8");
   const serverSeo = readFileSync(resolve(process.cwd(), "server/seo/publicSeoShell.ts"), "utf8");
