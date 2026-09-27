@@ -1,4 +1,4 @@
-import { UNIVERSITIES } from "./constants";
+import { UNIVERSITIES } from "./constants.js";
 
 export type University = (typeof UNIVERSITIES)[number];
 export type UserType = "student" | "public";
