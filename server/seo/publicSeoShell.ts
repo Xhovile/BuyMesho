@@ -708,7 +708,7 @@ export function injectSeoDocument(template: string, rendered: SeoRenderResult): 
 
   documentHtml = documentHtml.replace(
     '<div id="root"></div>',
-    '<div id="root">' + rendered.body + "</div>",
+    '<div id="seo-prerender">' + rendered.body + '</div><div id="root"></div>',
   );
 
   return documentHtml;
