@@ -51,6 +51,7 @@ export function listSellerPayoutOperationalView(sellerId: string) {
     FROM payouts p
     LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
     WHERE p.seller_id = ?
+      AND COALESCE(p.owner_type, 'seller') = 'seller'
     ORDER BY p.created_at DESC
   `).all(sellerId) as Array<Record<string, unknown>>;
 
