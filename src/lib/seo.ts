@@ -2,7 +2,7 @@
 
 import type { Listing } from "../types.js";
 import { isMarketplaceCategoryKey } from "./appNavigation.paths.js";
-import { buildProductJsonLd } from "./seoProduct.js";
+import { buildProductJsonLd, isListingOutOfStock } from "./seoProduct.js";
 import type { AppRoute } from "./appNavigation.paths.js";
 
 export interface SEOConfig {
@@ -496,6 +496,13 @@ export function updateSEOMetaTags(config: Partial<SEOConfig> = {}) {
 /**
  * Generate SEO metadata for a BuyMesho listing.
  */
+export function truncateSeoDescription(value: string, maxLength = 160): string {
+  const normalized = value.trim();
+  if (normalized.length <= maxLength) return normalized;
+  if (maxLength <= 1) return normalized.slice(0, maxLength);
+  return normalized.slice(0, maxLength - 1).trimEnd() + "…";
+}
+
 export function getSEOForListing(listing: Listing, sellerName?: string): SEOConfig {
   const itemTitle = listing.name?.trim() || "Marketplace listing";
   const price = listing.price || 0;
@@ -507,9 +514,10 @@ export function getSEOForListing(listing: Listing, sellerName?: string): SEOConf
   const locationText = listing.university ? `at ${listing.university}` : "in Malawi";
 
   const descriptionSource = listing.description?.trim();
-  const description = descriptionSource
-    ? `${descriptionSource.slice(0, 155).trimEnd()}${descriptionSource.length > 155 ? "…" : ""} ${itemTitle} is listed for ${formattedPrice} ${locationText} on BuyMesho.`
+  const rawDescription = descriptionSource
+    ? `${descriptionSource} ${itemTitle} is listed for ${formattedPrice} ${locationText} on BuyMesho.`
     : `Discover ${itemTitle} for ${formattedPrice} ${locationText} on BuyMesho, Malawi's secure marketplace.`;
+  const description = truncateSeoDescription(rawDescription);
 
   const primaryImage = listing.photos?.[0] || DEFAULT_SEO.image;
   const currentUrl = getListingCanonicalUrl(listing.id);
@@ -529,7 +537,11 @@ export function getSEOForListing(listing: Listing, sellerName?: string): SEOConf
     sellerName: sellerName || listing.business_name || "BuyMesho seller",
     sellerType: listing.business_name?.trim() ? "Organization" : "Person",
     productName: itemTitle,
-    availability: listing.status === "sold" ? "OutOfStock" : "InStock",
+    availability: isListingOutOfStock({
+      status: listing.status,
+      quantity: listing.quantity,
+      soldQuantity: listing.sold_quantity,
+    }) ? "OutOfStock" : "InStock",
     keywords: [itemTitle, listing.category, listing.university, "BuyMesho", "Malawi marketplace"].filter(Boolean) as string[],
   };
 }
