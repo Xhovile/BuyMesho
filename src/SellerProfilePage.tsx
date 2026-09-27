@@ -14,6 +14,7 @@ import {
 import FloatingCartButton from "./components/FloatingCartButton";
 import AppFooter from "./components/AppFooter";
 import ListingHeaderBar from "./components/listingDetails/ListingHeaderBar";
+import SeoInternalLinks from "./components/SeoInternalLinks";
 import { readPersistentPageCache, writePersistentPageCache } from "./lib/persistentPageCache";
 import { startConversationWithSeller } from "./lib/messages";
 import { navigateToConversation } from "./lib/messagesNavigation";
@@ -589,10 +590,13 @@ export default function SellerProfilePage() {
                 <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {filteredListings.length > 0 ? (
                     filteredListings.map((listing) => (
-                      <button
+                      <a
                         key={listing.id}
-                        type="button"
-                        onClick={() => navigateToListingDetails(listing.id)}
+                        href={`/listing?listing=${encodeURIComponent(String(listing.id))}`}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          navigateToListingDetails(listing.id);
+                        }}
                         className="group rounded-3xl border border-zinc-200 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                       >
                         <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
@@ -609,7 +613,7 @@ export default function SellerProfilePage() {
                           <p className="text-sm font-bold text-red-900">MK{Number(listing.price).toLocaleString()}</p>
                           <p className="text-xs text-zinc-500 line-clamp-2">{listing.description}</p>
                         </div>
-                      </button>
+                      </a>
                     ))
                   ) : (
                     <div className="col-span-full rounded-3xl border border-dashed border-zinc-200 bg-zinc-50 p-8 text-center text-sm text-zinc-500">
@@ -619,6 +623,8 @@ export default function SellerProfilePage() {
                 </div>
               </div>
             </section>
+
+            <SeoInternalLinks title="Explore more of BuyMesho" />
           </>
         )}
       </main>
