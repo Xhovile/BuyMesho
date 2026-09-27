@@ -59,6 +59,55 @@ function formatDate(value?: string | null) {
   return date.toLocaleDateString();
 }
 
+function fallbackInitials(uid: string, description?: string | null) {
+  const seed = (description || uid).trim();
+  const parts = seed.split(/\s+/).filter(Boolean);
+  const initials = parts.length > 0 ? parts.map((part) => part[0]).join("") : uid.slice(0, 2);
+  return initials.slice(0, 2).toUpperCase();
+}
+
+function getRatingDisplay(rating: number) {
+  const safeRating = Number.isFinite(rating) ? Math.max(0, Math.min(5, rating)) : 0;
+  const fullStars = Math.floor(safeRating);
+  const fraction = safeRating - fullStars;
+
+  if (fraction > 0.7) {
+    return { fullStars: Math.min(5, fullStars + 1), showHalfStar: false };
+  }
+
+  return { fullStars, showHalfStar: fraction > 0 };
+}
+
+function RatingStars({ rating }: { rating: number }) {
+  const { fullStars, showHalfStar } = useMemo(() => getRatingDisplay(rating), [rating]);
+
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-label={`Rating ${rating.toFixed(1)} out of 5`}>
+      {Array.from({ length: 5 }, (_, index) => {
+        const starIndex = index + 1;
+
+        if (starIndex <= fullStars) {
+          return <Star key={starIndex} className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />;
+        }
+
+        if (starIndex === fullStars + 1 && showHalfStar) {
+          return (
+            <span key={starIndex} className="relative inline-flex h-3.5 w-3.5">
+              <Star className="absolute inset-0 h-3.5 w-3.5 text-amber-500" />
+              <Star
+                className="absolute inset-0 h-3.5 w-3.5 fill-amber-400 text-amber-500"
+                style={{ clipPath: "inset(0 50% 0 0)" }}
+              />
+            </span>
+          );
+        }
+
+        return <Star key={starIndex} className="h-3.5 w-3.5 text-zinc-300" />;
+      })}
+    </span>
+  );
+}
+
 function StatPill({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white/80 px-3 py-2 shadow-sm backdrop-blur-sm">
