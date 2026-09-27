@@ -160,6 +160,25 @@ test("public marketplace surfaces expose crawlable internal links", () => {
   assert.ok(sources.includes("href={`/seller?uid="));
   assert.ok(sources.includes("EVENTS_PATH}?event=${encodeURIComponent"));
 });
+test("seller directory is backed by the public seller endpoint", () => {
+  const directory = readFileSync(resolve(process.cwd(), "src/SellersDirectoryPage.tsx"), "utf8");
+  const sellerRoutes = readFileSync(resolve(process.cwd(), "server/routes/sellerProfile.routes.ts"), "utf8");
+
+  assert.ok(
+    directory.includes('apiFetch("/api/sellers?public=true")'),
+    "seller directory should fetch sellers directly",
+  );
+  assert.ok(
+    !directory.includes('apiFetch("/api/listings?sortBy=newest&pageSize=200")'),
+    "seller directory should not derive sellers from the newest 200 listings",
+  );
+  assert.match(sellerRoutes, /app\.get\("\/api\/sellers"/);
+  assert.match(sellerRoutes, /WHERE s\.is_seller = 1/);
+  assert.match(sellerRoutes, /listing_count/);
+  assert.match(sellerRoutes, /average_rating/);
+  assert.match(sellerRoutes, /rating_count/);
+});
+
 test("public listing visibility uses the same seller eligibility rule", () => {
   const marketplace = readFileSync(resolve(process.cwd(), "server/routes/marketplace.routes.ts"), "utf8");
   const seoShell = readFileSync(resolve(process.cwd(), "server/seo/publicSeoShell.ts"), "utf8");
