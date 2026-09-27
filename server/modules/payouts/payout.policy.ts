@@ -42,6 +42,9 @@ export const PAYOUT_POLICY = {
 
 export type PayoutLaunchMode = typeof PAYOUT_POLICY.launchMode;
 
+// Shared money-normalisation and result contracts are kept here because both
+// marketplace and event payout flows consume the same financial primitives.
+
 export type PayoutFormulaInput = {
   grossAmount: number;
   processingFeeAmount?: number;
