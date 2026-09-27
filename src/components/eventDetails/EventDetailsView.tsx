@@ -210,7 +210,10 @@ export default function EventDetailsView() {
           "url": canonicalUrl,
           "price": isFree ? 0 : Number(event.ticket_price),
           "priceCurrency": "MWK",
-          "availability": "https://schema.org/InStock",
+          "availability":
+            event.status === "cancelled"
+              ? "https://schema.org/OutOfStock"
+              : "https://schema.org/InStock",
         },
         ...(isFree ? { "isAccessibleForFree": true } : {}),
       },
