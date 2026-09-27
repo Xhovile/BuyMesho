@@ -238,6 +238,16 @@ test("static sitemap is removed so dynamic sitemap data cannot drift", () => {
   assert.equal(existsSync(resolve(process.cwd(), "public/sitemap.xml")), false);
 });
 
+test("vercel routes application documents through the SSR backend", () => {
+  const vercel = JSON.parse(readFileSync(resolve(process.cwd(), "vercel.json"), "utf8")) as {
+    routes: Array<{ src?: string; dest?: string; handle?: string }>;
+  };
+
+  const appRoute = vercel.routes.find((route) => route.src === "/(.*)");
+  assert.equal(appRoute?.dest, "https://buymesho.onrender.com/$1");
+  assert.equal(vercel.routes.some((route) => route.handle === "filesystem"), false);
+});
+
 test("vercel routes canonical sitemap requests to the dynamic backend", () => {
   const vercel = JSON.parse(readFileSync(resolve(process.cwd(), "vercel.json"), "utf8")) as {
     routes: Array<{ src?: string; dest?: string }>;
