@@ -138,6 +138,9 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
     // successful payment. Once an escrow order is already in escrow, the
     // webhook must be idempotent rather than attempting the illegal
     // in_escrow -> paid transition.
+    if(existingPayment?.status==='captured' && order.status==='paid' && order.source==='event'){
+      return{payment:existingPayment,order,verification,sellerPayoutQueued:false,eventPayoutRequired:true,payoutId:null,orderEnteredEscrow:false};
+    }
     if(existingPayment?.status==='captured' && order.status==='in_escrow'){
       return{payment:existingPayment,order,verification,sellerPayoutQueued:false,payoutId:null,orderEnteredEscrow:false};
     }
@@ -146,26 +149,14 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
     const confirmedOrder=await confirmOrderByReferences(referenceCandidates,client);
     const activeOrder=confirmedOrder ?? await serverOrderService.setStatusAsync(order.id,'paid',client) ?? order;
 
-    const eventContext=await resolveEventPayoutContext(activeOrder.id,client);
-    if(activeOrder.source==='event'&&!eventContext){
-      throw new Error('Event ticket order could not resolve its payout destination');
-    }
-    if(eventContext){
-      const eventPayout=await createEventPayoutCandidateAsync({
-        orderId:activeOrder.id,
-        event:eventContext,
-        grossAmount:activeOrder.total.amount,
-        currency:normalizeReference(activeOrder.currency).toUpperCase(),
-        requestedBy:'system',
-        requestedAt:activeOrder.paidAt ?? new Date().toISOString(),
-      },client);
+    if(activeOrder.source==='event'){
       return{
         payment,
         order:activeOrder,
         verification,
         sellerPayoutQueued:false,
-        eventPayoutQueued:eventPayout.created,
-        payoutId:eventPayout.payout.id,
+        eventPayoutRequired:true,
+        payoutId:null,
         orderEnteredEscrow:false,
       };
     }
@@ -183,11 +174,27 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
     const escrowAmount=activeOrder.total.amount;const currency=normalizeReference(activeOrder.currency).toUpperCase();const escrow=await escrowRepository.createAsync(activeOrder.id,currency,escrowAmount,client);const escrowedOrder=await serverOrderService.markInEscrowAsync(activeOrder.id,escrow.id,client) ?? activeOrder;return{payment,order:escrowedOrder,verification,sellerPayoutQueued:false,eventPayoutQueued:false,payoutId:null,orderEnteredEscrow:escrowedOrder.status==='in_escrow'&&order.status!=='in_escrow'};
   });
 
-  if('eventPayoutQueued' in settlement && settlement.eventPayoutQueued&&settlement.payoutId&&settlement.order){
-    await payoutService.executePayout({
-      payoutId:settlement.payoutId,
-      actorType:'system',
+  if('eventPayoutRequired' in settlement && settlement.eventPayoutRequired && settlement.order){
+    const eventPayout=await withTransaction(async(client)=>{
+      const eventContext=await resolveEventPayoutContext(settlement.order!.id,client);
+      if(!eventContext){
+        throw new Error('Event ticket order could not resolve its payout destination');
+      }
+      return createEventPayoutCandidateAsync({
+        orderId:settlement.order!.id,
+        event:eventContext,
+        grossAmount:settlement.order!.subtotal.amount,
+        currency:normalizeReference(settlement.order!.subtotal.currency || settlement.order!.currency).toUpperCase(),
+        requestedBy:'system',
+        requestedAt:settlement.order!.paidAt ?? new Date().toISOString(),
+      },client);
     });
+    if(eventPayout.created){
+      await payoutService.executePayout({
+        payoutId:eventPayout.payout.id,
+        actorType:'system',
+      });
+    }
   }
   if(settlement.sellerPayoutQueued&&settlement.payoutId&&settlement.order)emitSellerPayoutQueuedNotification(settlement.order.sellerId,settlement.order.id,settlement.payoutId);
   if(settlement.order){if(settlement.orderEnteredEscrow||settlement.order.status==='paid'){emitOrderPaidNotification(settlement.order);emitEventTicketNotifications(settlement.order);}}
