@@ -112,7 +112,14 @@ export function RelatedRailCard({
         isDesktop ? "h-full" : ""
       }`}
     >
-      <button type="button" onClick={() => onOpenDetails(item)} className="block w-full text-left">
+      <a
+        href={`/listing?listing=${encodeURIComponent(String(item.id))}`}
+        onClick={(event) => {
+          event.preventDefault();
+          onOpenDetails(item);
+        }}
+        className="block w-full text-left"
+      >
         <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
           <img
             src={firstPhoto}
@@ -120,10 +127,17 @@ export function RelatedRailCard({
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         </div>
-      </button>
+      </a>
 
       <div className={isDesktop ? "space-y-2 p-4" : "space-y-1.5 p-2.5"}>
-        <button type="button" onClick={() => onOpenDetails(item)} className="block w-full text-left">
+        <a
+          href={`/listing?listing=${encodeURIComponent(String(item.id))}`}
+          onClick={(event) => {
+            event.preventDefault();
+            onOpenDetails(item);
+          }}
+          className="block w-full text-left"
+        >
           <h3
             className={`line-clamp-1 tracking-tight text-zinc-900 ${
               isDesktop ? "text-sm font-extrabold" : "text-[12px] font-extrabold"
@@ -131,7 +145,7 @@ export function RelatedRailCard({
           >
             {item.name}
           </h3>
-        </button>
+        </a>
 
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
@@ -158,18 +172,26 @@ export function RelatedRailCard({
           <div className="min-h-[1.25rem]" />
         )}
 
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            if (item.seller_uid) onOpenSeller(item.seller_uid);
-          }}
-          className={`block w-full text-left font-semibold text-zinc-500 transition-colors hover:text-zinc-900 ${
+        {item.seller_uid ? (
+          <a
+            href={`/seller?uid=${encodeURIComponent(String(item.seller_uid))}`}
+            onClick={(event) => {
+              event.preventDefault();
+              onOpenSeller(item.seller_uid!);
+            }}
+            className={`block w-full text-left font-semibold text-zinc-500 transition-colors hover:text-zinc-900 ${
+              isDesktop ? "text-[11px]" : "text-[10px]"
+            }`}
+          >
+            <span className="line-clamp-1">{sellerName}</span>
+          </a>
+        ) : (
+          <span className={`block w-full text-left font-semibold text-zinc-500 ${
             isDesktop ? "text-[11px]" : "text-[10px]"
-          }`}
-        >
-          <span className="line-clamp-1">{sellerName}</span>
-        </button>
+          }`}>
+            <span className="line-clamp-1">{sellerName}</span>
+          </span>
+        )}
 
         <div className="space-y-1">
           <button
