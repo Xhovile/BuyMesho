@@ -196,6 +196,43 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
               throw new Error('Event payout is still being processed; reconcile the payout before approving this refund.');
             }
 
+            const now = new Date().toISOString();
+            await client.query(
+              `UPDATE refund_requests
+                  SET status='approved',
+                      admin_decision=$1,
+                      latest_status_at=$2,
+                      updated_at=$2
+                WHERE id=$3
+                  AND status='under_review'`,
+              [note, now, refund.id],
+            );
+
+            const approvedCheck = await client.query<{ id: string }>(
+              `SELECT id
+                 FROM refund_requests
+                WHERE id=$1
+                  AND status='approved'
+                LIMIT 1`,
+              [refund.id],
+            );
+            if (!approvedCheck.rows[0]) {
+              throw new Error('Refund approval could not be persisted');
+            }
+
+            await client.query(
+              `INSERT INTO audit_events
+                (id,entity_type,entity_id,event_type,performed_by,timestamp,previous_state,new_state,metadata)
+               VALUES ($1,'refund_request',$2,'event_refund_approved',$3,$4,'under_review','approved',$5)`,
+              [
+                `aud_${randomUUID()}`,
+                refund.id,
+                req.user.uid,
+                now,
+                JSON.stringify({ caseId, orderId: current.order_id, amount: requestedAmount }),
+              ],
+            );
+
             assertRefundTransition('approved', 'owed', 'admin');
             const liability = await createEventRefundLiability(client, {
               orderId: String(current.order_id),
@@ -261,7 +298,7 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
             await client.query(
               `INSERT INTO audit_events
                 (id,entity_type,entity_id,event_type,performed_by,timestamp,previous_state,new_state,metadata)
-               VALUES ($1,'dispute_case',$2,'event_refund_liability_created',$3,$4,'under_review','under_review',$5)`,
+               VALUES ($1,'dispute_case',$2,'event_refund_liability_created',$3,$4,'approved','owed',$5)`,
               [
                 `aud_${randomUUID()}`,
                 caseId,
