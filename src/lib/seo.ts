@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 
 import type { Listing } from "../types.js";
+import { isMarketplaceCategoryKey } from "./appNavigation.paths.js";
 import type { AppRoute } from "./appNavigation.paths.js";
 
 export interface SEOConfig {
@@ -56,10 +57,22 @@ export function getRouteSEO(pathname: string, route: AppRoute, search = ""): Rou
   }
 
   if (route === "category") {
+    const category = new URLSearchParams(search).get("category")?.trim().toLowerCase();
+
+    if (!isMarketplaceCategoryKey(category)) {
+      return {
+        title: "BuyMesho Category",
+        description: "Select a valid marketplace category on BuyMesho.",
+        canonicalPath: "/category",
+        noIndex: true,
+        managedByPage: true,
+      };
+    }
+
     return {
       title: DEFAULT_SEO.title,
       description: DEFAULT_SEO.description,
-      canonicalPath: normalizedPathname,
+      canonicalPath: `/category?category=${encodeURIComponent(category)}`,
       noIndex: false,
       managedByPage: true,
     };
