@@ -483,14 +483,49 @@ test("static sitemap is removed so dynamic sitemap data cannot drift", () => {
   assert.equal(existsSync(resolve(process.cwd(), "public/sitemap.xml")), false);
 });
 
-test("vercel routes application documents through the SSR backend", () => {
+test("vercel keeps the frontend on Vercel and routes public SSR documents to Render", () => {
   const vercel = JSON.parse(readFileSync(resolve(process.cwd(), "vercel.json"), "utf8")) as {
     routes: Array<{ src?: string; dest?: string; handle?: string }>;
   };
 
-  const appRoute = vercel.routes.find((route) => route.src === "/(.*)");
-  assert.equal(appRoute?.dest, "https://buymesho.onrender.com/$1");
-  assert.equal(vercel.routes.some((route) => route.handle === "filesystem"), false);
+  const filesystemRoute = vercel.routes.find((route) => route.handle === "filesystem");
+  const spaFallback = vercel.routes.find((route) => route.src === "/(.*)");
+
+  assert.ok(filesystemRoute);
+  assert.equal(spaFallback?.dest, "/index.html");
+
+  for (const path of [
+    "/",
+    "/explore",
+    "/buy-online-malawi",
+    "/sell-online-malawi",
+    "/category",
+    "/listing",
+    "/seller",
+    "/explore/events",
+  ]) {
+    const route = vercel.routes.find((entry) => entry.src === path);
+    assert.equal(
+      route?.dest,
+      "https://buymesho.onrender.com" + path,
+      path + " should use Render only for its SSR document",
+    );
+  }
+});
+
+test("vercel keeps API and sitemap requests on Render", () => {
+  const vercel = JSON.parse(readFileSync(resolve(process.cwd(), "vercel.json"), "utf8")) as {
+    routes: Array<{ src?: string; dest?: string }>;
+  };
+
+  assert.equal(
+    vercel.routes.find((route) => route.src === "/api/(.*)")?.dest,
+    "https://buymesho.onrender.com/api/$1",
+  );
+  assert.equal(
+    vercel.routes.find((route) => route.src === "/sitemap\\.xml")?.dest,
+    "https://buymesho.onrender.com/api/seo/sitemap.xml",
+  );
 });
 
 test("vercel routes canonical sitemap requests to the dynamic backend", () => {
