@@ -1,5 +1,7 @@
-import type { Listing } from "../types";
-import type { AppRoute } from "../lib/appNavigation.paths";
+/// <reference lib="dom" />
+
+import type { Listing } from "../types.js";
+import type { AppRoute } from "./appNavigation.paths.js";
 
 export interface SEOConfig {
   title: string;
