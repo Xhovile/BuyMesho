@@ -127,6 +127,26 @@ export async function gateForSubmissionAsync(payoutId: string): Promise<PayoutEx
     if (orderStatus !== 'paid') {
       return { allowed: false, reasonCode: 'payment_not_captured', reason: 'Event payout requires a verified paid order' };
     }
+
+    // A dispute may be opened before the order projection changes to a
+    // disputed status. Re-check the canonical dispute table at the payout
+    // submission boundary so an event refund request cannot race an immediate
+    // direct payout into provider settlement.
+    const activeDispute = await query<{ id: string }>(
+      `SELECT dc.id
+         FROM dispute_cases dc
+        WHERE dc.order_id = $1
+          AND dc.status IN ('open','under_review')
+        LIMIT 1`,
+      [String(row.order_id ?? '')],
+    );
+    if (activeDispute.rows[0]) {
+      return {
+        allowed: false,
+        reasonCode: 'order_disputed',
+        reason: 'Event payout is blocked while the order has an active dispute',
+      };
+    }
   } else {
     if (!['paid', 'in_escrow', 'fulfilled'].includes(orderStatus)) {
       return { allowed: false, reasonCode: 'order_not_releasable', reason: 'Order is not in a releasable state' };
