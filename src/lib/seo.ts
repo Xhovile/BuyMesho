@@ -2,6 +2,7 @@
 
 import type { Listing } from "../types.js";
 import { isMarketplaceCategoryKey } from "./appNavigation.paths.js";
+import { buildProductJsonLd } from "./seoProduct.js";
 import type { AppRoute } from "./appNavigation.paths.js";
 
 export interface SEOConfig {
@@ -19,6 +20,9 @@ export interface SEOConfig {
   availability?: "InStock" | "OutOfStock";
   category?: string;
   sellerName?: string;
+  sellerType?: "Person" | "Organization";
+  productName?: string;
+  brandName?: string;
   campus?: string;
   condition?: string;
   /** Optional page-owned JSON-LD schema. */
@@ -467,47 +471,21 @@ export function updateSEOMetaTags(config: Partial<SEOConfig> = {}) {
   if (config.jsonLd) {
     updateJsonLdSchema(config.jsonLd);
   } else if (config.price !== undefined || config.category) {
-    const itemCondition = config.condition
-      ? config.condition.toLowerCase().includes("new")
-        ? "https://schema.org/NewCondition"
-        : "https://schema.org/UsedCondition"
-      : undefined;
-
-    const jsonLdProduct = {
-      "@context": "https://schema.org",
-      "@type": "Product",
-      "@id": `${url}#product`,
-      name: config.title || DEFAULT_SEO.siteName,
-      image: [image],
+    const jsonLdProduct = buildProductJsonLd({
+      name: config.productName || config.title || DEFAULT_SEO.siteName,
       description,
-      ...(config.category ? { category: config.category } : {}),
-      ...(itemCondition ? { itemCondition } : {}),
-      brand: {
-        "@type": "Brand",
-        name: DEFAULT_SEO.siteName,
-      },
-      mainEntityOfPage: url,
-      offers: {
-        "@type": "Offer",
-        url,
-        priceCurrency: config.currency || DEFAULT_SEO.currency,
-        price: config.price ?? 0,
-        availability:
-          config.availability === "OutOfStock"
-            ? "https://schema.org/OutOfStock"
-            : "https://schema.org/InStock",
-        ...(itemCondition ? { itemCondition } : {}),
-        ...(config.sellerName
-          ? {
-              seller: {
-                "@type": "Person",
-                name: config.sellerName,
-              },
-            }
-          : {}),
-        ...(config.campus ? { areaServed: `${config.campus}, Malawi` } : { areaServed: "Malawi" }),
-      },
-    };
+      url,
+      image,
+      category: config.category,
+      condition: config.condition,
+      price: config.price ?? 0,
+      currency: config.currency || DEFAULT_SEO.currency,
+      availability: config.availability === "OutOfStock" ? "OutOfStock" : "InStock",
+      sellerName: config.sellerName,
+      sellerType: config.sellerType,
+      brandName: config.brandName,
+      areaServed: config.campus ? `${config.campus}, Malawi` : "Malawi",
+    });
 
     updateJsonLdSchema(jsonLdProduct);
   } else {
@@ -549,6 +527,8 @@ export function getSEOForListing(listing: Listing, sellerName?: string): SEOConf
     campus: listing.university,
     condition: listing.condition,
     sellerName: sellerName || listing.business_name || "BuyMesho seller",
+    sellerType: listing.business_name?.trim() ? "Organization" : "Person",
+    productName: itemTitle,
     availability: listing.status === "sold" ? "OutOfStock" : "InStock",
     keywords: [itemTitle, listing.category, listing.university, "BuyMesho", "Malawi marketplace"].filter(Boolean) as string[],
   };
