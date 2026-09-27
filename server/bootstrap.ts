@@ -92,6 +92,10 @@ async function serveSpaShell(
     .status(200)
     .setHeader("Content-Type", "text/html; charset=utf-8")
     .setHeader("X-BuyMesho-SEO", "server-rendered")
+    .setHeader(
+      "Cache-Control",
+      rendered.noIndex ? "private, no-store" : "public, max-age=60, s-maxage=300",
+    )
     .send(documentHtml);
 }
 export async function startServer() {
