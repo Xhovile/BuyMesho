@@ -318,9 +318,6 @@ export async function executePayoutFlow(
   }
 
   const lockedResult = await withOrderFinancialLock(String(gate.orderId), async () => {
-    // Re-run the financial eligibility checks while holding the per-order
-    // database advisory lock. Dispute creation takes the same lock, so a
-    // dispute cannot be opened between this check and provider submission.
     const lockedGate = await gateForSubmissionAsync(input.payoutId);
 
     if (!lockedGate.allowed || !lockedGate.sellerId || !lockedGate.orderId || !lockedGate.amount || !lockedGate.currency || !lockedGate.provider) {
@@ -344,194 +341,192 @@ export async function executePayoutFlow(
 
     const gate = lockedGate;
 
-  const reservedAttempt = await reserveRetryAttempt({
-    payoutId: input.payoutId,
-    provider: gate.provider,
-    actorType: actor.actorType,
-    actorId: actor.actorId ?? null,
-  });
-  const attemptNo = reservedAttempt.attemptNo;
-
-  if (attemptNo > 1 || gate.currentFailureReason) {
-    await addPayoutEvent({
+    const reservedAttempt = await reserveRetryAttempt({
       payoutId: input.payoutId,
-      sellerId: gate.sellerId,
-      eventType: 'payout_retried',
+      provider: gate.provider,
       actorType: actor.actorType,
       actorId: actor.actorId ?? null,
-      note: `Retry accepted for attempt ${attemptNo}`,
-      payload: {
+    });
+    const attemptNo = reservedAttempt.attemptNo;
+
+    if (attemptNo > 1 || gate.currentFailureReason) {
+      await addPayoutEvent({
         payoutId: input.payoutId,
         sellerId: gate.sellerId,
+        eventType: 'payout_retried',
         actorType: actor.actorType,
         actorId: actor.actorId ?? null,
-        attemptNo,
-        previousFailureReason: gate.currentFailureReason ?? null,
-        retryReason: actor.actorType === 'admin' ? 'admin_requested_retry' : 'system_requested_retry',
-        providerChargeId: reservedAttempt.providerChargeId,
-        timestamp: new Date().toISOString(),
-      },
+        note: `Retry accepted for attempt ${attemptNo}`,
+        payload: {
+          payoutId: input.payoutId,
+          sellerId: gate.sellerId,
+          actorType: actor.actorType,
+          actorId: actor.actorId ?? null,
+          attemptNo,
+          previousFailureReason: gate.currentFailureReason ?? null,
+          retryReason: actor.actorType === 'admin' ? 'admin_requested_retry' : 'system_requested_retry',
+          providerChargeId: reservedAttempt.providerChargeId,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    const recipientName = splitRecipientName(gate.destinationAccountName);
+    const execution = await executePayChanguPayout({
+      payoutId: input.payoutId,
+      sellerId: gate.sellerId,
+      amount: gate.amount,
+      currency: gate.currency,
+      providerName: gate.provider,
+      destinationReference: gate.destinationValue ?? input.destinationReference ?? input.payoutId,
+      attemptNo,
+      destinationType: gate.destinationType,
+      mobile: gate.destinationType === 'mobile_money' ? gate.destinationValue ?? undefined : undefined,
+      bankAccountNumber: gate.destinationType === 'bank' ? gate.destinationValue ?? undefined : undefined,
+      mobileMoneyOperatorRefId: gate.destinationProviderRefId ?? undefined,
+      bankUuid: gate.destinationProviderRefId ?? undefined,
+      bankAccountName: gate.destinationAccountName ?? undefined,
+      firstName: recipientName.firstName,
+      lastName: recipientName.lastName,
     });
-  }
 
-  const recipientName = splitRecipientName(gate.destinationAccountName);
-  const execution = await executePayChanguPayout({
-    payoutId: input.payoutId,
-    sellerId: gate.sellerId,
-    amount: gate.amount,
-    currency: gate.currency,
-    providerName: gate.provider,
-    destinationReference: gate.destinationValue ?? input.destinationReference ?? input.payoutId,
-    attemptNo,
-    destinationType: gate.destinationType,
-    mobile: gate.destinationType === 'mobile_money' ? gate.destinationValue ?? undefined : undefined,
-    bankAccountNumber: gate.destinationType === 'bank' ? gate.destinationValue ?? undefined : undefined,
-    mobileMoneyOperatorRefId: gate.destinationProviderRefId ?? undefined,
-    bankUuid: gate.destinationProviderRefId ?? undefined,
-    bankAccountName: gate.destinationAccountName ?? undefined,
-    firstName: recipientName.firstName,
-    lastName: recipientName.lastName,
-  });
+    await recordAttempt(reservedAttempt.id, execution);
 
-  await recordAttempt(reservedAttempt.id, execution);
+    const providerReference = String(
+      execution.providerReference ?? reservedAttempt.providerChargeId ?? execution.providerChargeId ?? '',
+    );
 
-  const providerReference = String(
-    execution.providerReference ?? reservedAttempt.providerChargeId ?? execution.providerChargeId ?? '',
-  );
-
-  const attempt: PayoutAttemptRecord = {
-    id: reservedAttempt.id,
-    payoutId: input.payoutId,
-    provider: execution.provider,
-    providerChargeId: execution.providerChargeId,
-    providerReference,
-    providerTransactionId: execution.providerTransactionId,
-    status: execution.status,
-    attemptNo: execution.attemptNo,
-    rawResponse: execution.rawResponse,
-    createdAt: reservedAttempt.createdAt,
-  };
-
-  const insufficientBalance = execution.status === 'failed' && isInsufficientBalanceResponse(execution.rawResponse);
-
-  if (insufficientBalance) {
-    const exactMessage = exactProviderErrorMessage(execution.rawResponse);
-    const reason = exactMessage ?? 'PayChangu could not initiate the payout because the available balance is insufficient.';
-    const payout = await updatePayoutStatus(input.payoutId, 'pending', {
+    const attempt: PayoutAttemptRecord = {
+      id: reservedAttempt.id,
+      payoutId: input.payoutId,
       provider: execution.provider,
       providerChargeId: execution.providerChargeId,
       providerReference,
       providerTransactionId: execution.providerTransactionId,
-      providerStatus: execution.status,
+      status: execution.status,
+      attemptNo: execution.attemptNo,
+      rawResponse: execution.rawResponse,
+      createdAt: reservedAttempt.createdAt,
+    };
+
+    const insufficientBalance = execution.status === 'failed' && isInsufficientBalanceResponse(execution.rawResponse);
+
+    if (insufficientBalance) {
+      const exactMessage = exactProviderErrorMessage(execution.rawResponse);
+      const reason = exactMessage ?? 'PayChangu could not initiate the payout because the available balance is insufficient.';
+      const payout = await updatePayoutStatus(input.payoutId, 'pending', {
+        provider: execution.provider,
+        providerChargeId: execution.providerChargeId,
+        providerReference,
+        providerTransactionId: execution.providerTransactionId,
+        providerStatus: execution.status,
+        lastAttemptId: attempt.id,
+        rawResponse: execution.rawResponse,
+        failureReason: 'balance_insufficient',
+        manualReviewReason: null,
+        sentAt: execution.processedAt,
+        failedAt: null,
+      });
+
+      await addPayoutEvent({
+        payoutId: input.payoutId,
+        sellerId: gate.sellerId,
+        eventType: 'payout_attempt_failed_retry_pending',
+        actorType: actor.actorType,
+        actorId: actor.actorId ?? null,
+        note: reason,
+        payload: {
+          attemptNo,
+          providerChargeId: execution.providerChargeId,
+          failureReason: 'balance_insufficient',
+          providerStatus: execution.status,
+        },
+      });
+
+      return {
+        payout,
+        attempt,
+        execution,
+        reasonCode: 'balance_insufficient',
+        reason,
+        nextAction: 'awaiting_provider' as PayoutNextAction,
+      };
+    }
+
+    if (execution.status === 'failed' && isProviderHoldFailure(execution.failureClass)) {
+      const failureClass: NonNullable<typeof execution.failureClass> = execution.failureClass ?? 'provider_unavailable';
+      const exactMessage = exactProviderErrorMessage(execution.rawResponse);
+      const reason = providerFailureReason(failureClass, failureClass === 'provider_unavailable' ? null : exactMessage);
+      const payout = await holdPayoutForReviewAsync({
+        payoutId: input.payoutId,
+        sellerId: gate.sellerId,
+        reasonCode: failureClass,
+        reason,
+        payload: { attemptNo, providerChargeId: execution.providerChargeId, providerStatus: execution.status },
+        statusExtras: {
+          provider: execution.provider,
+          providerChargeId: execution.providerChargeId,
+          providerReference,
+          providerTransactionId: execution.providerTransactionId,
+          lastAttemptId: attempt.id,
+          rawResponse: execution.rawResponse,
+          sentAt: execution.processedAt,
+          failedAt: execution.processedAt,
+        },
+      }, actor);
+
+      await addPayoutEvent({
+        payoutId: input.payoutId,
+        sellerId: gate.sellerId,
+        eventType: 'payout_retry_blocked',
+        actorType: actor.actorType,
+        actorId: actor.actorId ?? null,
+        note: reason,
+        payload: { attemptNo, providerChargeId: execution.providerChargeId, reasonCode: failureClass },
+      });
+
+      return { payout, attempt, execution, reasonCode: failureClass, reason, nextAction: 'retry_blocked' as PayoutNextAction };
+    }
+
+    const payout = await updatePayoutStatus(input.payoutId, execution.status, {
       lastAttemptId: attempt.id,
       rawResponse: execution.rawResponse,
-      failureReason: 'balance_insufficient',
-      manualReviewReason: null,
+      failureReason: execution.status === 'failed' ? execution.failureClass ?? 'provider_execution_failed' : null,
+      providerTransactionId: execution.providerTransactionId,
+      provider: execution.provider,
+      providerChargeId: execution.providerChargeId,
+      providerReference,
+      providerStatus: execution.status,
+      approvedBy: actor.actorType === 'admin' ? actor.actorId ?? null : null,
       sentAt: execution.processedAt,
-      failedAt: null,
+      paidAt: execution.status === 'paid' ? execution.processedAt : null,
+      failedAt: execution.status === 'failed' ? execution.processedAt : null,
     });
 
     await addPayoutEvent({
       payoutId: input.payoutId,
       sellerId: gate.sellerId,
-      eventType: 'payout_attempt_failed_retry_pending',
+      eventType: execution.status === 'failed' ? 'payout_failed' : execution.status === 'paid' ? 'payout_paid' : 'payout_sent',
       actorType: actor.actorType,
       actorId: actor.actorId ?? null,
-      note: reason,
-      payload: {
-        attemptNo,
-        providerChargeId: execution.providerChargeId,
-        failureReason: 'balance_insufficient',
-        providerStatus: execution.status,
-      },
+      note: execution.status === 'failed'
+        ? `Provider attempt ${attemptNo} failed`
+        : execution.status === 'paid'
+          ? `Provider attempt ${attemptNo} paid`
+          : `Provider attempt ${attemptNo} sent`,
+      payload: execution.rawResponse as Record<string, unknown> | undefined,
     });
 
     return {
       payout,
       attempt,
       execution,
-      reasonCode: 'balance_insufficient',
-      reason,
-      nextAction: 'awaiting_provider' as PayoutNextAction,
+      reasonCode: execution.status === 'failed' ? execution.failureClass ?? 'provider_execution_failed' : null,
+      reason: execution.status === 'failed'
+        ? execution.failureClass ? providerFailureReason(execution.failureClass) : 'Provider reported payout failure.'
+        : execution.status === 'paid' ? 'Payout paid successfully.' : 'Payout submitted to provider.',
+      nextAction: execution.status === 'paid' ? 'none' : execution.status === 'failed' ? 'manual_review' : 'awaiting_provider',
     };
-  }
-
-  if (execution.status === 'failed' && isProviderHoldFailure(execution.failureClass)) {
-    const failureClass: NonNullable<typeof execution.failureClass> = execution.failureClass ?? 'provider_unavailable';
-    const exactMessage = exactProviderErrorMessage(execution.rawResponse);
-    const reason = providerFailureReason(failureClass, failureClass === 'provider_unavailable' ? null : exactMessage);
-    const payout = await holdPayoutForReviewAsync({
-      payoutId: input.payoutId,
-      sellerId: gate.sellerId,
-      reasonCode: failureClass,
-      reason,
-      payload: { attemptNo, providerChargeId: execution.providerChargeId, providerStatus: execution.status },
-      statusExtras: {
-        provider: execution.provider,
-        providerChargeId: execution.providerChargeId,
-        providerReference,
-        providerTransactionId: execution.providerTransactionId,
-        lastAttemptId: attempt.id,
-        rawResponse: execution.rawResponse,
-        sentAt: execution.processedAt,
-        failedAt: execution.processedAt,
-      },
-    }, actor);
-
-    await addPayoutEvent({
-      payoutId: input.payoutId,
-      sellerId: gate.sellerId,
-      eventType: 'payout_retry_blocked',
-      actorType: actor.actorType,
-      actorId: actor.actorId ?? null,
-      note: reason,
-      payload: { attemptNo, providerChargeId: execution.providerChargeId, reasonCode: failureClass },
-    });
-
-    return { payout, attempt, execution, reasonCode: failureClass, reason, nextAction: 'retry_blocked' as PayoutNextAction };
-  }
-
-  const payout = await updatePayoutStatus(input.payoutId, execution.status, {
-    lastAttemptId: attempt.id,
-    rawResponse: execution.rawResponse,
-    failureReason: execution.status === 'failed' ? execution.failureClass ?? 'provider_execution_failed' : null,
-    providerTransactionId: execution.providerTransactionId,
-    provider: execution.provider,
-    providerChargeId: execution.providerChargeId,
-    providerReference,
-    providerStatus: execution.status,
-    approvedBy: actor.actorType === 'admin' ? actor.actorId ?? null : null,
-    sentAt: execution.processedAt,
-    paidAt: execution.status === 'paid' ? execution.processedAt : null,
-    failedAt: execution.status === 'failed' ? execution.processedAt : null,
-  });
-
-  await addPayoutEvent({
-    payoutId: input.payoutId,
-    sellerId: gate.sellerId,
-    eventType: execution.status === 'failed' ? 'payout_failed' : execution.status === 'paid' ? 'payout_paid' : 'payout_sent',
-    actorType: actor.actorType,
-    actorId: actor.actorId ?? null,
-    note: execution.status === 'failed'
-      ? `Provider attempt ${attemptNo} failed`
-      : execution.status === 'paid'
-        ? `Provider attempt ${attemptNo} paid`
-        : `Provider attempt ${attemptNo} sent`,
-    payload: execution.rawResponse as Record<string, unknown> | undefined,
-  });
-
-  return {
-    payout,
-    attempt,
-    execution,
-    reasonCode: execution.status === 'failed' ? execution.failureClass ?? 'provider_execution_failed' : null,
-    reason: execution.status === 'failed'
-      ? execution.failureClass ? providerFailureReason(execution.failureClass) : 'Provider reported payout failure.'
-      : execution.status === 'paid' ? 'Payout paid successfully.' : 'Payout submitted to provider.',
-    nextAction: execution.status === 'paid' ? 'none' : execution.status === 'failed' ? 'manual_review' : 'awaiting_provider',
-  };
-}
-
   });
 
   return lockedResult;
