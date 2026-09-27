@@ -499,6 +499,10 @@ test("public SEO navigation and PWA shell references use crawlable or existing a
   const seller = readFileSync(resolve(process.cwd(), "src/SellOnlineMalawiPage.tsx"), "utf8");
   const internalLinks = readFileSync(resolve(process.cwd(), "src/components/SeoInternalLinks.tsx"), "utf8");
   const serviceWorker = readFileSync(resolve(process.cwd(), "public/service-worker.js"), "utf8");
+  const vercel = JSON.parse(readFileSync(resolve(process.cwd(), "vercel.json"), "utf8"));
+  const vercelSources = new Set(
+    (vercel.routes as Array<{ src?: string }>).map((route) => route.src).filter(Boolean),
+  );
 
   assert.match(buyer, /<a href=\{EXPLORE_PATH\} aria-label="Open BuyMesho marketplace">/);
   assert.match(seller, /<a href=\{EXPLORE_PATH\} aria-label="Open BuyMesho marketplace">/);
@@ -507,6 +511,29 @@ test("public SEO navigation and PWA shell references use crawlable or existing a
   assert.ok(serviceWorker.includes("/apple-touch-icon.svg"));
   assert.equal(serviceWorker.includes("/apple-touch-icon.png"), false);
   assert.equal(existsSync(resolve(process.cwd(), "public/_redirects")), false);
+
+  for (const pathname of [
+    "/home",
+    "/install",
+    "/signup",
+    "/about",
+    "/explore",
+    "/explore/deals",
+    "/explore/events",
+    "/explore/wholesale",
+    "/explore/sellers",
+    "/buy-online-malawi",
+    "/sell-online-malawi",
+    "/category",
+    "/listing",
+    "/seller",
+    "/privacy",
+    "/terms",
+    "/safety",
+  ]) {
+    assert.equal(vercelSources.has(pathname), true, pathname + " should proxy to SSR");
+    assert.equal(vercelSources.has(pathname + "/"), true, pathname + "/ should proxy to SSR");
+  }
 });
 
 test("phase 8 Search Console verification and measurement hooks are wired", () => {
