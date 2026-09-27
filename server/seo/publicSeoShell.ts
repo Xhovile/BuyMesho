@@ -203,7 +203,7 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
       };
       const categoryListings = db
         ? db.prepare(
-            "SELECT id,name FROM listings WHERE category=? AND is_hidden=0 AND deleted_at IS NULL ORDER BY updated_at DESC,id DESC LIMIT 8"
+            "SELECT l.id,l.name FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.category=? AND l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.updated_at DESC,l.id DESC LIMIT 8"
           ).all(categoryDbValues[category!]) as Array<{ id: number; name?: string | null }>
         : [];
       const listingLinks = categoryListings
@@ -264,7 +264,7 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
 
   if (db && (normalized === "/" || normalized === "/explore")) {
     const listings = db.prepare(
-      "SELECT id,name,price FROM listings WHERE is_hidden=0 AND deleted_at IS NULL ORDER BY updated_at DESC,id DESC LIMIT 8"
+      "SELECT l.id,l.name,l.price FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.updated_at DESC,l.id DESC LIMIT 8"
     ).all() as Array<{ id: number; name?: string | null; price?: number | string | null }>;
     if (listings.length) {
       const listingLinks = listings.map((item) =>
@@ -474,7 +474,7 @@ function buildSellerResult(db: any, uid: string): SeoRenderResult {
 
   const sellerName = profile.business_name?.trim() || "Seller Profile";
   const listings = db.prepare(
-    "SELECT id,name FROM listings WHERE seller_uid=? AND is_hidden=0 AND deleted_at IS NULL ORDER BY updated_at DESC,id DESC LIMIT ?"
+    "SELECT l.id,l.name FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.seller_uid=? AND l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.updated_at DESC,l.id DESC LIMIT ?"
   ).all(normalizedUid, MAX_SEO_LISTINGS) as Array<{ id: number; name?: string | null }>;
 
   const description = profile.bio?.trim().slice(0, 155) ||
