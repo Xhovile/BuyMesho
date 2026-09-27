@@ -146,6 +146,20 @@ test("seller profile and event detail routes are page-managed and indexable", ()
   assert.equal(eventDirectory.noIndex, false);
 });
 
+test("event details derive route state from live URL changes", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "src/components/eventDetails/EventDetailsView.tsx"),
+    "utf8",
+  );
+
+  assert.match(source, /export function getEventRouteState\(search: string\)/);
+  assert.match(source, /window\.addEventListener\("popstate", syncEventRouteState\)/);
+  assert.match(source, /setEventRouteState\(getEventRouteState\(window\.location\.search\)\)/);
+  assert.match(source, /setEvent\(null\)/);
+  assert.match(source, /autoBuyHandledRef\.current = false/);
+  assert.match(source, /\[eventId, autoBuyRequested\]/);
+});
+
 test("public marketplace surfaces expose crawlable internal links", () => {
   const sources = [
     readFileSync(resolve(process.cwd(), "src/components/ListingCard.tsx"), "utf8"),
