@@ -32,6 +32,18 @@ type SellerDirectoryRow = {
   rating_count?: number | string | null;
 };
 
+type SellerCard = {
+  uid: string;
+  sellerName: string;
+  logoUrl: string | null;
+  description: string;
+  rating: number;
+  ratingCount: number;
+  joinedAt: string | null;
+  listingCount: number;
+  isVerified: boolean;
+};
+
 type SellersDirectoryResponse = {
   items?: SellerDirectoryRow[];
   total?: number;
