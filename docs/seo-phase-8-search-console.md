@@ -14,7 +14,7 @@ to the homepage HTML when the variable is present.
 
 Do not commit the verification token to the repository.
 
-Google documents the HTML-tag method as a supported URL-prefix verification method and notes that the tag must be present in the homepage `<head>`. citeturn534053search0
+Google documents the HTML-tag method as a supported URL-prefix verification method and notes that the tag must be present in the homepage `<head>`.
 
 ## 2. Verify the live HTML
 
@@ -30,7 +30,7 @@ Also use Search Console's URL Inspection tool on:
 - one live `/seller?uid=...` URL
 - one live `/explore/events?event=...` URL
 
-Search Console can show the rendered HTML Google sees, which is useful for checking metadata and structured data. citeturn534053search1
+Search Console can show the rendered HTML Google sees, which is useful for checking metadata and structured data.
 
 ## 3. Submit the sitemap
 
@@ -40,7 +40,7 @@ Submit:
 
 The sitemap endpoint is dynamic and includes public marketplace content. After submission, monitor sitemap processing and indexing reports in Search Console.
 
-Google recommends submitting a sitemap to keep Google informed about future URL changes. citeturn534053search6
+Google recommends submitting a sitemap to keep Google informed about future URL changes.
 
 ## 4. Public SEO measurement
 
@@ -52,7 +52,7 @@ BuyMesho already initializes Firebase Analytics. Phase 8 adds a lightweight `scr
 
 Private/noindex routes are not included in this SEO page-view measurement.
 
-Firebase documents `logEvent()` for web analytics and the `screen_view` event with `firebase_screen` and `firebase_screen_class` parameters. citeturn498811search0turn498811search4
+Firebase documents `logEvent()` for web analytics and the `screen_view` event with `firebase_screen` and `firebase_screen_class` parameters.
 
 ## 5. What to monitor
 
@@ -89,4 +89,4 @@ Check a small representative set before scaling:
 7. One seller profile
 8. One event detail page
 
-For structured-data pages, Google recommends using the Rich Results Test and URL Inspection and correcting critical issues before wider rollout. citeturn534053search7
+For structured-data pages, Google recommends using the Rich Results Test and URL Inspection and correcting critical issues before wider rollout.
