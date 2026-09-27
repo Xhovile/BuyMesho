@@ -26,21 +26,52 @@ import FeedbackModal from "../FeedbackModal";
 import ConfirmModal from "../ConfirmModal";
 import TicketHolderForm, { type TicketHolderInformation } from "../tickets/TicketHolderForm";
 
+type EventRouteState = {
+  eventId: number | null;
+  autoBuyRequested: boolean;
+};
+
+export function getEventRouteState(search: string): EventRouteState {
+  const params = new URLSearchParams(search);
+  const raw = params.get("event");
+  const parsed = raw ? Number(raw) : NaN;
+
+  return {
+    eventId: Number.isInteger(parsed) && parsed > 0 ? parsed : null,
+    autoBuyRequested: params.get("buy") === "1",
+  };
+}
+
 export default function EventDetailsView() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
-  const eventId = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    const params = new URLSearchParams(window.location.search);
-    const raw = params.get("event");
-    if (!raw) return null;
-    const parsed = Number(raw);
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-  }, []);
-  const autoBuyRequested = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    return new URLSearchParams(window.location.search).get("buy") === "1";
-  }, []);
+  const [eventRouteState, setEventRouteState] = useState<EventRouteState>(() =>
+    typeof window === "undefined"
+      ? { eventId: null, autoBuyRequested: false }
+      : getEventRouteState(window.location.search)
+  );
+  const eventId = eventRouteState.eventId;
+  const autoBuyRequested = eventRouteState.autoBuyRequested;
   const autoBuyHandledRef = useRef(false);
+
+  useEffect(() => {
+    const syncEventRouteState = () => {
+      setEventRouteState(getEventRouteState(window.location.search));
+    };
+
+    window.addEventListener("popstate", syncEventRouteState);
+    return () => window.removeEventListener("popstate", syncEventRouteState);
+  }, []);
+
+  useEffect(() => {
+    autoBuyHandledRef.current = false;
+    setEvent(null);
+    setError(null);
+    setNotice(null);
+    setTicketHolderOpen(false);
+    setAuthPromptOpen(false);
+    setAuthPromptAction(null);
+    setLoading(eventId !== null);
+  }, [eventId, autoBuyRequested]);
 
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
