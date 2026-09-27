@@ -137,7 +137,7 @@ export async function gateForSubmissionAsync(payoutId: string): Promise<PayoutEx
       return { allowed: false, reasonCode: 'order_not_releasable', reason: 'Escrow must be released before payout submission' };
     }
   }
-  if (Number(row.seller_suspended ?? 0) === 1) {
+  if (!isEventPayout && Number(row.seller_suspended ?? 0) === 1) {
     return { allowed: false, reasonCode: 'seller_suspended', reason: 'Seller is suspended' };
   }
 
