@@ -460,6 +460,9 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
           }
 
           if (refundRequest) {
+            if (String(refundRequest.status ?? '').trim().toLowerCase() !== 'owed') {
+              throw new Error('Event refund request is not in the owed state required for recovery');
+            }
             assertRefundTransition('owed', 'refunded', 'system');
           }
 
