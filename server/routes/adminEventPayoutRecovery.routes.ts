@@ -281,7 +281,9 @@ export function createAdminEventPayoutRecoveryRouter(requireAuth: RequestHandler
         : [];
 
       if (!transactionId) return res.status(400).json({ error: "transactionId is required" });
-      if (!refundMethod) return res.status(400).json({ error: "refundMethod is required" });
+      if (!["mobile_money", "bank_transfer", "cash", "other"].includes(refundMethod)) {
+        return res.status(400).json({ error: "Unsupported refundMethod" });
+      }
       if (!refundDate) return res.status(400).json({ error: "refundDate is required" });
       if (!note) return res.status(400).json({ error: "note is required" });
       if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ error: "amount must be positive" });
