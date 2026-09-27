@@ -7,27 +7,23 @@ Event ticket sales settle directly after successful payment verification. Events
 ## Flow
 
 ```text
-successful payment verification
+successful payment capture
         ↓
-confirm order as paid
+record payment as captured + order as paid
         ↓
 identify event from order items
         ↓
-validate single-event ownership
-        ↓
 load event-bound payout destination
         ↓
-require destination active + verified + owned by event creator
+calculate payout from ticket subtotal only
         ↓
-calculate event payout fees
+create event payout candidate (no escrow/release)
         ↓
-create eligible payout candidate with event financial identity
-        ↓
-commit transaction
+commit payout transaction
         ↓
 submit immediately through the shared PayChangu payout engine
         ↓
-reuse normal payout retry timing if needed
+reuse the existing 48-hour payout retry window
 ```
 
 ## Event identity
@@ -38,6 +34,7 @@ The event payout candidate stores:
 - `event_creator_uid`
 - `destination_account_id`
 - the event formula snapshot
+- no `escrow_id` or `release_entry_id`
 
 The payout uses the destination bound to the event, not the creator's current seller default destination.
 
@@ -53,11 +50,13 @@ An event payout is rejected when:
 - the destination belongs to another owner;
 - a caller supplies a destination different from the event-bound destination.
 
-Existing seller/listings escrow releases continue through the existing seller destination and payout formula path.
+Existing seller/listings payout and escrow behavior remains unchanged. Seller-only payout pages and seller payout history do not include event-creator payouts.
 
 ## Financial calculation
 
-Event payouts reuse the Phase 7 server-side calculator. For example, at the current 3% platform commission, MK10,000 gross sales with an Airtel Money payout fee of MK180 result in MK9,520 creator net before any future processing fee, reserve, or manual adjustment.
+Event payout gross is the event ticket subtotal, not the buyer's final checkout charge. Any PayChangu checkout/customer fee included in the order total is not treated as event gross for BuyMesho commission or payout-fee calculation.
+
+Event payouts reuse the Phase 7 server-side calculator. For example, with MK10,000 in ticket sales and an Airtel Money payout fee of MK180, the 3% BuyMesho platform fee is MK300 and creator net is MK9,520 before any future processing fee, reserve, or manual adjustment.
 
 The formula snapshot is persisted with the payout candidate so later policy changes do not rewrite the historical calculation.
 
