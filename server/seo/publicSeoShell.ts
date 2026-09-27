@@ -1,8 +1,8 @@
 
 import type { Request } from "express";
-import { DEFAULT_SEO, getRouteSEO } from "../../src/lib/seo.js";
+import { DEFAULT_SEO, getRouteSEO, truncateSeoDescription } from "../../src/lib/seo.js";
 import { getEventAttendanceMode } from "../../src/lib/seoEvent.js";
-import { buildProductJsonLd } from "../../src/lib/seoProduct.js";
+import { buildProductJsonLd, isListingOutOfStock } from "../../src/lib/seoProduct.js";
 
 const SITE_URL = "https://buymesho.app";
 const MAX_SEO_LISTINGS = 12;
@@ -28,6 +28,8 @@ type ListingRow = {
   university?: string | null;
   condition?: string | null;
   status?: string | null;
+  quantity?: number | string | null;
+  sold_quantity?: number | string | null;
   photos?: unknown;
   seller_uid?: string | null;
   business_name?: string | null;
@@ -365,7 +367,7 @@ function buildListingResult(db: any, listingId: string): SeoRenderResult {
   }
 
   const row = db.prepare(
-    "SELECT l.id,l.name,l.price,l.description,l.category,l.university,l.condition,l.status,l.photos,l.seller_uid,s.business_name " +
+    "SELECT l.id,l.name,l.price,l.description,l.category,l.university,l.condition,l.status,l.quantity,l.sold_quantity,l.photos,l.seller_uid,s.business_name " +
     "FROM listings l JOIN sellers s ON l.seller_uid=s.uid " +
     "WHERE l.id=? AND l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 LIMIT 1"
   ).get(id) as ListingRow | undefined;
@@ -387,9 +389,10 @@ function buildListingResult(db: any, listingId: string): SeoRenderResult {
   const price = formatMoney(row.price);
   const sellerName = row.business_name?.trim() || "BuyMesho seller";
   const sourceDescription = row.description?.trim() || "";
-  const description = sourceDescription
-    ? sourceDescription.slice(0, 150) + " " + name + " is listed for " + price + " in Malawi on BuyMesho."
+  const rawDescription = sourceDescription
+    ? sourceDescription + " " + name + " is listed for " + price + " in Malawi on BuyMesho."
     : "Discover " + name + " for " + price + " in Malawi on BuyMesho.";
+  const description = truncateSeoDescription(rawDescription);
   const photo = parsePhotos(row.photos)[0];
   const image = photo ? absoluteUrl(photo) : undefined;
   const sellerHref = row.seller_uid ? "/seller?uid=" + encodeURIComponent(row.seller_uid) : "";
@@ -404,7 +407,11 @@ function buildListingResult(db: any, listingId: string): SeoRenderResult {
     condition: row.condition,
     price: Number(row.price) || 0,
     currency: "MWK",
-    availability: row.status === "sold" ? "OutOfStock" : "InStock",
+    availability: isListingOutOfStock({
+      status: row.status,
+      quantity: row.quantity,
+      soldQuantity: row.sold_quantity,
+    }) ? "OutOfStock" : "InStock",
     sellerName,
     sellerType: row.business_name?.trim() ? "Organization" : "Person",
     areaServed: row.university?.trim() ? `${row.university.trim()}, Malawi` : "Malawi",
@@ -629,7 +636,7 @@ function buildEventResult(db: any, eventId: string): SeoRenderResult {
 }
 
 export function renderSeoDocument(request: Request, db: any): SeoRenderResult {
-  const pathname = request.path || "/";
+  const pathname = (request.path || "/").replace(/\/+$/, "") || "/";
   const search = request.originalUrl.includes("?")
     ? request.originalUrl.slice(request.originalUrl.indexOf("?"))
     : "";
