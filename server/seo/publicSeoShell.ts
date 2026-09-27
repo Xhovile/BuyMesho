@@ -1,6 +1,7 @@
 
 import type { Request } from "express";
 import { DEFAULT_SEO, getRouteSEO } from "../../src/lib/seo.js";
+import { getEventAttendanceMode } from "../../src/lib/seoEvent.js";
 import { buildProductJsonLd } from "../../src/lib/seoProduct.js";
 
 const SITE_URL = "https://buymesho.app";
@@ -556,6 +557,7 @@ function buildEventResult(db: any, eventId: string): SeoRenderResult {
   }
 
   const spec = parseSpecValues(event.spec_values);
+  const eventAttendanceMode = getEventAttendanceMode(spec);
   const posterValue = spec.poster_image_url || spec.poster_url || spec.poster;
   const poster = typeof posterValue === "string" && posterValue.trim() ? absoluteUrl(posterValue.trim()) : undefined;
   const description = event.description?.trim().slice(0, 160) ||
@@ -583,7 +585,7 @@ function buildEventResult(db: any, eventId: string): SeoRenderResult {
       ...(startDate ? { startDate } : {}),
       ...(poster ? { image: [poster] } : {}),
       eventStatus: "https://schema.org/EventScheduled",
-      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      ...(eventAttendanceMode ? { eventAttendanceMode } : {}),
       location: {
         "@type": "Place",
         name: event.venue,
