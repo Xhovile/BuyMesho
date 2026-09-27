@@ -4,6 +4,7 @@ import { query, withTransaction } from '../postgres.js';
 import { postgresDb as messageDb } from '../db.js';
 import { notifyDisputeWorkflowEvent } from '../modules/notifications/dispute-workflow.notification.js';
 import { notifyAdminSellerRefundRecorded, notifyAdminSellerResolutionRecorded } from '../modules/notifications/admin-dispute.notification.js';
+import { assertRefundTransition } from '../modules/disputes/state-machine.js';
 
 const ALLOWED_REFUND_METHODS = new Set(['mobile_money', 'bank_transfer', 'cash', 'other']);
 const ALLOWED_SELLER_RESOLUTIONS = new Set(['replacement', 'rejected']);
@@ -456,6 +457,10 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
           const liabilityAmount = Number(eventLiability.amount ?? 0);
           if (Math.abs(liabilityAmount - amount) > 0.000001) {
             throw new Error('Seller refund amount does not match the outstanding event refund liability');
+          }
+
+          if (refundRequest) {
+            assertRefundTransition('owed', 'refunded', 'system');
           }
 
           await client.query(
