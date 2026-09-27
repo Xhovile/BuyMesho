@@ -3,7 +3,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
 
-import { getRouteSEO, getListingCanonicalUrl } from "../seo";
+import { getRouteSEO, getListingCanonicalUrl, getSEOForListing } from "../seo";
+import { buildProductJsonLd, getProductSchemaCondition } from "../seoProduct";
 import { getAppRouteFromLocation } from "../../lib/appNavigation.query";
 import type { AppRoute } from "../../lib/appNavigation.paths";
 import { buildSitemapIndexXml, buildUrlsetXml } from "../../../server/routes/sitemap.routes";
@@ -175,6 +176,62 @@ test("public marketplace surfaces expose crawlable internal links", () => {
   assert.ok(sources.includes("href={`/seller?uid="));
   assert.ok(sources.includes("EVENTS_PATH}?event=${encodeURIComponent"));
 });
+test("client and server listing SEO use the shared product schema", () => {
+  const clientSeo = readFileSync(resolve(process.cwd(), "src/lib/seo.ts"), "utf8");
+  const serverSeo = readFileSync(resolve(process.cwd(), "server/seo/publicSeoShell.ts"), "utf8");
+
+  assert.match(clientSeo, /buildProductJsonLd\(/);
+  assert.match(serverSeo, /buildProductJsonLd\(/);
+
+  const listing = {
+    id: 42,
+    seller_uid: "seller-42",
+    name: "Sample Phone",
+    price: 250000,
+    description: "A public phone listing.",
+    category: "Electronics & Gadgets",
+    university: "LUANAR",
+    photos: [],
+    status: "available",
+    condition: "Used",
+    created_at: "2026-09-27T00:00:00Z",
+    is_verified: false,
+    business_name: "Sample Seller",
+  } as any;
+
+  const seoConfig = getSEOForListing(listing);
+  const schema = buildProductJsonLd({
+    name: seoConfig.productName || "Sample Phone",
+    description: "A public phone listing.",
+    url: "https://buymesho.app/listing?listing=42",
+    image: seoConfig.image,
+    category: seoConfig.category,
+    condition: seoConfig.condition,
+    price: seoConfig.price || 0,
+    currency: seoConfig.currency || "MWK",
+    availability: seoConfig.availability || "InStock",
+    sellerName: seoConfig.sellerName,
+    sellerType: seoConfig.sellerType,
+    areaServed: seoConfig.campus ? `${seoConfig.campus}, Malawi` : "Malawi",
+  });
+
+  assert.equal(schema.name, "Sample Phone");
+  assert.equal(schema.mainEntityOfPage, "https://buymesho.app/listing?listing=42");
+  assert.equal((schema.offers as Record<string, unknown>).seller && ((schema.offers as Record<string, unknown>).seller as Record<string, unknown>)["@type"], "Organization");
+  assert.equal("brand" in schema, false);
+  assert.equal((schema.offers as Record<string, unknown>).price, 250000);
+  assert.equal((schema.offers as Record<string, unknown>).priceCurrency, "MWK");
+});
+
+test("product condition mapping is explicit", () => {
+  assert.equal(getProductSchemaCondition("New"), "https://schema.org/NewCondition");
+  assert.equal(getProductSchemaCondition("Like New"), "https://schema.org/LikeNewCondition");
+  assert.equal(getProductSchemaCondition("Refurbished"), "https://schema.org/RefurbishedCondition");
+  assert.equal(getProductSchemaCondition("Used"), "https://schema.org/UsedCondition");
+  assert.equal(getProductSchemaCondition("Open Box"), "https://schema.org/UsedCondition");
+  assert.equal(getProductSchemaCondition("Unknown condition"), undefined);
+});
+
 test("seller directory is backed by the public seller endpoint", () => {
   const directory = readFileSync(resolve(process.cwd(), "src/SellersDirectoryPage.tsx"), "utf8");
   const sellerRoutes = readFileSync(resolve(process.cwd(), "server/routes/sellerProfile.routes.ts"), "utf8");
