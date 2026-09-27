@@ -426,7 +426,7 @@ export default function EventsDirectoryPage() {
         </section>
       </main>
 
-      <SeoInternalLinks title="Explore more of the Malawi marketplace" />
+      <SeoInternalLinks context="events" />
 
       <AppFooter />
     </div>
