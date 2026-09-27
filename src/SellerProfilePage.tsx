@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, Loader2, MessageCircle, Search, ShieldCheck, Star } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
@@ -19,6 +19,7 @@ import { readPersistentPageCache, writePersistentPageCache } from "./lib/persist
 import { startConversationWithSeller } from "./lib/messages";
 import { navigateToConversation } from "./lib/messagesNavigation";
 import { resetSEOMetaTags, updateSEOMetaTags } from "./lib/seo";
+import { trackPublicPageView } from "./lib/analytics";
 
 type SellerProfile = {
   uid?: string;
@@ -245,6 +246,7 @@ export default function SellerProfilePage() {
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [messageLoading, setMessageLoading] = useState(false);
   const [listingSearch, setListingSearch] = useState("");
+  const trackedSellerPathRef = useRef<string | null>(null);
 
   useEffect(() => {
     const syncSellerUid = () => setSellerUid(getSellerUidFromUrl() || "");
@@ -394,6 +396,26 @@ export default function SellerProfilePage() {
         "buy online Malawi",
       ],
     });
+
+    const liveUid =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("uid")?.trim() || ""
+        : "";
+
+    if (
+      liveUid === sellerUid &&
+      profile.uid &&
+      String(profile.uid).trim() === sellerUid
+    ) {
+      const sellerPath = `/seller?uid=${encodeURIComponent(sellerUid)}`;
+      if (trackedSellerPathRef.current !== sellerPath) {
+        trackPublicPageView({
+          pathname: sellerPath,
+          route: "seller",
+        });
+        trackedSellerPathRef.current = sellerPath;
+      }
+    }
 
     return () => {
       resetSEOMetaTags();
