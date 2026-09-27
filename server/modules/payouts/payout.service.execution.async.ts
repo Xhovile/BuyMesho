@@ -5,6 +5,7 @@ import {
   type PayChanguPayoutExecutionResult,
 } from './paychangu.payout.js';
 import { PAYOUT_POLICY, isRetryableFailureCode } from './payout.policy.js';
+import { withOrderFinancialLock } from '../financial/orderFinancialLock.js';
 import {
   classifyProviderFailureFromError,
   decryptSensitiveValue,
@@ -52,6 +53,7 @@ export type PayoutExecutionGate = {
   destinationAccountName?: string | null;
   currentFailureReason?: string | null;
   currentProviderChargeId?: string | null;
+  orderId?: string;
 };
 
 function normalizeText(value: unknown): string | null {
@@ -198,6 +200,7 @@ export async function gateForSubmissionAsync(payoutId: string): Promise<PayoutEx
   return {
     allowed: true,
     sellerId: String(row.seller_id ?? ''),
+    orderId: String(row.order_id ?? ''),
     amount,
     currency: String(row.currency ?? 'MWK'),
     provider: String(row.provider ?? 'paychangu'),
@@ -255,7 +258,7 @@ export async function executePayoutFlow(
   const actor = { actorType: input.actorType ?? 'system', actorId: input.actorId ?? null };
   const gate = await gateForSubmissionAsync(input.payoutId);
 
-  if (!gate.allowed || !gate.sellerId || !gate.amount || !gate.currency || !gate.provider) {
+  if (!gate.allowed || !gate.sellerId || !gate.orderId || !gate.amount || !gate.currency || !gate.provider) {
     const payout = gate.sellerId
       ? await holdPayoutForReviewAsync({
           payoutId: input.payoutId,
@@ -313,6 +316,33 @@ export async function executePayoutFlow(
     }, actor);
     return { payout, attempt: null, execution: null, reasonCode: failureReason, reason, nextAction: 'manual_review' as PayoutNextAction };
   }
+
+  const lockedResult = await withOrderFinancialLock(String(gate.orderId), async () => {
+    // Re-run the financial eligibility checks while holding the per-order
+    // database advisory lock. Dispute creation takes the same lock, so a
+    // dispute cannot be opened between this check and provider submission.
+    const lockedGate = await gateForSubmissionAsync(input.payoutId);
+
+    if (!lockedGate.allowed || !lockedGate.sellerId || !lockedGate.orderId || !lockedGate.amount || !lockedGate.currency || !lockedGate.provider) {
+      const payout = lockedGate.sellerId
+        ? await holdPayoutForReviewAsync({
+            payoutId: input.payoutId,
+            sellerId: lockedGate.sellerId,
+            reasonCode: lockedGate.reasonCode ?? 'manual_review_required',
+            reason: lockedGate.reason ?? 'Payout failed eligibility gate',
+          }, actor)
+        : undefined;
+      return {
+        payout,
+        attempt: null,
+        execution: null,
+        reasonCode: lockedGate.reasonCode ?? 'manual_review_required',
+        reason: lockedGate.reason ?? 'Payout failed eligibility gate',
+        nextAction: (payout ? 'manual_review' : 'none') as PayoutNextAction,
+      };
+    }
+
+    const gate = lockedGate;
 
   const reservedAttempt = await reserveRetryAttempt({
     payoutId: input.payoutId,
@@ -501,6 +531,11 @@ export async function executePayoutFlow(
     nextAction: execution.status === 'paid' ? 'none' : execution.status === 'failed' ? 'manual_review' : 'awaiting_provider',
   };
 }
+
+  });
+
+  return lockedResult;
+
 
 export async function getProviderBalance(currency = 'MWK') {
   return getPayChanguPayoutBalance(currency);
