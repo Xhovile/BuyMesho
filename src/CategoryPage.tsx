@@ -175,27 +175,7 @@ export default function CategoryPage() {
         url: "https://buymesho.app/category",
         noIndex: true,
       });
-      if (!requestedCategory) {
-    return (
-      <main className="min-h-screen bg-zinc-100 px-4 py-10 text-zinc-950">
-        <div className="mx-auto max-w-2xl rounded-[2rem] border border-zinc-200 bg-white p-8 text-center shadow-sm sm:p-12">
-          <h1 className="text-3xl font-black tracking-tight">Category not found</h1>
-          <p className="mt-3 text-sm leading-6 text-zinc-600">
-            That marketplace category does not exist. Choose a category from the BuyMesho marketplace.
-          </p>
-          <button
-            type="button"
-            onClick={() => navigateToPath("/explore")}
-            className="mt-6 inline-flex rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-black text-white"
-          >
-            Explore marketplace
-          </button>
-        </div>
-      </main>
-    );
-  }
-
-  return () => {
+      return () => {
         updateSEOMetaTags();
       };
     }
@@ -380,6 +360,26 @@ export default function CategoryPage() {
       page: 1,
     });
   };
+
+  if (!requestedCategory) {
+    return (
+      <main className="min-h-screen bg-zinc-100 px-4 py-10 text-zinc-950">
+        <div className="mx-auto max-w-2xl rounded-[2rem] border border-zinc-200 bg-white p-8 text-center shadow-sm sm:p-12">
+          <h1 className="text-3xl font-black tracking-tight">Category not found</h1>
+          <p className="mt-3 text-sm leading-6 text-zinc-600">
+            That marketplace category does not exist. Choose a category from the BuyMesho marketplace.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigateToPath("/explore")}
+            className="mt-6 inline-flex rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-black text-white"
+          >
+            Explore marketplace
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
