@@ -47,18 +47,18 @@ async function ensureAccount(
   currency: string,
 ): Promise<SellerFinancialAccount> {
   await executor.query(
-    \`INSERT INTO seller_financial_accounts (seller_uid, currency)
+    `INSERT INTO seller_financial_accounts (seller_uid, currency)
      VALUES ($1, $2)
-     ON CONFLICT (seller_uid, currency) DO NOTHING\`,
+     ON CONFLICT (seller_uid, currency) DO NOTHING`,
     [sellerUid, currency],
   );
   const result = await executor.query<Record<string, unknown>>(
-    \`SELECT *
+    `SELECT *
        FROM seller_financial_accounts
       WHERE seller_uid = $1
         AND currency = $2
       LIMIT 1
-      FOR UPDATE\`,
+      FOR UPDATE`,
     [sellerUid, currency],
   );
   if (!result.rows[0]) throw new Error("Seller financial account could not be created");
@@ -87,7 +87,7 @@ async function insertLedgerEvent(
   },
 ): Promise<void> {
   await executor.query(
-    \`INSERT INTO seller_financial_ledger (
+    `INSERT INTO seller_financial_ledger (
        id, idempotency_key, seller_uid, currency, event_type, amount,
        reserve_delta, negative_balance_delta, reserved_negative_balance_delta,
        reserve_balance_after, negative_balance_after, reserved_negative_balance_after,
@@ -96,7 +96,7 @@ async function insertLedgerEvent(
      ) VALUES (
        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
      )
-     ON CONFLICT (idempotency_key) DO NOTHING\`,
+     ON CONFLICT (idempotency_key) DO NOTHING`,
     [
       randomUUID(),
       input.idempotencyKey,
@@ -157,22 +157,22 @@ async function applyDebitInTransaction(
   const negativeCreated = amount - reserveUsed;
 
   await client.query(
-    \`UPDATE seller_financial_accounts
+    `UPDATE seller_financial_accounts
         SET reserve_balance = reserve_balance - $1,
             negative_balance = negative_balance + $2,
             updated_at = CURRENT_TIMESTAMP
       WHERE seller_uid = $3
-        AND currency = $4\`,
+        AND currency = $4`,
     [reserveUsed, negativeCreated, sellerUid, currency],
   );
 
   const afterResult = await client.query<Record<string, unknown>>(
-    \`SELECT *
+    `SELECT *
        FROM seller_financial_accounts
       WHERE seller_uid = $1
         AND currency = $2
       LIMIT 1
-      FOR UPDATE\`,
+      FOR UPDATE`,
     [sellerUid, currency],
   );
   const after = toAccount(afterResult.rows[0]!);
@@ -205,7 +205,7 @@ export async function withSellerFinancialLock<T>(
 ): Promise<T> {
   const ownerUid = normalizeUid(sellerUid);
   const client = await getClient();
-  const lockKey = \`buymesho:seller-financial:\${ownerUid}\`;
+  const lockKey = `buymesho:seller-financial:\${ownerUid}`;
   let locked = false;
 
   try {
@@ -279,7 +279,7 @@ export async function recordSellerExternalRefundRecovery(
   const amount = Math.max(0, Math.trunc(Number(input.amount)));
   if (amount <= 0) throw new Error("External seller refund recovery amount must be positive");
 
-  const idempotencyKey = \`external-refund-recovery:\${input.reference}\`;
+  const idempotencyKey = `external-refund-recovery:\${input.reference}`;
   const existing = await executor.query<{ id: string }>(
     "SELECT id FROM seller_financial_ledger WHERE idempotency_key = $1 LIMIT 1",
     [idempotencyKey],
@@ -324,7 +324,7 @@ export async function recordManualRecoveryCredit(
   const amount = Math.max(0, Math.trunc(Number(input.amount)));
   if (amount <= 0) throw new Error("Manual recovery credit must be positive");
 
-  const idempotencyKey = \`manual-recovery-credit:\${input.reference ?? randomUUID()}\`;
+  const idempotencyKey = `manual-recovery-credit:\${input.reference ?? randomUUID()}`;
   const duplicate = await executor.query<{ id: string }>(
     "SELECT id FROM seller_financial_ledger WHERE idempotency_key = $1 LIMIT 1",
     [idempotencyKey],
@@ -337,16 +337,16 @@ export async function recordManualRecoveryCredit(
   const availableNegative = Math.max(0, before.negativeBalance - before.reservedNegativeBalance);
   if (amount > availableNegative) {
     throw new Error(
-      \`Manual recovery credit exceeds the currently unreserved seller negative balance (\${availableNegative})\`,
+      `Manual recovery credit exceeds the currently unreserved seller negative balance (\${availableNegative})`,
     );
   }
 
   await executor.query(
-    \`UPDATE seller_financial_accounts
+    `UPDATE seller_financial_accounts
         SET negative_balance = negative_balance - $1,
             updated_at = CURRENT_TIMESTAMP
       WHERE seller_uid = $2
-        AND currency = $3\`,
+        AND currency = $3`,
     [amount, sellerUid, currency],
   );
 
@@ -386,18 +386,18 @@ export async function setSellerPayoutHold(
   }
 
   await executor.query(
-    \`UPDATE seller_financial_accounts
+    `UPDATE seller_financial_accounts
         SET payout_hold = $1,
             payout_hold_reason = $2,
             updated_at = CURRENT_TIMESTAMP
       WHERE seller_uid = $3
-        AND currency = $4\`,
+        AND currency = $4`,
     [input.held ? 1 : 0, input.held ? String(input.reason).trim() : null, account.sellerUid, account.currency],
   );
 
   const refreshed = await ensureAccount(executor, account.sellerUid, account.currency);
   await insertLedgerEvent(executor, {
-    idempotencyKey: \`payout-hold:\${account.sellerUid}:\${account.currency}:\${input.held ? "on" : "off"}:\${Date.now()}\`,
+    idempotencyKey: `payout-hold:\${account.sellerUid}:\${account.currency}:\${input.held ? "on" : "off"}:\${Date.now()}`,
     sellerUid: account.sellerUid,
     currency: account.currency,
     eventType: input.held ? "payout_hold_set" : "payout_hold_cleared",
@@ -432,11 +432,11 @@ export async function preparePayoutFinancialNetting(
   const currency = normalizeCurrency(input.currency);
 
   const payoutResult = await executor.query<Record<string, unknown>>(
-    \`SELECT id, seller_receives_amount, amount, balance_netting_amount, balance_netting_status, currency
+    `SELECT id, seller_receives_amount, amount, balance_netting_amount, balance_netting_status, currency
        FROM payouts
       WHERE id = $1
       LIMIT 1
-      FOR UPDATE\`,
+      FOR UPDATE`,
     [input.payoutId],
   );
   const payout = payoutResult.rows[0];
@@ -487,17 +487,17 @@ export async function preparePayoutFinancialNetting(
   }
 
   await executor.query(
-    \`UPDATE seller_financial_accounts
+    `UPDATE seller_financial_accounts
         SET reserved_negative_balance = reserved_negative_balance + $1,
             updated_at = CURRENT_TIMESTAMP
       WHERE seller_uid = $2
-        AND currency = $3\`,
+        AND currency = $3`,
     [nettingAmount, sellerUid, currency],
   );
 
   const after = await ensureAccount(executor, sellerUid, currency);
   await insertLedgerEvent(executor, {
-    idempotencyKey: \`payout-netting-reserved:\${input.payoutId}\`,
+    idempotencyKey: `payout-netting-reserved:\${input.payoutId}`,
     sellerUid,
     currency,
     eventType: "payout_netting_reserved",
@@ -517,12 +517,12 @@ export async function preparePayoutFinancialNetting(
   });
 
   await executor.query(
-    \`UPDATE payouts
+    `UPDATE payouts
         SET amount = $1,
             balance_netting_amount = $2,
             balance_netting_status = 'reserved',
             updated_at = CURRENT_TIMESTAMP
-      WHERE id = $3\`,
+      WHERE id = $3`,
     [effectivePayoutAmount, nettingAmount, input.payoutId],
   );
 
@@ -540,12 +540,12 @@ export async function listSellerFinancialLedger(
   limit = 100,
 ): Promise<Record<string, unknown>[]> {
   const result = await query<Record<string, unknown>>(
-    \`SELECT *
+    `SELECT *
        FROM seller_financial_ledger
       WHERE seller_uid = $1
         AND currency = $2
       ORDER BY created_at DESC
-      LIMIT $3\`,
+      LIMIT $3`,
     [normalizeUid(sellerUid), normalizeCurrency(currency), Math.max(1, Math.min(250, Math.trunc(limit)))],
   );
   return result.rows;
