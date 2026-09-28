@@ -748,3 +748,18 @@ test("index.html contains the static BuyMesho brand entity schema", () => {
 
   const schemaJson = match[1];
   assert.ok(schemaJson, "BuyMesho entity JSON-LD should contain JSON content");
+  const graph = (JSON.parse(schemaJson) as {
+    "@graph"?: Array<Record<string, unknown>>;
+  })["@graph"];
+
+  assert.ok(Array.isArray(graph));
+
+  const organization = graph.find((entry) => entry["@type"] === "OnlineMarketplace");
+  assert.ok(organization);
+  assert.equal(organization.name, "BuyMesho");
+  assert.equal(organization.alternateName, "Buy Mesho");
+
+  const website = graph.find((entry) => entry["@type"] === "WebSite");
+  assert.ok(website);
+  assert.equal(website.name, "BuyMesho");
+});
