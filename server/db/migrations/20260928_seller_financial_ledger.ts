@@ -9,7 +9,7 @@ import { postgresDb } from "../../db.js";
  * proceeds against that negative balance.
  */
 export function ensureSellerFinancialLedgerMigration(): void {
-  postgresDb.exec(\`
+  postgresDb.exec(`
     CREATE TABLE IF NOT EXISTS seller_financial_accounts (
       seller_uid TEXT NOT NULL,
       currency TEXT NOT NULL DEFAULT 'MWK',
@@ -265,5 +265,5 @@ export function ensureSellerFinancialLedgerMigration(): void {
     BEFORE UPDATE OF status ON payouts
     FOR EACH ROW
     EXECUTE FUNCTION buymesho_payout_financial_transition();
-  \`);
+  `);
 }
