@@ -49,10 +49,10 @@ export default function SellOnlineMalawiPage() {
 
             <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
               <a
-                href="/become-seller"
+                href="/signup"
                 className="inline-flex items-center gap-2 rounded-xl bg-red-900 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_12px_30px_-18px_rgba(127,29,29,0.7)] hover:bg-red-950"
               >
-                Become a seller
+                Create an account
                 <ArrowRight className="h-4 w-4" />
               </a>
               <a
@@ -108,33 +108,13 @@ export default function SellOnlineMalawiPage() {
         </section>
 
         <section className="border-t border-zinc-200 py-10 sm:py-12">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Start selling</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Build your presence on BuyMesho.</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
-                Start with your seller profile, then publish the listings you want buyers to find.
-              </p>
-            </div>
-
-            <a
-              href="/become-seller"
-              className="group inline-flex shrink-0 items-center gap-2 py-2 text-sm font-extrabold text-zinc-900 hover:text-blue-700"
-            >
-              Become a seller
-              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
-            </a>
-          </div>
-
-          <div className="mt-5 border-t border-zinc-200 pt-4">
-            <a
-              href="/buy-online-malawi"
-              className="group inline-flex items-center gap-1.5 py-2 text-sm font-bold text-zinc-700 hover:text-blue-700"
-            >
-              Looking to buy instead?
-              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
-            </a>
-          </div>
+          <a
+            href="/buy-online-malawi"
+            className="group inline-flex items-center gap-1.5 py-2 text-sm font-bold text-zinc-700 hover:text-blue-700"
+          >
+            Looking to buy instead?
+            <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+          </a>
         </section>
       </main>
 
