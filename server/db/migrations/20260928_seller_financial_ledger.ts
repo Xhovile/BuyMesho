@@ -245,6 +245,13 @@ export function ensureSellerFinancialLedgerMigration(): void {
       )
       ON CONFLICT (idempotency_key) DO NOTHING;
 
+      IF NEW.status IN ('failed', 'cancelled') AND netting_amount > 0 THEN
+        -- A failed/cancelled attempt must retry from the original seller-net
+        -- amount. Keep the historical netting amount for audit, but restore the
+        -- live payout amount so a retry does not silently underpay the seller.
+        NEW.amount := COALESCE(NEW.seller_receives_amount, NEW.amount);
+      END IF;
+
       NEW.balance_netting_status := CASE
         WHEN NEW.status = 'paid' THEN 'settled'
         ELSE 'released'
