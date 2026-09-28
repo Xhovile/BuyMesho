@@ -22,6 +22,8 @@ const attemptId = "phase10-event-refund-attempt";
 const ticketId = "phase10-event-refund-ticket";
 
 async function cleanup(): Promise<void> {
+  await query("DELETE FROM seller_financial_ledger WHERE seller_uid = $1", [creatorUid]);
+  await query("DELETE FROM seller_financial_accounts WHERE seller_uid = $1", [creatorUid]);
   await query("DELETE FROM audit_events WHERE entity_id = $1", [refundRequestId]);
   await query("DELETE FROM audit_events WHERE entity_id = $1", ["event-refund-liability-test"]);
   await query("DELETE FROM payout_events WHERE payout_id IN (SELECT payout_id FROM event_refund_liabilities WHERE order_id = $1 AND payout_id IS NOT NULL)", [orderId]);
@@ -244,6 +246,80 @@ test("event refund recovery records the manual refund and closes the liability",
       note: "Duplicate recovery",
     }));
     assert.equal(duplicate.duplicate, true);
+  } finally {
+    await cleanup();
+  }
+});
+
+test("post-payout event refund recovery debits the creator financial ledger", async () => {
+  await seed();
+  try {
+    const now = new Date().toISOString();
+    await query(
+      `INSERT INTO payouts (
+         id, seller_id, owner_type, owner_uid, event_id, event_creator_uid, order_id,
+         amount, gross_amount, platform_fee_amount, processing_fee_amount,
+         reserve_amount, reserve_cap_amount, manual_adjustment_amount,
+         payout_fee_amount, seller_receives_amount, net_amount,
+         formula_snapshot, currency, status, provider, requested_by,
+         requested_at, created_at, updated_at
+       ) VALUES (
+         'phase10-event-refund-paid-payout', $1, 'event_creator', $1, $2, $1, $3,
+         9520, 10000, 300, 0, 100, 600, 0,
+         180, 9520, 9520, '{}', 'MWK', 'paid', 'paychangu', $1, $4, $4, $4
+       )`,
+      [creatorUid, eventId, orderId, now],
+    );
+    await query(
+      `INSERT INTO seller_financial_accounts
+         (seller_uid, currency, reserve_balance, negative_balance, reserved_negative_balance, payout_hold)
+       VALUES ($1, 'MWK', 100, 0, 0, 0)
+       ON CONFLICT (seller_uid, currency)
+       DO UPDATE SET reserve_balance = 100, negative_balance = 0, reserved_negative_balance = 0, payout_hold = 0`,
+      [creatorUid],
+    );
+
+    const liability = await withTransaction(async (client) => createEventRefundLiability(client, {
+      orderId,
+      refundRequestId,
+      ticketId,
+      amount: 500,
+      reason: "Approved event ticket refund",
+    }));
+
+    const result = await withTransaction(async (client) => recordEventRefundRecovery(client, {
+      liabilityId: liability.id,
+      actorId: creatorUid,
+      transactionId: "PHASE10-REFUND-POST-PAYOUT-001",
+      amount: 500,
+      refundMethod: "mobile_money",
+      refundDate: "2026-10-11",
+      destination: "0999000000",
+      note: "Post-payout refund paid to buyer",
+    }));
+
+    assert.equal(result.liability.status, "recovered");
+
+    const account = await query<{
+      reserve_balance: number | string;
+      negative_balance: number | string;
+    }>(
+      "SELECT reserve_balance, negative_balance FROM seller_financial_accounts WHERE seller_uid = $1 AND currency = 'MWK'",
+      [creatorUid],
+    );
+    assert.equal(Number(account.rows[0]?.reserve_balance), 0);
+    assert.equal(Number(account.rows[0]?.negative_balance), 400);
+
+    const ledger = await query<{ event_type: string; amount: number | string }>(
+      `SELECT event_type, amount
+         FROM seller_financial_ledger
+        WHERE refund_liability_id = $1
+        ORDER BY created_at DESC
+        LIMIT 1`,
+      [liability.id],
+    );
+    assert.equal(ledger.rows[0]?.event_type, "reversal_debit");
+    assert.equal(Number(ledger.rows[0]?.amount), 500);
   } finally {
     await cleanup();
   }
