@@ -512,6 +512,14 @@ test("public document URLs canonicalize trailing slashes before the SEO shell", 
   assert.ok(bootstrap.includes('const targetPath = isLegacyHomePath ? "/" : normalizedPath;'));
 });
 
+test("SPA route normalization preserves query-sensitive route detection", () => {
+  const rootRouter = readFileSync(resolve(process.cwd(), "src/RootRouter.tsx"), "utf8");
+
+  assert.ok(rootRouter.includes('pathname: initialPath,'));
+  assert.ok(rootRouter.includes('search: window.location.search,'));
+  assert.ok(rootRouter.includes('pathname,\n          search: window.location.search,'));
+});
+
 test("SPA route state also strips trailing slashes", () => {
   const rootRouter = readFileSync(resolve(process.cwd(), "src/RootRouter.tsx"), "utf8");
 
