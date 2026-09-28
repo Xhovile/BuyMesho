@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { ArrowRight } from "lucide-react";
 import { useListingSEO } from "../../hooks/useListingSEO";
 import ListingActionsMenu from "../ListingActionsMenu";
 import ConfirmModal from "../ConfirmModal";
