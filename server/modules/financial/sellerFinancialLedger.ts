@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { query, withTransaction } from "../../postgres.js";
 import type { PoolClient } from "pg";
 
@@ -188,7 +187,7 @@ async function applyDebitInTransaction(
     account: after,
     payoutId: input.payoutId ?? null,
     refundLiabilityId: input.refundLiabilityId ?? null,
-    reference: input.reference ?? null,
+    reference,
     reason: input.reason,
     actorType: input.actorType,
     actorId: input.actorId ?? null,
@@ -249,7 +248,7 @@ export async function recordSellerExternalRefundRecovery(
   const amount = Math.max(0, Math.trunc(Number(input.amount)));
   if (amount <= 0) throw new Error("External seller refund recovery amount must be positive");
 
-  const idempotencyKey = `external-refund-recovery:\${input.reference}`;
+  const idempotencyKey = `external-refund-recovery:${input.reference}`;
   const existing = await executor.query<{ id: string }>(
     "SELECT id FROM seller_financial_ledger WHERE idempotency_key = $1 LIMIT 1",
     [idempotencyKey],
@@ -294,7 +293,9 @@ export async function recordManualRecoveryCredit(
   const amount = Math.max(0, Math.trunc(Number(input.amount)));
   if (amount <= 0) throw new Error("Manual recovery credit must be positive");
 
-  const idempotencyKey = `manual-recovery-credit:\${input.reference ?? randomUUID()}`;
+  const reference = String(input.reference ?? "").trim();
+  if (!reference) throw new Error("Manual recovery credit requires a reference");
+  const idempotencyKey = `manual-recovery-credit:${reference}`;
   const duplicate = await executor.query<{ id: string }>(
     "SELECT id FROM seller_financial_ledger WHERE idempotency_key = $1 LIMIT 1",
     [idempotencyKey],
@@ -307,7 +308,7 @@ export async function recordManualRecoveryCredit(
   const availableNegative = Math.max(0, before.negativeBalance - before.reservedNegativeBalance);
   if (amount > availableNegative) {
     throw new Error(
-      `Manual recovery credit exceeds the currently unreserved seller negative balance (\${availableNegative})`,
+      `Manual recovery credit exceeds the currently unreserved seller negative balance (${availableNegative})`,
     );
   }
 
@@ -367,7 +368,7 @@ export async function setSellerPayoutHold(
 
   const refreshed = await ensureAccount(executor, account.sellerUid, account.currency);
   await insertLedgerEvent(executor, {
-    idempotencyKey: `payout-hold:\${account.sellerUid}:\${account.currency}:\${input.held ? "on" : "off"}:\${Date.now()}`,
+    idempotencyKey: `payout-hold:${account.sellerUid}:${account.currency}:${input.held ? "on" : "off"}:${Date.now()}`,
     sellerUid: account.sellerUid,
     currency: account.currency,
     eventType: input.held ? "payout_hold_set" : "payout_hold_cleared",
@@ -467,7 +468,7 @@ export async function preparePayoutFinancialNetting(
 
   const after = await ensureAccount(executor, sellerUid, currency);
   await insertLedgerEvent(executor, {
-    idempotencyKey: `payout-netting-reserved:\${input.payoutId}`,
+    idempotencyKey: `payout-netting-reserved:${input.payoutId}`,
     sellerUid,
     currency,
     eventType: "payout_netting_reserved",
