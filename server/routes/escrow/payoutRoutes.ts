@@ -10,6 +10,7 @@ import {
   payoutService,
 } from '../../modules/payouts/payout.service.js';
 import { PAYOUT_POLICY } from '../../modules/payouts/payout.policy.js';
+import { getSellerFinancialAccount, listSellerFinancialLedger } from '../../modules/financial/sellerFinancialLedger.js';
 import { getRequestUser, jsonError, payoutLimiter } from './shared.js';
 import {
   DEFAULT_CURRENCY,
@@ -350,6 +351,21 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
       return res.status(202).json({ status: 'queued_for_admin_review', sellerId });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to request withdrawal';
+      const status = /Unauthorized/i.test(message) ? 401 : 403;
+      return res.status(status).json({ error: message });
+    }
+  });
+
+  router.get('/financial-account/:sellerId', requireAuth, async (req, res) => {
+    try {
+      const sellerId = normalizeDestinationId(req.params.sellerId);
+      assertHistoryAccess(req, sellerId);
+      const currency = normalizeCurrency(req.query.currency);
+      const account = await getSellerFinancialAccount(sellerId, currency);
+      const ledger = await listSellerFinancialLedger(sellerId, currency, Number(req.query.limit ?? 100));
+      return res.json({ account, ledger });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load seller financial account';
       const status = /Unauthorized/i.test(message) ? 401 : 403;
       return res.status(status).json({ error: message });
     }
