@@ -6,6 +6,8 @@ if (process.env.NODE_ENV !== "test") {
 }
 
 const FINANCE_TABLES_IN_DELETE_ORDER = [
+  "seller_financial_ledger",
+  "seller_financial_accounts",
   "payout_attempts",
   "payout_events",
   "payout_adjustments",
