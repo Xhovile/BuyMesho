@@ -19,8 +19,57 @@
 
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
     <link rel="canonical" href="https://buymesho.app/" />
+
+
+    <!-- BuyMesho entity / brand identity -->
+    <script type="application/ld+json" id="buymesho-entity-schema">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "OnlineMarketplace",
+            "@id": "https://buymesho.app/#organization",
+            "name": "BuyMesho",
+            "alternateName": "Buy Mesho",
+            "url": "https://buymesho.app/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://buymesho.app/icon-512.png"
+            },
+            "image": "https://buymesho.app/Og-image.webp",
+            "description": "BuyMesho is Malawi's secure e-commerce platform for discovering and buying products, services, and tickets from sellers across the country.",
+            "areaServed": {
+              "@type": "Country",
+              "name": "Malawi"
+            },
+            "sameAs": [
+              "https://github.com/Xhovile/BuyMesho"
+            ],
+            "knowsAbout": [
+              "e-commerce",
+              "online marketplace",
+              "online shopping",
+              "products",
+              "services",
+              "event tickets"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://buymesho.app/#website",
+            "name": "BuyMesho",
+            "alternateName": "Buy Mesho",
+            "url": "https://buymesho.app/",
+            "publisher": {
+              "@id": "https://buymesho.app/#organization"
+            },
+            "inLanguage": "en-MW"
+          }
+        ]
+      }
+    </script>
 
     <!-- Open Graph -->
     <meta property="og:site_name" content="BuyMesho" />

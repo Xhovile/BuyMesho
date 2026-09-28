@@ -3,6 +3,7 @@ import { Loader2, ShieldCheck, Star } from "lucide-react";
 
 import Header from "./components/Header";
 import AppFooter from "./components/AppFooter";
+import SeoInternalLinks from "./components/SeoInternalLinks";
 import { apiFetch } from "./lib/api";
 import {
   getMarketChipFromLocation,
@@ -14,21 +15,21 @@ import {
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useAuthUser } from "./hooks/useAuthUser";
-import { normalizeRatingSummary } from "./components/ratings/ratingSummaryUtils";
 import { readPersistentPageCache, writePersistentPageCache } from "./lib/persistentPageCache";
 
-import type { Listing, RatingSummary } from "./types";
 
-type SellerDirectoryProfile = {
-  uid?: string;
-  email?: string;
+type SellerDirectoryRow = {
+  uid: string;
   business_name?: string | null;
   business_logo?: string | null;
   bio?: string | null;
   university?: string | null;
-  is_verified?: boolean;
+  is_verified?: boolean | number | null;
   join_date?: string | null;
-  profile_views?: number;
+  profile_views?: number | string | null;
+  listing_count?: number | string | null;
+  average_rating?: number | string | null;
+  rating_count?: number | string | null;
 };
 
 type SellerCard = {
@@ -43,7 +44,10 @@ type SellerCard = {
   isVerified: boolean;
 };
 
-type ListingsResponse = { items?: Listing[] } | Listing[] | null;
+type SellersDirectoryResponse = {
+  items?: SellerDirectoryRow[];
+  total?: number;
+};
 
 const SELLERS_DIRECTORY_CACHE_KEY = "seller-directory-cards-v1";
 const SELLERS_DIRECTORY_CACHE_TTL_MS = 60 * 60 * 1000;
@@ -53,12 +57,6 @@ function formatDate(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleDateString();
-}
-
-function normalizeListingsResponse(payload: ListingsResponse): Listing[] {
-  if (Array.isArray(payload)) return payload;
-  if (payload && Array.isArray(payload.items)) return payload.items;
-  return [];
 }
 
 function fallbackInitials(uid: string, description?: string | null) {
@@ -87,6 +85,7 @@ function RatingStars({ rating }: { rating: number }) {
     <span className="inline-flex items-center gap-0.5" aria-label={`Rating ${rating.toFixed(1)} out of 5`}>
       {Array.from({ length: 5 }, (_, index) => {
         const starIndex = index + 1;
+
         if (starIndex <= fullStars) {
           return <Star key={starIndex} className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />;
         }
@@ -107,22 +106,6 @@ function RatingStars({ rating }: { rating: number }) {
       })}
     </span>
   );
-}
-
-async function fetchSellerProfile(sellerUid: string) {
-  try {
-    return (await apiFetch(`/api/sellers/${sellerUid}`)) as SellerDirectoryProfile;
-  } catch {
-    return (await apiFetch(`/api/users/${sellerUid}`)) as SellerDirectoryProfile;
-  }
-}
-
-async function fetchSellerRatingSummary(sellerUid: string) {
-  try {
-    return (await apiFetch(`/api/sellers/${sellerUid}/rating-summary`)) as RatingSummary;
-  } catch {
-    return (await apiFetch(`/api/users/${sellerUid}/rating-summary`)) as RatingSummary;
-  }
 }
 
 function StatPill({ label, value }: { label: string; value: string }) {
@@ -161,65 +144,24 @@ export default function SellersDirectoryPage() {
       setError(null);
 
       try {
-        const listingsPayload = await apiFetch("/api/listings?sortBy=newest&pageSize=200");
-        const listings = normalizeListingsResponse(listingsPayload as ListingsResponse);
+        const payload = (await apiFetch("/api/sellers?public=true")) as SellersDirectoryResponse | SellerDirectoryRow[];
+        const sellerRows = Array.isArray(payload) ? payload : Array.isArray(payload?.items) ? payload.items : [];
 
-        const sellerBuckets = new Map<string, { listingCount: number; representativeListing: Listing }>();
-
-        for (const listing of listings) {
-          if (!listing?.seller_uid) continue;
-          const current = sellerBuckets.get(listing.seller_uid);
-          if (current) {
-            current.listingCount += 1;
-            continue;
-          }
-          sellerBuckets.set(listing.seller_uid, {
-            listingCount: 1,
-            representativeListing: listing,
-          });
-        }
-
-        const sellerEntries = await Promise.all(
-          Array.from(sellerBuckets.entries()).map(async ([uid, bucket]) => {
-            const [profileResult, ratingResult] = await Promise.allSettled([
-              fetchSellerProfile(uid),
-              fetchSellerRatingSummary(uid),
-            ]);
-
-            const profile = profileResult.status === "fulfilled" ? profileResult.value : null;
-            const ratingSummary =
-              ratingResult.status === "fulfilled"
-                ? normalizeRatingSummary(ratingResult.value as RatingSummary)
-                : normalizeRatingSummary(null);
-
-            const sellerName =
-              profile?.business_name?.trim() ||
-              profile?.email?.trim() ||
-              bucket.representativeListing.business_name?.trim() ||
-              bucket.representativeListing.name?.trim() ||
-              "Seller";
-
-            return {
-              uid,
-              sellerName,
-              logoUrl: profile?.business_logo || bucket.representativeListing.business_logo || null,
-              description: profile?.bio?.trim() || "",
-              rating: ratingSummary.averageRating,
-              ratingCount: ratingSummary.ratingCount,
-              joinedAt: profile?.join_date || bucket.representativeListing.created_at || null,
-              listingCount: bucket.listingCount,
-              isVerified: !!(profile?.is_verified || bucket.representativeListing.is_verified),
-            } satisfies SellerCard;
-          })
-        );
+        const nextCards = sellerRows.map((seller) => ({
+          uid: seller.uid,
+          sellerName: seller.business_name?.trim() || "Seller",
+          logoUrl: seller.business_logo?.trim() || null,
+          description: seller.bio?.trim() || "",
+          rating: Number.isFinite(Number(seller.average_rating))
+            ? Math.max(0, Math.min(5, Number(seller.average_rating)))
+            : 0,
+          ratingCount: Math.max(0, Number(seller.rating_count) || 0),
+          joinedAt: seller.join_date || null,
+          listingCount: Math.max(0, Number(seller.listing_count) || 0),
+          isVerified: Boolean(seller.is_verified),
+        } satisfies SellerCard));
 
         if (!mounted) return;
-        const nextCards = sellerEntries.sort((a, b) => {
-          if (b.isVerified !== a.isVerified) return Number(b.isVerified) - Number(a.isVerified);
-          if (b.rating !== a.rating) return b.rating - a.rating;
-          if (b.listingCount !== a.listingCount) return b.listingCount - a.listingCount;
-          return String(a.joinedAt || "").localeCompare(String(b.joinedAt || ""));
-        });
         setCards(nextCards);
         writePersistentPageCache(SELLERS_DIRECTORY_CACHE_KEY, nextCards);
       } catch (loadErr) {
@@ -312,17 +254,20 @@ export default function SellersDirectoryPage() {
             <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
               <h2 className="text-xl font-black tracking-tight text-zinc-900">No sellers found</h2>
               <p className="mt-3 text-sm text-zinc-500">
-                Approved sellers will show up here once they have public listings.
+                Approved sellers will show up here when they are available in the public directory.
               </p>
             </div>
           </div>
         ) : (
           <section className="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 pb-8 sm:grid-cols-2 xl:grid-cols-3">
             {filteredCards.map((card) => (
-              <button
+              <a
                 key={card.uid}
-                type="button"
-                onClick={() => navigateToSellerProfile(card.uid)}
+                href={`/seller?uid=${encodeURIComponent(card.uid)}`}
+                onClick={(event) => {
+                  event.preventDefault();
+                  navigateToSellerProfile(card.uid);
+                }}
                 className="group relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-5 text-left shadow-[0_18px_50px_-28px_rgba(0,0,0,0.28)] transition-all duration-200 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-[0_26px_70px_-30px_rgba(0,0,0,0.38)]"
               >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(127,29,29,0.10),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(24,24,27,0.05),transparent_26%)]" />
@@ -383,11 +328,13 @@ export default function SellersDirectoryPage() {
                     </p>
                   </div>
                 </div>
-              </button>
+              </a>
             ))}
           </section>
         )}
       </main>
+
+      <SeoInternalLinks title="Explore more of the Malawi marketplace" />
 
       <AppFooter />
     </div>

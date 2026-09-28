@@ -80,6 +80,12 @@ export const multiselectField = ({ key, label, options, required, advanced, help
 }): ListingSpecField => ({ key, label, type: "multiselect", options, required, advanced, helpText });
 
 const EVENT_LIFECYCLE_FIELDS: ListingSpecField[] = [
+  selectField({
+    key: "delivery_mode",
+    label: "Attendance",
+    options: Array.from(EVENT_DELIVERY_MODE_OPTIONS),
+    helpText: "Choose whether people attend in person, online, or in a hybrid format.",
+  }),
   textField({ key: "end_time", label: "End Time", placeholder: "e.g. 23:00", helpText: "When does the event end?" }),
   selectField({ key: "publication_mode", label: "Publication", options: Array.from(EVENT_PUBLICATION_MODE_OPTIONS), helpText: "Choose when the event should be visible to people." }),
   textField({ key: "publication_at", label: "Publication Date & Time", placeholder: "e.g. 2026-08-20T18:00:00+02:00", helpText: "Choose when the event should become visible." }),
@@ -94,7 +100,7 @@ export function createEventConfig(params: {
   const fields = [...params.fields, ...EVENT_LIFECYCLE_FIELDS];
   return {
     schema: { category: EVENT_CATEGORY, subcategory: EVENT_SUBCATEGORY, itemType: params.itemType, fields },
-    fieldGroups: [...params.fieldGroups, { title: "Event Schedule & Publication", keys: EVENT_LIFECYCLE_FIELDS.map((field) => field.key) }],
+    fieldGroups: [...params.fieldGroups, { title: "Event Attendance, Schedule & Publication", keys: EVENT_LIFECYCLE_FIELDS.map((field) => field.key) }],
     requiredKeys: params.requiredKeys,
   };
 }

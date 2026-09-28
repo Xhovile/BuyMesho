@@ -11,6 +11,8 @@ import { ensurePaymentWebhookEventSchema } from "./modules/payments/payment.webh
 import { registerRoutes } from "./routes/index.js";
 import { registerMarketplaceRoutes } from "./routes/marketplace.routes.js";
 import { registerSellerProfileRoutes } from "./routes/sellerProfile.routes.js";
+import { registerSitemapRoutes } from "./routes/sitemap.routes.js";
+import { injectSeoDocument, isSeoDocumentPath, renderSeoDocument } from "./seo/publicSeoShell.js";
 import { getConfiguredAdminEmails } from "./auth/adminAccess.js";
 import { requireAuth } from "./middleware/requireAuth.js";
 import { requireFirebaseUser } from "./middleware/requireFirebaseUser.js";
@@ -67,28 +69,35 @@ function registerFallbackHandlers(app: express.Express) {
   });
 }
 
-async function serveSpaShell(req: express.Request, res: express.Response, vite: ViteDevServer | null) {
+async function serveSpaShell(
+  req: express.Request,
+  res: express.Response,
+  vite: ViteDevServer | null,
+  db: typeof postgresDb,
+) {
   const staticDir = path.join(process.cwd(), "dist");
   const indexPath = path.join(staticDir, "index.html");
+  const indexHtml =
+    process.env.NODE_ENV !== "production" && vite
+      ? await vite.transformIndexHtml(
+          req.originalUrl,
+          await fs.readFile(path.join(process.cwd(), "index.html"), "utf-8"),
+        )
+      : await fs.readFile(indexPath, "utf-8");
 
-  if (process.env.NODE_ENV !== "production" && vite) {
-    const indexHtml = await fs.readFile(path.join(process.cwd(), "index.html"), "utf-8");
-    const transformedHtml = await vite.transformIndexHtml(req.originalUrl, indexHtml);
-    res.status(200).setHeader("Content-Type", "text/html; charset=utf-8");
-    res.send(transformedHtml);
-    return;
-  }
+  const rendered = renderSeoDocument(req, db);
+  const documentHtml = injectSeoDocument(indexHtml, rendered);
 
-  res.sendFile(indexPath, (err) => {
-    if (err) {
-      res.status(500).json({
-        error: "Failed to load app shell",
-        path: req.path,
-      });
-    }
-  });
+  res
+    .status(200)
+    .setHeader("Content-Type", "text/html; charset=utf-8")
+    .setHeader("X-BuyMesho-SEO", "server-rendered")
+    .setHeader(
+      "Cache-Control",
+      rendered.noIndex ? "private, no-store" : "public, max-age=60, s-maxage=300",
+    )
+    .send(documentHtml);
 }
-
 export async function startServer() {
   const app = createApp();
   runMigrations();
@@ -108,14 +117,16 @@ export async function startServer() {
     const forwardedHost = req.get("x-forwarded-host");
     const host = (forwardedHost ?? req.get("host") ?? "").split(",")[0].trim().toLowerCase();
     const isLegacyHost = host === "www.buymesho.app" || host.startsWith("www.buymesho.app:");
-    const isLegacyHomePath = req.path === "/home";
+    const normalizedPath = (req.path || "/").replace(/\/+$/, "") || "/";
+    const hasTrailingSlash = req.path !== "/" && req.path.endsWith("/") && !/\.[^/]+\/$/.test(req.path);
+    const isLegacyHomePath = normalizedPath === "/home";
 
-    if (!isLegacyHost && !isLegacyHomePath) {
+    if (!isLegacyHost && !isLegacyHomePath && !hasTrailingSlash) {
       next();
       return;
     }
 
-    const targetPath = isLegacyHomePath ? "/" : req.path;
+    const targetPath = isLegacyHomePath ? "/" : normalizedPath;
     const query = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
     res.redirect(308, `https://buymesho.app${targetPath}${query}`);
   });
@@ -187,6 +198,7 @@ export async function startServer() {
 
   registerMarketplaceRoutes(app, { db });
   registerSellerProfileRoutes(app, { db });
+  registerSitemapRoutes(app, { db });
 
   let vite: ViteDevServer | null = null;
 
@@ -197,21 +209,27 @@ export async function startServer() {
     });
 
     app.use(vite.middlewares);
-  } else {
-    const staticDir = path.join(process.cwd(), "dist");
-    app.use(express.static(staticDir));
-    app.get(/^\/(?!api\/).*/, (_req, res) => {
-      res.sendFile(path.join(staticDir, "index.html"));
-    });
   }
 
+  // Public extensionless document routes receive a server-rendered SEO shell
+  // before production static assets are handled. The browser still boots the SPA.
   app.get(/^\/(?!api\/).*/, async (req, res, next) => {
+    if (!isSeoDocumentPath(req.path)) {
+      next();
+      return;
+    }
+
     try {
-      await serveSpaShell(req, res, vite);
+      await serveSpaShell(req, res, vite, db);
     } catch (error) {
       next(error);
     }
   });
+
+  if (process.env.NODE_ENV === "production") {
+    const staticDir = path.join(process.cwd(), "dist");
+    app.use(express.static(staticDir));
+  }
 
   registerFallbackHandlers(app);
 

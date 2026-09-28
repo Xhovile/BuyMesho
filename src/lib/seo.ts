@@ -1,4 +1,9 @@
-import type { Listing } from "../types";
+/// <reference lib="dom" />
+
+import type { Listing } from "../types.js";
+import { isMarketplaceCategoryKey } from "./appNavigation.paths.js";
+import { buildProductJsonLd, isListingOutOfStock } from "./seoProduct.js";
+import type { AppRoute } from "./appNavigation.paths.js";
 
 export interface SEOConfig {
   title: string;
@@ -6,6 +11,7 @@ export interface SEOConfig {
   image?: string;
   imageAlt?: string;
   url?: string;
+  canonicalPath?: string;
   type?: "website" | "product";
   keywords?: string[];
   noIndex?: boolean;
@@ -14,11 +20,326 @@ export interface SEOConfig {
   availability?: "InStock" | "OutOfStock";
   category?: string;
   sellerName?: string;
+  sellerType?: "Person" | "Organization";
+  productName?: string;
+  brandName?: string;
   campus?: string;
   condition?: string;
+  /** Optional page-owned JSON-LD schema. */
+  jsonLd?: object | null;
 }
 
 const SITE_URL = "https://buymesho.app";
+
+export type RouteSEOConfig = SEOConfig & {
+  /**
+   * When true, a dedicated page owns SEO for this route (for example,
+   * category pages and listing detail pages). The root router should not
+   * overwrite that page-level metadata.
+   */
+  managedByPage?: boolean;
+};
+
+/**
+ * Central route-level SEO registry. Public/indexable routes are explicit;
+ * everything else defaults to noindex so private application surfaces do not
+ * accidentally become searchable.
+ */
+export function getRouteSEO(pathname: string, route: AppRoute, search = ""): RouteSEOConfig {
+  const normalizedPathname =
+    pathname === "/" ? "/" : pathname.replace(/\/+$/, "") || "/";
+  const normalizedStudioPath = normalizedPathname.toLowerCase();
+
+  if (route === "listing_details") {
+    return {
+      title: DEFAULT_SEO.title,
+      description: DEFAULT_SEO.description,
+      canonicalPath: "/listing",
+      noIndex: false,
+      managedByPage: true,
+    };
+  }
+
+  if (route === "category") {
+    const category = new URLSearchParams(search).get("category")?.trim().toLowerCase();
+
+    if (!isMarketplaceCategoryKey(category)) {
+      return {
+        title: "BuyMesho Category",
+        description: "Select a valid marketplace category on BuyMesho.",
+        canonicalPath: "/category",
+        noIndex: true,
+        managedByPage: true,
+      };
+    }
+
+    return {
+      title: DEFAULT_SEO.title,
+      description: DEFAULT_SEO.description,
+      canonicalPath: `/category?category=${encodeURIComponent(category)}`,
+      noIndex: false,
+      managedByPage: true,
+    };
+  }
+
+  if (route === "seller") {
+    const sellerUid = new URLSearchParams(search).get("uid")?.trim();
+    if (!sellerUid) {
+      return {
+        title: "BuyMesho Seller Profile",
+        description: "View a seller profile on BuyMesho.",
+        canonicalPath: "/seller",
+        noIndex: true,
+      };
+    }
+
+    return {
+      title: "BuyMesho Seller Profile",
+      description: "View a seller profile and marketplace listings on BuyMesho.",
+      canonicalPath: `/seller?uid=${encodeURIComponent(sellerUid)}`,
+      noIndex: false,
+      managedByPage: true,
+    };
+  }
+
+  if (route === "listing_reviews") {
+    return {
+      title: "Listing Reviews — BuyMesho",
+      description: "Read ratings and reviews for a BuyMesho marketplace listing.",
+      canonicalPath: "/listing/reviews",
+      noIndex: true,
+    };
+  }
+
+  if (
+    normalizedStudioPath === "/xhovilestudio" ||
+    normalizedStudioPath === "/services/xhovilestudio"
+  ) {
+    return {
+      title: "Xhovile Studio — Service Payment",
+      description:
+        "Submit a Graphic Design or Website Development request and continue to secure payment checkout.",
+      canonicalPath: "/xhovilestudio",
+      noIndex: true,
+    };
+  }
+
+  if (
+    normalizedStudioPath === "/xhovilestudio/receipt" ||
+    normalizedStudioPath === "/services/xhovilestudio/receipt"
+  ) {
+    return {
+      title: "Xhovile Studio — Payment Receipt",
+      description: "View and download your Xhovile Studio payment receipt.",
+      canonicalPath: "/xhovilestudio/receipt",
+      noIndex: true,
+    };
+  }
+
+  if (
+    normalizedStudioPath === "/xhovilestudio/admin" ||
+    normalizedStudioPath === "/services/xhovilestudio/admin"
+  ) {
+    return {
+      title: "Xhovile Studio — Admin",
+      description: "Xhovile Studio administration.",
+      canonicalPath: "/xhovilestudio/admin",
+      noIndex: true,
+    };
+  }
+
+  if (
+    normalizedPathname === "/explore/events" &&
+    new URLSearchParams(search).has("event")
+  ) {
+    const eventId = new URLSearchParams(search).get("event")?.trim();
+    return {
+      title: eventId ? "BuyMesho Event" : "BuyMesho Events in Malawi",
+      description: eventId
+        ? "View event details, ticket information, location, and organizer details on BuyMesho."
+        : "Discover public events and event listings in Malawi on BuyMesho.",
+      canonicalPath: eventId
+        ? `/explore/events?event=${encodeURIComponent(eventId)}`
+        : "/explore/events",
+      noIndex: false,
+      managedByPage: true,
+    };
+  }
+
+  switch (normalizedPathname) {
+    case "/":
+    case "/home":
+      return {
+        title: DEFAULT_SEO.title,
+        description: DEFAULT_SEO.description,
+        canonicalPath: "/",
+        noIndex: false,
+        keywords: [
+          "BuyMesho",
+          "Malawi e-commerce",
+          "Malawi marketplace",
+          "online shopping Malawi",
+          "buy and sell Malawi",
+          "Malawi sellers",
+          "products Malawi",
+          "services Malawi",
+          "event tickets Malawi",
+        ],
+      };
+    case "/install":
+      return {
+        title: "Install BuyMesho",
+        description:
+          "Install BuyMesho on your phone for fast access to Malawi's secure e-commerce platform.",
+        canonicalPath: "/install",
+        noIndex: false,
+      };
+    case "/signup":
+      return {
+        title: "Create a BuyMesho Account",
+        description: "Join BuyMesho to buy, sell, and manage your marketplace activity.",
+        canonicalPath: "/signup",
+        noIndex: false,
+      };
+    case "/about":
+      return {
+        title: "About BuyMesho — Malawi's Secure E-commerce Platform",
+        description: "Learn what BuyMesho is, who it serves, and how the e-commerce platform works.",
+        canonicalPath: "/about",
+        noIndex: false,
+      };
+    case "/explore":
+      return {
+        title: "BuyMesho: Online Marketplace in Malawi",
+        description: "Explore BuyMesho, an online marketplace in Malawi for products, services, deals, sellers, and events.",
+        canonicalPath: "/explore",
+        noIndex: false,
+        keywords: [
+          "BuyMesho",
+          "online marketplace Malawi",
+          "Malawi marketplace",
+          "buy online Malawi",
+          "sell online Malawi",
+          "products Malawi",
+          "services Malawi",
+          "event tickets Malawi",
+        ],
+      };
+    case "/buy-online-malawi":
+      return {
+        title: "Buy Online in Malawi | BuyMesho",
+        description: "Buy online in Malawi with BuyMesho. Discover products, services, deals, sellers, and event tickets from across the country.",
+        canonicalPath: "/buy-online-malawi",
+        noIndex: false,
+        keywords: [
+          "buy online Malawi",
+          "online shopping Malawi",
+          "BuyMesho",
+          "Malawi marketplace",
+          "buy products Malawi",
+          "event tickets Malawi",
+        ],
+      };
+    case "/sell-online-malawi":
+      return {
+        title: "Sell Online in Malawi | BuyMesho",
+        description: "Sell online in Malawi with BuyMesho. Create a seller presence and publish products or services for buyers to discover.",
+        canonicalPath: "/sell-online-malawi",
+        noIndex: false,
+        keywords: [
+          "sell online Malawi",
+          "sell products online Malawi",
+          "BuyMesho sellers",
+          "Malawi marketplace",
+          "online selling Malawi",
+        ],
+      };
+    case "/explore/deals":
+      return {
+        title: "BuyMesho Deals",
+        description: "Find current deals and value listings on BuyMesho.",
+        canonicalPath: "/explore/deals",
+        noIndex: false,
+      };
+    case "/explore/lay-by":
+      return {
+        title: "BuyMesho Lay-by",
+        description: "Lay-by on BuyMesho is coming soon.",
+        canonicalPath: "/explore/lay-by",
+        noIndex: true,
+      };
+    case "/explore/events":
+      return {
+        title: "BuyMesho Events in Malawi",
+        description: "Discover public events and event listings in Malawi on BuyMesho.",
+        canonicalPath: "/explore/events",
+        noIndex: false,
+      };
+    case "/tickets":
+      return {
+        title: "BuyMesho Tickets",
+        description: "View your event tickets, download PDFs, and share passes on WhatsApp.",
+        canonicalPath: "/tickets",
+        noIndex: true,
+      };
+    case "/explore/wholesale":
+      return {
+        title: "BuyMesho Wholesale",
+        description: "Browse wholesale listings and supplier options on BuyMesho.",
+        canonicalPath: "/explore/wholesale",
+        noIndex: false,
+      };
+    case "/explore/sellers":
+      return {
+        title: "BuyMesho Sellers in Malawi",
+        description: "Browse seller profiles and businesses on BuyMesho's Malawi marketplace.",
+        canonicalPath: "/explore/sellers",
+        noIndex: false,
+      };
+    case "/explore/lending":
+      return {
+        title: "BuyMesho Lending",
+        description: "Lending on BuyMesho is coming soon.",
+        canonicalPath: "/explore/lending",
+        noIndex: true,
+      };
+    case "/privacy":
+      return {
+        title: "BuyMesho Privacy Policy",
+        description: "Read the BuyMesho privacy policy.",
+        canonicalPath: "/privacy",
+        noIndex: false,
+      };
+    case "/terms":
+      return {
+        title: "BuyMesho Terms of Service",
+        description: "Read the BuyMesho terms of service.",
+        canonicalPath: "/terms",
+        noIndex: false,
+      };
+    case "/safety":
+      return {
+        title: "BuyMesho Safety Tips",
+        description: "Read safety tips for using BuyMesho.",
+        canonicalPath: "/safety",
+        noIndex: false,
+      };
+    case "/transaction-json":
+      return {
+        title: "Transaction JSON — BuyMesho",
+        description: "Deep-link JSON view for transaction debugging.",
+        canonicalPath: "/transaction-json",
+        noIndex: true,
+      };
+    default:
+      return {
+        title: "BuyMesho",
+        description: "BuyMesho marketplace.",
+        canonicalPath: normalizedPathname,
+        noIndex: true,
+      };
+  }
+}
 
 export const DEFAULT_SEO = {
   title: "BuyMesho: Malawi's Secure E-commerce Platform",
@@ -37,6 +358,17 @@ function absoluteUrl(value: string): string {
   } catch {
     return SITE_URL;
   }
+}
+
+export function getListingCanonicalUrl(listingId: string | number, currentHref?: string): string {
+  const url = new URL(
+    currentHref || (typeof window !== "undefined" ? window.location.href : SITE_URL),
+    SITE_URL,
+  );
+  url.pathname = "/listing";
+  url.search = "";
+  url.searchParams.set("listing", String(listingId));
+  return url.toString();
 }
 
 function normalizeTitle(title?: string): string {
@@ -71,6 +403,13 @@ function updateLinkTag(rel: string, href: string) {
 function updateJsonLdSchema(data: object | null) {
   const schemaId = "buymesho-jsonld-schema";
   let scriptTag = document.head.querySelector<HTMLScriptElement>(`script#${schemaId}`);
+
+  // Reuse the server-rendered schema after hydration instead of leaving a
+  // duplicate Product, Event, or ProfilePage script in the document head.
+  if (!scriptTag) {
+    scriptTag = document.head.querySelector<HTMLScriptElement>("#server-seo-schema");
+    if (scriptTag) scriptTag.id = schemaId;
+  }
 
   if (!data) {
     scriptTag?.remove();
@@ -108,9 +447,8 @@ export function updateSEOMetaTags(config: Partial<SEOConfig> = {}) {
   updateMetaTag("name", "robots", robots);
   updateMetaTag("name", "application-name", DEFAULT_SEO.siteName);
 
-  if (config.keywords?.length) {
-    updateMetaTag("name", "keywords", config.keywords.filter(Boolean).join(", "));
-  }
+  const keywords = config.keywords?.filter(Boolean).join(", ") || "";
+  updateMetaTag("name", "keywords", keywords);
 
   updateLinkTag("canonical", url);
 
@@ -132,53 +470,44 @@ export function updateSEOMetaTags(config: Partial<SEOConfig> = {}) {
   if (config.price !== undefined) {
     updateMetaTag("property", "product:price:amount", String(config.price));
     updateMetaTag("property", "product:price:currency", config.currency || DEFAULT_SEO.currency);
+  } else {
+    document.head.querySelector('meta[property="product:price:amount"]')?.remove();
+    document.head.querySelector('meta[property="product:price:currency"]')?.remove();
   }
 
-  if (config.price !== undefined || config.category) {
-    const itemCondition = config.condition
-      ? config.condition.toLowerCase().includes("new")
-        ? "https://schema.org/NewCondition"
-        : "https://schema.org/UsedCondition"
-      : undefined;
-
-    const jsonLdProduct = {
-      "@context": "https://schema.org",
-      "@type": "Product",
-      name: config.title || DEFAULT_SEO.siteName,
-      image: [image],
+  if (config.jsonLd) {
+    updateJsonLdSchema(config.jsonLd);
+  } else if (config.price !== undefined || config.category) {
+    const jsonLdProduct = buildProductJsonLd({
+      name: config.productName || config.title || DEFAULT_SEO.siteName,
       description,
-      ...(config.category ? { category: config.category } : {}),
-      ...(itemCondition ? { itemCondition } : {}),
-      brand: {
-        "@type": "Brand",
-        name: DEFAULT_SEO.siteName,
-      },
-      offers: {
-        "@type": "Offer",
-        url,
-        priceCurrency: config.currency || DEFAULT_SEO.currency,
-        price: config.price ?? 0,
-        availability:
-          config.availability === "OutOfStock"
-            ? "https://schema.org/OutOfStock"
-            : "https://schema.org/InStock",
-        ...(itemCondition ? { itemCondition } : {}),
-        ...(config.sellerName
-          ? {
-              seller: {
-                "@type": "Person",
-                name: config.sellerName,
-              },
-            }
-          : {}),
-        ...(config.campus ? { areaServed: `${config.campus}, Malawi` } : { areaServed: "Malawi" }),
-      },
-    };
+      url,
+      image,
+      category: config.category,
+      condition: config.condition,
+      price: config.price ?? 0,
+      currency: config.currency || DEFAULT_SEO.currency,
+      availability: config.availability === "OutOfStock" ? "OutOfStock" : "InStock",
+      sellerName: config.sellerName,
+      sellerType: config.sellerType,
+      brandName: config.brandName,
+      areaServed: config.campus ? `${config.campus}, Malawi` : "Malawi",
+    });
 
     updateJsonLdSchema(jsonLdProduct);
   } else {
     updateJsonLdSchema(null);
   }
+}
+
+/**
+ * Keep SEO descriptions within the configured metadata length.
+ */
+export function truncateSeoDescription(value: string, maxLength = 160): string {
+  const normalized = value.trim();
+  if (normalized.length <= maxLength) return normalized;
+  if (maxLength <= 1) return normalized.slice(0, maxLength);
+  return normalized.slice(0, maxLength - 1).trimEnd() + "…";
 }
 
 /**
@@ -195,14 +524,13 @@ export function getSEOForListing(listing: Listing, sellerName?: string): SEOConf
   const locationText = listing.university ? `at ${listing.university}` : "in Malawi";
 
   const descriptionSource = listing.description?.trim();
-  const description = descriptionSource
-    ? `${descriptionSource.slice(0, 155).trimEnd()}${descriptionSource.length > 155 ? "…" : ""} ${itemTitle} is listed for ${formattedPrice} ${locationText} on BuyMesho.`
+  const rawDescription = descriptionSource
+    ? `${descriptionSource} ${itemTitle} is listed for ${formattedPrice} ${locationText} on BuyMesho.`
     : `Discover ${itemTitle} for ${formattedPrice} ${locationText} on BuyMesho, Malawi's secure marketplace.`;
+  const description = truncateSeoDescription(rawDescription);
 
   const primaryImage = listing.photos?.[0] || DEFAULT_SEO.image;
-  const currentUrl = typeof window !== "undefined"
-    ? window.location.href
-    : `${SITE_URL}/listing/${listing.id}`;
+  const currentUrl = getListingCanonicalUrl(listing.id);
 
   return {
     title: `${itemTitle} - ${formattedPrice}`,
@@ -217,11 +545,23 @@ export function getSEOForListing(listing: Listing, sellerName?: string): SEOConf
     campus: listing.university,
     condition: listing.condition,
     sellerName: sellerName || listing.business_name || "BuyMesho seller",
-    availability: listing.status === "sold" ? "OutOfStock" : "InStock",
+    sellerType: listing.business_name?.trim() ? "Organization" : "Person",
+    productName: itemTitle,
+    availability: isListingOutOfStock({
+      status: listing.status,
+      quantity: listing.quantity,
+      soldQuantity: listing.sold_quantity,
+    }) ? "OutOfStock" : "InStock",
     keywords: [itemTitle, listing.category, listing.university, "BuyMesho", "Malawi marketplace"].filter(Boolean) as string[],
   };
 }
 
 export function resetSEOMetaTags() {
-  updateSEOMetaTags({});
+  updateSEOMetaTags({
+    title: DEFAULT_SEO.title,
+    description: DEFAULT_SEO.description,
+    url: SITE_URL,
+    type: DEFAULT_SEO.type,
+    noIndex: false,
+  });
 }

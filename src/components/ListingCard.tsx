@@ -146,10 +146,13 @@ export default function ListingCard({
     >
       <div className="relative overflow-hidden">
         <div className={`relative overflow-hidden rounded-2xl bg-zinc-100 ${imageAspect}`}>
-          <div
-            className="h-full w-full"
-            onClick={(e: ReactMouseEvent<HTMLDivElement>) => {
-              e.stopPropagation();
+          <a
+            href={`/listing?listing=${encodeURIComponent(String(listing.id))}`}
+            aria-label={`Open listing details for ${titleLabel}`}
+            className="block h-full w-full"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
               openDetails();
             }}
           >
@@ -161,7 +164,7 @@ export default function ListingCard({
               subcategory={listing.subcategory}
               performanceMode={performanceMode}
             />
-          </div>
+          </a>
 
           {listing.status === "sold" ? (
             <>
@@ -266,19 +269,30 @@ export default function ListingCard({
                   : "space-y-2 py-3"
           }
         >
-          <h3
-            className={
-              fillGrid
-                ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900 md:text-[14px] md:group-hover:text-primary"
-                : ultraCompact
-                  ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900"
-                  : compact
-                    ? "line-clamp-1 text-[14px] font-extrabold tracking-tight text-zinc-900 group-hover:text-primary"
-                    : "line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
-            }
+          <a
+            href={`/listing?listing=${encodeURIComponent(String(listing.id))}`}
+            aria-label={`Open listing details for ${titleLabel}`}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              openDetails();
+            }}
+            className="block min-w-0"
           >
-            {titleLabel}
-          </h3>
+            <h3
+              className={
+                fillGrid
+                  ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900 md:text-[14px] md:group-hover:text-primary"
+                  : ultraCompact
+                    ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900"
+                    : compact
+                      ? "line-clamp-1 text-[14px] font-extrabold tracking-tight text-zinc-900 group-hover:text-primary"
+                      : "line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
+              }
+            >
+              {titleLabel}
+            </h3>
+          </a>
 
           <div
             className={`flex min-h-[1.6rem] flex-wrap gap-0.5 ${

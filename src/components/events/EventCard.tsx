@@ -84,10 +84,14 @@ export function EventCard({ item }: { item: EventRecord }) {
   const posterAlt = getPosterAlt(item);
 
   return (
-    <button
-      type="button"
-      onClick={() => navigateToPath(`${EVENTS_PATH}?event=${item.id}`)}
-      className="overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white text-left shadow-[0_12px_30px_-24px_rgba(0,0,0,0.28)]"
+    <a
+      href={`${EVENTS_PATH}?event=${encodeURIComponent(String(item.id))}`}
+      onClick={(event) => {
+        event.preventDefault();
+        navigateToPath(`${EVENTS_PATH}?event=${item.id}`);
+      }}
+      className="block overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white text-left shadow-[0_12px_30px_-24px_rgba(0,0,0,0.28)]"
+      aria-label={`Open event: ${item.event_title}`}
     >
       <div className={`relative aspect-[4/3] bg-gradient-to-br ${accent}`}>
         {posterUrl ? <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" loading="lazy" /> : null}
@@ -124,6 +128,6 @@ export function EventCard({ item }: { item: EventRecord }) {
           </div>
         </div>
       </div>
-    </button>
+    </a>
   );
 }

@@ -96,15 +96,18 @@ export default function EventsStrip({
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => navigateToPath(viewMorePath)}
+            <a
+              href={viewMorePath}
+              onClick={(event) => {
+                event.preventDefault();
+                navigateToPath(viewMorePath);
+              }}
               className="inline-flex items-center gap-2 rounded-2xl border border-red-950/15 bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-red-900 shadow-sm shadow-black/10 transition-all hover:-translate-y-0.5 hover:border-red-900/25 hover:bg-zinc-50 hover:shadow-md sm:px-4 sm:py-2.5 sm:text-sm sm:font-bold sm:normal-case sm:tracking-normal"
             >
               <span className="sm:hidden">All</span>
               <span className="hidden sm:inline">Open Events</span>
               <ArrowRight className="h-4 w-4" />
-            </button>
+            </a>
           </div>
         </div>
 
@@ -128,10 +131,13 @@ export default function EventsStrip({
                   key={item.id}
                   className="group relative w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md sm:w-[260px]"
                 >
-                  <button
-                    type="button"
+                  <a
+                    href={`${EVENTS_PATH}?event=${encodeURIComponent(String(item.id))}`}
                     aria-label={`Open event details for ${item.event_title}`}
-                    onClick={() => navigateToPath(`${EVENTS_PATH}?event=${item.id}`)}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      navigateToPath(`${EVENTS_PATH}?event=${item.id}`);
+                    }}
                     className="absolute inset-0 z-0 rounded-3xl"
                   />
 

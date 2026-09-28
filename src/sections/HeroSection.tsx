@@ -80,6 +80,15 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
                 <span className="text-red-900">Buy</span>
                 <span className="text-zinc-700">Mesho</span>.
               </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.09 }}
+                className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-zinc-600 sm:text-base"
+              >
+                Explore products, services, deals, sellers, and events on BuyMesho, a public online marketplace in Malawi.
+              </motion.p>
             </div>
 
             <motion.div

@@ -16,6 +16,8 @@ export type PlatformNavigationEntry = {
 export const BUYMESHO_PLATFORM_NAVIGATION: readonly PlatformNavigationEntry[] = [
   { id: "home", name: "Home", description: "BuyMesho marketplace home.", path: "/", access: "public", keywords: ["home", "homepage", "market"] },
   { id: "explore", name: "Explore", description: "Browse marketplace listings and discovery sections.", path: "/explore", access: "public", keywords: ["explore", "browse", "listings", "marketplace"] },
+  { id: "buy-online-malawi", name: "Buy Online in Malawi", description: "Learn how to buy products, services, deals, and event tickets through BuyMesho.", path: "/buy-online-malawi", access: "public", keywords: ["buy online Malawi", "online shopping Malawi", "shop online Malawi", "buy on BuyMesho"] },
+  { id: "sell-online-malawi", name: "Sell Online in Malawi", description: "Learn how to sell products and services through BuyMesho.", path: "/sell-online-malawi", access: "public", keywords: ["sell online Malawi", "sell on BuyMesho", "online selling Malawi", "start selling"] },
   { id: "saved", name: "Saved", description: "View listings saved to your BuyMesho account.", path: "/saved", access: "authenticated", keywords: ["saved", "favorites", "favourites", "bookmarks"] },
   { id: "messages", name: "Messages", description: "Open your BuyMesho messages and conversations.", path: "/messages", access: "authenticated", keywords: ["messages", "inbox", "chat", "conversations", "message seller"] },
   { id: "cart", name: "Cart", description: "Review items in your shopping cart.", path: "/cart", access: "authenticated", keywords: ["cart", "shopping cart", "basket"] },
