@@ -23,22 +23,22 @@ afterEach(() => {
 
 function seedSeller(reserveBalance = 0, negativeBalance = 0): void {
   db.prepare(
-    \`INSERT INTO sellers (uid, email, is_verified)
-     VALUES (?, ?, 1)\`,
-  ).run(sellerUid, \`\${sellerUid}@example.com\`);
+    `INSERT INTO sellers (uid, email, is_verified)
+     VALUES (?, ?, 1)`,
+  ).run(sellerUid, `${sellerUid}@example.com`);
 
   db.prepare(
-    \`INSERT INTO seller_financial_accounts (
+    `INSERT INTO seller_financial_accounts (
        seller_uid, currency, reserve_balance, negative_balance,
        reserved_negative_balance, payout_hold
-     ) VALUES (?, 'MWK', ?, ?, 0, 0)\`,
+     ) VALUES (?, 'MWK', ?, ?, 0, 0)`,
   ).run(sellerUid, reserveBalance, negativeBalance);
 }
 
 function seedPayout(id: string, amount = 1200, reserve = 60): void {
   const now = new Date().toISOString();
   db.prepare(
-    \`INSERT INTO payouts (
+    `INSERT INTO payouts (
        id, seller_id, owner_type, owner_uid, order_id,
        amount, gross_amount, platform_fee_amount, processing_fee_amount,
        reserve_amount, reserve_cap_amount, manual_adjustment_amount,
@@ -47,12 +47,12 @@ function seedPayout(id: string, amount = 1200, reserve = 60): void {
      ) VALUES (
        ?, ?, 'seller', ?, ?, ?, ?, 0, 0, ?, ?, 0,
        0, ?, ?, '{}', 'MWK', 'eligible', 'paychangu', 'system', ?, ?, ?
-     )\`,
+     )`,
   ).run(
     id,
     sellerUid,
     sellerUid,
-    \`order-\${id}\`,
+    `order-${id}`,
     amount,
     amount,
     reserve,
