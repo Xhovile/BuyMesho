@@ -6,10 +6,8 @@ import {
 } from './paychangu.payout.js';
 import { PAYOUT_POLICY, isRetryableFailureCode } from './payout.policy.js';
 import { withOrderFinancialLock } from '../financial/orderFinancialLock.js';
-import {
-  preparePayoutFinancialNetting,
-  withSellerFinancialLock,
-} from '../financial/sellerFinancialLedger.js';
+import { withTransaction } from '../../postgres.js';
+import { preparePayoutFinancialNetting } from '../financial/sellerFinancialLedger.js';
 import {
   classifyProviderFailureFromError,
   decryptSensitiveValue,
@@ -330,8 +328,7 @@ export async function executePayoutFlow(
     return { payout, attempt: null, execution: null, reasonCode: failureReason, reason, nextAction: 'manual_review' as PayoutNextAction };
   }
 
-  const lockedResult = await withSellerFinancialLock(String(gate.sellerId), () =>
-    withOrderFinancialLock<PayoutExecutionFlowResult>(String(gate.orderId), async (): Promise<PayoutExecutionFlowResult> => {
+  const lockedResult = await withOrderFinancialLock<PayoutExecutionFlowResult>(String(gate.orderId), async (): Promise<PayoutExecutionFlowResult> => {
     const lockedGate = await gateForSubmissionAsync(input.payoutId);
 
     if (!lockedGate.allowed || !lockedGate.sellerId || !lockedGate.orderId || !lockedGate.amount || !lockedGate.currency || !lockedGate.provider) {
@@ -361,12 +358,14 @@ export async function executePayoutFlow(
       provider: string;
     };
 
-    const financialNetting = await preparePayoutFinancialNetting({ query }, {
-      payoutId: input.payoutId,
-      sellerUid: gate.sellerId,
-      currency: gate.currency,
-      minimumPayoutAmount: PAYOUT_POLICY.minimumPayoutAmount,
-    });
+    const financialNetting = await withTransaction((client) =>
+      preparePayoutFinancialNetting(client, {
+        payoutId: input.payoutId,
+        sellerUid: gate.sellerId,
+        currency: gate.currency,
+        minimumPayoutAmount: PAYOUT_POLICY.minimumPayoutAmount,
+      }),
+    );
 
     if (financialNetting.blocked) {
       const payout = await holdPayoutForReviewAsync({
@@ -577,8 +576,7 @@ export async function executePayoutFlow(
         : execution.status === 'paid' ? 'Payout paid successfully.' : 'Payout submitted to provider.',
       nextAction: execution.status === 'paid' ? 'none' : execution.status === 'failed' ? 'manual_review' : 'awaiting_provider',
     };
-    }),
-  );
+  });
 
   return lockedResult;
 }
