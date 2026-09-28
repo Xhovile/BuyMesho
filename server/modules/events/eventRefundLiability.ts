@@ -383,23 +383,33 @@ export async function recordEventRefundRecovery(
   const refundTransactionId = `rft-${randomUUID()}`;
   const evidence = Array.isArray(input.evidence) ? input.evidence.filter(Boolean).slice(0, 20) : [];
 
-  const financialDebit = await applySellerReversalDebit(client, {
-    sellerUid: liability.eventCreatorUid,
-    currency: liability.currency,
-    amount: liability.amount,
-    reason: `Post-payout event refund for liability ${liability.id}`,
-    actorType: "admin",
-    actorId: input.actorId,
-    payoutId: liability.payoutId,
-    refundLiabilityId: liability.id,
-    reference: input.transactionId,
-    idempotencyKey: `event-refund-liability:${liability.id}`,
-    metadata: {
-      refundRequestId: liability.refundRequestId,
-      orderId: liability.orderId,
-      eventId: liability.eventId,
-    },
-  });
+  const payoutStatusResult = liability.payoutId
+    ? await client.query<{ status: string }>(
+        "SELECT status FROM payouts WHERE id = $1 LIMIT 1",
+        [liability.payoutId],
+      )
+    : { rows: [] as Array<{ status: string }> };
+  const payoutWasPaid = String(payoutStatusResult.rows[0]?.status ?? "").toLowerCase() === "paid";
+
+  const financialDebit = payoutWasPaid
+    ? await applySellerReversalDebit(client, {
+        sellerUid: liability.eventCreatorUid,
+        currency: liability.currency,
+        amount: liability.amount,
+        reason: `Post-payout event refund for liability ${liability.id}`,
+        actorType: "admin",
+        actorId: input.actorId,
+        payoutId: liability.payoutId,
+        refundLiabilityId: liability.id,
+        reference: input.transactionId,
+        idempotencyKey: `event-refund-liability:${liability.id}`,
+        metadata: {
+          refundRequestId: liability.refundRequestId,
+          orderId: liability.orderId,
+          eventId: liability.eventId,
+        },
+      })
+    : null;
 
   await client.query(
     `INSERT INTO refund_transactions (
@@ -592,6 +602,9 @@ export async function recordEventRefundRecovery(
         transactionId: input.transactionId,
         refundMethod: input.refundMethod,
         refundDate: input.refundDate,
+        payoutWasPaid,
+        financialReserveUsed: financialDebit?.reserveUsed ?? 0,
+        financialNegativeCreated: financialDebit?.negativeCreated ?? 0,
       }),
     ],
   );
