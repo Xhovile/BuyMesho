@@ -13,7 +13,6 @@ export function isListingOutOfStock(input: ListingAvailabilityInput): boolean {
   const soldQuantity = Number(input.soldQuantity);
   return Number.isFinite(quantity) &&
     Number.isFinite(soldQuantity) &&
-    quantity > 0 &&
     soldQuantity >= quantity;
 }
 
