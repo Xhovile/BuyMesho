@@ -100,17 +100,17 @@ export default function SellOnlineMalawiPage() {
           <div className="mt-6 grid gap-x-8 sm:grid-cols-2">
             <a
               href="/explore/sellers"
-              className="group flex items-center justify-between border-t border-zinc-200 py-4 text-sm font-extrabold text-zinc-900 hover:text-red-900"
+              className="group flex items-center justify-between border-t border-zinc-200 py-4 text-sm font-extrabold text-zinc-900 hover:text-blue-700"
             >
               <span>Browse seller profiles</span>
-              <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
             </a>
             <a
               href={EXPLORE_PATH}
-              className="group flex items-center justify-between border-t border-zinc-200 py-4 text-sm font-extrabold text-zinc-900 hover:text-red-900"
+              className="group flex items-center justify-between border-t border-zinc-200 py-4 text-sm font-extrabold text-zinc-900 hover:text-blue-700"
             >
               <span>See marketplace listings</span>
-              <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
             </a>
           </div>
         </section>

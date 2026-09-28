@@ -75,10 +75,10 @@ export default function SeoInternalLinks({
               <a
                 key={href}
                 href={href}
-                className="group inline-flex min-w-0 items-center gap-1.5 border-b border-zinc-200 py-2 text-sm font-bold text-zinc-700 transition-colors hover:border-red-900/30 hover:text-red-900"
+                className="group inline-flex min-w-0 items-center gap-1.5 border-b border-zinc-200 py-2 text-sm font-bold text-zinc-700 transition-colors hover:border-blue-600/30 hover:text-blue-700"
               >
                 <span className="truncate">{label}</span>
-                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-zinc-400 transition-transform group-hover:translate-x-0.5" />
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
               </a>
             ))}
           </nav>

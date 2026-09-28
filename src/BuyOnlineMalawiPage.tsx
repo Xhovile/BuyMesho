@@ -110,10 +110,10 @@ export default function BuyOnlineMalawiPage() {
               <a
                 key={category.href}
                 href={category.href}
-                className="group flex items-center justify-between border-t border-zinc-200 py-4 text-sm font-extrabold text-zinc-900 transition-colors hover:text-red-900"
+                className="group flex items-center justify-between border-t border-zinc-200 py-4 text-sm font-extrabold text-zinc-900 transition-colors hover:text-blue-700"
               >
                 <span>{category.label}</span>
-                <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5" />
+                <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
               </a>
             ))}
           </div>
@@ -149,17 +149,17 @@ export default function BuyOnlineMalawiPage() {
                 Keep exploring
               </p>
               <div className="mt-4 space-y-3">
-                <a href={EVENTS_PATH} className="group flex items-center justify-between py-2 text-sm font-bold text-zinc-800 hover:text-red-900">
+                <a href={EVENTS_PATH} className="group flex items-center justify-between py-2 text-sm font-bold text-zinc-800 hover:text-blue-700">
                   Events in Malawi
-                  <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
                 </a>
-                <a href="/explore/sellers" className="group flex items-center justify-between border-t border-zinc-200 py-3 text-sm font-bold text-zinc-800 hover:text-red-900">
+                <a href="/explore/sellers" className="group flex items-center justify-between border-t border-zinc-200 py-3 text-sm font-bold text-zinc-800 hover:text-blue-700">
                   Seller profiles
-                  <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
                 </a>
-                <a href="/sell-online-malawi" className="group flex items-center justify-between border-t border-zinc-200 py-3 text-sm font-bold text-zinc-800 hover:text-red-900">
+                <a href="/sell-online-malawi" className="group flex items-center justify-between border-t border-zinc-200 py-3 text-sm font-bold text-zinc-800 hover:text-blue-700">
                   Sell online in Malawi
-                  <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
                 </a>
               </div>
             </aside>

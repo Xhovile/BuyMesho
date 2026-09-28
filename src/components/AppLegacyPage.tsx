@@ -45,13 +45,13 @@ export default function AppLegacyPage(props: AppLegacyState) {
           <h2 className="mt-2 max-w-3xl text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">A public marketplace for buying and selling online.</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-600 sm:text-base">Search marketplace listings, browse categories, discover seller profiles, and find public events through BuyMesho. The marketplace connects buyers and sellers across Malawi in one online experience.</p>
           <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2">
-            <a href="/buy-online-malawi" className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-red-900">
+            <a href="/buy-online-malawi" className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-blue-700">
               How to buy online in Malawi
-              <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
             </a>
-            <a href="/sell-online-malawi" className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-red-900">
+            <a href="/sell-online-malawi" className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-blue-700">
               How to sell online in Malawi
-              <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
             </a>
           </div>
         </section>
