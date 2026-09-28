@@ -62,9 +62,10 @@ export function createAdminSellerFinancialRouter(requireAuth: RequestHandler): e
       const amount = Number(req.body?.amount);
       const reason = String(req.body?.reason ?? "").trim();
       const currency = String(req.body?.currency ?? "MWK").trim().toUpperCase() || "MWK";
-      const reference = String(req.body?.reference ?? "").trim() || null;
+      const reference = String(req.body?.reference ?? "").trim();
       if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ error: "amount must be positive" });
       if (!reason) return res.status(400).json({ error: "reason is required" });
+      if (!reference) return res.status(400).json({ error: "reference is required" });
 
       const result = await withTransaction((client) => recordManualRecoveryCredit(client, {
         sellerUid: uid,
