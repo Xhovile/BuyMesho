@@ -43,9 +43,12 @@ export function ensureSellerFinancialLedgerMigration(): void {
       actor_type TEXT NOT NULL,
       actor_id TEXT,
       metadata TEXT,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (seller_uid) REFERENCES sellers(uid) ON DELETE CASCADE
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+
+    -- The financial owner may be either a Listing seller or an Event creator.
+    ALTER TABLE seller_financial_ledger
+      DROP CONSTRAINT IF EXISTS seller_financial_ledger_seller_uid_fkey;
 
     ALTER TABLE payouts
       ADD COLUMN IF NOT EXISTS balance_netting_amount INTEGER NOT NULL DEFAULT 0;
