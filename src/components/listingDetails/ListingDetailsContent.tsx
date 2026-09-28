@@ -253,31 +253,32 @@ export default function ListingDetailsContent({
               </div>
             </section>
 
-            <section className="scroll-mt-32 pt-12">
-              <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-                <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-400">Continue exploring</p>
-                <div className="mt-3 flex flex-wrap gap-2">
+            <section className="scroll-mt-32 border-t border-zinc-200 pt-8">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-400">Continue exploring</p>
+              <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+                <a
+                  href={EXPLORE_PATH}
+                  className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-red-900"
+                >
+                  Explore marketplace
+                  <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5" />
+                </a>
+                {listing.seller_uid ? (
                   <a
-                    href={EXPLORE_PATH}
-                    className="rounded-full border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm font-extrabold text-zinc-900 hover:bg-white"
+                    href={`/seller?uid=${encodeURIComponent(String(listing.seller_uid))}`}
+                    className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-red-900"
                   >
-                    Explore marketplace
+                    View seller profile
+                    <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5" />
                   </a>
-                  {listing.seller_uid ? (
-                    <a
-                      href={`/seller?uid=${encodeURIComponent(String(listing.seller_uid))}`}
-                      className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-extrabold text-blue-800 hover:bg-blue-100"
-                    >
-                      View seller profile
-                    </a>
-                  ) : null}
-                  <a
-                    href="/buy-online-malawi"
-                    className="rounded-full border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm font-extrabold text-zinc-900 hover:bg-white"
-                  >
-                    How to buy online in Malawi
-                  </a>
-                </div>
+                ) : null}
+                <a
+                  href="/buy-online-malawi"
+                  className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-red-900"
+                >
+                  How to buy online in Malawi
+                  <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5" />
+                </a>
               </div>
             </section>
 
