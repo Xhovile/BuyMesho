@@ -42,6 +42,8 @@ const REQUIRED_TABLES = [
   "payout_events",
   "payout_adjustments",
   "seller_payout_account_events",
+  "seller_financial_accounts",
+  "seller_financial_ledger",
   "idempotency_keys",
 ] as const;
 
@@ -51,12 +53,14 @@ const REQUIRED_COLUMNS: Record<string, string[]> = {
   orders: ["id", "buyer_id", "seller_id", "source", "status", "currency", "subtotal_amount", "total_amount"],
   seller_applications: ["applicant_uid", "applicant_email", "full_legal_name", "institution", "applicant_type", "institution_id_number", "business_name", "what_to_sell", "business_description", "reason_for_applying", "proof_document_url", "status"],
   payment_webhook_events: ["provider", "reference", "event_type", "signature_valid", "payload", "created_at"],
-  payouts: ["seller_id", "order_id", "escrow_id", "status", "currency", "amount", "destination_account_id", "provider_ref_id", "provider_transaction_id", "provider_status", "failure_reason", "manual_review_reason", "approved_by", "sent_at", "paid_at", "failed_at", "gross_amount", "platform_fee_amount", "processing_fee_amount", "reserve_amount", "reserve_cap_amount", "manual_adjustment_amount", "payout_fee_amount", "seller_receives_amount", "net_amount", "formula_snapshot", "last_adjustment_id", "processed_by", "raw_request", "raw_response"],
+  payouts: ["seller_id", "order_id", "escrow_id", "status", "currency", "amount", "balance_netting_amount", "balance_netting_status", "destination_account_id", "provider_ref_id", "provider_transaction_id", "provider_status", "failure_reason", "manual_review_reason", "approved_by", "sent_at", "paid_at", "failed_at", "gross_amount", "platform_fee_amount", "processing_fee_amount", "reserve_amount", "reserve_cap_amount", "manual_adjustment_amount", "payout_fee_amount", "seller_receives_amount", "net_amount", "formula_snapshot", "last_adjustment_id", "processed_by", "raw_request", "raw_response"],
   seller_payout_accounts: ["seller_uid", "destination_type", "provider_name", "masked_account", "destination_fingerprint", "is_default", "verification_status", "is_active", "created_at", "updated_at"],
   payout_attempts: ["payout_id", "attempt_no", "provider", "provider_charge_id", "request_payload", "status", "created_at", "updated_at"],
   payout_events: ["payout_id", "seller_id", "event_type", "actor_type", "created_at"],
   payout_adjustments: ["payout_id", "seller_id", "adjustment_type", "amount", "currency", "reason", "actor_type", "created_at"],
   seller_payout_account_events: ["seller_uid", "account_id", "event_type", "actor_type", "created_at"],
+  seller_financial_accounts: ["seller_uid", "currency", "reserve_balance", "negative_balance", "reserved_negative_balance", "payout_hold", "payout_hold_reason", "created_at", "updated_at"],
+  seller_financial_ledger: ["id", "idempotency_key", "seller_uid", "currency", "event_type", "amount", "reserve_delta", "negative_balance_delta", "reserved_negative_balance_delta", "reserve_balance_after", "negative_balance_after", "reserved_negative_balance_after", "payout_id", "refund_liability_id", "reference", "reason", "actor_type", "actor_id", "created_at"],
 };
 
 const REQUIRED_PAYMENT_ENDPOINTS = {
