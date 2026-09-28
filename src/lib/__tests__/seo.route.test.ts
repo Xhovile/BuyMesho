@@ -273,6 +273,7 @@ test("product condition mapping is explicit", () => {
 test("listing SEO availability follows marketplace quantity semantics", () => {
   assert.equal(isListingOutOfStock({ status: "available", quantity: 5, soldQuantity: 4 }), false);
   assert.equal(isListingOutOfStock({ status: "available", quantity: 5, soldQuantity: 5 }), true);
+  assert.equal(isListingOutOfStock({ status: "available", quantity: 0, soldQuantity: 0 }), true);
   assert.equal(isListingOutOfStock({ status: "sold", quantity: 5, soldQuantity: 0 }), true);
 
   const longListing = {
