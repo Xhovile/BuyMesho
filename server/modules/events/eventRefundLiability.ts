@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { assertRefundTransition } from "../disputes/state-machine.js";
+import { applySellerReversalDebit } from "../financial/sellerFinancialLedger.js";
 
 type DbExecutor = Pick<PoolClient, "query">;
 
@@ -381,6 +382,25 @@ export async function recordEventRefundRecovery(
   const now = new Date().toISOString();
   const refundTransactionId = `rft-${randomUUID()}`;
   const evidence = Array.isArray(input.evidence) ? input.evidence.filter(Boolean).slice(0, 20) : [];
+
+  const financialDebit = await applySellerReversalDebit(client, {
+    sellerUid: liability.eventCreatorUid,
+    currency: liability.currency,
+    amount: liability.amount,
+    reason: `Post-payout event refund for liability ${liability.id}`,
+    actorType: "admin",
+    actorId: input.actorId,
+    payoutId: liability.payoutId,
+    refundLiabilityId: liability.id,
+    reference: input.transactionId,
+    idempotencyKey: `event-refund-liability:${liability.id}`,
+    metadata: {
+      refundRequestId: liability.refundRequestId,
+      orderId: liability.orderId,
+      eventId: liability.eventId,
+    },
+  });
+
   await client.query(
     `INSERT INTO refund_transactions (
        id, refund_request_id, order_id, buyer_id, seller_id, amount, currency,
