@@ -5,6 +5,7 @@ import { postgresDb as messageDb } from '../db.js';
 import { notifyDisputeWorkflowEvent } from '../modules/notifications/dispute-workflow.notification.js';
 import { notifyAdminSellerRefundRecorded, notifyAdminSellerResolutionRecorded } from '../modules/notifications/admin-dispute.notification.js';
 import { assertRefundTransition } from '../modules/disputes/state-machine.js';
+import { recordSellerExternalRefundRecovery } from '../modules/financial/sellerFinancialLedger.js';
 
 const ALLOWED_REFUND_METHODS = new Set(['mobile_money', 'bank_transfer', 'cash', 'other']);
 const ALLOWED_SELLER_RESOLUTIONS = new Set(['replacement', 'rejected']);
@@ -453,6 +454,24 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
           [orderId],
         );
         const eventLiability = eventLiabilityResult.rows[0];
+
+        await recordSellerExternalRefundRecovery(client, {
+          sellerUid: sellerId,
+          currency: String(order.total_currency ?? 'MWK'),
+          amount,
+          reference: refundTransactionId,
+          refundLiabilityId: eventLiability ? String(eventLiability.id) : null,
+          orderId,
+          reason: 'Seller confirmed that the buyer refund was paid directly outside BuyMesho',
+          actorType: 'seller',
+          actorId: sellerId,
+          metadata: {
+            refundRequestId: refundRequest?.id ?? null,
+            refundMethod,
+            refundDate,
+          },
+        });
+
         if (eventLiability) {
           const liabilityAmount = Number(eventLiability.amount ?? 0);
           if (Math.abs(liabilityAmount - amount) > 0.000001) {
