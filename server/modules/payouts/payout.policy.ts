@@ -49,6 +49,24 @@ export type PayoutFormulaInput = {
   currency?: string;
 };
 
+export type PayoutFormulaResult = {
+  grossAmount: number;
+  platformFeeAmount: number;
+  processingFeeAmount: number;
+  reserveAmount: number;
+  reserveCapAmount: number;
+  manualAdjustmentAmount: number;
+  payoutFeeAmount: number;
+  sellerReceivesAmount: number;
+  netAmount: number;
+  currency: string;
+};
+
+export function toFixedMoney(amount: number): number {
+  if (!Number.isFinite(amount)) return 0;
+  return Math.max(0, Math.round(amount));
+}
+
 export function calculatePayoutFee(amount: number, payoutMethod?: PayoutFormulaInput['payoutMethod']): number {
   const payoutAmount = toFixedMoney(amount);
   if (!payoutMethod) return 0;
