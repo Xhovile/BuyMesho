@@ -1,4 +1,5 @@
 import React from "react";
+import { ArrowRight } from "lucide-react";
 import AppFooter from "./AppFooter";
 import Header from "./Header";
 import HeroSection from "../sections/HeroSection";
