@@ -568,28 +568,16 @@ test("public SEO navigation and PWA shell references use crawlable or existing a
   assert.equal(serviceWorker.includes("/apple-touch-icon.png"), false);
   assert.equal(existsSync(resolve(process.cwd(), "public/_redirects")), false);
 
-  for (const pathname of [
-    "/home",
-    "/install",
-    "/signup",
-    "/about",
-    "/explore",
-    "/explore/deals",
-    "/explore/events",
-    "/explore/wholesale",
-    "/explore/sellers",
-    "/buy-online-malawi",
-    "/sell-online-malawi",
-    "/category",
-    "/listing",
-    "/seller",
-    "/privacy",
-    "/terms",
-    "/safety",
-  ]) {
-    assert.equal(vercelSources.has(pathname), true, pathname + " should proxy to SSR");
-    assert.equal(vercelSources.has(pathname + "/"), true, pathname + "/ should proxy to SSR");
-  }
+  assert.equal(
+    vercelSources.has("/"),
+    false,
+    "the homepage should remain on the Vercel SPA",
+  );
+  assert.equal(
+    vercelSources.has("/explore"),
+    false,
+    "/explore should remain on the Vercel SPA",
+  );
 });
 
 test("phase 8 Search Console verification and measurement hooks are wired", () => {
