@@ -7,6 +7,10 @@ import {
 import { PAYOUT_POLICY, isRetryableFailureCode } from './payout.policy.js';
 import { withOrderFinancialLock } from '../financial/orderFinancialLock.js';
 import {
+  preparePayoutFinancialNetting,
+  withSellerFinancialLock,
+} from '../financial/sellerFinancialLedger.js';
+import {
   classifyProviderFailureFromError,
   decryptSensitiveValue,
   exactProviderErrorMessage,
@@ -171,6 +175,13 @@ export async function gateForSubmissionAsync(payoutId: string): Promise<PayoutEx
   if (!isEventPayout && Number(row.seller_suspended ?? 0) === 1) {
     return { allowed: false, reasonCode: 'seller_suspended', reason: 'Seller is suspended' };
   }
+  if (Number(row.seller_financial_payout_hold ?? 0) === 1) {
+    return {
+      allowed: false,
+      reasonCode: 'seller_financial_hold',
+      reason: String(row.seller_financial_payout_hold_reason ?? 'Seller payout account is on financial hold'),
+    };
+  }
 
   let destination: ExecutionDestination | null = null;
   const current = hydrateDestination(row);
@@ -319,7 +330,8 @@ export async function executePayoutFlow(
     return { payout, attempt: null, execution: null, reasonCode: failureReason, reason, nextAction: 'manual_review' as PayoutNextAction };
   }
 
-  const lockedResult = await withOrderFinancialLock<PayoutExecutionFlowResult>(String(gate.orderId), async (): Promise<PayoutExecutionFlowResult> => {
+  const lockedResult = await withSellerFinancialLock(String(gate.sellerId), () =>
+    withOrderFinancialLock<PayoutExecutionFlowResult>(String(gate.orderId), async (): Promise<PayoutExecutionFlowResult> => {
     const lockedGate = await gateForSubmissionAsync(input.payoutId);
 
     if (!lockedGate.allowed || !lockedGate.sellerId || !lockedGate.orderId || !lockedGate.amount || !lockedGate.currency || !lockedGate.provider) {
@@ -348,6 +360,36 @@ export async function executePayoutFlow(
       currency: string;
       provider: string;
     };
+
+    const financialNetting = await preparePayoutFinancialNetting({ query }, {
+      payoutId: input.payoutId,
+      sellerUid: gate.sellerId,
+      currency: gate.currency,
+      minimumPayoutAmount: PAYOUT_POLICY.minimumPayoutAmount,
+    });
+
+    if (financialNetting.blocked) {
+      const payout = await holdPayoutForReviewAsync({
+        payoutId: input.payoutId,
+        sellerId: gate.sellerId,
+        reasonCode: 'seller_negative_balance',
+        reason: financialNetting.reason ?? 'Seller negative balance prevents payout submission',
+        payload: {
+          payoutAmountBeforeNetting: gate.amount,
+          payoutAmountAfterNetting: financialNetting.payoutAmount,
+        },
+      }, actor);
+      return {
+        payout,
+        attempt: null,
+        execution: null,
+        reasonCode: 'seller_negative_balance',
+        reason: financialNetting.reason ?? 'Seller negative balance prevents payout submission',
+        nextAction: 'manual_review' as PayoutNextAction,
+      };
+    }
+
+    const effectivePayoutAmount = financialNetting.payoutAmount;
 
     const reservedAttempt = await reserveRetryAttempt({
       payoutId: input.payoutId,
@@ -383,7 +425,7 @@ export async function executePayoutFlow(
     const execution = await executePayChanguPayout({
       payoutId: input.payoutId,
       sellerId: gate.sellerId,
-      amount: gate.amount,
+      amount: effectivePayoutAmount,
       currency: gate.currency,
       providerName: gate.provider,
       destinationReference: gate.destinationValue ?? input.destinationReference ?? input.payoutId,
@@ -535,7 +577,8 @@ export async function executePayoutFlow(
         : execution.status === 'paid' ? 'Payout paid successfully.' : 'Payout submitted to provider.',
       nextAction: execution.status === 'paid' ? 'none' : execution.status === 'failed' ? 'manual_review' : 'awaiting_provider',
     };
-  });
+    }),
+  );
 
   return lockedResult;
 }
