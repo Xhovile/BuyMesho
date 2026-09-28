@@ -664,7 +664,7 @@ test("static sitemap is removed so dynamic sitemap data cannot drift", () => {
   assert.equal(existsSync(resolve(process.cwd(), "public/sitemap.xml")), false);
 });
 
-test("vercel keeps the frontend on Vercel and routes public SSR documents to Render", () => {
+test("vercel keeps public application pages on Vercel", () => {
   const vercel = JSON.parse(readFileSync(resolve(process.cwd(), "vercel.json"), "utf8")) as {
     routes: Array<{ src?: string; dest?: string; handle?: string }>;
   };
@@ -675,21 +675,40 @@ test("vercel keeps the frontend on Vercel and routes public SSR documents to Ren
   assert.ok(filesystemRoute);
   assert.equal(spaFallback?.dest, "/index.html");
 
+  const renderRoutes = vercel.routes.filter((route) => route.dest?.includes("buymesho.onrender.com"));
+  assert.deepEqual(
+    renderRoutes.map((route) => [route.src, route.dest]),
+    [
+      ["/api/(.*)", "https://buymesho.onrender.com/api/$1"],
+      ["/sitemap\\\\.xml", "https://buymesho.onrender.com/api/seo/sitemap.xml"],
+      ["/sitemap-(.*)\\\\.xml", "https://buymesho.onrender.com/api/seo/sitemap-$1.xml"],
+    ],
+  );
+
   for (const path of [
     "/",
+    "/home",
+    "/install",
+    "/signup",
+    "/about",
     "/explore",
+    "/explore/deals",
+    "/explore/events",
+    "/explore/wholesale",
+    "/explore/sellers",
     "/buy-online-malawi",
     "/sell-online-malawi",
     "/category",
     "/listing",
     "/seller",
-    "/explore/events",
+    "/privacy",
+    "/terms",
+    "/safety",
   ]) {
-    const route = vercel.routes.find((entry) => entry.src === path);
     assert.equal(
-      route?.dest,
-      "https://buymesho.onrender.com" + path,
-      path + " should use Render only for its SSR document",
+      vercel.routes.some((route) => route.src === path && route.dest?.includes("buymesho.onrender.com")),
+      false,
+      path + " should not wake or proxy through Render",
     );
   }
 });
