@@ -1,5 +1,5 @@
 import express, { type RequestHandler } from "express";
-import { query, withTransaction } from "../postgres.js";
+import { withTransaction } from "../postgres.js";
 import {
   getSellerFinancialAccount,
   listSellerFinancialLedger,
