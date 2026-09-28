@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { getClient } from "../../postgres.js";
 import { query, withTransaction } from "../../postgres.js";
 import type { PoolClient } from "pg";
 
@@ -197,35 +196,6 @@ async function applyDebitInTransaction(
   });
 
   return { account: after, reserveUsed, negativeCreated, duplicate: false };
-}
-
-export async function withSellerFinancialLock<T>(
-  sellerUid: string,
-  work: () => Promise<T>,
-): Promise<T> {
-  const ownerUid = normalizeUid(sellerUid);
-  const client = await getClient();
-  const lockKey = `buymesho:seller-financial:\${ownerUid}`;
-  let locked = false;
-
-  try {
-    await client.query("SELECT pg_advisory_lock(hashtext($1))", [lockKey]);
-    locked = true;
-    return await work();
-  } finally {
-    if (locked) {
-      try {
-        await client.query("SELECT pg_advisory_unlock(hashtext($1))", [lockKey]);
-      } catch {
-        // Session cleanup below also releases the advisory lock.
-      }
-    }
-    try {
-      client.release();
-    } catch {
-      // Ignore release errors during cleanup.
-    }
-  }
 }
 
 export async function getSellerFinancialAccount(
