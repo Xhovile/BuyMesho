@@ -15,7 +15,10 @@ function normalizeLocationPath(pathname: string) {
 export default function RootRouter() {
   const initialPath = normalizeLocationPath(window.location.pathname);
   const [route, setRoute] = useState<AppRoute>(() =>
-    getAppRouteFromLocation({ ...window.location, pathname: initialPath }),
+    getAppRouteFromLocation({
+      pathname: initialPath,
+      search: window.location.search,
+    }),
   );
   const [locationSearch, setLocationSearch] = useState(() => window.location.search);
   const [locationPath, setLocationPath] = useState(() => initialPath);
@@ -24,7 +27,12 @@ export default function RootRouter() {
   useEffect(() => {
     const handleRouteChange = () => {
       const pathname = normalizeLocationPath(window.location.pathname);
-      setRoute(getAppRouteFromLocation({ ...window.location, pathname }));
+      setRoute(
+        getAppRouteFromLocation({
+          pathname,
+          search: window.location.search,
+        }),
+      );
       setLocationSearch(window.location.search);
       setLocationPath(pathname);
     };
