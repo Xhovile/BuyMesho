@@ -366,7 +366,8 @@ export default function BuyOnlineMalawiPage() {
             </FlowRow>
             <FlowRow title="Before the delivery deadline">
               If the order is still within its delivery period and delivery has not yet been confirmed, the dispute form
-              can be temporarily unavailable. The page tells you the date when the dispute becomes available.
+              can be temporarily unavailable. The current default delivery period is 10 days, and the page tells you
+              the applicable date when the dispute becomes available.
             </FlowRow>
             <FlowRow title="When a dispute is available" tone="red">
               Choose what happened, choose the outcome you want, explain the problem, and submit the case.
