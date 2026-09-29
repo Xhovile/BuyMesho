@@ -32,6 +32,8 @@ const CONTEXTUAL_LINKS: Record<SeoInternalLinksContext, PublicMarketplaceLink[]>
     { href: "/buy-online-malawi", label: "Buy online in Malawi", description: "Learn how BuyMesho supports online buying and tickets.", icon: ShoppingBag },
     { href: "/sell-online-malawi", label: "Sell online in Malawi", description: "Learn how sellers publish listings for buyers.", icon: Store },
     { href: "/explore/sellers", label: "Browse sellers", description: "Discover public sellers and businesses on BuyMesho.", icon: Store },
+    { href: "/buy-event-tickets-malawi", label: "Buy event tickets", description: "Learn how to buy and validate event tickets on BuyMesho.", icon: CalendarDays },
+    { href: "/create-event-malawi", label: "Create events", description: "Learn how event creators set up and manage events on BuyMesho.", icon: CalendarDays },
   ],
   marketplace: [
     { href: "/explore", label: "Explore the marketplace", description: "Browse public BuyMesho listings and discovery sections.", icon: ShoppingBag },
