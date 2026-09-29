@@ -208,7 +208,7 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
       };
       const categoryListings = db
         ? db.prepare(
-            "SELECT l.id,l.name FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.category=? AND l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.updated_at DESC,l.id DESC LIMIT 8"
+            "SELECT l.id,l.name FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.category=? AND l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.created_at DESC,l.id DESC LIMIT 8"
           ).all(categoryDbValues[category!]) as Array<{ id: number; name?: string | null }>
         : [];
       const listingLinks = categoryListings
@@ -271,7 +271,7 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
 
   if (db && (normalized === "/" || normalized === "/explore")) {
     const listings = db.prepare(
-      "SELECT l.id,l.name,l.price FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.updated_at DESC,l.id DESC LIMIT 8"
+      "SELECT l.id,l.name,l.price FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.created_at DESC,l.id DESC LIMIT 8"
     ).all() as Array<{ id: number; name?: string | null; price?: number | string | null }>;
     if (listings.length) {
       const listingLinks = listings.map((item) =>
@@ -293,7 +293,7 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
 
   if (db && normalized === "/explore/sellers") {
     const sellers = db.prepare(
-      "SELECT uid,business_name FROM sellers WHERE is_seller=1 ORDER BY updated_at DESC,uid ASC LIMIT 8"
+      "SELECT uid,business_name FROM sellers WHERE is_seller=1 ORDER BY join_date DESC,uid ASC LIMIT 8"
     ).all() as Array<{ uid: string; business_name?: string | null }>;
     if (sellers.length) {
       const sellerLinks = sellers.map((item) =>
@@ -313,7 +313,7 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
 
   if (db && normalized === "/explore/events") {
     const events = db.prepare(
-      "SELECT id,event_title FROM events WHERE deleted_at IS NULL AND publication_status='published' AND (publication_mode='immediate' OR (publication_mode='scheduled' AND publication_at IS NOT NULL AND publication_at<=CURRENT_TIMESTAMP)) ORDER BY updated_at DESC,id DESC LIMIT 8"
+      "SELECT id,event_title FROM events WHERE deleted_at IS NULL AND publication_status='published' AND (publication_mode='immediate' OR (publication_mode='scheduled' AND publication_at IS NOT NULL AND publication_at<=CURRENT_TIMESTAMP)) ORDER BY created_at DESC,id DESC LIMIT 8"
     ).all() as Array<{ id: number; event_title?: string | null }>;
     if (events.length) {
       const eventLinks = events.map((item) =>
@@ -478,7 +478,7 @@ function buildSellerResult(db: any, uid: string): SeoRenderResult {
 
   const sellerName = profile.business_name?.trim() || "Seller Profile";
   const listings = db.prepare(
-    "SELECT l.id,l.name FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.seller_uid=? AND l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.updated_at DESC,l.id DESC LIMIT ?"
+    "SELECT l.id,l.name FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.seller_uid=? AND l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.created_at DESC,l.id DESC LIMIT ?"
   ).all(normalizedUid, MAX_SEO_LISTINGS) as Array<{ id: number; name?: string | null }>;
 
   const description = profile.bio?.trim().slice(0, 155) ||
