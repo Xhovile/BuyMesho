@@ -16,6 +16,12 @@ const sellerBenefits = [
   { title: "A structured selling flow", text: "Use the listing and marketplace tools to publish, manage, and grow your presence." },
 ];
 
+const sellerGuideLinks = [
+  { href: EXPLORE_PATH, label: "Browse marketplace" },
+  { href: "/explore/sellers", label: "View Sellers on BuyMesho" },
+  { href: "/buy-online-malawi", label: "Looking to buy instead?" },
+];
+
 export default function SellOnlineMalawiPage() {
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -108,21 +114,18 @@ export default function SellOnlineMalawiPage() {
         </section>
 
         <section className="border-t border-zinc-200 py-10 sm:py-12">
-          <div className="flex flex-col gap-3">
-            <a
-              href={EXPLORE_PATH}
-              className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-blue-700"
-            >
-              Browse marketplace
-              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
-            </a>
-            <a
-              href="/buy-online-malawi"
-              className="group inline-flex items-center gap-1.5 py-2 text-sm font-bold text-zinc-700 hover:text-blue-700"
-            >
-              Looking to buy instead?
-              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
-            </a>
+          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Continue on BuyMesho</p>
+          <div className="mt-4 grid gap-x-8 sm:grid-cols-3">
+            {sellerGuideLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="group flex items-center gap-1.5 border-t border-zinc-200 py-4 text-sm font-extrabold text-zinc-900 transition-colors hover:text-blue-700"
+              >
+                {link.label}
+                <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+              </a>
+            ))}
           </div>
         </section>
       </main>
