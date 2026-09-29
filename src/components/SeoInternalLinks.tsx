@@ -16,12 +16,16 @@ const CONTEXTUAL_LINKS: Record<SeoInternalLinksContext, PublicMarketplaceLink[]>
     { href: "/sell-online-malawi", label: "Sell online in Malawi", description: "See how sellers publish products and reach buyers.", icon: Store },
     { href: "/explore/sellers", label: "Browse sellers", description: "Compare public seller profiles and marketplace listings.", icon: Store },
     { href: "/explore/events", label: "Events in Malawi", description: "Find public events and ticket listings on BuyMesho.", icon: CalendarDays },
+    { href: "/buy-event-tickets-malawi", label: "Buy event tickets", description: "Learn how to buy and validate event tickets on BuyMesho.", icon: CalendarDays },
+    { href: "/create-event-malawi", label: "Create events", description: "Learn how event creators set up and manage events on BuyMesho.", icon: CalendarDays },
   ],
   seller: [
     { href: "/explore", label: "Explore marketplace listings", description: "Browse products and services from across BuyMesho.", icon: ShoppingBag },
     { href: "/buy-online-malawi", label: "Buy online in Malawi", description: "See how buyers discover listings and continue to checkout.", icon: ShoppingBag },
     { href: "/sell-online-malawi", label: "Sell online in Malawi", description: "Learn how to build a seller presence on BuyMesho.", icon: Store },
     { href: "/explore/events", label: "Events in Malawi", description: "Discover public events and ticket listings.", icon: CalendarDays },
+    { href: "/buy-event-tickets-malawi", label: "Buy event tickets", description: "Learn how to buy and validate event tickets on BuyMesho.", icon: CalendarDays },
+    { href: "/create-event-malawi", label: "Create events", description: "Learn how event creators set up and manage events on BuyMesho.", icon: CalendarDays },
   ],
   events: [
     { href: "/explore", label: "Explore marketplace listings", description: "Return to products, services, categories, and deals.", icon: ShoppingBag },
