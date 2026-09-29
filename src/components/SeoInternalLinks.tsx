@@ -11,16 +11,16 @@ type SeoInternalLinksContext = "category" | "seller" | "events" | "marketplace";
 
 const CONTEXTUAL_LINKS: Record<SeoInternalLinksContext, PublicMarketplaceLink[]> = {
   category: [
-    { href: "/buy-online-malawi", label: "Buyer guide", description: "Learn how to discover products and complete a purchase on BuyMesho.", icon: ShoppingBag },
-    { href: "/sell-online-malawi", label: "Seller guide", description: "Learn how to publish listings and sell on BuyMesho.", icon: Store },
+    { href: "/buy-online-malawi", label: "Buy products (guide)", description: "Learn how to discover products and complete a purchase on BuyMesho.", icon: ShoppingBag },
+    { href: "/sell-online-malawi", label: "Sell products (guide)", description: "Learn how to publish listings and sell on BuyMesho.", icon: Store },
   ],
   seller: [
     { href: "/buy-online-malawi", label: "Buyer guide", description: "Learn how buyers discover listings and complete a purchase.", icon: ShoppingBag },
     { href: "/sell-online-malawi", label: "Seller guide", description: "Learn how sellers publish listings and manage sales.", icon: Store },
   ],
   events: [
-    { href: "/buy-event-tickets-malawi", label: "Buyer guide", description: "Learn how to find, buy, receive, and use event tickets.", icon: CalendarDays },
-    { href: "/create-event-malawi", label: "Creator guide", description: "Learn how to create, publish, manage, and receive payouts for events.", icon: CalendarDays },
+    { href: "/buy-event-tickets-malawi", label: "Buy event tickets", description: "Learn how to find, buy, receive, and use event tickets.", icon: CalendarDays },
+    { href: "/create-event-malawi", label: "Create an event", description: "Learn how to create, publish, manage, and receive payouts for events.", icon: CalendarDays },
   ],
   marketplace: [
     { href: "/buy-online-malawi", label: "Buyer guide", description: "Learn how to discover and buy through BuyMesho.", icon: ShoppingBag },
@@ -29,10 +29,10 @@ const CONTEXTUAL_LINKS: Record<SeoInternalLinksContext, PublicMarketplaceLink[]>
 };
 
 const CONTEXTUAL_TITLES: Record<SeoInternalLinksContext, string> = {
-  category: "Learn on BuyMesho",
-  seller: "Learn more on BuyMesho",
-  events: "Learn more about events",
-  marketplace: "Learn on BuyMesho",
+  category: "How to",
+  seller: "Learn how to",
+  events: "How to",
+  marketplace: "Learn how to",
 };
 
 export default function SeoInternalLinks({
