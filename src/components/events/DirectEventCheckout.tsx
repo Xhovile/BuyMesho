@@ -10,18 +10,21 @@ import { useAuthUser } from "../../hooks/useAuthUser";
 type DirectEventCheckoutProps = {
   eventId: number;
   eventTitle: string;
-  initialValue: Partial<TicketHolderInformation>;
   price: string;
 };
 
 export default function DirectEventCheckout({
   eventId,
   eventTitle,
-  initialValue,
   price,
 }: DirectEventCheckoutProps) {
   const { user: firebaseUser } = useAuthUser();
   const [ticketHolderOpen, setTicketHolderOpen] = useState(false);
+  const initialValue = {
+    fullName: firebaseUser?.displayName ?? "",
+    email: firebaseUser?.email ?? "",
+    phone: firebaseUser?.phoneNumber ?? "",
+  };
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
 
