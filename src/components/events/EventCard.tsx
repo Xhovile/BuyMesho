@@ -1,6 +1,7 @@
 import { CalendarDays, MapPin } from "lucide-react";
 
 import { EVENTS_PATH, navigateToPath } from "../../lib/appNavigation";
+import DirectEventCheckout from "./DirectEventCheckout";
 
 export type EventCardItem = {
   id: number;
@@ -17,7 +18,7 @@ export type EventCardItem = {
 
 function formatMoney(value: number | null | undefined) {
   if (value === null || value === undefined || value <= 0) return "Free";
-  return `MK ${value.toLocaleString()}`;
+  return "MK " + value.toLocaleString();
 }
 
 function formatDate(value: string) {
@@ -52,17 +53,17 @@ function posterAccent(eventType: string) {
   }
 }
 
-function getPosterUrl(item: EventRecord) {
+function getPosterUrl(item: EventCardItem) {
   const specValues = item.spec_values ?? {};
   const posterValue = specValues.poster_image_url || specValues.poster_url || specValues.poster;
   return typeof posterValue === "string" && posterValue.trim().length > 0 ? posterValue.trim() : "";
 }
 
-function getPosterAlt(item: EventRecord) {
+function getPosterAlt(item: EventCardItem) {
   const specValues = item.spec_values ?? {};
   const posterAlt = item.poster_alt || specValues.poster_alt;
   if (typeof posterAlt === "string" && posterAlt.trim().length > 0) return posterAlt.trim();
-  return `${item.event_type} poster for ${item.event_title}`;
+  return item.event_type + " poster for " + item.event_title;
 }
 
 export function EventCard({ item }: { item: EventCardItem }) {
@@ -73,50 +74,43 @@ export function EventCard({ item }: { item: EventCardItem }) {
   const posterAlt = getPosterAlt(item);
 
   return (
-    <a
-      href={`${EVENTS_PATH}?event=${encodeURIComponent(String(item.id))}`}
-      onClick={(event) => {
-        event.preventDefault();
-        navigateToPath(`${EVENTS_PATH}?event=${item.id}`);
-      }}
-      className="block overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-200/90 shadow-sm text-left transition-shadow hover:shadow-md"
-      aria-label={`Open event: ${item.event_title}`}
-    >
-      <div className={`relative aspect-[4/3] overflow-hidden rounded-2xl bg-gradient-to-br ${accent}`}>
-        {posterUrl ? <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" loading="lazy" /> : null}
-      </div>
-
-      <div className="pt-3">
-        <h3 className="line-clamp-2 text-base font-black tracking-[-0.05em] leading-tight text-zinc-950">{item.event_title}</h3>
-
-        <div className="mt-3 grid gap-2 text-xs text-zinc-600">
-          <div className="flex items-center gap-2">
-            <CalendarDays className="h-3.5 w-3.5 shrink-0 text-red-900" />
-            <span className="font-semibold text-zinc-700">{date}</span>
-            <span className="text-zinc-300">•</span>
-            <span>{item.start_time}</span>
-          </div>
-
-          <div className="flex items-start gap-2">
-            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-900" />
-            <span className="leading-relaxed text-zinc-700 line-clamp-2">
-              {item.venue}
-              {item.location ? ` • ${item.location}` : ""}
-            </span>
-          </div>
+    <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-200/90 shadow-sm text-left transition-shadow hover:shadow-md">
+      <a
+        href={EVENTS_PATH + "?event=" + encodeURIComponent(String(item.id))}
+        onClick={(event) => {
+          event.preventDefault();
+          navigateToPath(EVENTS_PATH + "?event=" + item.id);
+        }}
+        className="block"
+        aria-label={"Open event: " + item.event_title}
+      >
+        <div className={"relative aspect-[4/3] overflow-hidden rounded-2xl bg-gradient-to-br " + accent}>
+          {posterUrl ? <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" loading="lazy" /> : null}
         </div>
 
-        <div className="mt-3 overflow-hidden rounded-2xl border border-orange-200 bg-white">
-          <div className="flex items-stretch">
-            <div className="flex flex-1 items-center justify-center bg-orange-700 px-4 py-3 text-sm font-extrabold text-white">
-              Buy Ticket
+        <div className="pt-3">
+          <h3 className="line-clamp-2 text-base font-black tracking-[-0.05em] leading-tight text-zinc-950">{item.event_title}</h3>
+
+          <div className="mt-3 grid gap-2 text-xs text-zinc-600">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-red-900" />
+              <span className="font-semibold text-zinc-700">{date}</span>
+              <span className="text-zinc-300">•</span>
+              <span>{item.start_time}</span>
             </div>
-            <div className="flex min-w-[6.5rem] items-center justify-center border-l border-orange-200 bg-white px-4 py-3 text-sm font-black tracking-tight text-zinc-950">
-              {price}
+
+            <div className="flex items-start gap-2">
+              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-900" />
+              <span className="leading-relaxed text-zinc-700 line-clamp-2">
+                {item.venue}
+                {item.location ? " • " + item.location : ""}
+              </span>
             </div>
           </div>
         </div>
-      </div>
-    </a>
+      </a>
+
+      <DirectEventCheckout eventId={item.id} eventTitle={item.event_title} price={price} />
+    </div>
   );
 }
