@@ -96,23 +96,22 @@ export default function BuyOnlineMalawiPage() {
       </header>
 
       <main className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <section className="py-6 sm:py-8 lg:py-10">
-          <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-[0_18px_50px_-35px_rgba(0,0,0,0.35)]">
-            <div className="px-5 py-9 text-center sm:px-8 sm:py-12 lg:px-12 lg:py-14">
-              <BookOpen className="mx-auto h-14 w-14 text-[#74152f] sm:h-16 sm:w-16 lg:h-20 lg:w-20" strokeWidth={1.8} aria-hidden="true" />
-              <div className="mt-4 text-sm font-black uppercase tracking-[0.18em] text-[#74152f] sm:text-base">
-                BuyMesho Buying Guide
-              </div>
-              <h1 className="guide-display mx-auto mt-4 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-zinc-950 sm:text-6xl lg:text-7xl">
-                Buying on BuyMesho, step by step.
-              </h1>
-              <p className="mx-auto mt-6 max-w-3xl text-base leading-7 text-zinc-700 sm:text-lg">
-                This guide explains what happens from the moment you find a product to the point where
-                payment, delivery, escrow, order tracking, and disputes are handled.
-              </p>
+        <section className="py-10 sm:py-14 lg:py-16">
+          <div className="mx-auto max-w-4xl px-1 text-center sm:px-0">
+            <BookOpen className="mx-auto h-14 w-14 text-[#74152f] sm:h-16 sm:w-16 lg:h-20 lg:w-20" strokeWidth={1.8} aria-hidden="true" />
+            <div className="mt-4 text-sm font-black uppercase tracking-[0.18em] text-[#74152f] sm:text-base">
+              BuyMesho Buying Guide
             </div>
+            <h1 className="guide-display mx-auto mt-4 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-zinc-950 sm:text-6xl lg:text-7xl">
+              Buying on BuyMesho, step by step.
+            </h1>
+            <p className="mx-auto mt-6 max-w-3xl text-base leading-7 text-zinc-700 sm:text-lg">
+              This guide explains what happens from the moment you find a product to the point where
+              payment, delivery, escrow, order tracking, and disputes are handled.
+            </p>
+          </div>
 
-          <nav aria-label="Buying guide sections" className="border-t border-zinc-200">
+          <nav aria-label="Buying guide sections" className="mt-9 border-y border-zinc-200">
             <div className="grid sm:grid-cols-2 lg:grid-cols-4">
               {guideSections.map((section) => (
                 <a
@@ -127,7 +126,6 @@ export default function BuyOnlineMalawiPage() {
               ))}
             </div>
           </nav>
-          </div>
         </section>
 
         <section className="py-8 sm:py-10">
