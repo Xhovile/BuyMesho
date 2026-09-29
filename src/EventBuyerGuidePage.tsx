@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, FileText, QrCode, Ticket, WalletCards } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, FileText, QrCode, ShieldCheck, Ticket, WalletCards } from "lucide-react";
 import type { ReactNode } from "react";
 
 import AppFooter from "./components/AppFooter";
