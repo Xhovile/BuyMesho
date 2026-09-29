@@ -284,7 +284,7 @@ export default function ListingCard({
                 fillGrid
                   ? "line-clamp-1 text-[13px] font-extrabold tracking-tight text-zinc-900 md:text-[15px] md:group-hover:text-primary"
                   : ultraCompact
-                    ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900"
+                    ? "line-clamp-1 text-[13px] font-extrabold tracking-tight text-zinc-900"
                     : compact
                       ? "line-clamp-1 text-[15px] font-extrabold tracking-tight text-zinc-900 group-hover:text-primary"
                       : "line-clamp-1 text-[18px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
@@ -296,7 +296,7 @@ export default function ListingCard({
 
           <div
             className={`flex min-h-[1.6rem] flex-wrap gap-0.5 ${
-              fillGrid ? "text-[9px] md:text-[10px]" : ultraCompact ? "text-[8px]" : compact ? "text-[10px]" : "text-[11px]"
+              fillGrid ? "text-[9px] md:text-[10px]" : ultraCompact ? "text-[9px]" : compact ? "text-[10px]" : "text-[11px]"
             }`}
           >
             {cardSpecs.map((spec) => (
