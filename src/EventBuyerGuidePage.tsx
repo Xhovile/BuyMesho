@@ -270,22 +270,24 @@ export default function EventBuyerGuidePage() {
           <GuideLink href={REPORT_PATH}>Report a problem</GuideLink>
         </GuideSection>
 
-        <section className="border-t border-zinc-200 py-10 sm:py-12">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f]">Continue with events</p>
-              <div className="mt-3 flex flex-col items-start gap-1">
-                <GuideLink href={EVENTS_PATH} tone="dark">Browse events</GuideLink>
-                <GuideLink href={EVENT_CREATOR_GUIDE_PATH} tone="dark">Want to create an event?</GuideLink>
-                <GuideLink href={TICKETS_PATH} tone="dark">Open My Tickets</GuideLink>
+        <section className="py-10 sm:py-12">
+          <div className="border border-zinc-200 bg-white/45 p-5 sm:p-7">
+            <div className="grid gap-8 sm:grid-cols-2 sm:gap-10">
+              <div>
+                <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f]">Continue with events</p>
+                <div className="mt-3 flex flex-col items-start gap-1">
+                  <GuideLink href={EVENTS_PATH} tone="dark">Browse events</GuideLink>
+                  <GuideLink href={EVENT_CREATOR_GUIDE_PATH} tone="dark">Want to create an event?</GuideLink>
+                  <GuideLink href={TICKETS_PATH} tone="dark">Open My Tickets</GuideLink>
+                </div>
               </div>
-            </div>
-            <div>
-              <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f]">Other BuyMesho guides</p>
-              <div className="mt-3 flex flex-col items-start gap-1">
-                <GuideLink href={BUY_ONLINE_MALAWI_PATH} tone="dark">Buying marketplace products</GuideLink>
-                <GuideLink href={SELL_ONLINE_MALAWI_PATH} tone="dark">Selling marketplace products</GuideLink>
-                <GuideLink href={EXPLORE_PATH} tone="dark">Open the marketplace</GuideLink>
+              <div>
+                <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f]">Other BuyMesho guides</p>
+                <div className="mt-3 flex flex-col items-start gap-1">
+                  <GuideLink href={BUY_ONLINE_MALAWI_PATH} tone="dark">Buying marketplace products</GuideLink>
+                  <GuideLink href={SELL_ONLINE_MALAWI_PATH} tone="dark">Selling marketplace products</GuideLink>
+                  <GuideLink href={EXPLORE_PATH} tone="dark">Open the marketplace</GuideLink>
+                </div>
               </div>
             </div>
           </div>

@@ -62,10 +62,10 @@ export default function SeoInternalLinks({
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-9 sm:px-6 sm:py-10 lg:px-8" aria-labelledby="buymesho-internal-links">
-      <div className="border-t border-zinc-200 pt-6 sm:pt-7">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className="border border-zinc-200 bg-white/45 p-5 sm:p-7">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#74152f]">
               BuyMesho marketplace
             </p>
             <h2 id="buymesho-internal-links" className="mt-2 text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">
