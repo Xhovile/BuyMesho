@@ -357,7 +357,7 @@ export default function EventBuyerGuidePage() {
               <div className="mt-3 flex flex-col items-start gap-1">
                 <GuideLink href={EVENTS_PATH} tone="dark">Browse events</GuideLink>
                 <GuideLink href={EVENT_CREATOR_GUIDE_PATH} tone="dark">Want to create an event?</GuideLink>
-                <GuideLink href={TICKETS_PATH}>Open My Tickets</GuideLink>
+                <GuideLink href={TICKETS_PATH} tone="dark">Open My Tickets</GuideLink>
               </div>
             </div>
             <div>
