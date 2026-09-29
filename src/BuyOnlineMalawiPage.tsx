@@ -30,14 +30,14 @@ function GuideSection({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-28 border-t border-[var(--guide-line)] py-12 sm:py-16 lg:py-20">
+    <section id={id} className="scroll-mt-28 border-t border-zinc-200 py-12 sm:py-16 lg:py-20">
       <div className="grid gap-5 sm:grid-cols-[96px_minmax(0,1fr)] sm:gap-8 lg:grid-cols-[132px_minmax(0,1fr)] lg:gap-10">
         <div className="pt-1">
           <p className="guide-chapter-number text-6xl leading-none sm:text-7xl lg:text-8xl">{number}</p>
         </div>
         <div className="max-w-5xl">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">{eyebrow}</p>
-          <h2 className="guide-display mt-2 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-[var(--guide-accent)] sm:text-5xl lg:text-6xl">
+          <h2 className="guide-display mt-2 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-zinc-950 sm:text-5xl lg:text-6xl">
             {title}
           </h2>
           <div className="mt-7 space-y-6 text-base leading-7 text-zinc-700 sm:mt-9 sm:text-[17px] sm:leading-8">{children}</div>
@@ -79,15 +79,15 @@ function PathCode({ children }: { children: React.ReactNode }) {
 
 export default function BuyOnlineMalawiPage() {
   return (
-    <div className="guide-page min-h-screen bg-[var(--guide-bg)] text-[#181313]">
-      <header className="sticky top-0 z-50 border-b border-[var(--guide-line)] bg-[rgba(251,241,242,0.95)] backdrop-blur">
+    <div className="guide-page min-h-screen bg-zinc-100 text-zinc-900">
+      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <a href={EXPLORE_PATH} aria-label="Open BuyMesho marketplace">
             <BrandMark subtitle="Buying guide" />
           </a>
           <a
             href={EXPLORE_PATH}
-            className="inline-flex items-center gap-2 rounded-full bg-black px-5 py-3 text-[15px] font-bold text-white transition hover:bg-[#181313] sm:px-6 sm:py-3.5 sm:text-base"
+            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
           >
             Browse Market
             <ArrowRight className="h-4 w-4" />
@@ -96,16 +96,16 @@ export default function BuyOnlineMalawiPage() {
       </header>
 
       <main className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <section className="border-b border-[var(--guide-line)] bg-[var(--guide-bg)] py-12 sm:py-16 lg:py-20">
+        <section className="border-b border-zinc-200 bg-gradient-to-br from-white via-zinc-50 to-red-50/40 py-10 sm:py-14 lg:py-16">
           <div className="max-w-4xl">
-            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.22em] text-[var(--guide-muted)]">
-              <BookOpen className="h-4 w-4 text-[var(--guide-accent)]" />
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">
+              <BookOpen className="h-4 w-4 text-blue-600" />
               BuyMesho buying guide
             </div>
-            <h1 className="guide-display mt-3 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-[var(--guide-accent)] sm:text-6xl lg:text-7xl">
+            <h1 className="guide-display mt-3 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-zinc-950 sm:text-6xl lg:text-7xl">
               Buying on BuyMesho, step by step.
             </h1>
-            <p className="mt-6 max-w-3xl text-base leading-7 text-[var(--guide-muted)] sm:text-lg sm:leading-8">
+            <p className="mt-5 max-w-3xl text-base leading-7 text-zinc-700 sm:text-lg">
               This guide explains what happens from the moment you find a product to the point where
               payment, delivery, escrow, order tracking, and disputes are handled.
             </p>
@@ -117,7 +117,7 @@ export default function BuyOnlineMalawiPage() {
                 <a
                   key={section.id}
                   href={`#${section.id}`}
-                  className="group flex min-h-16 items-center gap-4 border-b border-[var(--guide-line)] px-1 py-4 text-base font-bold text-zinc-800 transition-colors hover:text-[var(--guide-accent)] sm:min-h-20 sm:border-r sm:px-4 sm:text-lg sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(4n)]:border-r-0"
+                  className="group flex min-h-16 items-center gap-4 border-b border-[var(--guide-line)] px-1 py-4 text-base font-bold text-zinc-800 transition-colors hover:text-blue-700 sm:min-h-20 sm:border-r sm:px-4 sm:text-lg sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(4n)]:border-r-0"
                 >
                   <span className="guide-chapter-number text-2xl sm:text-3xl">{section.number}</span>
                   <span>{section.label}</span>
@@ -133,7 +133,7 @@ export default function BuyOnlineMalawiPage() {
             <div className="flex items-start gap-3">
               <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[var(--guide-accent)]" />
               <div>
-                <h2 className="guide-display text-xl font-semibold text-[var(--guide-accent)] sm:text-2xl">The complete buying path</h2>
+                <h2 className="guide-display text-xl font-semibold text-zinc-950 sm:text-2xl">The complete buying path</h2>
                 <p className="mt-2 text-sm leading-6 text-zinc-600">
                   Find a listing → open its details → sign in or create an account → checkout →
                   payment page → payment verification → order tracking → delivery → confirm delivery.
