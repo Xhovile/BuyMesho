@@ -41,7 +41,7 @@ export default function AppLegacyPage(props: AppLegacyState) {
         />
 
         <section className="my-10 border border-zinc-200 bg-white/45 p-5 sm:p-7">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#74152f]">Learn on BuyMesho</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#74152f]">Learn how to</p>
           <h2 className="mt-2 max-w-3xl text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">Get more from the marketplace.</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-600 sm:text-base">Learn how buying and selling work on BuyMesho, then return to the marketplace when you are ready.</p>
           <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2">
