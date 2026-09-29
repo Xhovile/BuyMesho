@@ -9,7 +9,8 @@ import FloatingCartButton from "./components/FloatingCartButton";
 import Header from "./components/Header";
 import AppFooter from "./components/AppFooter";
 import SeoInternalLinks from "./components/SeoInternalLinks";
-import { EventCard, type EventRecord } from "./components/events/EventCard";
+import { EventCard } from "./components/events/EventCard";
+import type { EventRecord } from "./components/eventDetails/eventDetailsTypes";
 import { API_CACHE_TTL_MS, isCachedApiResponseFresh, readCachedApiJson } from "./lib/apiCache";
 import {
   EVENTS_CREATE_PATH,
