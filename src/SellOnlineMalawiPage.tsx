@@ -19,7 +19,7 @@ const sellerBenefits = [
 export default function SellOnlineMalawiPage() {
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="border-b border-zinc-200 bg-white">
+      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <a href={EXPLORE_PATH} aria-label="Open BuyMesho marketplace">
             <BrandMark subtitle="Public Marketplace" />
@@ -56,11 +56,11 @@ export default function SellOnlineMalawiPage() {
                 <ArrowRight className="h-4 w-4" />
               </a>
               <a
-                href={EXPLORE_PATH}
-                className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-800 hover:text-blue-700"
+                href="/become-seller"
+                className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_12px_30px_-18px_rgba(24,24,27,0.7)] hover:bg-zinc-800"
               >
-                Browse marketplace
-                <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+                Become Seller
+                <ArrowRight className="h-4 w-4" />
               </a>
             </div>
           </div>
@@ -108,13 +108,22 @@ export default function SellOnlineMalawiPage() {
         </section>
 
         <section className="border-t border-zinc-200 py-10 sm:py-12">
-          <a
-            href="/buy-online-malawi"
-            className="group inline-flex items-center gap-1.5 py-2 text-sm font-bold text-zinc-700 hover:text-blue-700"
-          >
-            Looking to buy instead?
-            <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
-          </a>
+          <div className="flex flex-col gap-3">
+            <a
+              href={EXPLORE_PATH}
+              className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-blue-700"
+            >
+              Browse marketplace
+              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+            </a>
+            <a
+              href="/buy-online-malawi"
+              className="group inline-flex items-center gap-1.5 py-2 text-sm font-bold text-zinc-700 hover:text-blue-700"
+            >
+              Looking to buy instead?
+              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+            </a>
+          </div>
         </section>
       </main>
 
