@@ -472,13 +472,17 @@ export default function BuyOnlineMalawiPage() {
               </div>
               <div className="space-y-2 text-sm leading-6 text-zinc-600">
                 <p>
-                  BuyMesho currently adds <strong>0% separate buyer checkout fee</strong>. The checkout total is the
-                  published order item total based on the listing price and quantity.
+                  BuyMesho does <strong>not absorb payment-provider checkout fees</strong>. When a payment-processing
+                  fee applies, it is charged to the buyer during the payment checkout.
                 </p>
                 <p>
-                  The current <strong>3% platform fee</strong> and payout-method charges are seller-side payout costs,
-                  not separate buyer checkout charges. The listing checkout also does not add a standard platform
-                  delivery-fee line, so confirm any delivery arrangement or delivery cost with the seller before paying.
+                  The amount shown at the payment stage can therefore be higher than the listing order total because
+                  the payment provider may add its applicable checkout fee. Review the final amount shown in the
+                  payment checkout before authorizing the transaction.
+                </p>
+                <p>
+                  Delivery is separate from payment processing. Confirm the delivery arrangement, location, and any
+                  delivery cost with the seller before paying.
                 </p>
               </div>
             </div>
