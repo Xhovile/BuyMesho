@@ -108,6 +108,8 @@ function loadSitemapData(db: any) {
     { loc: `${SITE_URL}/explore` },
     { loc: `${SITE_URL}/buy-online-malawi` },
     { loc: `${SITE_URL}/sell-online-malawi` },
+    { loc: `${SITE_URL}/buy-event-tickets-malawi` },
+    { loc: `${SITE_URL}/create-event-malawi` },
     { loc: `${SITE_URL}/explore/deals` },
     { loc: `${SITE_URL}/explore/events` },
     { loc: `${SITE_URL}/explore/wholesale` },
