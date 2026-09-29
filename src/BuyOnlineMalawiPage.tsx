@@ -127,6 +127,7 @@ export default function BuyOnlineMalawiPage() {
               ))}
             </div>
           </nav>
+          </div>
         </section>
 
         <section className="py-8 sm:py-10">
