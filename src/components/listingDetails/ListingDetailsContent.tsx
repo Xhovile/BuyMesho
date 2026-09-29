@@ -1,10 +1,8 @@
 import { useState, type ReactNode } from "react";
-import { ArrowRight } from "lucide-react";
 import { useListingSEO } from "../../hooks/useListingSEO";
 import ListingActionsMenu from "../ListingActionsMenu";
 import ConfirmModal from "../ConfirmModal";
 import FeedbackModal from "../FeedbackModal";
-import SeoInternalLinks from "../SeoInternalLinks";
 import ListingGallery from "./ListingGallery";
 import ListingSummary from "./ListingSummary";
 import ListingOffersBlock from "./ListingOffersBlock";
@@ -253,37 +251,6 @@ export default function ListingDetailsContent({
                 <ListingTrustBlock listing={listing} seller={seller} ratingSummary={ratingSummary} />
               </div>
             </section>
-
-            <section className="scroll-mt-32 border-t border-zinc-200 pt-8">
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-400">Continue exploring</p>
-              <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
-                <a
-                  href={EXPLORE_PATH}
-                  className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-blue-700"
-                >
-                  Explore marketplace
-                  <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
-                </a>
-                {listing.seller_uid ? (
-                  <a
-                    href={`/seller?uid=${encodeURIComponent(String(listing.seller_uid))}`}
-                    className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-blue-700"
-                  >
-                    View seller profile
-                    <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
-                  </a>
-                ) : null}
-                <a
-                  href="/buy-online-malawi"
-                  className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-blue-700"
-                >
-                  How to buy online in Malawi
-                  <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
-                </a>
-              </div>
-            </section>
-
-            <SeoInternalLinks title="More ways to explore BuyMesho" />
 
             <section ref={reviewsRef} id="reviews" className="scroll-mt-32 pt-12">
               <ListingReviewsBlock ratingSummary={ratingSummary} listing={listing} seller={seller} />

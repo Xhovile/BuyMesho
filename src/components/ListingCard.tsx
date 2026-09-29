@@ -244,7 +244,7 @@ export default function ListingCard({
                   performanceMode ? "" : "backdrop-blur-md"
                 } ${
                   fillGrid
-                    ? "px-2 py-1 text-[11px] md:px-2.5 md:py-1 md:text-xs"
+                    ? "px-2 py-1 text-[12px] md:px-2.5 md:py-1 md:text-[13px]"
                     : ultraCompact
                       ? "px-2 py-1 text-[11px]"
                       : compact
@@ -282,12 +282,12 @@ export default function ListingCard({
             <h3
               className={
                 fillGrid
-                  ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900 md:text-[14px] md:group-hover:text-primary"
+                  ? "line-clamp-1 text-[13px] font-extrabold tracking-tight text-zinc-900 md:text-[15px] md:group-hover:text-primary"
                   : ultraCompact
-                    ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900"
+                    ? "line-clamp-1 text-[13px] font-extrabold tracking-tight text-zinc-900"
                     : compact
-                      ? "line-clamp-1 text-[14px] font-extrabold tracking-tight text-zinc-900 group-hover:text-primary"
-                      : "line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
+                      ? "line-clamp-1 text-[15px] font-extrabold tracking-tight text-zinc-900 group-hover:text-primary"
+                      : "line-clamp-1 text-[18px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
               }
             >
               {titleLabel}
@@ -296,7 +296,7 @@ export default function ListingCard({
 
           <div
             className={`flex min-h-[1.6rem] flex-wrap gap-0.5 ${
-              fillGrid ? "text-[8px] md:text-[9px]" : ultraCompact ? "text-[8px]" : compact ? "text-[9px]" : "text-[10px]"
+              fillGrid ? "text-[9px] md:text-[10px]" : ultraCompact ? "text-[9px]" : compact ? "text-[10px]" : "text-[11px]"
             }`}
           >
             {cardSpecs.map((spec) => (
@@ -306,7 +306,7 @@ export default function ListingCard({
             ))}
           </div>
 
-          <div className="min-h-[1.1rem] text-[9px] font-extrabold uppercase tracking-wider text-zinc-600">
+          <div className="min-h-[1.1rem] text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
             {[conditionLabel, availabilityLabel].filter(Boolean).join(" | ")}
           </div>
 
