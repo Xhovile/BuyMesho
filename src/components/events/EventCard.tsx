@@ -32,6 +32,20 @@ function formatDate(value: string) {
   });
 }
 
+function formatTime(value: string) {
+  if (!value) return "Time unavailable";
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return value;
+
+  const hour = Number(match[1]);
+  const minutes = match[2];
+  if (hour < 0 || hour > 23) return value;
+
+  const period = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 || 12;
+  return hour12 + ":" + minutes + " " + period;
+}
+
 function posterAccent(eventType: string) {
   switch (eventType) {
     case "Concert":
@@ -69,6 +83,7 @@ function getPosterAlt(item: EventCardItem) {
 export function EventCard({ item }: { item: EventCardItem }) {
   const price = formatMoney(item.ticket_price);
   const date = formatDate(item.event_date);
+  const time = formatTime(item.start_time);
   const accent = posterAccent(item.event_type);
   const posterUrl = getPosterUrl(item);
   const posterAlt = getPosterAlt(item);
@@ -88,7 +103,7 @@ export function EventCard({ item }: { item: EventCardItem }) {
           {posterUrl ? <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" loading="lazy" /> : null}
         </div>
 
-        <div className="pt-3">
+        <div className="px-3 pt-3">
           <h3 className="line-clamp-2 text-base font-black tracking-[-0.05em] leading-tight text-zinc-950">{item.event_title}</h3>
 
           <div className="mt-3 grid gap-2 text-xs text-zinc-600">
@@ -96,7 +111,7 @@ export function EventCard({ item }: { item: EventCardItem }) {
               <CalendarDays className="h-3.5 w-3.5 shrink-0 text-red-900" />
               <span className="font-semibold text-zinc-700">{date}</span>
               <span className="text-zinc-300">•</span>
-              <span>{item.start_time}</span>
+              <span>{time}</span>
             </div>
 
             <div className="flex items-start gap-2">
