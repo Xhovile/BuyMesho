@@ -1,4 +1,5 @@
 import { ArrowRight, BookOpen, CheckCircle2, CircleAlert, FileSearch, ShieldCheck, WalletCards } from "lucide-react";
+import type { ReactNode } from "react";
 
 import AppFooter from "./components/AppFooter";
 import BrandMark from "./components/BrandMark";
@@ -26,7 +27,7 @@ function GuideSection({
   number: string;
   eyebrow: string;
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <section id={id} className="scroll-mt-28 border-t border-zinc-200 py-10 sm:py-12">
@@ -50,7 +51,7 @@ function FlowRow({
   tone = "neutral",
 }: {
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
   tone?: "neutral" | "blue" | "red";
 }) {
   const toneClasses =
@@ -360,7 +361,7 @@ export default function BuyOnlineMalawiPage() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <FlowRow title="Find the order">
-              Open <PathCode>/disputes</PathCode> and search using the order reference, order ID, or a ticket ID where
+              Open <PathCode>/payments/disputes</PathCode> and search using the order reference, order ID, or a ticket ID where
               applicable.
             </FlowRow>
             <FlowRow title="Before the delivery deadline">
@@ -411,7 +412,7 @@ export default function BuyOnlineMalawiPage() {
           </p>
 
           <a
-            href="/disputes"
+            href="/payments/disputes"
             className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-blue-700"
           >
             Open Disputes
