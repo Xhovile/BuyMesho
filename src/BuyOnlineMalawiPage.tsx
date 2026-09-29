@@ -111,13 +111,13 @@ export default function BuyOnlineMalawiPage() {
             </p>
           </div>
 
-          <nav aria-label="Buying guide sections" className="mt-9 border-y border-[transparent]">
+          <nav aria-label="Buying guide sections" className="mt-9 border-y border-zinc-200">
             <div className="grid sm:grid-cols-2 lg:grid-cols-4">
               {guideSections.map((section) => (
                 <a
                   key={section.id}
                   href={`#${section.id}`}
-                  className="group flex min-h-16 items-center gap-4 border-b border-[transparent] px-1 py-4 text-base font-bold text-zinc-800 transition-colors hover:text-blue-700 sm:min-h-20 sm:border-r sm:px-4 sm:text-lg sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(4n)]:border-r-0"
+                  className="group flex min-h-16 items-center gap-4 border-b border-zinc-200 px-1 py-4 text-base font-bold text-zinc-800 transition-colors hover:text-blue-700 sm:min-h-20 sm:border-r sm:px-4 sm:text-lg sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(4n)]:border-r-0"
                 >
                   <span className="guide-chapter-number text-2xl sm:text-3xl">{section.number}</span>
                   <span>{section.label}</span>
@@ -129,7 +129,7 @@ export default function BuyOnlineMalawiPage() {
         </section>
 
         <section className="py-8 sm:py-10">
-          <div className="border-y border-[transparent] bg-white/45 p-5 sm:p-7">
+          <div className="border-y border-zinc-200 bg-white/45 p-5 sm:p-7">
             <div className="flex items-start gap-3">
               <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-zinc-950" />
               <div>
