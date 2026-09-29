@@ -90,14 +90,14 @@ export function EventCard({ item }: { item: EventRecord }) {
         event.preventDefault();
         navigateToPath(`${EVENTS_PATH}?event=${item.id}`);
       }}
-      className="block overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white text-left shadow-[0_12px_30px_-24px_rgba(0,0,0,0.28)]"
+      className="block text-left"
       aria-label={`Open event: ${item.event_title}`}
     >
-      <div className={`relative aspect-[4/3] bg-gradient-to-br ${accent}`}>
+      <div className={`relative aspect-[4/3] overflow-hidden rounded-2xl bg-gradient-to-br ${accent}`}>
         {posterUrl ? <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" loading="lazy" /> : null}
       </div>
 
-      <div className="p-3">
+      <div className="pt-3">
         <h3 className="line-clamp-2 text-base font-black tracking-[-0.05em] leading-tight text-zinc-950">{item.event_title}</h3>
 
         <div className="mt-3 grid gap-2 text-xs text-zinc-600">
