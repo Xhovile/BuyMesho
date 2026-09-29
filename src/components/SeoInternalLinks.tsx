@@ -45,8 +45,8 @@ export default function SeoInternalLinks({
   const links = CONTEXTUAL_LINKS[context];
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-9 sm:px-6 sm:py-10 lg:px-8" aria-labelledby="buymesho-internal-links">
-      <div className="border border-zinc-200 bg-white/45 p-5 sm:p-7">
+    <section className="mx-auto w-full max-w-7xl px-4 py-9 sm:px-6 sm:py-10 lg:px-8" aria-labelledby="buymesho-internal-links">
+      <div className="w-full border border-zinc-200 bg-white/45 p-5 sm:p-7">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
           <div>
             <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#74152f]">
