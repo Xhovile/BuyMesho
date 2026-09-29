@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, ClipboardList, QrCode, ShieldCheck, WalletCards } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, FileText, QrCode, Ticket, WalletCards } from "lucide-react";
 import type { ReactNode } from "react";
 
 import AppFooter from "./components/AppFooter";
@@ -15,14 +15,12 @@ import {
 } from "./lib/appNavigation.paths";
 
 const guideSections = [
-  { id: "access", number: "01", label: "Event creator access" },
-  { id: "create", number: "02", label: "Create your event" },
-  { id: "tickets", number: "03", label: "Set up tickets" },
-  { id: "payout", number: "04", label: "Set up payout" },
-  { id: "publish", number: "05", label: "Publish & manage" },
-  { id: "track", number: "06", label: "Track the event" },
-  { id: "money", number: "07", label: "Payments & payouts" },
-  { id: "tickets-validation", number: "08", label: "Tickets & validation" },
+  { id: "access", number: "01", label: "Get creator access" },
+  { id: "setup", number: "02", label: "Create & set up" },
+  { id: "payout", number: "03", label: "Set up your payout" },
+  { id: "manage", number: "04", label: "Publish & manage" },
+  { id: "sales", number: "05", label: "Sales & payouts" },
+  { id: "tickets", number: "06", label: "Tickets & entry" },
 ];
 
 function GuideSection({
@@ -131,18 +129,17 @@ export default function EventCreatorGuidePage() {
               Creating events on BuyMesho, step by step.
             </h1>
             <p className="mx-auto mt-6 max-w-3xl text-base leading-7 text-zinc-700 sm:text-lg">
-              This guide explains how event creators move from access and event setup to ticket sales,
-              payment records, event validation, and creator payouts.
+              Everything you need to go from creator access and event setup to ticket sales, payouts, and entry.
             </p>
           </div>
 
           <nav aria-label="Event creator guide sections" className="mt-9 border-y border-zinc-200">
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3">
               {guideSections.map((section) => (
                 <a
                   key={section.id}
                   href={`#${section.id}`}
-                  className="group flex min-h-16 items-center gap-4 border-b border-zinc-200 px-1 py-4 text-base font-bold text-zinc-800 transition-colors hover:text-blue-700 sm:min-h-20 sm:border-r sm:px-4 sm:text-lg sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(4n)]:border-r-0"
+                  className="group flex min-h-16 items-center gap-4 border-b border-zinc-200 px-1 py-4 text-base font-bold text-zinc-800 transition-colors hover:text-blue-700 sm:min-h-20 sm:border-r sm:px-4 sm:text-lg sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(3n)]:border-r-0"
                 >
                   <span className="guide-chapter-number text-2xl sm:text-3xl">{section.number}</span>
                   <span>{section.label}</span>
@@ -153,245 +150,151 @@ export default function EventCreatorGuidePage() {
           </nav>
         </section>
 
-        <section className="py-8 sm:py-10">
-          <div className="border-y border-zinc-200 bg-white/45 p-5 sm:p-7">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-zinc-950" />
-              <div>
-                <h2 className="guide-display text-xl font-semibold text-zinc-950 sm:text-2xl">The complete creator path</h2>
-                <p className="mt-2 text-sm leading-6 text-zinc-600">
-                  Get event creator access → create the event → configure tickets → verify a payout destination for paid events →
-                  publish → manage sales and activity → validate tickets → receive the event payout.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <GuideSection id="access" number="01" eyebrow="Event creator access" title="Start with a BuyMesho account and event creator access.">
+        <GuideSection id="access" number="01" eyebrow="Getting started" title="Get access to event creation.">
           <p>
-            Event creation is an authenticated workflow. BuyMesho checks whether the signed-in account has active event creator access before allowing event management actions.
+            Sign in to BuyMesho and request event creator access before you create your first event.
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <FlowRow title="Already approved" tone="blue">
-              Open the event creation or management route and continue into the creator workspace.
+            <FlowRow title="Request access" tone="blue">
+              Provide your display name, organization details, WhatsApp contact, the kinds of events you plan to run, and why you want to publish events.
             </FlowRow>
-            <FlowRow title="No active creator access">
-              The event creation flow loads the creator onboarding form so the account can submit the required creator information before creating events.
+            <FlowRow title="Once access is available">
+              Open the event creation tools and start setting up your event.
             </FlowRow>
           </div>
 
           <p>
-            The onboarding form currently asks for a display name, organization name and type, WhatsApp contact, the event types you plan to run, and a reason for requesting event-creator access. The creator record then carries the account's status and active-until date. Event creator access is distinct from marketplace seller access.
+            Event creator access is separate from marketplace seller access.
           </p>
 
           <GuideLink href={EVENTS_CREATE_PATH}>Open event creation</GuideLink>
         </GuideSection>
 
-        <GuideSection id="create" number="02" eyebrow="Event setup" title="Create the public event record before you publish it.">
+        <GuideSection id="setup" number="02" eyebrow="Event setup" title="Create the event and set up what buyers will see.">
           <p>
-            The event form is built around the information a buyer needs to understand what is happening, where it is happening, and what ticket they are buying.
+            Add the information buyers need to understand your event and decide whether they want to attend.
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <FlowRow title="Event basics">Choose the event type and provide the event title and organizer name.</FlowRow>
-            <FlowRow title="Date & time">Set the event date, start time, and optional end time.</FlowRow>
-            <FlowRow title="Location">Provide the venue and location shown to the public.</FlowRow>
-            <FlowRow title="Tickets">Set the ticket mode and, for paid events, the ticket price.</FlowRow>
-            <FlowRow title="Description">Give buyers the information they need to understand the event.</FlowRow>
-            <FlowRow title="Poster">Add the event poster information used for the public event page.</FlowRow>
+            <FlowRow title="Event details">Add the event type, title, organizer, date, time, venue, and location.</FlowRow>
+            <FlowRow title="Description">Explain the event clearly so buyers know what to expect.</FlowRow>
+            <FlowRow title="Poster">Add the event poster for the public event page.</FlowRow>
+            <FlowRow title="Tickets" tone="blue">Choose the ticket mode and set the ticket price for a paid event.</FlowRow>
+            <FlowRow title="Free or paid">Free events do not need a payout destination. Paid events do.</FlowRow>
+            <FlowRow title="Publication">Choose to publish immediately or schedule publication for later.</FlowRow>
           </div>
 
           <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
             <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
             <p className="text-sm leading-6 text-zinc-600">
-              You can also configure the publication mode. BuyMesho supports immediate publication and scheduled publication for events.
+              Before publishing, review the event information the way a buyer would see it.
             </p>
           </div>
         </GuideSection>
 
-        <GuideSection id="tickets" number="03" eyebrow="Ticket setup" title="Define what buyers are actually purchasing.">
+        <GuideSection id="payout" number="03" eyebrow="Payout" title="Set up where you will receive money from paid tickets.">
           <p>
-            An event ticket is a distinct transaction type in BuyMesho. The event checkout flow records the event ID, ticket information, quantity, and ticket-holder details so the resulting ticket can be projected into the buyer's ticket library.
+            Paid events need a verified payout destination before ticket sales can be published.
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <FlowRow title="Free event" tone="blue">
-              A zero or absent ticket price does not require an event payout destination.
+            <FlowRow title="Choose a destination" tone="blue">
+              Use a supported bank or mobile-money payout destination registered to you.
             </FlowRow>
-            <FlowRow title="Paid event">
-              A new paid event requires a usable payout destination before it can be published. BuyMesho checks that the selected destination is active and verified.
+            <FlowRow title="Verify it">
+              The destination must be active and verified before it can be used for a paid event.
             </FlowRow>
-          </div>
-
-          <p>
-            Ticket-holder information currently includes a full name, email address, and phone number. This information is associated with the purchased ticket and is used in ticket records and event-ticket communications.
-          </p>
-
-          <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
-            <ClipboardList className="mt-0.5 h-5 w-5 shrink-0 text-zinc-700" />
-            <p className="text-sm leading-6 text-zinc-600">
-              Keep the public ticket wording clear. The buyer's ticket should be identifiable by its event, ticket type, holder, and ticket ID.
-            </p>
-          </div>
-        </GuideSection>
-
-        <GuideSection id="payout" number="04" eyebrow="Payout destination" title="Paid events need a verified destination before ticket sales can settle.">
-          <p>
-            Event creators use the shared BuyMesho payout-destination infrastructure. A payout destination is created under the event creator's identity, verified, and then bound to the specific event.
-          </p>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <FlowRow title="Owned by the creator" tone="blue">
-              The payout destination must belong to the authenticated event creator.
+            <FlowRow title="Use it for the event">
+              Select the payout destination for the event so ticket-sale earnings can be sent through the event payout process.
             </FlowRow>
-            <FlowRow title="Active & verified">
-              Only an active, verified destination can be selected for a paid event.
-            </FlowRow>
-            <FlowRow title="Bound to the event">
-              The event stores the selected destination reference, so later event settlement uses that event-bound destination.
-            </FlowRow>
-            <FlowRow title="Protected after payment setup">
-              The payout architecture protects the event's financial identity and destination relationship instead of silently switching to another account.
+            <FlowRow title="Keep it active">
+              Check the payout destination if you make changes to your payment details or notice a payout problem.
             </FlowRow>
           </div>
-
-          <p>
-            Supported payout destinations use the existing normalized bank or mobile-money destination system. The underlying account details are protected and the creator-facing views use masked destination information.
-          </p>
 
           <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
             <WalletCards className="mt-0.5 h-5 w-5 shrink-0 text-zinc-700" />
             <p className="text-sm leading-6 text-zinc-600">
-              A payout destination problem should be corrected through the creator's payout-destination flow rather than by attaching an unrelated destination to the event.
+              Keep your payout destination details up to date before you start selling tickets.
             </p>
           </div>
         </GuideSection>
 
-        <GuideSection id="publish" number="05" eyebrow="Publishing & management" title="Publish the event, then manage its public state from the creator workspace.">
+        <GuideSection id="manage" number="04" eyebrow="Publish & manage" title="Publish the event, then keep it up to date.">
           <p>
-            BuyMesho keeps event publication state separate from the creator workspace itself. The current event lifecycle supports draft, published, paused, and cancelled publication states, plus immediate or scheduled publication.
+            You can keep an event as a draft, publish it, schedule it for later, pause it, or cancel it as circumstances change.
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <FlowRow title="Draft">Keep an event unpublished while you finish its details.</FlowRow>
-            <FlowRow title="Published" tone="blue">Make the event available in the public events directory when its publication conditions are satisfied.</FlowRow>
-            <FlowRow title="Paused">Temporarily remove the event from normal public availability without deleting the creator's event record.</FlowRow>
-            <FlowRow title="Cancelled" tone="red">Cancel an event when it should no longer operate as planned. Existing ticket holders can receive cancellation notifications through the event administration flow.</FlowRow>
+            <FlowRow title="Draft">Keep working on the event before making it public.</FlowRow>
+            <FlowRow title="Published" tone="blue">Make the event available to buyers when you are ready.</FlowRow>
+            <FlowRow title="Pause or cancel">Temporarily stop the event or cancel it when necessary.</FlowRow>
+            <FlowRow title="Keep it accurate">Update dates, times, venue, ticket details, and descriptions when something changes.</FlowRow>
           </div>
 
           <p>
-            The creator manager lets you search your events, filter by status, open one event at a time, edit it, change publication/runtime state, view the public event, or cancel it.
+            The creator workspace also lets you review your events, open an event, edit it, change its public state, view it as a buyer, and see ticket sales and revenue information.
           </p>
 
           <div className="flex flex-wrap gap-x-6 gap-y-2">
-            <GuideLink href={EVENTS_MANAGE_PATH}>Open Manage Events</GuideLink>
+            <GuideLink href={EVENTS_MANAGE_PATH}>Manage your events</GuideLink>
             <GuideLink href={EVENTS_DASHBOARD_PATH}>Open creator dashboard</GuideLink>
           </div>
         </GuideSection>
 
-        <GuideSection id="track" number="06" eyebrow="Event performance" title="Use the creator workspace to see what is happening with each event.">
+        <GuideSection id="sales" number="05" eyebrow="Sales & payouts" title="Understand what happens after buyers pay.">
           <p>
-            The event creator workspace combines event-level activity with ticket and financial summaries so you can inspect more than just the publication status.
-          </p>
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <FlowRow title="Tickets sold">See the number of tickets sold from paid orders.</FlowRow>
-            <FlowRow title="Gross revenue">See the gross value generated by the event's ticket sales.</FlowRow>
-            <FlowRow title="Net revenue">See the creator-facing net revenue summary after the configured financial calculation.</FlowRow>
-            <FlowRow title="Purchase activity">Review purchase count and the most recent sale information.</FlowRow>
-            <FlowRow title="Pending issues">See whether event activity has outstanding issues requiring attention.</FlowRow>
-            <FlowRow title="Event activity">Use the creator workspace to follow activity around the event and its public presence.</FlowRow>
-          </div>
-
-          <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
-            <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-zinc-700" />
-            <p className="text-sm leading-6 text-zinc-600">
-              The current dashboard also keeps event financial identity tied to the event itself, which makes historical reporting attributable to the correct creator and event.
-            </p>
-          </div>
-        </GuideSection>
-
-        <GuideSection id="money" number="07" eyebrow="Payments, fees & payouts" title="Event ticket sales settle through the event payout flow, not Listings escrow.">
-          <p>
-            Event payments are intentionally separate from marketplace Listings settlement. After a successful ticket payment is verified, BuyMesho identifies the event, validates the event creator and bound payout destination, calculates the event payout, and creates the event payout candidate.
+            Event ticket sales use the event payout process, separate from the marketplace product escrow process. Once a ticket payment is successfully confirmed, the sale becomes eligible for payout processing.
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <FlowRow title="Payment verification" tone="blue">
-              The payment must be successfully verified before event settlement begins.
+            <FlowRow title="Payment confirmation" tone="blue">
+              A ticket payment must be successfully confirmed before it moves into payout processing.
             </FlowRow>
-            <FlowRow title="Event financial identity">
-              The payout records the event ID, event creator, payout destination account, and financial formula snapshot.
+            <FlowRow title="Your sales">
+              Use the creator workspace to follow tickets sold, gross revenue, net revenue, and recent purchase activity.
             </FlowRow>
             <FlowRow title="Fees">
-              The event payout calculation keeps BuyMesho commission, processing fees, payout-destination fees, reserves, and adjustments as distinct financial components.
+              The payout calculation accounts for the applicable BuyMesho, payment, payout, reserve, and adjustment amounts.
             </FlowRow>
-            <FlowRow title="Provider submission">
-              The resulting event payout is submitted through the shared PayChangu payout execution infrastructure. Provider response and retry behavior remain authoritative.
+            <FlowRow title="Payout status">
+              Payout timing and status are handled through the payout process and provider confirmation.
             </FlowRow>
           </div>
 
           <div className="border-l-2 border-blue-600 pl-4 text-sm text-zinc-600">
-            Event payouts use the event settlement path rather than Listings escrow. After a successful ticket payment is verified, the transaction becomes eligible for the event payout workflow. Provider payout timing and status are handled by that workflow.
+            Event ticket money follows the event payout process; it is not released as a marketplace Listings escrow payment.
           </div>
         </GuideSection>
 
-        <GuideSection id="tickets-validation" number="08" eyebrow="Tickets & validation" title="A paid ticket is not finished when the money moves. It also has to work at the door.">
+        <GuideSection id="tickets" number="06" eyebrow="Tickets & entry" title="Make sure the tickets you sell can be used at the door.">
           <p>
-            Successful event payments are projected into the event-ticket system. The resulting ticket carries the event, holder, ticket type, ticket ID, purchase date, venue, location, and validation state.
+            Once a ticket purchase is completed, the buyer receives a ticket that can be opened, downloaded, and checked at the event.
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <FlowRow title="Buyer ticket library" tone="blue">
-              Buyers can open their Tickets area, inspect a ticket, and download a PDF copy.
+            <FlowRow title="Buyer tickets" tone="blue">
+              Buyers can open My Tickets and download a PDF copy of their ticket.
             </FlowRow>
-            <FlowRow title="Validator states">
-              Ticket records support states such as Waiting Entry, Inside, Outside, Cancelled, Refunded, and Blocked.
+            <FlowRow title="Ticket checking">
+              Your event team checks the ticket before admitting the holder.
             </FlowRow>
-            <FlowRow title="Ticket validation">
-              The validator projection is updated from the authoritative order/ticket state while preserving active entry states when appropriate.
-            </FlowRow>
-            <FlowRow title="Problems">
+            <FlowRow title="Cancelled or refunded">
               A cancelled, refunded, or blocked ticket should not be treated as a normal entry ticket.
+            </FlowRow>
+            <FlowRow title="Event entry">
+              Make sure the people handling entry have the access and ticket information they need.
             </FlowRow>
           </div>
 
           <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
             <QrCode className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
             <p className="text-sm leading-6 text-zinc-600">
-              Ticket Validator access is tied to approved event-creator access, and the current authentication flow can require a fresh authenticator-app 2FA verification before Validator access is granted.
+              Use the event's ticket validation tools to check tickets as people arrive.
             </p>
           </div>
-
-          <div className="border-l-2 border-blue-600 pl-4 text-sm text-zinc-600">
-            <strong className="text-zinc-900">Operational rule:</strong> the ticket sold by the event should be the same ticket the validator can recognize when the holder arrives.
-          </div>
         </GuideSection>
-
-        <section className="border-t border-zinc-200 py-12 sm:py-16">
-          <div className="max-w-5xl">
-            <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f] sm:text-base">Creator responsibilities</p>
-            <h2 className="guide-display mt-2 text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-zinc-950 sm:text-5xl">
-              Keep the event information, payout destination, and ticket experience aligned.
-            </h2>
-            <div className="mt-7 grid gap-3 sm:grid-cols-2">
-              <FlowRow title="Event information">
-                Keep the public event date, time, venue, location, ticket details, and description accurate.
-              </FlowRow>
-              <FlowRow title="Payout destination">
-                Keep the event's bound payout destination active and verified, and use the supported destination controls when it needs attention.
-              </FlowRow>
-              <FlowRow title="Buyer communication">
-                Respond to event-related questions and keep operational information consistent with the published event.
-              </FlowRow>
-              <FlowRow title="Ticket operations">
-                Make sure the person validating tickets has the event's operational ticket information and understands the expected validator states.
-              </FlowRow>
-            </div>
-          </div>
-        </section>
 
         <section className="border-t border-zinc-200 py-10 sm:py-12">
           <div className="grid gap-5 sm:grid-cols-2">
@@ -417,12 +320,12 @@ export default function EventCreatorGuidePage() {
         <section className="border-t border-zinc-200 py-10 sm:py-12">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f]">Need the marketplace?</p>
+              <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f]">Ready to publish?</p>
               <h2 className="guide-display mt-2 text-3xl font-semibold tracking-[-0.035em] text-zinc-950 sm:text-4xl">
-                Go back to BuyMesho events.
+                Create your next event on BuyMesho.
               </h2>
             </div>
-            <GuideLink href={EVENTS_PATH} tone="dark">Open Events</GuideLink>
+            <GuideLink href={EVENTS_CREATE_PATH} tone="dark">Create an event</GuideLink>
           </div>
         </section>
       </main>
