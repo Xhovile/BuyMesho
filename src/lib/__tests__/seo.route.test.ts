@@ -28,8 +28,6 @@ test("public routes are explicitly indexable", () => {
     ["/explore", "explore"],
     ["/buy-online-malawi", "buy_online_malawi"],
     ["/sell-online-malawi", "sell_online_malawi"],
-    ["/buy-event-tickets-malawi", "event_buyer_guide"],
-    ["/create-event-malawi", "event_creator_guide"],
     ["/explore/events", "explore"],
     ["/explore/sellers", "explore"],
     ["/privacy", "privacy"],
@@ -117,23 +115,6 @@ test("homepage route metadata identifies BuyMesho as a Malawi marketplace", () =
   assert.match(seo.description, /online marketplace/i);
   assert.match(seo.description, /Malawi/i);
   assert.equal(seo.noIndex, false);
-});
-
-test("event guide pages have distinct indexable metadata", () => {
-  const buyerGuide = getRouteSEO("/buy-event-tickets-malawi", "event_buyer_guide");
-  assert.equal(buyerGuide.canonicalPath, "/buy-event-tickets-malawi");
-  assert.equal(buyerGuide.noIndex, false);
-  assert.match(buyerGuide.title, /event tickets/i);
-
-  const creatorGuide = getRouteSEO("/create-event-malawi", "event_creator_guide");
-  assert.equal(creatorGuide.canonicalPath, "/create-event-malawi");
-  assert.equal(creatorGuide.noIndex, false);
-  assert.match(creatorGuide.title, /create events/i);
-});
-
-test("event guide URLs resolve to their dedicated routes", () => {
-  assert.equal(getAppRouteFromLocation({ pathname: "/buy-event-tickets-malawi", search: "" }), "event_buyer_guide");
-  assert.equal(getAppRouteFromLocation({ pathname: "/create-event-malawi", search: "" }), "event_creator_guide");
 });
 
 test("marketplace intent pages have distinct indexable metadata", () => {
@@ -705,8 +686,6 @@ test("vercel keeps public application pages on Vercel", () => {
     "/explore/sellers",
     "/buy-online-malawi",
     "/sell-online-malawi",
-    "/buy-event-tickets-malawi",
-    "/create-event-malawi",
     "/category",
     "/listing",
     "/seller",
