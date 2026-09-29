@@ -127,13 +127,13 @@ function loadSitemapData(db: any) {
   const listingRows = db
     .prepare(
       `
-        SELECT l.id, l.updated_at
+        SELECT l.id, l.created_at AS updated_at
         FROM listings l
         JOIN sellers s ON l.seller_uid = s.uid
         WHERE l.is_hidden = 0
           AND l.deleted_at IS NULL
           AND s.is_seller = 1
-        ORDER BY l.updated_at DESC, l.id DESC
+        ORDER BY l.created_at DESC, l.id DESC
       `
     )
     .all() as SitemapRow[];
@@ -141,10 +141,10 @@ function loadSitemapData(db: any) {
   const sellerRows = db
     .prepare(
       `
-        SELECT uid AS id, updated_at
+        SELECT uid AS id, join_date AS updated_at
         FROM sellers
         WHERE is_seller = 1
-        ORDER BY updated_at DESC, uid ASC
+        ORDER BY join_date DESC, uid ASC
       `
     )
     .all() as SitemapRow[];
@@ -152,7 +152,7 @@ function loadSitemapData(db: any) {
   const eventRows = db
     .prepare(
       `
-        SELECT id, updated_at
+        SELECT id, created_at AS updated_at
         FROM events
         WHERE deleted_at IS NULL
           AND publication_status = 'published'
@@ -164,7 +164,7 @@ function loadSitemapData(db: any) {
               AND publication_at <= CURRENT_TIMESTAMP
             )
           )
-        ORDER BY updated_at DESC, id DESC
+        ORDER BY created_at DESC, id DESC
       `
     )
     .all() as SitemapRow[];
