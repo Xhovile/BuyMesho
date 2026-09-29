@@ -14,6 +14,8 @@ const guideSections = [
   { id: "after-payment", number: "06", label: "After payment" },
   { id: "delivery", number: "07", label: "Delivery & escrow" },
   { id: "disputes", number: "08", label: "Disputes" },
+  { id: "fees", number: "09", label: "Fees & charges" },
+  { id: "disclaimer", number: "10", label: "Important terms" },
 ];
 
 function GuideSection({
@@ -110,7 +112,7 @@ export default function BuyOnlineMalawiPage() {
           </div>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {guideSections.slice(0, 4).map((section) => (
+            {guideSections.slice(0, 10).map((section) => (
               <a
                 key={section.id}
                 href={`#${section.id}`}
@@ -419,6 +421,93 @@ export default function BuyOnlineMalawiPage() {
             Open Disputes
             <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
           </a>
+        </GuideSection>
+
+        <GuideSection id="fees" number="09" eyebrow="Fees & charges" title="What does buying cost?">
+          <p>
+            BuyMesho's current buyer checkout does <strong>not add a separate buyer checkout fee</strong>.
+            The checkout total is the published order item total shown for the purchase and is calculated from
+            the listing price and quantity you select.
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FlowRow title="BuyMesho buyer fee" tone="blue">
+              <strong>0% separate buyer checkout fee.</strong> BuyMesho's locked marketplace policy states that no
+              separate buyer checkout fee is charged or presented.
+            </FlowRow>
+            <FlowRow title="Seller-side marketplace fees">
+              BuyMesho's current seller payout policy applies a <strong>3% platform fee</strong> to gross collected
+              amounts. This is part of the seller's payout calculation rather than a separate buyer checkout fee.
+            </FlowRow>
+            <FlowRow title="Payment and payout processing">
+              Current payout policy also defines payout-method charges on the seller side: 1.8% for Airtel Money,
+              1.5% for TNM Mpamba, and 1.7% + MWK 700 for bank transfer. These are payout costs, not buyer checkout
+              charges.
+            </FlowRow>
+            <FlowRow title="Delivery costs">
+              The current listing checkout does not add a standard platform delivery fee line. Confirm the delivery
+              arrangement, location, and any delivery cost with the seller before completing the purchase.
+            </FlowRow>
+          </div>
+
+          <div className="border-l-2 border-amber-600 pl-4 text-sm text-zinc-600">
+            <strong className="text-zinc-900">Check the final amount before paying:</strong> the amount presented
+            in the BuyMesho checkout is the amount BuyMesho sends into the payment flow for that order. Any separate
+            charge imposed by a payment account or external provider, where applicable, is outside BuyMesho's
+            separate buyer-fee policy.
+          </div>
+        </GuideSection>
+
+        <GuideSection id="disclaimer" number="10" eyebrow="Important terms" title="What BuyMesho does and does not guarantee.">
+          <p>
+            BuyMesho is a marketplace platform connecting buyers and sellers. Unless a specific transaction flow
+            expressly says otherwise, BuyMesho is not automatically the seller, reseller, warehouse operator,
+            delivery company, or owner of the goods or services listed by users.
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FlowRow title="You still need to verify">
+              Check the item description, condition, ownership, price, availability, seller profile, delivery terms,
+              and any important claims before paying.
+            </FlowRow>
+            <FlowRow title="A verified seller is not a guarantee">
+              A Verified badge is a platform trust signal. It does not mean every listing is guaranteed to be
+              accurate, available, safe, or suitable for your purchase.
+            </FlowRow>
+            <FlowRow title="Keep transaction evidence">
+              Keep your order reference, payment reference, relevant messages, delivery information, and evidence
+              that may be needed if a problem later has to be reviewed.
+            </FlowRow>
+            <FlowRow title="Disputes have conditions">
+              Dispute submission depends on the order's eligibility window. A submitted dispute is reviewed based on
+              the circumstances and evidence provided and does not guarantee a particular outcome or refund.
+            </FlowRow>
+          </div>
+
+          <div className="border border-zinc-200 bg-white p-5">
+            <p className="font-extrabold text-zinc-950">Use extra care when moving off-platform</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-600">
+              BuyMesho may have less visibility or evidence once part of a transaction moves to external communication
+              or payment channels. Moving off-platform does not remove your responsibility to act lawfully and safely.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-x-6 gap-y-2 border-t border-zinc-200 pt-5">
+            <a
+              href="/terms"
+              className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-blue-700"
+            >
+              Read Terms & Conditions
+              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+            </a>
+            <a
+              href="/safety"
+              className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-blue-700"
+            >
+              Read Safety Tips
+              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+            </a>
+          </div>
         </GuideSection>
 
         <section className="border-t border-zinc-200 py-10 sm:py-12">
