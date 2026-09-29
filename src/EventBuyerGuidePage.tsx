@@ -291,17 +291,6 @@ export default function EventBuyerGuidePage() {
           </div>
         </section>
 
-        <section className="border-t border-zinc-200 py-10 sm:py-12">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f]">Ready for more events?</p>
-              <h2 className="guide-display mt-2 text-3xl font-semibold tracking-[-0.035em] text-zinc-950 sm:text-4xl">
-                Explore BuyMesho events.
-              </h2>
-            </div>
-            <GuideLink href={EVENTS_PATH} tone="dark">Browse Events</GuideLink>
-          </div>
-        </section>
       </main>
 
       <AppFooter />
