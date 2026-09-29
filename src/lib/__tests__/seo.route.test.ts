@@ -204,7 +204,10 @@ test("public marketplace surfaces expose crawlable internal links", () => {
 
   assert.ok(sources.includes("href={`/listing?listing="));
   assert.ok(sources.includes("href={`/seller?uid="));
-  assert.ok(sources.includes("EVENTS_PATH}?event=${encodeURIComponent"));
+  assert.ok(
+    sources.includes('href={EVENTS_PATH + "?event=" + encodeURIComponent(String(item.id))}'),
+    "event cards should expose a crawlable event-details href",
+  );
 });
 test("event attendance schema is explicit and shared between client and server", () => {
   const client = readFileSync(resolve(process.cwd(), "src/components/eventDetails/EventDetailsView.tsx"), "utf8");
