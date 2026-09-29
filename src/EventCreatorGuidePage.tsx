@@ -211,7 +211,7 @@ export default function EventCreatorGuidePage() {
               A zero or absent ticket price does not require an event payout destination.
             </FlowRow>
             <FlowRow title="Paid event">
-              A paid event requires a verified payout destination before it can be published or managed as a paid event.
+              A new paid event requires a usable payout destination before it can be published. BuyMesho checks that the selected destination is active and verified.
             </FlowRow>
           </div>
 
