@@ -90,7 +90,7 @@ export function EventCard({ item }: { item: EventRecord }) {
         event.preventDefault();
         navigateToPath(`${EVENTS_PATH}?event=${item.id}`);
       }}
-      className="block text-left"
+      className="block overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-200/90 shadow-sm text-left"
       aria-label={`Open event: ${item.event_title}`}
     >
       <div className={`relative aspect-[4/3] overflow-hidden rounded-2xl bg-gradient-to-br ${accent}`}>
