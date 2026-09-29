@@ -80,11 +80,21 @@ function FlowRow({
   );
 }
 
-function GuideLink({ href, children }: { href: string; children: ReactNode }) {
+function GuideLink({
+  href,
+  children,
+  tone = "burgundy",
+}: {
+  href: string;
+  children: ReactNode;
+  tone?: "burgundy" | "dark";
+}) {
+  const toneClasses = tone === "dark" ? "text-zinc-950 hover:text-zinc-700" : "text-[#74152f] hover:text-[#560d22]";
+
   return (
     <a
       href={href}
-      className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg"
+      className={`group inline-flex items-center gap-2 py-2 text-base font-extrabold ${toneClasses} sm:text-lg`}
     >
       {children}
       <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
@@ -388,17 +398,17 @@ export default function EventCreatorGuidePage() {
             <div>
               <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f]">Continue with events</p>
               <div className="mt-3 flex flex-col items-start gap-1">
-                <GuideLink href={EVENTS_CREATE_PATH}>Create or continue an event</GuideLink>
-                <GuideLink href={EVENTS_MANAGE_PATH}>Manage your events</GuideLink>
-                <GuideLink href={EVENT_BUYER_GUIDE_PATH}>Buying event tickets?</GuideLink>
+                <GuideLink href={EVENTS_CREATE_PATH} tone="dark">Create or continue an event</GuideLink>
+                <GuideLink href={EVENTS_MANAGE_PATH} tone="dark">Manage your events</GuideLink>
+                <GuideLink href={EVENT_BUYER_GUIDE_PATH} tone="dark">Buying event tickets?</GuideLink>
               </div>
             </div>
             <div>
               <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f]">Other BuyMesho guides</p>
               <div className="mt-3 flex flex-col items-start gap-1">
-                <GuideLink href={BUY_ONLINE_MALAWI_PATH}>Buying marketplace products</GuideLink>
-                <GuideLink href={SELL_ONLINE_MALAWI_PATH}>Selling marketplace products</GuideLink>
-                <GuideLink href={EXPLORE_PATH}>Open the marketplace</GuideLink>
+                <GuideLink href={BUY_ONLINE_MALAWI_PATH} tone="dark">Buying marketplace products</GuideLink>
+                <GuideLink href={SELL_ONLINE_MALAWI_PATH} tone="dark">Selling marketplace products</GuideLink>
+                <GuideLink href={EXPLORE_PATH} tone="dark">Open the marketplace</GuideLink>
               </div>
             </div>
           </div>
@@ -412,7 +422,7 @@ export default function EventCreatorGuidePage() {
                 Go back to BuyMesho events.
               </h2>
             </div>
-            <GuideLink href={EVENTS_PATH}>Open Events</GuideLink>
+            <GuideLink href={EVENTS_PATH} tone="dark">Open Events</GuideLink>
           </div>
         </section>
       </main>
