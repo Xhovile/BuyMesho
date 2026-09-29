@@ -36,7 +36,7 @@ function GuideSection({
           <p className="guide-chapter-number text-6xl leading-none sm:text-7xl lg:text-8xl">{number}</p>
         </div>
         <div className="max-w-5xl">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">{eyebrow}</p>
+          <p className="mt-1 text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f] sm:text-base">{eyebrow}</p>
           <h2 className="guide-display mt-2 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-zinc-950 sm:text-5xl lg:text-6xl">
             {title}
           </h2>
@@ -198,10 +198,10 @@ export default function BuyOnlineMalawiPage() {
 
           <a
             href={EXPLORE_PATH}
-            className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-blue-700"
+            className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg"
           >
             Open the marketplace
-            <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+            <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
           </a>
         </GuideSection>
 
@@ -531,7 +531,7 @@ export default function BuyOnlineMalawiPage() {
             </div>
             <a
               href={EXPLORE_PATH}
-              className="group inline-flex shrink-0 items-center gap-2 py-2 text-sm font-extrabold text-zinc-900 hover:text-blue-700"
+              className="group inline-flex shrink-0 items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg"
             >
               Open Market
               <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
