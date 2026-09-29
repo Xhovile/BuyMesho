@@ -74,9 +74,9 @@ type MarketSectionProps = {
 
 function ListingCardSkeleton() {
   return (
-    <div className="w-full max-w-[160px] overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white shadow-sm md:max-w-none">
-      <div className="aspect-square animate-pulse bg-zinc-100 md:aspect-[4/3]" />
-      <div className="space-y-1.5 p-2">
+    <div className="w-full max-w-[160px] md:max-w-none">
+      <div className="aspect-square animate-pulse rounded-2xl bg-zinc-100 md:aspect-[4/3]" />
+      <div className="space-y-1.5 py-2">
         <div className="h-3.5 w-11/12 animate-pulse rounded-full bg-zinc-100" />
         <div className="h-3 w-4/5 animate-pulse rounded-full bg-zinc-100" />
         <div className="flex gap-1">
