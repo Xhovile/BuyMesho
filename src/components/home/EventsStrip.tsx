@@ -1,72 +1,20 @@
-import { ArrowRight, CalendarDays, MapPin, Ticket } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { EVENTS_PATH, navigateToPath } from "../../lib/appNavigation";
-import { getOptimizedImageUrl } from "../../lib/imageUrl";
 import type { HomeEventPreview } from "../../home/home.types";
-
-function formatMoney(value: number | null | undefined) {
-  if (value === null || value === undefined || value <= 0) return "Free";
-  return `MK ${value.toLocaleString()}`;
-}
-
-function formatDate(value: string) {
-  if (!value) return "Date unavailable";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function posterAccent(eventType: string) {
-  switch (eventType) {
-    case "Concert":
-      return "from-red-900 via-zinc-950 to-black";
-    case "Sports":
-      return "from-emerald-800 via-zinc-950 to-black";
-    case "Conference":
-      return "from-indigo-900 via-zinc-950 to-black";
-    case "Workshop":
-      return "from-amber-700 via-zinc-950 to-black";
-    case "Party":
-      return "from-fuchsia-800 via-zinc-950 to-black";
-    case "Church Event":
-      return "from-sky-800 via-zinc-950 to-black";
-    case "Campus Event":
-      return "from-rose-800 via-zinc-950 to-black";
-    default:
-      return "from-zinc-800 via-zinc-950 to-black";
-  }
-}
-
-function getPosterUrl(item: HomeEventPreview) {
-  const specValues = item.spec_values ?? {};
-  const posterValue = specValues.poster_image_url || specValues.poster_url || specValues.poster;
-  return typeof posterValue === "string" && posterValue.trim().length > 0 ? posterValue.trim() : "";
-}
-
-function getPosterAlt(item: HomeEventPreview) {
-  const specValues = item.spec_values ?? {};
-  const posterAlt = item.poster_alt || specValues.poster_alt;
-  if (typeof posterAlt === "string" && posterAlt.trim().length > 0) return posterAlt.trim();
-  return `${item.event_type} poster for ${item.event_title}`;
-}
+import { EventCard } from "../events/EventCard";
 
 function EventCardSkeleton() {
   return (
-    <div className="w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm sm:w-[260px]">
-      <div className="aspect-[4/3] animate-pulse bg-zinc-100" />
-      <div className="space-y-3 p-4">
-        <div className="h-4 w-3/4 animate-pulse rounded-full bg-zinc-100" />
-        <div className="h-3 w-full animate-pulse rounded-full bg-zinc-100" />
-        <div className="h-3 w-5/6 animate-pulse rounded-full bg-zinc-100" />
-        <div className="grid gap-2 pt-1">
+    <div className="w-[220px] shrink-0 snap-start overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-200/90 shadow-sm sm:w-[260px]">
+      <div className="aspect-[4/3] animate-pulse rounded-2xl bg-zinc-100" />
+      <div className="pt-3">
+        <div className="mx-0 h-4 w-3/4 animate-pulse rounded-full bg-zinc-100" />
+        <div className="mt-3 grid gap-2">
           <div className="h-3 w-2/3 animate-pulse rounded-full bg-zinc-100" />
           <div className="h-3 w-1/2 animate-pulse rounded-full bg-zinc-100" />
         </div>
-        <div className="h-10 w-full animate-pulse rounded-2xl bg-zinc-100" />
+        <div className="mt-3 h-10 w-full animate-pulse rounded-2xl bg-zinc-100" />
       </div>
     </div>
   );
@@ -117,95 +65,11 @@ export default function EventsStrip({
           ) : events.length === 0 ? (
             <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500">No events yet</div>
           ) : (
-            events.map((item) => {
-              const price = formatMoney(item.ticket_price);
-              const date = formatDate(item.event_date);
-              const accent = posterAccent(item.event_type);
-              const posterUrl = getPosterUrl(item);
-              const posterAlt = getPosterAlt(item);
-              const imageSrc = getOptimizedImageUrl(posterUrl, 480);
-              const snippet = item.description.length > 88 ? `${item.description.slice(0, 88).trim()}…` : item.description;
-
-              return (
-                <article
-                  key={item.id}
-                  className="group relative w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md sm:w-[260px]"
-                >
-                  <a
-                    href={`${EVENTS_PATH}?event=${encodeURIComponent(String(item.id))}`}
-                    aria-label={`Open event details for ${item.event_title}`}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      navigateToPath(`${EVENTS_PATH}?event=${item.id}`);
-                    }}
-                    className="absolute inset-0 z-0 rounded-3xl"
-                  />
-
-                  <div className="relative z-10 pointer-events-none">
-                    <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
-                      <div className={`absolute inset-0 bg-gradient-to-br ${accent}`} />
-                      {imageSrc ? (
-                        <img
-                          src={imageSrc}
-                          alt={posterAlt}
-                          className="relative h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : null}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/5" />
-                      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 px-4 py-4 text-white">
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/75">Featured event</p>
-                          <h3 className="mt-2 max-w-[12rem] truncate text-xl font-black tracking-[-0.05em] leading-none">
-                            {item.event_title}
-                          </h3>
-                        </div>
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm">
-                          <Ticket className="h-4 w-4" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4">
-                      <p className="line-clamp-2 text-sm leading-relaxed text-zinc-600">{snippet}</p>
-
-                      <div className="mt-4 grid gap-2 text-sm text-zinc-600">
-                        <div className="flex items-center gap-2">
-                          <CalendarDays className="h-4 w-4 text-red-900" />
-                          <span className="font-medium text-zinc-700">{date}</span>
-                          <span className="text-zinc-300">•</span>
-                          <span>{item.start_time}</span>
-                        </div>
-
-                        <div className="flex items-start gap-2">
-                          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-red-900" />
-                          <span className="line-clamp-2 leading-relaxed text-zinc-700">
-                            {item.venue}
-                            {item.location ? ` • ${item.location}` : ""}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 overflow-hidden rounded-2xl border border-orange-200 bg-white pointer-events-auto">
-                        <div className="flex items-stretch">
-                          <button
-                            type="button"
-                            onClick={() => navigateToPath(`${EVENTS_PATH}?event=${item.id}&buy=1`)}
-                            className="relative z-20 flex flex-1 items-center justify-center bg-orange-700 px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-orange-800"
-                          >
-                            Buy Ticket
-                          </button>
-                          <div className="pointer-events-none flex min-w-[6.5rem] items-center justify-center border-l border-orange-200 bg-white px-4 py-3 text-sm font-black tracking-tight text-zinc-950">
-                            {price}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              );
-            })
+            events.map((item) => (
+              <div key={item.id} className="w-[220px] shrink-0 snap-start sm:w-[260px]">
+                <EventCard item={item} />
+              </div>
+            ))
           )}
         </div>
       </div>
