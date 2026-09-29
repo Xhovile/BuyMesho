@@ -181,7 +181,7 @@ export default function EventBuyerGuidePage() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <FlowRow title="Ticket type" tone="blue">
-              Review the ticket type attached to the event before continuing.
+              Review the ticket option and price shown for the event before continuing.
             </FlowRow>
             <FlowRow title="Quantity">
               Choose how many tickets you need where the event allows more than one.
