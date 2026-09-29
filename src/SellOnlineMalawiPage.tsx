@@ -74,13 +74,13 @@ export default function SellOnlineMalawiPage() {
 
         <section className="py-8 sm:py-10">
           <div className="border-y border-zinc-200">
-            <div className="border-b border-[transparent] px-0 py-5 sm:py-7">
+            <div className="border-b border-zinc-200 px-0 py-5 sm:py-7">
               <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Your selling path</p>
               <h2 className="guide-display mt-2 text-2xl font-semibold text-zinc-950 sm:text-3xl">Create. List. Reach buyers.</h2>
             </div>
             <div>
               {sellingSteps.map((step) => (
-                <article key={step.number} className="grid gap-4 border-b border-[transparent] py-8 last:border-b-0 sm:grid-cols-[96px_minmax(0,1fr)] sm:gap-8 lg:grid-cols-[132px_minmax(0,1fr)] lg:gap-10 lg:py-11">
+                <article key={step.number} className="grid gap-4 border-b border-zinc-200 py-8 last:border-b-0 sm:grid-cols-[96px_minmax(0,1fr)] sm:gap-8 lg:grid-cols-[132px_minmax(0,1fr)] lg:gap-10 lg:py-11">
                   <p className="guide-chapter-number text-6xl leading-none sm:text-7xl lg:text-8xl">{step.number}</p>
                   <div className="max-w-5xl">
                     <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">{step.eyebrow}</p>
@@ -93,7 +93,7 @@ export default function SellOnlineMalawiPage() {
           </div>
         </section>
 
-        <section className="border-t border-[transparent] py-10 sm:py-12">
+        <section className="border-t border-zinc-200 py-10 sm:py-12">
           <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Why sell on BuyMesho</p>
           <h2 className="guide-display mt-2 max-w-4xl text-3xl font-semibold leading-[1.08] tracking-[-0.025em] text-zinc-950 sm:text-4xl lg:text-5xl">
             Put your business where buyers can discover it.
@@ -104,7 +104,7 @@ export default function SellOnlineMalawiPage() {
 
           <div className="mt-6 grid gap-x-8 sm:grid-cols-3">
             {sellerBenefits.map((benefit) => (
-              <article key={benefit.title} className="border-t border-[transparent] py-5">
+              <article key={benefit.title} className="border-t border-zinc-200 py-5">
                 <h3 className="text-base font-bold tracking-tight">{benefit.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-zinc-600">{benefit.text}</p>
               </article>
@@ -119,7 +119,7 @@ export default function SellOnlineMalawiPage() {
               <a
                 key={link.href}
                 href={link.href}
-                className="group flex items-center gap-3 border-t border-[transparent] py-4 text-base font-bold text-zinc-900 transition-colors hover:text-blue-700 sm:text-lg"
+                className="group flex items-center gap-3 border-t border-zinc-200 py-4 text-base font-bold text-zinc-900 transition-colors hover:text-blue-700 sm:text-lg"
               >
                 {link.label}
                 <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
