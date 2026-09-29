@@ -79,11 +79,21 @@ function FlowRow({
   );
 }
 
-function GuideLink({ href, children }: { href: string; children: ReactNode }) {
+function GuideLink({
+  href,
+  children,
+  tone = "burgundy",
+}: {
+  href: string;
+  children: ReactNode;
+  tone?: "burgundy" | "dark";
+}) {
+  const toneClasses = tone === "dark" ? "text-zinc-950 hover:text-zinc-700" : "text-[#74152f] hover:text-[#560d22]";
+
   return (
     <a
       href={href}
-      className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg"
+      className={`group inline-flex items-center gap-2 py-2 text-base font-extrabold ${toneClasses} sm:text-lg`}
     >
       {children}
       <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
@@ -250,7 +260,7 @@ export default function EventBuyerGuidePage() {
             </FlowRow>
           </div>
 
-          <GuideLink href={TICKETS_PATH}>Open My Tickets</GuideLink>
+          <GuideLink href={TICKETS_PATH} tone="dark">Open My Tickets</GuideLink>
         </GuideSection>
 
         <GuideSection id="receive" number="05" eyebrow="Ticket delivery" title="The ticket becomes a usable digital record, not just a payment receipt.">
@@ -345,17 +355,17 @@ export default function EventBuyerGuidePage() {
             <div>
               <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f]">Continue with events</p>
               <div className="mt-3 flex flex-col items-start gap-1">
-                <GuideLink href={EVENTS_PATH}>Browse events</GuideLink>
-                <GuideLink href={EVENT_CREATOR_GUIDE_PATH}>Want to create an event?</GuideLink>
+                <GuideLink href={EVENTS_PATH} tone="dark">Browse events</GuideLink>
+                <GuideLink href={EVENT_CREATOR_GUIDE_PATH} tone="dark">Want to create an event?</GuideLink>
                 <GuideLink href={TICKETS_PATH}>Open My Tickets</GuideLink>
               </div>
             </div>
             <div>
               <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f]">Other BuyMesho guides</p>
               <div className="mt-3 flex flex-col items-start gap-1">
-                <GuideLink href={BUY_ONLINE_MALAWI_PATH}>Buying marketplace products</GuideLink>
-                <GuideLink href={SELL_ONLINE_MALAWI_PATH}>Selling marketplace products</GuideLink>
-                <GuideLink href={EXPLORE_PATH}>Open the marketplace</GuideLink>
+                <GuideLink href={BUY_ONLINE_MALAWI_PATH} tone="dark">Buying marketplace products</GuideLink>
+                <GuideLink href={SELL_ONLINE_MALAWI_PATH} tone="dark">Selling marketplace products</GuideLink>
+                <GuideLink href={EXPLORE_PATH} tone="dark">Open the marketplace</GuideLink>
               </div>
             </div>
           </div>
@@ -369,7 +379,7 @@ export default function EventBuyerGuidePage() {
                 Go back to BuyMesho events.
               </h2>
             </div>
-            <GuideLink href={EVENTS_PATH}>Open Events</GuideLink>
+            <GuideLink href={EVENTS_PATH} tone="dark">Open Events</GuideLink>
           </div>
         </section>
       </main>
