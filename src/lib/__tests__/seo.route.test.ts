@@ -389,6 +389,8 @@ test("server SEO shell keeps every public static route indexable", () => {
     ["/explore", "explore"],
     ["/buy-online-malawi", "buy_online_malawi"],
     ["/sell-online-malawi", "sell_online_malawi"],
+    ["/buy-event-tickets-malawi", "event_buyer_guide"],
+    ["/create-event-malawi", "event_creator_guide"],
     ["/explore/deals", "explore"],
     ["/explore/events", "explore"],
     ["/explore/wholesale", "explore"],
