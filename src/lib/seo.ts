@@ -254,6 +254,34 @@ export function getRouteSEO(pathname: string, route: AppRoute, search = ""): Rou
           "online selling Malawi",
         ],
       };
+    case "/buy-event-tickets-malawi":
+      return {
+        title: "Buy Event Tickets in Malawi | BuyMesho",
+        description: "Learn how to find, buy, receive, and validate event tickets through BuyMesho in Malawi.",
+        canonicalPath: "/buy-event-tickets-malawi",
+        noIndex: false,
+        keywords: [
+          "event tickets Malawi",
+          "buy event tickets Malawi",
+          "BuyMesho tickets",
+          "Malawi events tickets",
+          "online event tickets Malawi",
+        ],
+      };
+    case "/create-event-malawi":
+      return {
+        title: "Create Events in Malawi | BuyMesho",
+        description: "Learn how to create, publish, manage, sell tickets for, and receive payouts from events on BuyMesho.",
+        canonicalPath: "/create-event-malawi",
+        noIndex: false,
+        keywords: [
+          "create event Malawi",
+          "event organizer Malawi",
+          "sell event tickets Malawi",
+          "event platform Malawi",
+          "BuyMesho event creator",
+        ],
+      };
     case "/explore/deals":
       return {
         title: "BuyMesho Deals",
