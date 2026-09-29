@@ -123,9 +123,8 @@ export default function SignupPage() {
         eyebrow="Account"
         title="Create your BuyMesho account"
         description="Start with your identity and login details. We’ll collect marketplace information after your email is verified."
-        backLabel="Log In"
+        backLabel="Go to Log In"
         onBack={() => navigateToLogin()}
-        backButtonClassName="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
         hideNavigation
         showBrandHero
       >
