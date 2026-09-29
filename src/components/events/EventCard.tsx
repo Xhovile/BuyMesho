@@ -2,26 +2,17 @@ import { CalendarDays, MapPin } from "lucide-react";
 
 import { EVENTS_PATH, navigateToPath } from "../../lib/appNavigation";
 
-type EventRecord = {
+export type EventCardItem = {
   id: number;
-  creator_uid: string | null;
   event_type: string;
   event_title: string;
-  organizer_name: string;
   event_date: string;
   start_time: string;
   venue: string;
   location: string;
-  ticket_mode: string;
   ticket_price: number | null;
-  ticket_link: string | null;
-  description: string;
-  contact_whatsapp: string | null;
   poster_alt: string | null;
   spec_values: Record<string, unknown>;
-  status: string;
-  created_at: string;
-  updated_at: string;
 };
 
 function formatMoney(value: number | null | undefined) {
@@ -74,9 +65,7 @@ function getPosterAlt(item: EventRecord) {
   return `${item.event_type} poster for ${item.event_title}`;
 }
 
-export type { EventRecord };
-
-export function EventCard({ item }: { item: EventRecord }) {
+export function EventCard({ item }: { item: EventCardItem }) {
   const price = formatMoney(item.ticket_price);
   const date = formatDate(item.event_date);
   const accent = posterAccent(item.event_type);
@@ -90,7 +79,7 @@ export function EventCard({ item }: { item: EventRecord }) {
         event.preventDefault();
         navigateToPath(`${EVENTS_PATH}?event=${item.id}`);
       }}
-      className="block overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-200/90 shadow-sm text-left"
+      className="block overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-200/90 shadow-sm text-left transition-shadow hover:shadow-md"
       aria-label={`Open event: ${item.event_title}`}
     >
       <div className={`relative aspect-[4/3] overflow-hidden rounded-2xl bg-gradient-to-br ${accent}`}>
