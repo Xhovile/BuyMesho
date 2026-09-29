@@ -24,15 +24,15 @@ const sellerGuideLinks = [
 
 export default function SellOnlineMalawiPage() {
   return (
-    <div className="guide-page min-h-screen bg-[var(--guide-bg)] text-[#181313]">
-      <header className="sticky top-0 z-50 border-b border-[var(--guide-line)] bg-[rgba(251,241,242,0.95)] backdrop-blur">
+    <div className="guide-page min-h-screen bg-zinc-100 text-zinc-900">
+      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <a href={EXPLORE_PATH} aria-label="Open BuyMesho marketplace">
             <BrandMark subtitle="Public Marketplace" />
           </a>
           <a
             href={EXPLORE_PATH}
-            className="inline-flex items-center gap-2 rounded-full bg-black px-5 py-3 text-[15px] font-bold text-white transition hover:bg-[#181313] sm:px-6 sm:py-3.5 sm:text-base"
+            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
           >
             Browse Market
             <ArrowRight className="h-4 w-4" />
@@ -41,11 +41,11 @@ export default function SellOnlineMalawiPage() {
       </header>
 
       <main className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <section className="relative overflow-hidden border-b border-[var(--guide-line)] bg-[var(--guide-bg)] py-12 sm:py-16 lg:py-20">
-          <div className="pointer-events-none absolute -right-24 top-0 h-64 w-64 rounded-full bg-[#74152f]/5 blur-3xl" />
+        <section className="relative overflow-hidden border-b border-zinc-200 bg-gradient-to-br from-white via-zinc-50 to-red-50/40 py-10 sm:py-14 lg:py-16">
+          <div className="pointer-events-none absolute -right-24 top-0 h-64 w-64 rounded-full bg-red-900/5 blur-3xl" />
           <div className="relative">
-            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[var(--guide-muted)]">BuyMesho for sellers</p>
-            <h1 className="guide-display mt-3 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-[var(--guide-accent)] sm:text-6xl lg:text-7xl">
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">BuyMesho for sellers</p>
+            <h1 className="guide-display mt-3 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-zinc-950 sm:text-6xl lg:text-7xl">
               Sell Online in Malawi.
             </h1>
             <p className="mt-6 max-w-3xl text-base leading-7 text-[var(--guide-muted)] sm:text-lg sm:leading-8">
@@ -56,7 +56,7 @@ export default function SellOnlineMalawiPage() {
             <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
               <a
                 href="/signup"
-                className="inline-flex items-center gap-2 rounded-full bg-[var(--guide-accent)] px-5 py-3.5 text-[15px] font-bold text-white transition hover:bg-[var(--guide-accent-dark)] sm:px-6 sm:text-base"
+                className="inline-flex items-center gap-2 rounded-xl bg-red-900 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_12px_30px_-18px_rgba(127,29,29,0.7)] hover:bg-red-950"
               >
                 Create an account
                 <ArrowRight className="h-4 w-4" />
@@ -73,7 +73,7 @@ export default function SellOnlineMalawiPage() {
         </section>
 
         <section className="py-8 sm:py-10">
-          <div className="border-y border-[var(--guide-line)]">
+          <div className="border-y border-zinc-200">
             <div className="border-b border-[var(--guide-line)] px-0 py-5 sm:py-7">
               <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[var(--guide-muted)]">Your selling path</p>
               <h2 className="guide-display mt-2 text-2xl font-semibold text-[var(--guide-accent)] sm:text-3xl">Create. List. Reach buyers.</h2>
@@ -119,7 +119,7 @@ export default function SellOnlineMalawiPage() {
               <a
                 key={link.href}
                 href={link.href}
-                className="group flex items-center gap-3 border-t border-[var(--guide-line)] py-4 text-base font-bold text-zinc-900 transition-colors hover:text-[var(--guide-accent)] sm:text-lg"
+                className="group flex items-center gap-3 border-t border-[var(--guide-line)] py-4 text-base font-bold text-zinc-900 transition-colors hover:text-blue-700 sm:text-lg"
               >
                 {link.label}
                 <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
