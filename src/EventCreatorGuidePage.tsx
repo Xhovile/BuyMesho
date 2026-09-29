@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, CalendarDays, FileText, QrCode, Ticket, WalletCards } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, QrCode, WalletCards } from "lucide-react";
 import type { ReactNode } from "react";
 
 import AppFooter from "./components/AppFooter";
@@ -256,10 +256,10 @@ export default function EventCreatorGuidePage() {
               Use the creator workspace to follow tickets sold, gross revenue, net revenue, and recent purchase activity.
             </FlowRow>
             <FlowRow title="Fees">
-              The payout calculation accounts for the applicable BuyMesho, payment, payout, reserve, and adjustment amounts.
+              Applicable fees and other adjustments are accounted for before your final payout amount is calculated.
             </FlowRow>
             <FlowRow title="Payout status">
-              Payout timing and status are handled through the payout process and provider confirmation.
+              Payout timing can vary, and the status is updated as the payout is processed.
             </FlowRow>
           </div>
 
@@ -317,17 +317,6 @@ export default function EventCreatorGuidePage() {
           </div>
         </section>
 
-        <section className="border-t border-zinc-200 py-10 sm:py-12">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f]">Ready to publish?</p>
-              <h2 className="guide-display mt-2 text-3xl font-semibold tracking-[-0.035em] text-zinc-950 sm:text-4xl">
-                Create your next event on BuyMesho.
-              </h2>
-            </div>
-            <GuideLink href={EVENTS_CREATE_PATH} tone="dark">Create an event</GuideLink>
-          </div>
-        </section>
       </main>
 
       <AppFooter />
