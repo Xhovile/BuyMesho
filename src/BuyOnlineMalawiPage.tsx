@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import AppFooter from "./components/AppFooter";
 import BrandMark from "./components/BrandMark";
-import { EXPLORE_PATH } from "./lib/appNavigation.paths";
+import { EXPLORE_PATH, SELL_ONLINE_MALAWI_PATH } from "./lib/appNavigation.paths";
 
 const guideSections = [
   { id: "account", number: "01", label: "Account & access" },
@@ -533,13 +533,22 @@ export default function BuyOnlineMalawiPage() {
                 Use the marketplace to search, filter, compare, inspect sellers, and start a purchase.
               </p>
             </div>
-            <a
-              href={EXPLORE_PATH}
-              className="group inline-flex shrink-0 items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg"
-            >
-              Open Market
-              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
-            </a>
+            <div className="flex shrink-0 flex-col items-start sm:items-end">
+              <a
+                href={EXPLORE_PATH}
+                className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg"
+              >
+                Open Market
+                <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+              </a>
+              <a
+                href={SELL_ONLINE_MALAWI_PATH}
+                className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg"
+              >
+                Want to sell instead?
+                <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+              </a>
+            </div>
           </div>
         </section>
       </main>
