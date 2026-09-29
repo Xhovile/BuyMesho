@@ -48,7 +48,7 @@ export default function SellOnlineMalawiPage() {
             <h1 className="guide-display mt-3 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-zinc-950 sm:text-6xl lg:text-7xl">
               Sell Online in Malawi.
             </h1>
-            <p className="mt-6 max-w-3xl text-base leading-7 text-[var(--guide-muted)] sm:text-lg sm:leading-8">
+            <p className="mt-6 max-w-3xl text-base leading-7 text-zinc-500 sm:text-lg sm:leading-8">
               Use BuyMesho to publish products and services, build a public seller presence,
               and reach buyers through a Malawi-focused online marketplace.
             </p>
@@ -74,17 +74,17 @@ export default function SellOnlineMalawiPage() {
 
         <section className="py-8 sm:py-10">
           <div className="border-y border-zinc-200">
-            <div className="border-b border-[var(--guide-line)] px-0 py-5 sm:py-7">
-              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[var(--guide-muted)]">Your selling path</p>
-              <h2 className="guide-display mt-2 text-2xl font-semibold text-[var(--guide-accent)] sm:text-3xl">Create. List. Reach buyers.</h2>
+            <div className="border-b border-[transparent] px-0 py-5 sm:py-7">
+              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Your selling path</p>
+              <h2 className="guide-display mt-2 text-2xl font-semibold text-zinc-950 sm:text-3xl">Create. List. Reach buyers.</h2>
             </div>
             <div>
               {sellingSteps.map((step) => (
-                <article key={step.number} className="grid gap-4 border-b border-[var(--guide-line)] py-8 last:border-b-0 sm:grid-cols-[96px_minmax(0,1fr)] sm:gap-8 lg:grid-cols-[132px_minmax(0,1fr)] lg:gap-10 lg:py-11">
+                <article key={step.number} className="grid gap-4 border-b border-[transparent] py-8 last:border-b-0 sm:grid-cols-[96px_minmax(0,1fr)] sm:gap-8 lg:grid-cols-[132px_minmax(0,1fr)] lg:gap-10 lg:py-11">
                   <p className="guide-chapter-number text-6xl leading-none sm:text-7xl lg:text-8xl">{step.number}</p>
                   <div className="max-w-5xl">
                     <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">{step.eyebrow}</p>
-                    <h2 className="guide-display mt-2 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-[var(--guide-accent)] sm:text-5xl lg:text-6xl">{step.title}</h2>
+                    <h2 className="guide-display mt-2 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-zinc-950 sm:text-5xl lg:text-6xl">{step.title}</h2>
                     <p className="mt-5 max-w-3xl text-base leading-7 text-zinc-700 sm:mt-7 sm:text-[17px] sm:leading-8">{step.text}</p>
                   </div>
                 </article>
@@ -93,18 +93,18 @@ export default function SellOnlineMalawiPage() {
           </div>
         </section>
 
-        <section className="border-t border-[var(--guide-line)] py-10 sm:py-12">
-          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[var(--guide-muted)]">Why sell on BuyMesho</p>
-          <h2 className="guide-display mt-2 max-w-4xl text-3xl font-semibold leading-[1.08] tracking-[-0.025em] text-[var(--guide-accent)] sm:text-4xl lg:text-5xl">
+        <section className="border-t border-[transparent] py-10 sm:py-12">
+          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Why sell on BuyMesho</p>
+          <h2 className="guide-display mt-2 max-w-4xl text-3xl font-semibold leading-[1.08] tracking-[-0.025em] text-zinc-950 sm:text-4xl lg:text-5xl">
             Put your business where buyers can discover it.
           </h2>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--guide-muted)] sm:text-[17px] sm:leading-8">
+          <p className="mt-4 max-w-3xl text-base leading-7 text-zinc-500 sm:text-[17px] sm:leading-8">
             BuyMesho gives sellers a public profile, marketplace listings, and a structured place to present what they offer.
           </p>
 
           <div className="mt-6 grid gap-x-8 sm:grid-cols-3">
             {sellerBenefits.map((benefit) => (
-              <article key={benefit.title} className="border-t border-[var(--guide-line)] py-5">
+              <article key={benefit.title} className="border-t border-[transparent] py-5">
                 <h3 className="text-base font-bold tracking-tight">{benefit.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-zinc-600">{benefit.text}</p>
               </article>
@@ -113,13 +113,13 @@ export default function SellOnlineMalawiPage() {
         </section>
 
         <section className="border-t border-zinc-200 py-10 sm:py-12">
-          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[var(--guide-muted)]">Continue on BuyMesho</p>
+          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Continue on BuyMesho</p>
           <div className="mt-4 grid gap-x-8 sm:grid-cols-3">
             {sellerGuideLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="group flex items-center gap-3 border-t border-[var(--guide-line)] py-4 text-base font-bold text-zinc-900 transition-colors hover:text-blue-700 sm:text-lg"
+                className="group flex items-center gap-3 border-t border-[transparent] py-4 text-base font-bold text-zinc-900 transition-colors hover:text-blue-700 sm:text-lg"
               >
                 {link.label}
                 <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
