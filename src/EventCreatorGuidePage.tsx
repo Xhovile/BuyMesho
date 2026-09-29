@@ -324,7 +324,7 @@ export default function EventCreatorGuidePage() {
           </div>
 
           <div className="border-l-2 border-blue-600 pl-4 text-sm text-zinc-600">
-            <strong className="text-zinc-900">Important:</strong> an event payout is not an escrow release. The current event architecture uses direct ticket-payment-to-payout settlement after payment verification.
+            Event payouts use the event settlement path rather than Listings escrow. After a successful ticket payment is verified, the transaction becomes eligible for the event payout workflow. Provider payout timing and status are handled by that workflow.
           </div>
         </GuideSection>
 
