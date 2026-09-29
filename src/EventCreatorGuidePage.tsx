@@ -173,7 +173,7 @@ export default function EventCreatorGuidePage() {
           </div>
 
           <p>
-            The current creator record includes a display name, organization name and type, WhatsApp contact, event types, approval status, and an active-until date. Event creator access is distinct from marketplace seller access.
+            The onboarding form currently asks for a display name, organization name and type, WhatsApp contact, the event types you plan to run, and a reason for requesting event-creator access. The creator record then carries the account's status and active-until date. Event creator access is distinct from marketplace seller access.
           </p>
 
           <GuideLink href={EVENTS_CREATE_PATH}>Open event creation</GuideLink>
@@ -351,8 +351,12 @@ export default function EventCreatorGuidePage() {
           <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
             <QrCode className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
             <p className="text-sm leading-6 text-zinc-600">
-              Your operational goal is simple: the ticket sold by the event should be the same ticket the validator can recognize when the holder arrives.
+              Ticket Validator access is tied to approved event-creator access, and the current authentication flow can require a fresh authenticator-app 2FA verification before Validator access is granted.
             </p>
+          </div>
+
+          <div className="border-l-2 border-blue-600 pl-4 text-sm text-zinc-600">
+            <strong className="text-zinc-900">Operational rule:</strong> the ticket sold by the event should be the same ticket the validator can recognize when the holder arrives.
           </div>
         </GuideSection>
 
