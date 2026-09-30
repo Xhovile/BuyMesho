@@ -158,7 +158,7 @@ test("marketplace intent paths resolve to their public app routes", () => {
 });
 
 
-test("seller profile and event detail routes are page-managed and indexable", () => {
+test("seller profile routes are noindex while event details remain indexable", () => {
   const seller = getRouteSEO("/seller", "seller", "?uid=seller-123");
   assert.equal(seller.noIndex, true);
   assert.equal(seller.managedByPage, true);
@@ -175,6 +175,16 @@ test("seller profile and event detail routes are page-managed and indexable", ()
   const eventDirectory = getRouteSEO("/explore/events", "explore", "");
   assert.equal(eventDirectory.managedByPage, undefined);
   assert.equal(eventDirectory.noIndex, false);
+});
+
+test("individual seller profiles are excluded from the sitemap", () => {
+  const sitemap = readFileSync(
+    resolve(process.cwd(), "server/routes/sitemap.routes.ts"),
+    "utf8",
+  );
+
+  assert.ok(!sitemap.includes("const sellerRows = db"));
+  assert.ok(!sitemap.includes("seller?uid="));
 });
 
 test("event details derive route state from live URL changes", () => {
