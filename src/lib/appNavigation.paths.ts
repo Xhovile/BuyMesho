@@ -2,6 +2,7 @@ import type { HeaderChip } from "../constants.js";
 import {
   MARKETPLACE_CATEGORY_SLUGS,
   isMarketplaceCategorySlug,
+  type MarketplaceCategorySlug,
 } from "./marketplaceCategories.js";
 
 export type AppRoute =
@@ -75,8 +76,8 @@ export const XHOVILE_STUDIO_PATH = "/xhovilestudio";
 export const LEGACY_XHOVILE_STUDIO_PATH = "/services/xhovilestudio";
 export const isXhovileStudioPath = (pathname: string): boolean =>
   /^(?:\/xhovilestudio|\/services\/xhovilestudio)(?:\/receipt|\/admin)?\/?$/i.test(pathname);
-export const MARKETPLACE_CATEGORY_KEYS = MARKETPLACE_CATEGORY_SLUGS as readonly string[];
-export type MarketplaceCategoryKey = (typeof MARKETPLACE_CATEGORY_KEYS)[number];
+export const MARKETPLACE_CATEGORY_KEYS = MARKETPLACE_CATEGORY_SLUGS;
+export type MarketplaceCategoryKey = MarketplaceCategorySlug;
 export const isMarketplaceCategoryKey = isMarketplaceCategorySlug;
 
 export const MARKET_CHIP_PATHS: Partial<Record<HeaderChip, string>> = {
