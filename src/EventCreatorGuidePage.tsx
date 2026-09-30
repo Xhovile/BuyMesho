@@ -12,6 +12,7 @@ import {
   EXPLORE_PATH,
   BUY_ONLINE_MALAWI_PATH,
   SELL_ONLINE_MALAWI_PATH,
+  TICKET_VALIDATOR_URL,
 } from "./lib/appNavigation.paths";
 
 const guideSections = [
@@ -316,6 +317,30 @@ export default function EventCreatorGuidePage() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="pb-10 sm:pb-12">
+          <div className="flex flex-col gap-5 rounded-[2rem] border border-green-200 bg-green-50/70 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-7">
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-green-600 text-white shadow-sm">
+                <QrCode className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-green-700">Ticket entry</p>
+                <h2 className="mt-1 text-2xl font-black tracking-tight text-zinc-950">Need to validate tickets?</h2>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-700">Use Ticket Validator to check event tickets at entry.</p>
+              </div>
+            </div>
+            <a
+              href={TICKET_VALIDATOR_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-green-700"
+            >
+              Open Ticket Validator
+              <ArrowRight className="h-4 w-4" />
+            </a>
           </div>
         </section>
 

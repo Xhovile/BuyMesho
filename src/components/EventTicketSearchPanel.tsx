@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Loader2, Search, Ticket } from "lucide-react";
+import { ExternalLink, Loader2, Search, Ticket } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import { navigateToPath } from "../lib/appNavigation";
+import { TICKET_VALIDATOR_URL } from "../lib/appNavigation.paths";
 
 type EventTicketSearchPanelProps = {
   mode: "creator" | "admin";
@@ -116,6 +117,17 @@ export default function EventTicketSearchPanel({ mode }: EventTicketSearchPanelP
             <button type="button" onClick={openEvent} disabled={!eventId} className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-black text-zinc-900 hover:bg-zinc-50 disabled:opacity-50">
               Open event
             </button>
+            {mode === "creator" ? (
+              <a
+                href={TICKET_VALIDATOR_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-2xl border border-green-600 bg-green-600 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-green-700"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Open Ticket Validator
+              </a>
+            ) : null}
           </div>
           <div className="mt-3 grid gap-2 text-xs text-zinc-700 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2"><span className="text-zinc-500">Order</span><p className="mt-1 break-all font-semibold">{orderId || "—"}</p></div>
