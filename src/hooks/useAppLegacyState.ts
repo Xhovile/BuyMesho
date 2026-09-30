@@ -13,6 +13,7 @@ import { useAuthUser } from "./useAuthUser";
 import { useAccountProfile } from "./useAccountProfile";
 import { apiFetch } from "../lib/api";
 import { Listing } from "../types";
+import { resolveMarketplaceCategory } from "../lib/marketplaceCategories.js";
 import type { HeaderChip } from "../constants";
 import type {
   MarketSectionActions,
@@ -21,12 +22,14 @@ import type {
   MarketSectionSetFilters,
 } from "../sections/MarketSection";
 
-const CATEGORY_QUERY_TO_CANONICAL: Record<string, string> = {
-  phones: "Electronics & Gadgets",
-  fashion: "Fashion & Clothing",
-  books: "Academic Services",
-  services: "Academic Services",
-};
+const CATEGORY_QUERY_TO_CANONICAL: Record<string, string> = Object.fromEntries(
+  [
+    ["phones", "electronics-gadgets"],
+    ["fashion", "fashion-clothing"],
+    ["books", "academic-services"],
+    ["services", "academic-services"],
+  ],
+);
 
 export type AppLegacyConfirmState = {
   open: boolean;
@@ -112,7 +115,8 @@ export function useAppLegacyState(): AppLegacyState {
   const [search, setSearch] = useState(initialExploreState.search);
   const [selectedUniv, setSelectedUniv] = useState(initialExploreState.university);
   const [selectedCat, setSelectedCat] = useState(
-    CATEGORY_QUERY_TO_CANONICAL[initialExploreState.category] ?? initialExploreState.category
+    resolveMarketplaceCategory(initialExploreState.category)?.name ??
+      initialExploreState.category
   );
   const [selectedSubcategory, setSelectedSubcategory] = useState(initialExploreState.subcategory);
   const [selectedItemType, setSelectedItemType] = useState(initialExploreState.itemType);
