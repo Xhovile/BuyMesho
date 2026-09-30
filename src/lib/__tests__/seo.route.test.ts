@@ -43,11 +43,51 @@ test("public routes are explicitly indexable", () => {
   }
 });
 
-test("category routes require a known category key", () => {
-  const valid = getRouteSEO("/category", "category", "?category=phones");
-  assert.equal(valid.noIndex, false);
-  assert.equal(valid.managedByPage, true);
-  assert.equal(valid.canonicalPath, "/category?category=phones");
+test("category routes use canonical slugs and retain legacy aliases", () => {
+  const electronics = getRouteSEO(
+    "/category",
+    "category",
+    "?category=electronics-gadgets",
+  );
+  assert.equal(electronics.noIndex, false);
+  assert.equal(electronics.managedByPage, true);
+  assert.equal(
+    electronics.canonicalPath,
+    "/category?category=electronics-gadgets",
+  );
+
+  const academics = getRouteSEO(
+    "/category",
+    "category",
+    "?category=academic-services",
+  );
+  assert.equal(academics.noIndex, false);
+  assert.equal(
+    academics.canonicalPath,
+    "/category?category=academic-services",
+  );
+
+  const legacyPhones = getRouteSEO(
+    "/category",
+    "category",
+    "?category=phones",
+  );
+  assert.equal(legacyPhones.noIndex, false);
+  assert.equal(
+    legacyPhones.canonicalPath,
+    "/category?category=electronics-gadgets",
+  );
+
+  const legacyBooks = getRouteSEO(
+    "/category",
+    "category",
+    "?category=books",
+  );
+  assert.equal(legacyBooks.noIndex, false);
+  assert.equal(
+    legacyBooks.canonicalPath,
+    "/category?category=academic-services",
+  );
 
   const bare = getRouteSEO("/category", "category", "");
   assert.equal(bare.noIndex, true);
@@ -158,9 +198,9 @@ test("marketplace intent paths resolve to their public app routes", () => {
 });
 
 
-test("seller profile and event detail routes are page-managed and indexable", () => {
+test("seller profile routes are noindex while event details remain indexable", () => {
   const seller = getRouteSEO("/seller", "seller", "?uid=seller-123");
-  assert.equal(seller.noIndex, false);
+  assert.equal(seller.noIndex, true);
   assert.equal(seller.managedByPage, true);
   assert.equal(seller.canonicalPath, "/seller?uid=seller-123");
 
@@ -175,6 +215,16 @@ test("seller profile and event detail routes are page-managed and indexable", ()
   const eventDirectory = getRouteSEO("/explore/events", "explore", "");
   assert.equal(eventDirectory.managedByPage, undefined);
   assert.equal(eventDirectory.noIndex, false);
+});
+
+test("individual seller profiles are excluded from the sitemap", () => {
+  const sitemap = readFileSync(
+    resolve(process.cwd(), "server/routes/sitemap.routes.ts"),
+    "utf8",
+  );
+
+  assert.ok(!sitemap.includes("const sellerRows = db"));
+  assert.ok(!sitemap.includes("seller?uid="));
 });
 
 test("event details derive route state from live URL changes", () => {
@@ -209,6 +259,34 @@ test("public marketplace surfaces expose crawlable internal links", () => {
     "event cards should expose a crawlable event-details href",
   );
 });
+test("server SEO navigation exposes primary marketplace destinations", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "server/seo/publicSeoShell.ts"),
+    "utf8",
+  );
+
+  for (const label of [
+    "Homepage",
+    "Marketplace",
+    "Events",
+    "Deals",
+    "Wholesale",
+    "Electronics & Gadgets",
+    "Fashion & Clothing",
+    "Academic Services",
+  ]) {
+    assert.match(source, new RegExp(`label: "${label}"`));
+  }
+
+  const navigationBlockMatch = source.match(
+    /bodyFrame\([\s\S]*?\n      \],\n      sections,\n    \),/,
+  );
+  assert.ok(navigationBlockMatch, "primary SEO navigation block should exist");
+  const navigationBlock = navigationBlockMatch[0];
+  assert.ok(!navigationBlock.includes('label: "Browse sellers"'));
+  assert.ok(!navigationBlock.includes('label: "Events in Malawi"'));
+});
+
 test("event attendance schema is explicit and shared between client and server", () => {
   const client = readFileSync(resolve(process.cwd(), "src/components/eventDetails/EventDetailsView.tsx"), "utf8");
   const server = readFileSync(resolve(process.cwd(), "server/seo/publicSeoShell.ts"), "utf8");
@@ -362,7 +440,7 @@ test("server SEO shell classifies document routes separately from assets", () =>
   assert.equal(isSeoDocumentPath("/sitemap.xml"), false);
 });
 
-test("server SEO shell noindexes bare and invalid category documents", () => {
+test("server SEO shell canonicalizes category documents and invalid category documents", () => {
   const bare = renderSeoDocument({ path: "/category", originalUrl: "/category" } as any, emptySeoDb);
   assert.equal(bare.noIndex, true);
   assert.equal(bare.canonicalUrl, "/category");
@@ -379,7 +457,31 @@ test("server SEO shell noindexes bare and invalid category documents", () => {
     emptySeoDb,
   );
   assert.equal(valid.noIndex, false);
-  assert.equal(valid.canonicalUrl, "/category?category=phones");
+  assert.equal(valid.canonicalUrl, "/category?category=electronics-gadgets");
+
+  const canonical = renderSeoDocument(
+    { path: "/category", originalUrl: "/category?category=academic-services" } as any,
+    emptySeoDb,
+  );
+  assert.equal(canonical.noIndex, false);
+  assert.equal(canonical.canonicalUrl, "/category?category=academic-services");
+});
+
+test("SEO sitemap and public navigation use canonical category URLs", () => {
+  const sitemap = readFileSync(resolve(process.cwd(), "server/routes/sitemap.routes.ts"), "utf8");
+  const shell = readFileSync(resolve(process.cwd(), "server/seo/publicSeoShell.ts"), "utf8");
+
+  assert.match(sitemap, /MARKETPLACE_CATEGORIES.map/);
+  assert.doesNotMatch(sitemap, /category=phones/);
+  assert.doesNotMatch(sitemap, /category=books/);
+
+  assert.match(shell, /category=electronics-gadgets/);
+  assert.match(shell, /category=fashion-clothing/);
+  assert.match(shell, /category=academic-services/);
+  assert.doesNotMatch(shell, /category=phones/);
+  assert.doesNotMatch(shell, /category=books/);
+  assert.match(shell, /label: "Electronics & Gadgets"/);
+  assert.match(shell, /label: "Academic Services"/);
 });
 
 test("server SEO shell keeps every public static route indexable", () => {
@@ -426,7 +528,7 @@ test("server SEO shell normalizes trailing slashes for public and dynamic routes
     emptySeoDb,
   );
   assert.equal(category.noIndex, false);
-  assert.equal(category.canonicalUrl, "/category?category=phones");
+  assert.equal(category.canonicalUrl, "/category?category=electronics-gadgets");
 
   const fakeListing = {
     id: 42,
@@ -478,12 +580,18 @@ test("server SEO shell replaces index defaults with route-specific metadata", ()
   assert.equal((html.match(/<title>/g) || []).length, 1);
 });
 
-test("category page does not silently default invalid URLs to phones", () => {
+test("category page resolves canonical slugs while preserving Header chip labels", () => {
   const source = readFileSync(resolve(process.cwd(), "src/CategoryPage.tsx"), "utf8");
-  assert.match(source, /isMarketplaceCategoryKey/);
+  const navigation = readFileSync(resolve(process.cwd(), "src/lib/appNavigation.paths.ts"), "utf8");
+  assert.match(source, /resolveMarketplaceCategory/);
   assert.match(source, /Category not found/);
   assert.match(source, /noIndex: true/);
   assert.match(source, /requestedCategory/);
+  assert.match(navigation, /Gadgets: "\/category\?category=electronics-gadgets"/);
+  assert.match(navigation, /Academics: "\/category\?category=academic-services"/);
+  assert.match(navigation, /Fashion: "\/category\?category=fashion-clothing"/);
+  assert.match(navigation, /Food: "\/category\?category=food-snacks"/);
+  assert.match(navigation, /Beauty: "\/category\?category=beauty-personal-care"/);
 });
 
 test("server SEO shell renders a public listing snapshot from the database", () => {

@@ -3,6 +3,7 @@ import type { Request } from "express";
 import { DEFAULT_SEO, getRouteSEO, truncateSeoDescription } from "../../src/lib/seo.js";
 import { getEventAttendanceMode } from "../../src/lib/seoEvent.js";
 import { buildProductJsonLd, isListingOutOfStock } from "../../src/lib/seoProduct.js";
+import { resolveMarketplaceCategory } from "../../src/lib/marketplaceCategories.js";
 
 const SITE_URL = "https://buymesho.app";
 const MAX_SEO_LISTINGS = 12;
@@ -189,27 +190,14 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
     : getRouteSEO(normalized, "home", search);
 
   if (normalized === "/category") {
-    const category = new URLSearchParams(search).get("category")?.trim().toLowerCase();
-    const labels: Record<string, string> = {
-      phones: "Phones & Gadgets",
-      fashion: "Fashion & Clothing",
-      books: "Books & Study Tools",
-      food: "Eatery & Fast Foods",
-      beauty: "Beauty & Personal Care",
-    };
-    if (category && labels[category]) {
-      const labelText = labels[category];
-      const categoryDbValues: Record<string, string> = {
-        phones: "Electronics & Gadgets",
-        fashion: "Fashion & Clothing",
-        books: "Academic Services",
-        food: "Food & Snacks",
-        beauty: "Beauty & Personal Care",
-      };
+    const requestedCategory = new URLSearchParams(search).get("category");
+    const category = resolveMarketplaceCategory(requestedCategory);
+
+    if (category) {
       const categoryListings = db
         ? db.prepare(
             "SELECT l.id,l.name FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.category=? AND l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.created_at DESC,l.id DESC LIMIT 8"
-          ).all(categoryDbValues[category!]) as Array<{ id: number; name?: string | null }>
+          ).all(category.name) as Array<{ id: number; name?: string | null }>
         : [];
       const listingLinks = categoryListings
         .map((item) =>
@@ -222,14 +210,14 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
         .join("");
 
       return {
-        title: labelText + " in Malawi",
-        description: "Browse " + labelText.toLowerCase() + " from sellers on BuyMesho's Malawi marketplace.",
-        canonicalUrl: "/category?category=" + encodeURIComponent(category),
+        title: category.name + " in Malawi",
+        description: "Browse " + category.name.toLowerCase() + " from sellers on BuyMesho's Malawi marketplace.",
+        canonicalUrl: "/category?category=" + encodeURIComponent(category.slug),
         noIndex: false,
         body: bodyFrame(
-          labelText + " in Malawi",
+          category.name + " in Malawi",
           "BuyMesho category",
-          "Browse " + labelText.toLowerCase() + " from sellers across the BuyMesho marketplace.",
+          "Browse " + category.name.toLowerCase() + " from sellers across the BuyMesho marketplace.",
           [
             { href: "/explore", label: "Explore all listings" },
             { href: "/buy-online-malawi", label: "Buy online in Malawi" },
@@ -341,13 +329,14 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
       selected.eyebrow,
       selected.text,
       [
-        { href: "/explore", label: "Explore marketplace" },
-        { href: "/buy-online-malawi", label: "Buy online in Malawi" },
-        { href: "/sell-online-malawi", label: "Sell online in Malawi" },
-        { href: "/buy-event-tickets-malawi", label: "Buy event tickets in Malawi" },
-        { href: "/create-event-malawi", label: "Create events in Malawi" },
-        { href: "/explore/sellers", label: "Browse sellers" },
-        { href: "/explore/events", label: "Events in Malawi" },
+        { href: "/", label: "Homepage" },
+        { href: "/explore", label: "Marketplace" },
+        { href: "/explore/events", label: "Events" },
+        { href: "/explore/deals", label: "Deals" },
+        { href: "/explore/wholesale", label: "Wholesale" },
+        { href: "/category?category=electronics-gadgets", label: "Electronics & Gadgets" },
+        { href: "/category?category=fashion-clothing", label: "Fashion & Clothing" },
+        { href: "/category?category=academic-services", label: "Academic Services" },
       ],
       sections,
     ),
@@ -492,24 +481,9 @@ function buildSellerResult(db: any, uid: string): SeoRenderResult {
     title: sellerName + " | BuyMesho Seller",
     description,
     canonicalUrl,
-    noIndex: false,
+    noIndex: true,
     image: logo,
     imageAlt: sellerName + " on BuyMesho",
-    jsonLd: {
-      "@context": "https://schema.org",
-      "@type": "ProfilePage",
-      "@id": SITE_URL + canonicalUrl + "#profile",
-      url: SITE_URL + canonicalUrl,
-      name: sellerName + " | BuyMesho Seller",
-      mainEntity: {
-        "@type": profile.business_name?.trim() ? "Organization" : "Person",
-        "@id": SITE_URL + canonicalUrl + "#seller",
-        name: sellerName,
-        url: SITE_URL + canonicalUrl,
-        ...(logo ? { image: absoluteUrl(logo) } : {}),
-        ...(profile.bio?.trim() ? { description: profile.bio.trim() } : {}),
-      },
-    },
     body: bodyFrame(
       sellerName,
       "BuyMesho seller profile",

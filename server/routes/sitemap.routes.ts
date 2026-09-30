@@ -1,4 +1,5 @@
 import type { Express, Response } from "express";
+import { MARKETPLACE_CATEGORIES } from "../../src/lib/marketplaceCategories.js";
 
 const SITE_URL = "https://buymesho.app";
 const SITEMAP_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -114,11 +115,9 @@ function loadSitemapData(db: any) {
     { loc: `${SITE_URL}/explore/events` },
     { loc: `${SITE_URL}/explore/wholesale` },
     { loc: `${SITE_URL}/explore/sellers` },
-    { loc: `${SITE_URL}/category?category=phones` },
-    { loc: `${SITE_URL}/category?category=fashion` },
-    { loc: `${SITE_URL}/category?category=books` },
-    { loc: `${SITE_URL}/category?category=food` },
-    { loc: `${SITE_URL}/category?category=beauty` },
+    ...MARKETPLACE_CATEGORIES.map((category) => ({
+      loc: `${SITE_URL}/category?category=${encodeURIComponent(category.slug)}`,
+    })),
     { loc: `${SITE_URL}/privacy` },
     { loc: `${SITE_URL}/terms` },
     { loc: `${SITE_URL}/safety` },
@@ -134,17 +133,6 @@ function loadSitemapData(db: any) {
           AND l.deleted_at IS NULL
           AND s.is_seller = 1
         ORDER BY l.created_at DESC, l.id DESC
-      `
-    )
-    .all() as SitemapRow[];
-
-  const sellerRows = db
-    .prepare(
-      `
-        SELECT uid AS id, join_date AS updated_at
-        FROM sellers
-        WHERE is_seller = 1
-        ORDER BY join_date DESC, uid ASC
       `
     )
     .all() as SitemapRow[];
@@ -172,10 +160,6 @@ function loadSitemapData(db: any) {
   const dynamicUrls: SitemapUrl[] = [
     ...listingRows.map((row) => ({
       loc: `${SITE_URL}/listing?listing=${encodeURIComponent(String(row.id))}`,
-      lastmod: row.updated_at,
-    })),
-    ...sellerRows.map((row) => ({
-      loc: `${SITE_URL}/seller?uid=${encodeURIComponent(String(row.id))}`,
       lastmod: row.updated_at,
     })),
     ...eventRows.map((row) => ({

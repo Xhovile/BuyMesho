@@ -11,7 +11,7 @@
     "dev:server": "tsx server.ts",
     "start:server": "node dist-server/server/entry.js",
     "test": "npm run check:gemini-secret-exposure && npm run test:seo && npm run test:ai-shopping && npm run test:ai-pricing && npm run test:ai-config && npm run test:integration && npm run test:order-state-transition && npm run test:payout-destination-independence && npm run test:routing-guards && npm run test:dispute-state-machines && npm run test:studio-receipt-access && npm run test:seller-dispute-resolution",
-    "test:seller-dispute-resolution": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/disputes/__tests__/seller-resolution.test.ts server/modules/notifications/dispute-workflow.notification.test.ts server/modules/email/templates/dispute-workflow.test.ts src/seller-orders/utils.test.ts",
+    "test:seller-dispute-resolution": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/disputes/__tests__/seller-resolution.test.ts server/modules/notifications/dispute-workflow.notification.test.ts server/modules/email/templates/dispute-workflow.test.ts src/seller-orders/utils.test.ts server/routes/__tests__/sellerOrders.scope.test.ts",
     "check:gemini-secret-exposure": "node scripts/check-gemini-secret-exposure.mjs",
     "check:payout-destination-independence": "node scripts/check-payout-destination-independence.mjs",
     "test:ai-shopping": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/lib/__tests__/shopping-assistant.canonical.test.ts",

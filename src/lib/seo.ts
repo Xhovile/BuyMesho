@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 
 import type { Listing } from "../types.js";
-import { isMarketplaceCategoryKey } from "./appNavigation.paths.js";
+import { resolveMarketplaceCategory } from "./marketplaceCategories.js";
 import { buildProductJsonLd, isListingOutOfStock } from "./seoProduct.js";
 import type { AppRoute } from "./appNavigation.paths.js";
 
@@ -61,9 +61,10 @@ export function getRouteSEO(pathname: string, route: AppRoute, search = ""): Rou
   }
 
   if (route === "category") {
-    const category = new URLSearchParams(search).get("category")?.trim().toLowerCase();
+    const requestedCategory = new URLSearchParams(search).get("category");
+    const category = resolveMarketplaceCategory(requestedCategory);
 
-    if (!isMarketplaceCategoryKey(category)) {
+    if (!category) {
       return {
         title: "BuyMesho Category",
         description: "Select a valid marketplace category on BuyMesho.",
@@ -74,9 +75,9 @@ export function getRouteSEO(pathname: string, route: AppRoute, search = ""): Rou
     }
 
     return {
-      title: DEFAULT_SEO.title,
-      description: DEFAULT_SEO.description,
-      canonicalPath: `/category?category=${encodeURIComponent(category)}`,
+      title: `${category.name} in Malawi`,
+      description: `Browse ${category.name.toLowerCase()} from sellers on BuyMesho's Malawi marketplace.`,
+      canonicalPath: `/category?category=${encodeURIComponent(category.slug)}`,
       noIndex: false,
       managedByPage: true,
     };
@@ -97,7 +98,7 @@ export function getRouteSEO(pathname: string, route: AppRoute, search = ""): Rou
       title: "BuyMesho Seller Profile",
       description: "View a seller profile and marketplace listings on BuyMesho.",
       canonicalPath: `/seller?uid=${encodeURIComponent(sellerUid)}`,
-      noIndex: false,
+      noIndex: true,
       managedByPage: true,
     };
   }

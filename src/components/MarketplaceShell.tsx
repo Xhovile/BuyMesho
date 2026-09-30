@@ -4,6 +4,7 @@ import CategoryPage from "../CategoryPage";
 import { useAccountProfile } from "../hooks/useAccountProfile";
 import { useAuthUser } from "../hooks/useAuthUser";
 import type { HeaderChip } from "../constants";
+import { resolveMarketplaceCategory } from "../lib/marketplaceCategories.js";
 import {
   BECOME_SELLER_PATH,
   EVENTS_CREATE_PATH,
@@ -22,12 +23,12 @@ type MarketplaceShellProps = {
   children: ReactNode;
 };
 
-const CATEGORY_CHIP_BY_KEY: Record<string, HeaderChip> = {
-  phones: "Gadgets",
-  fashion: "Fashion",
-  books: "Academics",
-  food: "Food",
-  beauty: "Beauty",
+const CATEGORY_CHIP_BY_SLUG: Record<string, HeaderChip> = {
+  "electronics-gadgets": "Gadgets",
+  "fashion-clothing": "Fashion",
+  "academic-services": "Academics",
+  "food-snacks": "Food",
+  "beauty-personal-care": "Beauty",
 };
 
 function isPersistentMarketplacePath(pathname: string, search: string) {
@@ -42,8 +43,10 @@ function isPersistentMarketplacePath(pathname: string, search: string) {
 }
 
 function getCategoryChip(search: string): HeaderChip {
-  const category = new URLSearchParams(search).get("category") || "phones";
-  return CATEGORY_CHIP_BY_KEY[category] || "Gadgets";
+  const category = resolveMarketplaceCategory(
+    new URLSearchParams(search).get("category"),
+  );
+  return (category && CATEGORY_CHIP_BY_SLUG[category.slug]) || "Gadgets";
 }
 
 export default function MarketplaceShell({ children }: MarketplaceShellProps) {
