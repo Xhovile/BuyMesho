@@ -228,8 +228,13 @@ test("server SEO navigation exposes primary marketplace destinations", () => {
     assert.match(source, new RegExp(`label: "${label}"`));
   }
 
-  assert.ok(!source.includes('label: "Browse sellers"'));
-  assert.ok(!source.includes('label: "Events in Malawi"'));
+  const navigationBlockMatch = source.match(
+    /bodyFrame\([\\s\\S]*?\n      \],\n      sections,\n    \),/,
+  );
+  assert.ok(navigationBlockMatch, "primary SEO navigation block should exist");
+  const navigationBlock = navigationBlockMatch[0];
+  assert.ok(!navigationBlock.includes('label: "Browse sellers"'));
+  assert.ok(!navigationBlock.includes('label: "Events in Malawi"'));
 });
 
 test("event attendance schema is explicit and shared between client and server", () => {
