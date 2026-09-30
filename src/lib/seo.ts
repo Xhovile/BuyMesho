@@ -97,7 +97,7 @@ export function getRouteSEO(pathname: string, route: AppRoute, search = ""): Rou
       title: "BuyMesho Seller Profile",
       description: "View a seller profile and marketplace listings on BuyMesho.",
       canonicalPath: `/seller?uid=${encodeURIComponent(sellerUid)}`,
-      noIndex: false,
+      noIndex: true,
       managedByPage: true,
     };
   }
