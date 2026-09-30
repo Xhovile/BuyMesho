@@ -117,7 +117,7 @@ function buildRefundRequest(row: SellerOrderRow) {
 }
 function buildSellerOrderBundle(row: SellerOrderRow, sellerUid: string) {
   const order = rowToSellerOrder(row);
-  if (['event', 'mixed'].includes(String(order.source ?? '').trim().toLowerCase())) return null;
+  if (!isSellerWorkspaceOrderSource(order.source)) return null;
   if (String(order.sellerId) !== sellerUid) return null;
   return { order, payment: buildPayment(row), escrow: buildEscrow(row), payoutStatus: row.payout_status ?? null, payout: { status: row.payout_status ?? null, createdAt: row.payout_created_at ?? null, paidAt: row.payout_paid_at ?? null, failedAt: row.payout_failed_at ?? null, updatedAt: row.payout_updated_at ?? null }, dispute: buildDispute(row), refundRequest: buildRefundRequest(row) };
 }
@@ -151,6 +151,7 @@ export function createSellerOrdersRouter(requireAuth: RequestHandler): express.R
            (SELECT COUNT(*)
               FROM orders o
              WHERE o.seller_id = $1
+               AND o.source NOT IN ('event', 'mixed')
                AND o.status NOT IN ('draft', 'pending_payment', 'fulfilled', 'closed')
                AND (
                  COALESCE(o.delivery_status, 'action_required') = 'action_required'
