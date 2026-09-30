@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Loader2, Search, Ticket } from "lucide-react";
+import { ExternalLink, Loader2, Search, Ticket } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import { navigateToPath } from "../lib/appNavigation";
+import { TICKET_VALIDATOR_URL } from "../lib/appNavigation.paths";
 
 type EventTicketSearchPanelProps = {
   mode: "creator" | "admin";
