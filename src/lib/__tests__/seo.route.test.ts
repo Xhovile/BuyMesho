@@ -209,6 +209,29 @@ test("public marketplace surfaces expose crawlable internal links", () => {
     "event cards should expose a crawlable event-details href",
   );
 });
+test("server SEO navigation exposes primary marketplace destinations", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "server/seo/publicSeoShell.ts"),
+    "utf8",
+  );
+
+  for (const label of [
+    "Homepage",
+    "Marketplace",
+    "Events",
+    "Deals",
+    "Wholesale",
+    "Gadgets",
+    "Fashion",
+    "Academic Services",
+  ]) {
+    assert.match(source, new RegExp(`label: "${label}"`));
+  }
+
+  assert.ok(!source.includes('label: "Browse sellers"'));
+  assert.ok(!source.includes('label: "Events in Malawi"'));
+});
+
 test("event attendance schema is explicit and shared between client and server", () => {
   const client = readFileSync(resolve(process.cwd(), "src/components/eventDetails/EventDetailsView.tsx"), "utf8");
   const server = readFileSync(resolve(process.cwd(), "server/seo/publicSeoShell.ts"), "utf8");
