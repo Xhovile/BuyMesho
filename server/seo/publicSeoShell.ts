@@ -346,7 +346,7 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
         { href: "/explore/events", label: "Events" },
         { href: "/explore/deals", label: "Deals" },
         { href: "/explore/wholesale", label: "Wholesale" },
-        { href: "/category?category=phones", label: "Electronics & Gadgets" },
+        { href: "/category?category=phones", label: "Gadgets" },
         { href: "/category?category=fashion", label: "Fashion" },
         { href: "/category?category=books", label: "Academic Services" },
       ],
