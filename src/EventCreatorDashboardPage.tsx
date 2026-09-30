@@ -308,14 +308,25 @@ export default function EventCreatorDashboardPage() {
   };
 
   const dashboardButton = (
-    <button
-      type="button"
-      onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?view=dashboard`, { scroll: false })}
-      className="inline-flex items-center gap-2 rounded-2xl border border-emerald-950 bg-emerald-100 px-4 py-2.5 text-sm font-extrabold text-emerald-950 shadow-sm shadow-emerald-950/10 transition hover:bg-emerald-200"
-    >
-      <BarChart3 className="h-4 w-4" />
-      Dashboard
-    </button>
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?view=dashboard`, { scroll: false })}
+        className="inline-flex items-center gap-2 rounded-2xl border border-emerald-950 bg-emerald-100 px-4 py-2.5 text-sm font-extrabold text-emerald-950 shadow-sm shadow-emerald-950/10 transition hover:bg-emerald-200"
+      >
+        <BarChart3 className="h-4 w-4" />
+        Dashboard
+      </button>
+      <a
+        href={TICKET_VALIDATOR_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 rounded-2xl border border-green-600 bg-green-600 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700"
+      >
+        <ExternalLink className="h-4 w-4" />
+        Open Ticket Validator
+      </a>
+    </div>
   );
 
   if (authLoading || loading) {
