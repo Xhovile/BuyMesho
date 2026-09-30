@@ -22,15 +22,6 @@ import type {
   MarketSectionSetFilters,
 } from "../sections/MarketSection";
 
-const CATEGORY_QUERY_TO_CANONICAL: Record<string, string> = Object.fromEntries(
-  [
-    ["phones", "electronics-gadgets"],
-    ["fashion", "fashion-clothing"],
-    ["books", "academic-services"],
-    ["services", "academic-services"],
-  ],
-);
-
 export type AppLegacyConfirmState = {
   open: boolean;
   title: string;
