@@ -359,43 +359,19 @@ export default function SellerProfilePage() {
       return;
     }
 
-    const sellerName = profile.business_name?.trim() || "Seller Profile";
-    const rawDescription =
-      profile.bio?.trim() ||
-      `Browse ${listings.length} marketplace listing${listings.length === 1 ? "" : "s"} from ${sellerName} on BuyMesho.`;
-    const description = truncateSeoDescription(rawDescription);
-    const image = profile.business_logo?.trim() || undefined;
-    const entityType = profile.business_name?.trim() ? "Organization" : "Person";
-
     updateSEOMetaTags({
-      title: `${sellerName} | BuyMesho Seller`,
-      description,
-      image,
-      imageAlt: `${sellerName} on BuyMesho`,
+      title: profile?.business_name?.trim()
+        ? `${profile.business_name.trim()} | BuyMesho Seller`
+        : "BuyMesho Seller Profile",
+      description: profile?.bio?.trim()
+        ? truncateSeoDescription(profile.bio.trim())
+        : "View a seller profile and marketplace listings on BuyMesho.",
+      image: profile?.business_logo?.trim() || undefined,
+      imageAlt: profile?.business_name?.trim()
+        ? `${profile.business_name.trim()} on BuyMesho`
+        : "BuyMesho seller profile",
       url: canonicalUrl,
-      noIndex: false,
-      jsonLd: {
-        "@context": "https://schema.org",
-        "@type": "ProfilePage",
-        "@id": `${canonicalUrl}#profile`,
-        "url": canonicalUrl,
-        "name": `${sellerName} | BuyMesho Seller`,
-        "mainEntity": {
-          "@type": entityType,
-          "@id": `${canonicalUrl}#seller`,
-          "name": sellerName,
-          "url": canonicalUrl,
-          ...(image ? { "image": image } : {}),
-          ...(profile.bio?.trim() ? { "description": profile.bio.trim() } : {}),
-        },
-      },
-      keywords: [
-        sellerName,
-        "BuyMesho seller",
-        "Malawi seller",
-        "Malawi marketplace",
-        "buy online Malawi",
-      ],
+      noIndex: true,
     });
 
     const liveUid =
