@@ -25,7 +25,6 @@ import {
   navigateToProfile,
   navigateToMarketChip,
   pushExploreStateInUrl,
-  isMarketplaceCategoryKey,
 } from "./lib/appNavigation";
 import type { HeaderChip } from "./constants";
 import Header from "./components/Header";
@@ -41,13 +40,14 @@ import FormDropdown from "./components/FormDropdown";
 import FeedbackModal from "./components/FeedbackModal";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { updateSEOMetaTags } from "./lib/seo";
+import { resolveMarketplaceCategory, type MarketplaceCategorySlug } from "./lib/marketplaceCategories.js";
 import {
   readHiddenListingIds,
   readHiddenSellerUids,
   subscribeToHiddenCollectionsChanges,
 } from "./lib/hiddenCollections";
 
-type CategoryKey = "phones" | "fashion" | "books" | "food" | "beauty";
+type CategoryKey = MarketplaceCategorySlug;
 
 type CategoryConfig = {
   key: CategoryKey;
@@ -72,18 +72,18 @@ type ListingPreview = {
 };
 
 const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
-  phones: {
-    key: "phones",
-    title: "Phones & Gadgets",
-    subtitle: "Devices, accessories, and everyday tech",
+  "electronics-gadgets": {
+    key: "electronics-gadgets",
+    title: "Electronics & Gadgets",
+    subtitle: "Phones, computers, accessories, and everyday tech",
     description:
-      "Browse phones, chargers, earphones, accessories, and everyday tech posted by sellers on the Malawi marketplace.",
+      "Browse phones, computers, audio, power products, accessories, and everyday technology posted by sellers on the Malawi marketplace.",
     heroIcon: Smartphone,
     apiCategory: "Electronics & Gadgets",
     accent: "from-red-900/10 to-zinc-100",
   },
-  fashion: {
-    key: "fashion",
+  "fashion-clothing": {
+    key: "fashion-clothing",
     title: "Fashion & Clothing",
     subtitle: "Style for campus and everyday life",
     description:
@@ -92,28 +92,28 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
     apiCategory: "Fashion & Clothing",
     accent: "from-zinc-900/10 to-zinc-100",
   },
-  books: {
-    key: "books",
-    title: "Books & Study Tools",
-    subtitle: "Books, calculators, and study essentials",
+  "academic-services": {
+    key: "academic-services",
+    title: "Academic Services",
+    subtitle: "Academic services, study tools, and student essentials",
     description:
-      "Browse books, calculators, stationery, and useful study tools available through the BuyMesho marketplace in Malawi.",
+      "Browse academic services, printing, study tools, books, calculators, stationery, and other student essentials available through BuyMesho in Malawi.",
     heroIcon: BookOpen,
     apiCategory: "Academic Services",
     accent: "from-amber-500/10 to-zinc-100",
   },
-  food: {
-    key: "food",
-    title: "Eatery & Fast Foods",
-    subtitle: "Meals, fast foods, and drinks",
+  "food-snacks": {
+    key: "food-snacks",
+    title: "Food & Snacks",
+    subtitle: "Meals, snacks, and drinks",
     description:
-      "Browse eatery options, fast foods, and drinks that buyers can discover quickly on BuyMesho in Malawi.",
+      "Browse food, snacks, meals, and drinks that buyers can discover quickly on BuyMesho in Malawi.",
     heroIcon: Store,
     apiCategory: "Food & Snacks",
     accent: "from-emerald-500/10 to-zinc-100",
   },
-  beauty: {
-    key: "beauty",
+  "beauty-personal-care": {
+    key: "beauty-personal-care",
     title: "Beauty & Personal Care",
     subtitle: "Beauty and personal care essentials",
     description:
@@ -125,11 +125,11 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
 };
 
 const CATEGORY_CHIP_BY_KEY: Record<CategoryKey, HeaderChip> = {
-  phones: "Gadgets",
-  fashion: "Fashion",
-  books: "Academics",
-  food: "Food",
-  beauty: "Beauty",
+  "electronics-gadgets": "Gadgets",
+  "fashion-clothing": "Fashion",
+  "academic-services": "Academics",
+  "food-snacks": "Food",
+  "beauty-personal-care": "Beauty",
 };
 
 const DEFAULT_SORT_BY = "Newest first";
@@ -159,11 +159,11 @@ export default function CategoryPage() {
   );
 
   const requestedCategory = useMemo(() => {
-    const value = new URLSearchParams(window.location.search).get("category")?.trim().toLowerCase() || null;
-    return isMarketplaceCategoryKey(value) ? value : null;
+    const value = new URLSearchParams(window.location.search).get("category");
+    return resolveMarketplaceCategory(value)?.slug ?? null;
   }, []);
 
-  const categoryKey = requestedCategory || "phones";
+  const categoryKey = requestedCategory || "electronics-gadgets";
   const config = CATEGORY_CONFIG[categoryKey];
   const activeCategoryChip = CATEGORY_CHIP_BY_KEY[categoryKey];
 
