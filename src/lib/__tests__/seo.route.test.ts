@@ -271,8 +271,8 @@ test("server SEO navigation exposes primary marketplace destinations", () => {
     "Events",
     "Deals",
     "Wholesale",
-    "Gadgets",
-    "Fashion",
+    "Electronics & Gadgets",
+    "Fashion & Clothing",
     "Academic Services",
   ]) {
     assert.match(source, new RegExp(`label: "${label}"`));
