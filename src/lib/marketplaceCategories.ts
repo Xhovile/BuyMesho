@@ -33,12 +33,14 @@ export const MARKETPLACE_CATEGORY_SLUGS = MARKETPLACE_CATEGORIES.map(
   (category) => category.slug,
 ) as MarketplaceCategorySlug[];
 
-const CATEGORY_ALIASES = new Map<string, MarketplaceCategorySlug>(
-  MARKETPLACE_CATEGORIES.flatMap((category) => [
-    [category.slug, category.slug],
-    ...category.legacySlugs.map((legacySlug) => [legacySlug, category.slug] as const),
-  ]),
-);
+const CATEGORY_ALIASES = new Map<string, MarketplaceCategorySlug>();
+
+for (const category of MARKETPLACE_CATEGORIES) {
+  CATEGORY_ALIASES.set(category.slug, category.slug);
+  for (const legacySlug of category.legacySlugs) {
+    CATEGORY_ALIASES.set(legacySlug, category.slug);
+  }
+}
 
 export function resolveMarketplaceCategory(
   value: string | null | undefined,
