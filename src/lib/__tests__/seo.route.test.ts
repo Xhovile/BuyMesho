@@ -239,7 +239,7 @@ test("server SEO navigation exposes primary marketplace destinations", () => {
   }
 
   const navigationBlockMatch = source.match(
-    /bodyFrame\([\\s\\S]*?\n      \],\n      sections,\n    \),/,
+    /bodyFrame\([\s\S]*?\n      \],\n      sections,\n    \),/,
   );
   assert.ok(navigationBlockMatch, "primary SEO navigation block should exist");
   const navigationBlock = navigationBlockMatch[0];
