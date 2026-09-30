@@ -5,6 +5,7 @@ import AccountPageShell from "./components/AccountPageShell";
 import EventCreatorOverviewPage from "./EventCreatorOverviewPage";
 import { apiFetch } from "./lib/api";
 import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, EVENTS_PATH, navigateToLoginWithReturnPath, navigateToPath } from "./lib/appNavigation";
+import { TICKET_VALIDATOR_URL } from "./lib/appNavigation.paths";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { useLocationSearch } from "./hooks/useLocationSearch";
 
