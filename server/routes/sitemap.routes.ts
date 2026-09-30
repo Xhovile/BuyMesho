@@ -138,17 +138,6 @@ function loadSitemapData(db: any) {
     )
     .all() as SitemapRow[];
 
-  const sellerRows = db
-    .prepare(
-      `
-        SELECT uid AS id, join_date AS updated_at
-        FROM sellers
-        WHERE is_seller = 1
-        ORDER BY join_date DESC, uid ASC
-      `
-    )
-    .all() as SitemapRow[];
-
   const eventRows = db
     .prepare(
       `
@@ -172,10 +161,6 @@ function loadSitemapData(db: any) {
   const dynamicUrls: SitemapUrl[] = [
     ...listingRows.map((row) => ({
       loc: `${SITE_URL}/listing?listing=${encodeURIComponent(String(row.id))}`,
-      lastmod: row.updated_at,
-    })),
-    ...sellerRows.map((row) => ({
-      loc: `${SITE_URL}/seller?uid=${encodeURIComponent(String(row.id))}`,
       lastmod: row.updated_at,
     })),
     ...eventRows.map((row) => ({
