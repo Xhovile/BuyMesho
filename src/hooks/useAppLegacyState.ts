@@ -309,7 +309,7 @@ export function useAppLegacyState(): AppLegacyState {
       syncingFromUrlRef.current = true;
       setSearch(urlState.search);
       setSelectedUniv(urlState.university);
-      setSelectedCat(CATEGORY_QUERY_TO_CANONICAL[urlState.category] ?? urlState.category);
+      setSelectedCat(resolveMarketplaceCategory(urlState.category)?.name ?? urlState.category);
       setSelectedSubcategory(urlState.subcategory);
       setSelectedItemType(urlState.itemType);
       setSelectedStatus(urlState.status);
