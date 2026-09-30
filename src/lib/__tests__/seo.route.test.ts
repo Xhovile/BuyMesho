@@ -231,7 +231,7 @@ test("server SEO navigation exposes primary marketplace destinations", () => {
     "Events",
     "Deals",
     "Wholesale",
-    "Electronics & Gadgets",
+    "Gadgets",
     "Fashion",
     "Academic Services",
   ]) {
