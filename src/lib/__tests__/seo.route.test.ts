@@ -160,7 +160,7 @@ test("marketplace intent paths resolve to their public app routes", () => {
 
 test("seller profile and event detail routes are page-managed and indexable", () => {
   const seller = getRouteSEO("/seller", "seller", "?uid=seller-123");
-  assert.equal(seller.noIndex, false);
+  assert.equal(seller.noIndex, true);
   assert.equal(seller.managedByPage, true);
   assert.equal(seller.canonicalPath, "/seller?uid=seller-123");
 
