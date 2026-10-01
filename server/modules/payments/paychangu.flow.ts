@@ -54,8 +54,11 @@ async function emitEventTicketPurchaseNotifications(order:ReturnType<typeof orde
   }));
 
   const first=ticketRows[0];
-  const eventManagerName=order.sellerId;
-  const buyerRecipient=await resolveNotificationRecipient(order.buyerId);
+  const [buyerRecipient,eventManagerRecipient]=await Promise.all([
+    resolveNotificationRecipient(order.buyerId),
+    resolveNotificationRecipient(order.sellerId),
+  ]);
+  const eventManagerName=eventManagerRecipient.displayName?.trim()||'Event Manager';
   const buyerEmail=buyerRecipient.email?.trim().toLowerCase()??'';
   const buyerName=order.buyerDetails?.fullName?.trim()||buyerRecipient.displayName?.trim()||'there';
 
