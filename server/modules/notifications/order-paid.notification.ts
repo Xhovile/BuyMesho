@@ -56,7 +56,9 @@ function getEventTicketHolderName(order: StoredOrder): string | null {
     const ticketHolder = record.ticketHolder;
     if (ticketHolder && typeof ticketHolder === "object" && !Array.isArray(ticketHolder)) {
       const holder = ticketHolder as Record<string, unknown>;
-      if (typeof holder.fullName === "string" && holder.fullName.trim()) return holder.fullName.trim();
+      if (typeof holder.fullName === "string" && holder.fullName.trim()) {
+        return holder.fullName.trim();
+      }
     }
 
     const tickets = record.tickets;
@@ -82,6 +84,17 @@ function getEventId(order: StoredOrder): string | null {
   return null;
 }
 
+function getEventName(order: StoredOrder): string | null {
+  if (order.source !== "event") return null;
+  for (const item of order.items ?? []) {
+    if (item?.kind === "event_ticket") {
+      const title = (item as unknown as Record<string, unknown>).title;
+      if (typeof title === "string" && title.trim()) return title.trim();
+    }
+  }
+  return null;
+}
+
 async function sendOrderPaidEmail(
   order: StoredOrder,
   role: RecipientRole,
@@ -90,8 +103,11 @@ async function sendOrderPaidEmail(
   const notificationType = "order_paid";
   const dedupeKey = `${order.id}:${role}`;
   const claim = deps.claim ?? ((type: string, key: string) => claimEmailNotification(type, key));
-  const markSent = deps.markSent ?? ((type: string, key: string) => markEmailNotificationSent(type, key));
-  const release = deps.release ?? ((type: string, key: string) => releaseEmailNotification(type, key));
+  const markSent =
+    deps.markSent ?? ((type: string, key: string) => markEmailNotificationSent(type, key));
+  const release =
+    deps.release ?? ((type: string, key: string) => releaseEmailNotification(type, key));
+
   const recipientId = role === "buyer" ? order.buyerId : order.sellerId;
   const userRecord = await resolveNotificationRecipient(recipientId);
   const email = userRecord.email?.trim();
@@ -106,13 +122,16 @@ async function sendOrderPaidEmail(
   const eventTicketHolderName = getEventTicketHolderName(order);
   const buyerCheckoutName = order.buyerDetails?.fullName?.trim() || eventTicketHolderName;
   const isEventOrder = order.source === "event";
+  const eventName = getEventName(order);
   const recipientName = role === "buyer"
     ? buyerCheckoutName || userRecord.displayName?.trim() || "there"
     : isEventOrder
       ? eventCreatorDisplayName || "there"
       : sellerBusinessName || userRecord.displayName?.trim() || "there";
   const counterpartyName = role === "buyer"
-    ? (isEventOrder ? eventCreatorDisplayName || sellerBusinessName || "Event creator" : sellerBusinessName || "BuyMesho seller")
+    ? (isEventOrder
+      ? eventCreatorDisplayName || sellerBusinessName || "Event creator"
+      : sellerBusinessName || "BuyMesho seller")
     : buyerCheckoutName || "BuyMesho customer";
   const eventId = getEventId(order);
   const actionUrl = role === "seller"
@@ -129,15 +148,21 @@ async function sendOrderPaidEmail(
     totalAmount: order.total.amount,
     currency: order.total.currency || order.currency,
     actionUrl,
+    isEventOrder,
+    eventName,
   });
 
   try {
     await (deps.send ?? sendEmail)({
       sender: "notifications",
       to: { email, name: recipientName },
-      subject: role === "buyer"
-        ? `BuyMesho payment confirmed — ${counterpartyName}`
-        : `BuyMesho — new paid order from ${counterpartyName}`,
+      subject: isEventOrder
+        ? role === "buyer"
+          ? `BuyMesho event payment confirmed — ${eventName || "your event"}`
+          : `BuyMesho — new event ticket purchase for ${eventName || "your event"}`
+        : role === "buyer"
+          ? `BuyMesho payment confirmed — ${counterpartyName}`
+          : `BuyMesho — new paid order from ${counterpartyName}`,
       text,
       html,
     });
