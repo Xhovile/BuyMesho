@@ -13,6 +13,7 @@ type SitemapUrl = {
 type SitemapRow = {
   id: number | string;
   updated_at?: string | null;
+  category?: string | null;
 };
 
 type SitemapCache = {
@@ -115,18 +116,11 @@ function loadSitemapData(db: any) {
     { loc: `${SITE_URL}/explore/events` },
     { loc: `${SITE_URL}/explore/wholesale` },
     { loc: `${SITE_URL}/explore/sellers` },
-    ...MARKETPLACE_CATEGORIES.map((category) => ({
-      loc: `${SITE_URL}/category?category=${encodeURIComponent(category.slug)}`,
-    })),
-    { loc: `${SITE_URL}/privacy` },
-    { loc: `${SITE_URL}/terms` },
-    { loc: `${SITE_URL}/safety` },
-  ];
 
   const listingRows = db
     .prepare(
       `
-        SELECT l.id, l.created_at AS updated_at
+        SELECT l.id, l.created_at AS updated_at, l.category
         FROM listings l
         JOIN sellers s ON l.seller_uid = s.uid
         WHERE l.is_hidden = 0
@@ -136,6 +130,26 @@ function loadSitemapData(db: any) {
       `
     )
     .all() as SitemapRow[];
+
+  const indexableCategoryNames = new Set(
+    listingRows
+      .map((row) => row.category?.trim())
+      .filter((category): category is string => !!category),
+  );
+
+  publicPages.push(
+    ...MARKETPLACE_CATEGORIES
+      .filter((category) => indexableCategoryNames.has(category.name))
+      .map((category) => ({
+        loc: `${SITE_URL}/category?category=${encodeURIComponent(category.slug)}`,
+      })),
+  );
+
+  publicPages.push(
+    { loc: `${SITE_URL}/privacy` },
+    { loc: `${SITE_URL}/terms` },
+    { loc: `${SITE_URL}/safety` },
+  );
 
   const eventRows = db
     .prepare(
