@@ -181,8 +181,9 @@ export async function notifyOrderPaid(
   order: StoredOrder,
   deps: NotificationDependencies = {},
 ): Promise<void> {
-  await Promise.allSettled([
-    sendOrderPaidEmail(order, "buyer", deps),
-    sendOrderPaidEmail(order, "seller", deps),
-  ]);
+  // Event buyers receive the unified event-ticket purchase notification.
+  // Keep order_paid for marketplace buyers while retaining the event manager
+  // purchase notification in this flow.
+  const recipients: RecipientRole[] = order.source === "event" ? ["seller"] : ["buyer", "seller"];
+  await Promise.allSettled(recipients.map((role) => sendOrderPaidEmail(order, role, deps)));
 }
