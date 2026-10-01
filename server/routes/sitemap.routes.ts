@@ -116,6 +116,7 @@ function loadSitemapData(db: any) {
     { loc: `${SITE_URL}/explore/events` },
     { loc: `${SITE_URL}/explore/wholesale` },
     { loc: `${SITE_URL}/explore/sellers` },
+  ];
 
   const listingRows = db
     .prepare(
