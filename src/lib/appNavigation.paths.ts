@@ -1,15 +1,25 @@
-import type { HeaderChip } from "../constants";
+import type { HeaderChip } from "../constants.js";
+import {
+  MARKETPLACE_CATEGORY_SLUGS,
+  isMarketplaceCategorySlug,
+  type MarketplaceCategorySlug,
+} from "./marketplaceCategories.js";
 
 export type AppRoute =
-  | "home" | "about" | "category" | "explore" | "saved" | "hidden" | "settings" | "privacy" | "terms" | "safety" | "report" | "seller" | "seller_dashboard" | "seller_hub" | "seller_orders" | "seller_payouts" | "listing_details" | "listing_reviews" | "messages" | "create" | "edit" | "login" | "signup" | "forgot_password" | "profile" | "verify_email" | "account_setup" | "edit_profile" | "edit_account" | "become_seller" | "change_password" | "change_email" | "email_action" | "my_listings" | "event_creator_dashboard" | "event_creator_overview" | "tickets" | "admin" | "admin_events" | "admin_payments" | "admin_transaction_inspector" | "admin_payouts" | "admin_reports" | "admin_seller_applications" | "admin_moderation_queue" | "admin_audit" | "admin_balance" | "admin_setup" | "admin_messages" | "admin_disputes" | "admin_event_payout_recovery" | "payment_return" | "install";
+  | "home" | "about" | "category" | "explore" | "saved" | "hidden" | "settings" | "privacy" | "terms" | "safety" | "report" | "seller" | "seller_dashboard" | "seller_hub" | "seller_orders" | "seller_payouts" | "listing_details" | "listing_reviews" | "messages" | "create" | "edit" | "login" | "signup" | "forgot_password" | "profile" | "verify_email" | "account_setup" | "edit_profile" | "edit_account" | "become_seller" | "change_password" | "change_email" | "email_action" | "my_listings" | "event_creator_dashboard" | "event_creator_overview" | "tickets" | "admin" | "admin_events" | "admin_payments" | "admin_transaction_inspector" | "admin_payouts" | "admin_reports" | "admin_seller_applications" | "admin_moderation_queue" | "admin_audit" | "admin_balance" | "admin_setup" | "admin_messages" | "admin_disputes" | "admin_event_payout_recovery" | "payment_return" | "install" | "buy_online_malawi" | "sell_online_malawi" | "event_buyer_guide" | "event_creator_guide";
 export const ADMIN_EVENTS_PATH = "/admin/events";
 export const HOME_PATH = "/";
 export const ABOUT_PATH = "/about";
 export const EXPLORE_PATH = "/explore";
+export const BUY_ONLINE_MALAWI_PATH = "/buy-online-malawi";
+export const SELL_ONLINE_MALAWI_PATH = "/sell-online-malawi";
+export const EVENT_BUYER_GUIDE_PATH = "/buy-event-tickets-malawi";
+export const EVENT_CREATOR_GUIDE_PATH = "/create-event-malawi";
 export const EVENTS_PATH = "/explore/events";
 export const EVENTS_CREATE_PATH = "/explore/events/create";
 export const EVENTS_MANAGE_PATH = "/explore/events/manage";
 export const EVENTS_DASHBOARD_PATH = "/explore/events/dashboard";
+export const TICKET_VALIDATOR_URL = "https://ticketvalidator.vercel.app/";
 export const TICKETS_PATH = "/tickets";
 export const SAVED_PATH = "/saved";
 export const HIDDEN_PATH = "/hidden";
@@ -68,8 +78,12 @@ export const XHOVILE_STUDIO_PATH = "/xhovilestudio";
 export const LEGACY_XHOVILE_STUDIO_PATH = "/services/xhovilestudio";
 export const isXhovileStudioPath = (pathname: string): boolean =>
   /^(?:\/xhovilestudio|\/services\/xhovilestudio)(?:\/receipt|\/admin)?\/?$/i.test(pathname);
+export const MARKETPLACE_CATEGORY_KEYS = MARKETPLACE_CATEGORY_SLUGS;
+export type MarketplaceCategoryKey = MarketplaceCategorySlug;
+export const isMarketplaceCategoryKey = isMarketplaceCategorySlug;
+
 export const MARKET_CHIP_PATHS: Partial<Record<HeaderChip, string>> = {
-  All: EXPLORE_PATH, Deals: `${EXPLORE_PATH}/deals`, "Lay-by": `${EXPLORE_PATH}/lay-by`, Events: `${EXPLORE_PATH}/events`, Wholesale: `${EXPLORE_PATH}/wholesale`, Gadgets: "/category?category=phones", Fashion: "/category?category=fashion", Food: "/category?category=food", Academics: "/category?category=books", Beauty: "/category?category=beauty", Sellers: `${EXPLORE_PATH}/sellers`, Innovation: `${EXPLORE_PATH}/innovation`, Accommodation: `${EXPLORE_PATH}/accommodation`, Lending: `${EXPLORE_PATH}/lending`,
+  All: EXPLORE_PATH, Deals: `${EXPLORE_PATH}/deals`, "Lay-by": `${EXPLORE_PATH}/lay-by`, Events: `${EXPLORE_PATH}/events`, Wholesale: `${EXPLORE_PATH}/wholesale`, Gadgets: "/category?category=electronics-gadgets", Fashion: "/category?category=fashion-clothing", Food: "/category?category=food-snacks", Academics: "/category?category=academic-services", Beauty: "/category?category=beauty-personal-care", Sellers: `${EXPLORE_PATH}/sellers`, Innovation: `${EXPLORE_PATH}/innovation`, Accommodation: `${EXPLORE_PATH}/accommodation`, Lending: `${EXPLORE_PATH}/lending`,
 };
 export const APP_HISTORY_STATE_KEY = "__buymesho";
 export const AUTH_RETURN_PATH_STORAGE_KEY = "__buymesho_auth_return_path";
