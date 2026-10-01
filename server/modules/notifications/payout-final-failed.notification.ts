@@ -17,6 +17,9 @@ type PayoutFinalFailedInput = {
   attemptNo: number;
   failureReason?: string | null;
   failedAt: string;
+  isEventPayout?: boolean;
+  eventName?: string | null;
+  dashboardUrl?: string;
 };
 
 type NotificationDependencies = {
@@ -46,7 +49,7 @@ export async function notifyPayoutFinalFailed(
   try {
     const { text, html } = renderPayoutFailedEmail({
       ...input,
-      dashboardUrl: "https://buymesho.app/seller/payouts",
+      dashboardUrl: input.dashboardUrl ?? "https://buymesho.app/seller/payouts",
     });
 
     await (deps.send ?? sendEmail)({
