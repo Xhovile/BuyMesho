@@ -3,8 +3,22 @@ import { sendEmail } from "../email/email.service.js";
 import { renderOrderPaidEmail } from "../email/templates/order-paid.js";
 import type { StoredOrder } from "../orders/order.repository.js";
 import { resolveNotificationRecipient } from "./email-recipient.js";
+import {
+  claimEmailNotification,
+  markEmailNotificationSent,
+  releaseEmailNotification,
+} from "./email-delivery.repository.js";
 
 type RecipientRole = "buyer" | "seller";
+
+type Send = typeof sendEmail;
+
+type NotificationDependencies = {
+  send?: Send;
+  claim?: (notificationType: string, dedupeKey: string) => boolean;
+  markSent?: (notificationType: string, dedupeKey: string) => void;
+  release?: (notificationType: string, dedupeKey: string) => void;
+};
 
 async function getSellerBusinessName(sellerUid: string): Promise<string | null> {
   try {
@@ -68,11 +82,22 @@ function getEventId(order: StoredOrder): string | null {
   return null;
 }
 
-async function sendOrderPaidEmail(order: StoredOrder, role: RecipientRole): Promise<void> {
+async function sendOrderPaidEmail(
+  order: StoredOrder,
+  role: RecipientRole,
+  deps: NotificationDependencies,
+): Promise<void> {
+  const notificationType = "order_paid";
+  const dedupeKey = `${order.id}:${role}`;
+  const claim = deps.claim ?? ((type: string, key: string) => claimEmailNotification(type, key));
+  const markSent = deps.markSent ?? ((type: string, key: string) => markEmailNotificationSent(type, key));
+  const release = deps.release ?? ((type: string, key: string) => releaseEmailNotification(type, key));
   const recipientId = role === "buyer" ? order.buyerId : order.sellerId;
   const userRecord = await resolveNotificationRecipient(recipientId);
   const email = userRecord.email?.trim();
   if (!email) return;
+
+  if (!claim(notificationType, dedupeKey)) return;
 
   const sellerBusinessName = await getSellerBusinessName(order.sellerId);
   const eventCreatorDisplayName = order.source === "event"
@@ -106,20 +131,29 @@ async function sendOrderPaidEmail(order: StoredOrder, role: RecipientRole): Prom
     actionUrl,
   });
 
-  await sendEmail({
-    sender: "notifications",
-    to: { email, name: recipientName },
-    subject: role === "buyer"
-      ? `BuyMesho payment confirmed — ${counterpartyName}`
-      : `BuyMesho — new paid order from ${counterpartyName}`,
-    text,
-    html,
-  });
+  try {
+    await (deps.send ?? sendEmail)({
+      sender: "notifications",
+      to: { email, name: recipientName },
+      subject: role === "buyer"
+        ? `BuyMesho payment confirmed — ${counterpartyName}`
+        : `BuyMesho — new paid order from ${counterpartyName}`,
+      text,
+      html,
+    });
+    markSent(notificationType, dedupeKey);
+  } catch (error) {
+    release(notificationType, dedupeKey);
+    throw error;
+  }
 }
 
-export async function notifyOrderPaid(order: StoredOrder): Promise<void> {
+export async function notifyOrderPaid(
+  order: StoredOrder,
+  deps: NotificationDependencies = {},
+): Promise<void> {
   await Promise.allSettled([
-    sendOrderPaidEmail(order, "buyer"),
-    sendOrderPaidEmail(order, "seller"),
+    sendOrderPaidEmail(order, "buyer", deps),
+    sendOrderPaidEmail(order, "seller", deps),
   ]);
 }
