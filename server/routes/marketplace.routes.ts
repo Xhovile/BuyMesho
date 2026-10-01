@@ -96,6 +96,7 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
       page = "1",
       pageSize = "12",
       specFilters,
+      listingMode,
     } = req.query;
 
     let baseQuery = `
@@ -111,6 +112,10 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
     if (category && typeof category === "string") {
       baseQuery += " AND l.category = ?";
       params.push(category);
+    }
+
+    if (listingMode === "wholesale") {
+      baseQuery += " AND (l.listing_mode = 'wholesale' OR l.is_wholesale = 1 OR COALESCE(l.pack_size, 0) > 1)";
     }
 
     if (subcategory && typeof subcategory === "string") {

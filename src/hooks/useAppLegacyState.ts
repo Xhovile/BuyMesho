@@ -398,6 +398,10 @@ export function useAppLegacyState(): AppLegacyState {
       if (Object.keys(selectedSpecFilters).length > 0) {
         params.append("specFilters", JSON.stringify(selectedSpecFilters));
       }
+
+      if (activeChip === "Wholesale") {
+        params.append("listingMode", "wholesale");
+      }
       params.append("page", String(currentPage));
       params.append("pageSize", String(pageSize));
 
