@@ -193,12 +193,13 @@ export default function CategoryPage() {
         "Malawi marketplace",
         "buy in Malawi",
       ],
+      noIndex: items.length === 0,
     });
 
     return () => {
       updateSEOMetaTags();
     };
-  }, [requestedCategory, config.description, config.subtitle, config.title]);
+  }, [items.length, requestedCategory, config.description, config.subtitle, config.title]);
 
   useEffect(() => {
     let cancelled = false;
