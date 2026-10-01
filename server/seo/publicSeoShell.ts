@@ -277,7 +277,7 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
         title: category.name + " in Malawi",
         description,
         canonicalUrl,
-        noIndex: false,
+        noIndex: categoryListings.length === 0,
         jsonLd,
         body: bodyFrame(
           category.name + " in Malawi",
