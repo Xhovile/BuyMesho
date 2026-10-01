@@ -199,35 +199,47 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
     }
   }
   if('eventPayoutRequired' in settlement && settlement.eventPayoutRequired && settlement.order){
-    const eventPayout=await withTransaction(async(client)=>{
-      const eventContext=await resolveEventPayoutContext(settlement.order!.id,client);
-      if(!eventContext){
-        throw new Error('Event ticket order could not resolve its payout destination');
-      }
-      return createEventPayoutCandidateAsync({
-        orderId:settlement.order!.id,
-        event:eventContext,
-        grossAmount:settlement.order!.subtotal.amount,
-        currency:normalizeReference(settlement.order!.subtotal.currency || settlement.order!.currency).toUpperCase(),
-        requestedBy:'system',
-        requestedAt:settlement.order!.paidAt ?? new Date().toISOString(),
-      },client);
-    });
-    if(eventPayout.created){
-      await payoutService.executePayout({
-        payoutId:eventPayout.payout.id,
-        actorType:'system',
+    try{
+      const eventPayout=await withTransaction(async(client)=>{
+        const eventContext=await resolveEventPayoutContext(settlement.order!.id,client);
+        if(!eventContext){
+          throw new Error('Event ticket order could not resolve its payout destination');
+        }
+        return createEventPayoutCandidateAsync({
+          orderId:settlement.order!.id,
+          event:eventContext,
+          grossAmount:settlement.order!.subtotal.amount,
+          currency:normalizeReference(settlement.order!.subtotal.currency || settlement.order!.currency).toUpperCase(),
+          requestedBy:'system',
+          requestedAt:settlement.order!.paidAt ?? new Date().toISOString(),
+        },client);
       });
+      if(eventPayout.created){
+        await payoutService.executePayout({
+          payoutId:eventPayout.payout.id,
+          actorType:'system',
+        });
+      }
+    }catch(error){
+      console.error('[event-payout] immediate payout attempt failed after successful event payment',JSON.stringify({
+        orderId:settlement.order.id,
+        sellerId:settlement.order.sellerId,
+        error:error instanceof Error?error.message:String(error),
+      }));
     }
   }
   if(settlement.sellerPayoutQueued&&settlement.payoutId&&settlement.order)emitSellerPayoutQueuedNotification(settlement.order.sellerId,settlement.order.id,settlement.payoutId);
   if(settlement.order){
-    if(settlement.orderEnteredEscrow||settlement.order.status==='paid'){
+    if(settlement.order.status==='paid'){
       if(settlement.order.source==='event'){
-        if(eventTicketsProjected)void emitEventTicketPurchaseNotifications(settlement.order);
-      }else{
+        // Event purchase notifications are independent of payout execution.
+        // The buyer needs the ticket confirmation, and the event manager needs
+        // the purchase notification even when the payout attempt fails.
         emitOrderPaidNotification(settlement.order);
+        if(eventTicketsProjected)void emitEventTicketPurchaseNotifications(settlement.order);
       }
+    }else if(settlement.orderEnteredEscrow){
+      emitOrderPaidNotification(settlement.order);
     }
   }
   return{payment:settlement.payment,order:settlement.order,verification:settlement.verification};
