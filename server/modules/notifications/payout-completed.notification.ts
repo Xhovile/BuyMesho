@@ -15,6 +15,9 @@ type PayoutCompletedInput = {
   destination?: string | null;
   completedAt: string;
   status: string;
+  isEventPayout?: boolean;
+  eventName?: string | null;
+  dashboardUrl?: string;
 };
 
 type NotificationDependencies = {
@@ -44,7 +47,7 @@ export async function notifyPayoutCompleted(
   try {
     const { text, html } = renderPayoutCompletedEmail({
       ...input,
-      dashboardUrl: "https://buymesho.app/seller/payouts",
+      dashboardUrl: input.dashboardUrl ?? "https://buymesho.app/seller/payouts",
     });
 
     await (deps.send ?? sendEmail)({
