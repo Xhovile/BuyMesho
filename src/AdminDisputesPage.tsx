@@ -179,6 +179,7 @@ export default function AdminDisputesPage() {
   const active = effectiveStatus === "open" || effectiveStatus === "under_review";
   const refundReady = effectiveStatus === "under_review" && effectiveRefundStatus === "under_review";
   const refundApproved = effectiveStatus === "under_review" && effectiveRefundStatus === "approved";
+  const refundOwed = effectiveStatus === "under_review" && effectiveRefundStatus === "owed";
   const sellerRefundReady =
     effectiveStatus === "under_review" &&
     selected?.refunded_status === "refunded" &&
@@ -437,6 +438,14 @@ export default function AdminDisputesPage() {
                         ? "The seller had not received the payout when this dispute was submitted. This case follows the BuyMesho-controlled refund workflow. Approval and financial execution remain separate steps."
                         : "Approval authorizes the refund. Execution is a separate financial step and only operates on the current held escrow balance."}
                     </p>
+                    {refundOwed ? (
+                      <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                        <p className="font-black">Refund approved — awaiting event refund recovery</p>
+                        <p className="mt-1 leading-6">
+                          This event refund has no available held-escrow execution path. The outstanding liability must be recovered from the event creator through the Event Payout Recovery workspace.
+                        </p>
+                      </div>
+                    ) : null}
                     <textarea
                       value={note}
                       onChange={(event) => setNote(event.target.value)}
@@ -493,6 +502,7 @@ export default function AdminDisputesPage() {
                       !prePayoutAdmin &&
                       !refundReady &&
                       !refundApproved &&
+                      !refundOwed &&
                       !sellerRefundReady ? (
                         <button
                           type="button"

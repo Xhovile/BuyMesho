@@ -4,6 +4,8 @@ import { query, withTransaction } from '../postgres.js';
 import { postgresDb as messageDb } from '../db.js';
 import { notifyDisputeWorkflowEvent } from '../modules/notifications/dispute-workflow.notification.js';
 import { notifyAdminSellerRefundRecorded, notifyAdminSellerResolutionRecorded } from '../modules/notifications/admin-dispute.notification.js';
+import { assertRefundTransition } from '../modules/disputes/state-machine.js';
+import { recordSellerExternalRefundRecovery } from '../modules/financial/sellerFinancialLedger.js';
 
 const ALLOWED_REFUND_METHODS = new Set(['mobile_money', 'bank_transfer', 'cash', 'other']);
 const ALLOWED_SELLER_RESOLUTIONS = new Set(['replacement', 'rejected']);
@@ -439,6 +441,139 @@ export function createSellerDisputeResolutionRouter(requireAuth: RequestHandler)
               WHERE id = $4`,
             [refundTransactionId, note || `Seller confirmed a refund on ${refundDate}.`, now, refundRequest.id],
           );
+        }
+
+        const eventLiabilityResult = await client.query<Record<string, unknown>>(
+          `SELECT *
+             FROM event_refund_liabilities
+            WHERE order_id = $1
+              AND status = 'due'
+            ORDER BY created_at DESC
+            LIMIT 1
+            FOR UPDATE`,
+          [orderId],
+        );
+        const eventLiability = eventLiabilityResult.rows[0];
+
+        await recordSellerExternalRefundRecovery(client, {
+          sellerUid: sellerId,
+          currency: String(order.total_currency ?? 'MWK'),
+          amount,
+          reference: refundTransactionId,
+          refundLiabilityId: eventLiability ? String(eventLiability.id) : null,
+          orderId,
+          reason: 'Seller confirmed that the buyer refund was paid directly outside BuyMesho',
+          actorType: 'seller',
+          actorId: sellerId,
+          metadata: {
+            refundRequestId: refundRequest?.id ?? null,
+            refundMethod,
+            refundDate,
+          },
+        });
+
+        if (eventLiability) {
+          const liabilityAmount = Number(eventLiability.amount ?? 0);
+          if (Math.abs(liabilityAmount - amount) > 0.000001) {
+            throw new Error('Seller refund amount does not match the outstanding event refund liability');
+          }
+
+          if (refundRequest) {
+            if (String(refundRequest.status ?? '').trim().toLowerCase() !== 'owed') {
+              throw new Error('Event refund request is not in the owed state required for recovery');
+            }
+            assertRefundTransition('owed', 'refunded', 'system');
+          }
+
+          await client.query(
+            `UPDATE event_refund_liabilities
+                SET status='recovered',
+                    recovery_reference=$1,
+                    recovery_note=$2,
+                    recovered_by=$3,
+                    recovered_at=$4,
+                    updated_at=$4
+              WHERE id=$5`,
+            [transactionId, note || `Seller confirmed a refund on ${refundDate}.`, sellerId, now, eventLiability.id],
+          );
+
+          if (eventLiability.ticket_id) {
+            await client.query(
+              `UPDATE event_tickets
+                  SET status='Refunded',
+                      updated_at=$1
+                WHERE id=$2
+                  AND order_id=$3`,
+              [now, String(eventLiability.ticket_id), orderId],
+            );
+          } else {
+            await client.query(
+              `UPDATE event_tickets
+                  SET status='Refunded',
+                      updated_at=$1
+                WHERE order_id=$2
+                  AND event_id=$3
+                  AND status <> 'Cancelled'`,
+              [now, orderId, Number(eventLiability.event_id)],
+            );
+          }
+
+          await client.query(
+            `INSERT INTO payout_events
+              (payout_id,seller_id,event_type,actor_type,actor_id,note,payload,created_at)
+             SELECT p.id,$1,'event_refund_recovered','seller',$1,$2,$3,$4
+               FROM payouts p
+              WHERE p.id = $5
+                AND (p.owner_type='event_creator' OR p.event_id IS NOT NULL)`,
+            [
+              sellerId,
+              note || `Seller confirmed a refund on ${refundDate}.`,
+              JSON.stringify({
+                liabilityId: eventLiability.id,
+                refundRequestId: refundRequest?.id ?? null,
+                transactionId,
+                amount,
+              }),
+              now,
+              eventLiability.payout_id ?? null,
+            ],
+          );
+
+          await client.query(
+            `INSERT INTO audit_events
+              (id,entity_type,entity_id,event_type,performed_by,timestamp,previous_state,new_state,metadata)
+             VALUES ($1,'event_refund_liability',$2,'event_refund_recovered',$3,$4,'due','recovered',$5)`,
+            [
+              `aud_${randomUUID()}`,
+              eventLiability.id,
+              sellerId,
+              now,
+              JSON.stringify({
+                orderId,
+                payoutId: eventLiability.payout_id ?? null,
+                refundRequestId: refundRequest?.id ?? null,
+                transactionId,
+                amount,
+                refundMethod,
+                refundDate,
+                source: 'seller_confirmed_refund',
+              }),
+            ],
+          );
+
+          const remainingTickets = await client.query<{ count: string }>(
+            `SELECT COUNT(*)::text AS count
+               FROM event_tickets
+              WHERE order_id=$1
+                AND status NOT IN ('Cancelled','Refunded')`,
+            [orderId],
+          );
+          if (Number(remainingTickets.rows[0]?.count ?? 0) === 0) {
+            await client.query(
+              "UPDATE orders SET status='refunded', updated_at=$1 WHERE id=$2",
+              [now, orderId],
+            );
+          }
         }
         if (attempt) {
           await client.query(

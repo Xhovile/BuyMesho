@@ -714,14 +714,18 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
 
       const db = getPaymentDb();
       const payout = db.prepare(
-        `SELECT id, seller_id AS sellerId, status, destination_account_id AS destinationAccountId
+        `SELECT id, seller_id AS sellerId, owner_type AS ownerType, status, destination_account_id AS destinationAccountId
          FROM payouts
          WHERE id = ?
          LIMIT 1`,
-      ).get(payoutId) as { id: string; sellerId: string; status: string; destinationAccountId: string | null } | undefined;
+      ).get(payoutId) as { id: string; sellerId: string; ownerType: string | null; status: string; destinationAccountId: string | null } | undefined;
 
       if (!payout) {
         return res.status(404).json({ error: 'Payout not found' });
+      }
+
+      if (String(payout.ownerType ?? 'seller') !== 'seller') {
+        return res.status(409).json({ error: 'Event payout destinations are locked to the event and cannot be rebound through seller payout controls' });
       }
 
       const latestDestination = db.prepare(

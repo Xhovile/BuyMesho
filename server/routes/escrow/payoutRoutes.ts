@@ -10,6 +10,7 @@ import {
   payoutService,
 } from '../../modules/payouts/payout.service.js';
 import { PAYOUT_POLICY } from '../../modules/payouts/payout.policy.js';
+import { getSellerFinancialAccount, listSellerFinancialLedger } from '../../modules/financial/sellerFinancialLedger.js';
 import { getRequestUser, jsonError, payoutLimiter } from './shared.js';
 import {
   DEFAULT_CURRENCY,
@@ -355,6 +356,21 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
     }
   });
 
+  router.get('/financial-account/:sellerId', requireAuth, async (req, res) => {
+    try {
+      const sellerId = normalizeDestinationId(req.params.sellerId);
+      assertHistoryAccess(req, sellerId);
+      const currency = normalizeCurrency(req.query.currency);
+      const account = await getSellerFinancialAccount(sellerId, currency);
+      const ledger = await listSellerFinancialLedger(sellerId, currency, Number(req.query.limit ?? 100));
+      return res.json({ account, ledger });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load seller financial account';
+      const status = /Unauthorized/i.test(message) ? 401 : 403;
+      return res.status(status).json({ error: message });
+    }
+  });
+
   router.get('/history/:sellerId', requireAuth, (req, res) => {
     try {
       const sellerId = normalizeDestinationId(req.params.sellerId);
@@ -372,6 +388,13 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
       const sellerId = normalizeDestinationId(req.params.sellerId);
       assertRetryAccess(req, sellerId);
       const payoutId = normalizeDestinationId(req.body?.payoutId);
+      const payout = payoutService.findById(payoutId);
+      if (!payout) {
+        return res.status(404).json({ error: 'Payout not found' });
+      }
+      if ((payout.ownerType ?? 'seller') !== 'seller' || String(payout.sellerId) !== sellerId) {
+        return res.status(403).json({ error: 'This payout is not owned by the requested seller' });
+      }
       if (PAYOUT_POLICY.launchMode === 'admin_approved' && !req.user?.is_admin) {
         return res.status(403).json({ error: 'Seller retry is disabled while launch mode is admin-approved' });
       }
@@ -393,6 +416,13 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
       assertOverrideAccess(req);
       const sellerId = normalizeDestinationId(req.params.sellerId);
       const payoutId = normalizeDestinationId(req.body?.payoutId);
+      const payoutRecord = payoutService.findById(payoutId);
+      if (!payoutRecord) {
+        return res.status(404).json({ error: 'Payout not found' });
+      }
+      if ((payoutRecord.ownerType ?? 'seller') !== 'seller' || String(payoutRecord.sellerId) !== sellerId) {
+        return res.status(403).json({ error: 'This payout is not owned by the requested seller' });
+      }
       const reason = normalizeText(req.body?.reason);
       if (!reason) {
         return res.status(400).json({ error: 'reason is required' });

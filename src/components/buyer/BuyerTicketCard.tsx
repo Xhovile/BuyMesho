@@ -47,7 +47,7 @@ export default function BuyerTicketCard({ ticket, onDownloadPdf, onOpenTicket, o
         <div className="mt-4 flex items-center justify-between gap-4 border-t border-zinc-100 pt-3">
           <div><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Amount</p><p className="mt-1 text-sm font-black text-zinc-950">{formatMoney(ticket.amount, ticket.currency)}</p></div>
           <div className="flex flex-wrap justify-end gap-2">
-            <button type="button" onClick={onDownloadPdf} className="inline-flex items-center gap-2 rounded-2xl border border-orange-500 bg-orange-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-orange-600"><Download className="h-4 w-4" />Print(PDF)</button>
+            <button type="button" onClick={onDownloadPdf} className="inline-flex items-center gap-2 rounded-2xl border border-orange-500 bg-orange-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-orange-600"><Download className="h-4 w-4" />Download PDF</button>
             {onOpenTicket ? <button type="button" onClick={onOpenTicket} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"><Ticket className="h-4 w-4" />View Details</button> : null}
             {onOpenSupport ? <button type="button" onClick={onOpenSupport} className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-800 hover:bg-sky-100"><ShieldAlert className="h-4 w-4" />Contact Support</button> : null}
           </div>

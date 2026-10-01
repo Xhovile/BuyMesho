@@ -13,7 +13,9 @@ import type { PoolClient } from 'pg';
 import { getPaymentDb } from '../../postgresCompat.js';
 import { isPaychanguSuccessStatus } from './paychangu.provider.js';
 import { notifyOrderPaid } from '../notifications/order-paid.notification.js';
-import { notifyTicketDelivery, notifyTicketPurchaseConfirmation } from '../notifications/event-ticket.notification.js';
+import { notifyEventTicketPurchaseCompleted } from '../notifications/event-ticket-purchase-completed.notification.js';
+import { resolveNotificationRecipient } from '../notifications/email-recipient.js';
+import { projectEventTickets } from '../orders/eventTicketProjection.js';
 
 export interface ApplyPayChanguResult {
   payment?: ReturnType<typeof paymentRepository.findByReference>;
@@ -32,70 +34,83 @@ function resolveReferenceCandidates(verification:PaymentVerificationResult):stri
 export function buildPayChanguPayoutChargeId(payoutId:string,attemptNo:number):string{const safe=Number.isFinite(attemptNo)&&attemptNo>0?Math.trunc(attemptNo):1;return `BM-PO-${payoutId}-A${String(safe).padStart(2,'0')}`;}
 function emitSellerPayoutQueuedNotification(sellerId:string,orderId:string,payoutId:string):void{console.log('[notification] seller_payout_queued',JSON.stringify({orderId,payoutId,sellerId,event:'seller_payout_queued',emittedAt:new Date().toISOString()}));}
 function emitOrderPaidNotification(order:ReturnType<typeof orderRepository.findByPaymentReference>):void{if(!order)return;void notifyOrderPaid(order).catch(error=>console.warn('[notification] order_paid email delivery failed',error));}
-function emitEventTicketNotifications(order:ReturnType<typeof orderRepository.findByPaymentReference>):void{
+async function emitEventTicketPurchaseNotifications(order:ReturnType<typeof orderRepository.findByPaymentReference>):Promise<void>{
   if(!order)return;
-  const tickets=getPaymentDb().prepare(`SELECT id,code,ticket_title,ticket_type,holder_name,holder_email,event_title,event_date,start_time,venue,location FROM event_tickets WHERE order_id=?`).all(order.id) as Array<Record<string,unknown>>;
+  const db=getPaymentDb();
+  const tickets=db.prepare(`SELECT id,code,ticket_title,ticket_type,holder_name,holder_email,event_title,event_date,start_time,venue,location FROM event_tickets WHERE order_id=? ORDER BY id ASC`).all(order.id) as Array<Record<string,unknown>>;
+  if(!tickets.length)return;
+
   const ticketRows=tickets.map(ticket=>({
-    email:String(ticket.holder_email??'').trim(),
-    buyerName:String(ticket.holder_name??'')||'there',
-    eventName:String(ticket.event_title??'Event Ticket'),
+    ticketId:String(ticket.code??ticket.id),
     ticketType:String(ticket.ticket_type??'General Admission'),
-    quantity:1,
-    orderReference:order.id,
-    amount:order.total.amount,
-    currency:order.total.currency||order.currency,
+    holderName:String(ticket.holder_name??'').trim(),
+    holderEmail:String(ticket.holder_email??'').trim().toLowerCase(),
+    eventName:String(ticket.event_title??'Event Ticket'),
     eventDate:String(ticket.event_date??''),
     startTime:String(ticket.start_time??''),
     venue:String(ticket.venue??''),
     location:String(ticket.location??''),
-    ticketId:String(ticket.code??ticket.id),
-    accessUrl:`https://buymesho.app/tickets?ticketId=${encodeURIComponent(String(ticket.code??ticket.id))}`,
-    orderStatus:order.status,
+    downloadUrl:`https://buymesho.app/tickets?ticketId=${encodeURIComponent(String(ticket.code??ticket.id))}&download=1`,
   }));
-  const firstTicket=ticketRows.find(ticket=>ticket.email);
-  if(firstTicket){
-    void notifyTicketPurchaseConfirmation({
-      ...firstTicket,
-      quantity:ticketRows.length,
-      tickets:ticketRows.map(ticket=>({
-        ticketId:ticket.ticketId,
-        ticketType:ticket.ticketType,
-        holderName:ticket.buyerName,
-        holderEmail:ticket.email,
-        eventName:ticket.eventName,
-        eventDate:ticket.eventDate,
-        startTime:ticket.startTime,
-        venue:ticket.venue,
-        location:ticket.location,
-      })),
-    }).catch(error=>console.warn('[notification] ticket_purchase email delivery failed',error));
+
+  const first=ticketRows[0];
+  const [buyerRecipient,eventManagerRecipient]=await Promise.all([
+    resolveNotificationRecipient(order.buyerId),
+    resolveNotificationRecipient(order.sellerId),
+  ]);
+  let eventManagerName=eventManagerRecipient.displayName?.trim()||'';
+  try{
+    const result=await query<{display_name?:string|null}>('SELECT display_name FROM event_creators WHERE uid = $1 LIMIT 1',[order.sellerId]);
+    eventManagerName=result.rows[0]?.display_name?.trim()||eventManagerName;
+  }catch(error){
+    console.warn('[event-ticket] failed to resolve event manager display name',error);
+  }
+  eventManagerName=eventManagerName||'Event Manager';
+  const buyerEmail=buyerRecipient.email?.trim().toLowerCase()??'';
+  const buyerName=order.buyerDetails?.fullName?.trim()||buyerRecipient.displayName?.trim()||'there';
+
+  const recipients=new Map<string,{name:string;tickets:typeof ticketRows;includePaymentDetails:boolean}>();
+  if(buyerEmail){
+    recipients.set(buyerEmail,{name:buyerName,tickets:ticketRows,includePaymentDetails:true});
   }
 
-  const ticketsByEmail=new Map<string, typeof ticketRows>();
   for(const ticket of ticketRows){
-    if(!ticket.email)continue;
-    const existing=ticketsByEmail.get(ticket.email);
-    if(existing)existing.push(ticket);else ticketsByEmail.set(ticket.email,[ticket]);
+    if(!ticket.holderEmail||ticket.holderEmail===buyerEmail)continue;
+    const existing=recipients.get(ticket.holderEmail);
+    if(existing){
+      existing.tickets.push(ticket);
+    }else{
+      recipients.set(ticket.holderEmail,{name:ticket.holderName||'there',tickets:[ticket],includePaymentDetails:false});
+    }
   }
 
-  for(const recipientTickets of ticketsByEmail.values()){
-    const first=recipientTickets[0];
-    void notifyTicketDelivery({
-      ...first,
-      quantity:recipientTickets.length,
-      tickets:recipientTickets.map(ticket=>({
-        ticketId:ticket.ticketId,
-        ticketType:ticket.ticketType,
-        holderName:ticket.buyerName,
-        holderEmail:ticket.email,
-        eventName:ticket.eventName,
-        eventDate:ticket.eventDate,
-        startTime:ticket.startTime,
-        venue:ticket.venue,
-        location:ticket.location,
-      })),
-    }).catch(error=>console.warn('[notification] ticket_delivery email delivery failed',error));
-  }
+  const eventName=first.eventName;
+  const eventDate=first.eventDate;
+  const startTime=first.startTime;
+  const venue=first.venue;
+  const location=first.location;
+  const ticketType=ticketRows.every(ticket=>ticket.ticketType===first.ticketType)?first.ticketType:'Multiple ticket types';
+
+  await Promise.allSettled(Array.from(recipients.entries()).map(async ([email,recipient])=>{
+    await notifyEventTicketPurchaseCompleted({
+      email,
+      recipientName:recipient.name,
+      eventManagerName,
+      eventName,
+      orderReference:order.id,
+      amount:order.total.amount,
+      currency:order.total.currency||order.currency,
+      ticketType,
+      quantity:recipient.tickets.length,
+      eventDate,
+      startTime,
+      venue,
+      location,
+      tickets:recipient.tickets,
+      includePaymentDetails:recipient.includePaymentDetails,
+      orderStatus:order.status,
+    });
+  }));
 }
 function findActiveVerifiedDestination(sellerId:string):{id:string;destination_type:string|null}|undefined{return getPaymentDb().prepare(`SELECT id,destination_type FROM seller_payout_accounts WHERE seller_uid=? AND is_active=1 AND verification_status='verified' ORDER BY is_default DESC,verified_at DESC,created_at DESC LIMIT 1`).get(sellerId) as {id:string;destination_type:string|null}|undefined;}
 function normalizePayoutMethod(destinationType:string|null|undefined):Parameters<typeof calculatePayoutFormula>[0]['payoutMethod']{return destinationType==='airtel_money'||destinationType==='tnm_mpamba'||destinationType==='bank_transfer'?destinationType:null;}
@@ -138,6 +153,9 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
     // successful payment. Once an escrow order is already in escrow, the
     // webhook must be idempotent rather than attempting the illegal
     // in_escrow -> paid transition.
+    if(existingPayment?.status==='captured' && order.status==='paid' && order.source==='event'){
+      return{payment:existingPayment,order,verification,sellerPayoutQueued:false,eventPayoutRequired:true,payoutId:null,orderEnteredEscrow:false};
+    }
     if(existingPayment?.status==='captured' && order.status==='in_escrow'){
       return{payment:existingPayment,order,verification,sellerPayoutQueued:false,payoutId:null,orderEnteredEscrow:false};
     }
@@ -146,26 +164,14 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
     const confirmedOrder=await confirmOrderByReferences(referenceCandidates,client);
     const activeOrder=confirmedOrder ?? await serverOrderService.setStatusAsync(order.id,'paid',client) ?? order;
 
-    const eventContext=await resolveEventPayoutContext(activeOrder.id,client);
-    if(activeOrder.source==='event'&&!eventContext){
-      throw new Error('Event ticket order could not resolve its payout destination');
-    }
-    if(eventContext){
-      const eventPayout=await createEventPayoutCandidateAsync({
-        orderId:activeOrder.id,
-        event:eventContext,
-        grossAmount:activeOrder.total.amount,
-        currency:normalizeReference(activeOrder.currency).toUpperCase(),
-        requestedBy:'system',
-        requestedAt:activeOrder.paidAt ?? new Date().toISOString(),
-      },client);
+    if(activeOrder.source==='event'){
       return{
         payment,
         order:activeOrder,
         verification,
         sellerPayoutQueued:false,
-        eventPayoutQueued:eventPayout.created,
-        payoutId:eventPayout.payout.id,
+        eventPayoutRequired:true,
+        payoutId:null,
         orderEnteredEscrow:false,
       };
     }
@@ -183,14 +189,47 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
     const escrowAmount=activeOrder.total.amount;const currency=normalizeReference(activeOrder.currency).toUpperCase();const escrow=await escrowRepository.createAsync(activeOrder.id,currency,escrowAmount,client);const escrowedOrder=await serverOrderService.markInEscrowAsync(activeOrder.id,escrow.id,client) ?? activeOrder;return{payment,order:escrowedOrder,verification,sellerPayoutQueued:false,eventPayoutQueued:false,payoutId:null,orderEnteredEscrow:escrowedOrder.status==='in_escrow'&&order.status!=='in_escrow'};
   });
 
-  if('eventPayoutQueued' in settlement && settlement.eventPayoutQueued&&settlement.payoutId&&settlement.order){
-    await payoutService.executePayout({
-      payoutId:settlement.payoutId,
-      actorType:'system',
+  let eventTicketsProjected=false;
+  if(settlement.order?.source==='event'){
+    try{
+      projectEventTickets(settlement.order);
+      eventTicketsProjected=true;
+    }catch(error){
+      console.error('[event-ticket] ticket projection failed after successful payment:',error);
+    }
+  }
+  if('eventPayoutRequired' in settlement && settlement.eventPayoutRequired && settlement.order){
+    const eventPayout=await withTransaction(async(client)=>{
+      const eventContext=await resolveEventPayoutContext(settlement.order!.id,client);
+      if(!eventContext){
+        throw new Error('Event ticket order could not resolve its payout destination');
+      }
+      return createEventPayoutCandidateAsync({
+        orderId:settlement.order!.id,
+        event:eventContext,
+        grossAmount:settlement.order!.subtotal.amount,
+        currency:normalizeReference(settlement.order!.subtotal.currency || settlement.order!.currency).toUpperCase(),
+        requestedBy:'system',
+        requestedAt:settlement.order!.paidAt ?? new Date().toISOString(),
+      },client);
     });
+    if(eventPayout.created){
+      await payoutService.executePayout({
+        payoutId:eventPayout.payout.id,
+        actorType:'system',
+      });
+    }
   }
   if(settlement.sellerPayoutQueued&&settlement.payoutId&&settlement.order)emitSellerPayoutQueuedNotification(settlement.order.sellerId,settlement.order.id,settlement.payoutId);
-  if(settlement.order){if(settlement.orderEnteredEscrow||settlement.order.status==='paid'){emitOrderPaidNotification(settlement.order);emitEventTicketNotifications(settlement.order);}}
+  if(settlement.order){
+    if(settlement.orderEnteredEscrow||settlement.order.status==='paid'){
+      if(settlement.order.source==='event'){
+        if(eventTicketsProjected)void emitEventTicketPurchaseNotifications(settlement.order);
+      }else{
+        emitOrderPaidNotification(settlement.order);
+      }
+    }
+  }
   return{payment:settlement.payment,order:settlement.order,verification:settlement.verification};
 }
 

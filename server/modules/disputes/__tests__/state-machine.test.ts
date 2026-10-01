@@ -21,6 +21,9 @@ test('order state machine keeps dispute out of transaction truth', () => {
 
 test('refund workflow separates approval from money movement', () => {
   assert.doesNotThrow(() => assertRefundTransition('under_review', 'approved', 'admin'));
+  assert.doesNotThrow(() => assertRefundTransition('approved', 'owed', 'admin'));
+  assert.doesNotThrow(() => assertRefundTransition('owed', 'refunded', 'system'));
+  assert.equal(transitionMovesMoney(REFUND_TRANSITION_TABLE, 'approved', 'owed'), false);
   assert.doesNotThrow(() => assertRefundTransition('approved', 'processing', 'financial_workflow'));
   assert.doesNotThrow(() => assertRefundTransition('processing', 'refunded', 'financial_workflow'));
   assert.equal(transitionMovesMoney(REFUND_TRANSITION_TABLE, 'under_review', 'approved'), false);

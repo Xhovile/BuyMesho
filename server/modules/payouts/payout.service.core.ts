@@ -37,6 +37,7 @@ async function loadPayoutRecipient(payout: PayoutRecord): Promise<{
     email?: string | null;
     recipient_name?: string | null;
     order_items?: unknown;
+    event_name?: string | null;
     masked_account?: string | null;
   }>(
     `SELECT

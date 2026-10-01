@@ -49,7 +49,11 @@ export type PayoutFormulaInput = {
   currency?: string;
 };
 
-export type PayoutFormulaResult = {
+/**
+ * Shared payout result contract used by marketplace and event payout flows.
+ */
+export interface PayoutFormulaResult {
+  [key: string]: unknown;
   grossAmount: number;
   platformFeeAmount: number;
   processingFeeAmount: number;
@@ -60,11 +64,13 @@ export type PayoutFormulaResult = {
   sellerReceivesAmount: number;
   netAmount: number;
   currency: string;
-};
+}
 
+/** Normalize a financial amount to the application's whole-MWK storage unit. */
 export function toFixedMoney(amount: number): number {
   if (!Number.isFinite(amount)) return 0;
-  return Math.max(0, Math.round(amount));
+  const normalized = Math.round(amount);
+  return normalized < 0 ? 0 : normalized;
 }
 
 export function calculatePayoutFee(amount: number, payoutMethod?: PayoutFormulaInput['payoutMethod']): number {

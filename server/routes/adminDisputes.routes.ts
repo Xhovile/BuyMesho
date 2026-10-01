@@ -5,6 +5,8 @@ import { escrowRepository } from '../modules/escrow/escrow.repository.js';
 import { assertDisputeAttemptTransition, assertDisputeCaseTransition, assertRefundTransition } from '../modules/disputes/state-machine.js';
 import { notifyDisputeWorkflowEvent } from '../modules/notifications/dispute-workflow.notification.js';
 import { ensureRefundDisputeArchitectureMigration } from '../db/migrations/20260904_refund_dispute_architecture.js';
+import { assertPayoutStatusTransition } from '../modules/payouts/payout.transitions.js';
+import { createEventRefundLiability } from '../modules/events/eventRefundLiability.js';
 
 function clean(value: unknown): string { return typeof value === 'string' ? value.trim() : ''; }
 
@@ -145,6 +147,204 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
         if (!['under_review', 'approved'].includes(refundStatus)) return res.status(409).json({ error: `Refund request is ${refundStatus}; it is not ready for approval.` });
         if (refundStatus === 'approved') return res.status(409).json({ error: 'Refund is already approved and awaiting financial execution.' });
         assertRefundTransition('under_review', 'approved', 'admin');
+
+        const payoutResult = await query<Record<string, unknown>>(
+          `SELECT id, status, owner_type, owner_uid, event_id, event_creator_uid
+             FROM payouts
+            WHERE order_id = $1
+            ORDER BY created_at DESC
+            LIMIT 1`,
+          [current.order_id],
+        );
+        const eventPayout = payoutResult.rows[0];
+        const isEventPayout =
+          String(eventPayout?.owner_type ?? '').toLowerCase() === 'event_creator' ||
+          eventPayout?.event_id != null;
+
+        if (isEventPayout) {
+          const requestedAmount = Number(current.refund_requested_amount ?? 0);
+          if (!(requestedAmount > 0)) return res.status(409).json({ error: 'Event refund amount must be positive.' });
+
+          const now = new Date().toISOString();
+          const result = await withTransaction(async (client) => {
+            const refundLock = await client.query<Record<string, unknown>>(
+              `SELECT *
+                 FROM refund_requests
+                WHERE id = $1
+                LIMIT 1
+                FOR UPDATE`,
+              [current.refund_request_id],
+            );
+            const refund = refundLock.rows[0];
+            if (!refund) throw new Error('Refund request not found');
+            if (String(refund.status) !== 'under_review') throw new Error(`Refund request is ${refund.status}; it is not ready for approval.`);
+
+            const payoutLock = await client.query<Record<string, unknown>>(
+              `SELECT id, status, owner_type, owner_uid, event_id, event_creator_uid
+                 FROM payouts
+                WHERE order_id = $1
+                  AND (owner_type = 'event_creator' OR event_id IS NOT NULL)
+                ORDER BY created_at DESC
+                LIMIT 1
+                FOR UPDATE`,
+              [current.order_id],
+            );
+            const payoutRow = payoutLock.rows[0] ?? null;
+            const payoutStatus = String(payoutRow?.status ?? '').toLowerCase();
+
+            if (payoutStatus === 'processing' || payoutStatus === 'pending') {
+              throw new Error('Event payout is still being processed; reconcile the payout before approving this refund.');
+            }
+
+            await client.query(
+              `UPDATE refund_requests
+                  SET status='approved',
+                      admin_decision=$1,
+                      latest_status_at=$2,
+                      updated_at=$2
+                WHERE id=$3
+                  AND status='under_review'`,
+              [note, now, refund.id],
+            );
+
+            const approvedCheck = await client.query<{ id: string }>(
+              `SELECT id
+                 FROM refund_requests
+                WHERE id=$1
+                  AND status='approved'
+                LIMIT 1`,
+              [refund.id],
+            );
+            if (!approvedCheck.rows[0]) {
+              throw new Error('Refund approval could not be persisted');
+            }
+
+            await client.query(
+              `INSERT INTO audit_events
+                (id,entity_type,entity_id,event_type,performed_by,timestamp,previous_state,new_state,metadata)
+               VALUES ($1,'refund_request',$2,'event_refund_approved',$3,$4,'under_review','approved',$5)`,
+              [
+                `aud_${randomUUID()}`,
+                refund.id,
+                req.user.uid,
+                now,
+                JSON.stringify({ caseId, orderId: current.order_id, amount: requestedAmount }),
+              ],
+            );
+
+            assertRefundTransition('approved', 'owed', 'admin');
+            const liability = await createEventRefundLiability(client, {
+              orderId: String(current.order_id),
+              refundRequestId: String(refund.id),
+              ticketId: refund.item_id ? String(refund.item_id) : null,
+              amount: requestedAmount,
+              reason: note,
+            });
+
+            let payoutCancelled = false;
+            if (payoutRow && !['paid', 'cancelled'].includes(payoutStatus)) {
+              assertPayoutStatusTransition(payoutStatus as any, 'cancelled');
+              await client.query(
+                `UPDATE payouts
+                    SET status='cancelled',
+                        provider_status='cancelled',
+                        failure_reason='event_refund_approved',
+                        manual_review_reason=$1,
+                        approved_by=$2,
+                        processed_by=$2,
+                        updated_at=$3
+                  WHERE id=$4`,
+                ['Event refund approved; payout was cancelled before provider settlement.', req.user.uid, now, payoutRow.id],
+              );
+              await client.query(
+                `INSERT INTO payout_events
+                  (payout_id,seller_id,event_type,actor_type,actor_id,note,payload,created_at)
+                 VALUES ($1,$2,'event_payout_cancelled_for_refund','admin',$3,$4,$5,$6)`,
+                [
+                  payoutRow.id,
+                  String(current.seller_id),
+                  req.user.uid,
+                  note,
+                  JSON.stringify({ caseId, orderId: current.order_id, liabilityId: liability.id }),
+                  now,
+                ],
+              );
+              payoutCancelled = true;
+            }
+
+            await client.query(
+              `UPDATE refund_requests
+                  SET status='owed',
+                      admin_decision=$1,
+                      event_liability_id=$2,
+                      latest_status_at=$3,
+                      updated_at=$3
+                WHERE id=$4`,
+              [note, liability.id, now, refund.id],
+            );
+
+            if (current.latest_attempt_id) {
+              await client.query(
+                `UPDATE dispute_attempts
+                    SET decision='event_refund_approved',
+                        resolution_note=$1,
+                        updated_at=$2
+                  WHERE id=$3`,
+                [note, now, current.latest_attempt_id],
+              );
+            }
+
+            await client.query(
+              `INSERT INTO audit_events
+                (id,entity_type,entity_id,event_type,performed_by,timestamp,previous_state,new_state,metadata)
+               VALUES ($1,'dispute_case',$2,'event_refund_liability_created',$3,$4,'approved','owed',$5)`,
+              [
+                `aud_${randomUUID()}`,
+                caseId,
+                req.user.uid,
+                now,
+                JSON.stringify({
+                  orderId: current.order_id,
+                  refundRequestId: refund.id,
+                  liabilityId: liability.id,
+                  payoutId: payoutRow?.id ?? null,
+                  payoutStatusBefore: payoutStatus || null,
+                  payoutCancelled,
+                  amount: requestedAmount,
+                  note,
+                  executionAvailable: false,
+                  providerRefundSupported: false,
+                }),
+              ],
+            );
+
+            return { liability, payoutCancelled, payoutStatus: payoutStatus || null };
+          });
+
+          try {
+            await notifyDisputeWorkflowEvent({
+              caseId,
+              orderId: String(current.order_id),
+              buyerId: String(current.buyer_id),
+              sellerId: String(current.seller_id),
+              event: 'approved',
+              note,
+              amount: requestedAmount,
+              currency: String(current.refund_currency ?? current.total_currency ?? 'MWK'),
+            });
+          } catch (notificationError) {
+            console.warn('Failed to send event refund-liability notification:', notificationError);
+          }
+
+          return res.status(202).json({
+            case: await loadCase(caseId),
+            liability: result.liability,
+            message: result.payoutCancelled
+              ? 'Event refund approved and the outstanding event payout was cancelled. The refund is now an outstanding manual recovery liability.'
+              : 'Event refund approved as an outstanding manual recovery liability. No provider refund was executed.',
+          });
+        }
+
         const escrow = await escrowRepository.findByOrderIdAsync(String(current.order_id));
         if (!escrow) return res.status(409).json({ error: 'Escrow is unavailable; approval cannot validate the financial path.' });
         if (!['funded', 'held', 'disputed'].includes(String(escrow.state))) return res.status(409).json({ error: `Escrow is ${escrow.state}; the normal held-funds refund path is unavailable.` });
@@ -225,6 +425,7 @@ export function createAdminDisputesRouter(requireAuth: RequestHandler): express.
         const refund = refundResult.rows[0];
         if (!refund) throw new Error('Refund request not found');
         if (String(refund.status) === 'refunded') return { duplicate: true, refund };
+        if (String(refund.status) === 'owed') throw new Error('This is an event refund liability. Use the event refund recovery workflow instead of held-escrow execution.');
         if (String(refund.status) !== 'approved') throw new Error(`Refund request is ${refund.status}; only approved refunds can be executed.`);
         if (!['open', 'under_review'].includes(String(refund.case_status))) throw new Error(`Dispute case is ${refund.case_status}; execution is no longer available.`);
         if (!['funded', 'held', 'disputed'].includes(String(refund.escrow_state))) throw new Error(`Escrow is ${refund.escrow_state}; held-funds execution is unavailable.`);

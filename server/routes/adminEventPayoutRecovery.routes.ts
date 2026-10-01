@@ -1,0 +1,350 @@
+import express, { type RequestHandler } from "express";
+import { randomUUID } from "node:crypto";
+import { query, withTransaction } from "../postgres.js";
+import { payoutService } from "../modules/payouts/payout.service.js";
+import { recordEventRefundRecovery, listEventRefundLiabilities } from "../modules/events/eventRefundLiability.js";
+import { notifyDisputeWorkflowEvent } from "../modules/notifications/dispute-workflow.notification.js";
+
+function clean(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function requireAdmin(req: any): void {
+  if (req.user?.is_admin !== true) throw new Error("Admin access required");
+}
+
+async function getEventPayout(payoutId: string) {
+  const result = await query<Record<string, unknown>>(
+    `SELECT p.*,
+            e.event_title,
+            e.event_date,
+            e.creator_uid AS event_creator_uid_actual,
+            ec.display_name AS event_creator_name,
+            ec.organization_name AS event_organization_name
+       FROM payouts p
+       INNER JOIN events e ON e.id = p.event_id
+       LEFT JOIN event_creators ec ON ec.uid = e.creator_uid
+      WHERE p.id = $1
+        AND (p.owner_type = 'event_creator' OR p.event_id IS NOT NULL)
+      LIMIT 1`,
+    [payoutId],
+  );
+  return result.rows[0] ?? null;
+}
+
+function responseError(res: express.Response, error: unknown, fallback: string) {
+  const message = error instanceof Error ? error.message : fallback;
+  const status = /Admin access required/i.test(message)
+    ? 403
+    : /not found/i.test(message)
+      ? 404
+      : 409;
+  return res.status(status).json({ error: message });
+}
+
+export function createAdminEventPayoutRecoveryRouter(requireAuth: RequestHandler): express.Router {
+  const router = express.Router();
+
+  router.get("/", requireAuth, async (req: any, res) => {
+    try {
+      requireAdmin(req);
+      const status = clean(req.query?.status).toLowerCase();
+      const statusFilter = ["eligible", "pending_settlement", "ready_for_payout", "queued", "processing", "pending", "held", "paid", "failed", "cancelled"].includes(status)
+        ? "AND p.status = $1"
+        : "";
+      const params = statusFilter ? [status] : [];
+
+      const result = await query<Record<string, unknown>>(
+        `SELECT p.id, p.event_id, p.event_creator_uid, p.order_id, p.destination_account_id,
+                p.amount, p.gross_amount, p.platform_fee_amount, p.processing_fee_amount,
+                p.reserve_amount, p.payout_fee_amount, p.net_amount, p.currency, p.status,
+                p.provider, p.provider_status, p.failure_reason, p.manual_review_reason,
+                p.provider_charge_id, p.provider_ref_id, p.provider_transaction_id,
+                p.requested_by, p.requested_at, p.created_at, p.updated_at,
+                e.event_title, e.event_date, e.creator_uid AS event_creator_uid_actual,
+                ec.display_name AS event_creator_name, ec.organization_name AS event_organization_name,
+                l.id AS liability_id, l.amount AS liability_amount, l.currency AS liability_currency,
+                l.status AS liability_status, l.refund_request_id AS liability_refund_request_id,
+                l.ticket_id AS liability_ticket_id, l.due_at AS liability_due_at
+           FROM payouts p
+           INNER JOIN events e ON e.id = p.event_id
+           LEFT JOIN event_creators ec ON ec.uid = e.creator_uid
+           LEFT JOIN LATERAL (
+             SELECT *
+               FROM event_refund_liabilities
+              WHERE payout_id = p.id
+              ORDER BY created_at DESC
+              LIMIT 1
+           ) l ON TRUE
+          WHERE (p.owner_type = 'event_creator' OR p.event_id IS NOT NULL)
+            ${statusFilter}
+          ORDER BY p.created_at DESC`,
+        params,
+      );
+
+      const liabilities = await listEventRefundLiabilities({ query } as any, status && ["due", "recovered", "waived"].includes(status)
+        ? { status: status as "due" | "recovered" | "waived" }
+        : {});
+      return res.json({ payouts: result.rows, refundLiabilities: liabilities });
+    } catch (error) {
+      return responseError(res, error, "Failed to load event payout recovery data");
+    }
+  });
+
+  router.get("/refund-liabilities", requireAuth, async (req: any, res) => {
+    try {
+      requireAdmin(req);
+      const status = clean(req.query?.status).toLowerCase();
+      const eventId = clean(req.query?.eventId);
+      if (status && !["due", "recovered", "waived"].includes(status)) {
+        return res.status(400).json({ error: "Unsupported liability status" });
+      }
+      const liabilities = await listEventRefundLiabilities(
+        { query } as any,
+        {
+          status: status ? status as "due" | "recovered" | "waived" : undefined,
+          eventId: eventId || null,
+        },
+      );
+      return res.json({ liabilities });
+    } catch (error) {
+      return responseError(res, error, "Failed to load event refund liabilities");
+    }
+  });
+
+  router.get("/:payoutId", requireAuth, async (req: any, res) => {
+    try {
+      requireAdmin(req);
+      const payoutId = clean(req.params.payoutId);
+      const payout = await getEventPayout(payoutId);
+      if (!payout) return res.status(404).json({ error: "Event payout not found" });
+
+      const [attempts, liabilities, events] = await Promise.all([
+        query<Record<string, unknown>>(
+          "SELECT * FROM payout_attempts WHERE payout_id = $1 ORDER BY attempt_no ASC",
+          [payoutId],
+        ),
+        query<Record<string, unknown>>(
+          "SELECT * FROM event_refund_liabilities WHERE payout_id = $1 ORDER BY created_at ASC",
+          [payoutId],
+        ),
+        query<Record<string, unknown>>(
+          "SELECT * FROM payout_events WHERE payout_id = $1 ORDER BY created_at ASC",
+          [payoutId],
+        ),
+      ]);
+
+      return res.json({
+        payout,
+        attempts: attempts.rows,
+        refundLiabilities: liabilities.rows,
+        payoutEvents: events.rows,
+      });
+    } catch (error) {
+      return responseError(res, error, "Failed to load event payout");
+    }
+  });
+
+  router.post("/:payoutId/retry", requireAuth, async (req: any, res) => {
+    try {
+      requireAdmin(req);
+      const payoutId = clean(req.params.payoutId);
+      const payout = await getEventPayout(payoutId);
+      if (!payout) return res.status(404).json({ error: "Event payout not found" });
+
+      const payoutStatus = String(payout.status ?? "").toLowerCase();
+      if (payoutStatus === "paid") return res.status(409).json({ error: "Paid event payouts cannot be retried." });
+      if (payoutStatus === "cancelled") return res.status(409).json({ error: "Cancelled event payouts cannot be retried." });
+      if (payoutStatus === "processing" || payoutStatus === "pending") {
+        return res.status(409).json({ error: "Event payout is already in provider processing. Reconcile its provider status before retrying." });
+      }
+
+      const liability = await query<Record<string, unknown>>(
+        `SELECT id, status
+           FROM event_refund_liabilities
+          WHERE payout_id = $1
+            AND status = 'due'
+          LIMIT 1`,
+        [payoutId],
+      );
+      if (liability.rows[0]) {
+        return res.status(409).json({ error: "This event payout has an outstanding refund liability and cannot be retried." });
+      }
+
+      const result = await payoutService.executePayout({
+        payoutId,
+        actorType: "admin",
+        actorId: req.user.uid,
+      });
+      return res.json({ ...result, eventPayout: await getEventPayout(payoutId) });
+    } catch (error) {
+      return responseError(res, error, "Failed to retry event payout");
+    }
+  });
+
+  router.post("/:payoutId/reconcile", requireAuth, async (req: any, res) => {
+    try {
+      requireAdmin(req);
+      const payoutId = clean(req.params.payoutId);
+      const payout = await getEventPayout(payoutId);
+      if (!payout) return res.status(404).json({ error: "Event payout not found" });
+      const result = await payoutService.reconcilePayoutStatus({
+        payoutId,
+        actorType: "admin",
+        actorId: req.user.uid,
+      });
+      return res.json({ ...result, eventPayout: await getEventPayout(payoutId) });
+    } catch (error) {
+      return responseError(res, error, "Failed to reconcile event payout");
+    }
+  });
+
+  router.post("/:payoutId/hold", requireAuth, async (req: any, res) => {
+    try {
+      requireAdmin(req);
+      const payoutId = clean(req.params.payoutId);
+      const reason = clean(req.body?.reason);
+      if (!reason) return res.status(400).json({ error: "reason is required" });
+
+      const payout = await getEventPayout(payoutId);
+      if (!payout) return res.status(404).json({ error: "Event payout not found" });
+      if (String(payout.status).toLowerCase() === "paid") return res.status(409).json({ error: "Paid event payouts cannot be held." });
+
+      const updated = payoutService.markHeld(payoutId, req.user.uid, reason);
+      if (!updated) return res.status(404).json({ error: "Event payout not found" });
+
+      return res.json({ payout: updated });
+    } catch (error) {
+      return responseError(res, error, "Failed to hold event payout");
+    }
+  });
+
+  router.post("/:payoutId/cancel", requireAuth, async (req: any, res) => {
+    try {
+      requireAdmin(req);
+      const payoutId = clean(req.params.payoutId);
+      const reason = clean(req.body?.reason);
+      if (!reason) return res.status(400).json({ error: "reason is required" });
+
+      const payout = await getEventPayout(payoutId);
+      if (!payout) return res.status(404).json({ error: "Event payout not found" });
+      const payoutStatus = String(payout.status).toLowerCase();
+      if (payoutStatus === "paid") return res.status(409).json({ error: "Paid event payouts cannot be cancelled." });
+      if (payoutStatus === "processing" || payoutStatus === "pending") {
+        return res.status(409).json({ error: "Provider processing must be reconciled before an event payout can be cancelled." });
+      }
+
+      const updated = payoutService.applyAdminOverride({
+        payoutId,
+        action: "cancel",
+        actorId: req.user.uid,
+        reason,
+      });
+      if (!updated) return res.status(404).json({ error: "Event payout not found" });
+
+      await query(
+        `INSERT INTO audit_events
+          (id,entity_type,entity_id,event_type,performed_by,timestamp,previous_state,new_state,metadata)
+         VALUES ($1,'event_payout',$2,'admin_event_payout_cancelled',$3,$4,$5,'cancelled',$6)`,
+        [
+          `aud_${randomUUID()}`,
+          payoutId,
+          req.user.uid,
+          new Date().toISOString(),
+          payoutStatus,
+          JSON.stringify({ reason }),
+        ],
+      );
+
+      return res.json({ payout: updated });
+    } catch (error) {
+      return responseError(res, error, "Failed to cancel event payout");
+    }
+  });
+
+  router.post("/refund-liabilities/:liabilityId/recover", requireAuth, async (req: any, res) => {
+    try {
+      requireAdmin(req);
+      const liabilityId = clean(req.params.liabilityId);
+      const transactionId = clean(req.body?.transactionId);
+      const refundMethod = clean(req.body?.refundMethod).toLowerCase();
+      const refundDate = clean(req.body?.refundDate);
+      const destination = clean(req.body?.destination);
+      const note = clean(req.body?.note);
+      const amount = Number(req.body?.amount);
+      const evidence = Array.isArray(req.body?.evidence)
+        ? req.body.evidence
+            .filter((item: unknown): item is string => typeof item === "string")
+            .map((item: string) => item.trim())
+            .filter(Boolean)
+            .slice(0, 20)
+        : [];
+
+      if (!transactionId) return res.status(400).json({ error: "transactionId is required" });
+      if (!["mobile_money", "bank_transfer", "cash", "other"].includes(refundMethod)) {
+        return res.status(400).json({ error: "Unsupported refundMethod" });
+      }
+      if (!refundDate) return res.status(400).json({ error: "refundDate is required" });
+      if (!note) return res.status(400).json({ error: "note is required" });
+      if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ error: "amount must be positive" });
+
+      const result = await withTransaction(async (client) => {
+        return recordEventRefundRecovery(client, {
+          liabilityId,
+          actorId: String(req.user.uid),
+          transactionId,
+          amount,
+          refundMethod,
+          refundDate,
+          destination: destination || null,
+          note,
+          evidence,
+        });
+      });
+
+      if (!result.duplicate) {
+        const liability = result.liability;
+        const caseResult = await query<Record<string, unknown>>(
+          `SELECT rr.dispute_case_id, rr.order_id, rr.buyer_id, rr.seller_id
+             FROM refund_requests rr
+            WHERE rr.id = $1
+            LIMIT 1`,
+          [liability.refundRequestId],
+        );
+        const caseRow = caseResult.rows[0];
+        if (caseRow?.dispute_case_id) {
+          try {
+            await notifyDisputeWorkflowEvent({
+              caseId: String(caseRow.dispute_case_id),
+              orderId: String(caseRow.order_id),
+              buyerId: String(caseRow.buyer_id),
+              sellerId: String(caseRow.seller_id),
+              event: "refund_completed",
+              note,
+              amount,
+              currency: liability.currency,
+              transactionId,
+              refundMethod,
+              refundDate,
+              destination,
+              recipients: ["buyer"],
+            });
+          } catch (notificationError) {
+            console.warn("Failed to send event refund recovery notification:", notificationError);
+          }
+        }
+      }
+
+      return res.status(result.duplicate ? 200 : 201).json({
+        ...result,
+        message: result.duplicate
+          ? "This event refund liability was already recovered."
+          : "Event refund liability recovered and recorded.",
+      });
+    } catch (error) {
+      return responseError(res, error, "Failed to recover event refund liability");
+    }
+  });
+
+  return router;
+}

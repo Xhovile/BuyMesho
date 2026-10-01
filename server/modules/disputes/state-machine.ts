@@ -24,7 +24,8 @@ export type RefundStatus =
   | 'processing'
   | 'refunded'
   | 'rejected'
-  | 'unavailable';
+  | 'unavailable'
+  | 'owed';
 
 export type DisputeCaseStatus = 'open' | 'under_review' | 'resolved' | 'rejected';
 export type DisputeAttemptStatus = 'open' | 'under_review' | 'resolved' | 'rejected';
@@ -56,6 +57,8 @@ export const REFUND_TRANSITIONS: readonly TransitionDefinition<RefundStatus>[] =
   { from: 'under_review', to: 'rejected', actors: ['admin'], movesMoney: false, description: 'Refund request is denied.' },
   { from: 'under_review', to: 'unavailable', actors: ['admin', 'system'], movesMoney: false, description: 'BuyMesho cannot execute the normal refund path.' },
   { from: 'approved', to: 'processing', actors: ['financial_workflow', 'system'], movesMoney: true, description: 'Actual refund execution begins.' },
+  { from: 'approved', to: 'owed', actors: ['admin', 'system'], movesMoney: false, description: 'Event refund is approved after or without provider refund execution and becomes an outstanding liability.' },
+  { from: 'owed', to: 'refunded', actors: ['financial_workflow', 'system', 'admin'], movesMoney: true, description: 'Outstanding event refund liability has been recovered.' },
   { from: 'processing', to: 'refunded', actors: ['financial_workflow', 'system'], movesMoney: true, description: 'Refund transaction completed and recorded.' },
 ];
 

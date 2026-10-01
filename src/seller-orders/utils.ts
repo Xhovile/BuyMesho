@@ -69,7 +69,7 @@ export function isPendingDispute(bundle: OrderBundle): boolean {
 
   return (
     ["open", "under_review", "awaiting_response"].includes(disputeStatus) ||
-    ["requested", "under_review", "processing", "approved"].includes(refundStatus)
+    ["requested", "under_review", "processing", "approved", "owed"].includes(refundStatus)
   );
 }
 
@@ -176,6 +176,7 @@ export function getFilterCount(
 
 export function orderStatusLabel(bundle: OrderBundle): string {
   if (isSettledDispute(bundle)) return `Dispute — ${settlementLabel(bundle)}`;
+  if (normalize(bundle.refundRequest?.status) === "owed") return "Dispute — Refund Recovery";
   if (isPendingDispute(bundle)) {
     return isAdminOwnedDispute(bundle) ? "Dispute — BuyMesho Review" : "Dispute — Action Required";
   }
