@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { notifyTicketDelivery, notifyTicketPurchaseConfirmation } from "../event-ticket.notification.js";
+import { notifyEventTicketPurchaseCompleted } from "../event-ticket-purchase-completed.notification.js";
 import { notifyPayoutCompleted } from "../payout-completed.notification.js";
 import { notifyEventCancelled } from "../event-cancelled.notification.js";
 
@@ -22,120 +22,89 @@ function notificationDeps(messages: any[], claimed = new Set<string>()) {
   };
 }
 
-test("ticket purchase confirmation sends only once for the order and only for a successful order", async () => {
+test("unified event ticket purchase notification sends only once per recipient", async () => {
   const messages: any[] = [];
   const deps = notificationDeps(messages);
+  const input = {
+    ...ticket,
+    eventManagerName: "Campus Events",
+    tickets: [
+      { ticketId: "ticket-1", ticketType: "VIP", holderName: "Ada Buyer", holderEmail: "buyer@example.com", downloadUrl: "https://buymesho.app/tickets?ticketId=ticket-1&download=1" },
+      { ticketId: "ticket-2", ticketType: "VIP", holderName: "John Buyer", holderEmail: "john@example.com", downloadUrl: "https://buymesho.app/tickets?ticketId=ticket-2&download=1" },
+    ],
+    includePaymentDetails: true,
+    orderStatus: "paid",
+  };
 
-  assert.equal(await notifyTicketPurchaseConfirmation(ticket, deps), true);
-  assert.equal(await notifyTicketPurchaseConfirmation(ticket, deps), false);
+  assert.equal(await notifyEventTicketPurchaseCompleted(input, deps), true);
+  assert.equal(await notifyEventTicketPurchaseCompleted(input, deps), false);
   assert.equal(messages.length, 1);
   assert.equal(messages[0].sender, "transactional");
   assert.deepEqual(messages[0].to, { email: "buyer@example.com", name: "Ada Buyer" });
-  assert.equal(messages[0].subject, "Your BuyMesho ticket purchase is confirmed");
-  assert.match(messages[0].text, /Campus Concert/);
-  assert.match(messages[0].text, /ord-event-1/);
-  assert.match(messages[0].text, /Quantity: 1/);
-  assert.equal(await notifyTicketPurchaseConfirmation({ ...ticket, orderStatus: "pending_payment" }, deps), false);
-});
-
-test("ticket purchase confirmation supports multiple tickets in one order", async () => {
-  const messages: any[] = [];
-  const tickets = [
-    { ticketId: "ticket-1", ticketType: "VIP", holderName: "Ada Buyer", holderEmail: "buyer@example.com" },
-    { ticketId: "ticket-2", ticketType: "VIP", holderName: "John Buyer", holderEmail: "john@example.com" },
-  ];
-  const deps = notificationDeps(messages);
-
-  assert.equal(
-    await notifyTicketPurchaseConfirmation(
-      { ...ticket, quantity: tickets.length, tickets },
-      deps,
-    ),
-    true,
-  );
-  assert.equal(messages.length, 1);
-  assert.match(messages[0].text, /Quantity: 2/);
+  assert.equal(messages[0].subject, "BuyMesho event ticket purchase confirmed — Campus Concert");
+  assert.match(messages[0].text, /Payment reference: ord-event-1/);
+  assert.match(messages[0].text, /Amount paid: 5,000\.00 MWK/);
   assert.match(messages[0].text, /ticket-1/);
   assert.match(messages[0].text, /ticket-2/);
-  assert.match(messages[0].text, /Holder: Ada Buyer/);
-  assert.match(messages[0].text, /Holder: John Buyer/);
+  assert.match(messages[0].html, /ticket-1.*download=1/s);
+  assert.match(messages[0].html, /Download PDF/);
 });
 
-test("ticket purchase confirmation releases the claim when delivery fails so a retry can succeed", async () => {
-  const claimed = new Set<string>();
+test("unified event ticket notification can deliver only the tickets assigned to another holder", async () => {
+  const messages: any[] = [];
+  const deps = notificationDeps(messages);
+  const input = {
+    ...ticket,
+    email: "john@example.com",
+    recipientName: "John Buyer",
+    eventManagerName: "Campus Events",
+    tickets: [
+      { ticketId: "ticket-2", ticketType: "VIP", holderName: "John Buyer", holderEmail: "john@example.com", downloadUrl: "https://buymesho.app/tickets?ticketId=ticket-2&download=1" },
+    ],
+    includePaymentDetails: false,
+    orderStatus: "paid",
+  };
+
+  assert.equal(await notifyEventTicketPurchaseCompleted(input, deps), true);
+  assert.equal(messages.length, 1);
+  assert.match(messages[0].subject, /event ticket is ready/);
+  assert.doesNotMatch(messages[0].text, /Payment reference:/);
+  assert.match(messages[0].text, /ticket-2/);
+});
+
+test("unified event ticket notification releases the claim when delivery fails", async () => {
   let attempts = 0;
   const deps = {
-    claim: (key: string) => {
-      if (claimed.has(key)) return false;
-      claimed.add(key);
-      return true;
-    },
+    claim: (key: string) => key === "ord-event-1:buyer@example.com" && attempts === 0,
     markSent: () => undefined,
-    release: (key: string) => claimed.delete(key),
+    release: () => undefined,
     send: async () => {
       attempts += 1;
       if (attempts === 1) throw new Error("temporary provider failure");
       return { messageId: "retry-success" };
     },
   };
-
-  await assert.rejects(() => notifyTicketPurchaseConfirmation(ticket, deps), /temporary provider failure/);
-  assert.equal(await notifyTicketPurchaseConfirmation(ticket, deps), true);
-  assert.equal(attempts, 2);
-});
-
-test("ticket delivery sends once per recipient and includes the issued pass identifier", async () => {
-  const messages: any[] = [];
-  const deps = notificationDeps(messages);
-  assert.equal(
-    await notifyTicketDelivery(
-      {
-        ...ticket,
-        quantity: 2,
-        tickets: [
-          { ticketId: "ticket-1", ticketType: "VIP", holderName: "Ada Buyer", holderEmail: "buyer@example.com" },
-          { ticketId: "ticket-2", ticketType: "VIP", holderName: "Ada Buyer", holderEmail: "buyer@example.com" },
-        ],
-      },
-      deps,
-    ),
-    true,
-  );
-  assert.equal(await notifyTicketDelivery({ ...ticket, ticketId: "ticket-2", quantity: 1 }, deps), false);
-  assert.equal(messages.length, 1);
-  assert.equal(messages[0].sender, "transactional");
-  assert.equal(messages[0].subject, "Your BuyMesho event ticket is ready");
-  assert.match(messages[0].text, /ticket-1/);
-  assert.match(messages[0].text, /ticket-2/);
-  assert.match(messages[0].text, /Quantity: 2/);
-});
-
-test("ticket delivery releases the claim when delivery fails so the seller can be retried", async () => {
-  const claimed = new Set<string>();
-  let attempts = 0;
-  const deps = {
-    claim: (key: string) => {
-      if (claimed.has(key)) return false;
-      claimed.add(key);
-      return true;
-    },
-    markSent: () => undefined,
-    release: (key: string) => claimed.delete(key),
-    send: async () => {
-      attempts += 1;
-      if (attempts === 1) throw new Error("temporary provider failure");
-      return { messageId: "delivery-retry-success" };
-    },
+  const input = {
+    ...ticket,
+    eventManagerName: "Campus Events",
+    tickets: [{ ticketId: "ticket-1", ticketType: "VIP", holderName: "Ada Buyer", holderEmail: "buyer@example.com", downloadUrl: "https://buymesho.app/tickets?ticketId=ticket-1&download=1" }],
+    includePaymentDetails: true,
+    orderStatus: "paid",
   };
 
-  await assert.rejects(() => notifyTicketDelivery(ticket, deps), /temporary provider failure/);
-  assert.equal(await notifyTicketDelivery(ticket, deps), true);
+  await assert.rejects(() => notifyEventTicketPurchaseCompleted(input, deps), /temporary provider failure/);
+  assert.equal(await notifyEventTicketPurchaseCompleted(input, {
+    ...deps,
+    claim: () => attempts >= 1,
+    release: () => undefined,
+  }), true);
   assert.equal(attempts, 2);
 });
 
-test("issued ticket delivery will not send before the order is successful", async () => {
+test("unified event ticket notification rejects unsuccessful orders", async () => {
   const messages: any[] = [];
-  assert.equal(await notifyTicketDelivery({ ...ticket, orderStatus: "failed" }, { send: async message => { messages.push(message); return { messageId: "must-not-send" }; } }), false);
+  const deps = notificationDeps(messages);
+  assert.equal(await notifyEventTicketPurchaseCompleted({ ...ticket, eventManagerName: "Campus Events", tickets: [], includePaymentDetails: true, orderStatus: "pending_payment" }, deps), false);
   assert.equal(messages.length, 0);
 });
 
