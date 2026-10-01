@@ -242,6 +242,39 @@ test("event details derive route state from live URL changes", () => {
   assert.match(source, /\[autoBuyRequested, authLoading, event, eventId, handleBuyTicket\]/);
 });
 
+test("wholesale SEO renders a substantive indexable landing page and wholesale inventory links", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "server/seo/publicSeoShell.ts"),
+    "utf8",
+  );
+  assert.match(source, /normalized === "\/explore\/wholesale"/);
+  assert.match(source, /Wholesale marketplace in Malawi/);
+  assert.match(source, /Current wholesale listings/);
+  assert.match(source, /l\.listing_mode='wholesale'/);
+  assert.match(source, /l\.is_wholesale=1/);
+  assert.match(source, /COALESCE\(l\.pack_size,0\)>1/);
+});
+
+test("marketplace API supports a server-side wholesale listing filter", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "server/routes/marketplace.routes.ts"),
+    "utf8",
+  );
+  assert.match(source, /listingMode/);
+  assert.match(source, /l\.listing_mode = 'wholesale'/);
+  assert.match(source, /l\.is_wholesale = 1/);
+  assert.match(source, /COALESCE\(l\.pack_size, 0\) > 1/);
+});
+
+test("wholesale marketplace fetches are scoped server-side", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "src/hooks/useAppLegacyState.ts"),
+    "utf8",
+  );
+  assert.match(source, /activeChip === "Wholesale"/);
+  assert.match(source, /params\.append\("listingMode", "wholesale"\)/);
+});
+
 test("public marketplace surfaces expose crawlable internal links", () => {
   const sources = [
     readFileSync(resolve(process.cwd(), "src/components/ListingCard.tsx"), "utf8"),
