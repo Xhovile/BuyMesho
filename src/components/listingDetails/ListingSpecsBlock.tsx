@@ -56,8 +56,8 @@ export default function ListingSpecsBlock({ groups }: { groups: ListingSpecsGrou
       {groups.length ? (
         <>
           <div className="space-y-4 md:hidden">
-            {groups.map((group) => (
-              <SpecAccordion key={group.title} group={group} defaultOpen={false} />
+            {groups.map((group, index) => (
+              <SpecAccordion key={group.title} group={group} defaultOpen={index === 0} />
             ))}
           </div>
 
@@ -68,8 +68,8 @@ export default function ListingSpecsBlock({ groups }: { groups: ListingSpecsGrou
               ))}
             </div>
             <div className="space-y-4">
-              {rightColumnGroups.map((group) => (
-                <SpecAccordion key={group.title} group={group} />
+              {rightColumnGroups.map((group, index) => (
+                <SpecAccordion key={group.title} group={group} defaultOpen={index === 0} />
               ))}
             </div>
           </div>
