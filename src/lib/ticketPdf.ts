@@ -76,7 +76,6 @@ function escapePdfText(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 }
 
-
 function addRect(commands: string[], x: number, y: number, width: number, height: number, color: PdfColor) {
   commands.push(`${rgb(color)} rg`);
   commands.push(`${x.toFixed(2)} ${y.toFixed(2)} ${width.toFixed(2)} ${height.toFixed(2)} re f`);
