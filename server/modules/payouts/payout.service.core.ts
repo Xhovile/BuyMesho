@@ -29,6 +29,7 @@ async function loadPayoutRecipient(payout: PayoutRecord): Promise<{
   name: string;
   orderItems: unknown;
   maskedAccount: string | null;
+  eventName: string | null;
 }> {
   const ownerType = payout.ownerType ?? 'seller';
   const ownerUid = payout.ownerUid ?? payout.sellerId;
@@ -42,6 +43,7 @@ async function loadPayoutRecipient(payout: PayoutRecord): Promise<{
        COALESCE(ec.email, s.email) AS email,
        COALESCE(s.business_name, ec.display_name, ec.organization_name, ec.uid, s.uid) AS recipient_name,
        o.items AS order_items,
+       e.event_title AS event_name,
        spa.masked_account
      FROM orders o
      LEFT JOIN sellers s
@@ -50,13 +52,16 @@ async function loadPayoutRecipient(payout: PayoutRecord): Promise<{
      LEFT JOIN event_creators ec
        ON ec.uid = $1
       AND $4 = 'event_creator'
+     LEFT JOIN events e
+       ON e.id = (SELECT event_id FROM payouts WHERE id = $5 LIMIT 1)
+      AND $4 = 'event_creator'
      LEFT JOIN seller_payout_accounts spa
        ON spa.id = $3
       AND spa.owner_type = $4
       AND spa.owner_uid = $1
      WHERE o.id = $2
      LIMIT 1`,
-    [ownerUid, payout.orderId ?? null, payout.destinationAccountId ?? null, ownerType],
+    [ownerUid, payout.orderId ?? null, payout.destinationAccountId ?? null, ownerType, payout.id],
   );
 
   return {
@@ -64,6 +69,7 @@ async function loadPayoutRecipient(payout: PayoutRecord): Promise<{
     name: result.rows[0]?.recipient_name?.trim() || 'there',
     orderItems: result.rows[0]?.order_items,
     maskedAccount: result.rows[0]?.masked_account?.trim() || null,
+    eventName: result.rows[0]?.event_name?.trim() || null,
   };
 }
 
@@ -85,6 +91,12 @@ async function notifySellerOfPaidPayout(payout: PayoutRecord | undefined): Promi
       destination: recipient.maskedAccount,
       completedAt: payout.updatedAt || new Date().toISOString(),
       status: payout.status,
+      isEventPayout: payout.ownerType === 'event_creator' || Boolean(payout.eventId),
+      eventName: recipient.eventName,
+      dashboardUrl:
+        payout.eventId
+          ? `https://buymesho.app/explore/events/manage?event=${encodeURIComponent(String(payout.eventId))}`
+          : undefined,
     });
   } catch (error) {
     console.warn('[notification] payout_completed email delivery failed', error);
@@ -105,6 +117,7 @@ async function notifySellerOfFinalPayoutFailure(
     const orderTitle = buildPayoutOrderTitle(recipient.orderItems);
     const attempt = Number(attemptNo);
     const failedAt = payout.updatedAt || new Date().toISOString();
+    const isEventPayout = payout.ownerType === 'event_creator' || Boolean(payout.eventId);
 
     await notifyPayoutFinalFailed({
       email: recipient.email,
@@ -118,6 +131,12 @@ async function notifySellerOfFinalPayoutFailure(
       attemptNo: attempt,
       failureReason: failureReason?.trim() || null,
       failedAt,
+      isEventPayout,
+      eventName: recipient.eventName,
+      dashboardUrl:
+        payout.eventId
+          ? `https://buymesho.app/explore/events/manage?event=${encodeURIComponent(String(payout.eventId))}`
+          : undefined,
     });
 
     await notifyAdminsPayoutFinalFailed({
@@ -131,6 +150,8 @@ async function notifySellerOfFinalPayoutFailure(
       attemptNo: attempt,
       failureReason: failureReason?.trim() || null,
       failedAt,
+      isEventPayout,
+      eventName: recipient.eventName,
     });
   } catch (error) {
     console.warn('[notification] payout_final_failed email delivery failed', error);
