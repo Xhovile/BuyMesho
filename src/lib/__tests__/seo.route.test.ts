@@ -500,6 +500,48 @@ test("server SEO shell canonicalizes category documents and invalid category doc
   assert.equal(canonical.canonicalUrl, "/category?category=academic-services");
 });
 
+test("category SEO pages are substantive even when inventory is empty", () => {
+  const rendered = renderSeoDocument(
+    { path: "/category", originalUrl: "/category?category=food-snacks" } as any,
+    emptySeoDb,
+  );
+
+  assert.equal(rendered.noIndex, false);
+  assert.equal(rendered.canonicalUrl, "/category?category=food-snacks");
+  assert.match(rendered.title, /Food & Snacks in Malawi/);
+  assert.match(rendered.body, /Explore meals, snacks, drinks/);
+  assert.match(rendered.body, /What you can find/);
+  assert.match(rendered.body, /Meals and prepared food/);
+  assert.match(rendered.body, /How to buy/);
+  assert.match(rendered.body, /There are no active listings in this category right now/);
+  assert.equal(rendered.jsonLd?.["@type"], "CollectionPage");
+});
+
+test("category SEO pages expose current listing links and ItemList schema", () => {
+  const db = {
+    prepare() {
+      return {
+        all: () => [
+          { id: 17, name: "Chambo Samosa", price: 2500 },
+          { id: 18, name: "Fresh Juice", price: 3000 },
+        ],
+      };
+    },
+  };
+  const rendered = renderSeoDocument(
+    { path: "/category", originalUrl: "/category?category=food-snacks" } as any,
+    db,
+  );
+
+  assert.match(rendered.body, /href="\/listing\?listing=17"/);
+  assert.match(rendered.body, /Chambo Samosa/);
+  const mainEntity = rendered.jsonLd?.mainEntity as Record<string, unknown>;
+  assert.equal(mainEntity?.["@type"], "ItemList");
+  const elements = mainEntity?.itemListElement as Array<Record<string, unknown>>;
+  assert.equal(elements?.length, 2);
+  assert.equal(elements?.[0]?.url, "https://buymesho.app/listing?listing=17");
+});
+
 test("SEO sitemap and public navigation use canonical category URLs", () => {
   const sitemap = readFileSync(resolve(process.cwd(), "server/routes/sitemap.routes.ts"), "utf8");
   const shell = readFileSync(resolve(process.cwd(), "server/seo/publicSeoShell.ts"), "utf8");
