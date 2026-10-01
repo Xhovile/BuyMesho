@@ -60,7 +60,7 @@ export function renderOrderPaidEmail(params: {
 
   const bodyText = detailRows
     .map(([label, value]) => `${label}: ${value}`)
-    .join("\\n");
+    .join("\n");
 
   const { text, html } = renderBuyMeshoEmail({
     recipientName: params.recipientName,
