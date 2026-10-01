@@ -222,45 +222,99 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
     const category = resolveMarketplaceCategory(requestedCategory);
 
     if (category) {
+      const seoContent = CATEGORY_SEO_CONTENT[category.slug];
       const categoryListings = db
         ? db.prepare(
-            "SELECT l.id,l.name FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.category=? AND l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.created_at DESC,l.id DESC LIMIT 8"
-          ).all(category.name) as Array<{ id: number; name?: string | null }>
+            "SELECT l.id,l.name,l.price FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.category=? AND l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.created_at DESC,l.id DESC LIMIT 8"
+          ).all(category.name) as Array<{ id: number; name?: string | null; price?: number | string | null }>
         : [];
+
       const listingLinks = categoryListings
         .map((item) =>
           '<li style="margin:0 0 8px"><a href="/listing?listing=' +
           encodeURIComponent(String(item.id)) +
           '">' +
           esc(item.name || "Listing " + item.id) +
+          " · " +
+          esc(formatMoney(item.price)) +
           "</a></li>"
         )
         .join("");
 
+      const canonicalUrl = "/category?category=" + encodeURIComponent(category.slug);
+      const description =
+        "Browse " +
+        category.name.toLowerCase() +
+        " from sellers on BuyMesho's Malawi marketplace.";
+      const jsonLd: Record<string, unknown> = {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: category.name + " in Malawi",
+        description,
+        url: absoluteUrl(canonicalUrl),
+        isPartOf: {
+          "@type": "WebSite",
+          name: "BuyMesho",
+          url: SITE_URL,
+        },
+      };
+
+      if (categoryListings.length) {
+        jsonLd.mainEntity = {
+          "@type": "ItemList",
+          itemListElement: categoryListings.map((item, index) => ({
+            "@type": "ListItem",
+            position: index + 1,
+            name: item.name || "BuyMesho listing " + item.id,
+            url: absoluteUrl(
+              "/listing?listing=" + encodeURIComponent(String(item.id)),
+            ),
+          })),
+        };
+      }
+
       return {
         title: category.name + " in Malawi",
-        description: "Browse " + category.name.toLowerCase() + " from sellers on BuyMesho's Malawi marketplace.",
-        canonicalUrl: "/category?category=" + encodeURIComponent(category.slug),
+        description,
+        canonicalUrl,
         noIndex: false,
+        jsonLd,
         body: bodyFrame(
           category.name + " in Malawi",
           "BuyMesho category",
-          "Browse " + category.name.toLowerCase() + " from sellers across the BuyMesho marketplace.",
+          seoContent.intro,
           [
             { href: "/explore", label: "Explore all listings" },
             { href: "/buy-online-malawi", label: "Buy online in Malawi" },
             { href: "/sell-online-malawi", label: "Sell online in Malawi" },
           ],
           [
+            '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">What you can find</h2><ul style="padding-left:20px">' +
+              seoContent.items
+                .map(
+                  (item) =>
+                    '<li style="margin:0 0 8px">' + esc(item) + "</li>",
+                )
+                .join("") +
+              "</ul></section>",
+            '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">How to buy</h2><ol style="padding-left:20px">' +
+              seoContent.buyingGuide
+                .map(
+                  (step) =>
+                    '<li style="margin:0 0 8px">' + esc(step) + "</li>",
+                )
+                .join("") +
+              "</ol></section>",
             categoryListings.length
-              ? '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">Current listings</h2><ul style="padding-left:20px">' + listingLinks + "</ul></section>"
-              : "",
+              ? '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">Current listings</h2><ul style="padding-left:20px">' +
+                listingLinks +
+                "</ul></section>"
+              : '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">Current listings</h2><p style="color:#52525b;line-height:1.7">There are no active listings in this category right now. The category page remains available for buyers as sellers add new offers.</p><p style="margin-top:10px;color:#52525b;line-height:1.7">Browse the marketplace to explore other categories and current listings.</p></section>',
           ],
         ),
       };
     }
   }
-
   const copy: Record<string, { eyebrow: string; text: string }> = {
     "/": { eyebrow: "BuyMesho marketplace", text: "Browse products, services, sellers, deals, and public events through BuyMesho." },
     "/install": { eyebrow: "Install BuyMesho", text: "Install BuyMesho on your phone for fast access to Malawi's secure e-commerce platform." },
@@ -400,6 +454,8 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
         { href: "/category?category=electronics-gadgets", label: "Electronics & Gadgets" },
         { href: "/category?category=fashion-clothing", label: "Fashion & Clothing" },
         { href: "/category?category=academic-services", label: "Academic Services" },
+        { href: "/category?category=food-snacks", label: "Food & Snacks" },
+        { href: "/category?category=beauty-personal-care", label: "Beauty & Personal Care" },
       ],
       sections,
     ),
