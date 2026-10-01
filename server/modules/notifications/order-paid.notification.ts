@@ -68,6 +68,17 @@ function getEventId(order: StoredOrder): string | null {
   return null;
 }
 
+function getEventName(order: StoredOrder): string | null {
+  if (order.source !== "event") return null;
+  for (const item of order.items ?? []) {
+    if (item?.kind === "event_ticket") {
+      const title = (item as unknown as Record<string, unknown>).title;
+      if (typeof title === "string" && title.trim()) return title.trim();
+    }
+  }
+  return null;
+}
+
 async function sendOrderPaidEmail(order: StoredOrder, role: RecipientRole): Promise<void> {
   const recipientId = role === "buyer" ? order.buyerId : order.sellerId;
   const userRecord = await resolveNotificationRecipient(recipientId);
@@ -81,6 +92,7 @@ async function sendOrderPaidEmail(order: StoredOrder, role: RecipientRole): Prom
   const eventTicketHolderName = getEventTicketHolderName(order);
   const buyerCheckoutName = order.buyerDetails?.fullName?.trim() || eventTicketHolderName;
   const isEventOrder = order.source === "event";
+  const eventName = getEventName(order);
   const recipientName = role === "buyer"
     ? buyerCheckoutName || userRecord.displayName?.trim() || "there"
     : isEventOrder
@@ -104,14 +116,20 @@ async function sendOrderPaidEmail(order: StoredOrder, role: RecipientRole): Prom
     totalAmount: order.total.amount,
     currency: order.total.currency || order.currency,
     actionUrl,
+    isEventOrder,
+    eventName,
   });
 
   await sendEmail({
     sender: "notifications",
     to: { email, name: recipientName },
-    subject: role === "buyer"
-      ? `BuyMesho payment confirmed — ${counterpartyName}`
-      : `BuyMesho — new paid order from ${counterpartyName}`,
+    subject: isEventOrder
+      ? role === "buyer"
+        ? `BuyMesho event payment confirmed — ${eventName || "your event"}`
+        : `BuyMesho — new event ticket purchase for ${eventName || "your event"}`
+      : role === "buyer"
+        ? `BuyMesho payment confirmed — ${counterpartyName}`
+        : `BuyMesho — new paid order from ${counterpartyName}`,
     text,
     html,
   });
