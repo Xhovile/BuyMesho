@@ -257,6 +257,41 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
     '<section style="margin-top:24px"><p style="color:#52525b;line-height:1.7">' + esc(selected.text) + "</p></section>",
   ];
 
+
+  if (db && normalized === "/explore/wholesale") {
+    const wholesaleListings = db.prepare(
+      "SELECT l.id,l.name,l.price,l.pack_size,l.bulk_units FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 AND (l.listing_mode='wholesale' OR l.is_wholesale=1 OR COALESCE(l.pack_size,0)>1) AND (l.status!='sold' AND l.sold_quantity<l.quantity) ORDER BY l.created_at DESC,l.id DESC LIMIT 8"
+    ).all() as Array<{
+      id: number;
+      name?: string | null;
+      price?: number | string | null;
+      pack_size?: number | string | null;
+      bulk_units?: string | null;
+    }>;
+
+    const listingLinks = wholesaleListings.map((item) =>
+      '<li style="margin:0 0 10px"><a href="/listing?listing=' +
+      encodeURIComponent(String(item.id)) +
+      '">' +
+      esc(item.name || "Wholesale listing " + item.id) +
+      " · " +
+      esc(formatMoney(item.price)) +
+      (item.pack_size ? " · Pack of " + esc(String(item.pack_size)) : "") +
+      (item.bulk_units ? " · " + esc(item.bulk_units) : "") +
+      "</a></li>"
+    ).join("");
+
+    sections.push(
+      '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">Wholesale marketplace in Malawi</h2><p style="color:#52525b;line-height:1.7">BuyMesho wholesale listings are designed for buyers looking for packs, bulk quantities, and supplier-style purchasing. Browse current wholesale offers, compare prices and pack sizes, and open a listing for its full purchasing details.</p><p style="margin-top:10px;color:#52525b;line-height:1.7">Wholesale inventory is published by approved marketplace sellers and can include products sold in packs or bulk quantities.</p></section>',
+    );
+
+    sections.push(
+      wholesaleListings.length
+        ? '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">Current wholesale listings</h2><ul style="padding-left:20px">' + listingLinks + "</ul></section>"
+        : '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">Current wholesale listings</h2><p style="color:#52525b;line-height:1.7">There are no active wholesale listings available right now. Check back as sellers add new bulk offers.</p></section>',
+    );
+  }
+
   if (db && (normalized === "/" || normalized === "/explore")) {
     const listings = db.prepare(
       "SELECT l.id,l.name,l.price FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.created_at DESC,l.id DESC LIMIT 8"
