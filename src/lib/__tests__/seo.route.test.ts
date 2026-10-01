@@ -569,7 +569,8 @@ test("SEO sitemap and public navigation use canonical category URLs", () => {
   const sitemap = readFileSync(resolve(process.cwd(), "server/routes/sitemap.routes.ts"), "utf8");
   const shell = readFileSync(resolve(process.cwd(), "server/seo/publicSeoShell.ts"), "utf8");
 
-  assert.match(sitemap, /MARKETPLACE_CATEGORIES/);\n  assert.match(sitemap, /indexableCategoryNames/);
+  assert.match(sitemap, /MARKETPLACE_CATEGORIES/);
+  assert.match(sitemap, /indexableCategoryNames/);
   assert.doesNotMatch(sitemap, /category=phones/);
   assert.doesNotMatch(sitemap, /category=books/);
 
