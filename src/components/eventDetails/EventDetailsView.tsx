@@ -85,11 +85,11 @@ export default function EventDetailsView() {
   const [cartNoticeOpen, setCartNoticeOpen] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | "cart" | null>(null);
-  const [coreOpen, setCoreOpen] = useState(() => {
+  const [coreOpen, setCoreOpen] = useState(true);
+  const [extraOpen, setExtraOpen] = useState(() => {
     if (typeof window === "undefined") return false;
-    return window.matchMedia("(max-width: 767px)").matches;
+    return window.matchMedia("(min-width: 768px)").matches;
   });
-  const [extraOpen, setExtraOpen] = useState(false);
 
   useEffect(() => {
     if (!eventId) {
@@ -154,10 +154,10 @@ export default function EventDetailsView() {
     const absolutePosterUrl = posterUrl
       ? new URL(posterUrl, window.location.origin).toString()
       : undefined;
-    const startDate = /^\d{4}-\d{2}-\d{2}$/.test(event.event_date)
+    const startDate = /^\\d{4}-\\d{2}-\\d{2}$/.test(event.event_date)
       ? `${event.event_date}`
       : undefined;
-    const timeMatch = (event.start_time || "").trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    const timeMatch = (event.start_time || "").trim().match(/^(\\d{1,2}):(\\d{2})(?::(\\d{2}))?$/);
     const schemaStartDate =
       startDate && timeMatch
         ? `${startDate}T${String(Number(timeMatch[1])).padStart(2, "0")}:${timeMatch[2]}:${timeMatch[3] || "00"}+02:00`
@@ -425,38 +425,7 @@ export default function EventDetailsView() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-100 px-4">
         <div className="w-full max-w-xl rounded-[2rem] border border-zinc-200 bg-white p-6 text-center shadow-xl shadow-zinc-200/60 sm:p-10">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-950 text-white"><Ticket className="h-6 w-6" /></div>
-          <h1 className="mt-5 text-2xl font-black tracking-[-0.05em] text-zinc-950">Event unavailable</h1>
-          <p className="mt-3 text-sm leading-relaxed text-zinc-600">{error || "This event could not be loaded."}</p>
-          <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800">Back to Events</button>
-        </div>
-      </div>
-    );
-  }
-
-  const holderInitialValue = {
-    fullName: firebaseUser?.displayName ?? "",
-    email: firebaseUser?.email ?? "",
-    phone: firebaseUser?.phoneNumber ?? "",
-  };
-
-  return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <EventDetailsHeader isLoggedIn={!!firebaseUser} />
-      <main className="mx-auto w-full max-w-7xl px-4 pb-10 pt-24 sm:pb-12">
-        <div className="grid gap-8">
-          {shouldShowMenu ? <section><div className="mb-3 flex justify-start"><EventActionsMenu eventId={event.id} eventTitle={event.event_title} shareUrl={eventPageUrl} /></div></section> : null}
-          <EventDetailsHero event={event} posterUrl={posterUrl} posterAlt={posterAlt} accent={accent} price={price} notice={notice} onClearNotice={clearNotice} />
-          <EventDetailsSections event={event} coreOpen={coreOpen} extraOpen={extraOpen} onToggleCore={() => setCoreOpen((current) => !current)} onToggleExtra={() => setExtraOpen((current) => !current)} extraSpecEntries={extraSpecEntries} />
-          <EventDetailsActions event={event} canManageEvent={canManageEvent} canMessageEvent={canMessageEvent} canBuyOrCart={canBuyOrCart} checkoutLoading={checkoutLoading} onBuyTicket={handleBuyTicket} onMessage={() => void handleMessage()} onAddToCart={() => void handleAddToCart()} onShare={handleShare} onCancelEvent={() => void handleCancelEvent()} />
-        </div>
-      </main>
-
-      {ticketHolderOpen ? (
-        <div className="fixed inset-0 z-[98] flex items-center justify-center p-4">
-          <button type="button" aria-label="Close ticket holder form" onClick={() => setTicketHolderOpen(false)} className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
-          <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
-            <button type="button" onClick={() => setTicketHolderOpen(false)} disabled={checkoutLoading} className="absolute right-4 top-4 rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700" aria-label="Close"><X className="h-5 w-5" /></button>
+          <div className="mx-auto flex h-14 w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
             <TicketHolderForm initialValue={holderInitialValue} onSubmit={submitTicketHolder} onCancel={() => setTicketHolderOpen(false)} submitting={checkoutLoading} />
           </div>
         </div>
