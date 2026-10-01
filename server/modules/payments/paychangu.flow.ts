@@ -58,7 +58,14 @@ async function emitEventTicketPurchaseNotifications(order:ReturnType<typeof orde
     resolveNotificationRecipient(order.buyerId),
     resolveNotificationRecipient(order.sellerId),
   ]);
-  const eventManagerName=eventManagerRecipient.displayName?.trim()||'Event Manager';
+  let eventManagerName=eventManagerRecipient.displayName?.trim()||'';
+  try{
+    const result=await query<{display_name?:string|null}>('SELECT display_name FROM event_creators WHERE uid = $1 LIMIT 1',[order.sellerId]);
+    eventManagerName=result.rows[0]?.display_name?.trim()||eventManagerName;
+  }catch(error){
+    console.warn('[event-ticket] failed to resolve event manager display name',error);
+  }
+  eventManagerName=eventManagerName||'Event Manager';
   const buyerEmail=buyerRecipient.email?.trim().toLowerCase()??'';
   const buyerName=order.buyerDetails?.fullName?.trim()||buyerRecipient.displayName?.trim()||'there';
 
