@@ -12,6 +12,8 @@ export type PayoutAdminFailedEmailData = {
   failureReason?: string | null;
   failedAt: string;
   dashboardUrl: string;
+  isEventPayout?: boolean;
+  eventName?: string | null;
 };
 
 function formatAmount(amount: number, currency: string): string {
@@ -20,20 +22,27 @@ function formatAmount(amount: number, currency: string): string {
 
 export function renderPayoutAdminFailedEmail(data: PayoutAdminFailedEmailData) {
   const amount = formatAmount(data.amount, data.currency);
+  const isEventPayout = Boolean(data.isEventPayout);
   const reason = data.failureReason?.trim() || "The payout could not be completed by the payment provider.";
   const details = renderDetailCard(
     [
-      ["Payout reference", data.payoutId],
-      ["Seller", data.sellerName],
-      ...(data.orderReference ? [["Order reference", data.orderReference] as [string, string]] : []),
-      ...(data.orderTitle ? [["Items", data.orderTitle] as [string, string]] : []),
+      [isEventPayout ? "Event payout reference" : "Payout reference", data.payoutId],
+      [isEventPayout ? "Event Manager" : "Seller", data.sellerName],
+      ...(isEventPayout
+        ? data.eventName
+          ? [["Event", data.eventName] as [string, string]]
+          : []
+        : data.orderReference
+          ? [["Order reference", data.orderReference] as [string, string]]
+          : []),
+      ...(!isEventPayout && data.orderTitle ? [["Items", data.orderTitle] as [string, string]] : []),
       ["Amount", amount],
       ...(data.destination ? [["Destination", data.destination] as [string, string]] : []),
       ["Attempts", `${data.attemptNo}`],
       ["Failure reason", reason],
       ["Failed", data.failedAt],
     ],
-    "Payout review details",
+    isEventPayout ? "Event payout review details" : "Payout review details",
   );
 
   const note = renderNoteCard(
@@ -43,15 +52,21 @@ export function renderPayoutAdminFailedEmail(data: PayoutAdminFailedEmailData) {
 
   return renderBuyMeshoEmail({
     recipientName: "BuyMesho Admin",
-    title: "Payout requires manual review",
-    intro: `A payout for ${data.sellerName} has failed after ${data.attemptNo} attempts and now requires manual review.`,
+    title: isEventPayout ? "Event payout requires manual review" : "Payout requires manual review",
+    intro: isEventPayout
+      ? `An event payout for ${data.sellerName}${data.eventName ? ` (${data.eventName})` : ""} has failed after ${data.attemptNo} attempts and now requires manual review.`
+      : `A payout for ${data.sellerName} has failed after ${data.attemptNo} attempts and now requires manual review.`,
     bodyHtml: `${details}${note}`,
     bodyText: [
-      "Payout review details",
-      `Payout reference: ${data.payoutId}`,
-      `Seller: ${data.sellerName}`,
-      data.orderReference ? `Order reference: ${data.orderReference}` : "",
-      data.orderTitle ? `Items: ${data.orderTitle}` : "",
+      isEventPayout ? "Event payout review details" : "Payout review details",
+      `${isEventPayout ? "Event payout reference" : "Payout reference"}: ${data.payoutId}`,
+      `${isEventPayout ? "Event Manager" : "Seller"}: ${data.sellerName}`,
+      ...(isEventPayout
+        ? data.eventName ? [`Event: ${data.eventName}`] : []
+        : [
+            data.orderReference ? `Order reference: ${data.orderReference}` : "",
+            data.orderTitle ? `Items: ${data.orderTitle}` : "",
+          ]),
       `Amount: ${amount}`,
       data.destination ? `Destination: ${data.destination}` : "",
       `Attempts: ${data.attemptNo}`,
@@ -62,6 +77,6 @@ export function renderPayoutAdminFailedEmail(data: PayoutAdminFailedEmailData) {
       "The payout has reached the maximum automatic retry limit. Review the payout in the admin payout workspace and take the appropriate manual action.",
     ].filter(Boolean).join("\n"),
     action: { label: "Open Admin Payouts", url: data.dashboardUrl },
-    preheader: `Payout ${data.payoutId} requires manual review after ${data.attemptNo} attempts`,
+    preheader: `${isEventPayout ? "Event payout" : "Payout"} ${data.payoutId} requires manual review after ${data.attemptNo} attempts`,
   });
 }
