@@ -14,6 +14,8 @@ export type AdminPayoutFinalFailedInput = {
   attemptNo: number;
   failureReason?: string | null;
   failedAt: string;
+  isEventPayout?: boolean;
+  eventName?: string | null;
 };
 
 export async function notifyAdminsPayoutFinalFailed(input: AdminPayoutFinalFailedInput): Promise<void> {
@@ -36,7 +38,9 @@ export async function notifyAdminsPayoutFinalFailed(input: AdminPayoutFinalFaile
       await sendEmail({
         sender: "notifications",
         to: { email: recipient, name: "BuyMesho Admin" },
-        subject: "BuyMesho payout requires manual review",
+        subject: input.isEventPayout
+          ? "BuyMesho event payout requires manual review"
+          : "BuyMesho payout requires manual review",
         text,
         html,
       });
