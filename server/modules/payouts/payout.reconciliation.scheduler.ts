@@ -1,4 +1,6 @@
 import { getPaymentDb } from '../../postgresCompat.js';
+import { withTransaction } from '../../postgres.js';
+import { createEventPayoutCandidateAsync, resolveEventPayoutContext } from './event-payout.integration.js';
 import { payoutRepository, payoutService } from './payout.service.js';
 import { PAYOUT_POLICY, isRetryableFailureCode } from './payout.policy.js';
 
@@ -166,6 +168,69 @@ export class PayoutReconciliationScheduler {
     if (!this.timer) return;
     clearInterval(this.timer);
     this.timer = undefined;
+  }
+
+  private async recoverMissingEventPayouts(limit: number): Promise<number> {
+    const db = getPaymentDb();
+    const rows = db.prepare(
+      `SELECT o.id, o.seller_id, o.paid_at, o.subtotal_amount, o.subtotal_currency, o.currency
+         FROM orders o
+        WHERE o.source = 'event'
+          AND o.status = 'paid'
+          AND o.paid_at IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1
+              FROM payouts p
+             WHERE p.order_id = o.id
+               AND (p.owner_type = 'event_creator' OR p.event_id IS NOT NULL)
+          )
+        ORDER BY o.paid_at ASC, o.created_at ASC
+        LIMIT ?`,
+    ).all(limit) as Array<{
+      id: string;
+      seller_id: string;
+      paid_at: string | null;
+      subtotal_amount: number;
+      subtotal_currency: string | null;
+      currency: string | null;
+    }>;
+
+    let recovered = 0;
+    for (const row of rows) {
+      try {
+        const candidate = await withTransaction(async (client) => {
+          const event = await resolveEventPayoutContext(row.id, client);
+          if (!event) return null;
+          return createEventPayoutCandidateAsync({
+            orderId: row.id,
+            event,
+            grossAmount: Number(row.subtotal_amount ?? 0),
+            currency: String(row.subtotal_currency ?? row.currency ?? 'MWK').toUpperCase(),
+            requestedBy: 'system',
+            requestedAt: row.paid_at ?? new Date().toISOString(),
+          }, client);
+        });
+
+        if (!candidate?.payout) continue;
+
+        const result = await payoutService.executePayout({
+          payoutId: candidate.payout.id,
+          actorType: 'system',
+        });
+        recovered += candidate.created || result.attempt ? 1 : 0;
+        this.logger.log(
+          `[payout-reconciliation] recovered missing event payout order=${row.id} payout=${candidate.payout.id}`,
+        );
+      } catch (error) {
+        // A legacy paid event may still be missing a bound destination. That is
+        // a configuration problem, not a reason to change listing payout behavior.
+        this.logger.warn(
+          `[payout-reconciliation] event payout recovery skipped order=${row.id}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
+    return recovered;
   }
 
   private async retryEligiblePayouts(limit: number): Promise<number> {
@@ -347,6 +412,11 @@ export class PayoutReconciliationScheduler {
 
     this.running = true;
     try {
+      const recoveredEventPayouts = await this.recoverMissingEventPayouts(this.config.batchLimit);
+      if (recoveredEventPayouts > 0) {
+        this.logger.log(`[payout-reconciliation] recovered ${recoveredEventPayouts} missing event payout(s)`);
+      }
+
       const retriedCount = await this.retryEligiblePayouts(this.config.batchLimit);
       if (retriedCount > 0) {
         this.logger.log(`[payout-reconciliation] retried ${retriedCount} payout(s)`);
