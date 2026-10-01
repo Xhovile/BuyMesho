@@ -199,10 +199,33 @@ export default function EventCreatorDashboardPage() {
     setError(null);
 
     try {
+      const access = (await apiFetch("/api/event-creators/me")) as { canCreateEvents?: boolean };
+      if (access?.canCreateEvents !== true) {
+        const eventId = searchParams.get("event");
+        navigateToPath(
+          eventId ? `${EVENTS_PATH}?event=${encodeURIComponent(eventId)}` : EVENTS_PATH,
+          { replace: true },
+        );
+        return;
+      }
+
       const response = (await apiFetch("/api/event-creator/overview")) as CreatorOverviewResponse;
+      const ownedEvents = Array.isArray(response?.events) ? response.events : [];
+      const requestedEventId = searchParams.get("event");
+      if (
+        requestedEventId &&
+        !ownedEvents.some((event) => String(event.id) === requestedEventId.trim())
+      ) {
+        navigateToPath(
+          `${EVENTS_PATH}?event=${encodeURIComponent(requestedEventId)}`,
+          { replace: true },
+        );
+        return;
+      }
+
       setDashboard({
         creator: response?.creator ?? null,
-        events: Array.isArray(response?.events) ? response.events : [],
+        events: ownedEvents,
         summary: response?.summary ?? {
           totalTicketsSold: 0,
           grossRevenueAmount: 0,
@@ -214,6 +237,14 @@ export default function EventCreatorDashboardPage() {
         },
       });
     } catch (loadError: any) {
+      const eventId = searchParams.get("event");
+      if (eventId) {
+        navigateToPath(
+          `${EVENTS_PATH}?event=${encodeURIComponent(eventId)}`,
+          { replace: true },
+        );
+        return;
+      }
       setError(loadError?.message || "Could not load your event dashboard.");
       setDashboard({
         creator: null,
