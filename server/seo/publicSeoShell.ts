@@ -3,7 +3,7 @@ import type { Request } from "express";
 import { DEFAULT_SEO, getRouteSEO, truncateSeoDescription } from "../../src/lib/seo.js";
 import { getEventAttendanceMode } from "../../src/lib/seoEvent.js";
 import { buildProductJsonLd, isListingOutOfStock } from "../../src/lib/seoProduct.js";
-import { resolveMarketplaceCategory } from "../../src/lib/marketplaceCategories.js";
+import { resolveMarketplaceCategory, type MarketplaceCategorySlug } from "../../src/lib/marketplaceCategories.js";
 
 const SITE_URL = "https://buymesho.app";
 const MAX_SEO_LISTINGS = 12;
@@ -183,6 +183,34 @@ function buildHead(result: SeoRenderResult): string {
   ].join("\n");
 }
 
+const CATEGORY_SEO_CONTENT: Record<MarketplaceCategorySlug, { intro: string; items: string[]; buyingGuide: string[] }> = {
+  "food-snacks": {
+    intro: "Explore meals, snacks, drinks, bakery items, and pantry essentials listed by sellers on BuyMesho in Malawi.",
+    items: ["Meals and prepared food", "Snacks and confectionery", "Drinks and beverages", "Bakery items", "Pantry and grocery essentials"],
+    buyingGuide: ["Compare the listing price and available quantity.", "Open a listing to review its seller and full product details.", "Contact the seller or continue through BuyMesho checkout when available."],
+  },
+  "fashion-clothing": {
+    intro: "Explore clothing, shoes, bags, accessories, thrift finds, and everyday fashion from BuyMesho sellers in Malawi.",
+    items: ["Clothing and campus wear", "Shoes and footwear", "Bags and accessories", "Thrift and pre-owned fashion", "Everyday style essentials"],
+    buyingGuide: ["Check the item description, condition, and sizing information.", "Open the listing to compare the seller's details and price.", "Use BuyMesho checkout or seller contact options to complete the purchase."],
+  },
+  "academic-services": {
+    intro: "Explore study materials, stationery, printing, academic support, books, and other student-focused services available through BuyMesho in Malawi.",
+    items: ["Books and study materials", "Stationery and school supplies", "Printing and document services", "Academic support services", "Calculators and study tools"],
+    buyingGuide: ["Review the service or item description and availability.", "Open the listing to check price, seller information, and delivery or collection details.", "Continue with the seller or BuyMesho checkout options provided on the listing."],
+  },
+  "electronics-gadgets": {
+    intro: "Explore phones, computers, accessories, power products, audio devices, and everyday technology listed on BuyMesho in Malawi.",
+    items: ["Phones and tablets", "Computers and laptops", "Chargers and power products", "Audio and accessories", "Everyday electronics"],
+    buyingGuide: ["Check the condition, key specifications, and price.", "Open the listing for photos, seller information, and full details.", "Complete the purchase through BuyMesho checkout or the seller options shown."],
+  },
+  "beauty-personal-care": {
+    intro: "Explore skincare, hair care, fragrances, cosmetics, and personal care essentials from BuyMesho sellers in Malawi.",
+    items: ["Skincare products", "Hair care products", "Fragrances and body care", "Cosmetics and beauty items", "Personal care essentials"],
+    buyingGuide: ["Read the product description and available size or quantity.", "Open the listing to review seller information and price.", "Use the purchase or seller contact options provided on BuyMesho."],
+  },
+};
+
 function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderResult {
   const normalized = pathname === "/" ? "/" : pathname.replace(/\/+$/, "") || "/";
   const route = normalized === "/category"
@@ -194,45 +222,99 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
     const category = resolveMarketplaceCategory(requestedCategory);
 
     if (category) {
+      const seoContent = CATEGORY_SEO_CONTENT[category.slug];
       const categoryListings = db
         ? db.prepare(
-            "SELECT l.id,l.name FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.category=? AND l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.created_at DESC,l.id DESC LIMIT 8"
-          ).all(category.name) as Array<{ id: number; name?: string | null }>
+            "SELECT l.id,l.name,l.price FROM listings l JOIN sellers s ON l.seller_uid=s.uid WHERE l.category=? AND l.is_hidden=0 AND l.deleted_at IS NULL AND s.is_seller=1 ORDER BY l.created_at DESC,l.id DESC LIMIT 8"
+          ).all(category.name) as Array<{ id: number; name?: string | null; price?: number | string | null }>
         : [];
+
       const listingLinks = categoryListings
         .map((item) =>
           '<li style="margin:0 0 8px"><a href="/listing?listing=' +
           encodeURIComponent(String(item.id)) +
           '">' +
           esc(item.name || "Listing " + item.id) +
+          " · " +
+          esc(formatMoney(item.price)) +
           "</a></li>"
         )
         .join("");
 
+      const canonicalUrl = "/category?category=" + encodeURIComponent(category.slug);
+      const description =
+        "Browse " +
+        category.name.toLowerCase() +
+        " from sellers on BuyMesho's Malawi marketplace.";
+      const jsonLd: Record<string, unknown> = {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: category.name + " in Malawi",
+        description,
+        url: absoluteUrl(canonicalUrl),
+        isPartOf: {
+          "@type": "WebSite",
+          name: "BuyMesho",
+          url: SITE_URL,
+        },
+      };
+
+      if (categoryListings.length) {
+        jsonLd.mainEntity = {
+          "@type": "ItemList",
+          itemListElement: categoryListings.map((item, index) => ({
+            "@type": "ListItem",
+            position: index + 1,
+            name: item.name || "BuyMesho listing " + item.id,
+            url: absoluteUrl(
+              "/listing?listing=" + encodeURIComponent(String(item.id)),
+            ),
+          })),
+        };
+      }
+
       return {
         title: category.name + " in Malawi",
-        description: "Browse " + category.name.toLowerCase() + " from sellers on BuyMesho's Malawi marketplace.",
-        canonicalUrl: "/category?category=" + encodeURIComponent(category.slug),
+        description,
+        canonicalUrl,
         noIndex: false,
+        jsonLd,
         body: bodyFrame(
           category.name + " in Malawi",
           "BuyMesho category",
-          "Browse " + category.name.toLowerCase() + " from sellers across the BuyMesho marketplace.",
+          seoContent.intro,
           [
             { href: "/explore", label: "Explore all listings" },
             { href: "/buy-online-malawi", label: "Buy online in Malawi" },
             { href: "/sell-online-malawi", label: "Sell online in Malawi" },
           ],
           [
+            '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">What you can find</h2><ul style="padding-left:20px">' +
+              seoContent.items
+                .map(
+                  (item) =>
+                    '<li style="margin:0 0 8px">' + esc(item) + "</li>",
+                )
+                .join("") +
+              "</ul></section>",
+            '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">How to buy</h2><ol style="padding-left:20px">' +
+              seoContent.buyingGuide
+                .map(
+                  (step) =>
+                    '<li style="margin:0 0 8px">' + esc(step) + "</li>",
+                )
+                .join("") +
+              "</ol></section>",
             categoryListings.length
-              ? '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">Current listings</h2><ul style="padding-left:20px">' + listingLinks + "</ul></section>"
-              : "",
+              ? '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">Current listings</h2><ul style="padding-left:20px">' +
+                listingLinks +
+                "</ul></section>"
+              : '<section style="margin-top:28px"><h2 style="font-size:24px;margin:0 0 12px">Current listings</h2><p style="color:#52525b;line-height:1.7">There are no active listings in this category right now. The category page remains available for buyers as sellers add new offers.</p><p style="margin-top:10px;color:#52525b;line-height:1.7">Browse the marketplace to explore other categories and current listings.</p></section>',
           ],
         ),
       };
     }
   }
-
   const copy: Record<string, { eyebrow: string; text: string }> = {
     "/": { eyebrow: "BuyMesho marketplace", text: "Browse products, services, sellers, deals, and public events through BuyMesho." },
     "/install": { eyebrow: "Install BuyMesho", text: "Install BuyMesho on your phone for fast access to Malawi's secure e-commerce platform." },
@@ -372,6 +454,8 @@ function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderR
         { href: "/category?category=electronics-gadgets", label: "Electronics & Gadgets" },
         { href: "/category?category=fashion-clothing", label: "Fashion & Clothing" },
         { href: "/category?category=academic-services", label: "Academic Services" },
+        { href: "/category?category=food-snacks", label: "Food & Snacks" },
+        { href: "/category?category=beauty-personal-care", label: "Beauty & Personal Care" },
       ],
       sections,
     ),
