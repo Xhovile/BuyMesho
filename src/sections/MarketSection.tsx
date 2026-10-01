@@ -350,11 +350,15 @@ export default function MarketSection({
           <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-zinc-100">
             <Search className="h-8 w-8 text-zinc-300" />
           </div>
-          <h3 className="text-lg font-bold text-zinc-900">No listings found</h3>
+          <h3 className="text-lg font-bold text-zinc-900">
+            {activeChip === "Wholesale" ? "No wholesale listings found" : "No listings found"}
+          </h3>
           <p className="text-zinc-500">
-            {hasActiveFilters
-              ? "Your current filters may be too restrictive. Remove one filter or clear all to broaden results."
-              : "Try adjusting your search terms or check again later for new listings."}
+            {activeChip === "Wholesale"
+              ? "Wholesale listings on BuyMesho are offered in packs or bulk quantities. Check back as sellers add new wholesale offers."
+              : hasActiveFilters
+                ? "Your current filters may be too restrictive. Remove one filter or clear all to broaden results."
+                : "Try adjusting your search terms or check again later for new listings."}
           </p>
           {hasActiveFilters && (
             <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
