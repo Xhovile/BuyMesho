@@ -1,5 +1,6 @@
 import { query, withTransaction } from "../../postgres.js";
 import type { PoolClient } from "pg";
+import { randomUUID } from "crypto";
 
 export type SellerFinancialAccount = {
   sellerUid: string;
@@ -187,7 +188,7 @@ async function applyDebitInTransaction(
     account: after,
     payoutId: input.payoutId ?? null,
     refundLiabilityId: input.refundLiabilityId ?? null,
-    reference,
+    reference: input.reference ?? null,
     reason: input.reason,
     actorType: input.actorType,
     actorId: input.actorId ?? null,
