@@ -117,6 +117,7 @@ async function notifySellerOfFinalPayoutFailure(
     const orderTitle = buildPayoutOrderTitle(recipient.orderItems);
     const attempt = Number(attemptNo);
     const failedAt = payout.updatedAt || new Date().toISOString();
+    const isEventPayout = payout.ownerType === 'event_creator' || Boolean(payout.eventId);
 
     await notifyPayoutFinalFailed({
       email: recipient.email,
@@ -130,7 +131,7 @@ async function notifySellerOfFinalPayoutFailure(
       attemptNo: attempt,
       failureReason: failureReason?.trim() || null,
       failedAt,
-      isEventPayout: payout.ownerType === 'event_creator' || Boolean(payout.eventId),
+      isEventPayout,
       eventName: recipient.eventName,
       dashboardUrl:
         payout.eventId
@@ -149,6 +150,8 @@ async function notifySellerOfFinalPayoutFailure(
       attemptNo: attempt,
       failureReason: failureReason?.trim() || null,
       failedAt,
+      isEventPayout,
+      eventName: recipient.eventName,
     });
   } catch (error) {
     console.warn('[notification] payout_final_failed email delivery failed', error);
