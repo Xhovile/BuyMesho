@@ -3,7 +3,7 @@ import type { Request } from "express";
 import { DEFAULT_SEO, getRouteSEO, truncateSeoDescription } from "../../src/lib/seo.js";
 import { getEventAttendanceMode } from "../../src/lib/seoEvent.js";
 import { buildProductJsonLd, isListingOutOfStock } from "../../src/lib/seoProduct.js";
-import { resolveMarketplaceCategory } from "../../src/lib/marketplaceCategories.js";
+import { resolveMarketplaceCategory, type MarketplaceCategorySlug } from "../../src/lib/marketplaceCategories.js";
 
 const SITE_URL = "https://buymesho.app";
 const MAX_SEO_LISTINGS = 12;
@@ -182,6 +182,34 @@ function buildHead(result: SeoRenderResult): string {
       : "",
   ].join("\n");
 }
+
+const CATEGORY_SEO_CONTENT: Record<MarketplaceCategorySlug, { intro: string; items: string[]; buyingGuide: string[] }> = {
+  "food-snacks": {
+    intro: "Explore meals, snacks, drinks, bakery items, and pantry essentials listed by sellers on BuyMesho in Malawi.",
+    items: ["Meals and prepared food", "Snacks and confectionery", "Drinks and beverages", "Bakery items", "Pantry and grocery essentials"],
+    buyingGuide: ["Compare the listing price and available quantity.", "Open a listing to review its seller and full product details.", "Contact the seller or continue through BuyMesho checkout when available."],
+  },
+  "fashion-clothing": {
+    intro: "Explore clothing, shoes, bags, accessories, thrift finds, and everyday fashion from BuyMesho sellers in Malawi.",
+    items: ["Clothing and campus wear", "Shoes and footwear", "Bags and accessories", "Thrift and pre-owned fashion", "Everyday style essentials"],
+    buyingGuide: ["Check the item description, condition, and sizing information.", "Open the listing to compare the seller's details and price.", "Use BuyMesho checkout or seller contact options to complete the purchase."],
+  },
+  "academic-services": {
+    intro: "Explore study materials, stationery, printing, academic support, books, and other student-focused services available through BuyMesho in Malawi.",
+    items: ["Books and study materials", "Stationery and school supplies", "Printing and document services", "Academic support services", "Calculators and study tools"],
+    buyingGuide: ["Review the service or item description and availability.", "Open the listing to check price, seller information, and delivery or collection details.", "Continue with the seller or BuyMesho checkout options provided on the listing."],
+  },
+  "electronics-gadgets": {
+    intro: "Explore phones, computers, accessories, power products, audio devices, and everyday technology listed on BuyMesho in Malawi.",
+    items: ["Phones and tablets", "Computers and laptops", "Chargers and power products", "Audio and accessories", "Everyday electronics"],
+    buyingGuide: ["Check the condition, key specifications, and price.", "Open the listing for photos, seller information, and full details.", "Complete the purchase through BuyMesho checkout or the seller options shown."],
+  },
+  "beauty-personal-care": {
+    intro: "Explore skincare, hair care, fragrances, cosmetics, and personal care essentials from BuyMesho sellers in Malawi.",
+    items: ["Skincare products", "Hair care products", "Fragrances and body care", "Cosmetics and beauty items", "Personal care essentials"],
+    buyingGuide: ["Read the product description and available size or quantity.", "Open the listing to review seller information and price.", "Use the purchase or seller contact options provided on BuyMesho."],
+  },
+};
 
 function staticSeoResult(pathname: string, search: string, db?: any): SeoRenderResult {
   const normalized = pathname === "/" ? "/" : pathname.replace(/\/+$/, "") || "/";
