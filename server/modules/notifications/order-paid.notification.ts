@@ -18,6 +18,9 @@ type NotificationDependencies = {
   claim?: (notificationType: string, dedupeKey: string) => boolean;
   markSent?: (notificationType: string, dedupeKey: string) => void;
   release?: (notificationType: string, dedupeKey: string) => void;
+  resolveRecipient?: typeof resolveNotificationRecipient;
+  getSellerBusinessName?: typeof getSellerBusinessName;
+  getEventCreatorDisplayName?: typeof getEventCreatorDisplayName;
 };
 
 async function getSellerBusinessName(sellerUid: string): Promise<string | null> {
@@ -109,15 +112,16 @@ async function sendOrderPaidEmail(
     deps.release ?? ((type: string, key: string) => releaseEmailNotification(type, key));
 
   const recipientId = role === "buyer" ? order.buyerId : order.sellerId;
-  const userRecord = await resolveNotificationRecipient(recipientId);
+  const resolveRecipient = deps.resolveRecipient ?? resolveNotificationRecipient;
+  const userRecord = await resolveRecipient(recipientId);
   const email = userRecord.email?.trim();
   if (!email) return;
 
   if (!claim(notificationType, dedupeKey)) return;
 
-  const sellerBusinessName = await getSellerBusinessName(order.sellerId);
+  const sellerBusinessName = await (deps.getSellerBusinessName ?? getSellerBusinessName)(order.sellerId);
   const eventCreatorDisplayName = order.source === "event"
-    ? await getEventCreatorDisplayName(order.sellerId)
+    ? await (deps.getEventCreatorDisplayName ?? getEventCreatorDisplayName)(order.sellerId)
     : null;
   const eventTicketHolderName = getEventTicketHolderName(order);
   const buyerCheckoutName = order.buyerDetails?.fullName?.trim() || eventTicketHolderName;
