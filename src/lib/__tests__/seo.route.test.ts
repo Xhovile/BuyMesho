@@ -485,16 +485,24 @@ test("server SEO shell canonicalizes category documents and invalid category doc
   assert.equal(invalid.noIndex, true);
   assert.equal(invalid.canonicalUrl, "/category");
 
+  const activeCategoryDb = {
+    prepare() {
+      return {
+        all: () => [{ id: 42, name: "Sample listing", price: 5000 }],
+      };
+    },
+  };
+
   const valid = renderSeoDocument(
     { path: "/category", originalUrl: "/category?category=phones" } as any,
-    emptySeoDb,
+    activeCategoryDb,
   );
   assert.equal(valid.noIndex, false);
   assert.equal(valid.canonicalUrl, "/category?category=electronics-gadgets");
 
   const canonical = renderSeoDocument(
     { path: "/category", originalUrl: "/category?category=academic-services" } as any,
-    emptySeoDb,
+    activeCategoryDb,
   );
   assert.equal(canonical.noIndex, false);
   assert.equal(canonical.canonicalUrl, "/category?category=academic-services");
@@ -506,7 +514,7 @@ test("category SEO pages are substantive even when inventory is empty", () => {
     emptySeoDb,
   );
 
-  assert.equal(rendered.noIndex, false);
+  assert.equal(rendered.noIndex, true);
   assert.equal(rendered.canonicalUrl, "/category?category=food-snacks");
   assert.match(rendered.title, /Food & Snacks in Malawi/);
   assert.match(rendered.body, /Explore meals, snacks, drinks/);
@@ -540,6 +548,21 @@ test("category SEO pages expose current listing links and ItemList schema", () =
   const elements = mainEntity?.itemListElement as Array<Record<string, unknown>>;
   assert.equal(elements?.length, 2);
   assert.equal(elements?.[0]?.url, "https://buymesho.app/listing?listing=17");
+});
+
+test("empty category pages are excluded from the sitemap", () => {
+  const sitemap = readFileSync(resolve(process.cwd(), "server/routes/sitemap.routes.ts"), "utf8");
+
+  assert.match(sitemap, /const indexableCategoryNames = new Set/);
+  assert.match(sitemap, /\.filter\(\(category\) => indexableCategoryNames\.has\(category\.name\)\)/);
+  assert.match(sitemap, /publicPages\.push\(/);
+});
+
+test("category client SEO follows listing availability", () => {
+  const source = readFileSync(resolve(process.cwd(), "src/CategoryPage.tsx"), "utf8");
+
+  assert.match(source, /noIndex: items\.length === 0/);
+  assert.match(source, /items\.length, requestedCategory/);
 });
 
 test("SEO sitemap and public navigation use canonical category URLs", () => {
