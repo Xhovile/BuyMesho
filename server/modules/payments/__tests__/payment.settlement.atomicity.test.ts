@@ -129,14 +129,12 @@ test('verified event payment creates and immediately submits an escrow-free payo
 });
 
 
-test('successful event payment remains paid when payout setup fails after capture commit',async()=>{
+test('successful event payment remains paid and notification flow continues when payout setup fails after capture commit',async()=>{
   await seedEventDirect();
   await query('UPDATE events SET payout_destination_id = NULL WHERE id = $1',[eventId]);
   try{
-    await assert.rejects(
-      ()=>applyVerifiedPayChanguPayment({verified:true,provider:'paychangu',status:'successful',reference:eventPaymentReference,txRef:eventPaymentReference,amount:{amount:10300,currency:'MWK'},currency:'MWK'}),
-      /Event ticket order could not resolve its payout destination/,
-    );
+    const result=await applyVerifiedPayChanguPayment({verified:true,provider:'paychangu',status:'successful',reference:eventPaymentReference,txRef:eventPaymentReference,amount:{amount:10300,currency:'MWK'},currency:'MWK'});
+    assert.equal(result.order?.id,eventOrderId);
     assert.equal((await paymentRepository.findByReferenceAsync(eventPaymentReference))?.status,'captured');
     assert.equal((await paymentRepository.findByReferenceAsync(eventPaymentReference))?.verified,true);
     assert.equal((await orderRepository.findByIdAsync(eventOrderId))?.status,'paid');
