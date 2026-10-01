@@ -8,7 +8,7 @@ import { payoutRepository, payoutService } from '../payouts/payout.service.js';
 import { getConnectAccount } from '../connect/connect.service.js';
 import { calculatePayoutFormula } from '../payouts/payout.policy.js';
 import { createEventPayoutCandidateAsync, resolveEventPayoutContext } from '../payouts/event-payout.integration.js';
-import { withTransaction } from '../../postgres.js';
+import { query, withTransaction } from '../../postgres.js';
 import type { PoolClient } from 'pg';
 import { getPaymentDb } from '../../postgresCompat.js';
 import { isPaychanguSuccessStatus } from './paychangu.provider.js';
