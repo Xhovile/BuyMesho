@@ -5,6 +5,14 @@
       "dest": "https://buymesho.onrender.com/api/$1"
     },
     {
+      "src": "/sitemap\\.xml",
+      "dest": "https://buymesho.onrender.com/api/seo/sitemap.xml"
+    },
+    {
+      "src": "/sitemap-(.*)\\.xml",
+      "dest": "https://buymesho.onrender.com/api/seo/sitemap-$1.xml"
+    },
+    {
       "handle": "filesystem"
     },
     {

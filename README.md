@@ -1,6 +1,6 @@
 # BuyMesho
 
-**A campus marketplace for university students in Malawi, built around internal messaging, secure checkout, and payment-led commerce.**
+**A public online marketplace in Malawi for discovering and buying products, services, deals, and event tickets.**
 
 ## Overview 
 

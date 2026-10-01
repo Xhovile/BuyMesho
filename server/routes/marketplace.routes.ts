@@ -96,6 +96,7 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
       page = "1",
       pageSize = "12",
       specFilters,
+      listingMode,
     } = req.query;
 
     let baseQuery = `
@@ -103,6 +104,7 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
       JOIN sellers s ON l.seller_uid = s.uid
       WHERE l.is_hidden = 0
         AND l.deleted_at IS NULL
+        AND s.is_seller = 1
     `;
 
     const params: any[] = [];
@@ -110,6 +112,10 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
     if (category && typeof category === "string") {
       baseQuery += " AND l.category = ?";
       params.push(category);
+    }
+
+    if (listingMode === "wholesale") {
+      baseQuery += " AND (l.listing_mode = 'wholesale' OR l.is_wholesale = 1 OR COALESCE(l.pack_size, 0) > 1)";
     }
 
     if (subcategory && typeof subcategory === "string") {
@@ -249,6 +255,7 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
           FROM listings l
           JOIN sellers s ON l.seller_uid = s.uid
           WHERE l.id = ? AND l.is_hidden = 0 AND l.deleted_at IS NULL
+            AND s.is_seller = 1
           LIMIT 1
         `)
         .get(listingId) as any;
@@ -277,9 +284,11 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
     try {
       const currentListing = db
         .prepare(`
-          SELECT id, category, subcategory, item_type, university
-          FROM listings
-          WHERE id = ? AND is_hidden = 0 AND deleted_at IS NULL
+          SELECT l.id, l.category, l.subcategory, l.item_type, l.university
+          FROM listings l
+          JOIN sellers s ON l.seller_uid = s.uid
+          WHERE l.id = ? AND l.is_hidden = 0 AND l.deleted_at IS NULL
+            AND s.is_seller = 1
           LIMIT 1
         `)
         .get(listingId) as
@@ -303,6 +312,7 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
           JOIN sellers s ON l.seller_uid = s.uid
           WHERE l.is_hidden = 0
             AND l.deleted_at IS NULL
+            AND s.is_seller = 1
             AND l.id != ?
             AND l.category = ?
             AND l.university = ?

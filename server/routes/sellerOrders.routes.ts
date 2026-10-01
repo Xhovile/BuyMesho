@@ -54,6 +54,10 @@ function parseJsonArray<T>(value: unknown, fallback: T[] = []): T[] {
   }
 }
 
+function isSellerWorkspaceOrderSource(source: unknown): boolean {
+  return !['event', 'mixed'].includes(String(source ?? '').trim().toLowerCase());
+}
+
 function rowToSellerOrder(row: SellerOrderRow): StoredOrder {
   const items = parseJsonArray<StoredOrder['items'][number]>(row.items);
   let buyerDetails: StoredOrder['buyerDetails'] = null;
@@ -112,7 +116,9 @@ function buildRefundRequest(row: SellerOrderRow) {
   return { id: row.refund_request_id, status: row.refund_request_status ?? null, requestType: row.refund_request_type ?? null, amountRequested: Number(row.refund_requested_amount ?? 0), requestedResolution: row.refund_requested_resolution ?? null, windowEndsAt: row.refund_window_ends_at ?? null };
 }
 function buildSellerOrderBundle(row: SellerOrderRow, sellerUid: string) {
-  const order = rowToSellerOrder(row); if (String(order.sellerId) !== sellerUid) return null;
+  const order = rowToSellerOrder(row);
+  if (!isSellerWorkspaceOrderSource(order.source)) return null;
+  if (String(order.sellerId) !== sellerUid) return null;
   return { order, payment: buildPayment(row), escrow: buildEscrow(row), payoutStatus: row.payout_status ?? null, payout: { status: row.payout_status ?? null, createdAt: row.payout_created_at ?? null, paidAt: row.payout_paid_at ?? null, failedAt: row.payout_failed_at ?? null, updatedAt: row.payout_updated_at ?? null }, dispute: buildDispute(row), refundRequest: buildRefundRequest(row) };
 }
 
@@ -130,7 +136,7 @@ const SELLER_ORDER_SELECT = `
   LEFT JOIN escrows e ON e.order_id = o.id
   LEFT JOIN LATERAL (SELECT id, escrow_id, opened_by, status, reason, created_at, updated_at FROM disputes WHERE disputes.order_id = o.id ORDER BY disputes.created_at DESC LIMIT 1) d ON TRUE
   LEFT JOIN LATERAL (SELECT id, status, outcome, window_ends_at, opened_at, resolved_at, resolution_owner, payout_status_at_submission FROM dispute_cases WHERE dispute_cases.order_id = o.id ORDER BY dispute_cases.created_at DESC LIMIT 1) dc ON TRUE
-  LEFT JOIN LATERAL (SELECT id, status, reason, resolution_note, requested_resolution FROM dispute_attempts WHERE dispute_attempts.case_id = dc.id ORDER BY dispute_attempts.created_at DESC LIMIT 1) da ON TRUE
+  LEFT JOIN LATERAL (SELECT id, status, reason, resolution_note, requested_resolution, evidence FROM dispute_attempts WHERE dispute_attempts.case_id = dc.id ORDER BY dispute_attempts.created_at DESC LIMIT 1) da ON TRUE
   LEFT JOIN LATERAL (SELECT id, status, request_type, amount_requested, requested_resolution, window_ends_at FROM refund_requests WHERE refund_requests.order_id = o.id ORDER BY refund_requests.created_at DESC LIMIT 1) rr ON TRUE`;
 
 export function createSellerOrdersRouter(requireAuth: RequestHandler): express.Router {
@@ -145,6 +151,7 @@ export function createSellerOrdersRouter(requireAuth: RequestHandler): express.R
            (SELECT COUNT(*)
               FROM orders o
              WHERE o.seller_id = $1
+               AND o.source NOT IN ('event', 'mixed')
                AND o.status NOT IN ('draft', 'pending_payment', 'fulfilled', 'closed')
                AND (
                  COALESCE(o.delivery_status, 'action_required') = 'action_required'
@@ -186,7 +193,7 @@ export function createSellerOrdersRouter(requireAuth: RequestHandler): express.R
   router.get('', requireAuth, async (req: any, res) => {
     try {
       const sellerUid = String(req.user?.uid ?? '').trim(); if (!sellerUid) return res.status(401).json({ error: 'Authentication required' });
-      const result = await query<SellerOrderRow>(`${SELLER_ORDER_SELECT}\nWHERE o.seller_id = $1 AND o.status NOT IN ('draft', 'pending_payment')\nORDER BY o.created_at DESC`, [sellerUid]);
+      const result = await query<SellerOrderRow>(`${SELLER_ORDER_SELECT}\nWHERE o.seller_id = $1 AND o.status NOT IN ('draft', 'pending_payment')\n      AND o.source NOT IN ('event', 'mixed')\nORDER BY o.created_at DESC`, [sellerUid]);
       return res.json(result.rows.map((row) => buildSellerOrderBundle(row, sellerUid)).filter((bundle): bundle is NonNullable<ReturnType<typeof buildSellerOrderBundle>> => Boolean(bundle)));
     } catch (error) { return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to fetch seller orders' }); }
   });
@@ -195,14 +202,15 @@ export function createSellerOrdersRouter(requireAuth: RequestHandler): express.R
     catch (error) { return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to fetch seller order' }); }
   });
   router.post('/:id/mark-pending-delivery', requireAuth, async (req: any, res) => {
-    try { const sellerUid = String(req.user?.uid ?? '').trim(); const orderId = decodeURIComponent(String(req.params.id ?? '')).trim(); if (!sellerUid) return res.status(401).json({ error: 'Authentication required' }); if (!orderId) return res.status(400).json({ error: 'Order id is required' }); const current = orderRepository.findById(orderId); if (!current || String(current.sellerId) !== sellerUid) return res.status(404).json({ error: 'Seller order not found' }); if (['draft', 'pending_payment', 'cancelled', 'refunded', 'closed'].includes(current.status)) return res.status(400).json({ error: 'This order cannot be marked as pending delivery' }); const updated = serverOrderService.markPendingDelivery(orderId); if (!updated) return res.status(404).json({ error: 'Seller order not found' }); return res.json(await buildSellerOrderBundleFromId(updated.id, sellerUid)); }
+    try { const sellerUid = String(req.user?.uid ?? '').trim(); const orderId = decodeURIComponent(String(req.params.id ?? '')).trim(); if (!sellerUid) return res.status(401).json({ error: 'Authentication required' }); if (!orderId) return res.status(400).json({ error: 'Order id is required' }); const current = orderRepository.findById(orderId); if (!current || !isSellerWorkspaceOrderSource(current.source) || String(current.sellerId) !== sellerUid) return res.status(404).json({ error: 'Seller order not found' }); if (['draft', 'pending_payment', 'cancelled', 'refunded', 'closed'].includes(current.status)) return res.status(400).json({ error: 'This order cannot be marked as pending delivery' }); const updated = serverOrderService.markPendingDelivery(orderId); if (!updated) return res.status(404).json({ error: 'Seller order not found' }); return res.json(await buildSellerOrderBundleFromId(updated.id, sellerUid)); }
     catch (error) { return res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to mark order as pending delivery' }); }
   });
   return router;
 }
 
 async function buildSellerOrderBundleFromId(orderId: string, sellerUid: string) {
-  const order = await orderRepository.findByIdAsync(orderId); if (!order || String(order.sellerId) !== sellerUid) return null;
+  const order = await orderRepository.findByIdAsync(orderId);
+  if (!order || !isSellerWorkspaceOrderSource(order.source) || String(order.sellerId) !== sellerUid) return null;
   const [payment, escrow, context] = await Promise.all([
     order.paymentReference ? paymentRepository.findByReferenceAsync(order.paymentReference) : Promise.resolve(undefined),
     escrowRepository.findByOrderIdAsync(order.id),

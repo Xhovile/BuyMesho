@@ -57,6 +57,63 @@ function getSellerDistribution(db: any, sellerUid: string) {
 export function registerSellerProfileRoutes(app: Express, deps: SellerProfileRouteDeps) {
   const { db } = deps;
 
+  app.get("/api/sellers", (req, res) => {
+    if (req.query.public !== undefined && req.query.public !== "true" && req.query.public !== "1") {
+      return res.status(400).json({ error: "Invalid public sellers query" });
+    }
+
+    try {
+      const rows = db
+        .prepare(
+          `
+            SELECT
+              s.uid,
+              s.business_name,
+              s.business_logo,
+              s.bio,
+              s.university,
+              s.is_verified,
+              s.join_date,
+              s.profile_views,
+              COALESCE((
+                SELECT COUNT(*)
+                FROM listings l
+                WHERE l.seller_uid = s.uid
+                  AND l.is_hidden = 0
+                  AND l.deleted_at IS NULL
+              ), 0) AS listing_count,
+              COALESCE((
+                SELECT AVG(sr.stars)
+                FROM seller_ratings sr
+                WHERE sr.seller_uid = s.uid
+              ), 0) AS average_rating,
+              COALESCE((
+                SELECT COUNT(*)
+                FROM seller_ratings sr
+                WHERE sr.seller_uid = s.uid
+              ), 0) AS rating_count
+            FROM sellers s
+            WHERE s.is_seller = 1
+            ORDER BY
+              s.is_verified DESC,
+              average_rating DESC,
+              listing_count DESC,
+              s.join_date DESC,
+              s.uid ASC
+          `
+        )
+        .all();
+
+      return res.json({
+        items: rows,
+        total: rows.length,
+      });
+    } catch (error) {
+      console.error("Failed to load public sellers", error);
+      return res.status(500).json({ error: "Failed to load sellers" });
+    }
+  });
+
   app.get("/api/sellers/:uid", (req, res) => {
     const uid = String(req.params.uid || "").trim();
     if (!uid) {

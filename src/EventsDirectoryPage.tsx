@@ -8,11 +8,14 @@ import FormDropdown from "./components/FormDropdown";
 import FloatingCartButton from "./components/FloatingCartButton";
 import Header from "./components/Header";
 import AppFooter from "./components/AppFooter";
-import { EventCard, type EventRecord } from "./components/events/EventCard";
+import SeoInternalLinks from "./components/SeoInternalLinks";
+import { EventCard } from "./components/events/EventCard";
+import type { EventRecord } from "./components/eventDetails/eventDetailsTypes";
 import { API_CACHE_TTL_MS, isCachedApiResponseFresh, readCachedApiJson } from "./lib/apiCache";
 import {
   EVENTS_CREATE_PATH,
   EVENTS_MANAGE_PATH,
+  TICKET_VALIDATOR_URL,
   getMarketChipFromLocation,
   navigateToCreateListing,
   navigateToMarketChip,
@@ -424,6 +427,32 @@ export default function EventsDirectoryPage() {
           )}
         </section>
       </main>
+
+      <SeoInternalLinks context="events" />
+
+      <section className="mx-auto w-full max-w-7xl px-4 pb-10 pt-4 sm:px-6 sm:pb-12 lg:px-8">
+        <div className="flex flex-col gap-5 rounded-[2rem] border border-green-200 bg-green-50/70 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-7">
+          <div className="flex items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-green-600 text-white shadow-sm">
+              <span className="text-lg font-black">✓</span>
+            </div>
+            <div>
+              <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-green-700">For event organizers</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight text-zinc-950">Need to validate tickets?</h2>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-700">Use Ticket Validator to check event tickets at entry.</p>
+            </div>
+          </div>
+          <a
+            href={TICKET_VALIDATOR_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-green-700"
+          >
+            Open Ticket Validator
+            <ArrowRight className="h-4 w-4" />
+          </a>
+        </div>
+      </section>
 
       <AppFooter />
     </div>

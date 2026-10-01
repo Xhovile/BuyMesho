@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+
 @import "tailwindcss";
 
 @theme {
@@ -154,4 +156,22 @@ main > div.pb-20 section {
     animation-duration: 0s;
     transform: translateX(260%);
   }
+}
+
+
+/* Buy/Sell guide typography: based on the XOXO Catalog type system. */
+.guide-page {
+  font-family: 'DM Sans', sans-serif;
+}
+.guide-page .guide-display,
+.guide-page h1,
+.guide-page h2,
+.guide-page h3 {
+  font-family: 'Playfair Display', serif;
+}
+.guide-page .guide-chapter-number {
+  color: #2563eb;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.05em;
 }

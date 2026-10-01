@@ -5,6 +5,7 @@ import AccountPageShell from "./components/AccountPageShell";
 import EventCreatorOverviewPage from "./EventCreatorOverviewPage";
 import { apiFetch } from "./lib/api";
 import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, EVENTS_PATH, navigateToLoginWithReturnPath, navigateToPath } from "./lib/appNavigation";
+import { TICKET_VALIDATOR_URL } from "./lib/appNavigation.paths";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { useLocationSearch } from "./hooks/useLocationSearch";
 
@@ -198,10 +199,33 @@ export default function EventCreatorDashboardPage() {
     setError(null);
 
     try {
+      const access = (await apiFetch("/api/event-creators/me")) as { canCreateEvents?: boolean };
+      if (access?.canCreateEvents !== true) {
+        const eventId = searchParams.get("event");
+        navigateToPath(
+          eventId ? `${EVENTS_PATH}?event=${encodeURIComponent(eventId)}` : EVENTS_PATH,
+          { replace: true },
+        );
+        return;
+      }
+
       const response = (await apiFetch("/api/event-creator/overview")) as CreatorOverviewResponse;
+      const ownedEvents = Array.isArray(response?.events) ? response.events : [];
+      const requestedEventId = searchParams.get("event");
+      if (
+        requestedEventId &&
+        !ownedEvents.some((event) => String(event.id) === requestedEventId.trim())
+      ) {
+        navigateToPath(
+          `${EVENTS_PATH}?event=${encodeURIComponent(requestedEventId)}`,
+          { replace: true },
+        );
+        return;
+      }
+
       setDashboard({
         creator: response?.creator ?? null,
-        events: Array.isArray(response?.events) ? response.events : [],
+        events: ownedEvents,
         summary: response?.summary ?? {
           totalTicketsSold: 0,
           grossRevenueAmount: 0,
@@ -213,6 +237,14 @@ export default function EventCreatorDashboardPage() {
         },
       });
     } catch (loadError: any) {
+      const eventId = searchParams.get("event");
+      if (eventId) {
+        navigateToPath(
+          `${EVENTS_PATH}?event=${encodeURIComponent(eventId)}`,
+          { replace: true },
+        );
+        return;
+      }
       setError(loadError?.message || "Could not load your event dashboard.");
       setDashboard({
         creator: null,
@@ -308,14 +340,25 @@ export default function EventCreatorDashboardPage() {
   };
 
   const dashboardButton = (
-    <button
-      type="button"
-      onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?view=dashboard`, { scroll: false })}
-      className="inline-flex items-center gap-2 rounded-2xl border border-emerald-950 bg-emerald-100 px-4 py-2.5 text-sm font-extrabold text-emerald-950 shadow-sm shadow-emerald-950/10 transition hover:bg-emerald-200"
-    >
-      <BarChart3 className="h-4 w-4" />
-      Dashboard
-    </button>
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?view=dashboard`, { scroll: false })}
+        className="inline-flex items-center gap-2 rounded-2xl border border-emerald-950 bg-emerald-100 px-4 py-2.5 text-sm font-extrabold text-emerald-950 shadow-sm shadow-emerald-950/10 transition hover:bg-emerald-200"
+      >
+        <BarChart3 className="h-4 w-4" />
+        Dashboard
+      </button>
+      <a
+        href={TICKET_VALIDATOR_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 rounded-2xl border border-green-600 bg-green-600 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700"
+      >
+        <ExternalLink className="h-4 w-4" />
+        Open Ticket Validator
+      </a>
+    </div>
   );
 
   if (authLoading || loading) {

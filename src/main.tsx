@@ -287,6 +287,9 @@ class AppErrorBoundary extends Component<
   }
 }
 
+// The server sends a crawlable HTML snapshot outside the React root.
+document.getElementById('seo-prerender')?.remove();
+
 const isStandaloneServicePage = isXhovileStudioPath(window.location.pathname);
 
 createRoot(document.getElementById('root')!).render(

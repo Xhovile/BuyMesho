@@ -21,25 +21,60 @@ import { startConversationFromEvent } from "../../lib/messages";
 import { navigateToConversation } from "../../lib/messagesNavigation";
 import { useAuthUser } from "../../hooks/useAuthUser";
 import { upsertEventCartItem } from "../../lib/eventCart";
+import { resetSEOMetaTags, truncateSeoDescription, updateSEOMetaTags } from "../../lib/seo";
+import { getEventAttendanceMode } from "../../lib/seoEvent";
+import { trackPublicPageView } from "../../lib/analytics";
 import FeedbackModal from "../FeedbackModal";
 import ConfirmModal from "../ConfirmModal";
 import TicketHolderForm, { type TicketHolderInformation } from "../tickets/TicketHolderForm";
 
+type EventRouteState = {
+  eventId: number | null;
+  autoBuyRequested: boolean;
+};
+
+export function getEventRouteState(search: string): EventRouteState {
+  const params = new URLSearchParams(search);
+  const raw = params.get("event");
+  const parsed = raw ? Number(raw) : NaN;
+
+  return {
+    eventId: Number.isInteger(parsed) && parsed > 0 ? parsed : null,
+    autoBuyRequested: params.get("buy") === "1",
+  };
+}
+
 export default function EventDetailsView() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
-  const eventId = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    const params = new URLSearchParams(window.location.search);
-    const raw = params.get("event");
-    if (!raw) return null;
-    const parsed = Number(raw);
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-  }, []);
-  const autoBuyRequested = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    return new URLSearchParams(window.location.search).get("buy") === "1";
-  }, []);
+  const [eventRouteState, setEventRouteState] = useState<EventRouteState>(() =>
+    typeof window === "undefined"
+      ? { eventId: null, autoBuyRequested: false }
+      : getEventRouteState(window.location.search)
+  );
+  const eventId = eventRouteState.eventId;
+  const autoBuyRequested = eventRouteState.autoBuyRequested;
   const autoBuyHandledRef = useRef(false);
+  const trackedEventPathRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const syncEventRouteState = () => {
+      setEventRouteState(getEventRouteState(window.location.search));
+    };
+
+    window.addEventListener("popstate", syncEventRouteState);
+    return () => window.removeEventListener("popstate", syncEventRouteState);
+  }, []);
+
+  useEffect(() => {
+    autoBuyHandledRef.current = false;
+    setEvent(null);
+    setError(null);
+    setNotice(null);
+    setTicketHolderOpen(false);
+    setAuthPromptOpen(false);
+    setAuthPromptAction(null);
+    setLoading(eventId !== null);
+  }, [eventId, autoBuyRequested]);
 
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,11 +85,11 @@ export default function EventDetailsView() {
   const [cartNoticeOpen, setCartNoticeOpen] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | "cart" | null>(null);
-  const [coreOpen, setCoreOpen] = useState(() => {
+  const [coreOpen, setCoreOpen] = useState(true);
+  const [extraOpen, setExtraOpen] = useState(() => {
     if (typeof window === "undefined") return false;
-    return window.matchMedia("(max-width: 767px)").matches;
+    return window.matchMedia("(min-width: 768px)").matches;
   });
-  const [extraOpen, setExtraOpen] = useState(false);
 
   useEffect(() => {
     if (!eventId) {
@@ -97,6 +132,121 @@ export default function EventDetailsView() {
   const canBuyOrCart = !!event && isPublished;
   const shouldShowMenu = !!event && !canManageEvent;
 
+  useEffect(() => {
+    const requestedEventId = eventId ? String(eventId) : "";
+    const unavailableCanonical = requestedEventId
+      ? `https://buymesho.app/explore/events?event=${encodeURIComponent(requestedEventId)}`
+      : "https://buymesho.app/explore/events";
+
+    if (!event) {
+      updateSEOMetaTags({
+        title: "Event unavailable | BuyMesho Events",
+        description: "This BuyMesho event is unavailable or could not be loaded.",
+        url: unavailableCanonical,
+        noIndex: true,
+      });
+      return () => {
+        resetSEOMetaTags();
+      };
+    }
+
+    const canonicalUrl = `https://buymesho.app/explore/events?event=${encodeURIComponent(String(event.id))}`;
+    const absolutePosterUrl = posterUrl
+      ? new URL(posterUrl, window.location.origin).toString()
+      : undefined;
+    const startDate = /^\d{4}-\d{2}-\d{2}$/.test(event.event_date)
+      ? `${event.event_date}`
+      : undefined;
+    const timeMatch = (event.start_time || "").trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    const schemaStartDate =
+      startDate && timeMatch
+        ? `${startDate}T${String(Number(timeMatch[1])).padStart(2, "0")}:${timeMatch[2]}:${timeMatch[3] || "00"}+02:00`
+        : startDate;
+    const isFree = event.ticket_price === null || Number(event.ticket_price) <= 0;
+    const description = truncateSeoDescription(
+      event.description?.trim() ||
+        `${event.event_title} by ${event.organizer_name} in ${event.location}.`,
+    );
+
+    updateSEOMetaTags({
+      title: `${event.event_title} | BuyMesho Events`,
+      description,
+      image: absolutePosterUrl,
+      imageAlt: event.poster_alt?.trim() || `${event.event_title} event poster`,
+      url: canonicalUrl,
+      noIndex: false,
+      jsonLd: {
+        "@context": "https://schema.org",
+        "@type": "Event",
+        "@id": `${canonicalUrl}#event`,
+        "name": event.event_title,
+        "description": event.description?.trim() || undefined,
+        ...(schemaStartDate ? { "startDate": schemaStartDate } : {}),
+        ...(absolutePosterUrl ? { "image": [absolutePosterUrl] } : {}),
+        "eventStatus":
+          event.status === "cancelled"
+            ? "https://schema.org/EventCancelled"
+            : "https://schema.org/EventScheduled",
+        ...(getEventAttendanceMode(event.spec_values) ? { "eventAttendanceMode": getEventAttendanceMode(event.spec_values) } : {}),
+        "location": {
+          "@type": "Place",
+          "name": event.venue,
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": event.location,
+            "addressCountry": "MW",
+          },
+        },
+        ...(event.organizer_name?.trim()
+          ? {
+              "organizer": {
+                "@type": "Organization",
+                "name": event.organizer_name.trim(),
+              },
+            }
+          : {}),
+        "offers": {
+          "@type": "Offer",
+          "url": canonicalUrl,
+          "price": isFree ? 0 : Number(event.ticket_price),
+          "priceCurrency": "MWK",
+          "availability":
+            event.status === "cancelled"
+              ? "https://schema.org/OutOfStock"
+              : "https://schema.org/InStock",
+        },
+        ...(isFree ? { "isAccessibleForFree": true } : {}),
+      },
+      keywords: [
+        event.event_title,
+        event.event_type,
+        "BuyMesho events",
+        "events Malawi",
+        "event tickets Malawi",
+      ].filter(Boolean),
+    });
+
+    const liveEventId =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("event")?.trim() || ""
+        : "";
+
+    if (event.id === eventId && liveEventId === String(event.id)) {
+      const eventPath = `${EVENTS_PATH}?event=${encodeURIComponent(String(event.id))}`;
+      if (trackedEventPathRef.current !== eventPath) {
+        trackPublicPageView({
+          pathname: eventPath,
+          route: "explore",
+        });
+        trackedEventPathRef.current = eventPath;
+      }
+    }
+
+    return () => {
+      resetSEOMetaTags();
+    };
+  }, [event, eventId, posterUrl]);
+  
   const clearNotice = () => setNotice(null);
 
   const openAuthPrompt = (action: "message" | "buy" | "cart") => {
@@ -164,10 +314,18 @@ export default function EventDetailsView() {
   }, [canBuyOrCart, event, firebaseUser?.uid]);
 
   useEffect(() => {
-    if (!autoBuyRequested || authLoading || !event || autoBuyHandledRef.current) return;
+    if (
+      !autoBuyRequested ||
+      authLoading ||
+      !event ||
+      event.id !== eventId ||
+      autoBuyHandledRef.current
+    ) {
+      return;
+    }
     autoBuyHandledRef.current = true;
     handleBuyTicket();
-  }, [autoBuyRequested, authLoading, event, handleBuyTicket]);
+  }, [autoBuyRequested, authLoading, event, eventId, handleBuyTicket]);
 
   const submitTicketHolder = async (ticketHolder: TicketHolderInformation) => {
     if (!event || !firebaseUser?.uid) return;

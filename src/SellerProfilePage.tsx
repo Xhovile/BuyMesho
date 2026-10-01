@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, Loader2, MessageCircle, Search, ShieldCheck, Star } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
@@ -14,9 +14,12 @@ import {
 import FloatingCartButton from "./components/FloatingCartButton";
 import AppFooter from "./components/AppFooter";
 import ListingHeaderBar from "./components/listingDetails/ListingHeaderBar";
+import SeoInternalLinks from "./components/SeoInternalLinks";
 import { readPersistentPageCache, writePersistentPageCache } from "./lib/persistentPageCache";
 import { startConversationWithSeller } from "./lib/messages";
 import { navigateToConversation } from "./lib/messagesNavigation";
+import { resetSEOMetaTags, truncateSeoDescription, updateSEOMetaTags } from "./lib/seo";
+import { trackPublicPageView } from "./lib/analytics";
 
 type SellerProfile = {
   uid?: string;
@@ -243,6 +246,7 @@ export default function SellerProfilePage() {
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [messageLoading, setMessageLoading] = useState(false);
   const [listingSearch, setListingSearch] = useState("");
+  const trackedSellerPathRef = useRef<string | null>(null);
 
   useEffect(() => {
     const syncSellerUid = () => setSellerUid(getSellerUidFromUrl() || "");
@@ -330,6 +334,71 @@ export default function SellerProfilePage() {
     );
   }, [listings, listingSearch]);
 
+  useEffect(() => {
+    const canonicalUrl = sellerUid
+      ? `https://buymesho.app/seller?uid=${encodeURIComponent(sellerUid)}`
+      : "https://buymesho.app/seller";
+
+    if (!sellerUid) {
+      updateSEOMetaTags({
+        title: "BuyMesho Seller Profile",
+        description: "View a seller profile and marketplace listings on BuyMesho.",
+        url: canonicalUrl,
+        noIndex: true,
+      });
+      return;
+    }
+
+    if (!profile) {
+      updateSEOMetaTags({
+        title: "Seller Profile Unavailable | BuyMesho",
+        description: "This BuyMesho seller profile is unavailable or could not be loaded.",
+        url: canonicalUrl,
+        noIndex: true,
+      });
+      return;
+    }
+
+    updateSEOMetaTags({
+      title: profile?.business_name?.trim()
+        ? `${profile.business_name.trim()} | BuyMesho Seller`
+        : "BuyMesho Seller Profile",
+      description: profile?.bio?.trim()
+        ? truncateSeoDescription(profile.bio.trim())
+        : "View a seller profile and marketplace listings on BuyMesho.",
+      image: profile?.business_logo?.trim() || undefined,
+      imageAlt: profile?.business_name?.trim()
+        ? `${profile.business_name.trim()} on BuyMesho`
+        : "BuyMesho seller profile",
+      url: canonicalUrl,
+      noIndex: true,
+    });
+
+    const liveUid =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("uid")?.trim() || ""
+        : "";
+
+    if (
+      liveUid === sellerUid &&
+      profile.uid &&
+      String(profile.uid).trim() === sellerUid
+    ) {
+      const sellerPath = `/seller?uid=${encodeURIComponent(sellerUid)}`;
+      if (trackedSellerPathRef.current !== sellerPath) {
+        trackPublicPageView({
+          pathname: sellerPath,
+          route: "seller",
+        });
+        trackedSellerPathRef.current = sellerPath;
+      }
+    }
+
+    return () => {
+      resetSEOMetaTags();
+    };
+  }, [sellerUid, profile, listings.length]);
+  
   const canRateSeller = !!firebaseUser && !!sellerUid && firebaseUser.uid !== sellerUid;
 
   const handleMessageSeller = async () => {
@@ -520,10 +589,13 @@ export default function SellerProfilePage() {
                 <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {filteredListings.length > 0 ? (
                     filteredListings.map((listing) => (
-                      <button
+                      <a
                         key={listing.id}
-                        type="button"
-                        onClick={() => navigateToListingDetails(listing.id)}
+                        href={`/listing?listing=${encodeURIComponent(String(listing.id))}`}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          navigateToListingDetails(listing.id);
+                        }}
                         className="group rounded-3xl border border-zinc-200 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                       >
                         <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
@@ -540,7 +612,7 @@ export default function SellerProfilePage() {
                           <p className="text-sm font-bold text-red-900">MK{Number(listing.price).toLocaleString()}</p>
                           <p className="text-xs text-zinc-500 line-clamp-2">{listing.description}</p>
                         </div>
-                      </button>
+                      </a>
                     ))
                   ) : (
                     <div className="col-span-full rounded-3xl border border-dashed border-zinc-200 bg-zinc-50 p-8 text-center text-sm text-zinc-500">
@@ -550,6 +622,8 @@ export default function SellerProfilePage() {
                 </div>
               </div>
             </section>
+
+            <SeoInternalLinks context="seller" />
           </>
         )}
       </main>

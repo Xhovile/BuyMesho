@@ -13,6 +13,7 @@ import { useAuthUser } from "./useAuthUser";
 import { useAccountProfile } from "./useAccountProfile";
 import { apiFetch } from "../lib/api";
 import { Listing } from "../types";
+import { resolveMarketplaceCategory } from "../lib/marketplaceCategories.js";
 import type { HeaderChip } from "../constants";
 import type {
   MarketSectionActions,
@@ -20,13 +21,6 @@ import type {
   MarketSectionPagination,
   MarketSectionSetFilters,
 } from "../sections/MarketSection";
-
-const CATEGORY_QUERY_TO_CANONICAL: Record<string, string> = {
-  phones: "Electronics & Gadgets",
-  fashion: "Fashion & Clothing",
-  books: "Academic Services",
-  services: "Academic Services",
-};
 
 export type AppLegacyConfirmState = {
   open: boolean;
@@ -112,7 +106,8 @@ export function useAppLegacyState(): AppLegacyState {
   const [search, setSearch] = useState(initialExploreState.search);
   const [selectedUniv, setSelectedUniv] = useState(initialExploreState.university);
   const [selectedCat, setSelectedCat] = useState(
-    CATEGORY_QUERY_TO_CANONICAL[initialExploreState.category] ?? initialExploreState.category
+    resolveMarketplaceCategory(initialExploreState.category)?.name ??
+      initialExploreState.category
   );
   const [selectedSubcategory, setSelectedSubcategory] = useState(initialExploreState.subcategory);
   const [selectedItemType, setSelectedItemType] = useState(initialExploreState.itemType);
@@ -314,7 +309,7 @@ export function useAppLegacyState(): AppLegacyState {
       syncingFromUrlRef.current = true;
       setSearch(urlState.search);
       setSelectedUniv(urlState.university);
-      setSelectedCat(CATEGORY_QUERY_TO_CANONICAL[urlState.category] ?? urlState.category);
+      setSelectedCat(resolveMarketplaceCategory(urlState.category)?.name ?? urlState.category);
       setSelectedSubcategory(urlState.subcategory);
       setSelectedItemType(urlState.itemType);
       setSelectedStatus(urlState.status);
@@ -402,6 +397,10 @@ export function useAppLegacyState(): AppLegacyState {
       if (sortBy) params.append("sortBy", sortBy);
       if (Object.keys(selectedSpecFilters).length > 0) {
         params.append("specFilters", JSON.stringify(selectedSpecFilters));
+      }
+
+      if (activeChip === "Wholesale") {
+        params.append("listingMode", "wholesale");
       }
       params.append("page", String(currentPage));
       params.append("pageSize", String(pageSize));

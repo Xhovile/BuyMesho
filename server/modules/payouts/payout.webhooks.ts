@@ -100,6 +100,10 @@ async function handlePaychanguWebhookInternal(context:PayoutWebhookContext):Prom
     const orderRow=payoutRow.order_id
       ? db.prepare(`SELECT items FROM orders WHERE id=? LIMIT 1`).get(String(payoutRow.order_id)) as {items?:unknown}|undefined
       : undefined;
+    const isEventPayout = ownerType === 'event_creator' || payoutRow.event_id != null;
+    const eventName = isEventPayout && payoutRow.event_id
+      ? (db.prepare(`SELECT event_title FROM events WHERE id=? LIMIT 1`).get(String(payoutRow.event_id)) as {event_title?:string}|undefined)?.event_title?.trim() || null
+      : null;
     const destinationRow=payoutRow.destination_account_id
       ? db.prepare(`
           SELECT masked_account
@@ -126,6 +130,11 @@ async function handlePaychanguWebhookInternal(context:PayoutWebhookContext):Prom
       destination:destinationRow?.masked_account?.trim()||null,
       completedAt:now,
       status:payoutState,
+      isEventPayout,
+      eventName,
+      dashboardUrl: isEventPayout && payoutRow.event_id
+        ? `https://buymesho.app/explore/events/manage?event=${encodeURIComponent(String(payoutRow.event_id))}`
+        : undefined,
     }).catch(error=>console.warn('[notification] payout_completed email delivery failed',error));
   }
   updatePaymentWebhookEventStatus(inserted.id,'processed',{processedAt:now,signatureValid:true});

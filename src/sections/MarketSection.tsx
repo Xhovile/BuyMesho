@@ -74,9 +74,9 @@ type MarketSectionProps = {
 
 function ListingCardSkeleton() {
   return (
-    <div className="w-full max-w-[160px] overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white shadow-sm md:max-w-none">
-      <div className="aspect-square animate-pulse bg-zinc-100 md:aspect-[4/3]" />
-      <div className="space-y-1.5 p-2">
+    <div className="w-full max-w-[160px] md:max-w-none">
+      <div className="aspect-square animate-pulse rounded-2xl bg-zinc-100 md:aspect-[4/3]" />
+      <div className="space-y-1.5 py-2">
         <div className="h-3.5 w-11/12 animate-pulse rounded-full bg-zinc-100" />
         <div className="h-3 w-4/5 animate-pulse rounded-full bg-zinc-100" />
         <div className="flex gap-1">
@@ -350,11 +350,15 @@ export default function MarketSection({
           <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-zinc-100">
             <Search className="h-8 w-8 text-zinc-300" />
           </div>
-          <h3 className="text-lg font-bold text-zinc-900">No listings found</h3>
+          <h3 className="text-lg font-bold text-zinc-900">
+            {activeChip === "Wholesale" ? "No wholesale listings found" : "No listings found"}
+          </h3>
           <p className="text-zinc-500">
-            {hasActiveFilters
-              ? "Your current filters may be too restrictive. Remove one filter or clear all to broaden results."
-              : "Try adjusting your search terms or check again later for new listings."}
+            {activeChip === "Wholesale"
+              ? "Wholesale listings on BuyMesho are offered in packs or bulk quantities. Check back as sellers add new wholesale offers."
+              : hasActiveFilters
+                ? "Your current filters may be too restrictive. Remove one filter or clear all to broaden results."
+                : "Try adjusting your search terms or check again later for new listings."}
           </p>
           {hasActiveFilters && (
             <div className="mt-5 flex flex-wrap items-center justify-center gap-3">

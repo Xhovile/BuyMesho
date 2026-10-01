@@ -33,19 +33,21 @@ import FloatingCartButton from "./components/FloatingCartButton";
 import ScrollToTopFab from "./components/ScrollToTopFab";
 import AiIcon from "./components/ai/AiIcon";
 import BuyMeshoCopilotDrawer from "./components/ai/BuyMeshoCopilotDrawer";
+import SeoInternalLinks from "./components/SeoInternalLinks";
 import { getListingSubcategories } from "./listingSchemas/registry";
 import ListingCard from "./components/ListingCard";
 import FormDropdown from "./components/FormDropdown";
 import FeedbackModal from "./components/FeedbackModal";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { updateSEOMetaTags } from "./lib/seo";
+import { resolveMarketplaceCategory, type MarketplaceCategorySlug } from "./lib/marketplaceCategories.js";
 import {
   readHiddenListingIds,
   readHiddenSellerUids,
   subscribeToHiddenCollectionsChanges,
 } from "./lib/hiddenCollections";
 
-type CategoryKey = "phones" | "fashion" | "books" | "food" | "beauty";
+type CategoryKey = MarketplaceCategorySlug;
 
 type CategoryConfig = {
   key: CategoryKey;
@@ -70,52 +72,52 @@ type ListingPreview = {
 };
 
 const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
-  phones: {
-    key: "phones",
-    title: "Phones & Gadgets",
-    subtitle: "Campus tech that moves fast",
+  "electronics-gadgets": {
+    key: "electronics-gadgets",
+    title: "Electronics & Gadgets",
+    subtitle: "Phones, computers, accessories, and everyday tech",
     description:
-      "Browse devices, chargers, earphones, accessories, and practical student tech posted in the marketplace.",
+      "Browse phones, computers, audio, power products, accessories, and everyday technology posted by sellers on the Malawi marketplace.",
     heroIcon: Smartphone,
     apiCategory: "Electronics & Gadgets",
     accent: "from-red-900/10 to-zinc-100",
   },
-  fashion: {
-    key: "fashion",
+  "fashion-clothing": {
+    key: "fashion-clothing",
     title: "Fashion & Clothing",
-    subtitle: "Style for campus life",
+    subtitle: "Style for campus and everyday life",
     description:
-      "Find clothes, bags, shoes, and everyday style pieces listed by students and campus sellers.",
+      "Find clothes, bags, shoes, and everyday style pieces listed by sellers across BuyMesho's Malawi marketplace.",
     heroIcon: ShoppingBag,
     apiCategory: "Fashion & Clothing",
     accent: "from-zinc-900/10 to-zinc-100",
   },
-  books: {
-    key: "books",
-    title: "Books & Study Tools",
-    subtitle: "Academic essentials",
+  "academic-services": {
+    key: "academic-services",
+    title: "Academic Services",
+    subtitle: "Academic services, study tools, and student essentials",
     description:
-      "Books, calculators, stationery, and useful study tools grouped into one clean category page.",
+      "Browse academic services, printing, study tools, books, calculators, stationery, and other student essentials available through BuyMesho in Malawi.",
     heroIcon: BookOpen,
     apiCategory: "Academic Services",
     accent: "from-amber-500/10 to-zinc-100",
   },
-  food: {
-    key: "food",
-    title: "Eatery & Fast Foods",
-    subtitle: "Campus meals, fast foods, and drinks",
+  "food-snacks": {
+    key: "food-snacks",
+    title: "Food & Snacks",
+    subtitle: "Meals, snacks, and drinks",
     description:
-      "Browse eatery options, fast foods, and drinks that students can discover quickly without digging through filters.",
+      "Browse food, snacks, meals, and drinks that buyers can discover quickly on BuyMesho in Malawi.",
     heroIcon: Store,
     apiCategory: "Food & Snacks",
     accent: "from-emerald-500/10 to-zinc-100",
   },
-  beauty: {
-    key: "beauty",
+  "beauty-personal-care": {
+    key: "beauty-personal-care",
     title: "Beauty & Personal Care",
-    subtitle: "Beauty products and personal care",
+    subtitle: "Beauty and personal care essentials",
     description:
-      "Browse beauty products, hair care, skincare, fragrances, and personal care essentials posted by campus sellers.",
+      "Browse beauty products, hair care, skincare, fragrances, and personal care essentials posted by sellers on BuyMesho in Malawi.",
     heroIcon: Sparkles,
     apiCategory: "Beauty & Personal Care",
     accent: "from-pink-500/10 to-zinc-100",
@@ -123,11 +125,11 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
 };
 
 const CATEGORY_CHIP_BY_KEY: Record<CategoryKey, HeaderChip> = {
-  phones: "Gadgets",
-  fashion: "Fashion",
-  books: "Academics",
-  food: "Food",
-  beauty: "Beauty",
+  "electronics-gadgets": "Gadgets",
+  "fashion-clothing": "Fashion",
+  "academic-services": "Academics",
+  "food-snacks": "Food",
+  "beauty-personal-care": "Beauty",
 };
 
 const DEFAULT_SORT_BY = "Newest first";
@@ -156,26 +158,29 @@ export default function CategoryPage() {
     readHiddenListingIds()
   );
 
-  const categoryKey = useMemo(() => {
-    const params = new URLSearchParams(window.location.search);
-    const value = params.get("category");
-    if (
-      value === "phones" ||
-      value === "fashion" ||
-      value === "books" ||
-      value === "food" ||
-      value === "beauty"
-    ) {
-      return value;
-    }
-    return "phones";
+  const requestedCategory = useMemo(() => {
+    const value = new URLSearchParams(window.location.search).get("category");
+    return resolveMarketplaceCategory(value)?.slug ?? null;
   }, []);
 
+  const categoryKey = requestedCategory || "electronics-gadgets";
   const config = CATEGORY_CONFIG[categoryKey];
   const activeCategoryChip = CATEGORY_CHIP_BY_KEY[categoryKey];
 
   useEffect(() => {
-    const canonicalUrl = `https://buymesho.app/category?category=${encodeURIComponent(categoryKey)}`;
+    if (!requestedCategory) {
+      updateSEOMetaTags({
+        title: "BuyMesho Category",
+        description: "Select a valid marketplace category on BuyMesho.",
+        url: "https://buymesho.app/category",
+        noIndex: true,
+      });
+      return () => {
+        updateSEOMetaTags();
+      };
+    }
+
+    const canonicalUrl = `https://buymesho.app/category?category=${encodeURIComponent(requestedCategory)}`;
 
     updateSEOMetaTags({
       title: `${config.title} in Malawi`,
@@ -188,17 +193,24 @@ export default function CategoryPage() {
         "Malawi marketplace",
         "buy in Malawi",
       ],
+      noIndex: items.length === 0,
     });
 
     return () => {
       updateSEOMetaTags();
     };
-  }, [categoryKey, config.description, config.subtitle, config.title]);
+  }, [items.length, requestedCategory, config.description, config.subtitle, config.title]);
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
+      if (!requestedCategory) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
@@ -224,7 +236,7 @@ export default function CategoryPage() {
     return () => {
       cancelled = true;
     };
-  }, [config.apiCategory]);
+  }, [requestedCategory, config.apiCategory]);
 
   useEffect(() => {
     const syncHiddenCollections = () => {
@@ -349,6 +361,26 @@ export default function CategoryPage() {
       page: 1,
     });
   };
+
+  if (!requestedCategory) {
+    return (
+      <main className="min-h-screen bg-zinc-100 px-4 py-10 text-zinc-950">
+        <div className="mx-auto max-w-2xl rounded-[2rem] border border-zinc-200 bg-white p-8 text-center shadow-sm sm:p-12">
+          <h1 className="text-3xl font-black tracking-tight">Category not found</h1>
+          <p className="mt-3 text-sm leading-6 text-zinc-600">
+            That marketplace category does not exist. Choose a category from the BuyMesho marketplace.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigateToPath("/explore")}
+            className="mt-6 inline-flex rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-black text-white"
+          >
+            Explore marketplace
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -514,6 +546,8 @@ export default function CategoryPage() {
             )}
           </div>
         </section>
+
+        <SeoInternalLinks context="category" />
 
         <section className="max-w-7xl mx-auto px-4 pb-16">
           <div className="rounded-[2rem] bg-zinc-900 text-white p-6 sm:p-8 shadow-xl">
