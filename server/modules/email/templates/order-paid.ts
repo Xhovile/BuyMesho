@@ -34,7 +34,7 @@ export function renderOrderPaidEmail(params: {
 
   const counterpartyLabel = isEventOrder
     ? isBuyer
-      ? "Event creator"
+      ? "Event Manager"
       : "Buyer"
     : isBuyer
       ? "Seller"
