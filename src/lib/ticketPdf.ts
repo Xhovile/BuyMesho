@@ -1,4 +1,6 @@
 import Logo from "../../photos/Logo.png";
+import qrcode from "./qrcode-generator.js";
+
 
 type PdfTicketLine = {
   label: string;
@@ -203,57 +205,24 @@ function addFieldBlock(
 }
 
 function drawTicketCodeMatrix(ticketCode: string, x: number, y: number, size: number) {
-  const moduleCount = 29;
-  const moduleSize = size / moduleCount;
-  const matrix: Array<Array<boolean | null>> = Array.from({ length: moduleCount }, () => Array<boolean | null>(moduleCount).fill(null));
+  const qr = qrcode(0, "H");
+  qr.addData(ticketCode, "Byte");
+  qr.make();
 
-  const reserveFinder = (startX: number, startY: number) => {
-    for (let row = 0; row < 7; row += 1) {
-      for (let col = 0; col < 7; col += 1) {
-        const edge = row === 0 || row === 6 || col === 0 || col === 6;
-        const center = row >= 2 && row <= 4 && col >= 2 && col <= 4;
-        matrix[startY + row][startX + col] = edge || center;
-      }
-    }
-  };
-
-  reserveFinder(0, 0);
-  reserveFinder(moduleCount - 7, 0);
-  reserveFinder(0, moduleCount - 7);
-
-  for (let index = 0; index < moduleCount; index += 1) {
-    matrix[6][index] = index % 2 === 0;
-    matrix[index][6] = index % 2 === 0;
-  }
-
-  matrix[moduleCount - 8][8] = true;
-
-  const payloadBits = Array.from(ticketCode)
-    .map((character) => character.charCodeAt(0).toString(2).padStart(8, "0"))
-    .join("");
-  const seed = hashString(ticketCode);
-  const rng = createRng(seed);
-  let bitCursor = 0;
-
-  for (let row = 0; row < moduleCount; row += 1) {
-    for (let col = 0; col < moduleCount; col += 1) {
-      if (matrix[row][col] !== null) continue;
-      const payloadBit = payloadBits.length ? payloadBits[bitCursor % payloadBits.length] : "0";
-      const randomBit = rng() > 0.5 ? "1" : "0";
-      matrix[row][col] = (Number(payloadBit) ^ Number(randomBit)) === 1;
-      bitCursor += 1;
-    }
-  }
-
+  const moduleCount = qr.getModuleCount();
+  const quietZone = 4;
+  const totalModules = moduleCount + quietZone * 2;
+  const moduleSize = size / totalModules;
   const commands: string[] = [];
-  addRect(commands, x - 6, y - 6, size + 12, size + 12, BRAND_LIGHT);
+
+  addRect(commands, x - 8, y - 8, size + 16, size + 16, BRAND_LIGHT);
   addRect(commands, x, y, size, size, { r: 255, g: 255, b: 255 });
 
   for (let row = 0; row < moduleCount; row += 1) {
     for (let col = 0; col < moduleCount; col += 1) {
-      if (!matrix[row][col]) continue;
+      if (!qr.isDark(row, col)) continue;
       commands.push(`${rgb(BRAND_CHARCOAL)} rg`);
-      commands.push(`${(x + col * moduleSize).toFixed(2)} ${(y + (moduleCount - 1 - row) * moduleSize).toFixed(2)} ${moduleSize.toFixed(2)} ${moduleSize.toFixed(2)} re f`);
+      commands.push(`${(x + (col + quietZone) * moduleSize).toFixed(2)} ${(y + (moduleCount + quietZone - row - 1) * moduleSize).toFixed(2)} ${moduleSize.toFixed(2)} ${moduleSize.toFixed(2)} re f`);
     }
   }
 
