@@ -13,10 +13,33 @@ const requireAuth: RequestHandler = (req, _res, next) => {
   next();
 };
 function createApp(): express.Express { const app = express(); app.use(express.json()); app.use('/api/payments', createPaymentRouter(requireAuth)); return app; }
-function clearState() { const db = getPaymentDb(); db.prepare('DELETE FROM payment_webhook_events').run(); db.prepare('DELETE FROM payments').run(); db.prepare('DELETE FROM orders').run(); db.prepare('DELETE FROM listings').run(); db.prepare('DELETE FROM events WHERE id IN (992101, 992102)').run(); db.prepare("DELETE FROM event_creators WHERE uid = 'event_creator_checkout_test'").run(); }
+function clearState() { const db = getPaymentDb(); db.prepare('DELETE FROM payment_webhook_events').run(); db.prepare('DELETE FROM payments').run(); db.prepare('DELETE FROM orders').run(); db.prepare('DELETE FROM listings').run(); db.prepare("DELETE FROM seller_payout_accounts WHERE owner_type = 'event_creator' AND event_creator_uid = 'event_creator_checkout_test'").run(); db.prepare('DELETE FROM events WHERE id IN (992101, 992102)').run(); db.prepare("DELETE FROM event_creators WHERE uid = 'event_creator_checkout_test'").run(); }
+function seedEventDestination(): string {
+  const db = getPaymentDb();
+  const id = 'event-checkout-destination';
+  const now = new Date().toISOString();
+  db.prepare(`INSERT INTO seller_payout_accounts (
+    id, seller_uid, event_creator_uid, owner_type, owner_uid, destination_type, provider_name,
+    provider_ref_id, currency, account_name, account_number_encrypted, mobile_encrypted,
+    masked_account, destination_fingerprint, is_default, verification_status, verification_attempts,
+    last_error, verified_at, replaced_from_id, replaced_by_id, is_active, created_at, updated_at
+  ) VALUES (?, NULL, ?, 'event_creator', ?, 'mobile_money', 'Airtel Money', 'airtel_money',
+    'MWK', 'Checkout Creator', NULL, ?, '******9999', ?, 1, 'verified', 0, NULL, ?, NULL, NULL, 1, ?, ?)`).run(
+    id,
+    'event_creator_checkout_test',
+    'event_creator_checkout_test',
+    'encrypted-mobile',
+    'checkout-destination-fingerprint',
+    now,
+    now,
+    now,
+  );
+  return id;
+}
+
 function seedCheckoutEventCreator() { const db = getPaymentDb(); const now = new Date().toISOString(); db.prepare(`INSERT INTO event_creators (uid,email,display_name,organization_name,organization_type,event_types,status,created_at,updated_at) VALUES ('event_creator_checkout_test','checkout@example.com','Checkout Test Creator','Checkout Test Org','events','concert','approved',?,?) ON CONFLICT (uid) DO NOTHING`).run(now, now); }
 function seedListing(): number { const result = getPaymentDb().prepare(`INSERT INTO listings (seller_uid, name, price, status, quantity, sold_quantity, is_hidden) VALUES (?, ?, ?, 'available', 5, 0, 0)`).run('seller_idempotency_1', 'Idempotency Test Item', 1000); return Number(result.lastInsertRowid); }
-function seedEvent(eventId: number, title: string): number { seedCheckoutEventCreator(); getPaymentDb().prepare(`INSERT INTO events (id, creator_uid, event_type, event_title, organizer_name, event_date, start_time, venue, location, ticket_mode, ticket_price, description, spec_values, status) VALUES (?, ?, 'concert', ?, 'Event Creator', '2026-10-01', '18:00', 'Test Venue', 'Lilongwe', 'paid', 5000, 'Checkout scope test', '{}', 'published')`).run(eventId, 'event_creator_checkout_test', title); return eventId; }
+function seedEvent(eventId: number, title: string, payoutDestinationId: string | null = null): number { seedCheckoutEventCreator(); getPaymentDb().prepare(`INSERT INTO events (id, creator_uid, event_type, event_title, organizer_name, event_date, start_time, venue, location, ticket_mode, ticket_price, description, spec_values, status, payout_destination_id) VALUES (?, ?, 'concert', ?, 'Event Creator', '2026-10-01', '18:00', 'Test Venue', 'Lilongwe', 'paid', 5000, 'Checkout scope test', '{}', 'published', ?)`).run(eventId, 'event_creator_checkout_test', title, payoutDestinationId); return eventId; }
 function mockPayChangu() { global.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => { const target = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url; if (/^https:\/\/api\.paychangu\.com\/payment$/.test(target)) { const payload = JSON.parse(String(init?.body ?? '{}')) as { tx_ref?: string }; return new Response(JSON.stringify({ status: 'success', message: 'Hosted payment session generated successfully.', data: { checkout_url: 'https://checkout.paychangu.test/session', data: { tx_ref: payload.tx_ref, status: 'pending' } } }), { status: 200, headers: { 'content-type': 'application/json' } }); } return originalFetch(input, init); }) as typeof fetch; }
 async function postCheckout(base: string, key: string, payload: Record<string, unknown>): Promise<Response> { return fetch(`${base}/api/payments/checkout`, { method: 'POST', headers: { 'content-type': 'application/json', 'idempotency-key': key }, body: JSON.stringify(payload) }); }
 
@@ -24,9 +47,38 @@ test('checkout rejects mixed event tickets and marketplace listings before creat
 
 test('checkout rejects tickets from multiple events before creating an order', async () => { clearState(); seedEvent(992101, 'Event One'); seedEvent(992102, 'Event Two'); mockPayChangu(); const app = createApp(); const server = app.listen(0); const port = (server.address() as { port: number }).port; const base = `http://127.0.0.1:${port}`; try { const response = await postCheckout(base, 'checkout-scope-multi-001', { items: [{ eventId: '992101', quantity: 1 }, { eventId: '992102', quantity: 1 }], method: 'mobile_money', settlementRoute: 'escrow', ticketHolder: { fullName: 'Test Buyer', email: 'buyer@example.com', phone: '0999999999' } }); assert.equal(response.status, 400); const body = await response.json() as { code?: string }; assert.equal(body.code, 'MULTI_EVENT_CHECKOUT'); const orderCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM orders WHERE checkout_idempotency_key = ?').get('checkout-scope-multi-001') as { count: number }).count; assert.equal(orderCount, 0); } finally { server.close(); clearState(); global.fetch = originalFetch; } });
 
-test('checkout forces direct settlement for event-only orders', async () => {
+test('checkout rejects published paid events without a payout destination', async () => {
   clearState();
-  seedEvent(992101, 'Direct Event Checkout');
+  seedEvent(992101, 'Unconfigured Paid Event');
+  mockPayChangu();
+  const app = createApp();
+  const server = app.listen(0);
+  const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  try {
+    const response = await postCheckout(base, 'checkout-event-destination-missing-001', {
+      items: [{ eventId: '992101', quantity: 1 }],
+      method: 'mobile_money',
+      settlementRoute: 'escrow',
+      returnUrl: 'https://example.com/payment/return',
+      cancelUrl: 'https://example.com/payment/return?cancelled=1',
+      ticketHolder: { fullName: 'Test Buyer', email: 'buyer@example.com', phone: '0999999999' },
+    });
+    assert.equal(response.status, 409);
+    const body = await response.json() as { code?: string };
+    assert.equal(body.code, 'EVENT_PAYOUT_DESTINATION_REQUIRED');
+    const orderCount = (getPaymentDb().prepare('SELECT COUNT(*) AS count FROM orders').get() as { count: number }).count;
+    assert.equal(orderCount, 0);
+  } finally {
+    server.close();
+    clearState();
+    global.fetch = originalFetch;
+  }
+});
+
+test('checkout forces direct settlement for configured event-only orders', async () => {
+  clearState();
+  const destinationId = seedEventDestination();
+  seedEvent(992101, 'Direct Event Checkout', destinationId);
   mockPayChangu();
   const app = createApp();
   const server = app.listen(0);
