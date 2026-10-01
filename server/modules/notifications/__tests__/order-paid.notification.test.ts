@@ -47,7 +47,7 @@ function deps(messages: any[]) {
   };
 }
 
-test("paid event email is sent once per recipient role across repeated callbacks", async () => {
+test("event order_paid notification is manager-only because buyer uses unified ticket notification", async () => {
   const messages: any[] = [];
   const notificationDeps = deps(messages);
   const order = buildEventOrder();
@@ -55,21 +55,10 @@ test("paid event email is sent once per recipient role across repeated callbacks
   await notifyOrderPaid(order, notificationDeps);
   await notifyOrderPaid(order, notificationDeps);
 
-  assert.equal(messages.length, 2);
-  assert.deepEqual(
-    messages.map((message) => message.to.email).sort(),
-    ["buyer@example.com", "creator@example.com"],
-  );
-
-  const buyerMessage = messages.find((message) => message.to.email === "buyer@example.com");
-  const creatorMessage = messages.find((message) => message.to.email === "creator@example.com");
-
-  assert.equal(buyerMessage.subject, "BuyMesho event payment confirmed — Campus Concert");
-  assert.match(buyerMessage.text, /Event Manager: Campus Events/);
-  assert.match(buyerMessage.text, /Event: Campus Concert/);
-
-  assert.equal(creatorMessage.subject, "BuyMesho — new event ticket purchase for Campus Concert");
-  assert.match(creatorMessage.text, /Buyer: Ada Buyer/);
-  assert.match(creatorMessage.text, /Event: Campus Concert/);
-  assert.match(creatorMessage.text, /https:\/\/buymesho\.app\/explore\/events\/manage\?event=event-1/);
+  assert.equal(messages.length, 1);
+  assert.equal(messages[0].to.email, "creator@example.com");
+  assert.equal(messages[0].subject, "BuyMesho — new event ticket purchase for Campus Concert");
+  assert.match(messages[0].text, /Buyer: Ada Buyer/);
+  assert.match(messages[0].text, /Event: Campus Concert/);
+  assert.match(messages[0].text, /https:\/\/buymesho\.app\/explore\/events\/manage\?event=event-1/);
 });
