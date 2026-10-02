@@ -178,8 +178,7 @@ export function setDefaultEventCreatorPayoutDestination(
 
     const currentDefault = rows.find((row) => row.is_default === 1);
     previousDefaultId = currentDefault?.id ?? null;
-
-    if (previousDefaultId === destinationId) return;
+    const wasAlreadyDefault = destination.is_default === 1;
 
     db.prepare(
       `UPDATE seller_payout_accounts
@@ -199,8 +198,9 @@ export function setDefaultEventCreatorPayoutDestination(
       throw new Error('Failed to set the payout destination as default');
     }
 
-    db.prepare(
-      `INSERT INTO seller_payout_account_events
+    if (!wasAlreadyDefault) {
+      db.prepare(
+        `INSERT INTO seller_payout_account_events
        (seller_uid, event_creator_uid, owner_type, owner_uid, account_id, event_type, actor_type, actor_id, note, payload, created_at)
        VALUES (NULL, ?, 'event_creator', ?, ?, 'destination_default_changed', 'event_creator', ?, NULL, ?, ?)`,
     ).run(
@@ -208,12 +208,13 @@ export function setDefaultEventCreatorPayoutDestination(
       eventCreatorUid,
       destinationId,
       eventCreatorUid,
-      JSON.stringify({
-        previousDefaultDestinationId: previousDefaultId,
-        newDefaultDestinationId: destinationId,
-      }),
-      now,
-    );
+        JSON.stringify({
+          previousDefaultDestinationId: previousDefaultId,
+          newDefaultDestinationId: destinationId,
+        }),
+        now,
+      );
+    }
   })();
 
   const selected = db.prepare(
