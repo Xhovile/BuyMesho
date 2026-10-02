@@ -286,12 +286,7 @@ function Stat({ label, value }: { label: string; value: number }) {
 
 function normalizePayoutRow(row: PayoutRow): PayoutRow {
   const destinationVerificationStatus = row.destinationVerificationStatus ?? row.destinationStatus ?? null;
-  const destinationLastError =
-    row.destinationLastError ??
-    row.lastError ??
-    row.latestAttemptFailureReason ??
-    row.failureReason ??
-    null;
+  const destinationLastError = row.destinationLastError ?? null;
 
   const retryEligible = row.retryEligible ?? row.retryAllowed ?? false;
 
@@ -302,12 +297,12 @@ function normalizePayoutRow(row: PayoutRow): PayoutRow {
     destinationActive:
       row.destinationActive ?? (destinationVerificationStatus ? destinationVerificationStatus === "verified" : undefined),
     destinationLastError,
-    latestAttemptFailureReason: row.latestAttemptFailureReason ?? destinationLastError,
+    latestAttemptFailureReason: row.latestAttemptFailureReason ?? row.lastError ?? row.failureReason ?? null,
     retryEligible,
     retryAllowed: row.retryAllowed ?? retryEligible,
     manualReviewPending:
       row.manualReviewPending ??
-      Boolean(row.holdReason || row.manualReviewReason || destinationLastError),
+      Boolean(row.holdReason || row.manualReviewReason || row.failureReason || row.latestAttemptFailureReason),
   };
 }
 
