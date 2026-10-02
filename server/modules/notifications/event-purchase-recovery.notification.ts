@@ -62,7 +62,8 @@ export async function notifyEventTicketPurchaseNotifications(order:StoredOrder|u
   const location=first.location;
   const ticketType=ticketRows.every(ticket=>ticket.ticketType===first.ticketType)?first.ticketType:'Multiple ticket types';
 
-  await Promise.allSettled(Array.from(recipients.entries()).map(async ([email,recipient])=>{
+  const entries=Array.from(recipients.entries());
+  const results=await Promise.allSettled(entries.map(async ([email,recipient])=>{
     await notifyEventTicketPurchaseCompleted({
       email,
       recipientName:recipient.name,
@@ -82,6 +83,15 @@ export async function notifyEventTicketPurchaseNotifications(order:StoredOrder|u
       orderStatus:order.status,
     });
   }));
+  results.forEach((result,index)=>{
+    if(result.status==='rejected'){
+      console.warn('[event-ticket] purchase confirmation email delivery failed',JSON.stringify({
+        orderId:order.id,
+        recipientEmail:entries[index]?.[0]??null,
+        error:result.reason instanceof Error?result.reason.message:String(result.reason),
+      }));
+    }
+  });
 }
 
 export async function recoverEventPurchaseNotifications(order:StoredOrder|undefined):Promise<void>{
