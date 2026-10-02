@@ -324,11 +324,16 @@ export default function EventCreatorDashboardPage() {
   const handleViewPublic = (eventId: number) => navigateToPath(`${EVENTS_PATH}?event=${eventId}`);
 
   const updateEventStatus = async (eventId: number, nextStatus: "published" | "inactive") => {
-    await apiFetch(`/api/event-creator/events/${eventId}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status: nextStatus }),
-    });
-    await loadDashboard();
+    setError(null);
+    try {
+      await apiFetch(`/api/event-creator/events/${eventId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      await loadDashboard();
+    } catch (statusError: any) {
+      setError(statusError?.message || "Could not update the event status.");
+    }
   };
 
   const handleDeleteEvent = async (eventId: number) => {
