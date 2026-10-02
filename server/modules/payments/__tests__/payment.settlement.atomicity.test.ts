@@ -40,8 +40,10 @@ const eventId=998901;
 const eventCreatorUid='event-direct-settlement-creator-1';
 const eventDestinationId='event-direct-settlement-destination-1';
 
+const testDb = getPaymentDb();
+
 async function cleanupEventDirect():Promise<void>{
-  getPaymentDb().prepare('DELETE FROM event_tickets WHERE order_id = ?').run(eventOrderId);
+  testDb.prepare('DELETE FROM event_tickets WHERE order_id = ?').run(eventOrderId);
   await query('DELETE FROM payout_events WHERE payout_id IN (SELECT id FROM payouts WHERE order_id = $1)',[eventOrderId]);
   await query('DELETE FROM payout_attempts WHERE payout_id IN (SELECT id FROM payouts WHERE order_id = $1)',[eventOrderId]);
   await query('DELETE FROM payouts WHERE order_id = $1',[eventOrderId]);
@@ -51,14 +53,27 @@ async function cleanupEventDirect():Promise<void>{
   await query('DELETE FROM events WHERE id = $1',[eventId]);
   await query('DELETE FROM seller_payout_accounts WHERE id = $1',[eventDestinationId]);
   await query('DELETE FROM event_creators WHERE uid = $1',[eventCreatorUid]);
+  testDb.prepare("DELETE FROM sellers WHERE uid IN (?, ?)").run('atomic-buyer-direct','event-direct-settlement-creator-1');
 }
 
 async function seedEventDirect():Promise<void>{
   await cleanupEventDirect();
   const now=new Date().toISOString();
-  await query('INSERT INTO event_creators (uid,email,display_name,organization_name,organization_type,event_types,status,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8)',[eventCreatorUid,'creator@example.com','Event Creator','Direct Settlement Org','events','concert','approved',now]);
-  await query('INSERT INTO seller_payout_accounts (id,seller_uid,event_creator_uid,owner_type,owner_uid,destination_type,provider_name,provider_ref_id,currency,account_name,mobile_encrypted,masked_account,destination_fingerprint,is_default,verification_status,verification_attempts,is_active,verified_at,created_at,updated_at) VALUES ($1,NULL,$2,$3,$2,$4,$5,$6,$7,$8,$9,$10,$11,1,$12,0,1,$13,$13,$13)',[eventDestinationId,eventCreatorUid,'event_creator','mobile_money','Airtel Money','airtel_money','MWK','Event Creator','encrypted-mobile','******9999',`event-direct-fingerprint-${eventId}`,'verified',now]);
-  await query('INSERT INTO events (id,creator_uid,event_type,event_title,organizer_name,event_date,start_time,venue,location,ticket_mode,ticket_price,description,spec_values,status,payout_destination_id,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$16)',[eventId,eventCreatorUid,'concert','Direct Settlement Test','Event Creator','2026-10-01','18:00','Test Venue','Lilongwe','paid',10000,'Direct settlement test','{}','published',eventDestinationId,now]);
+  testDb.prepare("INSERT INTO sellers (uid,email) VALUES (?, ?) ON CONFLICT (uid) DO NOTHING").run('atomic-buyer-direct','buyer@example.com');
+  testDb.prepare("INSERT INTO sellers (uid,email,business_name) VALUES (?, ?, ?) ON CONFLICT (uid) DO NOTHING").run(eventCreatorUid,'creator@example.com','Event Creator');
+  testDb.prepare(`INSERT INTO event_creators (uid,email,display_name,organization_name,organization_type,event_types,status,created_at,updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(eventCreatorUid,'creator@example.com','Event Creator','Direct Settlement Org','events','concert','approved',now,now);
+  testDb.prepare(`INSERT INTO seller_payout_accounts (
+    id,seller_uid,event_creator_uid,owner_type,owner_uid,destination_type,provider_name,provider_ref_id,currency,account_name,
+    mobile_encrypted,masked_account,destination_fingerprint,is_default,verification_status,verification_attempts,is_active,verified_at,created_at,updated_at
+  ) VALUES (?, NULL, ?, 'event_creator', ?, 'mobile_money', 'Airtel Money', 'airtel_money', 'MWK', ?, ?, '******9999', ?, 1, 'verified', 0, 1, ?, ?, ?)`).run(
+    eventDestinationId,eventCreatorUid,eventCreatorUid,'Event Creator','encrypted-mobile',`event-direct-fingerprint-${eventId}`,now,now,now,
+  );
+  testDb.prepare(`INSERT INTO events (
+    id,creator_uid,event_type,event_title,organizer_name,event_date,start_time,venue,location,ticket_mode,ticket_price,description,spec_values,status,
+    payout_destination_id,created_at,updated_at
+  ) VALUES (?, ?, 'concert', 'Direct Settlement Test', 'Event Creator', '2026-10-01', '18:00', 'Test Venue', 'Lilongwe', 'paid', 10000,
+    'Direct settlement test', '{}', 'published', ?, ?, ?)`).run(eventId,eventCreatorUid,eventDestinationId,now,now);
   await query('INSERT INTO orders (id,buyer_id,seller_id,source,status,delivery_status,currency,subtotal_amount,subtotal_currency,total_amount,total_currency,payment_provider,settlement_route,payment_reference,items,placed_at,paid_at,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NULL,$16,$16)',[eventOrderId,'buyer-direct',eventCreatorUid,'event','pending_payment','action_required','MWK',10000,'MWK',10300,'MWK','paychangu','direct',eventPaymentReference,'[{"kind":"event_ticket","eventId":"998901","quantity":1,"unitPrice":{"amount":10000,"currency":"MWK"}}]',now]);
   await paymentRepository.saveAsync({id:'event-direct-payment-1',orderId:eventOrderId,provider:'paychangu',method:'mobile_money',status:'pending',amount:{amount:10300,currency:'MWK'},reference:eventPaymentReference,providerReference:null,checkoutUrl:null,paidAt:null,rawResponse:{},verified:false,createdAt:now,updatedAt:now});
 }
