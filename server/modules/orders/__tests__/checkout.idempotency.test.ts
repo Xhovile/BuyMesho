@@ -77,6 +77,7 @@ test('checkout rejects published paid events without a payout destination', asyn
 
 test('checkout forces direct settlement for configured event-only orders', async () => {
   clearState();
+  seedCheckoutEventCreator();
   const destinationId = seedEventDestination();
   seedEvent(992101, 'Direct Event Checkout', destinationId);
   mockPayChangu();
