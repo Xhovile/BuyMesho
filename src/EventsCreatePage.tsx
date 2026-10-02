@@ -32,6 +32,7 @@ type SavedEvent = {
   contact_whatsapp: string | null;
   poster_alt: string | null;
   payout_destination_id?: string | null;
+  payout_destination_locked_at?: string | null;
   spec_values: Record<string, EventSpecValue>;
   status: string;
   created_at: string;
@@ -855,6 +856,7 @@ export default function EventsCreatePage() {
                   onChange={setPayoutDestinationId}
                   required={requiresPayoutDestination}
                   disabled={submitting}
+                  eventDestinationLocked={Boolean(existingEvent?.payout_destination_locked_at)}
                 />
 
                 {formError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{formError}</div> : null}
