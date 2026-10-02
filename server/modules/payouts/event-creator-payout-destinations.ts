@@ -149,7 +149,6 @@ export function setDefaultEventCreatorPayoutDestination(
   const db = getPaymentDb();
   const now = new Date().toISOString();
 
-  let selectedId = destinationId;
   let previousDefaultId: string | null = null;
 
   db.transaction(() => {
@@ -201,13 +200,13 @@ export function setDefaultEventCreatorPayoutDestination(
     if (!wasAlreadyDefault) {
       db.prepare(
         `INSERT INTO seller_payout_account_events
-       (seller_uid, event_creator_uid, owner_type, owner_uid, account_id, event_type, actor_type, actor_id, note, payload, created_at)
-       VALUES (NULL, ?, 'event_creator', ?, ?, 'destination_default_changed', 'event_creator', ?, NULL, ?, ?)`,
-    ).run(
-      eventCreatorUid,
-      eventCreatorUid,
-      destinationId,
-      eventCreatorUid,
+         (seller_uid, event_creator_uid, owner_type, owner_uid, account_id, event_type, actor_type, actor_id, note, payload, created_at)
+         VALUES (NULL, ?, 'event_creator', ?, ?, 'destination_default_changed', 'event_creator', ?, NULL, ?, ?)`,
+      ).run(
+        eventCreatorUid,
+        eventCreatorUid,
+        destinationId,
+        eventCreatorUid,
         JSON.stringify({
           previousDefaultDestinationId: previousDefaultId,
           newDefaultDestinationId: destinationId,
@@ -221,7 +220,7 @@ export function setDefaultEventCreatorPayoutDestination(
     `SELECT * FROM seller_payout_accounts
      WHERE id = ? AND owner_type = 'event_creator' AND event_creator_uid = ?
      LIMIT 1`,
-  ).get(selectedId, eventCreatorUid) as EventCreatorPayoutDestinationRow | undefined;
+  ).get(destinationId, eventCreatorUid) as EventCreatorPayoutDestinationRow | undefined;
 
   if (!selected) throw new Error('Payout destination not found after update');
   return rowToDestination(selected);
