@@ -853,6 +853,7 @@ export default function EventsCreatePage() {
                 <EventPayoutSetup
                   value={payoutDestinationId}
                   onChange={setPayoutDestinationId}
+                  eventId={editingEventId}
                   required={requiresPayoutDestination}
                   disabled={submitting}
                 />

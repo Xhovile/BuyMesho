@@ -142,6 +142,68 @@ export function assertUsableEventCreatorPayoutDestination(
   return row;
 }
 
+
+export function setDefaultEventCreatorPayoutDestination(
+  eventCreatorUid: string,
+  destinationId: string,
+): EventCreatorPayoutDestination {
+  const destination = assertUsableEventCreatorPayoutDestination(eventCreatorUid, destinationId);
+  const db = getPaymentDb();
+  const now = new Date().toISOString();
+
+  db.transaction(() => {
+    const previousDefault = db.prepare(
+      `SELECT id
+         FROM seller_payout_accounts
+        WHERE owner_type = 'event_creator'
+          AND event_creator_uid = ?
+          AND is_default = 1
+        LIMIT 1`,
+    ).get(eventCreatorUid) as { id: string } | undefined;
+
+    db.prepare(
+      `UPDATE seller_payout_accounts
+          SET is_default = 0, updated_at = ?
+        WHERE owner_type = 'event_creator'
+          AND event_creator_uid = ?`,
+    ).run(now, eventCreatorUid);
+
+    db.prepare(
+      `UPDATE seller_payout_accounts
+          SET is_default = 1, updated_at = ?
+        WHERE id = ?
+          AND owner_type = 'event_creator'
+          AND event_creator_uid = ?`,
+    ).run(now, destination.id, eventCreatorUid);
+
+    db.prepare(
+      `INSERT INTO seller_payout_account_events
+       (seller_uid, event_creator_uid, owner_type, owner_uid, account_id, event_type, actor_type, actor_id, note, payload, created_at)
+       VALUES (NULL, ?, 'event_creator', ?, ?, 'destination_default_changed', 'event_creator', ?, ?, ?)`,
+    ).run(
+      eventCreatorUid,
+      eventCreatorUid,
+      destination.id,
+      eventCreatorUid,
+      previousDefault?.id === destination.id
+        ? 'Payout destination remained the creator default'
+        : 'Creator payout default changed',
+      JSON.stringify({
+        previousDefaultId: previousDefault?.id ?? null,
+        newDefaultId: destination.id,
+      }),
+      now,
+    );
+  })();
+
+  const updated = db.prepare(
+    `SELECT * FROM seller_payout_accounts WHERE id = ? LIMIT 1`,
+  ).get(destination.id) as EventCreatorPayoutDestinationRow | undefined;
+
+  if (!updated) throw new Error('Failed to update payout destination default');
+  return rowToDestination(updated);
+}
+
 export function createEventCreatorPayoutDestination(input: {
   eventCreatorUid: string;
   destinationType: unknown;
