@@ -2,6 +2,8 @@ import { getPaymentDb } from '../../postgresCompat.js';
 import { withTransaction } from '../../postgres.js';
 import { createEventPayoutCandidateAsync, resolveEventPayoutContext } from './event-payout.integration.js';
 import { payoutRepository, payoutService } from './payout.service.js';
+import { orderRepository } from '../orders/order.repository.js';
+import { recoverEventPurchaseNotifications } from '../notifications/event-purchase-recovery.notification.js';
 import { PAYOUT_POLICY, isRetryableFailureCode } from './payout.policy.js';
 
 type ReconcilePayouts = (input: {
@@ -168,6 +170,38 @@ export class PayoutReconciliationScheduler {
     if (!this.timer) return;
     clearInterval(this.timer);
     this.timer = undefined;
+  }
+
+  private async recoverMissingEventPurchaseNotifications(limit: number): Promise<number> {
+    const db = getPaymentDb();
+    const rows = db.prepare(
+      `SELECT o.id
+         FROM orders o
+        WHERE o.source = 'event'
+          AND o.status = 'paid'
+          AND o.paid_at IS NOT NULL
+          AND EXISTS (
+            SELECT 1
+              FROM event_tickets t
+             WHERE t.order_id = o.id
+          )
+        ORDER BY o.paid_at ASC, o.created_at ASC
+        LIMIT ?`,
+    ).all(limit) as Array<{ id: string }>;
+
+    let attempted = 0;
+    for (const row of rows) {
+      try {
+        await recoverEventPurchaseNotifications(orderRepository.findById(row.id));
+        attempted += 1;
+      } catch (error) {
+        this.logger.warn(
+          `[payout-reconciliation] event purchase notification recovery failed order=${row.id}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
+    return attempted;
   }
 
   private async recoverMissingEventPayouts(limit: number): Promise<number> {
@@ -412,6 +446,11 @@ export class PayoutReconciliationScheduler {
 
     this.running = true;
     try {
+      const recoveredEventNotifications = await this.recoverMissingEventPurchaseNotifications(this.config.batchLimit);
+      if (recoveredEventNotifications > 0) {
+        this.logger.log(`[payout-reconciliation] checked ${recoveredEventNotifications} paid event purchase notification(s)`);
+      }
+
       const recoveredEventPayouts = await this.recoverMissingEventPayouts(this.config.batchLimit);
       if (recoveredEventPayouts > 0) {
         this.logger.log(`[payout-reconciliation] recovered ${recoveredEventPayouts} missing event payout(s)`);
