@@ -4,6 +4,7 @@ import { apiFetch } from '../../lib/api';
 import PayoutDestinationForm, {
   type PayoutDestinationFormValue,
 } from '../payouts/PayoutDestinationForm';
+import type { PayoutProviderOption } from '../../modules/payouts/types';
 
 type Destination = {
   id: string;
@@ -44,6 +45,8 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
   const [form, setForm] = useState<PayoutDestinationFormValue>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [providerOptions, setProviderOptions] = useState<PayoutProviderOption[]>([]);
+  const [providerMetadataLoading, setProviderMetadataLoading] = useState(false);
 
   const activeDestinations = useMemo(
     () => destinations.filter((destination) => destination.isActive && destination.verificationStatus.toLowerCase() === 'verified'),
@@ -52,13 +55,47 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
 
   const loadDestinations = async () => {
     setLoading(true);
+    setProviderMetadataLoading(true);
     try {
-      const response = (await apiFetch('/api/event-creator/payout-destinations')) as { destinations?: Destination[] };
-      setDestinations(Array.isArray(response.destinations) ? response.destinations : []);
+      const [destinationsResult, mobileMoneyResult, bankResult] = await Promise.all([
+        apiFetch('/api/event-creator/payout-destinations') as Promise<{ destinations?: Destination[] }>,
+        apiFetch('/api/payouts/provider/mobile-money-operators') as Promise<{ operators?: Array<{ refId: string; name: string }> }>,
+        apiFetch('/api/payouts/provider/banks?currency=MWK') as Promise<{ banks?: Array<{ uuid: string; name: string }> }>,
+      ]);
+
+      setDestinations(Array.isArray(destinationsResult?.destinations) ? destinationsResult.destinations : []);
+
+      const mobileMoneyOperators = Array.isArray(mobileMoneyResult?.operators)
+        ? mobileMoneyResult.operators.map((item) => ({
+            id: item.refId,
+            name: item.name,
+            destinationType: 'mobile_money' as const,
+            providerRefId: item.refId,
+            currency: 'MWK',
+          }))
+        : [];
+      const banks = Array.isArray(bankResult?.banks)
+        ? bankResult.banks.map((item) => ({
+            id: item.uuid,
+            name: item.name,
+            destinationType: 'bank' as const,
+            providerRefId: item.uuid,
+            currency: 'MWK',
+          }))
+        : [];
+
+      setProviderOptions([...mobileMoneyOperators, ...banks]);
+
+      if (mobileMoneyOperators.length === 0 && banks.length === 0) {
+        throw new Error('Could not load current PayChangu payout providers. Refresh before adding a new destination.');
+      }
+
       setError(null);
     } catch (err: any) {
       setError(err?.message || 'Could not load payout destinations.');
+      setProviderOptions([]);
     } finally {
+      setProviderMetadataLoading(false);
       setLoading(false);
     }
   };
@@ -143,7 +180,7 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
             <button
               type="button"
               onClick={() => setShowNew((current) => !current)}
-              disabled={disabled || saving}
+              disabled={disabled || saving || providerMetadataLoading || providerOptions.length === 0}
               className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-60"
             >
               <Plus className="h-4 w-4" />
@@ -161,7 +198,8 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
                 loading={saving}
                 error={null}
                 disabled={disabled}
-                providerOptions={[]}
+                providerOptions={providerOptions}
+                useFallbackProviders={false}
               />
             </div>
           ) : null}
