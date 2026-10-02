@@ -57,40 +57,40 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
     setLoading(true);
     setProviderMetadataLoading(true);
     try {
-      const [destinationsResult, mobileMoneyResult, bankResult] = await Promise.all([
+      const [destinationsResult, metadataResult] = await Promise.allSettled([
         apiFetch('/api/event-creator/payout-destinations') as Promise<{ destinations?: Destination[] }>,
-        apiFetch('/api/payouts/provider/mobile-money-operators') as Promise<{ operators?: Array<{ refId: string; name: string }> }>,
-        apiFetch('/api/payouts/provider/banks?currency=MWK') as Promise<{ banks?: Array<{ uuid: string; name: string }> }>,
+        apiFetch('/api/event-creator/payout-provider-metadata') as Promise<{
+          mobileMoneyOperators?: PayoutProviderOption[];
+          banks?: PayoutProviderOption[];
+        }>,
       ]);
 
-      setDestinations(Array.isArray(destinationsResult?.destinations) ? destinationsResult.destinations : []);
-
-      const mobileMoneyOperators = Array.isArray(mobileMoneyResult?.operators)
-        ? mobileMoneyResult.operators.map((item) => ({
-            id: item.refId,
-            name: item.name,
-            destinationType: 'mobile_money' as const,
-            providerRefId: item.refId,
-            currency: 'MWK',
-          }))
-        : [];
-      const banks = Array.isArray(bankResult?.banks)
-        ? bankResult.banks.map((item) => ({
-            id: item.uuid,
-            name: item.name,
-            destinationType: 'bank' as const,
-            providerRefId: item.uuid,
-            currency: 'MWK',
-          }))
-        : [];
-
-      setProviderOptions([...mobileMoneyOperators, ...banks]);
-
-      if (mobileMoneyOperators.length === 0 && banks.length === 0) {
-        throw new Error('Could not load current PayChangu payout providers. Refresh before adding a new destination.');
+      if (destinationsResult.status === 'fulfilled') {
+        setDestinations(Array.isArray(destinationsResult.value?.destinations) ? destinationsResult.value.destinations : []);
+      } else {
+        setDestinations([]);
       }
 
-      setError(null);
+      if (metadataResult.status === 'fulfilled') {
+        const mobileMoneyOperators = Array.isArray(metadataResult.value?.mobileMoneyOperators)
+          ? metadataResult.value.mobileMoneyOperators
+          : [];
+        const banks = Array.isArray(metadataResult.value?.banks)
+          ? metadataResult.value.banks
+          : [];
+        setProviderOptions([...mobileMoneyOperators, ...banks]);
+      } else {
+        setProviderOptions([]);
+      }
+
+      if (destinationsResult.status === 'rejected') {
+        throw destinationsResult.reason;
+      }
+      if (metadataResult.status === 'rejected') {
+        setError('Could not load current PayChangu payout providers. Refresh before adding a new destination.');
+      } else {
+        setError(null);
+      }
     } catch (err: any) {
       setError(err?.message || 'Could not load payout destinations.');
       setProviderOptions([]);
