@@ -13,7 +13,7 @@ const requireAuth: RequestHandler = (req, _res, next) => {
   next();
 };
 function createApp(): express.Express { const app = express(); app.use(express.json()); app.use('/api/payments', createPaymentRouter(requireAuth)); return app; }
-function clearState() { const db = getPaymentDb(); db.prepare('DELETE FROM payment_webhook_events').run(); db.prepare('DELETE FROM payments').run(); db.prepare('DELETE FROM orders').run(); db.prepare('DELETE FROM listings').run(); db.prepare("DELETE FROM seller_payout_accounts WHERE owner_type = 'event_creator' AND event_creator_uid = 'event_creator_checkout_test'").run(); db.prepare('DELETE FROM events WHERE id IN (992101, 992102)').run(); db.prepare("DELETE FROM event_creators WHERE uid = 'event_creator_checkout_test'").run(); }
+function clearState() { const db = getPaymentDb(); db.prepare('DELETE FROM payment_webhook_events').run(); db.prepare('DELETE FROM payments').run(); db.prepare('DELETE FROM orders').run(); db.prepare('DELETE FROM listings').run(); db.prepare('DELETE FROM events WHERE id IN (992101, 992102)').run(); db.prepare("DELETE FROM seller_payout_accounts WHERE owner_type = 'event_creator' AND event_creator_uid = 'event_creator_checkout_test'").run(); db.prepare("DELETE FROM event_creators WHERE uid = 'event_creator_checkout_test'").run(); }
 function seedEventDestination(): string {
   const db = getPaymentDb();
   const id = 'event-checkout-destination';
@@ -77,6 +77,7 @@ test('checkout rejects published paid events without a payout destination', asyn
 
 test('checkout forces direct settlement for configured event-only orders', async () => {
   clearState();
+  seedCheckoutEventCreator();
   const destinationId = seedEventDestination();
   seedEvent(992101, 'Direct Event Checkout', destinationId);
   mockPayChangu();

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test, { afterEach } from 'node:test';
 import { getPaymentDb } from '../../../postgresCompat.js';
 import { createEventPayoutCandidateAsync, resolveEventPayoutContext } from '../event-payout.integration.js';
+import { setDefaultEventCreatorPayoutDestination } from '../event-creator-payout-destinations.js';
 import { payoutService } from '../payout.service.js';
 import { withTransaction } from '../../../postgres.js';
 
@@ -85,6 +86,47 @@ test('event payout context resolves the event-bound verified destination', async
     assert.equal(context?.payoutMethod, 'airtel_money');
   });
   cleanup();
+});
+
+test('event creator can change default payout destination without changing an event binding', () => {
+  seed();
+
+  db.prepare(`
+    INSERT INTO seller_payout_accounts (
+      id, seller_uid, event_creator_uid, owner_type, owner_uid,
+      destination_type, provider_name, provider_ref_id, currency, account_name,
+      account_number_encrypted, mobile_encrypted, masked_account, destination_fingerprint,
+      is_default, verification_status, verification_attempts, last_error, verified_at,
+      replaced_from_id, replaced_by_id, is_active, created_at, updated_at
+    ) VALUES (
+      'event-payout-test-destination-b', NULL, 'event_payout_test_creator', 'event_creator', 'event_payout_test_creator',
+      'mobile_money', 'TNM Mpamba', 'tnm_mpamba', 'MWK', 'Creator TNM',
+      NULL, '0888888888', '******8888', 'event-payout-test-fingerprint-b',
+      0, 'verified', 0, NULL, ?, NULL, NULL, 1, ?, ?
+    )
+  `).run(new Date().toISOString(), new Date().toISOString(), new Date().toISOString());
+
+  const destination = setDefaultEventCreatorPayoutDestination(
+    'event_payout_test_creator',
+    'event-payout-test-destination-b',
+  );
+  assert.equal(destination.id, 'event-payout-test-destination-b');
+  assert.equal(destination.isDefault, true);
+
+  const defaults = db.prepare(`
+    SELECT id
+    FROM seller_payout_accounts
+    WHERE owner_type = 'event_creator' AND event_creator_uid = ?
+    ORDER BY is_default DESC
+  `).all('event_payout_test_creator') as Array<{ id: string }>;
+
+  assert.equal(defaults[0]?.id, 'event-payout-test-destination-b');
+
+  const event = db.prepare(
+    'SELECT payout_destination_id FROM events WHERE id = ? LIMIT 1',
+  ).get(992001) as { payout_destination_id: string | null };
+
+  assert.equal(event.payout_destination_id, 'event-payout-test-destination');
 });
 
 test('event payout context rejects orders that mix event tickets with listing items', async () => {
