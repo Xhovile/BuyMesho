@@ -41,8 +41,8 @@ const FALLBACK_BANK_OPTIONS: PayoutProviderOption[] = [
 ];
 
 const FALLBACK_MOBILE_OPTIONS: PayoutProviderOption[] = [
-  { id: "e8d5fca0-e5ac-4714-a518-484be9011326", name: "Airtel Money", destinationType: "mobile_money", providerRefId: "e8d5fca0-e5ac-4714-a518-484be9011326" },
-  { id: "5e9946ae-76ed-43f5-ad59-63e09096006a", name: "TNM Mpamba", destinationType: "mobile_money", providerRefId: "5e9946ae-76ed-43f5-ad59-63e09096006a" },
+  { id: "20be6c20-adeb-4b5b-a7ba-0769820df4fb", name: "Airtel Money", destinationType: "mobile_money", providerRefId: "e8d5fca0-e5ac-4714-a518-484be9011326" },
+  { id: "27494cb5-ba9e-437f-a114-4e7a7686bcca", name: "TNM Mpamba", destinationType: "mobile_money", providerRefId: "5e9946ae-76ed-43f5-ad59-63e09096006a" },
 ];
 
 export default function PayoutDestinationForm({
