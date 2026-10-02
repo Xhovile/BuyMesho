@@ -8,13 +8,12 @@ import { payoutRepository, payoutService } from '../payouts/payout.service.js';
 import { getConnectAccount } from '../connect/connect.service.js';
 import { calculatePayoutFormula } from '../payouts/payout.policy.js';
 import { createEventPayoutCandidateAsync, resolveEventPayoutContext } from '../payouts/event-payout.integration.js';
-import { query, withTransaction } from '../../postgres.js';
+import { withTransaction } from '../../postgres.js';
 import type { PoolClient } from 'pg';
 import { getPaymentDb } from '../../postgresCompat.js';
 import { isPaychanguSuccessStatus } from './paychangu.provider.js';
 import { notifyOrderPaid } from '../notifications/order-paid.notification.js';
-import { notifyEventTicketPurchaseCompleted } from '../notifications/event-ticket-purchase-completed.notification.js';
-import { resolveNotificationRecipient } from '../notifications/email-recipient.js';
+import { notifyEventTicketPurchaseNotifications } from '../notifications/event-purchase-recovery.notification.js';
 import { projectEventTickets } from '../orders/eventTicketProjection.js';
 
 export interface ApplyPayChanguResult {
@@ -158,7 +157,7 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
         // The buyer needs the ticket confirmation, and the event manager needs
         // the purchase notification even when the payout attempt fails.
         emitOrderPaidNotification(settlement.order);
-        if(eventTicketsProjected)void emitEventTicketPurchaseNotifications(settlement.order);
+        if(eventTicketsProjected)void notifyEventTicketPurchaseNotifications(settlement.order);
       }
     }else if(settlement.orderEnteredEscrow){
       emitOrderPaidNotification(settlement.order);
