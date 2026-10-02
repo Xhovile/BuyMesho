@@ -8,6 +8,7 @@ import { escrowRepository } from "../escrow/escrow.repository.js";
 import { getPaymentDb } from "../../postgresCompat.js";
 import { paymentWebhookHandler } from "./payment.webhooks.js";
 import { payoutWebhookHandler } from "../payouts/payout.webhooks.js";
+import { assertUsableEventCreatorPayoutDestination } from "../payouts/event-creator-payout-destinations.js";
 
 export { payoutWebhookHandler };
 
@@ -33,6 +34,7 @@ type EventRow = {
   location: string | null;
   organizer_name: string | null;
   status: string;
+  payout_destination_id?: string | null;
 };
 
 type CheckoutItemInput = {
@@ -324,6 +326,21 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           }
 
           const unitPrice = Number(event.ticket_price ?? 0);
+          if (unitPrice > 0) {
+            const creatorUid = String(event.creator_uid ?? "").trim();
+            const destinationId = String(event.payout_destination_id ?? "").trim();
+            if (!creatorUid) {
+              return res.status(409).json({ error: "This event is not configured for ticket payments yet.", code: "EVENT_PAYOUT_CONFIGURATION_REQUIRED" });
+            }
+            if (!destinationId) {
+              return res.status(409).json({ error: "This event is not configured with a payout destination yet.", code: "EVENT_PAYOUT_DESTINATION_REQUIRED" });
+            }
+            try {
+              assertUsableEventCreatorPayoutDestination(creatorUid, destinationId);
+            } catch {
+              return res.status(409).json({ error: "This event's payout destination is not currently usable.", code: "EVENT_PAYOUT_DESTINATION_UNUSABLE" });
+            }
+          }
           total += unitPrice * safeQty;
           hasEvent = true;
           eventIds.push(String(event.id));
