@@ -26,6 +26,7 @@ type PayoutDestinationFormProps = {
   disabled?: boolean;
   isEditing?: boolean;
   providerOptions?: PayoutProviderOption[];
+  useFallbackProviders?: boolean;
 };
 
 const FALLBACK_BANK_OPTIONS: PayoutProviderOption[] = [
@@ -54,6 +55,7 @@ export default function PayoutDestinationForm({
   disabled = false,
   isEditing = false,
   providerOptions = [],
+  useFallbackProviders = true,
 }: PayoutDestinationFormProps) {
   const updateValue = <Key extends keyof PayoutDestinationFormValue>(key: Key, nextValue: PayoutDestinationFormValue[Key]) => {
     onChange({ ...value, [key]: nextValue });
@@ -61,12 +63,12 @@ export default function PayoutDestinationForm({
 
   const availableProviders = useMemo(() => {
     const filtered = providerOptions.filter((option) => option.destinationType === value.destinationType);
-    return filtered.length > 0
-      ? filtered
-      : value.destinationType === "bank"
-        ? FALLBACK_BANK_OPTIONS
-        : FALLBACK_MOBILE_OPTIONS;
-  }, [providerOptions, value.destinationType]);
+    if (filtered.length > 0) return filtered;
+    if (!useFallbackProviders) return [];
+    return value.destinationType === "bank"
+      ? FALLBACK_BANK_OPTIONS
+      : FALLBACK_MOBILE_OPTIONS;
+  }, [providerOptions, value.destinationType, useFallbackProviders]);
 
   const dropdownValue = value.providerRefId || value.providerName;
   const mobilePlaceholder = useMemo(() => {
