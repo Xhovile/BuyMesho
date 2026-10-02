@@ -5,11 +5,36 @@ import { postgresDb } from "../db.js";
 import {
   assertUsableEventCreatorPayoutDestination,
   listEventCreatorPayoutDestinations,
+  setDefaultEventCreatorPayoutDestination,
 } from "../modules/payouts/event-creator-payout-destinations.js";
 
 export function createEventPayoutProtectionRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
+  router.patch("/payout-destinations/:destinationId/default", requireAuth, (req, res) => {
+    const destinationId = typeof req.params.destinationId === "string" ? req.params.destinationId.trim() : "";
+    if (!destinationId) return res.status(400).json({ error: "A payout destination is required" });
+
+    try {
+      const creator = postgresDb.prepare(
+        "SELECT uid, status, active_until FROM event_creators WHERE uid = ? LIMIT 1",
+      ).get(req.user!.uid) as { uid: string; status: string; active_until: string | null } | undefined;
+
+      if (!creator || creator.status !== "approved" || (creator.active_until && new Date(creator.active_until).getTime() < Date.now())) {
+        return res.status(403).json({ error: "Approved event creator access is required." });
+      }
+
+      const destination = setDefaultEventCreatorPayoutDestination(req.user!.uid, destinationId);
+      return res.json({ success: true, destination });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to set payout destination default";
+      const status =
+        /not found/i.test(message) ? 404 :
+        /inactive|not verified|usable/i.test(message) ? 400 :
+        500;
+      return res.status(status).json({ error: message });
+    }
+  });
   router.get("/events/:id/payout-destination", requireAuth, (req, res) => {
     const eventId = Number(req.params.id);
     if (!Number.isInteger(eventId)) return res.status(400).json({ error: "Invalid event id" });
