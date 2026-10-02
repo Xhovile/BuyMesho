@@ -57,8 +57,17 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
   const loadDestinations = async () => {
     setLoading(true);
     try {
-      const response = (await apiFetch('/api/event-creator/payout-destinations')) as { destinations?: Destination[] };
-      setDestinations(Array.isArray(response.destinations) ? response.destinations : []);
+      const nextDestinations = Array.isArray(response.destinations) ? response.destinations : [];
+      setDestinations(nextDestinations);
+      if (!eventId && !value) {
+        const defaultDestination = nextDestinations.find(
+          (destination) =>
+            destination.isActive &&
+            destination.verificationStatus.toLowerCase() === 'verified' &&
+            destination.isDefault,
+        );
+        if (defaultDestination) onChange(defaultDestination.id);
+      }
       setError(null);
     } catch (err: any) {
       setError(err?.message || 'Could not load payout destinations.');
