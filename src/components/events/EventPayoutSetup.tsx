@@ -25,6 +25,7 @@ type Props = {
   onChange: (destinationId: string | null) => void;
   required?: boolean;
   disabled?: boolean;
+  eventDestinationLocked?: boolean;
 };
 
 const EMPTY_FORM: PayoutDestinationFormValue = {
@@ -38,13 +39,20 @@ const EMPTY_FORM: PayoutDestinationFormValue = {
   isDefault: false,
 };
 
-export default function EventPayoutSetup({ value, onChange, required = false, disabled = false }: Props) {
+export default function EventPayoutSetup({
+  value,
+  onChange,
+  required = false,
+  disabled = false,
+  eventDestinationLocked = false,
+}: Props) {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState<PayoutDestinationFormValue>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [defaultSavingId, setDefaultSavingId] = useState<string | null>(null);
   const [providerOptions, setProviderOptions] = useState<PayoutProviderOption[]>([]);
   const [providerMetadataLoading, setProviderMetadataLoading] = useState(false);
 
@@ -114,13 +122,34 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
       })) as { destination?: Destination };
       if (!response.destination?.id) throw new Error('Payout destination was not created.');
       setDestinations((current) => [response.destination!, ...current.filter((item) => item.id !== response.destination!.id)]);
-      onChange(response.destination.id);
+      if (!eventDestinationLocked) {
+        onChange(response.destination.id);
+      }
       setShowNew(false);
       setForm({ ...EMPTY_FORM });
     } catch (err: any) {
       setError(err?.message || 'Could not save payout destination.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleMakeDefault = async (destinationId: string) => {
+    setDefaultSavingId(destinationId);
+    setError(null);
+    try {
+      const response = (await apiFetch(`/api/event-creator/payout-destinations/${encodeURIComponent(destinationId)}/default`, {
+        method: 'PATCH',
+      })) as { destination?: Destination };
+      if (!response.destination?.id) throw new Error('The default payout destination was not updated.');
+      setDestinations((current) => current.map((destination) => ({
+        ...destination,
+        isDefault: destination.id === response.destination!.id,
+      })));
+    } catch (err: any) {
+      setError(err?.message || 'Could not change the default payout destination.');
+    } finally {
+      setDefaultSavingId(null);
     }
   };
 
@@ -134,13 +163,18 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
             {required ? <span className="ml-1 text-red-900">*</span> : null}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600">
-            Choose the receiving account for this event. The event keeps this destination even if you later add another one.
+            Choose the receiving account for this event. “Default” is a creator preference for future events and does not change an event that is already bound to an account.
           </p>
         </div>
         <WalletCards className="mt-1 hidden h-5 w-5 text-zinc-500 sm:block" />
       </div>
 
       {error ? <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
+      {eventDestinationLocked ? (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          This event’s payout destination is locked because it has already had a successful ticket sale. You can still add a verified destination or change your default account for future events.
+        </div>
+      ) : null}
 
       {loading ? (
         <div className="mt-4 rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-500">Loading payout destinations…</div>
@@ -149,33 +183,60 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
           <div className="mt-4 grid gap-3">
             {activeDestinations.map((destination) => {
               const selected = value === destination.id;
+              const lockedAndNotSelected = eventDestinationLocked && !selected;
               return (
-                <button
+                <div
                   key={destination.id}
-                  type="button"
-                  onClick={() => onChange(destination.id)}
-                  disabled={disabled || saving}
-                  className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-4 text-left transition ${
-                    selected ? 'border-zinc-950 bg-white shadow-sm' : 'border-zinc-200 bg-white hover:border-zinc-300'
-                  }`}
+                  className={`rounded-2xl border bg-white p-3 transition ${selected ? 'border-zinc-950 shadow-sm' : 'border-zinc-200'}`}
                 >
-                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${selected ? 'bg-zinc-950 text-white' : 'bg-zinc-100 text-zinc-600'}`}>
-                    {destination.destinationType === 'bank' ? <Landmark className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-extrabold text-zinc-950">{destination.providerName}</span>
-                    <span className="mt-1 block truncate text-xs font-medium text-zinc-500">
-                      {destination.accountName} · {destination.accountDisplay}
-                    </span>
-                  </span>
-                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${selected ? 'bg-zinc-950 text-white' : 'border border-zinc-200 text-transparent'}`}>
-                    <Check className="h-4 w-4" />
-                  </span>
-                </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => onChange(destination.id)}
+                      disabled={disabled || saving || defaultSavingId !== null || lockedAndNotSelected}
+                      className={`flex min-w-0 flex-1 items-center gap-3 rounded-xl px-1 py-1.5 text-left ${lockedAndNotSelected ? 'cursor-not-allowed opacity-55' : 'hover:bg-zinc-50'}`}
+                    >
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${selected ? 'bg-zinc-950 text-white' : 'bg-zinc-100 text-zinc-600'}`}>
+                        {destination.destinationType === 'bank' ? <Landmark className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-extrabold text-zinc-950">{destination.providerName}</span>
+                        <span className="mt-1 block truncate text-xs font-medium text-zinc-500">
+                          {destination.accountName} · {destination.accountDisplay}
+                        </span>
+                      </span>
+                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${selected ? 'bg-zinc-950 text-white' : 'border border-zinc-200 text-transparent'}`}>
+                        <Check className="h-4 w-4" />
+                      </span>
+                    </button>
+
+                    <div className="shrink-0">
+                      {destination.isDefault ? (
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-extrabold text-emerald-700">
+                          Default
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void handleMakeDefault(destination.id)}
+                          disabled={disabled || saving || defaultSavingId !== null}
+                          className="rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-extrabold text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
+                        >
+                          {defaultSavingId === destination.id ? 'Saving…' : 'Make default'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {lockedAndNotSelected ? (
+                    <p className="mt-2 px-1 text-[11px] font-semibold text-zinc-500">
+                      This event already has a locked payout destination.
+                    </p>
+                  ) : null}
+                </div>
               );
             })}
           </div>
-
           <div className="mt-4">
             <button
               type="button"
