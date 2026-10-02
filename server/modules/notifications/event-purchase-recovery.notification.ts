@@ -25,10 +25,30 @@ export async function notifyEventTicketPurchaseNotifications(order:StoredOrder|u
   }));
 
   const first=ticketRows[0];
-  const [buyerRecipient,eventManagerRecipient]=await Promise.all([
+  const recipientResults=await Promise.allSettled([
     resolveNotificationRecipient(order.buyerId),
     resolveNotificationRecipient(order.sellerId),
   ]);
+
+  const emptyRecipient={email:"",displayName:""};
+  const buyerRecipient=recipientResults[0]?.status==='fulfilled'
+    ? recipientResults[0].value
+    : emptyRecipient;
+  const eventManagerRecipient=recipientResults[1]?.status==='fulfilled'
+    ? recipientResults[1].value
+    : emptyRecipient;
+
+  recipientResults.forEach((result,index)=>{
+    if(result.status==='rejected'){
+      console.warn('[event-ticket] recipient resolution failed',JSON.stringify({
+        orderId:order.id,
+        role:index===0?'buyer':'event_manager',
+        uid:index===0?order.buyerId:order.sellerId,
+        error:result.reason instanceof Error?result.reason.message:String(result.reason),
+      }));
+    }
+  });
+
   let eventManagerName=eventManagerRecipient.displayName?.trim()||'';
   try{
     const result=await query<{display_name?:string|null}>('SELECT display_name FROM event_creators WHERE uid = $1 LIMIT 1',[order.sellerId]);
