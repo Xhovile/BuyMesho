@@ -142,6 +142,90 @@ export function assertUsableEventCreatorPayoutDestination(
   return row;
 }
 
+export function setDefaultEventCreatorPayoutDestination(
+  eventCreatorUid: string,
+  destinationId: string,
+): EventCreatorPayoutDestination {
+  const db = getPaymentDb();
+  const now = new Date().toISOString();
+
+  let selectedId = destinationId;
+  let previousDefaultId: string | null = null;
+
+  db.transaction(() => {
+    const rows = db.prepare(
+      `SELECT id, is_default, is_active, verification_status
+       FROM seller_payout_accounts
+       WHERE owner_type = 'event_creator' AND event_creator_uid = ?
+       FOR UPDATE`,
+    ).all(eventCreatorUid) as Array<{
+      id: string;
+      is_default: number;
+      is_active: number;
+      verification_status: string;
+    }>;
+
+    const destination = rows.find((row) => row.id === destinationId);
+    if (!destination) {
+      throw new Error('Payout destination not found for this event creator');
+    }
+    if (destination.is_active !== 1) {
+      throw new Error('Selected payout destination is inactive');
+    }
+    if (destination.verification_status.toLowerCase() !== 'verified') {
+      throw new Error('Selected payout destination is not verified');
+    }
+
+    const currentDefault = rows.find((row) => row.is_default === 1);
+    previousDefaultId = currentDefault?.id ?? null;
+
+    if (previousDefaultId === destinationId) return;
+
+    db.prepare(
+      `UPDATE seller_payout_accounts
+       SET is_default = 0, updated_at = ?
+       WHERE owner_type = 'event_creator' AND event_creator_uid = ?`,
+    ).run(now, eventCreatorUid);
+
+    const result = db.prepare(
+      `UPDATE seller_payout_accounts
+       SET is_default = 1, updated_at = ?
+       WHERE id = ?
+         AND owner_type = 'event_creator'
+         AND event_creator_uid = ?`,
+    ).run(now, destinationId, eventCreatorUid);
+
+    if (result.changes !== 1) {
+      throw new Error('Failed to set the payout destination as default');
+    }
+
+    db.prepare(
+      `INSERT INTO seller_payout_account_events
+       (seller_uid, event_creator_uid, owner_type, owner_uid, account_id, event_type, actor_type, actor_id, note, payload, created_at)
+       VALUES (NULL, ?, 'event_creator', ?, ?, 'destination_default_changed', 'event_creator', ?, NULL, ?, ?)`,
+    ).run(
+      eventCreatorUid,
+      eventCreatorUid,
+      destinationId,
+      eventCreatorUid,
+      JSON.stringify({
+        previousDefaultDestinationId: previousDefaultId,
+        newDefaultDestinationId: destinationId,
+      }),
+      now,
+    );
+  })();
+
+  const selected = db.prepare(
+    `SELECT * FROM seller_payout_accounts
+     WHERE id = ? AND owner_type = 'event_creator' AND event_creator_uid = ?
+     LIMIT 1`,
+  ).get(selectedId, eventCreatorUid) as EventCreatorPayoutDestinationRow | undefined;
+
+  if (!selected) throw new Error('Payout destination not found after update');
+  return rowToDestination(selected);
+}
+
 export function createEventCreatorPayoutDestination(input: {
   eventCreatorUid: string;
   destinationType: unknown;
