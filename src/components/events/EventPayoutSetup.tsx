@@ -24,6 +24,7 @@ type Props = {
   onChange: (destinationId: string | null) => void;
   required?: boolean;
   disabled?: boolean;
+  eventId?: number | null;
 };
 
 const EMPTY_FORM: PayoutDestinationFormValue = {
@@ -37,12 +38,15 @@ const EMPTY_FORM: PayoutDestinationFormValue = {
   isDefault: false,
 };
 
-export default function EventPayoutSetup({ value, onChange, required = false, disabled = false }: Props) {
+export default function EventPayoutSetup({ value, onChange, required = false, disabled = false, eventId = null }: Props) {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState<PayoutDestinationFormValue>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
+  const [eventPayoutLocked, setEventPayoutLocked] = useState(false);
+  const [protectionLoading, setProtectionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const activeDestinations = useMemo(
@@ -66,6 +70,57 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
   useEffect(() => {
     void loadDestinations();
   }, []);
+
+  useEffect(() => {
+    if (!eventId) {
+      setEventPayoutLocked(false);
+      setProtectionLoading(false);
+      return;
+    }
+
+    let active = true;
+    setProtectionLoading(true);
+
+    void apiFetch(`/api/event-creator/events/${eventId}/payout-destination`)
+      .then((response) => {
+        if (!active) return;
+        const data = response as { locked?: boolean };
+        setEventPayoutLocked(data.locked === true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setEventPayoutLocked(false);
+      })
+      .finally(() => {
+        if (active) setProtectionLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [eventId]);
+
+  const handleMakeDefault = async (destinationId: string) => {
+    setSettingDefaultId(destinationId);
+    setError(null);
+    try {
+      const response = (await apiFetch(`/api/event-creator/payout-destinations/${destinationId}/default`, {
+        method: 'PATCH',
+      })) as { destination?: Destination };
+
+      if (!response.destination?.id) throw new Error('Payout destination default was not updated.');
+      setDestinations((current) =>
+        current.map((item) => ({
+          ...item,
+          isDefault: item.id === response.destination!.id,
+        })),
+      );
+    } catch (err: any) {
+      setError(err?.message || 'Could not change the default payout destination.');
+    } finally {
+      setSettingDefaultId(null);
+    }
+  };
 
   const handleSaveNew = async () => {
     setSaving(true);
@@ -97,7 +152,7 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
             {required ? <span className="ml-1 text-red-900">*</span> : null}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600">
-            Choose the receiving account for this event. The event keeps this destination even if you later add another one.
+            Select the payout destination for this event. Your creator default is separate and can be changed at any time for future events.
           </p>
         </div>
         <WalletCards className="mt-1 hidden h-5 w-5 text-zinc-500 sm:block" />
@@ -112,33 +167,69 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
           <div className="mt-4 grid gap-3">
             {activeDestinations.map((destination) => {
               const selected = value === destination.id;
+              const makingDefault = settingDefaultId === destination.id;
               return (
-                <button
+                <div
                   key={destination.id}
-                  type="button"
-                  onClick={() => onChange(destination.id)}
-                  disabled={disabled || saving}
-                  className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-4 text-left transition ${
-                    selected ? 'border-zinc-950 bg-white shadow-sm' : 'border-zinc-200 bg-white hover:border-zinc-300'
+                  className={`rounded-2xl border px-4 py-4 transition ${
+                    selected ? "border-zinc-950 bg-white shadow-sm" : "border-zinc-200 bg-white"
                   }`}
                 >
-                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${selected ? 'bg-zinc-950 text-white' : 'bg-zinc-100 text-zinc-600'}`}>
-                    {destination.destinationType === 'bank' ? <Landmark className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-extrabold text-zinc-950">{destination.providerName}</span>
-                    <span className="mt-1 block truncate text-xs font-medium text-zinc-500">
-                      {destination.accountName} · {destination.accountDisplay}
-                    </span>
-                  </span>
-                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${selected ? 'bg-zinc-950 text-white' : 'border border-zinc-200 text-transparent'}`}>
-                    <Check className="h-4 w-4" />
-                  </span>
-                </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => onChange(destination.id)}
+                      disabled={disabled || saving || eventPayoutLocked}
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
+                        selected ? "bg-zinc-950 text-white" : "bg-zinc-100 text-zinc-600"
+                      }`}
+                      >
+                        {destination.destinationType === "bank" ? <Landmark className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-extrabold text-zinc-950">{destination.providerName}</span>
+                          {destination.isDefault ? (
+                            <span className="rounded-full bg-zinc-100 px-2 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-zinc-600">
+                              Default
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="mt-1 block truncate text-xs font-medium text-zinc-500">
+                          {destination.accountName} · {destination.accountDisplay}
+                        </span>
+                      </span>
+                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                        selected ? "bg-zinc-950 text-white" : "border border-zinc-200 text-transparent"
+                      }`}
+                      >
+                        <Check className="h-4 w-4" />
+                      </span>
+                    </button>
+                    {!destination.isDefault ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleMakeDefault(destination.id)}
+                        disabled={disabled || saving || makingDefault}
+                        className="shrink-0 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-extrabold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {makingDefault ? "Setting…" : "Make default"}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
               );
             })}
           </div>
-
+          {eventId && eventPayoutLocked ? (
+            <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900">
+              This event's payout destination is locked after its first successful ticket sale. You can still change your creator default for future events.
+            </div>
+          ) : protectionLoading ? (
+            <p className="mt-3 text-xs font-medium text-zinc-400">Checking this event's payout binding…</p>
+          ) : null}
           <div className="mt-4">
             <button
               type="button"
