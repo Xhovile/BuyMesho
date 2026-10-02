@@ -26,24 +26,7 @@ type PayoutDestinationFormProps = {
   disabled?: boolean;
   isEditing?: boolean;
   providerOptions?: PayoutProviderOption[];
-  useFallbackProviders?: boolean;
 };
-
-const FALLBACK_BANK_OPTIONS: PayoutProviderOption[] = [
-  { id: "82310dd1-ec9b-4fe7-a32c-2f262ef08681", name: "National Bank of Malawi", destinationType: "bank", providerRefId: "82310dd1-ec9b-4fe7-a32c-2f262ef08681" },
-  { id: "b064172a-8a1b-4f7f-aad7-81b036c46c57", name: "FDH Bank Limited", destinationType: "bank", providerRefId: "b064172a-8a1b-4f7f-aad7-81b036c46c57" },
-  { id: "e7447c2c-c147-4907-b194-e087fe8d8585", name: "Standard Bank Limited", destinationType: "bank", providerRefId: "e7447c2c-c147-4907-b194-e087fe8d8585" },
-  { id: "87e62436-0553-4fb5-a76d-f27d28420c5b", name: "Ecobank Malawi Limited", destinationType: "bank", providerRefId: "87e62436-0553-4fb5-a76d-f27d28420c5b" },
-  { id: "236760c9-3045-4a01-990e-497b28d115bb", name: "Centenary Bank", destinationType: "bank", providerRefId: "236760c9-3045-4a01-990e-497b28d115bb" },
-  { id: "c759d7b6-ae5c-4a95-814a-79171271897a", name: "CDH Investment Bank", destinationType: "bank", providerRefId: "c759d7b6-ae5c-4a95-814a-79171271897a" },
-  { id: "968ac588-3b1f-4d89-81ff-a3d43a599003", name: "First Capital Limited", destinationType: "bank", providerRefId: "968ac588-3b1f-4d89-81ff-a3d43a599003" },
-  { id: "86007bf5-1b04-49ba-84c1-9758bbf5c996", name: "NBS Bank Limited", destinationType: "bank", providerRefId: "86007bf5-1b04-49ba-84c1-9758bbf5c996" },
-];
-
-const FALLBACK_MOBILE_OPTIONS: PayoutProviderOption[] = [
-  { id: "20be6c20-adeb-4b5b-a7ba-0769820df4fb", name: "Airtel Money", destinationType: "mobile_money", providerRefId: "e8d5fca0-e5ac-4714-a518-484be9011326" },
-  { id: "27494cb5-ba9e-437f-a114-4e7a7686bcca", name: "TNM Mpamba", destinationType: "mobile_money", providerRefId: "5e9946ae-76ed-43f5-ad59-63e09096006a" },
-];
 
 export default function PayoutDestinationForm({
   value,
@@ -55,7 +38,6 @@ export default function PayoutDestinationForm({
   disabled = false,
   isEditing = false,
   providerOptions = [],
-  useFallbackProviders = true,
 }: PayoutDestinationFormProps) {
   const updateValue = <Key extends keyof PayoutDestinationFormValue>(key: Key, nextValue: PayoutDestinationFormValue[Key]) => {
     onChange({ ...value, [key]: nextValue });
@@ -63,12 +45,8 @@ export default function PayoutDestinationForm({
 
   const availableProviders = useMemo(() => {
     const filtered = providerOptions.filter((option) => option.destinationType === value.destinationType);
-    if (filtered.length > 0) return filtered;
-    if (!useFallbackProviders) return [];
-    return value.destinationType === "bank"
-      ? FALLBACK_BANK_OPTIONS
-      : FALLBACK_MOBILE_OPTIONS;
-  }, [providerOptions, value.destinationType, useFallbackProviders]);
+    return filtered;
+  }, [providerOptions, value.destinationType]);
 
   const dropdownValue = value.providerRefId || value.providerName;
   const mobilePlaceholder = useMemo(() => {
