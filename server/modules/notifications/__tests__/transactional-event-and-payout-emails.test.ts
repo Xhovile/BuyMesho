@@ -46,7 +46,7 @@ test("unified event ticket purchase notification sends only once per recipient",
   assert.match(messages[0].text, /Amount paid: 5,000\.00 MWK/);
   assert.match(messages[0].text, /ticket-1/);
   assert.match(messages[0].text, /ticket-2/);
-  assert.match(messages[0].html, /ticket-1.*download=1/s);
+  assert.match(messages[0].html, /\/api\/event-tickets\/ticket-1\/download\?token=/);
   assert.equal((messages[0].html.match(/Download Ticket PDF/g) || []).length, 2);
   assert.doesNotMatch(messages[0].html, /Download ticket PDF/);
 });
