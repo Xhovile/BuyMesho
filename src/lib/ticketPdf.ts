@@ -9,6 +9,7 @@ type PdfTicketLine = {
 
 type TicketPdfOptions = {
   ticketCode: string;
+  qrPayload?: string;
   brandName?: string;
   brandTagline?: string;
 };
@@ -255,7 +256,7 @@ async function embedLogoAsImage(): Promise<EmbeddedImage> {
   };
 }
 
-function getLineValue(lines: PdfTicketLine[], label: string, fallback = "—") {
+function getLineValue(lines: PdfTicketLine[], label: string, fallback = "-") {
   const found = lines.find((line) => line.label.trim().toLowerCase() === label.trim().toLowerCase());
   return found?.value?.trim() || fallback;
 }
@@ -264,69 +265,78 @@ async function createPdfBytes(title: string, lines: PdfTicketLine[], options: Ti
   const brandName = options.brandName?.trim() || "BuyMesho";
   const brandTagline = options.brandTagline?.trim() || "Official event ticket";
   const ticketCode = options.ticketCode.trim() || title.trim();
+  const qrPayload = options.qrPayload?.trim() || ticketCode;
   const logo = await embedLogoAsImage();
-
   const commands: string[] = [];
 
-  addRect(commands, 0, 0, 595, 842, BRAND_LIGHT);
-  addRect(commands, 0, 686, 275, 156, { r: 255, g: 255, b: 255 });
-  addRect(commands, 275, 686, 320, 156, BRAND_CHARCOAL);
-  addRect(commands, 0, 674, 595, 12, BRAND_RED);
+  // Printable A4 canvas with a single, credential-style ticket card.
+  addRect(commands, 0, 0, 595, 842, { r: 248, g: 248, b: 249 });
+  addRect(commands, 28, 30, 539, 782, { r: 255, g: 255, b: 255 });
+  addRect(commands, 28, 758, 539, 54, BRAND_CHARCOAL);
+  addRect(commands, 28, 750, 539, 8, BRAND_RED);
 
-  const logoDisplayWidth = 46;
-  const logoDisplayHeight = Math.max(20, Math.round((logo.height / logo.width) * logoDisplayWidth));
-  const logoX = 34;
-  const logoY = 734;
+  const logoDisplayWidth = 38;
+  const logoDisplayHeight = Math.max(18, Math.round((logo.height / logo.width) * logoDisplayWidth));
+  const logoX = 45;
+  const logoY = 771;
   commands.push("q");
   commands.push(`${logoDisplayWidth.toFixed(2)} 0 0 ${logoDisplayHeight.toFixed(2)} ${logoX.toFixed(2)} ${logoY.toFixed(2)} cm`);
   commands.push("/Im0 Do");
   commands.push("Q");
 
-  addBrandWordmark(commands, 90, 748, 24, brandName);
-  addText(commands, 90, 726, 11, brandTagline, BRAND_MUTED);
+  addBrandWordmark(commands, 92, 783, 21, brandName);
+  addText(commands, 92, 765, 9.5, brandTagline, BRAND_MUTED);
 
-  addText(commands, 34, 642, 27, title, BRAND_CHARCOAL);
-  addText(commands, 34, 620, 12, "Ticket information", BRAND_MID);
+  addText(commands, 370, 784, 9, "VERIFIED EVENT TICKET", { r: 255, g: 255, b: 255 });
+  addText(commands, 370, 766, 8, "DIGITALLY ISSUED", BRAND_MUTED);
 
-  addRect(commands, 34, 568, 270, 42, { r: 255, g: 255, b: 255 });
-  addRect(commands, 34, 568, 270, 42, BRAND_RED);
-  addText(commands, 48, 594, 11, `Ticket code: ${ticketCode}`, { r: 255, g: 255, b: 255 });
+  addText(commands, 50, 718, 26, title, BRAND_CHARCOAL);
+  addText(commands, 50, 696, 10.5, "Event admission credential", BRAND_MID);
 
-  const leftColumnX = 34;
-  const rightColumnX = 34;
-  const leftWidth = 246;
-  const rightWidth = 246;
-  let leftY = 542;
-  leftY = addFieldBlock(commands, leftColumnX, leftY, "Event", getLineValue(lines, "Event"), leftWidth);
-  leftY = addFieldBlock(commands, leftColumnX, leftY, "Organizer", getLineValue(lines, "Organizer", "Event organizer"), leftWidth);
-  leftY = addFieldBlock(commands, leftColumnX, leftY, "Date", getLineValue(lines, "Date"), leftWidth);
-  leftY = addFieldBlock(commands, leftColumnX, leftY, "Time", getLineValue(lines, "Time"), leftWidth);
-  leftY = addFieldBlock(commands, leftColumnX, leftY, "Status", getLineValue(lines, "Status"), leftWidth);
+  addRect(commands, 50, 652, 495, 28, { r: 249, g: 246, b: 246 });
+  addText(commands, 62, 664, 9.5, `Ticket ID: ${ticketCode}`, BRAND_CHARCOAL);
+  addText(commands, 382, 664, 9.5, "STATUS: PAID", BRAND_RED);
 
-  let rightY = 542;
-  rightY = addFieldBlock(commands, rightColumnX + 270, rightY, "Reference", getLineValue(lines, "Reference"), rightWidth, { valueSize: 10.6 });
-  rightY = addFieldBlock(commands, rightColumnX + 270, rightY, "Holder", getLineValue(lines, "Holder", "Verified buyer account"), rightWidth, { valueSize: 11.2 });
-  rightY = addFieldBlock(commands, rightColumnX + 270, rightY, "Venue", getLineValue(lines, "Venue"), rightWidth, { valueSize: 11.2 });
-  rightY = addFieldBlock(commands, rightColumnX + 270, rightY, "Amount", getLineValue(lines, "Amount"), rightWidth, { valueSize: 11.2 });
-  void leftY;
-  void rightY;
+  const field = (x: number, y: number, label: string, value: string, width: number, valueSize = 11.5) => {
+    addText(commands, x, y, 7.5, label.toUpperCase(), BRAND_MID);
+    addWrappedText(commands, x, y - 13, valueSize, value, BRAND_CHARCOAL, width, valueSize + 1.6);
+  };
 
-  const qrX = 355;
-  const qrY = 118;
-  const qrBoxWidth = 206;
-  const qrBoxHeight = 252;
-  addRect(commands, qrX, qrY, qrBoxWidth, qrBoxHeight, { r: 255, g: 255, b: 255 });
-  addRect(commands, qrX, qrY, qrBoxWidth, qrBoxHeight, { r: 236, g: 236, b: 239 });
-  addText(commands, qrX + 18, qrY + 224, 11, "Scan at entry", BRAND_MID);
-  addText(commands, qrX + 18, qrY + 202, 20, "QR Code", BRAND_CHARCOAL);
-  commands.push(...drawTicketCodeMatrix(ticketCode, qrX + 17, qrY + 42, 152));
-  addText(commands, qrX + 18, qrY + 24, 10, ticketCode, BRAND_CHARCOAL);
+  field(50, 625, "Event", getLineValue(lines, "Event"), 225, 13);
+  field(315, 625, "Organizer", getLineValue(lines, "Organizer", "Event Manager"), 230, 11.5);
+  field(50, 575, "Date", getLineValue(lines, "Date"), 225);
+  field(315, 575, "Time", getLineValue(lines, "Time"), 230);
+  field(50, 525, "Venue", getLineValue(lines, "Venue"), 225);
+  field(315, 525, "Ticket type", getLineValue(lines, "Ticket type", "General Admission"), 230);
+  field(50, 475, "Holder", getLineValue(lines, "Holder", "Verified ticket holder"), 225);
+  field(315, 475, "Amount", getLineValue(lines, "Amount"), 230);
+  field(50, 425, "Payment reference", getLineValue(lines, "Reference"), 495, 10);
 
-  addText(commands, 34, 96, 10, "Keep this ticket and code available for verification.", BRAND_MID);
-  addRect(commands, 34, 64, 527, 1.4, mixColors(BRAND_RED, BRAND_CHARCOAL, 0.55));
-  addBrandWordmark(commands, 34, 38, 9, brandName);
-  addText(commands, 34, 24, 8.5, "Verified event access", BRAND_MUTED);
+  // Separate the verification panel visually like a real admission credential.
+  addRect(commands, 50, 136, 495, 248, { r: 248, g: 248, b: 249 });
+  addRect(commands, 50, 370, 495, 14, BRAND_RED);
+  addText(commands, 68, 346, 8.5, "AUTHENTICITY CHECK", BRAND_RED);
+  addText(commands, 68, 326, 17, "Scan this code at the gate", BRAND_CHARCOAL);
+  addWrappedText(commands, 68, 303, 10.5, "The QR code contains the BuyMesho-issued ticket credential. Ticket Validator checks the credential before admission.", BRAND_MID, 215, 14);
 
+  const qrBoxX = 328;
+  const qrBoxY = 160;
+  const qrSize = 184;
+  addRect(commands, qrBoxX, qrBoxY, 204, 204, { r: 255, g: 255, b: 255 });
+  commands.push(...drawTicketCodeMatrix(qrPayload, qrBoxX + 10, qrBoxY + 10, qrSize));
+  addText(commands, qrBoxX + 10, qrBoxY - 13, 8.5, "Ticket credential", BRAND_MID);
+  addText(commands, qrBoxX + 10, qrBoxY - 28, 8.5, "Keep the QR fully visible when scanning.", BRAND_MUTED);
+
+  addRect(commands, 68, 222, 220, 42, { r: 255, g: 255, b: 255 });
+  addText(commands, 82, 246, 9, "BUY MESHО VERIFIED", BRAND_CHARCOAL);
+  addText(commands, 82, 230, 8.5, "Authenticity is checked digitally.", BRAND_MID);
+
+  addRect(commands, 50, 116, 495, 1.2, { r: 224, g: 224, b: 228 });
+  addText(commands, 50, 94, 8.5, "This ticket grants admission only when its credential and ticket status are accepted by the event validator.", BRAND_MID);
+
+  addRect(commands, 50, 70, 495, 1.2, mixColors(BRAND_RED, BRAND_CHARCOAL, 0.55));
+  addBrandWordmark(commands, 50, 49, 9, brandName);
+  addText(commands, 50, 36, 7.8, "Official event access | Keep this ticket available for entry verification.", BRAND_MUTED);
   const contentStream = commands.join("\n");
   const contentBytes = encodeUtf8(contentStream);
 
