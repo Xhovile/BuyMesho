@@ -4,6 +4,7 @@ import { apiFetch } from '../../lib/api';
 import PayoutDestinationForm, {
   type PayoutDestinationFormValue,
 } from '../payouts/PayoutDestinationForm';
+import type { PayoutProviderOption } from '../../modules/payouts/types';
 
 type Destination = {
   id: string;
@@ -47,6 +48,8 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
   const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
   const [eventPayoutLocked, setEventPayoutLocked] = useState(false);
   const [protectionLoading, setProtectionLoading] = useState(false);
+  const [providerOptions, setProviderOptions] = useState<PayoutProviderOption[]>([]);
+  const [providerMetadataLoading, setProviderMetadataLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const activeDestinations = useMemo(
@@ -56,23 +59,53 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
 
   const loadDestinations = async () => {
     setLoading(true);
+    setProviderMetadataLoading(true);
     try {
-      const response = (await apiFetch('/api/event-creator/payout-destinations')) as { destinations?: Destination[] };
-      const nextDestinations = Array.isArray(response.destinations) ? response.destinations : [];
-      setDestinations(nextDestinations);
-      if (!eventId && !value) {
-        const defaultDestination = nextDestinations.find(
-          (destination) =>
-            destination.isActive &&
-            destination.verificationStatus.toLowerCase() === 'verified' &&
-            destination.isDefault,
-        );
-        if (defaultDestination) onChange(defaultDestination.id);
+      const [destinationsResult, metadataResult] = await Promise.allSettled([
+        apiFetch('/api/event-creator/payout-destinations') as Promise<{ destinations?: Destination[] }>,
+        apiFetch('/api/event-creator/payout-provider-metadata') as Promise<{
+          mobileMoneyOperators?: PayoutProviderOption[];
+          banks?: PayoutProviderOption[];
+        }>,
+      ]);
+
+      if (destinationsResult.status === 'fulfilled') {
+        const nextDestinations = Array.isArray(destinationsResult.value?.destinations)
+          ? destinationsResult.value.destinations
+          : [];
+        setDestinations(nextDestinations);
+        if (!eventId && !value) {
+          const defaultDestination = nextDestinations.find(
+            (destination) =>
+              destination.isActive &&
+              destination.verificationStatus.toLowerCase() === 'verified' &&
+              destination.isDefault,
+          );
+          if (defaultDestination) onChange(defaultDestination.id);
+        }
+      } else {
+        setDestinations([]);
+        throw destinationsResult.reason;
       }
-      setError(null);
+
+      if (metadataResult.status === 'fulfilled') {
+        const mobileMoneyOperators = Array.isArray(metadataResult.value?.mobileMoneyOperators)
+          ? metadataResult.value.mobileMoneyOperators
+          : [];
+        const banks = Array.isArray(metadataResult.value?.banks)
+          ? metadataResult.value.banks
+          : [];
+        setProviderOptions([...mobileMoneyOperators, ...banks]);
+        setError(null);
+      } else {
+        setProviderOptions([]);
+        setError('Could not load current PayChangu payout providers. Refresh before adding a new destination.');
+      }
     } catch (err: any) {
       setError(err?.message || 'Could not load payout destinations.');
+      setProviderOptions([]);
     } finally {
+      setProviderMetadataLoading(false);
       setLoading(false);
     }
   };
@@ -142,7 +175,9 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
       })) as { destination?: Destination };
       if (!response.destination?.id) throw new Error('Payout destination was not created.');
       setDestinations((current) => [response.destination!, ...current.filter((item) => item.id !== response.destination!.id)]);
-      onChange(response.destination.id);
+      if (!eventPayoutLocked) {
+        onChange(response.destination.id);
+      }
       setShowNew(false);
       setForm({ ...EMPTY_FORM });
     } catch (err: any) {
@@ -244,7 +279,7 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
             <button
               type="button"
               onClick={() => setShowNew((current) => !current)}
-              disabled={disabled || saving}
+              disabled={disabled || saving || providerMetadataLoading || providerOptions.length === 0}
               className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-60"
             >
               <Plus className="h-4 w-4" />
@@ -262,7 +297,7 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
                 loading={saving}
                 error={null}
                 disabled={disabled}
-                providerOptions={[]}
+                providerOptions={providerOptions}
               />
             </div>
           ) : null}
