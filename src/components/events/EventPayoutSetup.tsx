@@ -57,6 +57,7 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
   const loadDestinations = async () => {
     setLoading(true);
     try {
+      const response = (await apiFetch('/api/event-creator/payout-destinations')) as { destinations?: Destination[] };
       const nextDestinations = Array.isArray(response.destinations) ? response.destinations : [];
       setDestinations(nextDestinations);
       if (!eventId && !value) {
