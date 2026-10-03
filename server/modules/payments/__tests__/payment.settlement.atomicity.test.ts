@@ -98,11 +98,10 @@ test('missing order does not mark payment captured and remains recoverable',asyn
 
 test('verified event payment creates and immediately submits an escrow-free payout',async()=>{
   await seedEventDirect();
-  const originalExecute=payoutService.executePayout;
   const calls:Array<{payoutId:string;actorType?:string;actorId?:string|null}>=[];
-  payoutService.executePayout=async(input)=>{calls.push(input);return {} as any;};
+  const executePayout=async(input:{payoutId:string;actorType?:string;actorId?:string|null})=>{calls.push(input);return {} as any;};
   try{
-    const result=await applyVerifiedPayChanguPayment({verified:true,provider:'paychangu',status:'successful',reference:eventPaymentReference,txRef:eventPaymentReference,amount:{amount:10300,currency:'MWK'},currency:'MWK'});
+    const result=await applyVerifiedPayChanguPayment({verified:true,provider:'paychangu',status:'successful',reference:eventPaymentReference,txRef:eventPaymentReference,amount:{amount:10300,currency:'MWK'},currency:'MWK'},{executePayout});
     assert.equal(result.order?.status,'paid');
     assert.equal(await escrowRepository.findByOrderIdAsync(eventOrderId),undefined);
     const payout=await query('SELECT id,status,owner_type,owner_uid,event_id,event_creator_uid,order_id,escrow_id,release_entry_id,destination_account_id FROM payouts WHERE order_id = $1 LIMIT 1',[eventOrderId]);
