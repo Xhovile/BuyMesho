@@ -44,6 +44,7 @@ function decodePayload(value: string): TicketCredentialPayload | null {
       typeof payload.oid !== "string" ||
       !Number.isFinite(payload.iat)
     ) return null;
+    if (payload.kid !== getKeyId()) return null;
     return payload as TicketCredentialPayload;
   } catch {
     return null;
