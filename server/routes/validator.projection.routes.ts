@@ -2,6 +2,7 @@ import type { Express, NextFunction, Request, Response } from "express";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { hasAdminAccess } from "./adminAccess.js";
 import { getPaymentDb } from "../postgresCompat.js";
+import { decodeTicketCredential, verifyTicketCredential } from "../modules/events/ticketCredential.js";
 
 type User = { uid: string; email: string | null; email_verified: boolean; is_admin: boolean };
 type TicketStatus = "Waiting Entry" | "Inside" | "Outside" | "Cancelled" | "Refunded" | "Blocked" | "Duplicate Scan Attempt";
@@ -98,11 +99,19 @@ function ticketsHandler(req: Request, res: Response) {
 function scanHandler(req: Request, res: Response) {
   const current = user(req); if (!current) return res.status(401).json({ error: "Authentication required" });
   if (!creatorIsActive(current.uid)) return res.status(403).json({ error: "Approved event creator access is required" });
-  const eventId = normalize(req.body?.eventId); const code = normalizeCode(req.body?.code); const gateName = normalize(req.body?.gateName) || "Main Gate"; const staffName = normalize(req.body?.staffName) || "Gate Officer"; const allowReentry = req.body?.allowReentry === true; const clientVersion = normalize(req.body?.clientSnapshotVersion);
+  const eventId = normalize(req.body?.eventId); const rawCode = normalize(req.body?.code); const code = normalizeCode(rawCode); const gateName = normalize(req.body?.gateName) || "Main Gate"; const staffName = normalize(req.body?.staffName) || "Gate Officer"; const allowReentry = req.body?.allowReentry === true; const clientVersion = normalize(req.body?.clientSnapshotVersion);
   const event = allowedEvent(current.uid, eventId); if (!event) return res.status(404).json({ error: "Event not found" });
   if (!eventId || !code) return res.status(400).json({ error: "Missing scan code or event id" });
   if (clientVersion && clientVersion !== eventVersion(event)) return res.status(409).json({ error: "Snapshot outdated", result: "rejected", reason: "event_snapshot_outdated", serverVersion: eventVersion(event) });
-  const row = ticketRows(eventId).find((candidate) => normalizeCode(candidate.code) === code || normalizeCode(candidate.id) === code);
+  let lookupCode = code;
+  if (decodeTicketCredential(rawCode)) {
+    const credential = verifyTicketCredential(rawCode);
+    if (!credential) return res.status(403).json({ error: "Invalid ticket credential", result: "rejected", reason: "ticket_credential_invalid" });
+    if (credential.eid !== eventId) return res.status(403).json({ error: "Ticket belongs to another event", result: "rejected", reason: "ticket_event_mismatch" });
+    lookupCode = normalizeCode(credential.tid);
+  }
+
+  const row = ticketRows(eventId).find((candidate) => normalizeCode(candidate.code) === lookupCode || normalizeCode(candidate.id) === lookupCode);
   if (!row) return res.status(404).json({ error: "Ticket not found", result: "rejected", reason: "ticket_not_found" });
   const ticket = mapTicket(row);
   if (ticket.status === "Inside") return res.status(409).json({ error: "Duplicate scan", result: "already_applied", reason: "already_inside", ticket, serverVersion: eventVersion(event) });
