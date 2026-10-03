@@ -179,7 +179,7 @@ export function setDefaultEventCreatorPayoutDestination(
     db.prepare(
       `INSERT INTO seller_payout_account_events
        (seller_uid, event_creator_uid, owner_type, owner_uid, account_id, event_type, actor_type, actor_id, note, payload, created_at)
-       VALUES (NULL, ?, 'event_creator', ?, ?, 'destination_default_changed', 'event_creator', ?, ?, ?)`,
+       VALUES (NULL, ?, 'event_creator', ?, ?, 'destination_default_changed', 'event_creator', ?, ?, ?, ?)`,
     ).run(
       eventCreatorUid,
       eventCreatorUid,
