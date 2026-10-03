@@ -55,5 +55,7 @@ test("event ticket PDF generator returns a valid PDF document", () => {
   assert.ok(pdf.length > 1000);
   assert.equal(pdf.subarray(0, 8).toString("ascii"), "%PDF-1.4");
   assert.match(pdf.toString("latin1"), /Campus Concert/);
-  assert.match(pdf.toString("latin1"), /BM-4A02AFD21D/);
+  const pdfText = pdf.toString("latin1");
+  assert.match(pdfText, /BM-4A02AFD21D/);
+  assert.match(pdfText, /TICKET CODE/);
 });
