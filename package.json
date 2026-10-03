@@ -40,7 +40,8 @@
     "check:structure-gate": "tsx scripts/validate-structure-gate.ts",
     "check:payments": "npm run test:integration",
     "test:studio-receipt-access": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/services/__tests__/studio-receipt-access.test.ts server/modules/services/__tests__/service-payment-public-record.test.ts",
-    "test:ticket-pdf-qr": "NODE_ENV=test node --import tsx --test --test-concurrency=1 src/lib/qrcode-generator.test.ts"
+    "test:ticket-pdf-qr": "NODE_ENV=test node --import tsx --test --test-concurrency=1 src/lib/qrcode-generator.test.ts",
+    "generate:ticket-signing-keys": "node scripts/generate-ticket-signing-keys.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
