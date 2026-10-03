@@ -20,6 +20,7 @@ import { EVENTS_PATH, navigateBackOrPath, navigateToLoginWithReturnPath, navigat
 import { startConversationFromEvent } from "../../lib/messages";
 import { navigateToConversation } from "../../lib/messagesNavigation";
 import { useAuthUser } from "../../hooks/useAuthUser";
+import { useAccountProfile } from "../../hooks/useAccountProfile";
 import { upsertEventCartItem } from "../../lib/eventCart";
 import { resetSEOMetaTags, truncateSeoDescription, updateSEOMetaTags } from "../../lib/seo";
 import { getEventAttendanceMode } from "../../lib/seoEvent";
@@ -46,6 +47,7 @@ export function getEventRouteState(search: string): EventRouteState {
 
 export default function EventDetailsView() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
+  const { profile } = useAccountProfile();
   const [eventRouteState, setEventRouteState] = useState<EventRouteState>(() =>
     typeof window === "undefined"
       ? { eventId: null, autoBuyRequested: false }
@@ -435,9 +437,13 @@ export default function EventDetailsView() {
   }
 
   const holderInitialValue = {
-    fullName: firebaseUser?.displayName ?? "",
-    email: firebaseUser?.email ?? "",
-    phone: firebaseUser?.phoneNumber ?? "",
+    fullName:
+      profile?.full_name ||
+      [profile?.first_name, profile?.other_names, profile?.surname].filter(Boolean).join(" ") ||
+      firebaseUser?.displayName ||
+      "",
+    email: profile?.email || firebaseUser?.email || "",
+    phone: profile?.phone || profile?.buyer_details?.phone || firebaseUser?.phoneNumber || "",
   };
 
   return (
