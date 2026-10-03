@@ -6,6 +6,7 @@ import TicketHolderForm, { type TicketHolderInformation } from "../tickets/Ticke
 import { apiFetch } from "../../lib/api";
 import { navigateToLoginWithReturnPath } from "../../lib/appNavigation";
 import { useAuthUser } from "../../hooks/useAuthUser";
+import { useAccountProfile } from "../../hooks/useAccountProfile";
 
 type DirectEventCheckoutProps = {
   eventId: number;
@@ -19,11 +20,16 @@ export default function DirectEventCheckout({
   price,
 }: DirectEventCheckoutProps) {
   const { user: firebaseUser } = useAuthUser();
+  const { profile } = useAccountProfile();
   const [ticketHolderOpen, setTicketHolderOpen] = useState(false);
   const initialValue = {
-    fullName: firebaseUser?.displayName ?? "",
-    email: firebaseUser?.email ?? "",
-    phone: firebaseUser?.phoneNumber ?? "",
+    fullName:
+      profile?.full_name ||
+      [profile?.first_name, profile?.other_names, profile?.surname].filter(Boolean).join(" ") ||
+      firebaseUser?.displayName ||
+      "",
+    email: profile?.email || firebaseUser?.email || "",
+    phone: profile?.phone || profile?.buyer_details?.phone || firebaseUser?.phoneNumber || "",
   };
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);

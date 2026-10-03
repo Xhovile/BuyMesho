@@ -718,9 +718,9 @@ export default function EventsCreatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
+    <div className="min-h-screen w-screen max-w-none overflow-x-clip bg-zinc-100 text-zinc-900">
+      <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
+        <div className="mx-auto flex w-full max-w-7xl min-w-0 items-center justify-between gap-4 px-4 py-3">
           <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex min-w-0 items-center gap-2.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-900 text-xl font-extrabold text-white shadow-lg shadow-red-900/20">B</div>
             <div className="text-left">
@@ -737,9 +737,9 @@ export default function EventsCreatePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-4 lg:py-10">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
-          <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.15)] sm:p-8">
+      <main className="mx-auto w-full min-w-0 max-w-7xl px-4 py-8 sm:px-4 lg:py-10">
+        <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
+          <section className="min-w-0 rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.15)] sm:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Event creator</p>
@@ -873,7 +873,7 @@ export default function EventsCreatePage() {
             </form>
           </section>
 
-          <section className="space-y-6">
+          <section className="min-w-0 space-y-6">
             <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.15)] sm:p-6">
               <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Live preview</p>
               <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-zinc-50/70">
