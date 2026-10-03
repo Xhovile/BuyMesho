@@ -17,7 +17,7 @@ function base64UrlEncode(value: Uint8Array): string {
 }
 
 function normalizePem(value: string): string {
-  return value.replace(/\\\\n/g, "\n");
+  return value.replace(/\\n/g, "\n");
 }
 
 function getPrivateKey() {
