@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  createEventTicketDownloadResponse,
   createEventTicketDownloadToken,
   createEventTicketPdf,
   verifyEventTicketDownloadToken,
@@ -58,4 +59,42 @@ test("event ticket PDF generator returns a valid PDF document", () => {
   const pdfText = pdf.toString("latin1");
   assert.match(pdfText, /BM-4A02AFD21D/);
   assert.match(pdfText, /TICKET CODE/);
+});
+test("cancelled ticket cannot be downloaded even when its order is paid", () => {
+  const headers: Record<string, string> = {};
+  let statusCode = 0;
+  let body: unknown;
+
+  const res = {
+    setHeader(name: string, value: string) {
+      headers[name] = value;
+      return this;
+    },
+    status(code: number) {
+      statusCode = code;
+      return {
+        json(value: unknown) {
+          body = value;
+          return this;
+        },
+        send(value: Buffer) {
+          body = value;
+          return this;
+        },
+      };
+    },
+  };
+
+  createEventTicketDownloadResponse(
+    {
+      id: "ticket-1",
+      code: "BM-CANCELLED-1",
+      status: "cancelled",
+    },
+    res,
+  );
+
+  assert.equal(statusCode, 410);
+  assert.deepEqual(body, { error: "This ticket is no longer valid." });
+  assert.equal(headers["Content-Type"], undefined);
 });
