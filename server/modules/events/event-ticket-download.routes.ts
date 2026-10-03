@@ -38,7 +38,11 @@ export function registerEventTicketDownloadRoutes(app: Express, { db }: RouteDep
              et.purchase_date,
              et.order_id,
              e.organizer_name,
-             e.ticket_price
+             e.ticket_price,
+             o.status AS order_status
+           FROM event_tickets et
+           LEFT JOIN events e ON e.id = et.event_id
+           LEFT JOIN orders o ON o.id = et.order_id
            FROM event_tickets et
            LEFT JOIN events e ON e.id = et.event_id
           WHERE et.id = ? OR et.code = ?
@@ -56,6 +60,10 @@ export function registerEventTicketDownloadRoutes(app: Express, { db }: RouteDep
           ...ticket,
           ticket_title: ticket.ticket_title,
           organizer_name: ticket.organizer_name,
+          status:
+            String(ticket.order_status ?? "").toLowerCase() === "paid"
+              ? "Paid"
+              : String(ticket.status ?? "Pending"),
           amount:
             ticket.ticket_price !== undefined && ticket.ticket_price !== null
               ? `${ticket.ticket_price} MWK`
