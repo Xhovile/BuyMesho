@@ -9,7 +9,7 @@ type PdfTicketLine = {
 
 type TicketPdfOptions = {
   ticketCode: string;
-  qrPayload?: string;
+  qrPayload: string;
   brandName?: string;
   brandTagline?: string;
 };
@@ -265,7 +265,10 @@ async function createPdfBytes(title: string, lines: PdfTicketLine[], options: Ti
   const brandName = options.brandName?.trim() || "BuyMesho";
   const brandTagline = options.brandTagline?.trim() || "Official event ticket";
   const ticketCode = options.ticketCode.trim() || title.trim();
-  const qrPayload = options.qrPayload?.trim() || ticketCode;
+  const qrPayload = options.qrPayload.trim();
+  if (!qrPayload.startsWith("BM1.")) {
+    throw new Error("A signed BuyMesho ticket credential is required to generate the event ticket PDF.");
+  }
   const logo = await embedLogoAsImage();
   const commands: string[] = [];
 
