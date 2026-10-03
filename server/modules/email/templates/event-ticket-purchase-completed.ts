@@ -53,7 +53,7 @@ function ticketLinks(tickets: EventTicketPurchaseItem[]) {
         `<div style="padding:12px 0;${divider}">`,
         `<div style="font-size:14px;font-weight:700;color:#18181b">${escapeHtml(ticket.ticketType || "Event Ticket")} — ${escapeHtml(ticket.ticketId)}</div>`,
         holder,
-        `<div style="margin-top:8px"><a href="${escapeHtml(ticket.downloadUrl)}" style="display:inline-block;padding:9px 13px;border-radius:10px;background:#f97316;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none">Download PDF</a></div>`,
+        `<div style="margin-top:8px"><a href="${escapeHtml(ticket.downloadUrl)}" style="display:inline-block;padding:9px 13px;border-radius:10px;background:#f97316;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none">&#8595;&nbsp;Download Ticket PDF</a></div>`,
         "</div>",
       ].join("");
     }),
@@ -106,9 +106,6 @@ export function renderEventTicketPurchaseCompletedEmail(data: EventTicketPurchas
     intro,
     bodyHtml,
     bodyText,
-    action: data.tickets[0]
-      ? { label: "Download ticket PDF", url: data.tickets[0].downloadUrl }
-      : undefined,
     preheader: intro,
   });
 }
