@@ -113,6 +113,12 @@ function scanHandler(req: Request, res: Response) {
 
   const row = ticketRows(eventId).find((candidate) => normalizeCode(candidate.code) === lookupCode || normalizeCode(candidate.id) === lookupCode);
   if (!row) return res.status(404).json({ error: "Ticket not found", result: "rejected", reason: "ticket_not_found" });
+  if (decodeTicketCredential(rawCode) && verifyTicketCredential(rawCode)) {
+    const credential = verifyTicketCredential(rawCode)!;
+    if (String(row.order_id ?? "") !== credential.oid) {
+      return res.status(403).json({ error: "Ticket credential does not match the stored ticket", result: "rejected", reason: "ticket_order_mismatch" });
+    }
+  }
   const ticket = mapTicket(row);
   if (ticket.status === "Inside") return res.status(409).json({ error: "Duplicate scan", result: "already_applied", reason: "already_inside", ticket, serverVersion: eventVersion(event) });
   if (["Cancelled", "Refunded", "Blocked"].includes(ticket.status)) return res.status(403).json({ error: "Ticket denied", result: "rejected", reason: `ticket_${ticket.status.toLowerCase()}`, ticket, serverVersion: eventVersion(event) });
