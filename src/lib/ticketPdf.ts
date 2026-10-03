@@ -295,7 +295,7 @@ async function createPdfBytes(title: string, lines: PdfTicketLine[], options: Ti
 
   addRect(commands, 50, 652, 495, 28, { r: 249, g: 246, b: 246 });
   addText(commands, 62, 664, 9.5, `Ticket ID: ${ticketCode}`, BRAND_CHARCOAL);
-  addText(commands, 382, 664, 9.5, "STATUS: PAID", BRAND_RED);
+  addText(commands, 382, 664, 9.5, `STATUS: ${getLineValue(lines, "Status", "PAID").toUpperCase()}`, BRAND_RED);
 
   const field = (x: number, y: number, label: string, value: string, width: number, valueSize = 11.5) => {
     addText(commands, x, y, 7.5, label.toUpperCase(), BRAND_MID);
@@ -328,7 +328,7 @@ async function createPdfBytes(title: string, lines: PdfTicketLine[], options: Ti
   addText(commands, qrBoxX + 10, qrBoxY - 28, 8.5, "Keep the QR fully visible when scanning.", BRAND_MUTED);
 
   addRect(commands, 68, 222, 220, 42, { r: 255, g: 255, b: 255 });
-  addText(commands, 82, 246, 9, "BUY MESHО VERIFIED", BRAND_CHARCOAL);
+  addText(commands, 82, 246, 9, "BUYMESHO VERIFIED", BRAND_CHARCOAL);
   addText(commands, 82, 230, 8.5, "Authenticity is checked digitally.", BRAND_MID);
 
   addRect(commands, 50, 116, 495, 1.2, { r: 224, g: 224, b: 228 });
