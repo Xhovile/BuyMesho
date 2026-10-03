@@ -58,10 +58,17 @@ export function registerEventTicketDownloadRoutes(app: Express, { db }: RouteDep
           ...ticket,
           ticket_title: ticket.ticket_title,
           organizer_name: ticket.organizer_name,
-          status:
-            String(ticket.order_status ?? "").toLowerCase() === "paid"
-              ? "Paid"
-              : String(ticket.status ?? "Pending"),
+          const ticketStatus = String(ticket.status ?? "").trim();
+      const normalizedTicketStatus = ticketStatus.toLowerCase();
+      const orderStatus = String(ticket.order_status ?? "").trim().toLowerCase();
+      const effectiveStatus =
+        ["cancelled", "refunded", "blocked"].includes(normalizedTicketStatus)
+          ? ticketStatus
+          : orderStatus === "paid"
+            ? "Paid"
+            : ticketStatus || "Pending";
+
+      status: effectiveStatus,
           amount:
             ticket.ticket_price !== undefined && ticket.ticket_price !== null
               ? `${ticket.ticket_price} MWK`
