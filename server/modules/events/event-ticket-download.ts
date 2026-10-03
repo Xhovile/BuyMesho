@@ -114,6 +114,90 @@ function wrapText(value: string, maxChars: number): string[] {
   return lines.length ? lines : ["—"];
 }
 
+function hashString(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function createRng(seed: number) {
+  let state = seed >>> 0;
+  return () => {
+    state += 0x6d2b79f5;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function addRect(commands: string[], x: number, y: number, width: number, height: number, red: number, green: number, blue: number) {
+  commands.push(`${(red / 255).toFixed(3)} ${(green / 255).toFixed(3)} ${(blue / 255).toFixed(3)} rg`);
+  commands.push(`${x.toFixed(2)} ${y.toFixed(2)} ${width.toFixed(2)} ${height.toFixed(2)} re f`);
+}
+
+function drawTicketCodeMatrix(ticketCode: string, x: number, y: number, size: number) {
+  const moduleCount = 29;
+  const moduleSize = size / moduleCount;
+  const matrix: Array<Array<boolean | null>> = Array.from(
+    { length: moduleCount },
+    () => Array<boolean | null>(moduleCount).fill(null),
+  );
+
+  const reserveFinder = (startX: number, startY: number) => {
+    for (let row = 0; row < 7; row += 1) {
+      for (let col = 0; col < 7; col += 1) {
+        const edge = row === 0 || row === 6 || col === 0 || col === 6;
+        const center = row >= 2 && row <= 4 && col >= 2 && col <= 4;
+        matrix[startY + row][startX + col] = edge || center;
+      }
+    }
+  };
+
+  reserveFinder(0, 0);
+  reserveFinder(moduleCount - 7, 0);
+  reserveFinder(0, moduleCount - 7);
+
+  for (let index = 0; index < moduleCount; index += 1) {
+    matrix[6][index] = index % 2 === 0;
+    matrix[index][6] = index % 2 === 0;
+  }
+
+  matrix[moduleCount - 8][8] = true;
+
+  const payloadBits = Array.from(ticketCode)
+    .map((character) => character.charCodeAt(0).toString(2).padStart(8, "0"))
+    .join("");
+  const rng = createRng(hashString(ticketCode));
+  let bitCursor = 0;
+
+  for (let row = 0; row < moduleCount; row += 1) {
+    for (let col = 0; col < moduleCount; col += 1) {
+      if (matrix[row][col] !== null) continue;
+      const payloadBit = payloadBits.length ? payloadBits[bitCursor % payloadBits.length] : "0";
+      const randomBit = rng() > 0.5 ? "1" : "0";
+      matrix[row][col] = (Number(payloadBit) ^ Number(randomBit)) === 1;
+      bitCursor += 1;
+    }
+  }
+
+  addRect(commands, x - 6, y - 6, size + 12, size + 12, 244, 244, 245);
+  addRect(commands, x, y, size, size, 255, 255, 255);
+
+  for (let row = 0; row < moduleCount; row += 1) {
+    for (let col = 0; col < moduleCount; col += 1) {
+      if (!matrix[row][col]) continue;
+      commands.push("0.071 0.071 0.078 rg");
+      commands.push(
+        `${(x + col * moduleSize).toFixed(2)} ${(y + (moduleCount - 1 - row) * moduleSize).toFixed(2)} ${moduleSize.toFixed(2)} ${moduleSize.toFixed(2)} re f`,
+      );
+    }
+  }
+}
+
 type TicketPdfData = {
   eventTitle: string;
   organizer: string;
@@ -183,6 +267,14 @@ export function createEventTicketPdf(data: TicketPdfData): Buffer {
   addText(commands, 50, boxY + 35, 18, data.status || "Paid", true);
   addText(commands, 310, boxY + 58, 9, "TICKET CODE", false);
   addText(commands, 310, boxY + 35, 14, data.ticketId, true);
+
+  const codeBoxX = 355;
+  const codeBoxY = 92;
+  addRect(commands, codeBoxX, codeBoxY, 206, 280, 255, 255, 255);
+  addText(commands, codeBoxX + 18, codeBoxY + 254, 9, "TICKET CODE", false);
+  addText(commands, codeBoxX + 18, codeBoxY + 232, 14, data.ticketId, true);
+  drawTicketCodeMatrix(data.ticketId, codeBoxX + 27, codeBoxY + 38, 150);
+  addText(commands, codeBoxX + 18, codeBoxY + 22, 9, "Use this code for event validation.", false);
 
   addText(commands, 34, 70, 10, "Present this ticket or ticket code to the event validation team.", false);
   addText(commands, 34, 50, 9, "BuyMesho • Secure event ticket", false);
