@@ -18,12 +18,12 @@ test("event ticket download tokens verify and expire", () => {
     assert.equal(verifyEventTicketDownloadToken(ticketId, token), true);
     assert.equal(verifyEventTicketDownloadToken("BM-OTHER-123", token), false);
 
-    const expiresAt = Math.floor(Date.now() / 1000) + 1;
-    const expiring = createEventTicketDownloadToken(ticketId, expiresAt);
+    const expiringAt = Math.floor(Date.now() / 1000) + 1;
+    const expiring = createEventTicketDownloadToken(ticketId, expiringAt);
     assert.equal(verifyEventTicketDownloadToken(ticketId, expiring), true);
 
     const originalNow = Date.now;
-    Date.now = () => (expiresAt + 1) * 1000;
+    Date.now = () => (expiringAt + 1) * 1000;
     try {
       assert.equal(verifyEventTicketDownloadToken(ticketId, expiring), false);
     } finally {
