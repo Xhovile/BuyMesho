@@ -139,7 +139,7 @@ function addRect(commands: string[], x: number, y: number, width: number, height
   commands.push(`${x.toFixed(2)} ${y.toFixed(2)} ${width.toFixed(2)} ${height.toFixed(2)} re f`);
 }
 
-function drawTicketCodeMatrix(ticketCode: string, x: number, y: number, size: number) {
+function drawTicketCodeMatrix(commands: string[], ticketCode: string, x: number, y: number, size: number) {
   const moduleCount = 29;
   const moduleSize = size / moduleCount;
   const matrix: Array<Array<boolean | null>> = Array.from(
@@ -273,7 +273,7 @@ export function createEventTicketPdf(data: TicketPdfData): Buffer {
   addRect(commands, codeBoxX, codeBoxY, 206, 280, 255, 255, 255);
   addText(commands, codeBoxX + 18, codeBoxY + 254, 9, "TICKET CODE", false);
   addText(commands, codeBoxX + 18, codeBoxY + 232, 14, data.ticketId, true);
-  drawTicketCodeMatrix(data.ticketId, codeBoxX + 27, codeBoxY + 38, 150);
+  drawTicketCodeMatrix(commands, data.ticketId, codeBoxX + 27, codeBoxY + 38, 150);
   addText(commands, codeBoxX + 18, codeBoxY + 22, 9, "Use this code for event validation.", false);
 
   addText(commands, 34, 70, 10, "Present this ticket or ticket code to the event validation team.", false);
