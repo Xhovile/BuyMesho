@@ -236,7 +236,7 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
         // The buyer needs the ticket confirmation, and the event manager needs
         // the purchase notification even when the payout attempt fails.
         emitOrderPaidNotification(settlement.order);
-        if(eventTicketsProjected)void emitEventTicketPurchaseNotifications(settlement.order);
+        if(eventTicketsProjected)void emitEventTicketPurchaseNotifications(settlement.order).catch(error=>console.warn('[event-ticket] purchase notification delivery failed',error));
       }
     }else if(settlement.orderEnteredEscrow){
       emitOrderPaidNotification(settlement.order);
