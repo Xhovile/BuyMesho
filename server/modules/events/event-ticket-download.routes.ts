@@ -43,8 +43,6 @@ export function registerEventTicketDownloadRoutes(app: Express, { db }: RouteDep
            FROM event_tickets et
            LEFT JOIN events e ON e.id = et.event_id
            LEFT JOIN orders o ON o.id = et.order_id
-           FROM event_tickets et
-           LEFT JOIN events e ON e.id = et.event_id
           WHERE et.id = ? OR et.code = ?
           LIMIT 1`,
         )
