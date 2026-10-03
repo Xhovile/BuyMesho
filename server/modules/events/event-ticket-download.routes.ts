@@ -57,7 +57,7 @@ export function registerEventTicketDownloadRoutes(app: Express, { db }: RouteDep
       const normalizedTicketStatus = ticketStatus.toLowerCase();
       const orderStatus = String(ticket.order_status ?? "").trim().toLowerCase();
       const effectiveStatus =
-        ["cancelled", "refunded", "blocked"].includes(normalizedTicketStatus)
+        ["cancelled", "refunded"].includes(normalizedTicketStatus)
           ? ticketStatus
           : orderStatus === "paid"
             ? "Paid"
