@@ -498,14 +498,13 @@ export async function recordEventRefundRecovery(
     `UPDATE dispute_cases
         SET status = 'resolved',
             outcome = 'event_refund_recovered',
-            resolved_by = $1,
-            resolved_at = $2,
-            updated_at = $2
+            resolved_at = $1,
+            updated_at = $1
       WHERE id = (
-        SELECT dispute_case_id FROM refund_requests WHERE id = $3 LIMIT 1
+        SELECT dispute_case_id FROM refund_requests WHERE id = $2 LIMIT 1
       )
       AND status IN ('open','under_review')`,
-    [input.actorId, now, liability.refundRequestId],
+    [now, liability.refundRequestId],
   );
 
   await client.query(

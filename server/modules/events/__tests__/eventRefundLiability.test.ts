@@ -20,6 +20,7 @@ const creatorUid = "phase10-event-refund-creator";
 const caseId = "phase10-event-refund-case";
 const attemptId = "phase10-event-refund-attempt";
 const ticketId = "phase10-event-refund-ticket";
+const destinationId = "phase10-event-refund-destination";
 
 async function cleanup(): Promise<void> {
   await query("DELETE FROM seller_financial_ledger WHERE seller_uid = $1", [creatorUid]);
@@ -36,6 +37,7 @@ async function cleanup(): Promise<void> {
   await query("DELETE FROM payouts WHERE order_id = $1", [orderId]);
   await query("DELETE FROM orders WHERE id = $1", [orderId]);
   await query("DELETE FROM events WHERE id = $1", [eventId]);
+  await query("DELETE FROM seller_payout_accounts WHERE id = $1", [destinationId]);
   await query("DELETE FROM event_creators WHERE uid = $1", [creatorUid]);
 }
 
@@ -51,12 +53,24 @@ async function seed(): Promise<void> {
   );
 
   await query(
+    `INSERT INTO seller_payout_accounts (
+       id, seller_uid, event_creator_uid, owner_type, owner_uid, destination_type, provider_name,
+       provider_ref_id, currency, account_name, account_number_encrypted, mobile_encrypted,
+       masked_account, destination_fingerprint, is_default, verification_status, verification_attempts,
+       last_error, verified_at, replaced_from_id, replaced_by_id, is_active, created_at, updated_at
+     ) VALUES ($1, NULL, $2, 'event_creator', $2, 'mobile_money', 'Airtel Money', 'airtel_money',
+       'MWK', 'Phase 10 Creator', NULL, 'encrypted-mobile', '******9999', $3, 1, 'verified', 0,
+       NULL, $4, NULL, NULL, 1, $4, $4)`,
+    [destinationId, creatorUid, 'phase10-event-refund-fingerprint', now],
+  );
+
+  await query(
     `INSERT INTO events
       (id,creator_uid,event_type,event_title,organizer_name,event_date,start_time,venue,location,
-       ticket_mode,ticket_price,description,spec_values,status,created_at,updated_at)
+       ticket_mode,ticket_price,description,spec_values,status,payout_destination_id,created_at,updated_at)
      VALUES ($1,$2,'concert','Phase 10 Event','Phase 10 Creator','2026-10-10','18:00',
-             'Test Venue','Lilongwe','paid',5000,'Phase 10 test','{}','published',$3,$3)`,
-    [eventId, creatorUid, now],
+             'Test Venue','Lilongwe','paid',5000,'Phase 10 test','{}','published',$3,$4,$4)`,
+    [eventId, creatorUid, destinationId, now],
   );
 
   const order: StoredOrder = {
@@ -257,18 +271,18 @@ test("post-payout event refund recovery debits the creator financial ledger", as
     const now = new Date().toISOString();
     await query(
       `INSERT INTO payouts (
-         id, seller_id, owner_type, owner_uid, event_id, event_creator_uid, order_id,
+         id, seller_id, owner_type, owner_uid, event_id, event_creator_uid, order_id, destination_account_id,
          amount, gross_amount, platform_fee_amount, processing_fee_amount,
          reserve_amount, reserve_cap_amount, manual_adjustment_amount,
          payout_fee_amount, seller_receives_amount, net_amount,
          formula_snapshot, currency, status, provider, requested_by,
          requested_at, created_at, updated_at
        ) VALUES (
-         'phase10-event-refund-paid-payout', $1, 'event_creator', $1, $2, $1, $3,
+         'phase10-event-refund-paid-payout', $1, 'event_creator', $1, $2, $1, $3, $4,
          9520, 10000, 300, 0, 100, 600, 0,
-         180, 9520, 9520, '{}', 'MWK', 'paid', 'paychangu', $1, $4, $4, $4
+         180, 9520, 9520, '{}', 'MWK', 'paid', 'paychangu', $1, $5, $5, $5
        )`,
-      [creatorUid, eventId, orderId, now],
+      [creatorUid, eventId, orderId, destinationId, now],
     );
     await query(
       `INSERT INTO seller_financial_accounts
