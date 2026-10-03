@@ -53,12 +53,7 @@ export function registerEventTicketDownloadRoutes(app: Express, { db }: RouteDep
         return;
       }
 
-      return createEventTicketDownloadResponse(
-        {
-          ...ticket,
-          ticket_title: ticket.ticket_title,
-          organizer_name: ticket.organizer_name,
-          const ticketStatus = String(ticket.status ?? "").trim();
+      const ticketStatus = String(ticket.status ?? "").trim();
       const normalizedTicketStatus = ticketStatus.toLowerCase();
       const orderStatus = String(ticket.order_status ?? "").trim().toLowerCase();
       const effectiveStatus =
@@ -68,7 +63,12 @@ export function registerEventTicketDownloadRoutes(app: Express, { db }: RouteDep
             ? "Paid"
             : ticketStatus || "Pending";
 
-      status: effectiveStatus,
+      return createEventTicketDownloadResponse(
+        {
+          ...ticket,
+          ticket_title: ticket.ticket_title,
+          organizer_name: ticket.organizer_name,
+          status: effectiveStatus,
           amount:
             ticket.ticket_price !== undefined && ticket.ticket_price !== null
               ? `${ticket.ticket_price} MWK`
