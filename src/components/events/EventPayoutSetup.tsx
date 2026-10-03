@@ -298,6 +298,7 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
                 error={null}
                 disabled={disabled}
                 providerOptions={providerOptions}
+                allowLegacyProviderFallback={false}
               />
             </div>
           ) : null}
