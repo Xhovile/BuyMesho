@@ -122,7 +122,7 @@ async function resolveOrderByReferences(references:string[],executor:DbExecutor)
 async function updatePaymentByReferences(references:string[],updater:Parameters<typeof paymentRepository.updateByReference>[1],executor:DbExecutor){for(const reference of references){const payment=await paymentRepository.updateByReferenceAsync(reference,updater,executor);if(payment)return payment;}return undefined;}
 async function confirmOrderByReferences(references:string[],executor:DbExecutor){for(const reference of references){const order=await serverOrderService.confirmByPaymentReferenceAsync(reference,executor);if(order)return order;}return undefined;}
 
-export async function applyVerifiedPayChanguPayment(verification:PaymentVerificationResult):Promise<ApplyPayChanguResult>{
+export async function applyVerifiedPayChanguPayment(verification:PaymentVerificationResult,dependencies: { executePayout?: (input: Parameters<typeof payoutService.executePayout>[0]) => Promise<unknown> } = {}):Promise<ApplyPayChanguResult>{
   const referenceCandidates=resolveReferenceCandidates(verification);const reference=referenceCandidates[0];
   if(!reference)throw new Error('Missing PayChangu reference');
   if(!isCaptured(verification))throw new Error(`applyVerifiedPayChanguPayment only accepts verified paid/captured statuses for ${reference}`);
@@ -215,7 +215,7 @@ export async function applyVerifiedPayChanguPayment(verification:PaymentVerifica
         },client);
       });
       if(eventPayout.created){
-        await payoutService.executePayout({
+        await (dependencies.executePayout ?? payoutService.executePayout)({
           payoutId:eventPayout.payout.id,
           actorType:'system',
         });
