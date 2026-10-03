@@ -104,20 +104,18 @@ function scanHandler(req: Request, res: Response) {
   if (!eventId || !code) return res.status(400).json({ error: "Missing scan code or event id" });
   if (clientVersion && clientVersion !== eventVersion(event)) return res.status(409).json({ error: "Snapshot outdated", result: "rejected", reason: "event_snapshot_outdated", serverVersion: eventVersion(event) });
   let lookupCode = code;
-  if (decodeTicketCredential(rawCode)) {
-    const credential = verifyTicketCredential(rawCode);
-    if (!credential) return res.status(403).json({ error: "Invalid ticket credential", result: "rejected", reason: "ticket_credential_invalid" });
-    if (credential.eid !== eventId) return res.status(403).json({ error: "Ticket belongs to another event", result: "rejected", reason: "ticket_event_mismatch" });
-    lookupCode = normalizeCode(credential.tid);
+  const credential = decodeTicketCredential(rawCode);
+  if (credential) {
+    const verifiedCredential = verifyTicketCredential(rawCode);
+    if (!verifiedCredential) return res.status(403).json({ error: "Invalid ticket credential", result: "rejected", reason: "ticket_credential_invalid" });
+    if (verifiedCredential.eid !== eventId) return res.status(403).json({ error: "Ticket belongs to another event", result: "rejected", reason: "ticket_event_mismatch" });
+    lookupCode = normalizeCode(verifiedCredential.tid);
   }
 
   const row = ticketRows(eventId).find((candidate) => normalizeCode(candidate.code) === lookupCode || normalizeCode(candidate.id) === lookupCode);
   if (!row) return res.status(404).json({ error: "Ticket not found", result: "rejected", reason: "ticket_not_found" });
-  if (decodeTicketCredential(rawCode) && verifyTicketCredential(rawCode)) {
-    const credential = verifyTicketCredential(rawCode)!;
-    if (String(row.order_id ?? "") !== credential.oid) {
-      return res.status(403).json({ error: "Ticket credential does not match the stored ticket", result: "rejected", reason: "ticket_order_mismatch" });
-    }
+  if (credential && String(row.order_id ?? "") !== credential.oid) {
+    return res.status(403).json({ error: "Ticket credential does not match the stored ticket", result: "rejected", reason: "ticket_order_mismatch" });
   }
   const ticket = mapTicket(row);
   if (ticket.status === "Inside") return res.status(409).json({ error: "Duplicate scan", result: "already_applied", reason: "already_inside", ticket, serverVersion: eventVersion(event) });
