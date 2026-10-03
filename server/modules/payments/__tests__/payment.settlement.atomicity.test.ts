@@ -5,7 +5,7 @@ import { applyVerifiedPayChanguPayment } from '../paychangu.flow.js';
 import { paymentRepository } from '../payment.repository.js';
 import { orderRepository } from '../../orders/order.repository.js';
 import { escrowRepository } from '../../escrow/escrow.repository.js';
-import { payoutService } from '../../payouts/payout.service.js';
+import { payoutService } from '../../payouts/payout.service.core.js';
 
 const orderId='atomic-settlement-order-1';
 const paymentReference='atomic-settlement-ref-1';
