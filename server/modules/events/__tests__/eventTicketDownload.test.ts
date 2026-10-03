@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  createEventTicketDownloadResponse,
   createEventTicketDownloadToken,
   createEventTicketPdf,
   verifyEventTicketDownloadToken,
 } from "../event-ticket-download.js";
+import { registerEventTicketDownloadRoutes } from "../event-ticket-download.routes.js";
 
 const ORIGINAL_SECRET = process.env.EVENT_TICKET_DOWNLOAD_SECRET;
 
@@ -60,41 +60,85 @@ test("event ticket PDF generator returns a valid PDF document", () => {
   assert.match(pdfText, /BM-4A02AFD21D/);
   assert.match(pdfText, /TICKET CODE/);
 });
+
 test("cancelled ticket cannot be downloaded even when its order is paid", () => {
-  const headers: Record<string, string> = {};
-  let statusCode = 0;
-  let body: unknown;
+  const previousSecret = process.env.EVENT_TICKET_DOWNLOAD_SECRET;
+  process.env.EVENT_TICKET_DOWNLOAD_SECRET = "event-ticket-download-test-secret";
 
-  const res = {
-    setHeader(name: string, value: string) {
-      headers[name] = value;
-      return this;
-    },
-    status(code: number) {
-      statusCode = code;
-      return {
-        json(value: unknown) {
-          body = value;
-          return this;
-        },
-        send(value: Buffer) {
-          body = value;
-          return this;
-        },
-      };
-    },
-  };
+  try {
+    const ticketId = "BM-CANCELLED-1";
+    const token = createEventTicketDownloadToken(ticketId);
 
-  createEventTicketDownloadResponse(
-    {
-      id: "ticket-1",
-      code: "BM-CANCELLED-1",
-      status: "cancelled",
-    },
-    res,
-  );
+    let handler: ((req: any, res: any) => unknown) | undefined;
+    const app = {
+      get(_path: string, routeHandler: (req: any, res: any) => unknown) {
+        handler = routeHandler;
+      },
+    };
 
-  assert.equal(statusCode, 410);
-  assert.deepEqual(body, { error: "This ticket is no longer valid." });
-  assert.equal(headers["Content-Type"], undefined);
+    const db = {
+      prepare() {
+        return {
+          get() {
+            return {
+              id: "ticket-1",
+              code: ticketId,
+              ticket_title: "Cancelled Ticket",
+              ticket_type: "General Admission",
+              holder_name: "Ada Buyer",
+              holder_email: "buyer@example.com",
+              holder_phone: "0994123456",
+              status: "cancelled",
+              event_title: "Campus Concert",
+              event_date: "2026-10-03",
+              start_time: "18:00",
+              venue: "Main Hall",
+              location: "Lilongwe",
+              organizer_name: "Campus Events",
+              ticket_price: 5000,
+              order_status: "paid",
+            };
+          },
+        };
+      },
+    };
+
+    registerEventTicketDownloadRoutes(app as any, { db });
+    assert.ok(handler);
+
+    let statusCode = 0;
+    let body: unknown;
+    const res = {
+      setHeader() {
+        return this;
+      },
+      status(code: number) {
+        statusCode = code;
+        return {
+          json(value: unknown) {
+            body = value;
+            return this;
+          },
+          send(value: Buffer) {
+            body = value;
+            return this;
+          },
+        };
+      },
+    };
+
+    handler!(
+      {
+        params: { ticketId },
+        query: { token },
+      },
+      res,
+    );
+
+    assert.equal(statusCode, 410);
+    assert.deepEqual(body, { error: "This ticket is no longer valid." });
+  } finally {
+    if (previousSecret === undefined) delete process.env.EVENT_TICKET_DOWNLOAD_SECRET;
+    else process.env.EVENT_TICKET_DOWNLOAD_SECRET = previousSecret;
+  }
 });
