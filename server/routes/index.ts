@@ -19,6 +19,7 @@ import { registerListingRoutes } from "./listings.routes.js";
 import { registerEventRoutes } from "./events.routes.js";
 import { createEventPayoutProtectionRouter } from "./eventPayoutProtection.routes.js";
 import { registerEventCreatorOverviewRoutes } from "./eventCreatorOverview.routes.js";
+import { registerEventTicketDownloadRoutes } from "../modules/events/event-ticket-download.routes.js";
 import { registerAiRoutes } from "./ai.routes.js";
 import { registerSellerApplicationRoutes } from "./sellerApplication.routes.js";
 import { registerSellerAnalyticsRoutes } from "./sellerAnalytics.routes.js";

@@ -16,6 +16,7 @@ import { notifyOrderPaid } from '../notifications/order-paid.notification.js';
 import { notifyEventTicketPurchaseCompleted } from '../notifications/event-ticket-purchase-completed.notification.js';
 import { resolveNotificationRecipient } from '../notifications/email-recipient.js';
 import { projectEventTickets } from '../orders/eventTicketProjection.js';
+import { createEventTicketDownloadToken } from '../events/event-ticket-download.js';
 
 export interface ApplyPayChanguResult {
   payment?: ReturnType<typeof paymentRepository.findByReference>;
@@ -50,7 +51,7 @@ async function emitEventTicketPurchaseNotifications(order:ReturnType<typeof orde
     startTime:String(ticket.start_time??''),
     venue:String(ticket.venue??''),
     location:String(ticket.location??''),
-    downloadUrl:`https://buymesho.app/tickets?ticketId=${encodeURIComponent(String(ticket.code??ticket.id))}&download=1`,
+    downloadUrl:`https://buymesho.app/api/event-tickets/${encodeURIComponent(String(ticket.code??ticket.id))}/download?token=${encodeURIComponent(createEventTicketDownloadToken(String(ticket.code??ticket.id)))}`,
   }));
 
   const first=ticketRows[0];
