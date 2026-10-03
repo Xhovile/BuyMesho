@@ -280,7 +280,7 @@ test("post-payout event refund recovery debits the creator financial ledger", as
        ) VALUES (
          'phase10-event-refund-paid-payout', $1, 'event_creator', $1, $2, $1, $3, $4,
          9520, 10000, 300, 0, 100, 600, 0,
-         180, 9520, 9520, '{}', 'MWK', 'paid', 'paychangu', $1, $4, $4, $4
+         180, 9520, 9520, '{}', 'MWK', 'paid', 'paychangu', $1, $5, $5, $5
        )`,
       [creatorUid, eventId, orderId, destinationId, now],
     );
