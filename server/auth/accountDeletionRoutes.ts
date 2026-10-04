@@ -1,6 +1,6 @@
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import { postgresDb as db } from "../db.js";
-import { v2 as cloudinary } from "cloudinary";
+import { deleteCloudinaryAsset } from "../lib/cloudinaryUpload.js";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { deleteAllPasskeysForUser, deletePasskeyCeremoniesForUser } from "./passkeyStore.js";
 import { disableTotpEnrollment } from "../../src/server/totpStore.js";
@@ -162,8 +162,9 @@ async function destroyCloudinaryAsset(rawUrl: string) {
   if (!asset) return;
 
   try {
-    await cloudinary.uploader.destroy(asset.publicId, {
-      resource_type: asset.resourceType,
+    await deleteCloudinaryAsset({
+      ...asset,
+      secureUrl: rawUrl,
     });
   } catch (error) {
     console.warn("Failed to delete Cloudinary asset:", rawUrl, error);
