@@ -808,7 +808,7 @@ async function runDiagnostics(): Promise<DiagnosticRunResult> {
       business_invariants: businessInvariants,
       hard_delete_after: hardDelete,
       firebase: checkFirebaseAdmin(),
-      cloudinary: checkEnvironmentGroup(["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"], "Cloudinary"),
+      cloudinary: checkCloudinaryConfiguration(),
       smtp: checkEnvironmentGroup(["SMTP_HOST", "SMTP_USER", "SMTP_PASS"], "SMTP"),
       paychangu: checkEnvironmentGroup(["PAYCHANGU_SECRET_KEY", "PAYCHANGU_WEBHOOK_SECRET"], "PayChangu"),
       database_url: checkEnvironment("DATABASE_URL", true),
@@ -911,4 +911,22 @@ export function registerDiagnosticsRoutes(app: Express, _deps: { db: any }) {
         } satisfies DiagnosticPayload);
     }
   });
+}
+
+function checkCloudinaryConfiguration(): NamedCheck {
+  const numbered = [1, 2, 3].some((index) =>
+    Boolean(
+      process.env[`CLOUDINARY_${index}_CLOUD_NAME`]?.trim() &&
+      process.env[`CLOUDINARY_${index}_API_KEY`]?.trim() &&
+      process.env[`CLOUDINARY_${index}_API_SECRET`]?.trim(),
+    ),
+  );
+  const legacy = Boolean(
+    process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
+    process.env.CLOUDINARY_API_KEY?.trim() &&
+    process.env.CLOUDINARY_API_SECRET?.trim(),
+  );
+  return numbered || legacy
+    ? { status: "PASS", message: "Cloudinary media credentials configured" }
+    : { status: "FAIL", message: "Cloudinary media credentials are not configured" };
 }

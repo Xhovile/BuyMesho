@@ -727,6 +727,7 @@ async function replaceReviewMedia(reviewId: number, listingId: number, files: Ex
         await deleteCloudinaryAsset({
           publicId: media.public_id,
           resourceType: media.resource_type,
+          secureUrl: media.url,
         });
       } catch (error) {
         console.warn("Failed to delete replaced review media from Cloudinary", {
@@ -744,6 +745,7 @@ async function replaceReviewMedia(reviewId: number, listingId: number, files: Ex
         deleteCloudinaryAsset({
           publicId: media.public_id,
           resourceType: media.resource_type,
+          secureUrl: media.url,
         }).catch((cleanupError) => {
           console.warn("Failed to clean up uploaded review media", cleanupError);
         })

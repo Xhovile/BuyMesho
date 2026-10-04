@@ -20,13 +20,29 @@ export function registerInfrastructureDiagnosticsRoutes(app: Express) {
     }
 
     const groups = {
-      cloudinary: ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"],
       smtp: ["SMTP_HOST", "SMTP_USER", "SMTP_PASS"],
       paychangu: ["PAYCHANGU_SECRET_KEY", "PAYCHANGU_WEBHOOK_SECRET"],
       admin: ["ADMIN_EMAILS", "ADMIN_UIDS"],
     } as const;
 
+    const cloudinaryConfigured = [1, 2, 3].some((index) =>
+      Boolean(
+        process.env[`CLOUDINARY_${index}_CLOUD_NAME`]?.trim() &&
+        process.env[`CLOUDINARY_${index}_API_KEY`]?.trim() &&
+        process.env[`CLOUDINARY_${index}_API_SECRET`]?.trim(),
+      ),
+    ) || Boolean(
+      process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
+      process.env.CLOUDINARY_API_KEY?.trim() &&
+      process.env.CLOUDINARY_API_SECRET?.trim(),
+    );
+
     const checks: NonNullable<DiagnosticPayload["checks"]> = {
+      cloudinary: {
+        status: cloudinaryConfigured ? "PASS" : "FAIL",
+        message: cloudinaryConfigured ? "Cloudinary media credentials configured" : "Cloudinary media credentials are not configured",
+        details: { configured: cloudinaryConfigured },
+      },
       firebase: {
         status: firebase ? "PASS" : "FAIL",
         message: firebase ? "Firebase Admin initialized" : "Firebase Admin is unavailable",
