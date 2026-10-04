@@ -166,29 +166,55 @@ function parseAccountPart(index: number): CloudinaryAccount | null {
 }
 
 export function getCloudinaryAccounts(): CloudinaryAccount[] {
-  const numbered = [1, 2, 3]
-    .map(parseAccountPart)
-    .filter((account): account is CloudinaryAccount => Boolean(account));
+  const accounts: CloudinaryAccount[] = [];
 
-  if (numbered.length > 0) return numbered;
+  // Preserve the original BuyMesho Cloudinary configuration as the first account.
+  const legacyCloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim() ?? "";
+  const legacyApiKey = process.env.CLOUDINARY_API_KEY?.trim() ?? "";
+  const legacyApiSecret = process.env.CLOUDINARY_API_SECRET?.trim() ?? "";
+  const legacyAnyConfigured = Boolean(
+    legacyCloudName || legacyApiKey || legacyApiSecret,
+  );
 
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim() ?? "";
-  const apiKey = process.env.CLOUDINARY_API_KEY?.trim() ?? "";
-  const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim() ?? "";
+  if (legacyAnyConfigured) {
+    if (legacyCloudName && legacyApiKey && legacyApiSecret) {
+      accounts.push({
+        id: "cloudinary_1",
+        cloudName: legacyCloudName,
+        apiKey: legacyApiKey,
+        apiSecret: legacyApiSecret,
+      });
+    } else {
+      console.warn("[cloudinary] Legacy CLOUDINARY_* variables are partially configured; the original account will not be used.");
+    }
+  }
 
-  if (!cloudName || !apiKey || !apiSecret) return [];
+  // Additional accounts are explicitly numbered 2 and 3, so the original
+  // Cloudinary environment remains Account 1 without requiring a migration.
+  for (const index of [2, 3]) {
+    const account = parseAccountPart(index);
+    if (account) accounts.push({
+      ...account,
+      id: `cloudinary_${index}`,
+    });
+  }
 
-  return [{
-    id: "cloudinary_legacy",
-    cloudName,
-    apiKey,
-    apiSecret,
-  }];
+  // Backward compatibility: if the legacy variables are absent, allow a
+  // fully configured CLOUDINARY_1_* set to act as Account 1.
+  if (!accounts.length) {
+    const accountOne = parseAccountPart(1);
+    if (accountOne) accounts.push({
+      ...accountOne,
+      id: "cloudinary_1",
+    });
+  }
+
+  return accounts;
 }
 
 export function getCloudinaryConfigurationStatus() {
   const accounts = getCloudinaryAccounts();
-  const configuredNumberedIndexes = [1, 2, 3].filter((index) =>
+  const configuredNumberedIndexes = [2, 3].filter((index) =>
     Boolean(
       process.env[`CLOUDINARY_${index}_CLOUD_NAME`]?.trim() ||
       process.env[`CLOUDINARY_${index}_API_KEY`]?.trim() ||
@@ -196,16 +222,25 @@ export function getCloudinaryConfigurationStatus() {
     ),
   );
 
+  const legacyConfigured = Boolean(
+    process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
+    process.env.CLOUDINARY_API_KEY?.trim() &&
+    process.env.CLOUDINARY_API_SECRET?.trim(),
+  );
+
+  const numberedAccountOneConfigured = Boolean(
+    process.env.CLOUDINARY_1_CLOUD_NAME?.trim() &&
+    process.env.CLOUDINARY_1_API_KEY?.trim() &&
+    process.env.CLOUDINARY_1_API_SECRET?.trim(),
+  );
+
   return {
     configured: accounts.length > 0,
     accountCount: accounts.length,
     accountIds: accounts.map((account) => account.id),
     configuredNumberedIndexes,
-    legacyConfigured: Boolean(
-      process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
-      process.env.CLOUDINARY_API_KEY?.trim() &&
-      process.env.CLOUDINARY_API_SECRET?.trim(),
-    ),
+    legacyConfigured,
+    numberedAccountOneConfigured,
   };
 }
 
