@@ -3,7 +3,6 @@ import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { hasAdminAccess } from "./adminAccess.js";
 import { getPaymentDb } from "../postgresCompat.js";
 import { decodeTicketCredential, verifyTicketCredential } from "../modules/events/ticketCredential.js";
-import { decodeTicketCredential, verifyTicketCredential } from "../modules/events/ticketCredential.js";
 
 type User = { uid: string; email: string | null; email_verified: boolean; is_admin: boolean };
 type TicketStatus = "Waiting Entry" | "Inside" | "Outside" | "Cancelled" | "Refunded" | "Blocked" | "Duplicate Scan Attempt";
