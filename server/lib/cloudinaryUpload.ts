@@ -321,7 +321,11 @@ function getCloudNameFromSecureUrl(secureUrl: string | null | undefined): string
 }
 
 function shouldTryAnotherAccount(kind: CloudinaryFailureKind): boolean {
-  return kind === "quota_exhausted" || kind === "rate_limited" || kind === "transient";
+  // Only provider-capacity/rate-limit failures are safe account-level fallbacks.
+  // A transient failure is retried on the same account, then surfaced to avoid
+  // potentially creating a duplicate asset on another account after an ambiguous
+  // network failure.
+  return kind === "quota_exhausted" || kind === "rate_limited";
 }
 
 async function uploadAcrossCloudinaryAccounts<T>(
