@@ -25,7 +25,6 @@ async function findOrderByParam(param: string) {
 }
 
 async function buildEventTicketCredentials(order: StoredOrder): Promise<Record<string, string>> {
-  if (order.source !== "event") return {};
   const db = getPaymentDb();
   const rows = db.prepare(
     "SELECT id, code, event_id, purchase_date FROM event_tickets WHERE order_id = ? ORDER BY id ASC",
