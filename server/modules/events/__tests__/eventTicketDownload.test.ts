@@ -57,7 +57,7 @@ test("event ticket PDF generator returns a valid PDF document", () => {
     eventDate: "2026-10-03",
     startTime: "18:00",
     venue: "Main Hall",
-    location: "Lilongwe",
+    location: "Area 2 • Pa chigulumwa",
     status: "Paid",
     amount: "5000 MWK",
     qrPayload: "BM1.test-payload.invalid-signature",
@@ -69,6 +69,8 @@ test("event ticket PDF generator returns a valid PDF document", () => {
   const pdfText = pdf.toString("latin1");
   assert.match(pdfText, /BM-4A02AFD21D/);
   assert.match(pdfText, /TICKET CODE/);
+  assert.match(pdfText, /Area 2 \| Pa chigulumwa/);
+  assert.doesNotMatch(pdfText, /â|�/);
 });
 
 test("cancelled ticket cannot be downloaded even when its order is paid", () => {
