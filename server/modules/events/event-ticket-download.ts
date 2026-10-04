@@ -111,6 +111,29 @@ function wrapText(value: string, maxChars: number): string[] {
   if (current) lines.push(current);
   return lines.length ? lines : ["-"];
 }
+function addRect(commands: string[], x: number, y: number, width: number, height: number, red: number, green: number, blue: number) {
+  commands.push((red / 255).toFixed(3) + " " + (green / 255).toFixed(3) + " " + (blue / 255).toFixed(3) + " rg");
+  commands.push(x.toFixed(2) + " " + y.toFixed(2) + " " + width.toFixed(2) + " " + height.toFixed(2) + " re f");
+}
+
+function drawTicketCodeMatrix(commands: string[], payload: string, x: number, y: number, size: number) {
+  const qr = qrcode(0, "H");
+  qr.addData(payload, "Byte");
+  qr.make();
+  const moduleCount = qr.getModuleCount();
+  const quietZone = 4;
+  const totalModules = moduleCount + quietZone * 2;
+  const moduleSize = size / totalModules;
+  addRect(commands, x - 8, y - 8, size + 16, size + 16, 244, 244, 245);
+  addRect(commands, x, y, size, size, 255, 255, 255);
+  for (let row = 0; row < moduleCount; row += 1) {
+    for (let col = 0; col < moduleCount; col += 1) {
+      if (!qr.isDark(row, col)) continue;
+      commands.push("0.071 0.071 0.078 rg");
+      commands.push((x + (col + quietZone) * moduleSize).toFixed(2) + " " + (y + (moduleCount + quietZone - row - 1) * moduleSize).toFixed(2) + " " + moduleSize.toFixed(2) + " " + moduleSize.toFixed(2) + " re f");
+    }
+  }
+}
 type TicketPdfData = {
   eventTitle: string;
   organizer: string;
