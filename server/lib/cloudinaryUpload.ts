@@ -244,6 +244,29 @@ export function getCloudinaryConfigurationStatus() {
   };
 }
 
+const CLOUDINARY_TRANSIENT_RETRIES = 2;
+const CLOUDINARY_TRANSIENT_RETRY_DELAYS_MS = [500, 1500] as const;
+
+// The Cloudinary Node SDK stores configuration globally. Serialize each
+// configured SDK operation so concurrent requests cannot overwrite one another's
+// account configuration while an upload/delete is in flight.
+let cloudinaryOperationTail = Promise.resolve();
+
+async function withCloudinaryOperationLock<T>(operation: () => Promise<T>): Promise<T> {
+  const previous = cloudinaryOperationTail;
+  let release!: () => void;
+  cloudinaryOperationTail = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  await previous;
+  try {
+    return await operation();
+  } finally {
+    release();
+  }
+}
+
 const unavailableUntil = new Map<string, number>();
 
 function isAccountTemporarilyUnavailable(account: CloudinaryAccount): boolean {
@@ -306,7 +329,9 @@ async function uploadAcrossCloudinaryAccounts<T>(
 ): Promise<{ value: T; account: CloudinaryAccount }> {
   const accounts = getCloudinaryAccounts();
   if (!accounts.length) {
-    throw new Error("Cloudinary is not configured. Configure CLOUDINARY_1_* or the legacy CLOUDINARY_* variables.");
+    throw new Error(
+      "Cloudinary is not configured. Configure the existing CLOUDINARY_* variables or CLOUDINARY_2_* / CLOUDINARY_3_*.",
+    );
   }
 
   let lastError: CloudinaryUploadError | null = null;
@@ -314,36 +339,47 @@ async function uploadAcrossCloudinaryAccounts<T>(
   for (const account of accounts) {
     if (isAccountTemporarilyUnavailable(account)) continue;
 
-    try {
-      const value = await operation(account);
-      clearAccountUnavailable(account);
-      return { value, account };
-    } catch (error) {
-      const kind = classifyCloudinaryError(error);
-      const wrapped = error instanceof CloudinaryUploadError
-        ? error
-        : new CloudinaryUploadError(readErrorMessage(error), {
-            kind,
-            account,
-            httpCode: readErrorHttpCode(error),
-            cause: error,
-          });
+    for (let attempt = 0; attempt <= CLOUDINARY_TRANSIENT_RETRIES; attempt += 1) {
+      try {
+        const value = await operation(account);
+        clearAccountUnavailable(account);
+        return { value, account };
+      } catch (error) {
+        const kind = classifyCloudinaryError(error);
+        const wrapped = error instanceof CloudinaryUploadError
+          ? error
+          : new CloudinaryUploadError(readErrorMessage(error), {
+              kind,
+              account,
+              httpCode: readErrorHttpCode(error),
+              cause: error,
+            });
 
-      lastError = wrapped;
+        lastError = wrapped;
 
-      console.error("[cloudinary] upload attempt failed", {
-        accountId: account.id,
-        cloudName: account.cloudName,
-        kind,
-        httpCode: wrapped.httpCode,
-        message: wrapped.message,
-      });
+        console.error("[cloudinary] operation failed", {
+          accountId: account.id,
+          cloudName: account.cloudName,
+          kind,
+          httpCode: wrapped.httpCode,
+          attempt: attempt + 1,
+          message: wrapped.message,
+        });
 
-      if (!shouldTryAnotherAccount(kind)) {
-        throw wrapped;
+        if (kind === "transient" && attempt < CLOUDINARY_TRANSIENT_RETRIES) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, CLOUDINARY_TRANSIENT_RETRY_DELAYS_MS[attempt] ?? 1500),
+          );
+          continue;
+        }
+
+        if (!shouldTryAnotherAccount(kind)) {
+          throw wrapped;
+        }
+
+        markAccountUnavailable(account, kind);
+        break;
       }
-
-      markAccountUnavailable(account, kind);
     }
   }
 
@@ -403,7 +439,6 @@ function createCloudinaryUploadStream(
     throw new Error("Unsupported file type");
   }
 
-  configureCloudinaryAccount(account);
   const resourceType = options.resourceType ?? getResourceType(file.mimetype);
 
   let resolveUpload!: (asset: CloudinaryUploadAsset) => void;
@@ -452,35 +487,38 @@ async function uploadFileToCloudinaryAccount(
   options: { folder?: string },
   account: CloudinaryAccount,
 ): Promise<CloudinaryMediaUploadAsset> {
-  const readStream = createReadStream(file.path);
-  const { stream: uploadStream, uploadPromise } = createCloudinaryUploadStream(
-    file,
-    options,
-    account,
-  );
+  return withCloudinaryOperationLock(async () => {
+    configureCloudinaryAccount(account);
+    const readStream = createReadStream(file.path);
+    const { stream: uploadStream, uploadPromise } = createCloudinaryUploadStream(
+      file,
+      options,
+      account,
+    );
 
-  try {
-    const asset = await new Promise<CloudinaryUploadAsset>((resolve, reject) => {
-      const onReadError = (error: unknown) => {
-        const normalized =
-          error instanceof Error ? error : new Error("Unable to read upload file");
-        uploadStream.destroy(normalized);
-        reject(normalized);
+    try {
+      const asset = await new Promise<CloudinaryUploadAsset>((resolve, reject) => {
+        const onReadError = (error: unknown) => {
+          const normalized =
+            error instanceof Error ? error : new Error("Unable to read upload file");
+          uploadStream.destroy(normalized);
+          reject(normalized);
+        };
+
+        readStream.once("error", onReadError);
+        readStream.pipe(uploadStream);
+        uploadPromise.then(resolve, reject);
+      });
+
+      return {
+        ...asset,
+        resourceType: asset.resourceType === "video" ? "video" : "image",
       };
-
-      readStream.once("error", onReadError);
-      readStream.pipe(uploadStream);
-      uploadPromise.then(resolve, reject);
-    });
-
-    return {
-      ...asset,
-      resourceType: asset.resourceType === "video" ? "video" : "image",
-    };
-  } finally {
-    readStream.destroy();
-    uploadStream.destroy();
-  }
+    } finally {
+      readStream.destroy();
+      uploadStream.destroy();
+    }
+  });
 }
 
 export async function uploadFileToCloudinaryAsset(
@@ -510,13 +548,16 @@ async function uploadBufferToCloudinaryAccount(
   },
   account: CloudinaryAccount,
 ): Promise<CloudinaryUploadAsset> {
-  const { stream: uploadStream, uploadPromise } = createCloudinaryUploadStream(
-    file,
-    options,
-    account,
-  );
-  uploadStream.end(file.buffer);
-  return uploadPromise;
+  return withCloudinaryOperationLock(async () => {
+    configureCloudinaryAccount(account);
+    const { stream: uploadStream, uploadPromise } = createCloudinaryUploadStream(
+      file,
+      options,
+      account,
+    );
+    uploadStream.end(file.buffer);
+    return uploadPromise;
+  });
 }
 
 export async function uploadBufferToCloudinaryAsset(
@@ -634,36 +675,38 @@ export async function deleteCloudinaryAsset(asset: {
     );
   }
 
-  configureCloudinaryAccount(account);
+  await withCloudinaryOperationLock(async () => {
+    configureCloudinaryAccount(account);
 
-  await new Promise<void>((resolve, reject) => {
-    cloudinary.uploader.destroy(
-      asset.publicId,
-      {
-        resource_type: asset.resourceType,
-        invalidate: true,
-      },
-      (error, result) => {
-        if (error) {
-          reject(
-            new CloudinaryUploadError(readErrorMessage(error), {
-              kind: classifyCloudinaryError(error),
-              account,
-              httpCode: readErrorHttpCode(error),
-              cause: error,
-            }),
-          );
-          return;
-        }
+    await new Promise<void>((resolve, reject) => {
+      cloudinary.uploader.destroy(
+        asset.publicId,
+        {
+          resource_type: asset.resourceType,
+          invalidate: true,
+        },
+        (error, result) => {
+          if (error) {
+            reject(
+              new CloudinaryUploadError(readErrorMessage(error), {
+                kind: classifyCloudinaryError(error),
+                account,
+                httpCode: readErrorHttpCode(error),
+                cause: error,
+              }),
+            );
+            return;
+          }
 
-        const resultStatus = String(result?.result ?? "").toLowerCase();
-        if (resultStatus && !["ok", "not found"].includes(resultStatus)) {
-          reject(new Error(`Cloudinary deletion failed: ${resultStatus}`));
-          return;
-        }
+          const resultStatus = String(result?.result ?? "").toLowerCase();
+          if (resultStatus && !["ok", "not found"].includes(resultStatus)) {
+            reject(new Error(`Cloudinary deletion failed: ${resultStatus}`));
+            return;
+          }
 
-        resolve();
-      },
-    );
+          resolve();
+        },
+      );
+    });
   });
 }
