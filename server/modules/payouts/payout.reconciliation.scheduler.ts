@@ -178,6 +178,13 @@ export class PayoutReconciliationScheduler {
         WHERE o.source = 'event'
           AND o.status = 'paid'
           AND o.paid_at IS NOT NULL
+          AND EXISTS (
+            SELECT 1
+              FROM event_tickets et
+              JOIN events e ON e.id = et.event_id
+             WHERE et.order_id = o.id
+               AND e.payout_destination_id IS NOT NULL
+          )
           AND NOT EXISTS (
             SELECT 1
               FROM payouts p
