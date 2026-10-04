@@ -912,7 +912,8 @@ export function registerDiagnosticsRoutes(app: Express, _deps: { db: any }) {
     }
   });
 }
-\n\nfunction checkCloudinaryConfiguration() {
+
+function checkCloudinaryConfiguration(): NamedCheck {
   const numbered = [1, 2, 3].some((index) =>
     Boolean(
       process.env[`CLOUDINARY_${index}_CLOUD_NAME`]?.trim() &&
@@ -926,7 +927,6 @@ export function registerDiagnosticsRoutes(app: Express, _deps: { db: any }) {
     process.env.CLOUDINARY_API_SECRET?.trim(),
   );
   return numbered || legacy
-    ? { status: "OK", configured: true, message: "Cloudinary media credentials configured" }
+    ? { status: "PASS", configured: true, message: "Cloudinary media credentials configured" }
     : { status: "FAIL", configured: false, message: "Cloudinary media credentials are not configured" };
 }
-
