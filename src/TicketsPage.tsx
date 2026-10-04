@@ -39,7 +39,7 @@ function TicketsListPage() {
     const syncLocal = () => { if (mounted) setPaymentRecords(readBuyerPayments()); };
     syncLocal();
     const cachedOrders = getCachedBuyerOrders();
-    if (cachedOrders) { setOrders(cachedOrders); setLoading(false); window.addEventListener("storage", syncLocal); window.addEventListener("focus", syncLocal); return () => { mounted = false; window.removeEventListener("storage", syncLocal); window.removeEventListener("focus", syncLocal); }; }
+    if (cachedOrders) { setOrders(cachedOrders); setLoading(false); }
     void (async () => { try { const data = await apiFetch("/api/payments/orders/me", { timeoutMs: 30000, retryAttempts: 1 }); if (!mounted) return; const nextOrders = Array.isArray(data) ? data as OrderBundle[] : []; setOrders(nextOrders); setCachedBuyerOrders(nextOrders); } catch (err) { if (!mounted) return; setError(err instanceof Error ? err.message : "Failed to load buyer tickets."); } finally { if (mounted) setLoading(false); } })();
     window.addEventListener("storage", syncLocal); window.addEventListener("focus", syncLocal);
     return () => { mounted = false; window.removeEventListener("storage", syncLocal); window.removeEventListener("focus", syncLocal); };
