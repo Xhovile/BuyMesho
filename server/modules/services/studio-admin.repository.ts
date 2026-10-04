@@ -299,9 +299,16 @@ export async function getStudioAdminSnapshot(
       ),
       brevoConfigured: Boolean(process.env.BREVO_API_KEY?.trim()),
       cloudinaryConfigured: Boolean(
-        process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
-        process.env.CLOUDINARY_API_KEY?.trim() &&
-        process.env.CLOUDINARY_API_SECRET?.trim(),
+        [1, 2, 3].some((index) =>
+          process.env[`CLOUDINARY_${index}_CLOUD_NAME`]?.trim() &&
+          process.env[`CLOUDINARY_${index}_API_KEY`]?.trim() &&
+          process.env[`CLOUDINARY_${index}_API_SECRET`]?.trim(),
+        ) ||
+        (
+          process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
+          process.env.CLOUDINARY_API_KEY?.trim() &&
+          process.env.CLOUDINARY_API_SECRET?.trim()
+        ),
       ),
       notificationEmail:
         process.env.XHOVILE_STUDIO_NOTIFICATION_EMAIL?.trim() ||
