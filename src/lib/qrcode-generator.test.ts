@@ -3,8 +3,8 @@ import test from "node:test";
 
 import qrcode from "./qrcode-generator.js";
 
-test("generates a decodable QR matrix for a BuyMesho ticket code", () => {
-  const ticketCode = "BM-6513D50ED8";
+test("generates a standards-compliant QR matrix for a signed BuyMesho credential", () => {
+  const ticketCode = "BM1." + "A".repeat(180) + "." + "B".repeat(86);
   const qr = qrcode(0, "H");
 
   qr.addData(ticketCode, "Byte");
