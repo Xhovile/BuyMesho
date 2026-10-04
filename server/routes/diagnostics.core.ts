@@ -927,6 +927,6 @@ function checkCloudinaryConfiguration(): NamedCheck {
     process.env.CLOUDINARY_API_SECRET?.trim(),
   );
   return numbered || legacy
-    ? { status: "PASS", configured: true, message: "Cloudinary media credentials configured" }
-    : { status: "FAIL", configured: false, message: "Cloudinary media credentials are not configured" };
+    ? { status: "PASS", message: "Cloudinary media credentials configured" }
+    : { status: "FAIL", message: "Cloudinary media credentials are not configured" };
 }
