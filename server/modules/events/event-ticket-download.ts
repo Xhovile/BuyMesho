@@ -67,64 +67,15 @@ export function verifyEventTicketDownloadToken(
   }
 }
 
-function escapePdfText(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
-}
-
-function sanitizeFilename(value: string): string {
-  const cleaned = value
-    .trim()
-    .replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
-  return cleaned || "buymesho-ticket";
-}
-
-function addText(commands: string[], x: number, y: number, size: number, text: string, bold = false) {
-  commands.push("BT");
-  commands.push(`/${bold ? "F2" : "F1"} ${size} Tf`);
-  commands.push(`0 0 0 rg`);
-  commands.push(`1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Tm`);
-  commands.push(`(${escapePdfText(text)}) Tj`);
-  commands.push("ET");
-}
-
-function addLine(commands: string[], x1: number, y: number, x2: number) {
-  commands.push("0.86 0.86 0.88 RG");
-  commands.push("1 w");
-  commands.push(`${x1.toFixed(2)} ${y.toFixed(2)} m ${x2.toFixed(2)} ${y.toFixed(2)} l S`);
-}
-
-function wrapText(value: string, maxChars: number): string[] {
-  const words = value.trim().split(/\s+/).filter(Boolean);
-  if (!words.length) return ["—"];
-
-  const lines: string[] = [];
-  let current = "";
-
-  for (const word of words) {
-    const candidate = current ? `${current} ${word}` : word;
-    if (candidate.length <= maxChars) {
-      current = candidate;
-      continue;
-    }
-    if (current) lines.push(current);
-    current = word;
-  }
-
-  if (current) lines.push(current);
-  return lines.length ? lines : ["—"];
-}
-
 function pdfSafeText(value: string): string {
   return String(value)
     .normalize("NFKD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[—–]/g, "-")
     .replace(/•/g, "|")
     .replace(/[“”]/g, '"')
     .replace(/[‘’]/g, "'")
-    .replace(/[^\\x20-\\x7E]/g, "?");
+    .replace(/[^\x20-\x7E]/g, "?");
 }
 
 function escapePdfText(value: string): string {
@@ -159,30 +110,6 @@ function wrapText(value: string, maxChars: number): string[] {
   }
   if (current) lines.push(current);
   return lines.length ? lines : ["-"];
-}
-
-function addRect(commands: string[], x: number, y: number, width: number, height: number, red: number, green: number, blue: number) {
-  commands.push((red / 255).toFixed(3) + " " + (green / 255).toFixed(3) + " " + (blue / 255).toFixed(3) + " rg");
-  commands.push(x.toFixed(2) + " " + y.toFixed(2) + " " + width.toFixed(2) + " " + height.toFixed(2) + " re f");
-}
-
-function drawTicketCodeMatrix(commands: string[], payload: string, x: number, y: number, size: number) {
-  const qr = qrcode(0, "H");
-  qr.addData(payload, "Byte");
-  qr.make();
-  const moduleCount = qr.getModuleCount();
-  const quietZone = 4;
-  const totalModules = moduleCount + quietZone * 2;
-  const moduleSize = size / totalModules;
-  addRect(commands, x - 8, y - 8, size + 16, size + 16, 244, 244, 245);
-  addRect(commands, x, y, size, size, 255, 255, 255);
-  for (let row = 0; row < moduleCount; row += 1) {
-    for (let col = 0; col < moduleCount; col += 1) {
-      if (!qr.isDark(row, col)) continue;
-      commands.push("0.071 0.071 0.078 rg");
-      commands.push((x + (col + quietZone) * moduleSize).toFixed(2) + " " + (y + (moduleCount + quietZone - row - 1) * moduleSize).toFixed(2) + " " + moduleSize.toFixed(2) + " " + moduleSize.toFixed(2) + " re f");
-    }
-  }
 }
 type TicketPdfData = {
   eventTitle: string;
