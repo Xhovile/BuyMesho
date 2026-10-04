@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { generateKeyPairSync } from "node:crypto";
 import test from "node:test";
 import {
   createEventTicketDownloadToken,
@@ -8,6 +9,14 @@ import {
 import { registerEventTicketDownloadRoutes } from "../event-ticket-download.routes.js";
 
 const ORIGINAL_SECRET = process.env.EVENT_TICKET_DOWNLOAD_SECRET;
+const ORIGINAL_KEY_ID = process.env.BUYMESHO_TICKET_SIGNING_KEY_ID;
+const ORIGINAL_PRIVATE_KEY = process.env.BUYMESHO_TICKET_SIGNING_PRIVATE_KEY;
+const ticketSigningKeys = generateKeyPairSync("ed25519", {
+  privateKeyEncoding: { type: "pkcs8", format: "pem" },
+  publicKeyEncoding: { type: "spki", format: "pem" },
+});
+process.env.BUYMESHO_TICKET_SIGNING_KEY_ID = "test-ticket-key";
+process.env.BUYMESHO_TICKET_SIGNING_PRIVATE_KEY = ticketSigningKeys.privateKey.replace(/\n/g, "\\n");
 
 test("event ticket download tokens verify and expire", () => {
   process.env.EVENT_TICKET_DOWNLOAD_SECRET = "event-ticket-download-test-secret";
@@ -51,6 +60,7 @@ test("event ticket PDF generator returns a valid PDF document", () => {
     location: "Lilongwe",
     status: "Paid",
     amount: "5000 MWK",
+    qrPayload: "BM1.test-payload.invalid-signature",
   });
 
   assert.ok(pdf.length > 1000);
@@ -97,6 +107,9 @@ test("cancelled ticket cannot be downloaded even when its order is paid", () => 
               organizer_name: "Campus Events",
               ticket_price: 5000,
               order_status: "paid",
+              event_id: "event-1",
+              order_id: "order-1",
+              purchase_date: "2026-10-03T12:00:00.000Z",
             };
           },
         };
@@ -142,3 +155,12 @@ test("cancelled ticket cannot be downloaded even when its order is paid", () => 
     else process.env.EVENT_TICKET_DOWNLOAD_SECRET = previousSecret;
   }
 });
+
+
+const restoreTicketSigningEnv = () => {
+  if (ORIGINAL_KEY_ID === undefined) delete process.env.BUYMESHO_TICKET_SIGNING_KEY_ID;
+  else process.env.BUYMESHO_TICKET_SIGNING_KEY_ID = ORIGINAL_KEY_ID;
+  if (ORIGINAL_PRIVATE_KEY === undefined) delete process.env.BUYMESHO_TICKET_SIGNING_PRIVATE_KEY;
+  else process.env.BUYMESHO_TICKET_SIGNING_PRIVATE_KEY = ORIGINAL_PRIVATE_KEY;
+};
+test.after(restoreTicketSigningEnv);
