@@ -76,14 +76,13 @@ function mixColors(a: PdfColor, b: PdfColor, ratio: number): PdfColor {
 function pdfSafeText(value: string) {
   return value
     .normalize("NFKD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[—–]/g, "-")
     .replace(/•/g, "|")
     .replace(/[“”]/g, '"')
     .replace(/[‘’]/g, "'")
-    .replace(/[^\\x20-\\x7E]/g, "?");
+    .replace(/[^\x20-\x7E]/g, "?");
 }
-
 function escapePdfText(value: string) {
   return pdfSafeText(value).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 }
