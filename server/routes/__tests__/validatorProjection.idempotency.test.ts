@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 import { getPaymentDb } from "../../postgresCompat.js";
-import { atomicallyClaimTicketEntry, updateTicket } from "../validator.projection.routes.js";
+import { atomicallyClaimTicketEntry } from "../validator.projection.routes.js";
+import { updateTicket } from "../validatorProjection.routes.js";
 
 const db = getPaymentDb();
 
