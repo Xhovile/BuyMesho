@@ -163,9 +163,10 @@ function parseDate(value: unknown): Date | null {
 function normalizeRequestedResolution(value: unknown, subjectType: DisputeSubjectType = 'listing'): 'refund' | 'return' | 'return_and_refund' | 'review' {
   const normalized = String(value ?? '').trim().toLowerCase();
   if (normalized === 'refund') return 'refund';
-  if (normalized === 'return') return 'return';
-  if (normalized === 'return_and_refund' && subjectType === 'listing') return 'return_and_refund';
-  if (normalized === 'return' && subjectType === 'listing') return 'return';
+  if (subjectType === 'listing') {
+    if (normalized === 'return') return 'return';
+    if (normalized === 'return_and_refund') return 'return_and_refund';
+  }
   return 'review';
 }
 function normalizeRequestType(value: unknown, subjectType: DisputeSubjectType): string {
@@ -320,7 +321,11 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         let eligibleAt: string | null = null;
         let phase: 'delivery' | 'escrow' | 'post_delivery' = 'escrow';
 
-        if (released) {
+        if (subjectType === 'event') {
+          windowEndsAt = eligibility.windowEndsAt;
+          eligibleAt = eligibility.eligibleAt;
+          phase = eligibility.phase === 'pre_event' ? 'escrow' : 'post_delivery';
+        } else if (released) {
           const deliveredAt = parseDate(order.fulfilled_at) ?? (escrowState === 'released' ? parseDate(escrow?.updatedAt) : null);
           if (!deliveredAt) {
             return { duplicate: false, settled: false, timingError: 'DELIVERY_TIMESTAMP_UNAVAILABLE', caseId: null, attemptId: null, refundRequestId: null, windowEndsAt: null, eligibleAt: null, phase: 'post_delivery', buyerId: String(order.buyer_id), sellerId: String(order.seller_id), currency: String(order.total_currency ?? 'MWK'), status: orderStatus, resolutionOwner: 'admin', payoutStatusAtSubmission: null };
@@ -339,7 +344,6 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
           eligibleAt = deliveryDeadline?.toISOString() ?? null;
           phase = 'escrow';
         }
-
         const payoutResult = await client.query<Record<string, unknown>>(
           `SELECT id, status FROM payouts WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
           [orderId],
