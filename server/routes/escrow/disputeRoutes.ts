@@ -113,7 +113,7 @@ async function getDisputeEligibility(orderId: string, subjectType: DisputeSubjec
   }
 
   if (subjectType === 'event') {
-    const eventResult = eventId ? await query<Record<string, unknown>>(`SELECT id, event_title, event_date, start_time, status FROM events WHERE id = $1 LIMIT 1`, [eventId]) : { rows: [] as Record<string, unknown>[] };
+    const eventResult = eventId ? await query<Record<string, unknown>>(`SELECT id, event_title, event_date, start_time, end_time, status FROM events WHERE id = $1 LIMIT 1`, [eventId]) : { rows: [] as Record<string, unknown>[] };
     const event = eventResult.rows[0];
     if (String(event?.status ?? '').trim().toLowerCase() === 'cancelled') return { eligible: true, phase: 'post_event', eligibleAt: null, windowEndsAt: null, reason: 'Cancelled-event disputes can be submitted once the cancellation is known.' };
     const eventDate = event?.event_date ? parseDate(String(event.event_date)) : null;
@@ -242,7 +242,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         listings = safeParseItems(orderResult.rows[0]?.items).filter((item) => String(item.kind ?? 'listing').toLowerCase() === 'listing').map((item) => ({ id: item.listingId ?? item.listing_id ?? null, title: item.title ?? 'Listing', quantity: item.quantity ?? 1, unitPrice: item.unitPrice ?? item.unit_price ?? null, reference: item.reference ?? null }));
       }
       const eventRequestTypes = eligibility.phase === 'pre_event' ? [...EVENT_PRE_EVENT_REQUEST_TYPES] : [...EVENT_REQUEST_TYPES];
-      return res.json({ query: rawQuery, matchedBy, subjectType: subject.subjectType, orderId, ticketId, eligibility, event, tickets, listings, requestTypes: subject.subjectType === 'event' ? eventRequestTypes.map((value) => ({ value, label: EVENT_REQUEST_TYPE_LABELS[value] })) : [...LISTING_REQUEST_TYPES].map((value) => ({ value, label: DISPUTE_REQUEST_TYPE_LABELS[value] })), resolutionOptions: subject.subjectType === 'event' ? [...Object.keys(EVENT_RESOLUTION_LABELS)].map((value) => ({ value, label: EVENT_RESOLUTION_LABELS[value] })) : [...Object.keys(DISPUTE_RESOLUTION_LABELS)].map((value) => ({ value, label: DISPUTE_RESOLUTION_LABELS[value] })) });
+      return res.json({ query: rawQuery, matchedBy, subjectType: subject.subjectType, orderId, ticketId, eligibility, event, tickets, listings, requestTypes: subject.subjectType === 'event' ? eventRequestTypes.map((value) => ({ value, label: EVENT_REQUEST_TYPE_LABELS[value] })) : [...LISTING_REQUEST_TYPES].map((value) => ({ value, label: DISPUTE_REQUEST_TYPE_LABELS[value] })), resolutions: subject.subjectType === 'event' ? [...Object.keys(EVENT_RESOLUTION_LABELS)].map((value) => ({ value, label: EVENT_RESOLUTION_LABELS[value] })) : [...Object.keys(DISPUTE_RESOLUTION_LABELS)].map((value) => ({ value, label: DISPUTE_RESOLUTION_LABELS[value] })) });
     } catch (error) {
       return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to resolve dispute search' });
     }
