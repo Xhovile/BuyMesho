@@ -49,10 +49,40 @@ export function createAdminEventPayoutRecoveryRouter(requireAuth: RequestHandler
     try {
       requireAdmin(req);
       const status = clean(req.query?.status).toLowerCase();
-      const statusFilter = ["eligible", "pending_settlement", "ready_for_payout", "queued", "processing", "pending", "held", "paid", "failed", "cancelled"].includes(status)
-        ? "AND p.status = $1"
-        : "";
-      const params = statusFilter ? [status] : [];
+      const search = clean(req.query?.q).toLowerCase();
+      const params: string[] = [];
+      const filters = ["(p.owner_type = 'event_creator' OR p.event_id IS NOT NULL)"];
+
+      if (search) {
+        params.push(`%${search}%`);
+        const placeholder = `${params.length}`;
+        filters.push(`(
+          LOWER(CAST(p.id AS TEXT)) LIKE ${placeholder} OR
+          LOWER(COALESCE(p.order_id, '')) LIKE ${placeholder} OR
+          LOWER(CAST(p.event_id AS TEXT)) LIKE ${placeholder} OR
+          LOWER(COALESCE(e.event_title, '')) LIKE ${placeholder} OR
+          LOWER(COALESCE(e.creator_uid, '')) LIKE ${placeholder} OR
+          LOWER(COALESCE(ec.uid, '')) LIKE ${placeholder} OR
+          LOWER(COALESCE(ec.email, '')) LIKE ${placeholder} OR
+          LOWER(COALESCE(o.buyer_id, '')) LIKE ${placeholder} OR
+          EXISTS (
+            SELECT 1
+              FROM event_tickets et_search
+             WHERE et_search.order_id = p.order_id
+               AND (
+                 LOWER(COALESCE(et_search.id, '')) LIKE ${placeholder} OR
+                 LOWER(COALESCE(et_search.code, '')) LIKE ${placeholder} OR
+                 LOWER(COALESCE(et_search.holder_email, '')) LIKE ${placeholder} OR
+                 LOWER(COALESCE(et_search.holder_name, '')) LIKE ${placeholder}
+               )
+          )
+        )`);
+      }
+
+      if (["eligible", "pending_settlement", "ready_for_payout", "queued", "processing", "pending", "held", "paid", "failed", "cancelled"].includes(status)) {
+        params.push(status);
+        filters.push(`p.status = ${params.length}`);
+      }
 
       const result = await query<Record<string, unknown>>(
         `SELECT p.id, p.event_id, p.event_creator_uid, p.order_id, p.destination_account_id,
@@ -69,6 +99,7 @@ export function createAdminEventPayoutRecoveryRouter(requireAuth: RequestHandler
            FROM payouts p
            INNER JOIN events e ON e.id = p.event_id
            LEFT JOIN event_creators ec ON ec.uid = e.creator_uid
+           LEFT JOIN orders o ON o.id = p.order_id
            LEFT JOIN LATERAL (
              SELECT *
                FROM event_refund_liabilities
@@ -76,15 +107,48 @@ export function createAdminEventPayoutRecoveryRouter(requireAuth: RequestHandler
               ORDER BY created_at DESC
               LIMIT 1
            ) l ON TRUE
-          WHERE (p.owner_type = 'event_creator' OR p.event_id IS NOT NULL)
-            ${statusFilter}
+          WHERE ${filters.join(" AND ")}
           ORDER BY p.created_at DESC`,
         params,
       );
 
-      const liabilities = await listEventRefundLiabilities({ query } as any, status && ["due", "recovered", "waived"].includes(status)
-        ? { status: status as "due" | "recovered" | "waived" }
-        : {});
+      let liabilities;
+      if (search) {
+        const liabilityResult = await query<Record<string, unknown>>(
+          `SELECT l.*
+             FROM event_refund_liabilities l
+             LEFT JOIN events e ON e.id = l.event_id
+             LEFT JOIN event_creators ec ON ec.uid = l.event_creator_uid
+             LEFT JOIN orders o ON o.id = l.order_id
+            WHERE
+              LOWER(CAST(l.id AS TEXT)) LIKE $1 OR
+              LOWER(CAST(l.event_id AS TEXT)) LIKE $1 OR
+              LOWER(COALESCE(l.event_creator_uid, '')) LIKE $1 OR
+              LOWER(COALESCE(l.order_id, '')) LIKE $1 OR
+              LOWER(COALESCE(l.ticket_id, '')) LIKE $1 OR
+              LOWER(COALESCE(e.event_title, '')) LIKE $1 OR
+              LOWER(COALESCE(ec.email, '')) LIKE $1 OR
+              LOWER(COALESCE(o.buyer_id, '')) LIKE $1 OR
+              EXISTS (
+                SELECT 1
+                  FROM event_tickets et_search
+                 WHERE et_search.order_id = l.order_id
+                   AND (
+                     LOWER(COALESCE(et_search.id, '')) LIKE $1 OR
+                     LOWER(COALESCE(et_search.code, '')) LIKE $1 OR
+                     LOWER(COALESCE(et_search.holder_email, '')) LIKE $1 OR
+                     LOWER(COALESCE(et_search.holder_name, '')) LIKE $1
+                   )
+              )
+            ORDER BY l.created_at DESC`,
+          [`%${search}%`],
+        );
+        liabilities = liabilityResult.rows;
+      } else {
+        liabilities = await listEventRefundLiabilities({ query } as any, status && ["due", "recovered", "waived"].includes(status)
+          ? { status: status as "due" | "recovered" | "waived" }
+          : {});
+      }
       return res.json({ payouts: result.rows, refundLiabilities: liabilities });
     } catch (error) {
       return responseError(res, error, "Failed to load event payout recovery data");
@@ -119,7 +183,7 @@ export function createAdminEventPayoutRecoveryRouter(requireAuth: RequestHandler
       const payout = await getEventPayout(payoutId);
       if (!payout) return res.status(404).json({ error: "Event payout not found" });
 
-      const [attempts, liabilities, events] = await Promise.all([
+      const [attempts, liabilities, events, orderResult, eventResult, creatorResult, ticketResult, paymentResult] = await Promise.all([
         query<Record<string, unknown>>(
           "SELECT * FROM payout_attempts WHERE payout_id = $1 ORDER BY attempt_no ASC",
           [payoutId],
@@ -132,13 +196,76 @@ export function createAdminEventPayoutRecoveryRouter(requireAuth: RequestHandler
           "SELECT * FROM payout_events WHERE payout_id = $1 ORDER BY created_at ASC",
           [payoutId],
         ),
+        query<Record<string, unknown>>(
+          "SELECT * FROM orders WHERE id = $1 LIMIT 1",
+          [payout.order_id],
+        ),
+        query<Record<string, unknown>>(
+          "SELECT * FROM events WHERE id = $1 LIMIT 1",
+          [payout.event_id],
+        ),
+        query<Record<string, unknown>>(
+          "SELECT * FROM event_creators WHERE uid = $1 LIMIT 1",
+          [payout.event_creator_uid_actual ?? payout.event_creator_uid],
+        ),
+        query<Record<string, unknown>>(
+          "SELECT * FROM event_tickets WHERE order_id = $1 AND event_id = $2 ORDER BY id ASC",
+          [payout.order_id, payout.event_id],
+        ),
+        query<Record<string, unknown>>(
+          "SELECT * FROM payments WHERE order_id = $1 ORDER BY created_at DESC",
+          [payout.order_id],
+        ),
       ]);
+
+      const paymentReferences = [...new Set(
+        paymentResult.rows
+          .flatMap((row) => [row.reference, row.provider_reference])
+          .map((value) => String(value ?? "").trim())
+          .filter(Boolean),
+      )];
+
+      const webhookEvents = paymentReferences.length
+        ? (await query<Record<string, unknown>>(
+            `SELECT *
+               FROM payment_webhook_events
+              WHERE reference IN (${paymentReferences.map((_, index) => `${index + 1}`).join(", ")})
+                 OR tx_ref IN (${paymentReferences.map((_, index) => `${index + 1}`).join(", ")})
+              ORDER BY created_at DESC`,
+            [...paymentReferences, ...paymentReferences],
+          )).rows
+        : [];
+
+      const buyerUid = String(orderResult.rows[0]?.buyer_id ?? "").trim();
+      const buyerEmails = [...new Set(
+        ticketResult.rows
+          .map((row) => String(row.holder_email ?? "").trim().toLowerCase())
+          .filter(Boolean),
+      )];
+
+      const rawData = {
+        payout,
+        event: eventResult.rows[0] ?? null,
+        eventCreator: creatorResult.rows[0] ?? null,
+        order: orderResult.rows[0] ?? null,
+        buyer: {
+          uid: buyerUid || null,
+          emails: buyerEmails,
+        },
+        tickets: ticketResult.rows,
+        payments: paymentResult.rows,
+        paymentWebhookEvents: webhookEvents,
+        payoutAttempts: attempts.rows,
+        payoutEvents: events.rows,
+        refundLiabilities: liabilities.rows,
+      };
 
       return res.json({
         payout,
         attempts: attempts.rows,
         refundLiabilities: liabilities.rows,
         payoutEvents: events.rows,
+        rawData,
       });
     } catch (error) {
       return responseError(res, error, "Failed to load event payout");
