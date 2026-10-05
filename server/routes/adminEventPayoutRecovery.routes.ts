@@ -38,7 +38,7 @@ async function listEventPayments(search = "") {
   const conditions = ["et.id IS NOT NULL"];
   if (normalized) {
     params.push(`%${normalized}%`);
-    const placeholder = `${params.length}`;
+    const placeholder = `$${params.length}`;
     conditions.push(`(
       LOWER(CAST(p.id AS TEXT)) LIKE ${placeholder} OR
       LOWER(COALESCE(p.order_id, '')) LIKE ${placeholder} OR
@@ -168,8 +168,8 @@ async function getEventPaymentDiagnostics(paymentId: string) {
     ? (await query<Record<string, unknown>>(
         `SELECT *
            FROM payment_webhook_events
-          WHERE reference IN (${paymentReferences.map((_, index) => `${index + 1}`).join(", ")})
-             OR tx_ref IN (${paymentReferences.map((_, index) => `${paymentReferences.length + index + 1}`).join(", ")})
+          WHERE reference IN (${paymentReferences.map((_, index) => `$${index + 1}`).join(", ")})
+             OR tx_ref IN (${paymentReferences.map((_, index) => `$${paymentReferences.length + index + 1}`).join(", ")})
           ORDER BY created_at DESC`,
         [...paymentReferences, ...paymentReferences],
       )).rows
@@ -184,21 +184,21 @@ async function getEventPaymentDiagnostics(paymentId: string) {
         query<Record<string, unknown>>(
           `SELECT *
              FROM payout_attempts
-            WHERE payout_id IN (${payoutIds.map((_, index) => `${index + 1}`).join(", ")})
+            WHERE payout_id IN (${payoutIds.map((_, index) => `$${index + 1}`).join(", ")})
             ORDER BY payout_id, attempt_no ASC`,
           payoutIds,
         ),
         query<Record<string, unknown>>(
           `SELECT *
              FROM payout_events
-            WHERE payout_id IN (${payoutIds.map((_, index) => `${index + 1}`).join(", ")})
+            WHERE payout_id IN (${payoutIds.map((_, index) => `$${index + 1}`).join(", ")})
             ORDER BY payout_id, created_at ASC`,
           payoutIds,
         ),
         query<Record<string, unknown>>(
           `SELECT *
              FROM event_refund_liabilities
-            WHERE payout_id IN (${payoutIds.map((_, index) => `${index + 1}`).join(", ")})
+            WHERE payout_id IN (${payoutIds.map((_, index) => `$${index + 1}`).join(", ")})
             ORDER BY created_at ASC`,
           payoutIds,
         ),
@@ -443,8 +443,8 @@ export function createAdminEventPayoutRecoveryRouter(requireAuth: RequestHandler
         ? (await query<Record<string, unknown>>(
             `SELECT *
                FROM payment_webhook_events
-              WHERE reference IN (${paymentReferences.map((_, index) => `${index + 1}`).join(", ")})
-                 OR tx_ref IN (${paymentReferences.map((_, index) => `${paymentReferences.length + index + 1}`).join(", ")})
+              WHERE reference IN (${paymentReferences.map((_, index) => `$${index + 1}`).join(", ")})
+                 OR tx_ref IN (${paymentReferences.map((_, index) => `$${paymentReferences.length + index + 1}`).join(", ")})
               ORDER BY created_at DESC`,
             [...paymentReferences, ...paymentReferences],
           )).rows
