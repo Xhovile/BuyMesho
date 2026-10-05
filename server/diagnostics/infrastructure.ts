@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { getFirebaseAdmin } from "../auth/firebaseAdmin.js";
+import { getCloudinaryAccounts, verifyCloudinaryAccounts } from "../lib/cloudinaryUpload.js";
 import type { DiagnosticPayload } from "./types.js";
 
 function configured(name: string): boolean {
@@ -7,7 +8,7 @@ function configured(name: string): boolean {
 }
 
 export function registerInfrastructureDiagnosticsRoutes(app: Express) {
-  app.get("/api/diagnostics/infrastructure", async (_req, res) => {
+  app.get("/api/diagnostics/infrastructure", async (req, res) => {
     const started = Date.now();
     let firebase = false;
     let firebaseError: string | undefined;
@@ -25,23 +26,26 @@ export function registerInfrastructureDiagnosticsRoutes(app: Express) {
       admin: ["ADMIN_EMAILS", "ADMIN_UIDS"],
     } as const;
 
-    const cloudinaryConfigured = [1, 2, 3].some((index) =>
-      Boolean(
-        process.env[`CLOUDINARY_${index}_CLOUD_NAME`]?.trim() &&
-        process.env[`CLOUDINARY_${index}_API_KEY`]?.trim() &&
-        process.env[`CLOUDINARY_${index}_API_SECRET`]?.trim(),
-      ),
-    ) || Boolean(
-      process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
-      process.env.CLOUDINARY_API_KEY?.trim() &&
-      process.env.CLOUDINARY_API_SECRET?.trim(),
-    );
+    const cloudinaryAccounts = getCloudinaryAccounts();
+    const cloudinaryConfigured = cloudinaryAccounts.length > 0;
+    const deepCloudinaryCheck = String(req.query.deep ?? "").trim().toLowerCase() === "cloudinary";
+    const cloudinaryVerification = deepCloudinaryCheck
+      ? await verifyCloudinaryAccounts()
+      : null;
+    const cloudinaryVerified = cloudinaryVerification
+      ? cloudinaryVerification.length > 0 &&
+        cloudinaryVerification.every((item) => item.status === "PASS")
+      : cloudinaryConfigured;
 
     const checks: NonNullable<DiagnosticPayload["checks"]> = {
       cloudinary: {
-        status: cloudinaryConfigured ? "PASS" : "FAIL",
-        message: cloudinaryConfigured ? "Cloudinary media credentials configured" : "Cloudinary media credentials are not configured",
-        details: { configured: cloudinaryConfigured },
+        status: cloudinaryVerified ? "PASS" : "FAIL",
+        message: deepCloudinaryCheck
+          ? (cloudinaryVerified ? "Cloudinary credentials authenticated successfully" : "One or more Cloudinary accounts failed authentication")
+          : (cloudinaryConfigured ? "Cloudinary media credentials configured" : "Cloudinary media credentials are not configured"),
+        details: deepCloudinaryCheck
+          ? { configured: cloudinaryConfigured, accounts: cloudinaryVerification }
+          : { configured: cloudinaryConfigured },
       },
       firebase: {
         status: firebase ? "PASS" : "FAIL",
