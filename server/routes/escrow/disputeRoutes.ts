@@ -114,7 +114,9 @@ async function getDisputeEligibility(orderId: string, subjectType: DisputeSubjec
     if (eventStart && now.getTime() < eventStart.getTime()) return { eligible: true, phase: 'pre_event', eligibleAt: eventStart.toISOString(), windowEndsAt: null, reason: 'Event disputes for payment or ticket problems can be submitted before the event. Event-day experience disputes should be submitted after entry or the event.' };
     const windowEndsAt = eventStart ? addDays(eventStart, EVENT_DISPUTE_POST_EVENT_HOURS / 24) : null;
     if (windowEndsAt && now.getTime() >= new Date(windowEndsAt).getTime()) return { eligible: false, phase: 'expired', eligibleAt: eventStart?.toISOString() ?? null, windowEndsAt, reason: 'The 48-hour event dispute window has expired.' };
-    return { eligible: true, phase: 'post_event', eligibleAt: eventStart?.toISOString() ?? null, windowEndsAt, reason: windowEndsAt ? 'Event disputes remain available until 48 hours after the scheduled event start.' : 'Event disputes can be submitted while the event issue can still be reviewed.' };
+    const eventDayEndsAt = eventStart ? addDays(eventStart, 1) : null;
+    const phase: DisputeEligibility['phase'] = eventDayEndsAt && now.getTime() < new Date(eventDayEndsAt).getTime() ? 'event_day' : 'post_event';
+    return { eligible: true, phase, eligibleAt: eventStart?.toISOString() ?? null, windowEndsAt, reason: windowEndsAt ? 'Event disputes remain available until 48 hours after the scheduled event start.' : 'Event disputes can be submitted while the event issue can still be reviewed.' };
   }
 
   const orderResult = await query<Record<string, unknown>>(`SELECT status, fulfilled_at, delivery_deadline FROM orders WHERE id = $1 LIMIT 1`, [orderId]);
@@ -240,8 +242,16 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       const openedBy = req.user!.uid;
       const now = new Date();
       const nowIso = now.toISOString();
-      const requestType = normalizeRequestType(body.requestType);
-      const requestedResolution = normalizeRequestedResolution(body.requestedResolution);
+      const subject = await detectDisputeSubject(orderId);
+      const subjectType = subject.subjectType;
+      const eligibility = await getDisputeEligibility(orderId, subjectType, subject.eventId, now);
+      if (!eligibility.eligible) {
+        if (eligibility.phase === 'active') return res.status(409).json({ error: 'This order already has an active dispute.', code: 'ACTIVE_DISPUTE_EXISTS', orderId });
+        if (eligibility.phase === 'settled') return res.status(409).json({ error: 'Dispute already settled.', code: 'DISPUTE_ALREADY_SETTLED', orderId });
+        return res.status(409).json({ error: eligibility.reason, code: subjectType === 'event' ? 'EVENT_DISPUTE_WINDOW_UNAVAILABLE' : 'DISPUTE_WINDOW_UNAVAILABLE', phase: eligibility.phase, eligibleAt: eligibility.eligibleAt, windowEndsAt: eligibility.windowEndsAt, orderId });
+      }
+      const requestType = normalizeRequestType(body.requestType, subjectType);
+      const requestedResolution = normalizeRequestedResolution(body.requestedResolution, subjectType);
       const amountRequested = Number(body.amountRequested ?? 0);
       const evidence = cleanEvidence(body.evidence);
       if (!Number.isFinite(amountRequested) || amountRequested < 0) return res.status(400).json({ error: 'amountRequested must be a non-negative number' });
