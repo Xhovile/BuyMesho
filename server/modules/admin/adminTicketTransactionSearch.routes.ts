@@ -115,7 +115,10 @@ export function createAdminTicketTransactionSearchRouter(params: {
         LEFT JOIN escrows e ON e.order_id = o.id
         LEFT JOIN event_tickets et ON et.order_id = o.id
         LEFT JOIN events ev ON ev.id = et.event_id
-        WHERE
+        WHERE NOT EXISTS (
+          SELECT 1 FROM event_tickets event_scope WHERE event_scope.order_id = o.id
+        )
+          AND
           LOWER(CAST(p.id AS TEXT)) LIKE ? OR
           LOWER(COALESCE(p.order_id, '')) LIKE ? OR
           LOWER(COALESCE(p.reference, '')) LIKE ? OR
@@ -237,7 +240,10 @@ export function createAdminTicketTransactionSearchRouter(params: {
             LEFT JOIN escrows e ON e.order_id = o.id
             LEFT JOIN event_tickets et ON et.order_id = o.id
             LEFT JOIN events ev ON ev.id = et.event_id
-            WHERE p.reference IN (${webhookReferences.map(() => "?").join(", ")})
+            WHERE NOT EXISTS (
+              SELECT 1 FROM event_tickets event_scope WHERE event_scope.order_id = o.id
+            )
+              AND p.reference IN (${webhookReferences.map(() => "?").join(", ")})
                OR p.provider_reference IN (${webhookReferences.map(() => "?").join(", ")})
             ORDER BY p.created_at DESC
             LIMIT 200
