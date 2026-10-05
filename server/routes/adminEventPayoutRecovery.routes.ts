@@ -75,7 +75,6 @@ async function listEventPayments(search = "") {
         p.paid_at,
         p.verified,
         p.verification,
-        p.raw_response,
         p.created_at,
         p.updated_at,
         o.buyer_id,
