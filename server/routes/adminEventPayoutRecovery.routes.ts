@@ -363,7 +363,8 @@ export function createAdminEventPayoutRecoveryRouter(requireAuth: RequestHandler
           ? { status: status as "due" | "recovered" | "waived" }
           : {});
       }
-      const eventPayments = await listEventPayments(search);\n      return res.json({ payouts: result.rows, refundLiabilities: liabilities, eventPayments });
+      const eventPayments = await listEventPayments(search);
+      return res.json({ payouts: result.rows, refundLiabilities: liabilities, eventPayments });
     } catch (error) {
       return responseError(res, error, "Failed to load event payout recovery data");
     }
