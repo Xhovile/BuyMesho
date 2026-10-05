@@ -63,6 +63,7 @@ export default function AdminEventPayoutRecoveryPage() {
   };
 
   const stats = useMemo(() => ({
+    payments: eventPayments.length,
     total: payouts.length,
     processing: payouts.filter((r) => ["processing", "pending"].includes(text(r.status).toLowerCase())).length,
     paid: payouts.filter((r) => text(r.status).toLowerCase() === "paid").length,
@@ -139,8 +140,8 @@ export default function AdminEventPayoutRecoveryPage() {
 
   return (
     <AdminWorkspaceLayout
-      title="Event Payout Recovery"
-      description="Reconcile direct event payouts, stop unsafe retries, and record approved event refund recoveries."
+      title="Event Financial Recovery"
+      description="Review event payments, reconcile payouts, and record approved event refund recoveries."
       onRefresh={() => void load()}
     >
       <form onSubmit={submitSearch} className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
@@ -157,7 +158,8 @@ export default function AdminEventPayoutRecoveryPage() {
       {error ? <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div> : null}
       {notice ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">{notice}</div> : null}
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <Stat icon={<CreditCardIcon />} title="Event payments" value={stats.payments} />
         <Stat icon={<Wallet className="h-4 w-4" />} title="Event payouts" value={stats.total} />
         <Stat icon={<Clock3 className="h-4 w-4" />} title="Provider processing" value={stats.processing} />
         <Stat icon={<CheckCircle2 className="h-4 w-4" />} title="Paid" value={stats.paid} />
@@ -291,6 +293,10 @@ export default function AdminEventPayoutRecoveryPage() {
       </div> : null}
     </AdminWorkspaceLayout>
   );
+}
+
+function CreditCardIcon() {
+  return <span className="inline-flex"><Wallet className="h-4 w-4" /></span>;
 }
 
 function Stat({ icon, title, value }: { icon: ReactNode; title: string; value: number }) {
