@@ -244,6 +244,64 @@ export function getCloudinaryConfigurationStatus() {
   };
 }
 
+export type CloudinaryAccountVerification = {
+  accountId: string;
+  cloudName: string;
+  status: "PASS" | "FAIL";
+  latencyMs: number;
+  httpCode: number | null;
+  failureKind: CloudinaryFailureKind | null;
+};
+
+export async function verifyCloudinaryAccounts(): Promise<CloudinaryAccountVerification[]> {
+  const accounts = getCloudinaryAccounts();
+
+  return Promise.all(
+    accounts.map(async (account) => {
+      const started = Date.now();
+
+      try {
+        const response = await (cloudinary.api.ping as unknown as (
+          options: Record<string, string>,
+        ) => Promise<{ status?: string }>)(cloudinaryRequestOptions(account));
+
+        if (String(response?.status ?? "").toLowerCase() !== "ok") {
+          throw new Error("Cloudinary ping returned an unexpected response");
+        }
+
+        return {
+          accountId: account.id,
+          cloudName: account.cloudName,
+          status: "PASS" as const,
+          latencyMs: Date.now() - started,
+          httpCode: null,
+          failureKind: null,
+        };
+      } catch (error) {
+        const httpCode = readErrorHttpCode(error);
+        const failureKind = classifyCloudinaryError(error);
+
+        console.error("[cloudinary] account verification failed", {
+          accountId: account.id,
+          cloudName: account.cloudName,
+          failureKind,
+          httpCode,
+          message: readErrorMessage(error),
+        });
+
+        return {
+          accountId: account.id,
+          cloudName: account.cloudName,
+          status: "FAIL" as const,
+          latencyMs: Date.now() - started,
+          httpCode,
+          failureKind,
+        };
+      }
+    }),
+  );
+}
+
 const CLOUDINARY_TRANSIENT_RETRIES = 2;
 const CLOUDINARY_TRANSIENT_RETRY_DELAYS_MS = [500, 1500] as const;
 
