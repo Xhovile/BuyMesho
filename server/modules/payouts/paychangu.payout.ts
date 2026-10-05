@@ -252,11 +252,12 @@ function normalizeProviderStatus(rawStatus: unknown): PayChanguPayoutExecutionSt
   return 'pending';
 }
 
-function classifyProviderError(error: unknown, httpStatus?: number): PayChanguPayoutFailureClass {
+export function classifyProviderError(error: unknown, httpStatus?: number): PayChanguPayoutFailureClass {
   if (httpStatus !== undefined) {
     if (httpStatus === 429) return 'provider_rate_limited';
     if (httpStatus >= 500 && httpStatus < 600) return 'provider_unavailable';
-    if (httpStatus === 401 || httpStatus === 403) return 'provider_authentication_error';
+    if (httpStatus === 401) return 'provider_authentication_error';
+    if (httpStatus === 403) return 'provider_configuration_error';
     if (httpStatus === 404) return 'provider_configuration_error';
     if (httpStatus === 409) return 'provider_conflict';
     if (httpStatus === 400 || httpStatus === 422) return 'provider_rejected';
