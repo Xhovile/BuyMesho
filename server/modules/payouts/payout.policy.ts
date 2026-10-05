@@ -14,6 +14,8 @@ export const PAYOUT_POLICY = {
   automaticRetryIntervalHours: 3,
   automaticRetryWindowHours: 48,
   launchMode: 'admin_approved' as const,
+  // Manual/admin retry eligibility. Authentication and configuration failures
+  // remain manually retryable after the underlying provider issue is corrected.
   retryableFailureCodes: new Set([
     'provider_timeout',
     'provider_unavailable',
@@ -22,6 +24,17 @@ export const PAYOUT_POLICY = {
     'provider_rejected',
     'provider_authentication_error',
     'provider_configuration_error',
+    'provider_conflict',
+    'balance_insufficient',
+  ]),
+  // Automatic retries are limited to failures that can reasonably clear without
+  // an operator changing provider credentials, account configuration, or feature access.
+  automaticRetryableFailureCodes: new Set([
+    'provider_timeout',
+    'provider_unavailable',
+    'provider_network_error',
+    'provider_rate_limited',
+    'provider_rejected',
     'provider_conflict',
     'balance_insufficient',
   ]),
@@ -121,6 +134,11 @@ export function calculatePayoutFormula(input: PayoutFormulaInput): PayoutFormula
 export function isRetryableFailureCode(code: string | null | undefined): boolean {
   if (!code) return false;
   return PAYOUT_POLICY.retryableFailureCodes.has(code);
+}
+
+export function isAutomaticallyRetryableFailureCode(code: string | null | undefined): boolean {
+  if (!code) return false;
+  return PAYOUT_POLICY.automaticRetryableFailureCodes.has(code);
 }
 
 export function isNonRetryableFailureCode(code: string | null | undefined): boolean {
