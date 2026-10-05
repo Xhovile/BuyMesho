@@ -6,6 +6,7 @@ import {
   isNonRetryableFailureCode,
   isRetryableFailureCode,
 } from '../payout.policy.js';
+import { classifyProviderError } from '../paychangu.payout.js';
 
 test('payout policy freezes the seller-net formula and hard caps reserves', () => {
   const formula = calculatePayoutFormula({
@@ -54,6 +55,14 @@ test('payout policy separates retryable and non-retryable failure codes', () => 
   assert.equal(isRetryableFailureCode('provider_configuration_error'), true);
   assert.equal(isRetryableFailureCode('provider_conflict'), true);
   assert.equal(isRetryableFailureCode('balance_insufficient'), true);
+  assert.equal(isRetryableFailureCode('provider_authentication_error'), true);
+  assert.equal(isRetryableFailureCode('provider_configuration_error'), true);
+
+
+  assert.equal(classifyProviderError(null, 401), 'provider_authentication_error');
+  assert.equal(classifyProviderError(null, 403), 'provider_configuration_error');
+  assert.equal(classifyProviderError(null, 429), 'provider_rate_limited');
+  assert.equal(classifyProviderError(null, 500), 'provider_unavailable');
 
   assert.equal(isRetryableFailureCode('order_disputed'), false);
   assert.equal(isNonRetryableFailureCode('order_disputed'), true);

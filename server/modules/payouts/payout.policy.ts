@@ -14,6 +14,9 @@ export const PAYOUT_POLICY = {
   automaticRetryIntervalHours: 3,
   automaticRetryWindowHours: 48,
   launchMode: 'admin_approved' as const,
+  // Both automatic and manual retries use the same retryable failure policy.
+  // A provider configuration/authentication error is still retried automatically
+  // through the normal attempt cap; the provider error remains visible to admins.
   retryableFailureCodes: new Set([
     'provider_timeout',
     'provider_unavailable',
@@ -122,6 +125,7 @@ export function isRetryableFailureCode(code: string | null | undefined): boolean
   if (!code) return false;
   return PAYOUT_POLICY.retryableFailureCodes.has(code);
 }
+
 
 export function isNonRetryableFailureCode(code: string | null | undefined): boolean {
   if (!code) return false;
