@@ -68,7 +68,7 @@ export default function AdminEventPayoutRecoveryPage() {
     processing: payouts.filter((r) => ["processing", "pending"].includes(text(r.status).toLowerCase())).length,
     paid: payouts.filter((r) => text(r.status).toLowerCase() === "paid").length,
     due: liabilities.filter((r) => text(r.status).toLowerCase() === "due").length,
-  }), [payouts, liabilities]);
+  }), [eventPayments, payouts, liabilities]);
 
   const openEventPayment = async (row: Row) => {
     setSelectedPayment(row);
