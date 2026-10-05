@@ -25,6 +25,7 @@ import { createAdminTicketTransactionSearchRouter } from "./modules/admin/adminT
 import { createServicePaymentRouter } from "./modules/services/service-payment.routes.js";
 import { createXhovileStudioAdminRouter } from "./modules/services/studio-admin.routes.js";
 import { logGeminiConfiguration } from "./lib/gemini.js";
+import { runCloudinaryStartupVerification } from "./lib/cloudinaryUpload.js";
 import {
   checkoutRateLimit,
   publicPaymentStatusRateLimit,
@@ -239,6 +240,10 @@ export async function startServer() {
     console.log("[Validator] Health endpoint: /api/validator/health");
 
     setImmediate(() => {
+      void runCloudinaryStartupVerification().catch((error) => {
+        console.error("[cloudinary] startup verification runner failed", error);
+      });
+
       startPayoutReconciliationScheduler();
       startEventOwnershipReconciliationScheduler();
     });
