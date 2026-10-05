@@ -62,6 +62,14 @@ const EVENT_RESOLUTION_LABELS: Record<string, string> = {
 };
 
 const EVENT_REQUEST_TYPES = new Set(Object.keys(EVENT_REQUEST_TYPE_LABELS));
+const EVENT_PRE_EVENT_REQUEST_TYPES = new Set([
+  'event_payment_problem',
+  'ticket_not_received',
+  'invalid_ticket',
+  'event_cancelled',
+  'event_rescheduled',
+  'exceptional_event_issue',
+]);
 const EVENT_DISPUTE_POST_EVENT_HOURS = 48;
 
 type DisputeSubjectType = 'listing' | 'event';
@@ -232,9 +240,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         const orderResult = await query<{ items: string }>(`SELECT items FROM orders WHERE id = $1 LIMIT 1`, [orderId]);
         listings = safeParseItems(orderResult.rows[0]?.items).filter((item) => String(item.kind ?? 'listing').toLowerCase() === 'listing').map((item) => ({ id: item.listingId ?? item.listing_id ?? null, title: item.title ?? 'Listing', quantity: item.quantity ?? 1, unitPrice: item.unitPrice ?? item.unit_price ?? null, reference: item.reference ?? null }));
       }
-      const eventRequestTypes = eligibility.phase === 'pre_event'
-        ? ['event_payment_problem', 'ticket_not_received', 'invalid_ticket', 'event_cancelled', 'event_rescheduled', 'exceptional_event_issue']
-        : [...EVENT_REQUEST_TYPES];
+      const eventRequestTypes = eligibility.phase === 'pre_event' ? [...EVENT_PRE_EVENT_REQUEST_TYPES] : [...EVENT_REQUEST_TYPES];
       return res.json({ query: rawQuery, matchedBy, subjectType: subject.subjectType, orderId, ticketId, eligibility, requestTypes: subject.subjectType === 'event' ? eventRequestTypes.map((value) => ({ value, label: EVENT_REQUEST_TYPE_LABELS[value] })) : [...LISTING_REQUEST_TYPES].map((value) => ({ value, label: DISPUTE_REQUEST_TYPE_LABELS[value] })),
     } catch (error) {
       return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to resolve dispute search' });
@@ -271,6 +277,9 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       }
       const requestType = normalizeRequestType(body.requestType, subjectType);
       const requestedResolution = normalizeRequestedResolution(body.requestedResolution, subjectType);
+      if (subjectType === 'event' && eligibility.phase === 'pre_event' && !EVENT_PRE_EVENT_REQUEST_TYPES.has(requestType)) {
+        return res.status(409).json({ error: 'This event issue type can only be submitted once the event has started.', code: 'EVENT_DISPUTE_TYPE_NOT_AVAILABLE_YET', phase: eligibility.phase, eligibleAt: eligibility.eligibleAt, orderId });
+      }
       const amountRequested = Number(body.amountRequested ?? 0);
       const evidence = cleanEvidence(body.evidence);
       if (!Number.isFinite(amountRequested) || amountRequested < 0) return res.status(400).json({ error: 'amountRequested must be a non-negative number' });
