@@ -474,7 +474,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
           ...row,
           latest_evidence: latestEvidence,
           status: DISPUTE_STATUS_LABELS[status] ?? status.replace(/_/g, ' '),
-          latest_request_type: DISPUTE_REQUEST_TYPE_LABELS[requestType] ?? requestType.replace(/_/g, ' '),
+          latest_request_type: EVENT_REQUEST_TYPE_LABELS[requestType] ?? DISPUTE_REQUEST_TYPE_LABELS[requestType] ?? requestType.replace(/_/g, ' '),
           latest_requested_resolution: DISPUTE_RESOLUTION_LABELS[resolution] ?? resolution.replace(/_/g, ' '),
         };
       });
