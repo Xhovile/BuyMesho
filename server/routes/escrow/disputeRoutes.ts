@@ -194,8 +194,8 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       }
 
       if (!orderId) {
-        const exactEvent = await query<{ order_id: string; ticket_id: string }>(`SELECT et.order_id, et.id AS ticket_id FROM event_tickets et INNER JOIN orders o ON o.id = et.order_id WHERE o.buyer_id = $1 AND et.event_id::text = $2 LIMIT 1`, [req.user!.uid, rawQuery]);
-        if (exactEvent.rows[0]?.order_id) { orderId = String(exactEvent.rows[0].order_id); ticketId = String(exactEvent.rows[0].ticket_id ?? ''); matchedBy = 'event_id'; }
+        const exactEvent = await query<{ order_id: string }>(`SELECT o.id AS order_id FROM orders o WHERE o.buyer_id = $1 AND EXISTS (SELECT 1 FROM jsonb_array_elements(COALESCE(NULLIF(o.items, ''), '[]'::jsonb)) item WHERE COALESCE(item->>'kind', '') = 'event_ticket' AND item->>'eventId' = $2) ORDER BY o.created_at DESC LIMIT 1`, [req.user!.uid, rawQuery]);
+        if (exactEvent.rows[0]?.order_id) { orderId = String(exactEvent.rows[0].order_id); matchedBy = 'event_id'; }
       }
 
       if (!orderId) {
@@ -204,8 +204,8 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
       }
 
       if (!orderId) {
-        const eventMatch = await query<{ order_id: string; ticket_id: string }>(`SELECT et.order_id, et.id AS ticket_id FROM event_tickets et INNER JOIN orders o ON o.id = et.order_id INNER JOIN events e ON e.id = et.event_id WHERE o.buyer_id = $1 AND e.event_title ILIKE $2 ORDER BY o.created_at DESC, et.id ASC LIMIT 1`, [req.user!.uid, like]);
-        if (eventMatch.rows[0]?.order_id) { orderId = String(eventMatch.rows[0].order_id); ticketId = String(eventMatch.rows[0].ticket_id ?? ''); matchedBy = 'event'; }
+        const eventMatch = await query<{ order_id: string }>(`SELECT o.id AS order_id FROM orders o WHERE o.buyer_id = $1 AND EXISTS (SELECT 1 FROM jsonb_array_elements(COALESCE(NULLIF(o.items, ''), '[]'::jsonb)) item WHERE COALESCE(item->>'kind', '') = 'event_ticket' AND lower(COALESCE(item->>'title', '')) LIKE lower($2)) ORDER BY o.created_at DESC LIMIT 1`, [req.user!.uid, like]);
+        if (eventMatch.rows[0]?.order_id) { orderId = String(eventMatch.rows[0].order_id); matchedBy = 'event'; }
       }
 
       if (!orderId) {
