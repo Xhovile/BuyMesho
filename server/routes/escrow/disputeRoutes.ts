@@ -110,13 +110,17 @@ async function getDisputeEligibility(orderId: string, subjectType: DisputeSubjec
     if (String(event?.status ?? '').trim().toLowerCase() === 'cancelled') return { eligible: true, phase: 'post_event', eligibleAt: null, windowEndsAt: null, reason: 'Cancelled-event disputes can be submitted once the cancellation is known.' };
     const eventDate = event?.event_date ? parseDate(String(event.event_date)) : null;
     const startTime = String(event?.start_time ?? '').trim();
-    const eventStart = eventDate ? parseDate(`${String(event.event_date).slice(0, 10)}T${startTime || '00:00:00'}`) : null;
-    if (eventStart && now.getTime() < eventStart.getTime()) return { eligible: true, phase: 'pre_event', eligibleAt: eventStart.toISOString(), windowEndsAt: null, reason: 'Event disputes for payment or ticket problems can be submitted before the event. Event-day experience disputes should be submitted after entry or the event.' };
-    const windowEndsAt = eventStart ? addDays(eventStart, EVENT_DISPUTE_POST_EVENT_HOURS / 24) : null;
-    if (windowEndsAt && now.getTime() >= new Date(windowEndsAt).getTime()) return { eligible: false, phase: 'expired', eligibleAt: eventStart?.toISOString() ?? null, windowEndsAt, reason: 'The 48-hour event dispute window has expired.' };
-    const eventDayEndsAt = eventStart ? addDays(eventStart, 1) : null;
+    const endTime = String(event?.end_time ?? '').trim();
+    const eventStart = eventDate ? parseDate(String(event.event_date).slice(0, 10) + 'T' + (startTime || '00:00:00')) : null;
+    const eventEnd = eventDate && endTime ? parseDate(String(event.event_date).slice(0, 10) + 'T' + endTime) : null;
+    if (eventStart && now.getTime() < eventStart.getTime()) return { eligible: true, phase: 'pre_event', eligibleAt: eventStart.toISOString(), windowEndsAt: null, reason: 'Payment and ticket-availability problems can be reported before the event. Entry or event-experience complaints become eligible once the event starts.' };
+    const postEventBase = eventEnd ?? eventStart;
+    const windowEndsAt = postEventBase ? addDays(postEventBase, EVENT_DISPUTE_POST_EVENT_HOURS / 24) : null;
+    if (windowEndsAt && now.getTime() >= new Date(windowEndsAt).getTime()) return { eligible: false, phase: 'expired', eligibleAt: postEventBase?.toISOString() ?? null, windowEndsAt, reason: 'The 48-hour event dispute window has expired.' };
+    const eventDayEndsAt = eventEnd ?? (eventStart ? addDays(eventStart, 1) : null);
     const phase: DisputeEligibility['phase'] = eventDayEndsAt && now.getTime() < new Date(eventDayEndsAt).getTime() ? 'event_day' : 'post_event';
-    return { eligible: true, phase, eligibleAt: eventStart?.toISOString() ?? null, windowEndsAt, reason: windowEndsAt ? 'Event disputes remain available until 48 hours after the scheduled event start.' : 'Event disputes can be submitted while the event issue can still be reviewed.' };
+    const eventWindowReason = eventEnd ? 'Event disputes remain available until 48 hours after the event ends.' : 'Event disputes remain available until 48 hours after the scheduled event start because no end time is recorded.';
+    return { eligible: true, phase, eligibleAt: eventStart?.toISOString() ?? null, windowEndsAt, reason: windowEndsAt ? eventWindowReason : 'Event disputes can be submitted while the event issue can still be reviewed.' };
   }
 
   const orderResult = await query<Record<string, unknown>>(`SELECT status, fulfilled_at, delivery_deadline FROM orders WHERE id = $1 LIMIT 1`, [orderId]);
@@ -228,7 +232,10 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         const orderResult = await query<{ items: string }>(`SELECT items FROM orders WHERE id = $1 LIMIT 1`, [orderId]);
         listings = safeParseItems(orderResult.rows[0]?.items).filter((item) => String(item.kind ?? 'listing').toLowerCase() === 'listing').map((item) => ({ id: item.listingId ?? item.listing_id ?? null, title: item.title ?? 'Listing', quantity: item.quantity ?? 1, unitPrice: item.unitPrice ?? item.unit_price ?? null, reference: item.reference ?? null }));
       }
-      return res.json({ query: rawQuery, matchedBy, subjectType: subject.subjectType, orderId, ticketId, eligibility, requestTypes: subject.subjectType === 'event' ? [...EVENT_REQUEST_TYPES].map((value) => ({ value, label: EVENT_REQUEST_TYPE_LABELS[value] })) : [...LISTING_REQUEST_TYPES].map((value) => ({ value, label: DISPUTE_REQUEST_TYPE_LABELS[value] })), resolutions: subject.subjectType === 'event' ? Object.entries(EVENT_RESOLUTION_LABELS).map(([value, label]) => ({ value, label })) : Object.entries(DISPUTE_RESOLUTION_LABELS).map(([value, label]) => ({ value, label })), event, tickets, listings });
+      const eventRequestTypes = eligibility.phase === 'pre_event'
+        ? ['event_payment_problem', 'ticket_not_received', 'invalid_ticket', 'event_cancelled', 'event_rescheduled', 'exceptional_event_issue']
+        : [...EVENT_REQUEST_TYPES];
+      return res.json({ query: rawQuery, matchedBy, subjectType: subject.subjectType, orderId, ticketId, eligibility, requestTypes: subject.subjectType === 'event' ? eventRequestTypes.map((value) => ({ value, label: EVENT_REQUEST_TYPE_LABELS[value] })) : [...LISTING_REQUEST_TYPES].map((value) => ({ value, label: DISPUTE_REQUEST_TYPE_LABELS[value] })),
     } catch (error) {
       return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to resolve dispute search' });
     }
