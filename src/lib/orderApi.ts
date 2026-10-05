@@ -48,6 +48,7 @@ export type OrderBundle = {
   payout?: Record<string, unknown> | null;
   dispute: Record<string, unknown> | null;
   ticketCredentials?: Record<string, string>;
+  ticketCredentialErrors?: string[];
 };
 
 const PAYOUT_STATUSES: SellerOrderPayoutStatus[] = [
