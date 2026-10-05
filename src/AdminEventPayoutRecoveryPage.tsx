@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { AlertTriangle, CheckCircle2, Clock3, RefreshCw, RotateCcw, ShieldCheck, Wallet, XCircle } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, Clock3, Copy, RefreshCw, RotateCcw, Search, ShieldCheck, Wallet, XCircle } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 
 type Row = Record<string, unknown>;
-type Detail = { payout?: Row; attempts?: Row[]; payoutEvents?: Row[]; refundLiabilities?: Row[] };
+type Detail = { payout?: Row; attempts?: Row[]; payoutEvents?: Row[]; refundLiabilities?: Row[]; rawData?: Record<string, unknown> };
 const text = (value: unknown) => String(value ?? "").trim();
 const amount = (value: unknown, currency = "MWK") => `${currency} ${Number.isFinite(Number(value)) ? Number(value).toLocaleString() : "0"}`;
 const label = (value: unknown) => text(value).replaceAll("_", " ") || "—";
@@ -13,6 +13,8 @@ const today = () => new Date().toISOString().slice(0, 10);
 export default function AdminEventPayoutRecoveryPage() {
   const [payouts, setPayouts] = useState<Row[]>([]);
   const [liabilities, setLiabilities] = useState<Row[]>([]);
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [selectedPayout, setSelectedPayout] = useState<Row | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [selectedLiability, setSelectedLiability] = useState<Row | null>(null);
@@ -28,10 +30,12 @@ export default function AdminEventPayoutRecoveryPage() {
   const [destination, setDestination] = useState("");
   const [recoveryNote, setRecoveryNote] = useState("");
 
-  const load = async () => {
+  const load = async (query = search) => {
     try {
       setLoading(true); setError(null);
-      const data = await apiFetch("/api/admin/event-payouts") as { payouts?: Row[]; refundLiabilities?: Row[] };
+      const normalizedQuery = query.trim();
+      const path = normalizedQuery ? `/api/admin/event-payouts?q=${encodeURIComponent(normalizedQuery)}` : "/api/admin/event-payouts";
+      const data = await apiFetch(path) as { payouts?: Row[]; refundLiabilities?: Row[] };
       setPayouts(Array.isArray(data.payouts) ? data.payouts : []);
       setLiabilities(Array.isArray(data.refundLiabilities) ? data.refundLiabilities : []);
     } catch (err) {
@@ -39,7 +43,20 @@ export default function AdminEventPayoutRecoveryPage() {
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(""); }, []);
+
+  const submitSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    const next = searchInput.trim();
+    setSearch(next);
+    void load(next);
+  };
+
+  const clearSearch = () => {
+    setSearchInput("");
+    setSearch("");
+    void load("");
+  };
 
   const stats = useMemo(() => ({
     total: payouts.length,
@@ -111,6 +128,17 @@ export default function AdminEventPayoutRecoveryPage() {
       description="Reconcile direct event payouts, stop unsafe retries, and record approved event refund recoveries."
       onRefresh={() => void load()}
     >
+      <form onSubmit={submitSearch} className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <input value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Search buyer email, buyer UUID, creator email/UUID, order ID, ticket ID…" className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-zinc-400 focus:bg-white" aria-label="Search event financial records" />
+          </div>
+          <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white"><Search className="h-4 w-4" />Search</button>
+          {search ? <button type="button" onClick={clearSearch} className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-50">Clear</button> : null}
+        </div>
+        <p className="mt-2 text-xs text-zinc-500">Searches across event title/ID, buyer and creator identity, order ID, and ticket ID/code.</p>
+      </form>
       {error ? <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div> : null}
       {notice ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">{notice}</div> : null}
 
@@ -175,10 +203,8 @@ export default function AdminEventPayoutRecoveryPage() {
               </> : null}
             </div>
             <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Reason for hold/cancel…" className="w-full rounded-2xl border border-zinc-200 bg-white p-3 text-sm outline-none" />
-            <div className="grid gap-5 xl:grid-cols-2">
-              <List title="Payout attempts" items={Array.isArray(detail.attempts) ? detail.attempts as Row[] : []} fields={["attempt_no","status","provider_transaction_id"]} />
-              <List title="Payout events" items={Array.isArray(detail.payoutEvents) ? detail.payoutEvents as Row[] : []} fields={["event_type","actor_type","note"]} />
-            </div>
+            <List title="Payout attempts" items={Array.isArray(detail.attempts) ? detail.attempts as Row[] : []} fields={["attempt_no","status","provider_transaction_id"]} />
+            <RawJsonViewer data={detail.rawData ?? { payout: detail.payout, payoutAttempts: detail.attempts, payoutEvents: detail.payoutEvents, refundLiabilities: detail.refundLiabilities }} />
             {Array.isArray(detail.refundLiabilities) && detail.refundLiabilities.length ? <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4"><h3 className="font-black text-amber-950">Refund liabilities</h3><div className="mt-3 space-y-2">{(detail.refundLiabilities as Row[]).map((row) => <div key={text(row.id)} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-3"><div><p className="text-sm font-black">{amount(row.amount, text(row.currency) || "MWK")}</p><p className="text-xs text-zinc-500">{label(row.status)} · {text(row.id)}</p></div>{text(row.status).toLowerCase() === "due" ? <button type="button" onClick={() => openRecovery(row)} className="rounded-xl bg-zinc-900 px-3 py-2 text-xs font-bold text-white">Record recovery</button> : <Badge tone="green">Recovered</Badge>}</div>)}</div></div> : null}
           </div>
         </div>
@@ -216,4 +242,32 @@ function Badge({ tone, children }: { tone: "green" | "amber" | "red"; children: 
 }
 function List({ title, items, fields }: { title: string; items: Row[]; fields: string[] }) {
   return <div className="rounded-3xl border border-zinc-200 bg-white p-4"><h3 className="font-black">{title}</h3><div className="mt-3 max-h-60 space-y-2 overflow-auto">{items.length ? items.map((item, index) => <div key={text(item.id) || index} className="rounded-2xl bg-zinc-50 p-3 text-xs">{fields.map((field) => <p key={field}><span className="font-bold">{label(field)}:</span> {label(item[field])}</p>)}</div>) : <p className="text-sm text-zinc-500">No records.</p>}</div></div>;
+}
+
+function RawJsonViewer({ data }: { data: unknown }) {
+  const [open, setOpen] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const raw = (() => {
+    try { return JSON.stringify(data, null, 2) ?? "null"; } catch { return "Unable to serialize raw event data."; }
+  })();
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(raw);
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 1500);
+    } catch {
+      setCopyState("failed");
+      window.setTimeout(() => setCopyState("idle"), 1500);
+    }
+  };
+  return <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white">
+    <div className="flex items-center justify-between gap-3 p-4">
+      <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} className="text-sm font-black">{open ? "Hide raw JSON" : "View raw JSON"}</button>
+      <button type="button" onClick={() => void copy()} className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-100">
+        {copyState === "copied" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+        {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy"}
+      </button>
+    </div>
+    {open ? <pre className="max-h-[32rem] overflow-auto border-t border-zinc-200 bg-zinc-950 p-4 text-[11px] leading-5 text-zinc-100 [scrollbar-width:thin]">{raw}</pre> : null}
+  </div>;
 }
