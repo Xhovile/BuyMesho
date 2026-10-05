@@ -82,10 +82,18 @@ function escapePdfText(value: string): string {
   return pdfSafeText(value).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 }
 
-function addText(commands: string[], x: number, y: number, size: number, text: string, bold = false) {
+function addText(
+  commands: string[],
+  x: number,
+  y: number,
+  size: number,
+  text: string,
+  bold = false,
+  color = "0 0 0",
+) {
   commands.push("BT");
   commands.push("/" + (bold ? "F2" : "F1") + " " + size + " Tf");
-  commands.push("0 0 0 rg");
+  commands.push(color + " rg");
   commands.push("1 0 0 1 " + x.toFixed(2) + " " + y.toFixed(2) + " Tm");
   commands.push("(" + escapePdfText(text) + ") Tj");
   commands.push("ET");
@@ -165,10 +173,10 @@ export function createEventTicketPdf(data: TicketPdfData): Buffer {
   commands.push("0.69 0.10 0.16 rg");
   commands.push("0 748 595 12 re f");
 
-  addText(commands, 34, 795, 22, "BuyMesho", true);
-  addText(commands, 34, 774, 9, "OFFICIAL EVENT TICKET");
-  addText(commands, 395, 795, 9, "VERIFIED EVENT ACCESS", true);
-  addText(commands, 395, 777, 8, "DIGITALLY ISSUED");
+  addText(commands, 34, 795, 22, "BuyMesho", true, "1 1 1");
+  addText(commands, 34, 774, 9, "OFFICIAL EVENT TICKET", false, "1 1 1");
+  addText(commands, 395, 795, 9, "VERIFIED EVENT ACCESS", true, "1 1 1");
+  addText(commands, 395, 777, 8, "DIGITALLY ISSUED", false, "0.75 0.75 0.78");
 
   addText(commands, 34, 710, 27, data.eventTitle, true);
   addText(commands, 34, 689, 11, "Event admission credential");
