@@ -693,6 +693,26 @@ export function cloudinaryAttachmentSourceUrl(secureUrl: string): string {
   return secureUrl.replace(/\/raw\/upload\/fl_attachment:[^/]+\//, "/raw/upload/");
 }
 
+
+export async function runCloudinaryStartupVerification(): Promise<void> {
+  if (String(process.env.CLOUDINARY_VERIFY_ON_STARTUP ?? "").trim().toLowerCase() !== "true") {
+    return;
+  }
+
+  const results = await verifyCloudinaryAccounts();
+  console.log("[cloudinary] startup account verification", {
+    accounts: results.map((result) => ({
+      accountId: result.accountId,
+      cloudName: result.cloudName,
+      status: result.status,
+      latencyMs: result.latencyMs,
+      httpCode: result.httpCode,
+      failureKind: result.failureKind,
+    })),
+  });
+}
+
+
 export async function deleteCloudinaryAsset(asset: {
   publicId: string;
   resourceType: CloudinaryResourceType;
