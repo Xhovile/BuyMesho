@@ -169,7 +169,7 @@ async function getEventPaymentDiagnostics(paymentId: string) {
         `SELECT *
            FROM payment_webhook_events
           WHERE reference IN (${paymentReferences.map((_, index) => `${index + 1}`).join(", ")})
-             OR tx_ref IN (${paymentReferences.map((_, index) => `${index + 1}`).join(", ")})
+             OR tx_ref IN (${paymentReferences.map((_, index) => `${paymentReferences.length + index + 1}`).join(", ")})
           ORDER BY created_at DESC`,
         [...paymentReferences, ...paymentReferences],
       )).rows
@@ -444,7 +444,7 @@ export function createAdminEventPayoutRecoveryRouter(requireAuth: RequestHandler
             `SELECT *
                FROM payment_webhook_events
               WHERE reference IN (${paymentReferences.map((_, index) => `${index + 1}`).join(", ")})
-                 OR tx_ref IN (${paymentReferences.map((_, index) => `${index + 1}`).join(", ")})
+                 OR tx_ref IN (${paymentReferences.map((_, index) => `${paymentReferences.length + index + 1}`).join(", ")})
               ORDER BY created_at DESC`,
             [...paymentReferences, ...paymentReferences],
           )).rows
