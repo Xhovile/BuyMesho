@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { generateKeyPairSync } from "node:crypto";
 import test from "node:test";
 import {
   createEventTicketDownloadToken,
@@ -8,6 +9,14 @@ import {
 import { registerEventTicketDownloadRoutes } from "../event-ticket-download.routes.js";
 
 const ORIGINAL_SECRET = process.env.EVENT_TICKET_DOWNLOAD_SECRET;
+const ORIGINAL_KEY_ID = process.env.BUYMESHO_TICKET_SIGNING_KEY_ID;
+const ORIGINAL_PRIVATE_KEY = process.env.BUYMESHO_TICKET_SIGNING_PRIVATE_KEY;
+const ticketSigningKeys = generateKeyPairSync("ed25519", {
+  privateKeyEncoding: { type: "pkcs8", format: "pem" },
+  publicKeyEncoding: { type: "spki", format: "pem" },
+});
+process.env.BUYMESHO_TICKET_SIGNING_KEY_ID = "test-ticket-key";
+process.env.BUYMESHO_TICKET_SIGNING_PRIVATE_KEY = ticketSigningKeys.privateKey.replace(/\n/g, "\\n");
 
 test("event ticket download tokens verify and expire", () => {
   process.env.EVENT_TICKET_DOWNLOAD_SECRET = "event-ticket-download-test-secret";
@@ -48,9 +57,11 @@ test("event ticket PDF generator returns a valid PDF document", () => {
     eventDate: "2026-10-03",
     startTime: "18:00",
     venue: "Main Hall",
-    location: "Lilongwe",
+    location: "Area 2 • Pa chigulumwa",
     status: "Paid",
     amount: "5000 MWK",
+    orderId: "order-1",
+    qrPayload: "BM1.test-payload.invalid-signature",
   });
 
   assert.ok(pdf.length > 1000);
@@ -58,7 +69,101 @@ test("event ticket PDF generator returns a valid PDF document", () => {
   assert.match(pdf.toString("latin1"), /Campus Concert/);
   const pdfText = pdf.toString("latin1");
   assert.match(pdfText, /BM-4A02AFD21D/);
-  assert.match(pdfText, /TICKET CODE/);
+  assert.match(pdfText, /AUTHENTICITY CHECK/);
+  assert.match(pdfText, /Area 2 \| Pa chigulumwa/);
+  assert.doesNotMatch(pdfText, /â|�/);
+});
+
+test("valid ticket download route returns a PDF with signed ticket credential data", () => {
+  const previousSecret = process.env.EVENT_TICKET_DOWNLOAD_SECRET;
+  process.env.EVENT_TICKET_DOWNLOAD_SECRET = "event-ticket-download-test-secret";
+
+  try {
+    const ticketId = "BM-DOWNLOAD-123";
+    const token = createEventTicketDownloadToken(ticketId);
+    const ticketRow = {
+      id: "ticket-1",
+      code: ticketId,
+      ticket_title: "Campus Concert Ticket",
+      ticket_type: "General Admission",
+      holder_name: "Ada Buyer",
+      holder_email: "buyer@example.com",
+      holder_phone: "0994123456",
+      status: "Waiting Entry",
+      event_title: "Campus Concert",
+      event_date: "2026-10-03",
+      start_time: "18:00",
+      venue: "Main Hall",
+      location: "Lilongwe",
+      event_id: "event-42",
+      organizer_name: "Campus Events",
+      ticket_price: 5000,
+      order_status: "paid",
+      order_id: "order-1",
+      purchase_date: "2026-10-03T12:00:00.000Z",
+    };
+
+    let handler: ((req: any, res: any) => unknown) | undefined;
+    const app = {
+      get(_path: string, routeHandler: (req: any, res: any) => unknown) {
+        handler = routeHandler;
+      },
+    };
+    const db = {
+      prepare() {
+        return {
+          get() {
+            return ticketRow;
+          },
+        };
+      },
+    };
+
+    registerEventTicketDownloadRoutes(app as any, { db });
+    assert.ok(handler);
+
+    const headers = new Map<string, string>();
+    let statusCode = 0;
+    let body: unknown;
+    const res = {
+      setHeader(name: string, value: string) {
+        headers.set(name, value);
+        return this;
+      },
+      status(code: number) {
+        statusCode = code;
+        return {
+          json(value: unknown) {
+            body = value;
+            return this;
+          },
+          send(value: Buffer) {
+            body = value;
+            return this;
+          },
+        };
+      },
+    };
+
+    handler(
+      {
+        params: { ticketId },
+        query: { token },
+      },
+      res,
+    );
+
+    assert.equal(statusCode, 200);
+    assert.ok(Buffer.isBuffer(body));
+    assert.equal(headers.get("Content-Type"), "application/pdf");
+    assert.match(headers.get("Content-Disposition") ?? "", /attachment; filename=/);
+    assert.equal(headers.get("Cache-Control"), "private, no-store, max-age=0");
+    assert.ok((body as Buffer).subarray(0, 8).toString("ascii") === "%PDF-1.4");
+    assert.doesNotMatch((body as Buffer).toString("ascii"), /Ticket credential source data is incomplete/);
+  } finally {
+    if (previousSecret === undefined) delete process.env.EVENT_TICKET_DOWNLOAD_SECRET;
+    else process.env.EVENT_TICKET_DOWNLOAD_SECRET = previousSecret;
+  }
 });
 
 test("cancelled ticket cannot be downloaded even when its order is paid", () => {
@@ -97,6 +202,9 @@ test("cancelled ticket cannot be downloaded even when its order is paid", () => 
               organizer_name: "Campus Events",
               ticket_price: 5000,
               order_status: "paid",
+              event_id: "event-1",
+              order_id: "order-1",
+              purchase_date: "2026-10-03T12:00:00.000Z",
             };
           },
         };
@@ -142,3 +250,12 @@ test("cancelled ticket cannot be downloaded even when its order is paid", () => 
     else process.env.EVENT_TICKET_DOWNLOAD_SECRET = previousSecret;
   }
 });
+
+
+const restoreTicketSigningEnv = () => {
+  if (ORIGINAL_KEY_ID === undefined) delete process.env.BUYMESHO_TICKET_SIGNING_KEY_ID;
+  else process.env.BUYMESHO_TICKET_SIGNING_KEY_ID = ORIGINAL_KEY_ID;
+  if (ORIGINAL_PRIVATE_KEY === undefined) delete process.env.BUYMESHO_TICKET_SIGNING_PRIVATE_KEY;
+  else process.env.BUYMESHO_TICKET_SIGNING_PRIVATE_KEY = ORIGINAL_PRIVATE_KEY;
+};
+test.after(restoreTicketSigningEnv);

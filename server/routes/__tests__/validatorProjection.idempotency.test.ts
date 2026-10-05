@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test, { beforeEach } from "node:test";
 import { getPaymentDb } from "../../postgresCompat.js";
+import { atomicallyClaimTicketEntry } from "../validator.projection.routes.js";
 import { updateTicket } from "../validatorProjection.routes.js";
 
 const db = getPaymentDb();
@@ -53,4 +54,32 @@ test('concurrent-style replay cannot apply a second state transition after the f
 
   const row = db.prepare("SELECT status FROM event_tickets WHERE id='ticket_idempotency_test'").get() as { status: string };
   assert.equal(row.status, 'Outside');
+});
+
+test('ticket entry claim is atomic when two scans race from the same state', () => {
+  const now = new Date().toISOString();
+  const metadata = { last_gate_name: 'Main Gate', last_staff_name: 'Officer', last_scan_at: now };
+
+  const first = atomicallyClaimTicketEntry(
+    db,
+    '990001',
+    'ticket_idempotency_test',
+    'Waiting Entry',
+    now,
+    metadata,
+  );
+  const second = atomicallyClaimTicketEntry(
+    db,
+    '990001',
+    'ticket_idempotency_test',
+    'Waiting Entry',
+    now,
+    metadata,
+  );
+
+  assert.equal(first, 1);
+  assert.equal(second, 0);
+
+  const row = db.prepare("SELECT status FROM event_tickets WHERE id='ticket_idempotency_test'").get() as { status: string };
+  assert.equal(row.status, 'Inside');
 });

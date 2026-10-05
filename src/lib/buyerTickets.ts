@@ -27,6 +27,7 @@ export type BuyerTicketRecord = {
   paymentStatus: string;
   orderStatus: string;
   ticketCode: string;
+  ticketCredential?: string;
   detail: string;
   updatedAt: string | null;
   source: "order" | "payment";
@@ -139,6 +140,7 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
           paymentStatus,
           orderStatus,
           ticketCode: ticketId,
+          ticketCredential: bundle.ticketCredentials?.[ticketId] || bundle.ticketCredentials?.[readString(record, "ticketId")],
           detail: buildDetail(eventDate, startTime, venue, location, "order"),
           updatedAt,
           source: "order",
