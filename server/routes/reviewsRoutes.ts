@@ -3,7 +3,12 @@ import multer from "multer";
 import { postgresDb as db } from "../db.js";
 import { attachOptionalAuth, requireAuth } from "../middleware/requireAuth.js";
 import { REVIEW_MEDIA_MAX_COUNT, validateReviewMediaFiles } from "../lib/reviewMedia.js";
-import { deleteCloudinaryAsset, uploadBufferToCloudinaryReviewMedia } from "../lib/cloudinaryUpload.js";
+import {
+  CloudinaryUploadError,
+  deleteCloudinaryAsset,
+  getCloudinaryUserMessage,
+  uploadBufferToCloudinaryReviewMedia,
+} from "../lib/cloudinaryUpload.js";
 import { createIdempotencyMiddleware } from "../idempotency/middleware.js";
 import { getFirebaseAdmin } from "../auth/firebaseAdmin.js";
 
@@ -1082,7 +1087,12 @@ async function createListingReviewHandler(req: Request, res: Response) {
     });
   } catch (error) {
     console.error("POST /api/listings/:listingId/reviews error:", error);
-    return reviewError(res, 400, error instanceof Error ? error.message : "Failed to save review");
+    const message = error instanceof CloudinaryUploadError
+      ? getCloudinaryUserMessage(error)
+      : error instanceof Error
+        ? error.message
+        : "Failed to save review";
+    return reviewError(res, 400, message);
   }
 }
 
@@ -1141,7 +1151,12 @@ async function updateListingReviewHandler(req: Request, res: Response) {
     });
   } catch (error) {
     console.error("PUT /api/listings/:listingId/reviews error:", error);
-    return reviewError(res, 400, error instanceof Error ? error.message : "Failed to update review");
+    const message = error instanceof CloudinaryUploadError
+      ? getCloudinaryUserMessage(error)
+      : error instanceof Error
+        ? error.message
+        : "Failed to update review";
+    return reviewError(res, 400, message);
   }
 }
 
