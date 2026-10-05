@@ -130,6 +130,20 @@ type EventRecordsResponse = {
   }>;
   conversations: Array<Record<string, unknown>>;
   purchaseRecords: Array<Record<string, unknown>>;
+  payoutDestination: {
+    id: string;
+    destination_type: string;
+    provider_name: string;
+    provider_ref_id: string | null;
+    currency: string;
+    account_name: string;
+    masked_account: string;
+    verification_status: string;
+    is_default: number;
+    is_active: number;
+    created_at: string;
+    updated_at: string;
+  } | null;
 };
 
 function formatMoney(value: number | null | undefined) {
@@ -715,6 +729,27 @@ export default function AdminEventModerationPage() {
                   <p className="mt-1 text-xs text-zinc-500">Date: {formatDate(selectedEvent?.event_date)}</p>
                   <p className="mt-1 text-xs text-zinc-500">Start: {selectedEvent?.start_time || "—"}</p>
                   <p className="mt-1 text-xs text-zinc-500">Ticket: {formatMoney(selectedEvent?.ticket_price)}</p>
+                </div>
+                <div className="rounded-[1.4rem] border border-zinc-200 bg-zinc-50/80 p-4">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Payout receiving destination</p>
+                  {recordsLoading && !selectedRecordPayload ? (
+                    <p className="mt-1 text-xs text-zinc-500">Loading destination...</p>
+                  ) : selectedRecordPayload?.payoutDestination ? (
+                    <>
+                      <p className="mt-1 font-semibold text-zinc-950">
+                        {selectedRecordPayload.payoutDestination.provider_name} • {selectedRecordPayload.payoutDestination.destination_type.replace(/_/g, " ")}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        {selectedRecordPayload.payoutDestination.account_name} • {selectedRecordPayload.payoutDestination.masked_account}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        {selectedRecordPayload.payoutDestination.currency} • {selectedRecordPayload.payoutDestination.verification_status} • {selectedRecordPayload.payoutDestination.is_active ? "Active" : "Inactive"}
+                      </p>
+                      <p className="mt-1 text-[11px] text-zinc-400">Destination ID: {selectedRecordPayload.payoutDestination.id}</p>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-xs text-zinc-500">No payout receiving destination is assigned to this event.</p>
+                  )}
                 </div>
                 <div className="rounded-[1.4rem] border border-zinc-200 bg-zinc-50/80 p-4">
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Moderation totals</p>
