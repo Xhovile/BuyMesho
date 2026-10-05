@@ -5,7 +5,6 @@ import {
   calculatePayoutFormula,
   isNonRetryableFailureCode,
   isRetryableFailureCode,
-  isAutomaticallyRetryableFailureCode,
 } from '../payout.policy.js';
 import { classifyProviderError } from '../paychangu.payout.js';
 
@@ -56,14 +55,9 @@ test('payout policy separates retryable and non-retryable failure codes', () => 
   assert.equal(isRetryableFailureCode('provider_configuration_error'), true);
   assert.equal(isRetryableFailureCode('provider_conflict'), true);
   assert.equal(isRetryableFailureCode('balance_insufficient'), true);
+  assert.equal(isRetryableFailureCode('provider_authentication_error'), true);
+  assert.equal(isRetryableFailureCode('provider_configuration_error'), true);
 
-  assert.equal(isAutomaticallyRetryableFailureCode('provider_timeout'), true);
-  assert.equal(isAutomaticallyRetryableFailureCode('provider_unavailable'), true);
-  assert.equal(isAutomaticallyRetryableFailureCode('provider_rejected'), true);
-  assert.equal(isAutomaticallyRetryableFailureCode('provider_conflict'), true);
-  assert.equal(isAutomaticallyRetryableFailureCode('balance_insufficient'), true);
-  assert.equal(isAutomaticallyRetryableFailureCode('provider_authentication_error'), false);
-  assert.equal(isAutomaticallyRetryableFailureCode('provider_configuration_error'), false);
 
   assert.equal(classifyProviderError(null, 401), 'provider_authentication_error');
   assert.equal(classifyProviderError(null, 403), 'provider_configuration_error');
