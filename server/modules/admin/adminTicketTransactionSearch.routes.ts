@@ -252,8 +252,10 @@ export function createAdminTicketTransactionSearchRouter(params: {
             WHERE NOT EXISTS (
               SELECT 1 FROM event_tickets event_scope WHERE event_scope.order_id = o.id
             )
-              AND p.reference IN (${webhookReferences.map(() => "?").join(", ")})
-               OR p.provider_reference IN (${webhookReferences.map(() => "?").join(", ")})
+              AND (
+                p.reference IN (${webhookReferences.map(() => "?").join(", ")})
+                OR p.provider_reference IN (${webhookReferences.map(() => "?").join(", ")})
+              )
             ORDER BY p.created_at DESC
             LIMIT 200
           `).all(...webhookReferences, ...webhookReferences) as Array<Record<string, unknown>>
