@@ -35,6 +35,7 @@ export function registerEventTicketDownloadRoutes(app: Express, { db }: RouteDep
              et.start_time,
              et.venue,
              et.location,
+             et.event_id,
              et.purchase_date,
              et.order_id,
              e.organizer_name,
@@ -57,11 +58,8 @@ export function registerEventTicketDownloadRoutes(app: Express, { db }: RouteDep
       const normalizedTicketStatus = ticketStatus.toLowerCase();
       const orderStatus = String(ticket.order_status ?? "").trim().toLowerCase();
       const effectiveStatus =
-        ["cancelled", "refunded"].includes(normalizedTicketStatus)
-          ? ticketStatus
-          : orderStatus === "paid"
-            ? "Paid"
-            : ticketStatus || "Pending";
+        ticketStatus ||
+        (orderStatus === "paid" ? "Paid" : "Pending");
 
       return createEventTicketDownloadResponse(
         {
