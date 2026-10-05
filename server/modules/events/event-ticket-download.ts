@@ -286,6 +286,7 @@ export function createEventTicketDownloadResponse(
     location: String(ticketRow.location ?? ""),
     status: status || "Paid",
     amount: String(ticketRow.amount ?? ""),
+    orderId,
     qrPayload,
   });
 
