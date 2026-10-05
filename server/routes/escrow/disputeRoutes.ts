@@ -125,12 +125,15 @@ async function getDisputeEligibility(orderId: string, subjectType: DisputeSubjec
   const orderStatus = String(order.status ?? '').trim().toLowerCase();
   const fulfilledAt = parseDate(String(order.fulfilled_at ?? ''));
   const deliveryDeadline = parseDate(String(order.delivery_deadline ?? ''));
-  const released = ['fulfilled', 'closed'].includes(orderStatus) || Boolean(fulfilledAt);
+  const escrow = await escrowRepository.findByOrderIdAsync(orderId);
+  const escrowState = String(escrow?.state ?? '').trim().toLowerCase();
+  const released = escrowState === 'released' || ['fulfilled', 'closed'].includes(orderStatus);
   if (released) {
-    if (!fulfilledAt) return { eligible: false, phase: 'expired', eligibleAt: null, windowEndsAt: null, reason: 'Delivery confirmation date is unavailable.' };
-    const windowEndsAt = addDays(fulfilledAt, POST_DELIVERY_DISPUTE_WINDOW_DAYS);
-    if (now.getTime() >= new Date(windowEndsAt).getTime()) return { eligible: false, phase: 'expired', eligibleAt: fulfilledAt.toISOString(), windowEndsAt, reason: 'The 30-day post-delivery dispute period has ended.' };
-    return { eligible: true, phase: 'post_delivery', eligibleAt: fulfilledAt.toISOString(), windowEndsAt, reason: 'You can report an issue within 30 days of confirmed delivery.' };
+    const deliveredAt = fulfilledAt ?? (escrowState === 'released' ? parseDate(escrow?.updatedAt) : null);
+    if (!deliveredAt) return { eligible: false, phase: 'expired', eligibleAt: null, windowEndsAt: null, reason: 'Delivery confirmation date is unavailable.' };
+    const windowEndsAt = addDays(deliveredAt, POST_DELIVERY_DISPUTE_WINDOW_DAYS);
+    if (now.getTime() >= new Date(windowEndsAt).getTime()) return { eligible: false, phase: 'expired', eligibleAt: deliveredAt.toISOString(), windowEndsAt, reason: 'The 30-day post-delivery dispute period has ended.' };
+    return { eligible: true, phase: 'post_delivery', eligibleAt: deliveredAt.toISOString(), windowEndsAt, reason: 'You can report an issue within 30 days of confirmed delivery.' };
   }
   if (deliveryDeadline && now.getTime() < deliveryDeadline.getTime()) return { eligible: false, phase: 'delivery', eligibleAt: deliveryDeadline.toISOString(), windowEndsAt: null, reason: 'The delivery period has not ended yet. An escrow dispute becomes available after the delivery deadline if delivery has not been confirmed.' };
   return { eligible: true, phase: 'escrow', eligibleAt: deliveryDeadline?.toISOString() ?? null, windowEndsAt: null, reason: 'The delivery period has ended and escrow is still held. You may open a dispute.' };
