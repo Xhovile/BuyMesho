@@ -322,11 +322,12 @@ export function createPaymentAdminPayoutCanonicalRouter(requireAuth: RequestHand
 
       const result = await query(
         `${baseSelect}
+         WHERE (COALESCE(p.owner_type, 'seller') = 'seller' AND p.event_id IS NULL)
          ORDER BY p.created_at DESC
-         LIMIT $1 OFFSET $2`,
+         LIMIT $1 OFFSET $2
         [limit, offset],
       );
-      const totalResult = await query(`SELECT COUNT(*)::int AS total FROM payouts`);
+      const totalResult = await query(`SELECT COUNT(*)::int AS total FROM payouts WHERE (COALESCE(p.owner_type, 'seller') = 'seller' AND p.event_id IS NULL)`);
       const rows = result.rows as Array<Record<string, unknown>>;
 
       const shaped = await Promise.all(rows.map(async (row) => {
@@ -360,6 +361,7 @@ export function createPaymentAdminPayoutCanonicalRouter(requireAuth: RequestHand
           COUNT(*) FILTER (WHERE status = 'failed')::int AS "failedPayouts",
           COUNT(*) FILTER (WHERE status = 'cancelled')::int AS "cancelledPayouts"
         FROM payouts
+        WHERE (COALESCE(p.owner_type, 'seller') = 'seller' AND p.event_id IS NULL)
       `);
       return res.status(200).json({ summary: result.rows[0] ?? {} });
     } catch (error) {
@@ -374,7 +376,7 @@ export function createPaymentAdminPayoutCanonicalRouter(requireAuth: RequestHand
       const payoutId = String(req.params.payoutId ?? '').trim();
       if (!payoutId) return res.status(400).json({ error: 'payoutId is required' });
 
-      const result = await query(`${baseSelect} WHERE p.id = $1 LIMIT 1`, [payoutId]);
+      const result = await query(`${baseSelect} WHERE (COALESCE(p.owner_type, 'seller') = 'seller' AND p.event_id IS NULL) AND p.id = $1 LIMIT 1`, [payoutId]);
       const row = result.rows[0] as Record<string, unknown> | undefined;
       if (!row) return res.status(404).json({ error: 'Payout not found' });
 
