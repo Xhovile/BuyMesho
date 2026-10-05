@@ -16,6 +16,7 @@ type OrderLookupResult = {
   escrow: StoredEscrow | null;
   dispute: Record<string, unknown> | null;
   ticketCredentials?: Record<string, string>;
+  ticketCredentialErrors?: string[];
 };
 
 async function findOrderByParam(param: string) {
@@ -24,17 +25,31 @@ async function findOrderByParam(param: string) {
   return orderRepository.findByPaymentReferenceAsync(param);
 }
 
-async function buildEventTicketCredentials(order: StoredOrder): Promise<Record<string, string>> {
+async function buildEventTicketCredentials(order: StoredOrder): Promise<{
+  credentials: Record<string, string>;
+  errors: string[];
+}> {
   const db = getPaymentDb();
   const rows = db.prepare(
     "SELECT id, code, event_id, purchase_date FROM event_tickets WHERE order_id = ? ORDER BY id ASC",
   ).all(order.id) as Array<{ id?: unknown; code?: unknown; event_id?: unknown; purchase_date?: unknown }>;
 
   const credentials: Record<string, string> = {};
+  const errors: string[] = [];
+
   for (const row of rows) {
     const ticketId = String(row.code ?? row.id ?? "").trim();
     const eventId = String(row.event_id ?? "").trim();
-    if (!ticketId || !eventId) continue;
+    if (!ticketId || !eventId) {
+      const identifier = ticketId || String(row.id ?? "unknown").trim();
+      errors.push(identifier);
+      console.error("[ticket-credential] ticket is missing credential source data", {
+        orderId: order.id,
+        ticketId: identifier,
+        eventId,
+      });
+      continue;
+    }
 
     const issuedAtSource = String(row.purchase_date ?? order.paidAt ?? "").trim();
     const parsedIssuedAt = issuedAtSource ? Math.floor(Date.parse(issuedAtSource) / 1000) : NaN;
@@ -48,10 +63,12 @@ async function buildEventTicketCredentials(order: StoredOrder): Promise<Record<s
       });
       if (row.id && String(row.id) !== ticketId) credentials[String(row.id)] = credentials[ticketId]!;
     } catch (error) {
-      console.warn("[ticket-credential] unable to issue credential for ticket", ticketId, error);
+      errors.push(ticketId);
+      console.error("[ticket-credential] unable to issue credential for ticket", ticketId, error);
     }
   }
-  return credentials;
+
+  return { credentials, errors };
 }
 
 async function buildOrderBundle(order: StoredOrder): Promise<OrderLookupResult> {
