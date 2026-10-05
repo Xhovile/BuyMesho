@@ -89,6 +89,33 @@ function readErrorMessage(error: unknown): string {
   return "Cloudinary operation failed";
 }
 
+export function getCloudinaryUserMessage(
+  error: unknown,
+  fallback = "We couldn't upload this file right now. Please try again.",
+): string {
+  if (!(error instanceof CloudinaryUploadError)) return fallback;
+
+  switch (error.kind) {
+    case "quota_exhausted":
+      return "Image storage is temporarily unavailable. Please try again later.";
+    case "rate_limited":
+      return "Uploads are temporarily busy. Please try again in a moment.";
+    case "upload_size_limit":
+      return "This file is too large. Please choose a smaller file.";
+    case "authentication":
+      return "Image uploads are temporarily unavailable. Please try again later.";
+    case "invalid_request":
+      return "We couldn't process this file. Please try another file.";
+    case "transient":
+      return "The upload was interrupted. Please try again.";
+    case "forbidden":
+    case "not_found":
+    case "unknown":
+    default:
+      return fallback;
+  }
+}
+
 export function classifyCloudinaryError(error: unknown): CloudinaryFailureKind {
   const httpCode = readErrorHttpCode(error);
   const message = readErrorMessage(error).toLowerCase();
