@@ -96,6 +96,26 @@ function ticketsHandler(req: Request, res: Response) {
   const rows = ticketRows(eventId);
   return res.json({ success: true, event: { id: eventId, event_title: String(event.event_title ?? ""), event_date: String(event.event_date ?? ""), start_time: String(event.start_time ?? ""), end_time: event.end_time == null ? null : String(event.end_time), venue: String(event.venue ?? ""), location: String(event.location ?? ""), updated_at: String(event.updated_at ?? "") }, tickets: rows.map(mapTicket), snapshot_version: eventVersion(event) });
 }
+export function atomicallyClaimTicketEntry(
+  db: ReturnType<typeof getPaymentDb>,
+  eventId: string,
+  ticketId: string,
+  expectedStatus: TicketStatus,
+  now: string,
+  metadata: Record<string, unknown>,
+): number {
+  return db.prepare(
+    `UPDATE event_tickets
+       SET status = 'Inside',
+           scanned_at = ?,
+           updated_at = ?,
+           metadata = ?
+     WHERE id = ?
+       AND event_id = ?
+       AND status = ?`,
+  ).run(now, now, JSON.stringify(metadata), ticketId, eventId, expectedStatus).changes;
+}
+
 function scanHandler(req: Request, res: Response) {
   const current = user(req); if (!current) return res.status(401).json({ error: "Authentication required" });
   if (!creatorIsActive(current.uid)) return res.status(403).json({ error: "Approved event creator access is required" });
@@ -124,7 +144,48 @@ function scanHandler(req: Request, res: Response) {
   const now = new Date().toISOString();
   assertTicketStatusTransition(ticket.status, "Inside");
   const metadata = { ...(ticket.metadata ?? {}), last_gate_name: gateName, last_staff_name: staffName, last_scan_at: now };
-  getPaymentDb().prepare(`UPDATE event_tickets SET status = 'Inside', scanned_at = ?, updated_at = ?, metadata = ? WHERE id = ? AND event_id = ?`).run(now, now, JSON.stringify(metadata), ticket.id, eventId);
+  const claimed = atomicallyClaimTicketEntry(
+    getPaymentDb(),
+    eventId,
+    ticket.id,
+    ticket.status,
+    now,
+    metadata,
+  );
+
+  if (claimed !== 1) {
+    const currentRow = ticketRows(eventId).find((candidate) => String(candidate.id ?? "") === String(ticket.id));
+    if (!currentRow) {
+      return res.status(404).json({ error: "Ticket not found", result: "rejected", reason: "ticket_not_found" });
+    }
+    const currentTicket = mapTicket(currentRow);
+    if (currentTicket.status === "Inside") {
+      return res.status(409).json({
+        error: "Duplicate scan",
+        result: "already_applied",
+        reason: "already_inside",
+        ticket: currentTicket,
+        serverVersion: eventVersion(event),
+      });
+    }
+    if (["Cancelled", "Refunded", "Blocked"].includes(currentTicket.status)) {
+      return res.status(403).json({
+        error: "Ticket denied",
+        result: "rejected",
+        reason: `ticket_${currentTicket.status.toLowerCase()}`,
+        ticket: currentTicket,
+        serverVersion: eventVersion(event),
+      });
+    }
+    return res.status(409).json({
+      error: "Ticket state changed during validation",
+      result: "rejected",
+      reason: "ticket_state_changed",
+      ticket: currentTicket,
+      serverVersion: eventVersion(event),
+    });
+  }
+
   refreshStats(eventId);
   const updated = mapTicket(getPaymentDb().prepare(`SELECT t.*, o.status AS order_status, (SELECT p.status FROM payments p WHERE p.order_id=t.order_id ORDER BY p.updated_at DESC LIMIT 1) AS payment_status FROM event_tickets t LEFT JOIN orders o ON o.id=t.order_id WHERE t.id=?`).get(ticket.id) as Record<string, unknown>);
   return res.json({ result: "accepted", reason: ticket.status === "Outside" ? "reentry_permitted" : "validated", ticket: updated, serverVersion: eventVersion(event) });
