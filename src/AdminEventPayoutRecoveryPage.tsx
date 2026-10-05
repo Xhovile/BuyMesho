@@ -25,7 +25,7 @@ export default function AdminEventPayoutRecoveryPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(""); const [pendingAction, setPendingAction] = useState<"hold" | "cancel" | null>(null);
   const [recoverAmount, setRecoverAmount] = useState("");
   const [transactionId, setTransactionId] = useState("");
   const [refundMethod, setRefundMethod] = useState("mobile_money");
@@ -92,6 +92,17 @@ export default function AdminEventPayoutRecoveryPage() {
 
   const runAction = async (action: "retry" | "reconcile" | "hold" | "cancel") => {
     if (!selectedPayout) return;
+    if (action === "hold" || action === "cancel") {
+      setPendingAction(action);
+      setNote("");
+      setError(null);
+      return;
+    }
+    await executeAction(action);
+  };
+
+  const executeAction = async (action: "retry" | "reconcile" | "hold" | "cancel") => {
+    if (!selectedPayout) return;
     if ((action === "hold" || action === "cancel") && !note.trim()) {
       setError("A reason is required for this action."); return;
     }
@@ -100,14 +111,13 @@ export default function AdminEventPayoutRecoveryPage() {
       const path = `/api/admin/event-payouts/${encodeURIComponent(text(selectedPayout.id))}/${action}`;
       const body = action === "hold" || action === "cancel" ? JSON.stringify({ reason: note.trim() }) : undefined;
       await apiFetch(path, { method: "POST", ...(body ? { headers: { "Content-Type": "application/json" }, body } : {}) });
-      setNote(""); setNotice(`Event payout ${action} completed.`); await load();
+      setNote(""); setPendingAction(null); setNotice(`Event payout ${action} completed.`); await load();
       const refreshed = payouts.find((row) => text(row.id) === text(selectedPayout.id));
       if (refreshed) await openPayout(refreshed);
     } catch (err) {
       setError(err instanceof Error ? err.message : `Failed to ${action} event payout.`);
     } finally { setBusy(false); }
   };
-
   const openRecovery = (row: Row) => {
     setSelectedLiability(row);
     setRecoverAmount(String(Number(row.amount ?? 0)));
@@ -226,7 +236,7 @@ export default function AdminEventPayoutRecoveryPage() {
         <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-zinc-50 shadow-2xl">
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white/95 px-5 py-4">
             <div><p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Event payout</p><h2 className="mt-1 text-lg font-black">{text(detail.payout?.event_title) || text(detail.payout?.id)}</h2></div>
-            <button type="button" onClick={() => { setDetail(null); setSelectedPayout(null); }} className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100" aria-label="Close"><XCircle className="h-5 w-5" /></button>
+            <button type="button" onClick={() => { setDetail(null); setSelectedPayout(null); setPendingAction(null); setNote(""); }} className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100" aria-label="Close"><XCircle className="h-5 w-5" /></button>
           </div>
           <div className="space-y-5 p-5">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -239,11 +249,11 @@ export default function AdminEventPayoutRecoveryPage() {
               {![ "paid", "cancelled" ].includes(text(detail.payout?.status).toLowerCase()) ? <>
                 <button type="button" disabled={busy} onClick={() => void runAction("reconcile")} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold disabled:opacity-50"><RefreshCw className="h-4 w-4" />Reconcile</button>
                 <button type="button" disabled={busy || ["processing","pending"].includes(text(detail.payout?.status).toLowerCase())} onClick={() => void runAction("retry")} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"><RotateCcw className="h-4 w-4" />Retry</button>
-                <button type="button" disabled={busy || !note.trim()} onClick={() => void runAction("hold")} className="inline-flex items-center gap-2 rounded-2xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"><AlertTriangle className="h-4 w-4" />Hold</button>
-                <button type="button" disabled={busy || ["processing","pending"].includes(text(detail.payout?.status).toLowerCase()) || !note.trim()} onClick={() => void runAction("cancel")} className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50"><XCircle className="h-4 w-4" />Cancel</button>
+                <button type="button" disabled={busy} onClick={() => void runAction("hold")} className="inline-flex items-center gap-2 rounded-2xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"><AlertTriangle className="h-4 w-4" />Hold</button>
+                <button type="button" disabled={busy || ["processing","pending"].includes(text(detail.payout?.status).toLowerCase())} onClick={() => void runAction("cancel")} className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50"><XCircle className="h-4 w-4" />Cancel</button>
               </> : null}
             </div>
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Reason for hold/cancel…" className="w-full rounded-2xl border border-zinc-200 bg-white p-3 text-sm outline-none" />
+            {pendingAction ? <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4"><h3 className="font-black text-amber-950">{pendingAction === "hold" ? "Hold payout" : "Cancel payout"}</h3><p className="mt-1 text-sm text-amber-900">Provide a reason for this administrative action.</p><textarea autoFocus value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={2000} placeholder={pendingAction === "hold" ? "Why should this payout be held?" : "Why should this payout be cancelled?"} className="mt-3 w-full rounded-2xl border border-amber-300 bg-white p-3 text-sm outline-none" /><div className="mt-3 flex flex-wrap justify-end gap-2"><button type="button" disabled={busy} onClick={() => { setPendingAction(null); setNote(""); }} className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700">Back</button><button type="button" disabled={busy || !note.trim()} onClick={() => void executeAction(pendingAction)} className="rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{busy ? "Submitting…" : pendingAction === "hold" ? "Place on hold" : "Cancel payout"}</button></div></div> : null}
             <List title="Payout attempts" items={Array.isArray(detail.attempts) ? detail.attempts as Row[] : []} fields={["attempt_no","status","provider_transaction_id"]} />
             <RawJsonViewer data={detail.rawData ?? { payout: detail.payout, payoutAttempts: detail.attempts, payoutEvents: detail.payoutEvents, refundLiabilities: detail.refundLiabilities }} />
             {Array.isArray(detail.refundLiabilities) && detail.refundLiabilities.length ? <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4"><h3 className="font-black text-amber-950">Refund liabilities</h3><div className="mt-3 space-y-2">{(detail.refundLiabilities as Row[]).map((row) => <div key={text(row.id)} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-3"><div><p className="text-sm font-black">{amount(row.amount, text(row.currency) || "MWK")}</p><p className="text-xs text-zinc-500">{label(row.status)} · {text(row.id)}</p></div>{text(row.status).toLowerCase() === "due" ? <button type="button" onClick={() => openRecovery(row)} className="rounded-xl bg-zinc-900 px-3 py-2 text-xs font-bold text-white">Record recovery</button> : <Badge tone="green">Recovered</Badge>}</div>)}</div></div> : null}
