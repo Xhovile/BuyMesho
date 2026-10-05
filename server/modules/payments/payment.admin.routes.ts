@@ -239,7 +239,14 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
       const db = getPaymentDb();
       const rows = db.prepare(`
         SELECT id, provider, reference, event_type, signature_valid, payload, created_at
-        FROM payment_webhook_events
+        FROM payment_webhook_events w_scope
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM payments p_scope
+          INNER JOIN event_tickets et_scope ON et_scope.order_id = p_scope.order_id
+          WHERE p_scope.reference IN (w_scope.reference, w_scope.tx_ref)
+             OR p_scope.provider_reference IN (w_scope.reference, w_scope.tx_ref)
+        )
         ORDER BY created_at DESC
         LIMIT 200
       `).all();
@@ -261,7 +268,10 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
           SUM(CASE WHEN verified = 1 THEN 1 ELSE 0 END) AS verified_payments,
           SUM(CASE WHEN status IN ('captured', 'paid') THEN 1 ELSE 0 END) AS paid_payments,
           SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_payments
-        FROM payments
+        FROM payments p_scope
+        WHERE NOT EXISTS (
+          SELECT 1 FROM event_tickets et_scope WHERE et_scope.order_id = p_scope.order_id
+        )
       `).get();
 
       const webhookSummary = db.prepare(`
