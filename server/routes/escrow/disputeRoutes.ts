@@ -36,6 +36,104 @@ const DISPUTE_RESOLUTION_LABELS: Record<string, string> = {
   return_and_refund: 'Return & refund',
   review: 'BuyMesho review',
 };
+const LISTING_REQUEST_TYPES = new Set([
+  'buyer_cancellation',
+  'seller_failed_to_fulfill',
+  'product_item_problem',
+  'delivery_failure',
+  'payment_platform_error',
+  'exceptional_dispute',
+]);
+
+const EVENT_REQUEST_TYPE_LABELS: Record<string, string> = {
+  event_payment_problem: 'Payment problem',
+  ticket_not_received: 'Ticket was not received',
+  invalid_ticket: 'Ticket is invalid or duplicated',
+  event_cancelled: 'Event was cancelled',
+  event_rescheduled: 'Event was postponed or rescheduled',
+  denied_entry: 'Denied entry with a valid ticket',
+  event_material_difference: 'Event was materially different from the listing',
+  exceptional_event_issue: 'Other event issue',
+};
+
+const EVENT_RESOLUTION_LABELS: Record<string, string> = {
+  refund: 'Request a refund',
+  review: 'Ask BuyMesho to review',
+};
+
+const EVENT_REQUEST_TYPES = new Set(Object.keys(EVENT_REQUEST_TYPE_LABELS));
+const EVENT_DISPUTE_POST_EVENT_HOURS = 48;
+
+type DisputeSubjectType = 'listing' | 'event';
+
+type DisputeEligibility = {
+  eligible: boolean;
+  phase: 'delivery' | 'escrow' | 'post_delivery' | 'expired' | 'settled' | 'active' | 'pre_event' | 'event_day' | 'post_event';
+  eligibleAt: string | null;
+  windowEndsAt: string | null;
+  reason: string;
+};
+
+function safeParseItems(value: unknown): Array<Record<string, unknown>> {
+  if (typeof value !== 'string' || !value.trim()) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is Record<string, unknown> => !!item && typeof item === 'object' && !Array.isArray(item)) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function detectDisputeSubject(orderId: string): Promise<{ subjectType: DisputeSubjectType; eventId: string | null }> {
+  const result = await query<{ source?: string; items?: string }>(`SELECT source, items FROM orders WHERE id = $1 LIMIT 1`, [orderId]);
+  const order = result.rows[0];
+  if (!order) return { subjectType: 'listing', eventId: null };
+  const eventItem = safeParseItems(order.items).find((item) => String(item.kind ?? '').trim().toLowerCase() === 'event_ticket');
+  if (eventItem) return { subjectType: 'event', eventId: String(eventItem.eventId ?? eventItem.event_id ?? '').trim() || null };
+  if (String(order.source ?? '').trim().toLowerCase() === 'event') return { subjectType: 'event', eventId: null };
+  return { subjectType: 'listing', eventId: null };
+}
+
+async function getDisputeEligibility(orderId: string, subjectType: DisputeSubjectType, eventId: string | null, now = new Date()): Promise<DisputeEligibility> {
+  const latest = await query<Record<string, unknown>>(`SELECT id, status, outcome, window_ends_at FROM dispute_cases WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1`, [orderId]);
+  const current = latest.rows[0];
+  if (current) {
+    const status = String(current.status ?? '').trim().toLowerCase();
+    const outcome = String(current.outcome ?? '').trim().toLowerCase();
+    if (['resolved', 'closed'].includes(status) || SETTLED_OUTCOMES.has(outcome)) return { eligible: false, phase: 'settled', eligibleAt: null, windowEndsAt: current.window_ends_at ? String(current.window_ends_at) : null, reason: 'This dispute already has a final outcome.' };
+    if (['open', 'under_review', 'awaiting_response'].includes(status)) return { eligible: false, phase: 'active', eligibleAt: null, windowEndsAt: current.window_ends_at ? String(current.window_ends_at) : null, reason: 'This order already has an active dispute.' };
+  }
+
+  if (subjectType === 'event') {
+    const eventResult = eventId ? await query<Record<string, unknown>>(`SELECT id, event_title, event_date, start_time, status FROM events WHERE id = $1 LIMIT 1`, [eventId]) : { rows: [] as Record<string, unknown>[] };
+    const event = eventResult.rows[0];
+    if (String(event?.status ?? '').trim().toLowerCase() === 'cancelled') return { eligible: true, phase: 'post_event', eligibleAt: null, windowEndsAt: null, reason: 'Cancelled-event disputes can be submitted once the cancellation is known.' };
+    const eventDate = event?.event_date ? parseDate(String(event.event_date)) : null;
+    const startTime = String(event?.start_time ?? '').trim();
+    const eventStart = eventDate ? parseDate(`${String(event.event_date).slice(0, 10)}T${startTime || '00:00:00'}`) : null;
+    if (eventStart && now.getTime() < eventStart.getTime()) return { eligible: true, phase: 'pre_event', eligibleAt: eventStart.toISOString(), windowEndsAt: null, reason: 'Event disputes for payment or ticket problems can be submitted before the event. Event-day experience disputes should be submitted after entry or the event.' };
+    const windowEndsAt = eventStart ? addDays(eventStart, EVENT_DISPUTE_POST_EVENT_HOURS / 24) : null;
+    if (windowEndsAt && now.getTime() >= new Date(windowEndsAt).getTime()) return { eligible: false, phase: 'expired', eligibleAt: eventStart?.toISOString() ?? null, windowEndsAt, reason: 'The 48-hour event dispute window has expired.' };
+    return { eligible: true, phase: 'post_event', eligibleAt: eventStart?.toISOString() ?? null, windowEndsAt, reason: windowEndsAt ? 'Event disputes remain available until 48 hours after the scheduled event start.' : 'Event disputes can be submitted while the event issue can still be reviewed.' };
+  }
+
+  const orderResult = await query<Record<string, unknown>>(`SELECT status, fulfilled_at, delivery_deadline FROM orders WHERE id = $1 LIMIT 1`, [orderId]);
+  const order = orderResult.rows[0];
+  if (!order) return { eligible: false, phase: 'expired', eligibleAt: null, windowEndsAt: null, reason: 'Order not found.' };
+  const orderStatus = String(order.status ?? '').trim().toLowerCase();
+  const fulfilledAt = parseDate(String(order.fulfilled_at ?? ''));
+  const deliveryDeadline = parseDate(String(order.delivery_deadline ?? ''));
+  const released = ['fulfilled', 'closed'].includes(orderStatus) || Boolean(fulfilledAt);
+  if (released) {
+    if (!fulfilledAt) return { eligible: false, phase: 'expired', eligibleAt: null, windowEndsAt: null, reason: 'Delivery confirmation date is unavailable.' };
+    const windowEndsAt = addDays(fulfilledAt, POST_DELIVERY_DISPUTE_WINDOW_DAYS);
+    if (now.getTime() >= new Date(windowEndsAt).getTime()) return { eligible: false, phase: 'expired', eligibleAt: fulfilledAt.toISOString(), windowEndsAt, reason: 'The 30-day post-delivery dispute period has ended.' };
+    return { eligible: true, phase: 'post_delivery', eligibleAt: fulfilledAt.toISOString(), windowEndsAt, reason: 'You can report an issue within 30 days of confirmed delivery.' };
+  }
+  if (deliveryDeadline && now.getTime() < deliveryDeadline.getTime()) return { eligible: false, phase: 'delivery', eligibleAt: deliveryDeadline.toISOString(), windowEndsAt: null, reason: 'The delivery period has not ended yet. An escrow dispute becomes available after the delivery deadline if delivery has not been confirmed.' };
+  return { eligible: true, phase: 'escrow', eligibleAt: deliveryDeadline?.toISOString() ?? null, windowEndsAt: null, reason: 'The delivery period has ended and escrow is still held. You may open a dispute.' };
+}
+
 
 function addDays(from: Date, days: number): string {
   return new Date(from.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
@@ -45,17 +143,18 @@ function parseDate(value: unknown): Date | null {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
-function normalizeRequestedResolution(value: unknown): 'refund' | 'return' | 'return_and_refund' | 'review' {
+function normalizeRequestedResolution(value: unknown, subjectType: DisputeSubjectType = 'listing'): 'refund' | 'return' | 'return_and_refund' | 'review' {
   const normalized = String(value ?? '').trim().toLowerCase();
   if (normalized === 'refund') return 'refund';
   if (normalized === 'return') return 'return';
-  if (normalized === 'return_and_refund') return 'return_and_refund';
+  if (normalized === 'return_and_refund' && subjectType === 'listing') return 'return_and_refund';
+  if (normalized === 'return' && subjectType === 'listing') return 'return';
   return 'review';
 }
-function normalizeRequestType(value: unknown): string {
+function normalizeRequestType(value: unknown, subjectType: DisputeSubjectType): string {
   const normalized = String(value ?? '').trim().toLowerCase();
-  const allowed = new Set(['buyer_cancellation','seller_failed_to_fulfill','product_item_problem','delivery_failure','payment_platform_error','exceptional_dispute']);
-  return allowed.has(normalized) ? normalized : 'exceptional_dispute';
+  if (subjectType === 'event') return EVENT_REQUEST_TYPES.has(normalized) ? normalized : 'exceptional_event_issue';
+  return LISTING_REQUEST_TYPES.has(normalized) ? normalized : 'exceptional_dispute';
 }
 function cleanEvidence(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map((item) => item.trim()).slice(0, 20) : [];
@@ -71,6 +170,55 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
   ensureDisputeWorkflowFoundation();
   ensureDisputeResolutionOwnershipMigration();
   const router = express.Router();
+
+  router.get('/resolve', disputeLimiter, requireAuth, async (req, res) => {
+    try {
+      const rawQuery = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+      if (!rawQuery) return res.status(400).json({ error: 'A dispute search query is required' });
+      const like = `%${rawQuery}%`;
+      let orderId: string | null = null;
+      let ticketId: string | null = null;
+      let matchedBy = '';
+
+      const exactOrder = await query<{ id: string }>(`SELECT id FROM orders WHERE buyer_id = $1 AND (id = $2 OR payment_reference = $2) LIMIT 1`, [req.user!.uid, rawQuery]);
+      if (exactOrder.rows[0]?.id) { orderId = String(exactOrder.rows[0].id); matchedBy = 'order'; }
+
+      if (!orderId) {
+        const exactTicket = await query<{ order_id: string; id: string }>(`SELECT et.order_id, et.id FROM event_tickets et INNER JOIN orders o ON o.id = et.order_id WHERE o.buyer_id = $1 AND (et.id = $2 OR et.code = $2) LIMIT 1`, [req.user!.uid, rawQuery]);
+        if (exactTicket.rows[0]?.order_id) { orderId = String(exactTicket.rows[0].order_id); ticketId = String(exactTicket.rows[0].id); matchedBy = 'ticket'; }
+      }
+
+      if (!orderId) {
+        const eventMatch = await query<{ order_id: string; ticket_id: string }>(`SELECT et.order_id, et.id AS ticket_id FROM event_tickets et INNER JOIN orders o ON o.id = et.order_id INNER JOIN events e ON e.id = et.event_id WHERE o.buyer_id = $1 AND e.event_title ILIKE $2 ORDER BY o.created_at DESC, et.id ASC LIMIT 1`, [req.user!.uid, like]);
+        if (eventMatch.rows[0]?.order_id) { orderId = String(eventMatch.rows[0].order_id); ticketId = String(eventMatch.rows[0].ticket_id ?? ''); matchedBy = 'event'; }
+      }
+
+      if (!orderId) {
+        const listingMatch = await query<{ order_id: string }>(`SELECT o.id AS order_id FROM orders o WHERE o.buyer_id = $1 AND EXISTS (SELECT 1 FROM jsonb_array_elements(COALESCE(NULLIF(o.items, '')::jsonb, '[]'::jsonb)) item WHERE lower(COALESCE(item->>'title', '')) LIKE lower($2) AND COALESCE(item->>'kind', 'listing') = 'listing') ORDER BY o.created_at DESC LIMIT 1`, [req.user!.uid, like]);
+        if (listingMatch.rows[0]?.order_id) { orderId = String(listingMatch.rows[0].order_id); matchedBy = 'listing'; }
+      }
+
+      if (!orderId) return res.status(404).json({ error: 'No order, ticket, event, or listing matching that query was found.' });
+      const subject = await detectDisputeSubject(orderId);
+      const eventId = subject.eventId;
+      const eligibility = await getDisputeEligibility(orderId, subject.subjectType, eventId);
+      let event: Record<string, unknown> | null = null;
+      let tickets: Record<string, unknown>[] = [];
+      let listings: Record<string, unknown>[] = [];
+      if (subject.subjectType === 'event') {
+        const eventResult = eventId ? await query<Record<string, unknown>>(`SELECT e.id, e.event_title, e.event_type, e.organizer_name, e.event_date, e.start_time, e.end_time, e.venue, e.location, e.status, e.ticket_price FROM events e WHERE e.id = $1 LIMIT 1`, [eventId]) : { rows: [] as Record<string, unknown>[] };
+        event = eventResult.rows[0] ?? null;
+        const ticketResult = await query<Record<string, unknown>>(`SELECT et.id, et.code, et.ticket_title, et.ticket_type, et.status, et.holder_name, et.holder_email, et.holder_phone, et.purchase_date FROM event_tickets et WHERE et.order_id = $1 ORDER BY et.id ASC`, [orderId]);
+        tickets = ticketResult.rows;
+      } else {
+        const orderResult = await query<{ items: string }>(`SELECT items FROM orders WHERE id = $1 LIMIT 1`, [orderId]);
+        listings = safeParseItems(orderResult.rows[0]?.items).filter((item) => String(item.kind ?? 'listing').toLowerCase() === 'listing').map((item) => ({ id: item.listingId ?? item.listing_id ?? null, title: item.title ?? 'Listing', quantity: item.quantity ?? 1, unitPrice: item.unitPrice ?? item.unit_price ?? null, reference: item.reference ?? null }));
+      }
+      return res.json({ query: rawQuery, matchedBy, subjectType: subject.subjectType, orderId, ticketId, eligibility, requestTypes: subject.subjectType === 'event' ? [...EVENT_REQUEST_TYPES].map((value) => ({ value, label: EVENT_REQUEST_TYPE_LABELS[value] })) : [...LISTING_REQUEST_TYPES].map((value) => ({ value, label: DISPUTE_REQUEST_TYPE_LABELS[value] })), resolutions: subject.subjectType === 'event' ? Object.entries(EVENT_RESOLUTION_LABELS).map(([value, label]) => ({ value, label })) : Object.entries(DISPUTE_RESOLUTION_LABELS).map(([value, label]) => ({ value, label })), event, tickets, listings });
+    } catch (error) {
+      return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to resolve dispute search' });
+    }
+  });
 
   router.post('/', disputeLimiter, requireAuth, async (req, res) => {
     try {
@@ -160,7 +308,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         );
         const payout = payoutResult.rows[0] ?? null;
         const payoutStatusAtSubmission = payout ? String(payout.status ?? '').trim().toLowerCase() : null;
-        const resolutionOwner: 'admin' | 'seller' = released && payoutStatusAtSubmission === 'paid' ? 'seller' : 'admin';
+        const resolutionOwner: 'admin' | 'seller' = subjectType === 'event' ? 'admin' : released && payoutStatusAtSubmission === 'paid' ? 'seller' : 'admin';
 
         if (resolutionOwner === 'admin' && payout) {
           const payoutStatus = String(payout.status ?? '').trim().toLowerCase();
