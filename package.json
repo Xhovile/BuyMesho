@@ -10,7 +10,7 @@
     "start": "node dist/server.js",
     "dev:server": "tsx server.ts",
     "start:server": "node dist-server/server/entry.js",
-    "test": "npm run check:gemini-secret-exposure && npm run test:ai-shopping && npm run test:ai-pricing && npm run test:ai-config && npm run test:integration && npm run test:order-state-transition && npm run test:payout-destination-independence && npm run test:routing-guards && npm run test:dispute-state-machines && npm run test:studio-receipt-access && npm run test:seller-dispute-resolution",
+    "test": "npm run check:gemini-secret-exposure && npm run test:ticket-pdf-qr && npm run test:ticket-credential && npm run test:ai-shopping && npm run test:ai-pricing && npm run test:ai-config && npm run test:integration && npm run test:order-state-transition && npm run test:payout-destination-independence && npm run test:routing-guards && npm run test:dispute-state-machines && npm run test:studio-receipt-access && npm run test:seller-dispute-resolution",
     "test:event-refund-recovery": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/events/__tests__/eventRefundLiability.test.ts",
     "test:seller-dispute-resolution": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/disputes/__tests__/seller-resolution.test.ts server/modules/notifications/dispute-workflow.notification.test.ts server/modules/email/templates/dispute-workflow.test.ts src/seller-orders/utils.test.ts",
     "check:gemini-secret-exposure": "node scripts/check-gemini-secret-exposure.mjs",
@@ -40,7 +40,10 @@
     "check:structure-gate": "tsx scripts/validate-structure-gate.ts",
     "check:payments": "npm run test:integration",
     "test:seo": "NODE_ENV=test node --import tsx --test --test-concurrency=1 src/lib/__tests__/seo.route.test.ts",
-  "test:studio-receipt-access": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/services/__tests__/studio-receipt-access.test.ts server/modules/services/__tests__/service-payment-public-record.test.ts"
+    "test:studio-receipt-access": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/services/__tests__/studio-receipt-access.test.ts server/modules/services/__tests__/service-payment-public-record.test.ts",
+    "test:ticket-pdf-qr": "NODE_ENV=test node --import tsx --test --test-concurrency=1 src/lib/qrcode-generator.test.ts",
+    "generate:ticket-signing-keys": "node scripts/generate-ticket-signing-keys.mjs",
+    "test:ticket-credential": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/events/__tests__/ticketCredential.test.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
