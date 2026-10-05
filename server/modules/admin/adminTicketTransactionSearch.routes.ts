@@ -116,7 +116,7 @@ export function createAdminTicketTransactionSearchRouter(params: {
         LEFT JOIN event_tickets et ON et.order_id = o.id
         LEFT JOIN events ev ON ev.id = et.event_id
         WHERE NOT EXISTS (
-          SELECT 1 FROM event_tickets event_scope WHERE event_scope.order_id = o.id
+          SELECT 1 FROM event_tickets event_scope WHERE event_scope.order_id = p.order_id
         )
           AND (
           LOWER(CAST(p.id AS TEXT)) LIKE ? OR
@@ -250,7 +250,7 @@ export function createAdminTicketTransactionSearchRouter(params: {
             LEFT JOIN event_tickets et ON et.order_id = o.id
             LEFT JOIN events ev ON ev.id = et.event_id
             WHERE NOT EXISTS (
-              SELECT 1 FROM event_tickets event_scope WHERE event_scope.order_id = o.id
+              SELECT 1 FROM event_tickets event_scope WHERE event_scope.order_id = p.order_id
             )
               AND (
                 p.reference IN (${webhookReferences.map(() => "?").join(", ")})
