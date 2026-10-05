@@ -20,6 +20,7 @@ import {
 } from "./service-payment.repository.js";
 import { buildXhovileStudioReceiptPdf } from "./service-payment.receipt.js";
 import { verifyXhovileStudioReceiptAccessToken } from "./studio-receipt-access.js";
+import { CloudinaryUploadError, getCloudinaryUserMessage } from "../../lib/cloudinaryUpload.js";
 
 const STUDIO_REFERENCE_UPLOAD_DIR = path.join(
   os.tmpdir(),
@@ -405,7 +406,11 @@ export function createServicePaymentRouter(
 
         console.error("[ServicePayments] Failed to create Xhovile Studio payment:", error);
         return res.status(502).json({
-          error: error instanceof Error ? error.message : "Unable to start payment checkout.",
+          error: error instanceof CloudinaryUploadError
+            ? getCloudinaryUserMessage(error, "Unable to start payment checkout.")
+            : error instanceof Error
+              ? error.message
+              : "Unable to start payment checkout.",
         });
       } finally {
         await cleanupReferenceTempFiles(req);
