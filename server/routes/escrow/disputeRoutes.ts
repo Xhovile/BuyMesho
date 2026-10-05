@@ -332,7 +332,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         const payoutStatusAtSubmission = payout ? String(payout.status ?? '').trim().toLowerCase() : null;
         const resolutionOwner: 'admin' | 'seller' = subjectType === 'event' ? 'admin' : released && payoutStatusAtSubmission === 'paid' ? 'seller' : 'admin';
 
-        if (resolutionOwner === 'admin' && payout) {
+        if (subjectType === 'listing' && resolutionOwner === 'admin' && payout) {
           const payoutStatus = String(payout.status ?? '').trim().toLowerCase();
           if (!['paid', 'cancelled'].includes(payoutStatus)) {
             const holdReason = 'Payout held because this delivered order has an active pre-payout dispute under BuyMesho review.';
