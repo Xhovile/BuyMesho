@@ -15,6 +15,9 @@ export default function AdminEventPayoutRecoveryPage() {
   const [liabilities, setLiabilities] = useState<Row[]>([]);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [eventPayments, setEventPayments] = useState<Row[]>([]);
+  const [selectedPayment, setSelectedPayment] = useState<Row | null>(null);
+  const [paymentDetail, setPaymentDetail] = useState<{ rawData?: Record<string, unknown> } | null>(null);
   const [selectedPayout, setSelectedPayout] = useState<Row | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [selectedLiability, setSelectedLiability] = useState<Row | null>(null);
@@ -35,9 +38,10 @@ export default function AdminEventPayoutRecoveryPage() {
       setLoading(true); setError(null);
       const normalizedQuery = query.trim();
       const path = normalizedQuery ? `/api/admin/event-payouts?q=${encodeURIComponent(normalizedQuery)}` : "/api/admin/event-payouts";
-      const data = await apiFetch(path) as { payouts?: Row[]; refundLiabilities?: Row[] };
+      const data = await apiFetch(path) as { payouts?: Row[]; refundLiabilities?: Row[]; eventPayments?: Row[] };
       setPayouts(Array.isArray(data.payouts) ? data.payouts : []);
       setLiabilities(Array.isArray(data.refundLiabilities) ? data.refundLiabilities : []);
+      setEventPayments(Array.isArray(data.eventPayments) ? data.eventPayments : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load event payout recovery data.");
     } finally { setLoading(false); }
@@ -64,6 +68,17 @@ export default function AdminEventPayoutRecoveryPage() {
     paid: payouts.filter((r) => text(r.status).toLowerCase() === "paid").length,
     due: liabilities.filter((r) => text(r.status).toLowerCase() === "due").length,
   }), [payouts, liabilities]);
+
+  const openEventPayment = async (row: Row) => {
+    setSelectedPayment(row);
+    setPaymentDetail(null);
+    setError(null);
+    try {
+      setPaymentDetail(await apiFetch(`/api/admin/event-payouts/transactions/${encodeURIComponent(text(row.id))}`) as { rawData?: Record<string, unknown> });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load event payment details.");
+    }
+  };
 
   const openPayout = async (row: Row) => {
     setSelectedPayout(row); setDetail(null); setError(null);
@@ -152,6 +167,30 @@ export default function AdminEventPayoutRecoveryPage() {
       {loading ? <div className="rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500">Loading event payout recovery data…</div> : (
         <>
           <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+            <div className="border-b border-zinc-200 p-5"><h2 className="text-lg font-black">Event payment activity</h2><p className="mt-1 text-sm text-zinc-500">Event-ticket payments, buyer identity, and payment state. Open a payment for full diagnostics.</p></div>
+            <div className="divide-y divide-zinc-100">
+              {eventPayments.length === 0 ? <p className="p-6 text-sm text-zinc-500">No event payments found.</p> : eventPayments.map((row) => {
+                const status = text(row.payment_status).toLowerCase();
+                const buyerEmails = Array.isArray(row.buyer_emails) ? row.buyer_emails.map(text).filter(Boolean).join(", ") : text(row.buyer_emails);
+                const ticketIds = Array.isArray(row.ticket_ids) ? row.ticket_ids.map(text).filter(Boolean).join(", ") : text(row.ticket_ids);
+                return <button key={text(row.id)} type="button" onClick={() => void openEventPayment(row)} className="block w-full p-5 text-left hover:bg-zinc-50">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black">{text(row.event_title) || "Event"}</p>
+                      <p className="mt-1 text-xs font-semibold text-zinc-500">Payment {text(row.id)} · Order {text(row.order_id)}</p>
+                      <p className="mt-1 text-xs text-zinc-500">Buyer {buyerEmails || text(row.buyer_id) || "—"} · Ticket {ticketIds || "—"}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <Badge tone={["paid","captured","successful","completed"].includes(status) ? "green" : ["failed","cancelled"].includes(status) ? "red" : "amber"}>{label(row.payment_status)}</Badge>
+                      <span className="text-sm font-black">{amount(row.amount, text(row.currency) || "MWK")}</span>
+                    </div>
+                  </div>
+                </button>;
+              })}
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
             <div className="border-b border-zinc-200 p-5"><h2 className="text-lg font-black">Event payout queue</h2><p className="mt-1 text-sm text-zinc-500">Review provider state and refund-related payout blockers.</p></div>
             <div className="divide-y divide-zinc-100">
               {payouts.length === 0 ? <p className="p-6 text-sm text-zinc-500">No event payouts found.</p> : payouts.map((row) => {
@@ -206,6 +245,30 @@ export default function AdminEventPayoutRecoveryPage() {
             <List title="Payout attempts" items={Array.isArray(detail.attempts) ? detail.attempts as Row[] : []} fields={["attempt_no","status","provider_transaction_id"]} />
             <RawJsonViewer data={detail.rawData ?? { payout: detail.payout, payoutAttempts: detail.attempts, payoutEvents: detail.payoutEvents, refundLiabilities: detail.refundLiabilities }} />
             {Array.isArray(detail.refundLiabilities) && detail.refundLiabilities.length ? <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4"><h3 className="font-black text-amber-950">Refund liabilities</h3><div className="mt-3 space-y-2">{(detail.refundLiabilities as Row[]).map((row) => <div key={text(row.id)} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-3"><div><p className="text-sm font-black">{amount(row.amount, text(row.currency) || "MWK")}</p><p className="text-xs text-zinc-500">{label(row.status)} · {text(row.id)}</p></div>{text(row.status).toLowerCase() === "due" ? <button type="button" onClick={() => openRecovery(row)} className="rounded-xl bg-zinc-900 px-3 py-2 text-xs font-bold text-white">Record recovery</button> : <Badge tone="green">Recovered</Badge>}</div>)}</div></div> : null}
+          </div>
+        </div>
+      </div> : null}
+
+      {selectedPayment && paymentDetail ? <div className="fixed inset-0 z-[95] flex items-center justify-center bg-zinc-950/55 p-3 backdrop-blur-sm">
+        <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-zinc-50 shadow-2xl">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white/95 px-5 py-4">
+            <div><p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Event payment</p><h2 className="mt-1 text-lg font-black">{text(selectedPayment.event_title) || text(selectedPayment.id)}</h2></div>
+            <button type="button" onClick={() => { setSelectedPayment(null); setPaymentDetail(null); }} className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100" aria-label="Close"><XCircle className="h-5 w-5" /></button>
+          </div>
+          <div className="space-y-4 p-5">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <Metric title="Payment status" value={label(selectedPayment.payment_status)} />
+              <Metric title="Amount" value={amount(selectedPayment.amount, text(selectedPayment.currency) || "MWK")} />
+              <Metric title="Order" value={text(selectedPayment.order_id)} />
+              <Metric title="Buyer UUID" value={text(selectedPayment.buyer_id)} />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Metric title="Buyer email" value={Array.isArray(selectedPayment.buyer_emails) ? selectedPayment.buyer_emails.map(text).filter(Boolean).join(", ") : text(selectedPayment.buyer_emails)} />
+              <Metric title="Ticket ID" value={Array.isArray(selectedPayment.ticket_ids) ? selectedPayment.ticket_ids.map(text).filter(Boolean).join(", ") : text(selectedPayment.ticket_ids)} />
+              <Metric title="Event creator" value={text(selectedPayment.event_creator_uid)} />
+              <Metric title="Payment reference" value={text(selectedPayment.reference)} />
+            </div>
+            <RawJsonViewer data={paymentDetail.rawData ?? { payment: selectedPayment }} />
           </div>
         </div>
       </div> : null}
