@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { AlertTriangle, CheckCircle2, Clock3, RefreshCw, RotateCcw, ShieldCheck, Wallet, XCircle } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, Clock3, Copy, CreditCard, RefreshCw, RotateCcw, Search, ShieldCheck, Wallet, XCircle } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 
 type Row = Record<string, unknown>;
-type Detail = { payout?: Row; attempts?: Row[]; payoutEvents?: Row[]; refundLiabilities?: Row[] };
+type Detail = { payout?: Row; attempts?: Row[]; payoutEvents?: Row[]; refundLiabilities?: Row[]; rawData?: Record<string, unknown> };
 const text = (value: unknown) => String(value ?? "").trim();
 const amount = (value: unknown, currency = "MWK") => `${currency} ${Number.isFinite(Number(value)) ? Number(value).toLocaleString() : "0"}`;
 const label = (value: unknown) => text(value).replaceAll("_", " ") || "—";
@@ -13,6 +13,11 @@ const today = () => new Date().toISOString().slice(0, 10);
 export default function AdminEventPayoutRecoveryPage() {
   const [payouts, setPayouts] = useState<Row[]>([]);
   const [liabilities, setLiabilities] = useState<Row[]>([]);
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [eventPayments, setEventPayments] = useState<Row[]>([]);
+  const [selectedPayment, setSelectedPayment] = useState<Row | null>(null);
+  const [paymentDetail, setPaymentDetail] = useState<{ rawData?: Record<string, unknown> } | null>(null);
   const [selectedPayout, setSelectedPayout] = useState<Row | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [selectedLiability, setSelectedLiability] = useState<Row | null>(null);
@@ -20,7 +25,7 @@ export default function AdminEventPayoutRecoveryPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(""); const [pendingAction, setPendingAction] = useState<"hold" | "cancel" | null>(null);
   const [recoverAmount, setRecoverAmount] = useState("");
   const [transactionId, setTransactionId] = useState("");
   const [refundMethod, setRefundMethod] = useState("mobile_money");
@@ -28,28 +33,56 @@ export default function AdminEventPayoutRecoveryPage() {
   const [destination, setDestination] = useState("");
   const [recoveryNote, setRecoveryNote] = useState("");
 
-  const load = async () => {
+  const load = async (query = search) => {
     try {
       setLoading(true); setError(null);
-      const data = await apiFetch("/api/admin/event-payouts") as { payouts?: Row[]; refundLiabilities?: Row[] };
+      const normalizedQuery = query.trim();
+      const path = normalizedQuery ? `/api/admin/event-payouts?q=${encodeURIComponent(normalizedQuery)}` : "/api/admin/event-payouts";
+      const data = await apiFetch(path) as { payouts?: Row[]; refundLiabilities?: Row[]; eventPayments?: Row[] };
       setPayouts(Array.isArray(data.payouts) ? data.payouts : []);
       setLiabilities(Array.isArray(data.refundLiabilities) ? data.refundLiabilities : []);
+      setEventPayments(Array.isArray(data.eventPayments) ? data.eventPayments : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load event payout recovery data.");
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(""); }, []);
+
+  const submitSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    const next = searchInput.trim();
+    setSearch(next);
+    void load(next);
+  };
+
+  const clearSearch = () => {
+    setSearchInput("");
+    setSearch("");
+    void load("");
+  };
 
   const stats = useMemo(() => ({
+    payments: eventPayments.length,
     total: payouts.length,
     processing: payouts.filter((r) => ["processing", "pending"].includes(text(r.status).toLowerCase())).length,
     paid: payouts.filter((r) => text(r.status).toLowerCase() === "paid").length,
     due: liabilities.filter((r) => text(r.status).toLowerCase() === "due").length,
-  }), [payouts, liabilities]);
+  }), [eventPayments, payouts, liabilities]);
+
+  const openEventPayment = async (row: Row) => {
+    setSelectedPayment(row);
+    setPaymentDetail(null);
+    setError(null);
+    try {
+      setPaymentDetail(await apiFetch(`/api/admin/event-payouts/transactions/${encodeURIComponent(text(row.id))}`) as { rawData?: Record<string, unknown> });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load event payment details.");
+    }
+  };
 
   const openPayout = async (row: Row) => {
-    setSelectedPayout(row); setDetail(null); setError(null);
+    setSelectedPayout(row); setDetail(null); setPendingAction(null); setNote(""); setError(null);
     try {
       setDetail(await apiFetch(`/api/admin/event-payouts/${encodeURIComponent(text(row.id))}`) as Detail);
     } catch (err) {
@@ -59,6 +92,17 @@ export default function AdminEventPayoutRecoveryPage() {
 
   const runAction = async (action: "retry" | "reconcile" | "hold" | "cancel") => {
     if (!selectedPayout) return;
+    if (action === "hold" || action === "cancel") {
+      setPendingAction(action);
+      setNote("");
+      setError(null);
+      return;
+    }
+    await executeAction(action);
+  };
+
+  const executeAction = async (action: "retry" | "reconcile" | "hold" | "cancel") => {
+    if (!selectedPayout) return;
     if ((action === "hold" || action === "cancel") && !note.trim()) {
       setError("A reason is required for this action."); return;
     }
@@ -67,14 +111,13 @@ export default function AdminEventPayoutRecoveryPage() {
       const path = `/api/admin/event-payouts/${encodeURIComponent(text(selectedPayout.id))}/${action}`;
       const body = action === "hold" || action === "cancel" ? JSON.stringify({ reason: note.trim() }) : undefined;
       await apiFetch(path, { method: "POST", ...(body ? { headers: { "Content-Type": "application/json" }, body } : {}) });
-      setNote(""); setNotice(`Event payout ${action} completed.`); await load();
+      setNote(""); setPendingAction(null); setNotice(`Event payout ${action} completed.`); await load();
       const refreshed = payouts.find((row) => text(row.id) === text(selectedPayout.id));
       if (refreshed) await openPayout(refreshed);
     } catch (err) {
       setError(err instanceof Error ? err.message : `Failed to ${action} event payout.`);
     } finally { setBusy(false); }
   };
-
   const openRecovery = (row: Row) => {
     setSelectedLiability(row);
     setRecoverAmount(String(Number(row.amount ?? 0)));
@@ -107,14 +150,26 @@ export default function AdminEventPayoutRecoveryPage() {
 
   return (
     <AdminWorkspaceLayout
-      title="Event Payout Recovery"
-      description="Reconcile direct event payouts, stop unsafe retries, and record approved event refund recoveries."
+      title="Event Financial Recovery"
+      description="Review event payments, reconcile payouts, and record approved event refund recoveries."
       onRefresh={() => void load()}
     >
+      <form onSubmit={submitSearch} className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <input value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Search buyer email, buyer UUID, creator email/UUID, order ID, ticket ID…" className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-zinc-400 focus:bg-white" aria-label="Search event financial records" />
+          </div>
+          <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white"><Search className="h-4 w-4" />Search</button>
+          {search ? <button type="button" onClick={clearSearch} className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-50">Clear</button> : null}
+        </div>
+        <p className="mt-2 text-xs text-zinc-500">Searches across event title/ID, buyer and creator identity, order ID, and ticket ID/code.</p>
+      </form>
       {error ? <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div> : null}
       {notice ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">{notice}</div> : null}
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <Stat icon={<CreditCard className="h-4 w-4" />} title="Event payments" value={stats.payments} />
         <Stat icon={<Wallet className="h-4 w-4" />} title="Event payouts" value={stats.total} />
         <Stat icon={<Clock3 className="h-4 w-4" />} title="Provider processing" value={stats.processing} />
         <Stat icon={<CheckCircle2 className="h-4 w-4" />} title="Paid" value={stats.paid} />
@@ -123,6 +178,30 @@ export default function AdminEventPayoutRecoveryPage() {
 
       {loading ? <div className="rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500">Loading event payout recovery data…</div> : (
         <>
+          <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+            <div className="border-b border-zinc-200 p-5"><h2 className="text-lg font-black">Event payment activity</h2><p className="mt-1 text-sm text-zinc-500">Event-ticket payments, buyer identity, and payment state. Open a payment for full diagnostics.</p></div>
+            <div className="divide-y divide-zinc-100">
+              {eventPayments.length === 0 ? <p className="p-6 text-sm text-zinc-500">No event payments found.</p> : eventPayments.map((row) => {
+                const status = text(row.payment_status).toLowerCase();
+                const buyerEmails = Array.isArray(row.buyer_emails) ? row.buyer_emails.map(text).filter(Boolean).join(", ") : text(row.buyer_emails);
+                const ticketIds = Array.isArray(row.ticket_ids) ? row.ticket_ids.map(text).filter(Boolean).join(", ") : text(row.ticket_ids);
+                return <button key={text(row.id)} type="button" onClick={() => void openEventPayment(row)} className="block w-full p-5 text-left hover:bg-zinc-50">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black">{text(row.event_title) || "Event"}</p>
+                      <p className="mt-1 text-xs font-semibold text-zinc-500">Payment {text(row.id)} · Order {text(row.order_id)}</p>
+                      <p className="mt-1 text-xs text-zinc-500">Buyer {buyerEmails || text(row.buyer_id) || "—"} · Ticket {ticketIds || "—"}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <Badge tone={["paid","captured","successful","completed"].includes(status) ? "green" : ["failed","cancelled"].includes(status) ? "red" : "amber"}>{label(row.payment_status)}</Badge>
+                      <span className="text-sm font-black">{amount(row.amount, text(row.currency) || "MWK")}</span>
+                    </div>
+                  </div>
+                </button>;
+              })}
+            </div>
+          </section>
+
           <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
             <div className="border-b border-zinc-200 p-5"><h2 className="text-lg font-black">Event payout queue</h2><p className="mt-1 text-sm text-zinc-500">Review provider state and refund-related payout blockers.</p></div>
             <div className="divide-y divide-zinc-100">
@@ -157,7 +236,7 @@ export default function AdminEventPayoutRecoveryPage() {
         <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-zinc-50 shadow-2xl">
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white/95 px-5 py-4">
             <div><p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Event payout</p><h2 className="mt-1 text-lg font-black">{text(detail.payout?.event_title) || text(detail.payout?.id)}</h2></div>
-            <button type="button" onClick={() => { setDetail(null); setSelectedPayout(null); }} className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100" aria-label="Close"><XCircle className="h-5 w-5" /></button>
+            <button type="button" onClick={() => { setDetail(null); setSelectedPayout(null); setPendingAction(null); setNote(""); }} className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100" aria-label="Close"><XCircle className="h-5 w-5" /></button>
           </div>
           <div className="space-y-5 p-5">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -170,16 +249,38 @@ export default function AdminEventPayoutRecoveryPage() {
               {![ "paid", "cancelled" ].includes(text(detail.payout?.status).toLowerCase()) ? <>
                 <button type="button" disabled={busy} onClick={() => void runAction("reconcile")} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold disabled:opacity-50"><RefreshCw className="h-4 w-4" />Reconcile</button>
                 <button type="button" disabled={busy || ["processing","pending"].includes(text(detail.payout?.status).toLowerCase())} onClick={() => void runAction("retry")} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"><RotateCcw className="h-4 w-4" />Retry</button>
-                <button type="button" disabled={busy || !note.trim()} onClick={() => void runAction("hold")} className="inline-flex items-center gap-2 rounded-2xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"><AlertTriangle className="h-4 w-4" />Hold</button>
-                <button type="button" disabled={busy || ["processing","pending"].includes(text(detail.payout?.status).toLowerCase()) || !note.trim()} onClick={() => void runAction("cancel")} className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50"><XCircle className="h-4 w-4" />Cancel</button>
+                <button type="button" disabled={busy} onClick={() => void runAction("hold")} className="inline-flex items-center gap-2 rounded-2xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"><AlertTriangle className="h-4 w-4" />Hold</button>
+                <button type="button" disabled={busy || ["processing","pending"].includes(text(detail.payout?.status).toLowerCase())} onClick={() => void runAction("cancel")} className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50"><XCircle className="h-4 w-4" />Cancel</button>
               </> : null}
             </div>
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Reason for hold/cancel…" className="w-full rounded-2xl border border-zinc-200 bg-white p-3 text-sm outline-none" />
-            <div className="grid gap-5 xl:grid-cols-2">
-              <List title="Payout attempts" items={Array.isArray(detail.attempts) ? detail.attempts as Row[] : []} fields={["attempt_no","status","provider_transaction_id"]} />
-              <List title="Payout events" items={Array.isArray(detail.payoutEvents) ? detail.payoutEvents as Row[] : []} fields={["event_type","actor_type","note"]} />
-            </div>
+            {pendingAction ? <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4"><h3 className="font-black text-amber-950">{pendingAction === "hold" ? "Hold payout" : "Cancel payout"}</h3><p className="mt-1 text-sm text-amber-900">Provide a reason for this administrative action.</p><textarea autoFocus value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={2000} placeholder={pendingAction === "hold" ? "Why should this payout be held?" : "Why should this payout be cancelled?"} className="mt-3 w-full rounded-2xl border border-amber-300 bg-white p-3 text-sm outline-none" /><div className="mt-3 flex flex-wrap justify-end gap-2"><button type="button" disabled={busy} onClick={() => { setPendingAction(null); setNote(""); }} className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700">Back</button><button type="button" disabled={busy || !note.trim()} onClick={() => void executeAction(pendingAction)} className="rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{busy ? "Submitting…" : pendingAction === "hold" ? "Place on hold" : "Cancel payout"}</button></div></div> : null}
+            <List title="Payout attempts" items={Array.isArray(detail.attempts) ? detail.attempts as Row[] : []} fields={["attempt_no","status","provider_transaction_id"]} />
+            <RawJsonViewer data={detail.rawData ?? { payout: detail.payout, payoutAttempts: detail.attempts, payoutEvents: detail.payoutEvents, refundLiabilities: detail.refundLiabilities }} />
             {Array.isArray(detail.refundLiabilities) && detail.refundLiabilities.length ? <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4"><h3 className="font-black text-amber-950">Refund liabilities</h3><div className="mt-3 space-y-2">{(detail.refundLiabilities as Row[]).map((row) => <div key={text(row.id)} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-3"><div><p className="text-sm font-black">{amount(row.amount, text(row.currency) || "MWK")}</p><p className="text-xs text-zinc-500">{label(row.status)} · {text(row.id)}</p></div>{text(row.status).toLowerCase() === "due" ? <button type="button" onClick={() => openRecovery(row)} className="rounded-xl bg-zinc-900 px-3 py-2 text-xs font-bold text-white">Record recovery</button> : <Badge tone="green">Recovered</Badge>}</div>)}</div></div> : null}
+          </div>
+        </div>
+      </div> : null}
+
+      {selectedPayment && paymentDetail ? <div className="fixed inset-0 z-[95] flex items-center justify-center bg-zinc-950/55 p-3 backdrop-blur-sm">
+        <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-zinc-50 shadow-2xl">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white/95 px-5 py-4">
+            <div><p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Event payment</p><h2 className="mt-1 text-lg font-black">{text(selectedPayment.event_title) || text(selectedPayment.id)}</h2></div>
+            <button type="button" onClick={() => { setSelectedPayment(null); setPaymentDetail(null); }} className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100" aria-label="Close"><XCircle className="h-5 w-5" /></button>
+          </div>
+          <div className="space-y-4 p-5">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <Metric title="Payment status" value={label(selectedPayment.payment_status)} />
+              <Metric title="Amount" value={amount(selectedPayment.amount, text(selectedPayment.currency) || "MWK")} />
+              <Metric title="Order" value={text(selectedPayment.order_id)} />
+              <Metric title="Buyer UUID" value={text(selectedPayment.buyer_id)} />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Metric title="Buyer email" value={Array.isArray(selectedPayment.buyer_emails) ? selectedPayment.buyer_emails.map(text).filter(Boolean).join(", ") : text(selectedPayment.buyer_emails)} />
+              <Metric title="Ticket ID" value={Array.isArray(selectedPayment.ticket_ids) ? selectedPayment.ticket_ids.map(text).filter(Boolean).join(", ") : text(selectedPayment.ticket_ids)} />
+              <Metric title="Event creator" value={text(selectedPayment.event_creator_uid)} />
+              <Metric title="Payment reference" value={text(selectedPayment.reference)} />
+            </div>
+            <RawJsonViewer data={paymentDetail.rawData ?? { payment: selectedPayment }} />
           </div>
         </div>
       </div> : null}
@@ -216,4 +317,32 @@ function Badge({ tone, children }: { tone: "green" | "amber" | "red"; children: 
 }
 function List({ title, items, fields }: { title: string; items: Row[]; fields: string[] }) {
   return <div className="rounded-3xl border border-zinc-200 bg-white p-4"><h3 className="font-black">{title}</h3><div className="mt-3 max-h-60 space-y-2 overflow-auto">{items.length ? items.map((item, index) => <div key={text(item.id) || index} className="rounded-2xl bg-zinc-50 p-3 text-xs">{fields.map((field) => <p key={field}><span className="font-bold">{label(field)}:</span> {label(item[field])}</p>)}</div>) : <p className="text-sm text-zinc-500">No records.</p>}</div></div>;
+}
+
+function RawJsonViewer({ data }: { data: unknown }) {
+  const [open, setOpen] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const raw = (() => {
+    try { return JSON.stringify(data, null, 2) ?? "null"; } catch { return "Unable to serialize raw event data."; }
+  })();
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(raw);
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 1500);
+    } catch {
+      setCopyState("failed");
+      window.setTimeout(() => setCopyState("idle"), 1500);
+    }
+  };
+  return <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white">
+    <div className="flex items-center justify-between gap-3 p-4">
+      <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} className="text-sm font-black">{open ? "Hide raw JSON" : "View raw JSON"}</button>
+      <button type="button" onClick={() => void copy()} className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-100">
+        {copyState === "copied" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+        {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy"}
+      </button>
+    </div>
+    {open ? <pre className="max-h-[32rem] overflow-auto border-t border-zinc-200 bg-zinc-950 p-4 text-[11px] leading-5 text-zinc-100 [scrollbar-width:thin]">{raw}</pre> : null}
+  </div>;
 }

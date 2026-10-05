@@ -161,6 +161,29 @@ export function createAdminEventTransactionRouter(params: {
         ? db.prepare(`SELECT * FROM event_creators WHERE uid = ? LIMIT 1`).get(String(event.creator_uid))
         : null;
 
+      const payoutDestination = event.payout_destination_id && event.creator_uid
+        ? db.prepare(
+            `SELECT
+               id,
+               destination_type,
+               provider_name,
+               provider_ref_id,
+               currency,
+               account_name,
+               masked_account,
+               verification_status,
+               is_default,
+               is_active,
+               created_at,
+               updated_at
+             FROM seller_payout_accounts
+             WHERE id = ?
+               AND owner_type = 'event_creator'
+               AND event_creator_uid = ?
+             LIMIT 1`
+          ).get(String(event.payout_destination_id), String(event.creator_uid))
+        : null;
+
       const activities = db.prepare(`
         SELECT *
         FROM event_activity
@@ -210,6 +233,7 @@ export function createAdminEventTransactionRouter(params: {
       return res.json({
         event,
         creator,
+        payoutDestination: payoutDestination ?? null,
         activities,
         conversations,
         purchaseRecords,

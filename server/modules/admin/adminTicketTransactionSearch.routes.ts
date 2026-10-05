@@ -115,7 +115,10 @@ export function createAdminTicketTransactionSearchRouter(params: {
         LEFT JOIN escrows e ON e.order_id = o.id
         LEFT JOIN event_tickets et ON et.order_id = o.id
         LEFT JOIN events ev ON ev.id = et.event_id
-        WHERE
+        WHERE NOT EXISTS (
+          SELECT 1 FROM event_tickets event_scope WHERE event_scope.order_id = p.order_id
+        )
+          AND (
           LOWER(CAST(p.id AS TEXT)) LIKE ? OR
           LOWER(COALESCE(p.order_id, '')) LIKE ? OR
           LOWER(COALESCE(p.reference, '')) LIKE ? OR
@@ -132,6 +135,7 @@ export function createAdminTicketTransactionSearchRouter(params: {
           LOWER(CAST(et.event_id AS TEXT)) LIKE ? OR
           LOWER(COALESCE(ev.event_title, '')) LIKE ? OR
           LOWER(CAST(p.verification AS TEXT)) LIKE ?
+          )
         ORDER BY p.created_at DESC
         LIMIT 200
       `).all(...Array.from({ length: 16 }, () => like)) as Array<Record<string, unknown>>;
@@ -150,9 +154,16 @@ export function createAdminTicketTransactionSearchRouter(params: {
           signature_valid,
           payload,
           created_at
-        FROM payment_webhook_events
-        WHERE
-          LOWER(CAST(id AS TEXT)) LIKE ? OR
+        FROM payment_webhook_events webhooks_scope
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM payments p_scope
+          INNER JOIN event_tickets et_scope ON et_scope.order_id = p_scope.order_id
+          WHERE p_scope.reference IN (webhooks_scope.reference, webhooks_scope.tx_ref)
+             OR p_scope.provider_reference IN (webhooks_scope.reference, webhooks_scope.tx_ref)
+        )
+          AND (
+          LOWER(CAST(webhooks_scope.id AS TEXT)) LIKE ? OR
           LOWER(COALESCE(event_id, '')) LIKE ? OR
           LOWER(COALESCE(provider_event_id, '')) LIKE ? OR
           LOWER(COALESCE(provider, '')) LIKE ? OR
@@ -162,8 +173,9 @@ export function createAdminTicketTransactionSearchRouter(params: {
           LOWER(COALESCE(processing_status, '')) LIKE ? OR
           LOWER(COALESCE(error, '')) LIKE ? OR
           LOWER(CAST(signature_valid AS TEXT)) LIKE ? OR
-          LOWER(COALESCE(payload, '')) LIKE ?
-        ORDER BY created_at DESC
+          LOWER(COALESCE(webhooks_scope.payload, '')) LIKE ?
+          )
+        ORDER BY webhooks_scope.created_at DESC
         LIMIT 200
       `).all(...Array.from({ length: 11 }, () => like)) as Array<Record<string, unknown>>;
 
@@ -237,8 +249,13 @@ export function createAdminTicketTransactionSearchRouter(params: {
             LEFT JOIN escrows e ON e.order_id = o.id
             LEFT JOIN event_tickets et ON et.order_id = o.id
             LEFT JOIN events ev ON ev.id = et.event_id
-            WHERE p.reference IN (${webhookReferences.map(() => "?").join(", ")})
-               OR p.provider_reference IN (${webhookReferences.map(() => "?").join(", ")})
+            WHERE NOT EXISTS (
+              SELECT 1 FROM event_tickets event_scope WHERE event_scope.order_id = p.order_id
+            )
+              AND (
+                p.reference IN (${webhookReferences.map(() => "?").join(", ")})
+                OR p.provider_reference IN (${webhookReferences.map(() => "?").join(", ")})
+              )
             ORDER BY p.created_at DESC
             LIMIT 200
           `).all(...webhookReferences, ...webhookReferences) as Array<Record<string, unknown>>
