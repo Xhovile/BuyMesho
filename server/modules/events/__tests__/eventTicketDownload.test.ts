@@ -60,6 +60,7 @@ test("event ticket PDF generator returns a valid PDF document", () => {
     location: "Area 2 • Pa chigulumwa",
     status: "Paid",
     amount: "5000 MWK",
+    orderId: "order-1",
     qrPayload: "BM1.test-payload.invalid-signature",
   });
 
