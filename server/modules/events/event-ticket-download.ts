@@ -148,6 +148,7 @@ type TicketPdfData = {
   location: string;
   status: string;
   amount: string;
+  orderId: string;
   qrPayload: string;
 };
 
