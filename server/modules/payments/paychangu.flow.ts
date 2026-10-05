@@ -38,6 +38,7 @@ function emitOrderPaidNotification(order:ReturnType<typeof orderRepository.findB
 async function emitEventTicketPurchaseNotifications(order:ReturnType<typeof orderRepository.findByPaymentReference>):Promise<void>{
   if(!order)return;
   const db=getPaymentDb();
+  const appUrl=(process.env.APP_URL?.trim()||'https://buymesho.app').replace(/\/$/,'');
   const tickets=db.prepare(`SELECT id,code,ticket_title,ticket_type,holder_name,holder_email,event_title,event_date,start_time,venue,location FROM event_tickets WHERE order_id=? ORDER BY id ASC`).all(order.id) as Array<Record<string,unknown>>;
   if(!tickets.length)return;
 
@@ -51,7 +52,7 @@ async function emitEventTicketPurchaseNotifications(order:ReturnType<typeof orde
     startTime:String(ticket.start_time??''),
     venue:String(ticket.venue??''),
     location:String(ticket.location??''),
-    downloadUrl:`https://buymesho.app/api/event-tickets/${encodeURIComponent(String(ticket.code??ticket.id))}/download?token=${encodeURIComponent(createEventTicketDownloadToken(String(ticket.code??ticket.id)))}`,
+    downloadUrl:`${appUrl}/api/event-tickets/${encodeURIComponent(String(ticket.code??ticket.id))}/download?token=${encodeURIComponent(createEventTicketDownloadToken(String(ticket.code??ticket.id)))}`,
   }));
 
   const first=ticketRows[0];
