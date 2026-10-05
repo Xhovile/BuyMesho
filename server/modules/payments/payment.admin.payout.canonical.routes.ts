@@ -324,7 +324,7 @@ export function createPaymentAdminPayoutCanonicalRouter(requireAuth: RequestHand
         `${baseSelect}
          WHERE (COALESCE(p.owner_type, 'seller') = 'seller' AND p.event_id IS NULL)
          ORDER BY p.created_at DESC
-         LIMIT $1 OFFSET $2
+         LIMIT $1 OFFSET $2`,
         [limit, offset],
       );
       const totalResult = await query(`SELECT COUNT(*)::int AS total FROM payouts WHERE (COALESCE(p.owner_type, 'seller') = 'seller' AND p.event_id IS NULL)`);
@@ -360,7 +360,7 @@ export function createPaymentAdminPayoutCanonicalRouter(requireAuth: RequestHand
           COUNT(*) FILTER (WHERE status = 'paid')::int AS "paidPayouts",
           COUNT(*) FILTER (WHERE status = 'failed')::int AS "failedPayouts",
           COUNT(*) FILTER (WHERE status = 'cancelled')::int AS "cancelledPayouts"
-        FROM payouts
+        FROM payouts p
         WHERE (COALESCE(p.owner_type, 'seller') = 'seller' AND p.event_id IS NULL)
       `);
       return res.status(200).json({ summary: result.rows[0] ?? {} });
