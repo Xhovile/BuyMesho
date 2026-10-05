@@ -2,7 +2,7 @@ import { getPaymentDb } from '../../postgresCompat.js';
 import { withTransaction } from '../../postgres.js';
 import { createEventPayoutCandidateAsync, resolveEventPayoutContext } from './event-payout.integration.js';
 import { payoutRepository, payoutService } from './payout.service.js';
-import { PAYOUT_POLICY, isRetryableFailureCode } from './payout.policy.js';
+import { PAYOUT_POLICY, isAutomaticallyRetryableFailureCode } from './payout.policy.js';
 
 type ReconcilePayouts = (input: {
   actorType: 'system';
@@ -339,6 +339,13 @@ export class PayoutReconciliationScheduler {
         continue;
       }
 
+      // Do not automatically resubmit authentication/configuration failures.
+      // These remain manually retryable after the provider-side issue is corrected.
+      const failureCode = row.failure_reason;
+      if (!isAutomaticallyRetryableFailureCode(failureCode)) {
+        continue;
+      }
+
       if (!withinRetryWindow(requestedAt, nowMs)) {
         payoutRepository.addEvent({
           payoutId: row.id,
@@ -371,11 +378,6 @@ export class PayoutReconciliationScheduler {
 
       const nextRetryAt = retryEligibleAt(row.latest_attempt_at, requestedAt);
       if (nextRetryAt !== null && nowMs < nextRetryAt) {
-        continue;
-      }
-
-      const failureCode = row.failure_reason;
-      if (row.status === 'held' && !isRetryableFailureCode(failureCode)) {
         continue;
       }
 
