@@ -74,6 +74,98 @@ test("event ticket PDF generator returns a valid PDF document", () => {
   assert.doesNotMatch(pdfText, /â|�/);
 });
 
+test("valid ticket download route returns a PDF with signed ticket credential data", () => {
+  const previousSecret = process.env.EVENT_TICKET_DOWNLOAD_SECRET;
+  process.env.EVENT_TICKET_DOWNLOAD_SECRET = "event-ticket-download-test-secret";
+
+  try {
+    const ticketId = "BM-DOWNLOAD-123";
+    const token = createEventTicketDownloadToken(ticketId);
+    const ticketRow = {
+      id: "ticket-1",
+      code: ticketId,
+      ticket_title: "Campus Concert Ticket",
+      ticket_type: "General Admission",
+      holder_name: "Ada Buyer",
+      holder_email: "buyer@example.com",
+      holder_phone: "0994123456",
+      status: "Waiting Entry",
+      event_title: "Campus Concert",
+      event_date: "2026-10-03",
+      start_time: "18:00",
+      venue: "Main Hall",
+      location: "Lilongwe",
+      event_id: "event-42",
+      organizer_name: "Campus Events",
+      ticket_price: 5000,
+      order_status: "paid",
+      order_id: "order-1",
+      purchase_date: "2026-10-03T12:00:00.000Z",
+    };
+
+    let handler: ((req: any, res: any) => unknown) | undefined;
+    const app = {
+      get(_path: string, routeHandler: (req: any, res: any) => unknown) {
+        handler = routeHandler;
+      },
+    };
+    const db = {
+      prepare() {
+        return {
+          get() {
+            return ticketRow;
+          },
+        };
+      },
+    };
+
+    registerEventTicketDownloadRoutes(app as any, { db });
+    assert.ok(handler);
+
+    const headers = new Map<string, string>();
+    let statusCode = 0;
+    let body: unknown;
+    const res = {
+      setHeader(name: string, value: string) {
+        headers.set(name, value);
+        return this;
+      },
+      status(code: number) {
+        statusCode = code;
+        return {
+          json(value: unknown) {
+            body = value;
+            return this;
+          },
+          send(value: Buffer) {
+            body = value;
+            return this;
+          },
+        };
+      },
+    };
+
+    handler(
+      {
+        params: { ticketId },
+        query: { token },
+      },
+      res,
+    );
+
+    assert.equal(statusCode, 200);
+    assert.ok(Buffer.isBuffer(body));
+    assert.equal(headers.get("Content-Type"), "application/pdf");
+    assert.match(headers.get("Content-Disposition") ?? "", /attachment; filename=/);
+    assert.equal(headers.get("Cache-Control"), "private, no-store, max-age=0");
+    assert.ok((body as Buffer).subarray(0, 8).toString("ascii") === "%PDF-1.4");
+    assert.doesNotMatch((body as Buffer).toString("ascii"), /Ticket credential source data is incomplete/);
+  } finally {
+    if (previousSecret === undefined) delete process.env.EVENT_TICKET_DOWNLOAD_SECRET;
+    else process.env.EVENT_TICKET_DOWNLOAD_SECRET = previousSecret;
+  }
+});
+
 test("cancelled ticket cannot be downloaded even when its order is paid", () => {
   const previousSecret = process.env.EVENT_TICKET_DOWNLOAD_SECRET;
   process.env.EVENT_TICKET_DOWNLOAD_SECRET = "event-ticket-download-test-secret";
