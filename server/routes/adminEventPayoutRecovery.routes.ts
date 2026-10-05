@@ -55,7 +55,7 @@ export function createAdminEventPayoutRecoveryRouter(requireAuth: RequestHandler
 
       if (search) {
         params.push(`%${search}%`);
-        const placeholder = `${params.length}`;
+        const placeholder = `$${params.length}`;
         filters.push(`(
           LOWER(CAST(p.id AS TEXT)) LIKE ${placeholder} OR
           LOWER(COALESCE(p.order_id, '')) LIKE ${placeholder} OR
@@ -81,7 +81,7 @@ export function createAdminEventPayoutRecoveryRouter(requireAuth: RequestHandler
 
       if (["eligible", "pending_settlement", "ready_for_payout", "queued", "processing", "pending", "held", "paid", "failed", "cancelled"].includes(status)) {
         params.push(status);
-        filters.push(`p.status = ${params.length}`);
+        filters.push(`p.status = $${params.length}`);
       }
 
       const result = await query<Record<string, unknown>>(
