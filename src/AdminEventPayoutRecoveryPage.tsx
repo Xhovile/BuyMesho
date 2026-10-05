@@ -82,7 +82,7 @@ export default function AdminEventPayoutRecoveryPage() {
   };
 
   const openPayout = async (row: Row) => {
-    setSelectedPayout(row); setDetail(null); setError(null);
+    setSelectedPayout(row); setDetail(null); setPendingAction(null); setNote(""); setError(null);
     try {
       setDetail(await apiFetch(`/api/admin/event-payouts/${encodeURIComponent(text(row.id))}`) as Detail);
     } catch (err) {
