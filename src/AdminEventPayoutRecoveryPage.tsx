@@ -159,7 +159,7 @@ export default function AdminEventPayoutRecoveryPage() {
       {notice ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">{notice}</div> : null}
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Stat icon={<CreditCardIcon />} title="Event payments" value={stats.payments} />
+        <Stat icon={<CreditCard className="h-4 w-4" />} title="Event payments" value={stats.payments} />
         <Stat icon={<Wallet className="h-4 w-4" />} title="Event payouts" value={stats.total} />
         <Stat icon={<Clock3 className="h-4 w-4" />} title="Provider processing" value={stats.processing} />
         <Stat icon={<CheckCircle2 className="h-4 w-4" />} title="Paid" value={stats.paid} />
@@ -293,10 +293,6 @@ export default function AdminEventPayoutRecoveryPage() {
       </div> : null}
     </AdminWorkspaceLayout>
   );
-}
-
-function CreditCardIcon() {
-  return <span className="inline-flex"><Wallet className="h-4 w-4" /></span>;
 }
 
 function Stat({ icon, title, value }: { icon: ReactNode; title: string; value: number }) {
