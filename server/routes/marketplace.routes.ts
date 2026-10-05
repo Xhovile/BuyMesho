@@ -1,6 +1,6 @@
 import type { Express, NextFunction, Request, Response } from "express";
 import multer from "multer";
-import { uploadBufferToCloudinary } from "../lib/cloudinaryUpload.js";
+import { getCloudinaryUserMessage, uploadBufferToCloudinary } from "../lib/cloudinaryUpload.js";
 import { parseSpecFilters, serializeListingRow } from "../lib/listingHelpers.js";
 import { getFirebaseAdmin } from "../auth/firebaseAdmin.js";
 import { requireAuth } from "../middleware/requireAuth.js";
@@ -47,11 +47,17 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
     upload.single("image")(req, res, (err) => {
       if (err instanceof multer.MulterError) {
         console.error("Multer error:", err);
-        return res.status(400).json({ error: "File upload error", details: err.message });
+        return res.status(400).json({
+          error: err.code === "LIMIT_FILE_SIZE"
+            ? "This file is too large. Please choose a smaller file."
+            : "We couldn't process this file upload. Please try again.",
+        });
       }
       if (err) {
         console.error("Unknown upload error:", err);
-        return res.status(500).json({ error: "Upload failed", details: err.message });
+        return res.status(500).json({
+          error: "We couldn't process this file upload. Please try again.",
+        });
       }
       console.log("Multer finished - File:", req.file ? req.file.originalname : "None");
       next();
@@ -74,8 +80,7 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
     } catch (error) {
       console.error("Cloudinary/Handler error:", error);
       res.status(500).json({
-        error: "Upload failed",
-        details: error instanceof Error ? error.message : String(error),
+        error: getCloudinaryUserMessage(error, "We couldn't upload this file right now. Please try again."),
       });
     }
   });
