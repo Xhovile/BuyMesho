@@ -3,7 +3,9 @@ import { test, afterEach } from "node:test";
 
 import {
   classifyCloudinaryError,
+  CloudinaryUploadError,
   getCloudinaryAccounts,
+  getCloudinaryUserMessage,
 } from "../cloudinaryUpload.js";
 
 const CLOUDINARY_ENV_KEYS = [
@@ -97,4 +99,30 @@ test("classifies provider failures conservatively", () => {
   assert.equal(classifyCloudinaryError({ http_code: 404, message: "not found" }), "not_found");
   assert.equal(classifyCloudinaryError({ http_code: 500, message: "temporary failure" }), "transient");
   assert.equal(classifyCloudinaryError({ message: "credits exceeded" }), "quota_exhausted");
+
+  const testAccount = {
+    id: "cloudinary_1",
+    cloudName: "test-cloud",
+    apiKey: "test-key",
+    apiSecret: "test-secret",
+  };
+  assert.equal(
+    getCloudinaryUserMessage(
+      new CloudinaryUploadError("provider says unauthorized", {
+        kind: "authentication",
+        account: testAccount,
+        httpCode: 401,
+      }),
+    ),
+    "Image uploads are temporarily unavailable. Please try again later.",
+  );
+  assert.equal(
+    getCloudinaryUserMessage(
+      new CloudinaryUploadError("provider says credits exceeded", {
+        kind: "quota_exhausted",
+        account: testAccount,
+      }),
+    ),
+    "Image storage is temporarily unavailable. Please try again later.",
+  );
 });
