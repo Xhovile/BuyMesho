@@ -32,7 +32,6 @@
     "test:event-payout": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/payouts/__tests__/event-payout.integration.test.ts",
     "test:admin-ticket-search": "node --import tsx --test server/modules/admin/__tests__/adminTicketTransactionSearch.test.ts",
     "test:admin-event-cancellation": "NODE_ENV=test node --import tsx --import ./server/testSafety.ts --test --test-concurrency=1 server/modules/admin/__tests__/event-cancellation-email.test.ts",
-    "test:admin-event-cancellation": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/admin/__tests__/event-cancellation-email.test.ts",
     "test:payout-destination-independence": "NODE_ENV=test node --import tsx --test --test-concurrency=1 --experimental-test-isolation=none server/routes/escrow/__tests__/payout.destination-independence.test.ts",
     "test:routing-guards": "NODE_ENV=test node --import tsx --test --test-concurrency=1 --experimental-test-isolation=none server/modules/payouts/__tests__/payout.routing-guards.test.ts",
     "test:dispute-state-machines": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/disputes/__tests__/state-machine.test.ts",
