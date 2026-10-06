@@ -8,6 +8,7 @@ import {
 } from "../lib/listingHelpers.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { invalidatePublicListingsCache } from "../lib/publicListingsCache.js";
+import { invalidatePublicListingsCache } from "../lib/publicListingsCache.js";
 
 export type ListingRouteDeps = {
   db: any;
@@ -253,6 +254,8 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
 
       invalidatePublicListingsCache();
 
+      invalidatePublicListingsCache();
+
       return res.status(201).json({
         success: true,
         listing: row ? serializeListingRow(row) : null,
@@ -457,6 +460,8 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
           `
         )
         .get(listingId) as any;
+
+      invalidatePublicListingsCache();
 
       invalidatePublicListingsCache();
 
