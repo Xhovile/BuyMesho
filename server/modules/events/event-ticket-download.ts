@@ -82,6 +82,16 @@ function escapePdfText(value: string): string {
   return pdfSafeText(value).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 }
 
+function sanitizeFilename(value: string): string {
+  const cleaned = value
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  return cleaned || "buymesho-ticket";
+}
+
+
 function addText(
   commands: string[],
   x: number,
