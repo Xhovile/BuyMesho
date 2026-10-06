@@ -82,12 +82,15 @@ async function buildOrderBundle(order: StoredOrder): Promise<OrderLookupResult> 
     ),
   ]);
 
+  const ticketCredentialResult = await buildEventTicketCredentials(order);
+
   return {
     order,
     payment: payment ?? null,
     escrow: escrow ?? null,
     dispute: disputeResult.rows[0] ?? null,
-    ticketCredentials: await buildEventTicketCredentials(order),
+    ticketCredentials: ticketCredentialResult.credentials,
+    ticketCredentialErrors: ticketCredentialResult.errors,
   };
 }
 
