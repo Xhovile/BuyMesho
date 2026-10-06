@@ -1,4 +1,11 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "fix/*": false,
+      "feat/*": false,
+      "test/*": false
+    }
+  },
   "routes": [
     {
       "src": "/api/(.*)",
