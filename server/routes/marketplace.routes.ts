@@ -237,15 +237,13 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
         const total = totalRow?.total ?? 0;
         const totalPages = Math.max(1, Math.ceil(total / safePageSize));
 
-          return {
-
+        return {
           items: rows.map((l: any) => serializeListingRow(l)),
           total,
           page: safePage,
           pageSize: safePageSize,
           totalPages,
-          };
-
+        };
       });
       return res.json(payload);
     } catch (error) {
