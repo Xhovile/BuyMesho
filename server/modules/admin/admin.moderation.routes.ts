@@ -7,6 +7,7 @@ import { ADMIN_ACTION_TYPES, ADMIN_TARGET_TYPES, type AdminActionType, type Admi
 import { notifySellerApplicationApproved } from "../notifications/seller-application-approved.notification.js";
 import { notifySellerApplicationRejected } from "../notifications/seller-application-rejected.notification.js";
 import { invalidatePublicListingsCache } from "../lib/publicListingsCache.js";
+import { invalidatePublicListingsCache } from "../lib/publicListingsCache.js";
 
 type AsyncRouteHandler = (
   req: Request,
@@ -390,6 +391,7 @@ export function createAdminModerationRouter(params: {
 
       db.prepare("UPDATE listings SET is_hidden = 1 WHERE id = ?").run(id);
       invalidatePublicListingsCache();
+      invalidatePublicListingsCache();
 
       logAdminAction({
         admin_uid: requesterUid,
@@ -430,6 +432,7 @@ export function createAdminModerationRouter(params: {
       }
 
       db.prepare("UPDATE listings SET is_hidden = 0 WHERE id = ?").run(id);
+      invalidatePublicListingsCache();
       invalidatePublicListingsCache();
 
       logAdminAction({
