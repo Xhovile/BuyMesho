@@ -4,10 +4,7 @@ import { getCloudinaryUserMessage, uploadBufferToCloudinary } from "../lib/cloud
 import { parseSpecFilters, serializeListingRow } from "../lib/listingHelpers.js";
 import { getFirebaseAdmin } from "../auth/firebaseAdmin.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import {
-  getCachedPublicListings,
-  getPublicListingsCacheKey,
-} from "../lib/publicListingsCache.js";
+import { getCachedPublicListings } from "../lib/publicListingsCache.js";
 
 export type MarketplaceRouteDeps = {
   db: any;
@@ -220,7 +217,7 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
     const safePage = Math.max(1, Number(page) || 1);
     const safePageSize = Math.max(1, Math.min(48, Number(pageSize) || 12));
     const offset = (safePage - 1) * safePageSize;
-    const cacheKey = getPublicListingsCacheKey(req.originalUrl);
+    const cacheKey = req.originalUrl;
 
     try {
       const payload = await getCachedPublicListings(cacheKey, async () => {
