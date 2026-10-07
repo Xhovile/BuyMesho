@@ -285,32 +285,39 @@ export function createEventTicketPdf(data: TicketPdfData): Buffer {
     }
   };
 
-  field(34, 640, "Event", data.eventTitle, 240, 12);
-  field(310, 640, "Organizer", data.organizer, 250, 11.5);
-  field(34, 590, "Date", data.eventDate, 240);
-  field(310, 590, "Time", data.startTime, 250);
-  field(34, 540, "Venue", [data.venue, data.location].filter(Boolean).join(" | "), 240);
-  field(310, 540, "Ticket type", data.ticketType, 250);
-  field(34, 490, "Holder", data.holderName, 240);
-  field(310, 490, "Amount", data.amount, 250);
-  field(34, 440, "Reference", data.orderId, 527, 10.5);
+  addText(commands, 34, 644, 8.5, "EVENT DETAILS", true, "0.69 0.10 0.16");
+  addLine(commands, 34, 636, 561);
+  field(34, 616, "Event", data.eventTitle, 240, 12);
+  field(310, 616, "Organizer", data.organizer, 250, 11.5);
+  field(34, 566, "Date", data.eventDate, 240);
+  field(310, 566, "Time", data.startTime, 250);
+  field(34, 516, "Venue", [data.venue, data.location].filter(Boolean).join(" | "), 240);
+  field(310, 516, "Ticket type", data.ticketType, 250);
+  field(34, 466, "Amount", data.amount, 240);
+  field(310, 466, "Ticket ID", data.ticketId, 250, 10.5);
 
-  addRect(commands, 34, 130, 527, 260, 248, 248, 249);
-  addRect(commands, 34, 376, 527, 14, 175, 25, 42);
-  addText(commands, 52, 352, 8.5, "AUTHENTICITY CHECK");
-  addText(commands, 52, 330, 18, "Scan this code at the gate", true);
-  wrapText("Ticket Validator verifies this BuyMesho-issued credential before admission.", 44).slice(0, 3).forEach((line, index) => addText(commands, 52, 306 - index * 14, 10, line));
-  addText(commands, 52, 266, 9, "BUYMESHO VERIFIED", true);
-  addText(commands, 52, 250, 8.5, "The QR contains the signed ticket credential.", false, "0.35 0.35 0.38");
+  addText(commands, 34, 430, 8.5, "HOLDER DETAILS", true, "0.69 0.10 0.16");
+  addLine(commands, 34, 422, 561);
+  field(34, 402, "Name", data.holderName, 240);
+  field(310, 402, "Email", data.holderEmail, 250, 10.5);
+  field(34, 352, "Phone", data.holderPhone, 240);
+
+  addRect(commands, 34, 106, 527, 224, 248, 248, 249);
+  addRect(commands, 34, 316, 527, 14, 175, 25, 42);
+  addText(commands, 52, 292, 8.5, "AUTHENTICITY CHECK");
+  addText(commands, 52, 270, 18, "Scan this code at the gate", true);
+  wrapText("Ticket Validator verifies this BuyMesho-issued credential before admission.", 44).slice(0, 3).forEach((line, index) => addText(commands, 52, 246 - index * 14, 10, line));
+  addText(commands, 52, 196, 9, "BUYMESHO VERIFIED", true);
+  addText(commands, 52, 180, 8.5, "The QR contains the signed ticket credential.", false, "0.35 0.35 0.38");
 
   const qrBoxX = 325;
-  const qrBoxY = 145;
+  const qrBoxY = 116;
   addRect(commands, qrBoxX, qrBoxY, 204, 204, 255, 255, 255);
   drawTicketCodeMatrix(commands, data.qrPayload, qrBoxX + 10, qrBoxY + 10, 184);
   addText(commands, qrBoxX + 10, qrBoxY - 13, 8.5, "Scan to verify admission.");
-  addText(commands, 34, 108, 8.5, "This ticket grants admission only when its credential and ticket status are accepted.");
-  addText(commands, 34, 82, 8.5, "Keep the QR fully visible when scanning.");
-  addText(commands, 34, 52, 7.8, "BuyMesho | Official event access");
+  addText(commands, 34, 80, 8.5, "This ticket grants admission only when its credential and ticket status are accepted.");
+  addText(commands, 34, 54, 8.5, "Keep the QR fully visible when scanning.");
+  addText(commands, 34, 30, 7.8, "BuyMesho | Official event access");
 
   const content = Buffer.from(commands.join("\n"), "ascii");
   const objects: Buffer[] = [];
