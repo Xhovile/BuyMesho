@@ -4,6 +4,7 @@ import { deleteCloudinaryAsset } from "../lib/cloudinaryUpload.js";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { deleteAllPasskeysForUser, deletePasskeyCeremoniesForUser } from "./passkeyStore.js";
 import { disableTotpEnrollment } from "../../src/server/totpStore.js";
+import { invalidatePublicListingsCache } from "../lib/publicListingsCache.js";
 
 type VerifiedRequestUser = {
   uid: string;
@@ -216,6 +217,7 @@ function cleanupUserRecords(userId: string) {
     db.prepare(`DELETE FROM listing_reviews WHERE seller_uid = ? OR reviewer_uid = ?`).run(uid, uid);
     db.prepare(`DELETE FROM seller_applications WHERE applicant_uid = ?`).run(uid);
     db.prepare(`DELETE FROM listings WHERE seller_uid = ?`).run(uid);
+    invalidatePublicListingsCache();
     db.prepare(`DELETE FROM sellers WHERE uid = ?`).run(uid);
   });
 

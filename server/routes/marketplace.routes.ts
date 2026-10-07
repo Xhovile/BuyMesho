@@ -4,6 +4,7 @@ import { getCloudinaryUserMessage, uploadBufferToCloudinary } from "../lib/cloud
 import { parseSpecFilters, serializeListingRow } from "../lib/listingHelpers.js";
 import { getFirebaseAdmin } from "../auth/firebaseAdmin.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { getCachedPublicListings } from "../lib/publicListingsCache.js";
 
 export type MarketplaceRouteDeps = {
   db: any;
@@ -85,7 +86,7 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
     }
   });
 
-  app.get("/api/listings", (req, res) => {
+  app.get("/api/listings", async (req, res) => {
     const {
       category,
       university,
@@ -218,32 +219,36 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
     const offset = (safePage - 1) * safePageSize;
 
     try {
-      const totalRow = db
-        .prepare(`SELECT COUNT(*) as total ${baseQuery}`)
-        .get(...params) as { total: number };
+      const payload = await getCachedPublicListings(req.originalUrl, async () => {
+        const totalRow = db
+          .prepare(`SELECT COUNT(*) as total ${baseQuery}`)
+          .get(...params) as { total: number };
 
-      const rows = db
-        .prepare(`
-          SELECT l.*, s.business_name, s.business_logo, s.is_verified
-          ${baseQuery}
-          ${orderBy}
-          LIMIT ? OFFSET ?
-        `)
-        .all(...params, safePageSize, offset);
+        const rows = db
+          .prepare(`
+            SELECT l.*, s.business_name, s.business_logo, s.is_verified
+            ${baseQuery}
+            ${orderBy}
+            LIMIT ? OFFSET ?
+          `)
+          .all(...params, safePageSize, offset);
 
-      const total = totalRow?.total ?? 0;
-      const totalPages = Math.max(1, Math.ceil(total / safePageSize));
+        const total = totalRow?.total ?? 0;
+        const totalPages = Math.max(1, Math.ceil(total / safePageSize));
 
-      res.json({
-        items: rows.map((l: any) => serializeListingRow(l)),
-        total,
-        page: safePage,
-        pageSize: safePageSize,
-        totalPages,
+        return {
+          items: rows.map((l: any) => serializeListingRow(l)),
+          total,
+          page: safePage,
+          pageSize: safePageSize,
+          totalPages,
+        };
       });
+
+      return res.json(payload);
     } catch (error) {
       console.error("Fetch listings error:", error);
-      res.status(500).json({ error: "Failed to load listings" });
+      return res.status(500).json({ error: "Failed to load listings" });
     }
   });
 
