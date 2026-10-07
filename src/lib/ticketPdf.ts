@@ -306,43 +306,46 @@ async function createPdfBytes(title: string, lines: PdfTicketLine[], options: Ti
   addText(commands, 50, 718, 26, title, BRAND_CHARCOAL);
   addText(commands, 50, 696, 10.5, "Event admission credential", BRAND_MID);
 
-  addRect(commands, 50, 652, 495, 28, { r: 249, g: 246, b: 246 });
-  addText(commands, 62, 664, 9.5, `Ticket ID: ${ticketCode}`, BRAND_CHARCOAL);
-  addText(commands, 382, 664, 9.5, `STATUS: ${getLineValue(lines, "Status", "PAID").toUpperCase()}`, BRAND_RED);
+  addText(commands, 50, 665, 8.5, "EVENT DETAILS", BRAND_RED);
+  addRect(commands, 50, 656, 495, 1, BRAND_LIGHT);
 
   const field = (x: number, y: number, label: string, value: string, width: number, valueSize = 11.5) => {
     addText(commands, x, y, 7.5, label.toUpperCase(), BRAND_MID);
     addWrappedText(commands, x, y - 13, valueSize, value, BRAND_CHARCOAL, width, valueSize + 1.6);
   };
 
-  field(50, 625, "Event", getLineValue(lines, "Event"), 225, 13);
-  field(315, 625, "Organizer", getLineValue(lines, "Organizer", "Event Manager"), 230, 11.5);
-  field(50, 575, "Date", getLineValue(lines, "Date"), 225);
-  field(315, 575, "Time", getLineValue(lines, "Time"), 230);
-  field(50, 525, "Venue", getLineValue(lines, "Venue"), 225);
-  field(315, 525, "Ticket type", getLineValue(lines, "Ticket type", "General Admission"), 230);
-  field(50, 475, "Holder", getLineValue(lines, "Holder", "Verified ticket holder"), 225);
-  field(315, 475, "Amount", getLineValue(lines, "Amount"), 230);
-  field(50, 425, "Payment reference", getLineValue(lines, "Reference"), 495, 10);
+  field(50, 635, "Event", getLineValue(lines, "Event"), 225, 13);
+  field(315, 635, "Organizer", getLineValue(lines, "Organizer", "Event Manager"), 230, 11.5);
+  field(50, 585, "Date", getLineValue(lines, "Date"), 225);
+  field(315, 585, "Time", getLineValue(lines, "Time"), 230);
+  field(50, 535, "Venue", getLineValue(lines, "Venue"), 225);
+  field(315, 535, "Ticket type", getLineValue(lines, "Ticket type", "General Admission"), 230);
+  field(50, 485, "Amount", getLineValue(lines, "Amount"), 225);
+  field(315, 485, "Ticket ID", ticketCode, 230, 10.5);
 
-  // Separate the verification panel visually like a real admission credential.
-  addRect(commands, 50, 136, 495, 248, { r: 248, g: 248, b: 249 });
-  addRect(commands, 50, 370, 495, 14, BRAND_RED);
-  addText(commands, 68, 346, 8.5, "AUTHENTICITY CHECK", BRAND_RED);
-  addText(commands, 68, 326, 17, "Scan this code at the gate", BRAND_CHARCOAL);
-  addWrappedText(commands, 68, 303, 10.5, "The QR code contains the BuyMesho-issued ticket credential. Ticket Validator checks the credential before admission.", BRAND_MID, 215, 14);
+  addText(commands, 50, 445, 8.5, "HOLDER DETAILS", BRAND_RED);
+  addRect(commands, 50, 436, 495, 1, BRAND_LIGHT);
+  field(50, 415, "Name", getLineValue(lines, "Holder", "Verified ticket holder"), 225);
+  field(315, 415, "Email", getLineValue(lines, "Email", "—"), 230, 10.5);
+  field(50, 365, "Phone", getLineValue(lines, "Phone", "—"), 225);
+
+  // Keep the verification panel prominent while leaving the event and holder credentials easy to read.
+  addRect(commands, 50, 105, 495, 230, BRAND_LIGHT);
+  addRect(commands, 50, 321, 495, 14, BRAND_RED);
+  addText(commands, 68, 297, 8.5, "AUTHENTICITY CHECK", BRAND_RED);
+  addText(commands, 68, 277, 17, "Scan this code at the gate", BRAND_CHARCOAL);
+  addWrappedText(commands, 68, 254, 10.5, "The QR code contains the BuyMesho-issued ticket credential. Ticket Validator checks the credential before admission.", BRAND_MID, 215, 14);
 
   const qrBoxX = 328;
-  const qrBoxY = 160;
-  const qrSize = 184;
-  addRect(commands, qrBoxX, qrBoxY, 204, 204, { r: 255, g: 255, b: 255 });
+  const qrBoxY = 118;
+  const qrSize = 170;
+  addRect(commands, qrBoxX, qrBoxY, 190, 190, { r: 255, g: 255, b: 255 });
   commands.push(...drawTicketCodeMatrix(qrPayload, qrBoxX + 10, qrBoxY + 10, qrSize));
-  addText(commands, qrBoxX + 10, qrBoxY - 13, 8.5, "Ticket credential", BRAND_MID);
-  addText(commands, qrBoxX + 10, qrBoxY - 28, 8.5, "Keep the QR fully visible when scanning.", BRAND_MUTED);
+  addText(commands, qrBoxX + 10, qrBoxY - 13, 8.5, "Scan to verify admission.", BRAND_MID);
 
-  addRect(commands, 68, 222, 220, 42, { r: 255, g: 255, b: 255 });
-  addText(commands, 82, 246, 9, "BUYMESHO VERIFIED", BRAND_CHARCOAL);
-  addText(commands, 82, 230, 8.5, "Authenticity is checked digitally.", BRAND_MID);
+  addRect(commands, 68, 181, 220, 42, { r: 255, g: 255, b: 255 });
+  addText(commands, 82, 207, 9, "BUYMESHO VERIFIED", BRAND_CHARCOAL);
+  addText(commands, 82, 191, 8.5, "The QR contains the signed ticket credential.", BRAND_MID);
 
   addRect(commands, 50, 116, 495, 1.2, { r: 224, g: 224, b: 228 });
   addText(commands, 50, 94, 8.5, "This ticket grants admission only when its credential and ticket status are accepted by the event validator.", BRAND_MID);
