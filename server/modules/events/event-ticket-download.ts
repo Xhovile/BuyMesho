@@ -1,4 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import qrcode from "../../../src/lib/qrcode-generator.js";
 import { createTicketCredential } from "./ticketCredential.js";
 
@@ -109,6 +111,85 @@ function addText(
   commands.push("ET");
 }
 
+function addRoundedRect(
+  commands: string[],
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+  red: number,
+  green: number,
+  blue: number,
+) {
+  const r = Math.min(radius, width / 2, height / 2);
+  const k = 0.5522848;
+  addRect(commands, x + r, y, width - 2 * r, height, red, green, blue);
+  addRect(commands, x, y + r, width, height - 2 * r, red, green, blue);
+  commands.push((red / 255).toFixed(3) + " " + (green / 255).toFixed(3) + " " + (blue / 255).toFixed(3) + " rg");
+  commands.push(
+    "M " + (x + r).toFixed(2) + " " + y.toFixed(2) +
+    " L " + (x + width - r).toFixed(2) + " " + y.toFixed(2) +
+    " C " + (x + width - r + r * k).toFixed(2) + " " + y.toFixed(2) +
+    " " + (x + width).toFixed(2) + " " + (y + r - r * k).toFixed(2) +
+    " " + (x + width).toFixed(2) + " " + (y + r).toFixed(2) +
+    " L " + (x + width).toFixed(2) + " " + (y + height - r).toFixed(2) +
+    " C " + (x + width).toFixed(2) + " " + (y + height - r + r * k).toFixed(2) +
+    " " + (x + width - r + r * k).toFixed(2) + " " + (y + height).toFixed(2) +
+    " " + (x + width - r).toFixed(2) + " " + (y + height).toFixed(2) +
+    " L " + (x + r).toFixed(2) + " " + (y + height).toFixed(2) +
+    " C " + (x + r - r * k).toFixed(2) + " " + (y + height).toFixed(2) +
+    " " + x.toFixed(2) + " " + (y + height - r + r * k).toFixed(2) +
+    " " + x.toFixed(2) + " " + (y + height - r).toFixed(2) +
+    " L " + x.toFixed(2) + " " + (y + r).toFixed(2) +
+    " C " + x.toFixed(2) + " " + (y + r - r * k).toFixed(2) +
+    " " + (x + r - r * k).toFixed(2) + " " + y.toFixed(2) +
+    " " + (x + r).toFixed(2) + " " + y.toFixed(2) +
+    " h f"
+  );
+}
+
+function drawBuyMeshoLogo(commands: string[], x: number, y: number, size: number) {
+  const svgPath = resolve(process.cwd(), "photos", "LOGO.svg");
+  const svg = readFileSync(svgPath, "utf8");
+  const match = svg.match(/<path[^>]*\\bd="([^"]+)"/s);
+  if (!match?.[1]) throw new Error("BuyMesho logo SVG path is unavailable.");
+
+  addRoundedRect(commands, x, y, size, size, size * 0.195, 224, 1, 6);
+
+  const scale = size / 1536;
+  const segments = match[1].match(/[MLZ][^MLZ]*/g) ?? [];
+  commands.push("1 1 1 rg");
+  for (const segment of segments) {
+    const command = segment[0];
+    if (command === "Z") {
+      commands.push("h f");
+      continue;
+    }
+
+    const values = segment
+      .slice(1)
+      .match(/-?\\d+(?:\\.\\d+)?/g)
+      ?.map(Number) ?? [];
+    if (values.length < 2) continue;
+
+    const pairs = [];
+    for (let i = 0; i + 1 < values.length; i += 2) {
+      const px = x + values[i] * scale;
+      const py = y + size - values[i + 1] * scale;
+      pairs.push([px, py]);
+    }
+    if (!pairs.length) continue;
+
+    const [firstX, firstY] = pairs[0];
+    commands.push(command === "M" ? firstX.toFixed(2) + " " + firstY.toFixed(2) + " m" : firstX.toFixed(2) + " " + firstY.toFixed(2) + " l");
+    for (const [px, py] of pairs.slice(1)) {
+      commands.push(px.toFixed(2) + " " + py.toFixed(2) + " l");
+    }
+    commands.push(command === "M" ? "f" : "f");
+  }
+}
+
 function addLine(commands: string[], x1: number, y: number, x2: number) {
   commands.push("0.86 0.86 0.88 RG");
   commands.push("1 w");
@@ -183,17 +264,16 @@ export function createEventTicketPdf(data: TicketPdfData): Buffer {
   commands.push("0.69 0.10 0.16 rg");
   commands.push("0 748 595 12 re f");
 
-  addText(commands, 34, 795, 22, "BuyMesho", true, "1 1 1");
-  addText(commands, 34, 774, 9, "OFFICIAL EVENT TICKET", false, "1 1 1");
+  // Use the same SVG logo already used by the BuyMesho app.
+  drawBuyMeshoLogo(commands, 34, 772, 42);
+  addText(commands, 88, 795, 22, "BuyMesho", true, "1 1 1");
+  addText(commands, 88, 774, 9, "OFFICIAL EVENT TICKET", false, "1 1 1");
   addText(commands, 395, 795, 9, "VERIFIED EVENT ACCESS", true, "1 1 1");
   addText(commands, 395, 777, 8, "DIGITALLY ISSUED", false, "0.75 0.75 0.78");
 
   addText(commands, 34, 710, 27, data.eventTitle, true);
   addText(commands, 34, 689, 11, "Event admission credential");
-
-  addRect(commands, 34, 646, 527, 34, 249, 246, 246);
-  addText(commands, 48, 659, 9, "Ticket ID: " + data.ticketId, true);
-  addText(commands, 402, 659, 9, ("STATUS: " + (data.status || "Paid")).toUpperCase());
+  addLine(commands, 34, 665, 561);
 
   const field = (x: number, y: number, label: string, value: string, width = 240, valueSize = 11.5) => {
     addText(commands, x, y, 7.5, label.toUpperCase());
@@ -205,34 +285,32 @@ export function createEventTicketPdf(data: TicketPdfData): Buffer {
     }
   };
 
-  field(34, 620, "Event", data.eventTitle, 240, 12);
-  field(310, 620, "Organizer", data.organizer, 250, 11.5);
-  field(34, 570, "Date", data.eventDate, 240);
-  field(310, 570, "Time", data.startTime, 250);
-  field(34, 520, "Venue", [data.venue, data.location].filter(Boolean).join(" | "), 240);
-  field(310, 520, "Ticket type", data.ticketType, 250);
-  field(34, 470, "Holder", data.holderName, 240);
-  field(310, 470, "Amount", data.amount, 250);
-  field(34, 420, "Reference", data.orderId, 527, 10.5);
+  field(34, 640, "Event", data.eventTitle, 240, 12);
+  field(310, 640, "Organizer", data.organizer, 250, 11.5);
+  field(34, 590, "Date", data.eventDate, 240);
+  field(310, 590, "Time", data.startTime, 250);
+  field(34, 540, "Venue", [data.venue, data.location].filter(Boolean).join(" | "), 240);
+  field(310, 540, "Ticket type", data.ticketType, 250);
+  field(34, 490, "Holder", data.holderName, 240);
+  field(310, 490, "Amount", data.amount, 250);
+  field(34, 440, "Reference", data.orderId, 527, 10.5);
 
-  addRect(commands, 34, 130, 527, 248, 248, 248, 249);
-  addRect(commands, 34, 364, 527, 14, 175, 25, 42);
-  addText(commands, 52, 340, 8.5, "AUTHENTICITY CHECK");
-  addText(commands, 52, 318, 18, "Scan this code at the gate", true);
-  addText(commands, 52, 294, 10, "Ticket Validator verifies this BuyMesho-issued credential before admission.");
-  addText(commands, 52, 270, 10, "Credential: BM1 | Issuer: BuyMesho");
+  addRect(commands, 34, 130, 527, 260, 248, 248, 249);
+  addRect(commands, 34, 376, 527, 14, 175, 25, 42);
+  addText(commands, 52, 352, 8.5, "AUTHENTICITY CHECK");
+  addText(commands, 52, 330, 18, "Scan this code at the gate", true);
+  addWrappedText(commands, 52, 306, 10, "Ticket Validator verifies this BuyMesho-issued credential before admission.", 250, 14);
+  addText(commands, 52, 266, 9, "BUYMESHO VERIFIED", true);
+  addText(commands, 52, 250, 8.5, "The QR contains the signed ticket credential.", false, "0.35 0.35 0.38");
 
   const qrBoxX = 325;
-  const qrBoxY = 155;
+  const qrBoxY = 145;
   addRect(commands, qrBoxX, qrBoxY, 204, 204, 255, 255, 255);
   drawTicketCodeMatrix(commands, data.qrPayload, qrBoxX + 10, qrBoxY + 10, 184);
-  addText(commands, 52, 226, 8.5, "BUYMESHO VERIFIED", true);
-  addText(commands, 52, 210, 8.5, "Authenticity is checked digitally.");
-
-  addLine(commands, 34, 110, 561);
-  addText(commands, 34, 88, 8.5, "This ticket grants admission only when its credential and ticket status are accepted.");
-  addText(commands, 34, 58, 8.5, "Keep the QR fully visible when scanning.");
-  addText(commands, 34, 36, 7.8, "BuyMesho | Official event access");
+  addText(commands, qrBoxX + 10, qrBoxY - 13, 8.5, "Scan to verify admission.");
+  addText(commands, 34, 108, 8.5, "This ticket grants admission only when its credential and ticket status are accepted.");
+  addText(commands, 34, 82, 8.5, "Keep the QR fully visible when scanning.");
+  addText(commands, 34, 52, 7.8, "BuyMesho | Official event access");
 
   const content = Buffer.from(commands.join("\n"), "ascii");
   const objects: Buffer[] = [];
@@ -266,6 +344,7 @@ export function createEventTicketPdf(data: TicketPdfData): Buffer {
   xref += "trailer\n<< /Size " + (objects.length + 1) + " /Root 1 0 R >>\nstartxref\n" + xrefOffset + "\n%%EOF";
   return Buffer.concat([output, Buffer.from(xref, "ascii")]);
 }
+
 export function createEventTicketDownloadResponse(
   ticketRow: Record<string, unknown>,
   res: {
