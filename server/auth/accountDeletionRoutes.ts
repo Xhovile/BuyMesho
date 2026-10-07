@@ -4,6 +4,7 @@ import { deleteCloudinaryAsset } from "../lib/cloudinaryUpload.js";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { deleteAllPasskeysForUser, deletePasskeyCeremoniesForUser } from "./passkeyStore.js";
 import { disableTotpEnrollment } from "../../src/server/totpStore.js";
+import { invalidatePublicListingsCache } from "../lib/publicListingsCache.js";
 
 type VerifiedRequestUser = {
   uid: string;
