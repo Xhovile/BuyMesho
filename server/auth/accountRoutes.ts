@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { requireFirebaseUser } from "../middleware/requireFirebaseUser.js";
 import { postgresDb as db } from "../db.js";
+import { invalidatePublicSeller } from "../lib/publicSellerCache.js";
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.accountRoutesInstalled");
 type UserType = "student" | "public";
@@ -98,6 +99,7 @@ export function registerAccountRoutes(app: Express) {
           }
           params.push(uid);
           db.prepare(`UPDATE sellers SET ${updates.join(", ")} WHERE uid = ?`).run(...params);
+          void invalidatePublicSeller(uid);
         } catch (error) {
           console.warn("Failed to sync account fields to seller record", error);
         }

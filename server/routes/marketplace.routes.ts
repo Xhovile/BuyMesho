@@ -5,6 +5,7 @@ import { parseSpecFilters, serializeListingRow } from "../lib/listingHelpers.js"
 import { getFirebaseAdmin } from "../auth/firebaseAdmin.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { getCachedPublicListings } from "../lib/publicListingsCache.js";
+import { invalidatePublicSeller } from "../lib/publicSellerCache.js";
 
 export type MarketplaceRouteDeps = {
   db: any;
@@ -384,6 +385,8 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
         incomingSeller
       );
 
+      void invalidatePublicSeller(uid);
+
       res.json({ success: true });
     } catch (error) {
       console.error("Seller sync error:", error);
@@ -470,6 +473,8 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
         recoveredIsSeller ? 1 : 0,
         nowIso
       );
+
+      void invalidatePublicSeller(uid);
 
       const adminApp = getFirebaseAdmin();
       await adminApp.firestore().collection("users").doc(uid).set(fallbackProfile, {
