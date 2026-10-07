@@ -350,9 +350,9 @@ async function createPdfBytes(title: string, lines: PdfTicketLine[], options: Ti
   addRect(commands, 50, 84, 495, 1.2, { r: 224, g: 224, b: 228 });
   addText(commands, 50, 64, 8.5, "This ticket grants admission only when its credential and ticket status are accepted by the event validator.", BRAND_MID);
 
-  addRect(commands, 50, 46, 495, 1.2, mixColors(BRAND_RED, BRAND_CHARCOAL, 0.55));
-  addBrandWordmark(commands, 50, 34, 9, brandName);
-  addText(commands, 50, 21, 7.4, "Official event access | Keep this ticket available for entry verification.", BRAND_MUTED);
+  addRect(commands, 50, 58, 495, 1.2, mixColors(BRAND_RED, BRAND_CHARCOAL, 0.55));
+  addBrandWordmark(commands, 50, 43, 9, brandName);
+  addText(commands, 50, 31, 7.2, "Official event access | Keep this ticket available for entry verification.", BRAND_MUTED);
   const contentStream = commands.join("\n");
   const contentBytes = encodeUtf8(contentStream);
 
