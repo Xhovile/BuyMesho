@@ -6,7 +6,7 @@ import { adminApiLimiter } from "./admin.rateLimit.js";
 import { ADMIN_ACTION_TYPES, ADMIN_TARGET_TYPES, type AdminActionType, type AdminTargetType } from "../../../src/modules/admin/shared/adminAuditTypes.js";
 import { notifySellerApplicationApproved } from "../notifications/seller-application-approved.notification.js";
 import { notifySellerApplicationRejected } from "../notifications/seller-application-rejected.notification.js";
-import { invalidatePublicListingsCache } from "../lib/publicListingsCache.js";
+import { invalidatePublicListingsCache } from "../../lib/publicListingsCache.js";
 
 type AsyncRouteHandler = (
   req: Request,
@@ -479,7 +479,7 @@ export function createAdminModerationRouter(params: {
 
       return res.json({ success: true });
     } catch (error) {
-      console.error("Suspend seller error:", error);
+      console.error("Unsuspend seller error:", error);
       return res.status(500).json({ error: "Failed to suspend seller" });
     }
   });
