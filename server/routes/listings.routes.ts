@@ -253,7 +253,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
         .get(insert.lastInsertRowid) as any;
 
       invalidatePublicListingsCache();
-      void invalidatePublicSellerListingData(${"uid"});
+      void invalidatePublicSellerListingData(uid);
 
       return res.status(201).json({
         success: true,
@@ -461,7 +461,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
         .get(listingId) as any;
 
       invalidatePublicListingsCache();
-      void invalidatePublicSellerListingData(${"uid"});
+      void invalidatePublicSellerListingData(uid);
 
       return res.json({
         success: true,
@@ -485,7 +485,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
     const status = normalizeString(req.body?.status).toLowerCase() === "sold" ? "sold" : "available";
     db.prepare("UPDATE listings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(status, listingId);
     invalidatePublicListingsCache();
-      void invalidatePublicSellerListingData(${"uid"});
+      void invalidatePublicSellerListingData(uid);
     return res.json({ success: true, listing: getSerializedListing(listingId) });
   });
 
@@ -515,7 +515,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       listingId
     );
     invalidatePublicListingsCache();
-      void invalidatePublicSellerListingData(${"uid"});
+      void invalidatePublicSellerListingData(uid);
     return res.json({ success: true, listing: getSerializedListing(listingId), available_quantity: nextAvailableQuantity });
   });
 
@@ -542,7 +542,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       listingId
     );
     invalidatePublicListingsCache();
-      void invalidatePublicSellerListingData(${"uid"});
+      void invalidatePublicSellerListingData(uid);
     return res.json({ success: true, listing: getSerializedListing(listingId), available_quantity: nextAvailableQuantity });
   });
 
@@ -556,7 +556,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
 
     db.prepare("UPDATE listings SET deleted_at = CURRENT_TIMESTAMP, deleted_by_uid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(req.user!.uid, listingId);
     invalidatePublicListingsCache();
-      void invalidatePublicSellerListingData(${"uid"});
+      void invalidatePublicSellerListingData(uid);
     return res.json({ success: true });
   });
 
