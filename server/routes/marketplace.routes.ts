@@ -220,33 +220,29 @@ export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDe
 
     try {
       const payload = await getCachedPublicListings(req.originalUrl, async () => {
-              const totalRow = db
-                .prepare(`SELECT COUNT(*) as total ${baseQuery}`)
-                .get(...params) as { total: number };
-        
-              const rows = db
-                .prepare(`
-                  SELECT l.*, s.business_name, s.business_logo, s.is_verified
-                  ${baseQuery}
-                  ${orderBy}
-                  LIMIT ? OFFSET ?
-                `)
-                .all(...params, safePageSize, offset);
-        
-              const total = totalRow?.total ?? 0;
-              const totalPages = Math.max(1, Math.ceil(total / safePageSize));
-        
-              res.json({
-                items: rows.map((l: any) => serializeListingRow(l)),
-                total,
-                page: safePage,
-                pageSize: safePageSize,
-                totalPages,
-              });
-            } catch (error) {
-              console.error("Fetch listings error:", error);
-              res.status(500).json({ error: "Failed to load listings" });
-            }
+        const totalRow = db
+          .prepare(`SELECT COUNT(*) as total ${baseQuery}`)
+          .get(...params) as { total: number };
+
+        const rows = db
+          .prepare(`
+            SELECT l.*, s.business_name, s.business_logo, s.is_verified
+            ${baseQuery}
+            ${orderBy}
+            LIMIT ? OFFSET ?
+          `)
+          .all(...params, safePageSize, offset);
+
+        const total = totalRow?.total ?? 0;
+        const totalPages = Math.max(1, Math.ceil(total / safePageSize));
+
+        return {
+          items: rows.map((l: any) => serializeListingRow(l)),
+          total,
+          page: safePage,
+          pageSize: safePageSize,
+          totalPages,
+        };
       });
 
       return res.json(payload);
