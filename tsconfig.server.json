@@ -17,7 +17,8 @@
   },
   "include": [
     "server.ts",
-    "server/**/*.ts"
+    "server/**/*.ts",
+    "src/lib/qrcode-generator.js"
   ],
   "exclude": [
     "node_modules",
