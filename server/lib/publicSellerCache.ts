@@ -85,6 +85,20 @@ export async function invalidatePublicSellerRatingSummary(uid: string): Promise<
   await publicSellerCache.delete(getPublicSellerRatingSummaryCacheKey(uid));
 }
 
+export async function invalidatePublicSellerListingData(uid: string): Promise<void> {
+  await Promise.all([
+    invalidatePublicSellerDirectory(),
+    invalidatePublicSellerListings(uid),
+  ]);
+}
+
+export async function invalidatePublicSellerRatingData(uid: string): Promise<void> {
+  await Promise.all([
+    invalidatePublicSellerDirectory(),
+    invalidatePublicSellerRatingSummary(uid),
+  ]);
+}
+
 export async function invalidatePublicSeller(uid: string): Promise<void> {
   await Promise.all([
     invalidatePublicSellerDirectory(),
