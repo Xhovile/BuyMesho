@@ -69,8 +69,14 @@ test("event ticket PDF generator returns a valid PDF document", () => {
   assert.match(pdf.toString("latin1"), /Campus Concert/);
   const pdfText = pdf.toString("latin1");
   assert.match(pdfText, /BM-4A02AFD21D/);
+  assert.match(pdfText, /Ticket ID/);
+  assert.match(pdfText, /EVENT DETAILS/);
+  assert.match(pdfText, /HOLDER DETAILS/);
+  assert.match(pdfText, /buyer@example.com/);
+  assert.match(pdfText, /0994123456/);
   assert.match(pdfText, /AUTHENTICITY CHECK/);
   assert.match(pdfText, /Area 2 \| Pa chigulumwa/);
+  assert.doesNotMatch(pdfText, /Reference/);
   assert.doesNotMatch(pdfText, /â|�/);
 });
 
