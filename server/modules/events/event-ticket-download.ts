@@ -152,7 +152,7 @@ function addRoundedRect(
 function drawBuyMeshoLogo(commands: string[], x: number, y: number, size: number) {
   const svgPath = resolve(process.cwd(), "photos", "LOGO.svg");
   const svg = readFileSync(svgPath, "utf8");
-  const match = svg.match(/<path[^>]*\\bd="([^"]+)"/s);
+  const match = svg.match(/<path[^>]*d="([^"]+)"/s);
   if (!match?.[1]) throw new Error("BuyMesho logo SVG path is unavailable.");
 
   addRoundedRect(commands, x, y, size, size, size * 0.195, 224, 1, 6);
@@ -169,7 +169,7 @@ function drawBuyMeshoLogo(commands: string[], x: number, y: number, size: number
 
     const values = segment
       .slice(1)
-      .match(/-?\\d+(?:\\.\\d+)?/g)
+      .match(/-?\d+(?:\.\d+)?/g)
       ?.map(Number) ?? [];
     if (values.length < 2) continue;
 
@@ -186,7 +186,7 @@ function drawBuyMeshoLogo(commands: string[], x: number, y: number, size: number
     for (const [px, py] of pairs.slice(1)) {
       commands.push(px.toFixed(2) + " " + py.toFixed(2) + " l");
     }
-    commands.push(command === "M" ? "f" : "f");
+
   }
 }
 
@@ -299,7 +299,7 @@ export function createEventTicketPdf(data: TicketPdfData): Buffer {
   addRect(commands, 34, 376, 527, 14, 175, 25, 42);
   addText(commands, 52, 352, 8.5, "AUTHENTICITY CHECK");
   addText(commands, 52, 330, 18, "Scan this code at the gate", true);
-  addWrappedText(commands, 52, 306, 10, "Ticket Validator verifies this BuyMesho-issued credential before admission.", 250, 14);
+  wrapText("Ticket Validator verifies this BuyMesho-issued credential before admission.", 44).slice(0, 3).forEach((line, index) => addText(commands, 52, 306 - index * 14, 10, line));
   addText(commands, 52, 266, 9, "BUYMESHO VERIFIED", true);
   addText(commands, 52, 250, 8.5, "The QR contains the signed ticket credential.", false, "0.35 0.35 0.38");
 
