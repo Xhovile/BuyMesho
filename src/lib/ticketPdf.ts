@@ -347,12 +347,12 @@ async function createPdfBytes(title: string, lines: PdfTicketLine[], options: Ti
   addText(commands, 82, 207, 9, "BUYMESHO VERIFIED", BRAND_CHARCOAL);
   addText(commands, 82, 191, 8.5, "The QR contains the signed ticket credential.", BRAND_MID);
 
-  addRect(commands, 50, 116, 495, 1.2, { r: 224, g: 224, b: 228 });
-  addText(commands, 50, 94, 8.5, "This ticket grants admission only when its credential and ticket status are accepted by the event validator.", BRAND_MID);
+  addRect(commands, 50, 84, 495, 1.2, { r: 224, g: 224, b: 228 });
+  addText(commands, 50, 64, 8.5, "This ticket grants admission only when its credential and ticket status are accepted by the event validator.", BRAND_MID);
 
-  addRect(commands, 50, 70, 495, 1.2, mixColors(BRAND_RED, BRAND_CHARCOAL, 0.55));
-  addBrandWordmark(commands, 50, 49, 9, brandName);
-  addText(commands, 50, 36, 7.8, "Official event access | Keep this ticket available for entry verification.", BRAND_MUTED);
+  addRect(commands, 50, 46, 495, 1.2, mixColors(BRAND_RED, BRAND_CHARCOAL, 0.55));
+  addBrandWordmark(commands, 50, 34, 9, brandName);
+  addText(commands, 50, 21, 7.4, "Official event access | Keep this ticket available for entry verification.", BRAND_MUTED);
   const contentStream = commands.join("\n");
   const contentBytes = encodeUtf8(contentStream);
 
