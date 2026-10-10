@@ -260,9 +260,14 @@ export function reconcileProviderCallbackFlow(
 
 export async function reconcilePendingPayoutStatusesFlow(
   repository: PayoutRepository,
-  input: { actorType?: 'admin' | 'system'; actorId?: string | null; limit?: number } = {},
+  input: { actorType?: 'admin' | 'system'; actorId?: string | null; limit?: number; ownerType?: 'seller' | 'event_creator' } = {},
 ) {
   const limit = Math.max(1, Math.min(50, Number(input.limit ?? 25) || 25));
+  const ownerScopeSql = input.ownerType === 'seller'
+    ? "AND COALESCE(owner_type, 'seller') = 'seller' AND event_id IS NULL"
+    : input.ownerType === 'event_creator'
+      ? "AND (owner_type = 'event_creator' OR event_id IS NOT NULL)"
+      : '';
   const rows = getPaymentDb().prepare(
     `SELECT id
      FROM payouts
@@ -273,6 +278,7 @@ export async function reconcilePendingPayoutStatusesFlow(
          OR EXISTS (SELECT 1 FROM payout_attempts pa WHERE pa.payout_id = payouts.id AND pa.provider_charge_id IS NOT NULL)
        )
        AND status IN ('queued', 'processing', 'pending', 'held', 'failed')
+       ${ownerScopeSql}
      ORDER BY updated_at ASC
      LIMIT ?`,
   ).all(limit) as Array<{ id: string }>;
