@@ -183,7 +183,7 @@ test('admin verification attempts record verified, failed, pending, and disabled
       const verifiedAt = destination.verified_at instanceof Date
         ? destination.verified_at.toISOString()
         : destination.verified_at;
-      assert.match(verifiedAt, /^\\d{4}-\\d{2}-\\d{2}T/);
+      assert.match(verifiedAt, /^\d{4}-\d{2}-\d{2}T/);
     } else {
       assert.equal(destination.verified_at, null);
     }
