@@ -75,13 +75,14 @@ function seedAdminPayout(prefix: string, payoutStatus = 'processing') {
   );
 
   db.prepare(`INSERT INTO seller_payout_accounts (
-    id, seller_uid, destination_type, provider_name, provider_ref_id,
+    id, seller_uid, owner_type, owner_uid, destination_type, provider_name, provider_ref_id,
     currency, account_name, mobile_encrypted, masked_account, destination_fingerprint,
     is_default, verification_status, verification_attempts, is_active, created_at, updated_at
-  ) VALUES (?, ?, 'mobile_money', 'Airtel Money', 'airtel-money',
+  ) VALUES (?, ?, 'seller', ?, 'mobile_money', 'Airtel Money', 'airtel-money',
     'MWK', 'Admin Test Seller', '265999111333', '****1333', ?,
     1, 'pending', 0, 1, ?, ?)`).run(
     destinationId,
+    sellerId,
     sellerId,
     `${prefix}-fingerprint`,
     now,
