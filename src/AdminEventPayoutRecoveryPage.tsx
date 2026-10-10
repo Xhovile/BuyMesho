@@ -2,12 +2,17 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AlertTriangle, Check, CheckCircle2, Clock3, Copy, CreditCard, RefreshCw, RotateCcw, Search, ShieldCheck, Wallet, XCircle } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
+import {
+  getLiabilityStatusGroup,
+  getPaymentStatusGroup,
+  getPayoutStatusGroup,
+  type LiabilityFilter,
+  type PaymentFilter,
+  type PayoutFilter,
+} from "./adminEventRecoveryFilters";
 
 type Row = Record<string, unknown>;
 type Detail = { payout?: Row; attempts?: Row[]; payoutEvents?: Row[]; refundLiabilities?: Row[]; rawData?: Record<string, unknown> };
-type PaymentFilter = "all" | "paid" | "pending" | "failed" | "other";
-type PayoutFilter = "all" | "paid" | "processing" | "failed" | "held_cancelled" | "other";
-type LiabilityFilter = "all" | "due" | "recovered" | "waived";
 const text = (value: unknown) => String(value ?? "").trim();
 const amount = (value: unknown, currency = "MWK") => `${currency} ${Number.isFinite(Number(value)) ? Number(value).toLocaleString() : "0"}`;
 const label = (value: unknown) => text(value).replaceAll("_", " ") || "—";
@@ -85,7 +90,7 @@ export default function AdminEventPayoutRecoveryPage() {
     [payouts, payoutFilter],
   );
   const visibleLiabilities = useMemo(
-    () => liabilities.filter((row) => liabilityFilter === "all" || text(row.status).toLowerCase() === liabilityFilter),
+    () => liabilities.filter((row) => liabilityFilter === "all" || getLiabilityStatusGroup(row.status) === liabilityFilter),
     [liabilities, liabilityFilter],
   );
 
@@ -258,9 +263,9 @@ export default function AdminEventPayoutRecoveryPage() {
           <section className="space-y-3">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <StatusFilterCard label="All liabilities" value={liabilities.length} active={liabilityFilter === "all"} onClick={() => setLiabilityFilter("all")} />
-              <StatusFilterCard label="Due" value={liabilities.filter((row) => text(row.status).toLowerCase() === "due").length} active={liabilityFilter === "due"} onClick={() => setLiabilityFilter("due")} />
-              <StatusFilterCard label="Recovered" value={liabilities.filter((row) => text(row.status).toLowerCase() === "recovered").length} active={liabilityFilter === "recovered"} onClick={() => setLiabilityFilter("recovered")} />
-              <StatusFilterCard label="Waived" value={liabilities.filter((row) => text(row.status).toLowerCase() === "waived").length} active={liabilityFilter === "waived"} onClick={() => setLiabilityFilter("waived")} />
+              <StatusFilterCard label="Due" value={liabilities.filter((row) => getLiabilityStatusGroup(row.status) === "due").length} active={liabilityFilter === "due"} onClick={() => setLiabilityFilter("due")} />
+              <StatusFilterCard label="Recovered" value={liabilities.filter((row) => getLiabilityStatusGroup(row.status) === "recovered").length} active={liabilityFilter === "recovered"} onClick={() => setLiabilityFilter("recovered")} />
+              <StatusFilterCard label="Waived" value={liabilities.filter((row) => getLiabilityStatusGroup(row.status) === "waived").length} active={liabilityFilter === "waived"} onClick={() => setLiabilityFilter("waived")} />
             </div>
           </section>
           <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
@@ -356,23 +361,6 @@ export default function AdminEventPayoutRecoveryPage() {
       </div> : null}
     </AdminWorkspaceLayout>
   );
-}
-
-function getPaymentStatusGroup(value: unknown): Exclude<PaymentFilter, "all"> {
-  const status = text(value).toLowerCase();
-  if (["paid", "captured", "successful", "completed"].includes(status)) return "paid";
-  if (["pending", "created", "initiated", "processing", "provider_pending"].includes(status)) return "pending";
-  if (["failed", "error", "rejected"].includes(status)) return "failed";
-  return "other";
-}
-
-function getPayoutStatusGroup(value: unknown): Exclude<PayoutFilter, "all"> {
-  const status = text(value).toLowerCase();
-  if (status === "paid") return "paid";
-  if (["processing", "pending", "pending_settlement", "eligible", "ready_for_payout", "queued", "initiated", "submitted", "provider_pending"].includes(status)) return "processing";
-  if (["failed", "error", "rejected"].includes(status)) return "failed";
-  if (["held", "cancelled", "canceled"].includes(status)) return "held_cancelled";
-  return "other";
 }
 
 function StatusFilterCard({ label: cardLabel, value, active, onClick }: { label: string; value: number; active: boolean; onClick: () => void }) {
