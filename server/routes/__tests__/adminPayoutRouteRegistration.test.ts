@@ -20,6 +20,8 @@ test("general payment admin router has no duplicate payout read or batch-reconci
   assert.equal(generalPaymentAdminRoutes.includes("router.post('/payouts/reconcile-pending'"), false);
   assert.ok(generalPaymentAdminRoutes.includes("router.post('/payouts/:payoutId/reconcile'"));
   assert.ok(generalPaymentAdminRoutes.includes("router.post('/payouts/destinations/:destinationId/verification'"));
+  assert.ok(generalPaymentAdminRoutes.includes("router.get('/payouts/:payoutId/adjustments'"));
+  assert.ok(generalPaymentAdminRoutes.includes("router.post('/payouts/:payoutId/adjustments'"));
 });
 
 test("dedicated payout mutation and adjustment routers remain registered", () => {
