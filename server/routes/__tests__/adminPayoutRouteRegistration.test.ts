@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 const routesIndex = readFileSync(resolve(process.cwd(), "server/routes/index.ts"), "utf8");
+const generalPaymentAdminRoutes = readFileSync(resolve(process.cwd(), "server/modules/payments/payment.admin.routes.ts"), "utf8");
 
 test("canonical Admin Payouts router is the only registered owner of list and detail GET routes", () => {
   assert.match(routesIndex, /import\s*\{\s*createPaymentAdminPayoutCanonicalRouter\s*\}\s*from/);
@@ -13,8 +14,17 @@ test("canonical Admin Payouts router is the only registered owner of list and de
   assert.doesNotMatch(routesIndex, /createPaymentAdminDetailRouter/);
 });
 
+test("general payment admin router has no duplicate payout read or batch-reconcile handlers", () => {
+  assert.equal(generalPaymentAdminRoutes.includes("router.get('/payouts',"), false);
+  assert.equal(generalPaymentAdminRoutes.includes("router.get('/payouts/summary'"), false);
+  assert.equal(generalPaymentAdminRoutes.includes("router.post('/payouts/reconcile-pending'"), false);
+  assert.ok(generalPaymentAdminRoutes.includes("router.post('/payouts/:payoutId/reconcile'"));
+  assert.ok(generalPaymentAdminRoutes.includes("router.post('/payouts/destinations/:destinationId/verification'"));
+});
+
 test("dedicated payout mutation and adjustment routers remain registered", () => {
   assert.match(routesIndex, /createPaymentAdminActionRouter\(requireAuth\)/);
   assert.match(routesIndex, /createPaymentAdminReconcileRouter\(requireAuth\)/);
   assert.match(routesIndex, /createPaymentAdminRouter\(requireAuth\)/);
+
 });
