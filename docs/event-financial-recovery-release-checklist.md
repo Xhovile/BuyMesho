@@ -43,9 +43,10 @@ Run write actions only in a test/staging environment or against an explicitly ap
 ## 5. Legacy payout route cleanup
 
 - [ ] Keep `createPaymentAdminPayoutCanonicalRouter` as the registered GET owner for `/api/admin/payouts`, `/api/admin/payouts/summary`, and `/api/admin/payouts/detail/:payoutId`.
-- [ ] Remove duplicate registrations for the old display/list/detail routers only after verifying their route paths are completely covered by the canonical router.
-- [ ] Retain distinct admin adjustment/action/reconciliation endpoints in their dedicated routers.
-- [ ] Search the repository for remaining imports and update any tests/docs affected by removing the duplicate handlers.
+- [ ] Keep batch reconciliation routes owned by `createPaymentAdminReconcileRouter`; per-payout reconciliation remains a distinct admin action.
+- [x] Remove duplicate display/list/detail routers and duplicate payout list, summary, and batch-reconcile handlers from the general payments router.
+- [ ] Retain distinct admin adjustment/action/reconciliation endpoints and verify their routes remain reachable.
+- [ ] Search the repository for remaining imports and stale references to deleted handlers.
 - [ ] Confirm routing and financial tests pass before merging.
 
 ## Verification record
