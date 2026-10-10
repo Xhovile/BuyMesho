@@ -11,8 +11,8 @@ The current implementation creates new seller payout destinations with `verifica
 ## Relevant surfaces
 
 - `server/routes/escrow/payoutRoutes.helpers.destinations.ts`
-- `server/modules/payments/payment.admin.payout.routes.ts`
-- `server/modules/payments/payment.admin.payout.canonical.routes.ts`
+- `server/modules/payments/payment.admin.payout.canonical.routes.ts` (canonical Admin Payouts read API)
+- `server/modules/payments/payment.admin.actions.routes.ts` and `server/modules/payments/payment.admin.reconcile.routes.ts` (payout mutations)
 - `src/AdminPayoutDestinationRequestsPage.tsx`
 - `src/AdminPayoutDetailDrawer.tsx`
 - `src/modules/payouts/api.ts`

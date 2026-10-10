@@ -2,6 +2,14 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AlertTriangle, Check, CheckCircle2, Clock3, Copy, CreditCard, RefreshCw, RotateCcw, Search, ShieldCheck, Wallet, XCircle } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
+import {
+  getLiabilityStatusGroup,
+  getPaymentStatusGroup,
+  getPayoutStatusGroup,
+  type LiabilityFilter,
+  type PaymentFilter,
+  type PayoutFilter,
+} from "./adminEventRecoveryFilters";
 
 type Row = Record<string, unknown>;
 type Detail = { payout?: Row; attempts?: Row[]; payoutEvents?: Row[]; refundLiabilities?: Row[]; rawData?: Record<string, unknown> };
@@ -15,6 +23,9 @@ export default function AdminEventPayoutRecoveryPage() {
   const [liabilities, setLiabilities] = useState<Row[]>([]);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
+  const [payoutFilter, setPayoutFilter] = useState<PayoutFilter>("all");
+  const [liabilityFilter, setLiabilityFilter] = useState<LiabilityFilter>("all");
   const [eventPayments, setEventPayments] = useState<Row[]>([]);
   const [selectedPayment, setSelectedPayment] = useState<Row | null>(null);
   const [paymentDetail, setPaymentDetail] = useState<{ rawData?: Record<string, unknown> } | null>(null);
@@ -69,6 +80,19 @@ export default function AdminEventPayoutRecoveryPage() {
     paid: payouts.filter((r) => text(r.status).toLowerCase() === "paid").length,
     due: liabilities.filter((r) => text(r.status).toLowerCase() === "due").length,
   }), [eventPayments, payouts, liabilities]);
+
+  const visibleEventPayments = useMemo(
+    () => eventPayments.filter((row) => paymentFilter === "all" || getPaymentStatusGroup(row.payment_status) === paymentFilter),
+    [eventPayments, paymentFilter],
+  );
+  const visiblePayouts = useMemo(
+    () => payouts.filter((row) => payoutFilter === "all" || getPayoutStatusGroup(row.status) === payoutFilter),
+    [payouts, payoutFilter],
+  );
+  const visibleLiabilities = useMemo(
+    () => liabilities.filter((row) => liabilityFilter === "all" || getLiabilityStatusGroup(row.status) === liabilityFilter),
+    [liabilities, liabilityFilter],
+  );
 
   const openEventPayment = async (row: Row) => {
     setSelectedPayment(row);
@@ -146,7 +170,6 @@ export default function AdminEventPayoutRecoveryPage() {
     } finally { setBusy(false); }
   };
 
-  const dueLiabilities = liabilities.filter((r) => text(r.status).toLowerCase() === "due");
 
   return (
     <AdminWorkspaceLayout
@@ -178,10 +201,19 @@ export default function AdminEventPayoutRecoveryPage() {
 
       {loading ? <div className="rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500">Loading event payout recovery data…</div> : (
         <>
+          <section className="space-y-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+              <StatusFilterCard label="All payments" value={eventPayments.length} active={paymentFilter === "all"} onClick={() => setPaymentFilter("all")} />
+              <StatusFilterCard label="Paid / captured" value={eventPayments.filter((row) => getPaymentStatusGroup(row.payment_status) === "paid").length} active={paymentFilter === "paid"} onClick={() => setPaymentFilter("paid")} />
+              <StatusFilterCard label="Pending" value={eventPayments.filter((row) => getPaymentStatusGroup(row.payment_status) === "pending").length} active={paymentFilter === "pending"} onClick={() => setPaymentFilter("pending")} />
+              <StatusFilterCard label="Failed" value={eventPayments.filter((row) => getPaymentStatusGroup(row.payment_status) === "failed").length} active={paymentFilter === "failed"} onClick={() => setPaymentFilter("failed")} />
+              <StatusFilterCard label="Other" value={eventPayments.filter((row) => getPaymentStatusGroup(row.payment_status) === "other").length} active={paymentFilter === "other"} onClick={() => setPaymentFilter("other")} />
+            </div>
+          </section>
           <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-            <div className="border-b border-zinc-200 p-5"><h2 className="text-lg font-black">Event payment activity</h2><p className="mt-1 text-sm text-zinc-500">Event-ticket payments, buyer identity, and payment state. Open a payment for full diagnostics.</p></div>
+            <div className="border-b border-zinc-200 p-5"><h2 className="text-lg font-black">Event payment activity</h2><p className="mt-1 text-sm text-zinc-500">Event-ticket payments, buyer identity, and payment state. Open a payment for full diagnostics.</p><p className="mt-2 text-xs font-semibold text-zinc-500">Showing {visibleEventPayments.length} of {eventPayments.length} matching payments</p></div>
             <div className="divide-y divide-zinc-100">
-              {eventPayments.length === 0 ? <p className="p-6 text-sm text-zinc-500">No event payments found.</p> : eventPayments.map((row) => {
+              {visibleEventPayments.length === 0 ? <p className="p-6 text-sm text-zinc-500">{eventPayments.length === 0 ? "No event payments found." : "No event payments match this status."}</p> : visibleEventPayments.map((row) => {
                 const status = text(row.payment_status).toLowerCase();
                 const buyerEmails = Array.isArray(row.buyer_emails) ? row.buyer_emails.map(text).filter(Boolean).join(", ") : text(row.buyer_emails);
                 const ticketIds = Array.isArray(row.ticket_ids) ? row.ticket_ids.map(text).filter(Boolean).join(", ") : text(row.ticket_ids);
@@ -202,10 +234,20 @@ export default function AdminEventPayoutRecoveryPage() {
             </div>
           </section>
 
+          <section className="space-y-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+              <StatusFilterCard label="All payouts" value={payouts.length} active={payoutFilter === "all"} onClick={() => setPayoutFilter("all")} />
+              <StatusFilterCard label="Paid" value={payouts.filter((row) => getPayoutStatusGroup(row.status) === "paid").length} active={payoutFilter === "paid"} onClick={() => setPayoutFilter("paid")} />
+              <StatusFilterCard label="Queued / processing" value={payouts.filter((row) => getPayoutStatusGroup(row.status) === "processing").length} active={payoutFilter === "processing"} onClick={() => setPayoutFilter("processing")} />
+              <StatusFilterCard label="Failed" value={payouts.filter((row) => getPayoutStatusGroup(row.status) === "failed").length} active={payoutFilter === "failed"} onClick={() => setPayoutFilter("failed")} />
+              <StatusFilterCard label="Held / cancelled" value={payouts.filter((row) => getPayoutStatusGroup(row.status) === "held_cancelled").length} active={payoutFilter === "held_cancelled"} onClick={() => setPayoutFilter("held_cancelled")} />
+              <StatusFilterCard label="Other" value={payouts.filter((row) => getPayoutStatusGroup(row.status) === "other").length} active={payoutFilter === "other"} onClick={() => setPayoutFilter("other")} />
+            </div>
+          </section>
           <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-            <div className="border-b border-zinc-200 p-5"><h2 className="text-lg font-black">Event payout queue</h2><p className="mt-1 text-sm text-zinc-500">Review provider state and refund-related payout blockers.</p></div>
+            <div className="border-b border-zinc-200 p-5"><h2 className="text-lg font-black">Event payout queue</h2><p className="mt-1 text-sm text-zinc-500">Review provider state and refund-related payout blockers.</p><p className="mt-2 text-xs font-semibold text-zinc-500">Showing {visiblePayouts.length} of {payouts.length} matching payouts</p></div>
             <div className="divide-y divide-zinc-100">
-              {payouts.length === 0 ? <p className="p-6 text-sm text-zinc-500">No event payouts found.</p> : payouts.map((row) => {
+              {visiblePayouts.length === 0 ? <p className="p-6 text-sm text-zinc-500">{payouts.length === 0 ? "No event payouts found." : "No event payouts match this status."}</p> : visiblePayouts.map((row) => {
                 const status = text(row.status).toLowerCase();
                 const liabilityStatus = text(row.liability_status).toLowerCase();
                 return <button key={text(row.id)} type="button" onClick={() => void openPayout(row)} className="block w-full p-5 text-left hover:bg-zinc-50">
@@ -218,15 +260,31 @@ export default function AdminEventPayoutRecoveryPage() {
             </div>
           </section>
 
+          <section className="space-y-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <StatusFilterCard label="All liabilities" value={liabilities.length} active={liabilityFilter === "all"} onClick={() => setLiabilityFilter("all")} />
+              <StatusFilterCard label="Due" value={liabilities.filter((row) => getLiabilityStatusGroup(row.status) === "due").length} active={liabilityFilter === "due"} onClick={() => setLiabilityFilter("due")} />
+              <StatusFilterCard label="Recovered" value={liabilities.filter((row) => getLiabilityStatusGroup(row.status) === "recovered").length} active={liabilityFilter === "recovered"} onClick={() => setLiabilityFilter("recovered")} />
+              <StatusFilterCard label="Waived" value={liabilities.filter((row) => getLiabilityStatusGroup(row.status) === "waived").length} active={liabilityFilter === "waived"} onClick={() => setLiabilityFilter("waived")} />
+            </div>
+          </section>
           <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-            <div className="border-b border-zinc-200 p-5"><h2 className="text-lg font-black">Outstanding refund liabilities</h2><p className="mt-1 text-sm text-zinc-500">Approved event refunds waiting for an actual recovery record.</p></div>
+            <div className="border-b border-zinc-200 p-5"><h2 className="text-lg font-black">Event refund liabilities</h2><p className="mt-1 text-sm text-zinc-500">Track approved event refunds from outstanding liability through recovery or waiver.</p><p className="mt-2 text-xs font-semibold text-zinc-500">Showing {visibleLiabilities.length} of {liabilities.length} matching liabilities</p></div>
             <div className="divide-y divide-zinc-100">
-              {dueLiabilities.length === 0 ? <p className="p-6 text-sm text-zinc-500">No outstanding event refund liabilities.</p> : dueLiabilities.map((row) =>
-                <div key={text(row.id)} className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
-                  <div><p className="text-sm font-black">{amount(row.amount, text(row.currency) || "MWK")}</p><p className="mt-1 text-xs font-semibold text-zinc-500">Order {text(row.order_id)} · Ticket {text(row.ticket_id) || "entire order"}</p><p className="mt-1 text-xs text-zinc-400">Due {text(row.due_at) || "—"} · {text(row.id)}</p></div>
-                  <button type="button" onClick={() => openRecovery(row)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white"><ShieldCheck className="h-4 w-4" />Record recovery</button>
-                </div>
-              )}
+              {visibleLiabilities.length === 0 ? <p className="p-6 text-sm text-zinc-500">{liabilities.length === 0 ? "No event refund liabilities found." : "No refund liabilities match this status."}</p> : visibleLiabilities.map((row) => {
+                const status = text(row.status).toLowerCase();
+                const orderId = text(row.order_id ?? row.orderId);
+                const ticketId = text(row.ticket_id ?? row.ticketId);
+                const dueAt = text(row.due_at ?? row.dueAt);
+                return <div key={text(row.id)} className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2"><p className="text-sm font-black">{amount(row.amount, text(row.currency) || "MWK")}</p><Badge tone={status === "due" ? "amber" : status === "waived" ? "red" : "green"}>{label(status)}</Badge></div>
+                    <p className="mt-1 break-all text-xs font-semibold text-zinc-500">Order {orderId || "—"} · Ticket {ticketId || "entire order"}</p>
+                    <p className="mt-1 break-all text-xs text-zinc-400">Due {dueAt || "—"} · {text(row.id)}</p>
+                  </div>
+                  {status === "due" ? <button type="button" onClick={() => openRecovery(row)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white"><ShieldCheck className="h-4 w-4" />Record recovery</button> : null}
+                </div>;
+              })}
             </div>
           </section>
         </>
@@ -303,6 +361,21 @@ export default function AdminEventPayoutRecoveryPage() {
       </div> : null}
     </AdminWorkspaceLayout>
   );
+}
+
+function StatusFilterCard({ label: cardLabel, value, active, onClick }: { label: string; value: number; active: boolean; onClick: () => void }) {
+  return <button
+    type="button"
+    onClick={onClick}
+    aria-pressed={active}
+    className={`group flex min-h-[5.25rem] flex-col justify-between rounded-2xl border px-3.5 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:px-4 ${active ? "border-zinc-950 bg-zinc-950 text-white shadow-zinc-950/15" : "border-zinc-200 bg-white text-zinc-900 hover:border-zinc-300"}`}
+  >
+    <div className="flex min-w-0 items-center justify-between gap-2">
+      <p className={`text-[10px] font-black uppercase tracking-[0.12em] sm:text-[11px] sm:tracking-[0.16em] ${active ? "text-zinc-300" : "text-zinc-500"}`}>{cardLabel}</p>
+      <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${active ? "bg-white/15 text-white" : "bg-zinc-100 text-zinc-500"}`}>{active ? "Active" : "Filter"}</span>
+    </div>
+    <p className="mt-3 text-2xl font-black leading-none tracking-tight sm:text-3xl">{value}</p>
+  </button>;
 }
 
 function Stat({ icon, title, value }: { icon: ReactNode; title: string; value: number }) {

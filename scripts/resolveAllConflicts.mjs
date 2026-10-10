@@ -43,7 +43,6 @@ const headAuthoritativeFiles = [
   "server/routes/marketplace.routes.ts",
   "server/modules/admin/admin.summary.routes.ts",
   "server/modules/orders/order.repository.ts",
-  "server/modules/payments/payment.admin.payout.display.routes.ts",
   "server/modules/payments/payment.admin.routes.ts",
   "server/modules/payments/payment.routes.ts",
   "server/modules/payouts/payout.repository.ts",
