@@ -5,6 +5,8 @@ import test from "node:test";
 
 const routesIndex = readFileSync(resolve(process.cwd(), "server/routes/index.ts"), "utf8");
 const generalPaymentAdminRoutes = readFileSync(resolve(process.cwd(), "server/modules/payments/payment.admin.routes.ts"), "utf8");
+const adminReconcileRoutes = readFileSync(resolve(process.cwd(), "server/modules/payments/payment.admin.reconcile.routes.ts"), "utf8");
+const payoutReconciliationFlow = readFileSync(resolve(process.cwd(), "server/modules/payouts/payout.service.reconciliation.ts"), "utf8");
 
 test("canonical Admin Payouts router is the only registered owner of list and detail GET routes", () => {
   assert.match(routesIndex, /import\s*\{\s*createPaymentAdminPayoutCanonicalRouter\s*\}\s*from/);
@@ -22,6 +24,12 @@ test("general payment admin router has no duplicate payout read or batch-reconci
   assert.ok(generalPaymentAdminRoutes.includes("router.post('/payouts/destinations/:destinationId/verification'"));
   assert.ok(generalPaymentAdminRoutes.includes("router.get('/payouts/:payoutId/adjustments'"));
   assert.ok(generalPaymentAdminRoutes.includes("router.post('/payouts/:payoutId/adjustments'"));
+});
+
+test("Admin Payouts batch reconciliation is scoped to seller/listing payouts", () => {
+  assert.ok(adminReconcileRoutes.includes("ownerType: 'seller'"));
+  assert.ok(payoutReconciliationFlow.includes("COALESCE(owner_type, 'seller') = 'seller' AND event_id IS NULL"));
+  // The system scheduler omits ownerType and retains its existing shared scope.
 });
 
 test("dedicated payout mutation and adjustment routers remain registered", () => {
