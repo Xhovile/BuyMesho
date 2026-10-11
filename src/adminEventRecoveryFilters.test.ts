@@ -7,17 +7,19 @@ import {
 } from "./adminEventRecoveryFilters.js";
 
 test("payment statuses are grouped without case or whitespace sensitivity", () => {
-  for (const status of ["paid", "captured", "successful", "completed", " CAPTURED "]) {
+  for (const status of ["paid", "captured", "verified", "successful", "completed", " CAPTURED "]) {
     assert.equal(getPaymentStatusGroup(status), "paid", status);
   }
-  for (const status of ["pending", "created", "initiated", "processing", "provider_pending"]) {
+  for (const status of ["pending", "created", "initiated", "processing", "queued", "awaiting_payment", "provider_pending"]) {
     assert.equal(getPaymentStatusGroup(status), "pending", status);
   }
-  for (const status of ["failed", "error", "rejected"]) {
+  for (const status of ["failed", "error"]) {
     assert.equal(getPaymentStatusGroup(status), "failed", status);
   }
+  for (const status of ["rejected", "cancelled", "canceled", "refunded"]) {
+    assert.equal(getPaymentStatusGroup(status), "rejected", status);
+  }
   assert.equal(getPaymentStatusGroup(null), "other");
-  assert.equal(getPaymentStatusGroup("cancelled"), "other");
 });
 
 test("payout statuses separate paid, provider queue, failures, holds, and cancellations", () => {
