@@ -202,11 +202,12 @@ export default function AdminEventPayoutRecoveryPage() {
       {loading ? <div className="rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500">Loading event payout recovery data…</div> : (
         <>
           <section className="space-y-3">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
               <StatusFilterCard label="All payments" value={eventPayments.length} active={paymentFilter === "all"} onClick={() => setPaymentFilter("all")} />
               <StatusFilterCard label="Paid / captured" value={eventPayments.filter((row) => getPaymentStatusGroup(row.payment_status) === "paid").length} active={paymentFilter === "paid"} onClick={() => setPaymentFilter("paid")} />
               <StatusFilterCard label="Pending" value={eventPayments.filter((row) => getPaymentStatusGroup(row.payment_status) === "pending").length} active={paymentFilter === "pending"} onClick={() => setPaymentFilter("pending")} />
-              <StatusFilterCard label="Failed" value={eventPayments.filter((row) => getPaymentStatusGroup(row.payment_status) === "failed").length} active={paymentFilter === "failed"} onClick={() => setPaymentFilter("failed")} />
+              <StatusFilterCard label="Failed / error" value={eventPayments.filter((row) => getPaymentStatusGroup(row.payment_status) === "failed").length} active={paymentFilter === "failed"} onClick={() => setPaymentFilter("failed")} />
+              <StatusFilterCard label="Rejected / refunded" value={eventPayments.filter((row) => getPaymentStatusGroup(row.payment_status) === "rejected").length} active={paymentFilter === "rejected"} onClick={() => setPaymentFilter("rejected")} />
               <StatusFilterCard label="Other" value={eventPayments.filter((row) => getPaymentStatusGroup(row.payment_status) === "other").length} active={paymentFilter === "other"} onClick={() => setPaymentFilter("other")} />
             </div>
           </section>
