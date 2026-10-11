@@ -240,6 +240,7 @@ export class PayoutService {
     actorType?: 'admin' | 'system';
     actorId?: string | null;
     limit?: number;
+    ownerType?: 'seller' | 'event_creator';
   } = {}) {
     const { reconcilePendingPayoutStatusesFlow } = await import('./payout.service.reconciliation.js');
     const results = await reconcilePendingPayoutStatusesFlow(this.repository, input);

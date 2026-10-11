@@ -2,19 +2,24 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import express from 'express';
 import { createPaymentAdminRouter } from '../payment.admin.routes.js';
+import { createPaymentAdminPayoutCanonicalRouter } from '../payment.admin.payout.canonical.routes.js';
 import { getPaymentDb } from '../../../postgresCompat.js';
 
 function createAdminApp() {
   const app = express();
   app.use(express.json());
-  app.use('/api/admin', createPaymentAdminRouter((req, _res, next) => {
+  const requireAdmin = (req: express.Request, _res: express.Response, next: express.NextFunction) => {
     (req as express.Request & { user?: unknown }).user = {
       uid: 'admin-user',
       email: 'admin@example.com',
       is_admin: true,
     };
     next();
-  }));
+  };
+  // Match production route order: canonical payout reads take precedence,
+  // while the general admin router owns payout mutation endpoints.
+  app.use('/api/admin', createPaymentAdminPayoutCanonicalRouter(requireAdmin));
+  app.use('/api/admin', createPaymentAdminRouter(requireAdmin));
   return app;
 }
 
@@ -70,13 +75,14 @@ function seedAdminPayout(prefix: string, payoutStatus = 'processing') {
   );
 
   db.prepare(`INSERT INTO seller_payout_accounts (
-    id, seller_uid, destination_type, provider_name, provider_ref_id,
+    id, seller_uid, owner_type, owner_uid, destination_type, provider_name, provider_ref_id,
     currency, account_name, mobile_encrypted, masked_account, destination_fingerprint,
     is_default, verification_status, verification_attempts, is_active, created_at, updated_at
-  ) VALUES (?, ?, 'mobile_money', 'Airtel Money', 'airtel-money',
+  ) VALUES (?, ?, 'seller', ?, 'mobile_money', 'Airtel Money', 'airtel-money',
     'MWK', 'Admin Test Seller', '265999111333', '****1333', ?,
     1, 'pending', 0, 1, ?, ?)`).run(
     destinationId,
+    sellerId,
     sellerId,
     `${prefix}-fingerprint`,
     now,
@@ -166,7 +172,7 @@ test('admin verification attempts record verified, failed, pending, and disabled
       verification_status: string;
       last_error: string | null;
       verification_attempts: number;
-      verified_at: string | null;
+      verified_at: string | Date | null;
       is_active: number;
     };
     assert.equal(destination.verification_status, current.status);
@@ -174,7 +180,11 @@ test('admin verification attempts record verified, failed, pending, and disabled
     assert.equal(destination.verification_attempts, 1);
     assert.equal(destination.is_active, current.expectedActive);
     if (current.expectVerifiedAt) {
-      assert.match(destination.verified_at ?? '', /^\d{4}-\d{2}-\d{2}T/);
+      assert.ok(destination.verified_at, 'verified destination should have a verified_at timestamp');
+      const verifiedAt = destination.verified_at instanceof Date
+        ? destination.verified_at.toISOString()
+        : destination.verified_at;
+      assert.match(verifiedAt, /^\d{4}-\d{2}-\d{2}T/);
     } else {
       assert.equal(destination.verified_at, null);
     }
@@ -282,7 +292,11 @@ test('admin reconcile endpoint syncs provider status and terminal payout fields'
   const { payoutId } = seedAdminPayout('admin-reconcile');
   const originalFetch = global.fetch;
   const originalSecretKey = process.env.PAYCHANGU_SECRET_KEY;
+  const originalPayoutStatusPath = process.env.PAYCHANGU_PAYOUT_STATUS_PATH;
   process.env.PAYCHANGU_SECRET_KEY = 'test-secret-key';
+  // Exercise the single-payout details endpoint this test mocks rather than
+  // the default paginated provider listing endpoint.
+  process.env.PAYCHANGU_PAYOUT_STATUS_PATH = '/direct-charge/payouts/{charge_id}/details';
 
   global.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
@@ -344,6 +358,11 @@ test('admin reconcile endpoint syncs provider status and terminal payout fields'
       delete process.env.PAYCHANGU_SECRET_KEY;
     } else {
       process.env.PAYCHANGU_SECRET_KEY = originalSecretKey;
+    }
+    if (originalPayoutStatusPath === undefined) {
+      delete process.env.PAYCHANGU_PAYOUT_STATUS_PATH;
+    } else {
+      process.env.PAYCHANGU_PAYOUT_STATUS_PATH = originalPayoutStatusPath;
     }
   }
 });

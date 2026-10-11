@@ -327,7 +327,7 @@ export function createPaymentAdminPayoutCanonicalRouter(requireAuth: RequestHand
          LIMIT $1 OFFSET $2`,
         [limit, offset],
       );
-      const totalResult = await query(`SELECT COUNT(*)::int AS total FROM payouts WHERE (COALESCE(p.owner_type, 'seller') = 'seller' AND p.event_id IS NULL)`);
+      const totalResult = await query(`SELECT COUNT(*)::int AS total FROM payouts p WHERE (COALESCE(p.owner_type, 'seller') = 'seller' AND p.event_id IS NULL)`);
       const rows = result.rows as Array<Record<string, unknown>>;
 
       const shaped = await Promise.all(rows.map(async (row) => {
