@@ -2,6 +2,7 @@ import express, { type RequestHandler } from 'express';
 import { hasAdminAccess } from '../../auth/adminAccess.js';
 import { query } from '../../postgres.js';
 import { PAYOUT_POLICY, isRetryableFailureCode } from '../payouts/payout.policy.js';
+import { PAYOUT_PENDING_SUMMARY_STATUSES } from '../payouts/payout.shared.js';
 import { payoutLimiter } from '../../routes/escrow/shared.js';
 
 function requireAdmin(req: express.Request, res: express.Response): boolean {
@@ -356,13 +357,13 @@ export function createPaymentAdminPayoutCanonicalRouter(requireAuth: RequestHand
       const result = await query(`
         SELECT
           COUNT(*)::int AS "totalPayouts",
-          COUNT(*) FILTER (WHERE status IN ('eligible','queued','processing','pending','held'))::int AS "pendingPayouts",
+          COUNT(*) FILTER (WHERE status = ANY($1::text[]))::int AS "pendingPayouts",
           COUNT(*) FILTER (WHERE status = 'paid')::int AS "paidPayouts",
           COUNT(*) FILTER (WHERE status = 'failed')::int AS "failedPayouts",
           COUNT(*) FILTER (WHERE status = 'cancelled')::int AS "cancelledPayouts"
         FROM payouts p
         WHERE (COALESCE(p.owner_type, 'seller') = 'seller' AND p.event_id IS NULL)
-      `);
+      `, [PAYOUT_PENDING_SUMMARY_STATUSES]);
       return res.status(200).json({ summary: result.rows[0] ?? {} });
     } catch (error) {
       console.error('[admin-payout-canonical] summary failed', error);
