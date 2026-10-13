@@ -4,6 +4,7 @@ import express from 'express';
 import { createPaymentAdminRouter } from '../payment.admin.routes.js';
 import { createPaymentAdminPayoutCanonicalRouter } from '../payment.admin.payout.canonical.routes.js';
 import { getPaymentDb } from '../../../postgresCompat.js';
+import { PAYOUT_PENDING_SUMMARY_STATUSES } from '../../payouts/payout.shared.js';
 
 function createAdminApp() {
   const app = express();
@@ -286,6 +287,139 @@ test('admin payouts list marks held payout retry-eligible when destination is ve
   assert.ok(row);
   assert.equal(row.escrowState, 'released');
   assert.equal(row.retryEligible, true);
+});
+
+test('admin payout summary counts every active lifecycle state and excludes event payouts', async () => {
+  const expectedPendingStatuses = [
+    'eligible',
+    'pending_settlement',
+    'ready_for_payout',
+    'queued',
+    'processing',
+    'pending',
+    'held',
+  ] as const;
+  assert.deepEqual([...PAYOUT_PENDING_SUMMARY_STATUSES], expectedPendingStatuses);
+
+  const terminalStatuses = [
+    { status: 'paid', summaryKey: 'paidPayouts' },
+    { status: 'failed', summaryKey: 'failedPayouts' },
+    { status: 'cancelled', summaryKey: 'cancelledPayouts' },
+  ] as const;
+  const prefixes: string[] = [];
+  const readSummary = async (): Promise<Record<string, unknown>> => {
+    const result = await callAdmin('/api/admin/payouts/summary');
+    assert.equal(result.status, 200);
+    assert.ok(result.body.summary && typeof result.body.summary === 'object');
+    return result.body.summary as Record<string, unknown>;
+  };
+  const count = (summary: Record<string, unknown>, key: string) => Number(summary[key] ?? 0);
+
+  let previous = await readSummary();
+  try {
+    for (const status of expectedPendingStatuses) {
+      const prefix = `admin-summary-pending-${status}`;
+      prefixes.push(prefix);
+      seedAdminPayout(prefix, status);
+
+      const current = await readSummary();
+      assert.equal(
+        count(current, 'totalPayouts') - count(previous, 'totalPayouts'),
+        1,
+        `${status} should be included in the seller payout total`,
+      );
+      assert.equal(
+        count(current, 'pendingPayouts') - count(previous, 'pendingPayouts'),
+        1,
+        `${status} should count as pending`,
+      );
+      previous = current;
+    }
+
+    for (const { status, summaryKey } of terminalStatuses) {
+      const prefix = `admin-summary-terminal-${status}`;
+      prefixes.push(prefix);
+      seedAdminPayout(prefix, status);
+
+      const current = await readSummary();
+      assert.equal(count(current, 'totalPayouts') - count(previous, 'totalPayouts'), 1);
+      assert.equal(
+        count(current, 'pendingPayouts'),
+        count(previous, 'pendingPayouts'),
+        `${status} must not count as pending`,
+      );
+      assert.equal(count(current, summaryKey) - count(previous, summaryKey), 1);
+      previous = current;
+    }
+
+    const eventPrefix = 'admin-summary-event-owned';
+    prefixes.push(eventPrefix);
+    const eventPayout = seedAdminPayout(eventPrefix, 'pending_settlement');
+    const db = getPaymentDb();
+    const now = new Date().toISOString();
+    const eventId = 994901;
+    const eventDestinationId = `${eventPrefix}-event-destination`;
+
+    // Build a valid event-owned payout fixture: production constraints require
+    // a real event, its creator identity, and the event-bound payout destination.
+    db.prepare(`DELETE FROM payouts WHERE event_id = ?`).run(eventId);
+    db.prepare(`DELETE FROM events WHERE id = ?`).run(eventId);
+    db.prepare(`DELETE FROM seller_payout_accounts WHERE id = ?`).run(eventDestinationId);
+    db.prepare(`DELETE FROM event_creators WHERE uid = ?`).run(eventPayout.sellerId);
+
+    db.prepare(`
+      INSERT INTO event_creators
+        (uid,email,display_name,organization_name,organization_type,event_types,status,active_until,created_at,updated_at)
+      VALUES (?, ?, 'Summary Test Creator', 'Summary Test Org', 'events', 'concert', 'approved', ?, ?, ?)
+    `).run(eventPayout.sellerId, `${eventPrefix}@example.com`, new Date(Date.now() + 86400000).toISOString(), now, now);
+
+    db.prepare(`
+      INSERT INTO seller_payout_accounts (
+        id,seller_uid,event_creator_uid,owner_type,owner_uid,destination_type,provider_name,provider_ref_id,
+        currency,account_name,account_number_encrypted,masked_account,destination_fingerprint,
+        is_default,verification_status,verification_attempts,is_active,created_at,updated_at
+      ) VALUES (?, NULL, ?, 'event_creator', ?, 'mobile_money', 'paychangu', 'test-event-destination',
+        'MWK', 'Summary Test Creator', 'test', '****0001', ?, 1, 'verified', 0, 1, ?, ?)
+    `).run(eventDestinationId, eventPayout.sellerId, eventPayout.sellerId, `${eventPrefix}-fingerprint`, now, now);
+
+    db.prepare(`
+      INSERT INTO events (
+        id,creator_uid,event_type,event_title,organizer_name,event_date,start_time,
+        venue,location,ticket_mode,ticket_price,description,spec_values,status,payout_destination_id,
+        created_at,updated_at
+      ) VALUES (?, ?, 'concert', 'Summary Test Event', 'Summary Test Creator', '2026-10-20', '18:00',
+        'Test Venue', 'Lilongwe', 'paid', 10000, 'Test event payout summary', '{}', 'published', ?, ?, ?)
+    `).run(eventId, eventPayout.sellerId, eventDestinationId, now, now);
+
+    db.prepare(`
+      UPDATE payouts
+         SET owner_type = 'event_creator',
+             owner_uid = ?,
+             event_id = ?,
+             event_creator_uid = ?,
+             destination_account_id = ?
+       WHERE id = ?
+    `).run(eventPayout.sellerId, eventId, eventPayout.sellerId, eventDestinationId, eventPayout.payoutId);
+
+    const afterEventPayout = await readSummary();
+    assert.equal(
+      count(afterEventPayout, 'totalPayouts'),
+      count(previous, 'totalPayouts'),
+      'event-owned payouts must not appear in generic Admin Payouts totals',
+    );
+    assert.equal(
+      count(afterEventPayout, 'pendingPayouts'),
+      count(previous, 'pendingPayouts'),
+      'event-owned payouts must not affect the generic pending summary',
+    );
+  } finally {
+    for (const prefix of prefixes) resetAdminPayoutState(prefix);
+    const db = getPaymentDb();
+    db.prepare(`DELETE FROM payouts WHERE event_id = ?`).run(994901);
+    db.prepare(`DELETE FROM events WHERE id = ?`).run(994901);
+    db.prepare(`DELETE FROM seller_payout_accounts WHERE id = ?`).run('admin-summary-event-owned-event-destination');
+    db.prepare(`DELETE FROM event_creators WHERE uid = ?`).run('admin-summary-event-owned-seller');
+  }
 });
 
 test('admin reconcile endpoint syncs provider status and terminal payout fields', async () => {

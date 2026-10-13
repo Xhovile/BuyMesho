@@ -15,6 +15,20 @@ export type PayoutStatus =
   | 'failed'
   | 'cancelled';
 
+/**
+ * Operational states counted as pending in the seller/listing Admin Payouts
+ * summary. Paid, failed, and cancelled payouts remain in their own buckets.
+ */
+export const PAYOUT_PENDING_SUMMARY_STATUSES = [
+  'eligible',
+  'pending_settlement',
+  'ready_for_payout',
+  'queued',
+  'processing',
+  'pending',
+  'held',
+] as const satisfies readonly PayoutStatus[];
+
 export type PayoutOwnerType = 'seller' | 'event_creator';
 
 export interface PayoutRecord {
