@@ -5,6 +5,7 @@ import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { deleteAllPasskeysForUser, deletePasskeyCeremoniesForUser } from "./passkeyStore.js";
 import { disableTotpEnrollment } from "../../src/server/totpStore.js";
 import { invalidatePublicListingsCache } from "../lib/publicListingsCache.js";
+import { invalidatePublicSeller } from "../lib/publicSellerCache.js";
 
 type VerifiedRequestUser = {
   uid: string;
@@ -219,6 +220,7 @@ function cleanupUserRecords(userId: string) {
     db.prepare(`DELETE FROM listings WHERE seller_uid = ?`).run(uid);
     invalidatePublicListingsCache();
     db.prepare(`DELETE FROM sellers WHERE uid = ?`).run(uid);
+    void invalidatePublicSeller(uid);
   });
 
   transaction(userId);
