@@ -42,6 +42,7 @@ export default function AdminEventPayoutRecoveryPage() {
   const [busyAction, setBusyAction] = useState<"retry" | "reconcile" | "hold" | "cancel" | "recover" | null>(null);
   const paymentDetailRequest = useRef(0);
   const payoutDetailRequest = useRef(0);
+  const loadRequest = useRef(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -54,17 +55,26 @@ export default function AdminEventPayoutRecoveryPage() {
   const [recoveryNote, setRecoveryNote] = useState("");
 
   const load = async (query = search) => {
+    const requestId = ++loadRequest.current;
     try {
       setLoading(true); setError(null);
       const normalizedQuery = query.trim();
       const path = normalizedQuery ? `/api/admin/event-payouts?q=${encodeURIComponent(normalizedQuery)}` : "/api/admin/event-payouts";
       const data = await apiFetch(path) as { payouts?: Row[]; refundLiabilities?: Row[]; eventPayments?: Row[] };
+      if (requestId !== loadRequest.current) return;
       setPayouts(Array.isArray(data.payouts) ? data.payouts : []);
       setLiabilities(Array.isArray(data.refundLiabilities) ? data.refundLiabilities : []);
       setEventPayments(Array.isArray(data.eventPayments) ? data.eventPayments : []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load event payout recovery data.");
-    } finally { setLoading(false); setHasLoadedOnce(true); }
+      if (requestId === loadRequest.current) {
+        setError(err instanceof Error ? err.message : "Failed to load event payout recovery data.");
+      }
+    } finally {
+      if (requestId === loadRequest.current) {
+        setLoading(false);
+        setHasLoadedOnce(true);
+      }
+    }
   };
 
   useEffect(() => { void load(""); }, []);
@@ -205,7 +215,7 @@ export default function AdminEventPayoutRecoveryPage() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Search buyer email, buyer UUID, creator email/UUID, order ID, ticket ID…" className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-zinc-400 focus:bg-white" aria-label="Search event financial records" />
           </div>
-          <button type="submit" disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-70">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}{loading ? "Loading…" : "Search"}</button>
+          <button type="submit" disabled={loading} aria-busy={loading} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-70">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}Search</button>
           {search ? <button type="button" onClick={clearSearch} className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-50">Clear</button> : null}
         </div>
         <p className="mt-2 text-xs text-zinc-500">Searches across event title/ID, buyer and creator identity, order ID, and ticket ID/code. The same search applies to both tabs; switch tabs to review matching payments or payouts.</p>
@@ -332,6 +342,7 @@ export default function AdminEventPayoutRecoveryPage() {
           </div>
           {payoutDetailLoading ? <LoadingPanel message="Loading payout details and financial diagnostics…" /> : detail ? (
             <div className="space-y-5 p-5">
+              {error ? <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</div> : null}
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <Metric title="Status" value={label(detail.payout?.status)} />
                 <Metric title="Net amount" value={amount(detail.payout?.net_amount ?? detail.payout?.amount, text(detail.payout?.currency) || "MWK")} />
@@ -401,6 +412,7 @@ export default function AdminEventPayoutRecoveryPage() {
         <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl">
           <div className="flex items-start justify-between border-b border-zinc-200 p-5"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Refund recovery</p><h2 className="mt-1 text-lg font-black">{amount(selectedLiability.amount, text(selectedLiability.currency) || "MWK")}</h2><p className="mt-1 text-xs text-zinc-500">Liability {text(selectedLiability.id)} · Order {text(selectedLiability.order_id)}</p></div><button type="button" onClick={() => setSelectedLiability(null)} className="rounded-full p-2 text-zinc-500" aria-label="Close"><XCircle className="h-5 w-5" /></button></div>
           <div className="space-y-4 p-5">
+            {error ? <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</div> : null}
             <label className="block text-sm font-bold">Recovery amount<input value={recoverAmount} onChange={(e) => setRecoverAmount(e.target.value)} type="number" step="0.01" min="0" className="mt-2 w-full rounded-2xl border border-zinc-200 px-4 py-3 text-sm" /></label>
             <label className="block text-sm font-bold">Transaction ID<input value={transactionId} onChange={(e) => setTransactionId(e.target.value)} className="mt-2 w-full rounded-2xl border border-zinc-200 px-4 py-3 text-sm" /></label>
             <div className="grid gap-4 sm:grid-cols-2">
