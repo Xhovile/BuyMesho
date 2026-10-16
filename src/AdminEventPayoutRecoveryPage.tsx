@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { AlertTriangle, Check, CheckCircle2, Clock3, Copy, CreditCard, RefreshCw, RotateCcw, Search, ShieldCheck, Wallet, XCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Check, Copy, CreditCard, RefreshCw, RotateCcw, Search, ShieldCheck, Wallet, XCircle } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import {
@@ -23,6 +23,7 @@ export default function AdminEventPayoutRecoveryPage() {
   const [liabilities, setLiabilities] = useState<Row[]>([]);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [activeSection, setActiveSection] = useState<"payments" | "payouts">("payments");
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
   const [payoutFilter, setPayoutFilter] = useState<PayoutFilter>("all");
   const [liabilityFilter, setLiabilityFilter] = useState<LiabilityFilter>("all");
@@ -72,14 +73,6 @@ export default function AdminEventPayoutRecoveryPage() {
     setSearch("");
     void load("");
   };
-
-  const stats = useMemo(() => ({
-    payments: eventPayments.length,
-    total: payouts.length,
-    processing: payouts.filter((r) => ["processing", "pending"].includes(text(r.status).toLowerCase())).length,
-    paid: payouts.filter((r) => text(r.status).toLowerCase() === "paid").length,
-    due: liabilities.filter((r) => text(r.status).toLowerCase() === "due").length,
-  }), [eventPayments, payouts, liabilities]);
 
   const visibleEventPayments = useMemo(
     () => eventPayments.filter((row) => paymentFilter === "all" || getPaymentStatusGroup(row.payment_status) === paymentFilter),
@@ -186,21 +179,24 @@ export default function AdminEventPayoutRecoveryPage() {
           <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white"><Search className="h-4 w-4" />Search</button>
           {search ? <button type="button" onClick={clearSearch} className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-50">Clear</button> : null}
         </div>
-        <p className="mt-2 text-xs text-zinc-500">Searches across event title/ID, buyer and creator identity, order ID, and ticket ID/code.</p>
+        <p className="mt-2 text-xs text-zinc-500">Searches across event title/ID, buyer and creator identity, order ID, and ticket ID/code. The same search applies to both tabs; switch tabs to review matching payments or payouts.</p>
       </form>
       {error ? <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div> : null}
       {notice ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">{notice}</div> : null}
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Stat icon={<CreditCard className="h-4 w-4" />} title="Event payments" value={stats.payments} />
-        <Stat icon={<Wallet className="h-4 w-4" />} title="Event payouts" value={stats.total} />
-        <Stat icon={<Clock3 className="h-4 w-4" />} title="Provider processing" value={stats.processing} />
-        <Stat icon={<CheckCircle2 className="h-4 w-4" />} title="Paid" value={stats.paid} />
-        <Stat icon={<AlertTriangle className="h-4 w-4" />} title="Refund liabilities due" value={stats.due} />
-      </section>
+      <div role="tablist" aria-label="Event financial record type" className="grid grid-cols-2 gap-2 rounded-2xl border border-zinc-200 bg-zinc-100 p-1.5">
+        <button type="button" role="tab" aria-selected={activeSection === "payments"} onClick={() => setActiveSection("payments")} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 py-3 text-xs font-black uppercase tracking-wider transition sm:text-sm ${activeSection === "payments" ? "bg-zinc-950 text-white shadow-sm" : "text-zinc-500 hover:bg-white hover:text-zinc-900"}`}>
+          <CreditCard className="h-4 w-4" /> Event Payments <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeSection === "payments" ? "bg-white/15 text-white" : "bg-white text-zinc-500"}`}>{eventPayments.length}</span>
+        </button>
+        <button type="button" role="tab" aria-selected={activeSection === "payouts"} onClick={() => setActiveSection("payouts")} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 py-3 text-xs font-black uppercase tracking-wider transition sm:text-sm ${activeSection === "payouts" ? "bg-zinc-950 text-white shadow-sm" : "text-zinc-500 hover:bg-white hover:text-zinc-900"}`}>
+          <Wallet className="h-4 w-4" /> Event Payouts <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeSection === "payouts" ? "bg-white/15 text-white" : "bg-white text-zinc-500"}`}>{payouts.length}</span>
+        </button>
+      </div>
 
       {loading ? <div className="rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500">Loading event payout recovery data…</div> : (
         <>
+          {activeSection === "payments" ? (
+            <>
           <section className="space-y-3">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
               <StatusFilterCard label="All payments" value={eventPayments.length} active={paymentFilter === "all"} onClick={() => setPaymentFilter("all")} />
@@ -214,7 +210,7 @@ export default function AdminEventPayoutRecoveryPage() {
           <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
             <div className="border-b border-zinc-200 p-5"><h2 className="text-lg font-black">Event payment activity</h2><p className="mt-1 text-sm text-zinc-500">Event-ticket payments, buyer identity, and payment state. Open a payment for full diagnostics.</p><p className="mt-2 text-xs font-semibold text-zinc-500">Showing {visibleEventPayments.length} of {eventPayments.length} matching payments</p></div>
             <div className="divide-y divide-zinc-100">
-              {visibleEventPayments.length === 0 ? <p className="p-6 text-sm text-zinc-500">{eventPayments.length === 0 ? "No event payments found." : "No event payments match this status."}</p> : visibleEventPayments.map((row) => {
+              {visibleEventPayments.length === 0 ? <div className="p-6 text-sm text-zinc-500">{eventPayments.length === 0 ? (search ? "No event payments match this search." : "No event payments found.") : "No event payments match this status."}{payouts.length > 0 ? <button type="button" onClick={() => setActiveSection("payouts")} className="ml-2 font-bold text-zinc-900 underline underline-offset-4">View {payouts.length} matching event payouts</button> : null}</div> : visibleEventPayments.map((row) => {
                 const status = text(row.payment_status).toLowerCase();
                 const buyerEmails = Array.isArray(row.buyer_emails) ? row.buyer_emails.map(text).filter(Boolean).join(", ") : text(row.buyer_emails);
                 const ticketIds = Array.isArray(row.ticket_ids) ? row.ticket_ids.map(text).filter(Boolean).join(", ") : text(row.ticket_ids);
@@ -234,7 +230,11 @@ export default function AdminEventPayoutRecoveryPage() {
               })}
             </div>
           </section>
+            </>
+          ) : null}
 
+          {activeSection === "payouts" ? (
+            <>
           <section className="space-y-3">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
               <StatusFilterCard label="All payouts" value={payouts.length} active={payoutFilter === "all"} onClick={() => setPayoutFilter("all")} />
@@ -248,7 +248,7 @@ export default function AdminEventPayoutRecoveryPage() {
           <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
             <div className="border-b border-zinc-200 p-5"><h2 className="text-lg font-black">Event payout queue</h2><p className="mt-1 text-sm text-zinc-500">Review provider state and refund-related payout blockers.</p><p className="mt-2 text-xs font-semibold text-zinc-500">Showing {visiblePayouts.length} of {payouts.length} matching payouts</p></div>
             <div className="divide-y divide-zinc-100">
-              {visiblePayouts.length === 0 ? <p className="p-6 text-sm text-zinc-500">{payouts.length === 0 ? "No event payouts found." : "No event payouts match this status."}</p> : visiblePayouts.map((row) => {
+              {visiblePayouts.length === 0 ? <div className="p-6 text-sm text-zinc-500">{payouts.length === 0 ? (search ? "No event payouts match this search." : "No event payouts found.") : "No event payouts match this status."}{eventPayments.length > 0 ? <button type="button" onClick={() => setActiveSection("payments")} className="ml-2 font-bold text-zinc-900 underline underline-offset-4">View {eventPayments.length} matching event payments</button> : null}</div> : visiblePayouts.map((row) => {
                 const status = text(row.status).toLowerCase();
                 const liabilityStatus = text(row.liability_status).toLowerCase();
                 return <button key={text(row.id)} type="button" onClick={() => void openPayout(row)} className="block w-full p-5 text-left hover:bg-zinc-50">
@@ -288,6 +288,8 @@ export default function AdminEventPayoutRecoveryPage() {
               })}
             </div>
           </section>
+            </>
+          ) : null}
         </>
       )}
 
@@ -379,9 +381,6 @@ function StatusFilterCard({ label: cardLabel, value, active, onClick }: { label:
   </button>;
 }
 
-function Stat({ icon, title, value }: { icon: ReactNode; title: string; value: number }) {
-  return <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-zinc-400">{icon}{title}</div><p className="mt-2 text-2xl font-black">{value}</p></div>;
-}
 function Metric({ title, value }: { title: string; value: string }) {
   return <div className="rounded-2xl bg-white p-3"><p className="text-xs font-black uppercase tracking-wider text-zinc-400">{title}</p><p className="mt-2 break-all text-sm font-bold">{value || "—"}</p></div>;
 }
