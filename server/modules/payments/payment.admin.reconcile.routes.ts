@@ -33,7 +33,7 @@ export function createPaymentAdminReconcileRouter(requireAuth: RequestHandler): 
         actorId: req.user?.uid ?? null,
         limit,
         // This endpoint belongs to the seller/listing Admin Payouts workspace.
-        // Event-owned payouts are reconciled through Event Financial Recovery.
+        // Event-owned payouts are reconciled through Event Financials.
         ownerType: 'seller',
       });
 

@@ -442,7 +442,7 @@ export default function AdminDisputesPage() {
                       <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
                         <p className="font-black">Refund approved — awaiting event refund recovery</p>
                         <p className="mt-1 leading-6">
-                          This event refund has no available held-escrow execution path. The outstanding liability must be recovered from the event creator through the Event Payout Recovery workspace.
+                          This event refund has no available held-escrow execution path. The outstanding liability must be recovered from the event creator through the Event Financials workspace.
                         </p>
                       </div>
                     ) : null}

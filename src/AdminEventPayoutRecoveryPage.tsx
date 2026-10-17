@@ -204,7 +204,7 @@ export default function AdminEventPayoutRecoveryPage() {
 
   return (
     <AdminWorkspaceLayout
-      title="Event Financial Recovery"
+      title="Event Financials"
       description="Review event payments, reconcile creator payouts, and manage refunds and recovery."
       isRefreshing={loading}
       onRefresh={() => void load()}

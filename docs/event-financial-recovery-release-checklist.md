@@ -1,11 +1,11 @@
-# Event Financial Recovery — Release Checklist
+# Event Financials — Release Checklist
 
-Run this checklist in order for the Event Financial Recovery changes. Treat UI loading and real money movement as separate checks.
+Run this checklist in order for the Event Financials workspace changes. Treat UI loading and real money movement as separate checks.
 
 ## 1. Production smoke test
 
 - [ ] Confirm the deployment built from the intended commit is marked **Ready** before testing.
-- [ ] Sign in with an authorized admin account and open `/admin` → **Event Recovery**.
+- [ ] Sign in with an authorized admin account and open `/admin` → **Event Financials**.
 - [ ] Confirm search, Refresh, status cards, empty states, and record details render on mobile and desktop.
 - [ ] Verify that an unauthenticated request to admin APIs is rejected; do not expose real transaction data to a public smoke test.
 - [ ] Capture any console errors or failed network requests before proceeding.
@@ -14,8 +14,8 @@ Run this checklist in order for the Event Financial Recovery changes. Treat UI l
 
 Use existing records for one event-ticket order and one marketplace/listing order. This is read-only verification; do not create or alter a real payment just to test the screen.
 
-- [ ] Event payment appears in Event Financial Recovery and not in generic **Admin Payments**.
-- [ ] Event payout appears in Event Financial Recovery and not in generic **Admin Payouts**.
+- [ ] Event payment appears in Event Financials and not in generic **Admin Payments**.
+- [ ] Event payout appears in Event Financials and not in generic **Admin Payouts**.
 - [ ] Listing payment and seller payout remain visible in their generic admin workspaces and do not appear in event-finance results.
 - [ ] Event search by event title/ID, buyer or creator identity, order ID, and ticket ID/code returns only relevant event records.
 - [ ] Record the IDs used and the observed section/status for the release notes, without copying buyer personal data into the PR.
