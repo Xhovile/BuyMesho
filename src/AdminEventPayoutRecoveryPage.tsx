@@ -23,7 +23,7 @@ export default function AdminEventPayoutRecoveryPage() {
   const [liabilities, setLiabilities] = useState<Row[]>([]);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [activeSection, setActiveSection] = useState<"payments" | "payouts">("payments");
+  const [activeSection, setActiveSection] = useState<"payments" | "payouts" | "refunds">("payments");
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
   const [payoutFilter, setPayoutFilter] = useState<PayoutFilter>("all");
   const [liabilityFilter, setLiabilityFilter] = useState<LiabilityFilter>("all");
@@ -205,7 +205,7 @@ export default function AdminEventPayoutRecoveryPage() {
   return (
     <AdminWorkspaceLayout
       title="Event Financial Recovery"
-      description="Review event payments, reconcile payouts, and record approved event refund recoveries."
+      description="Review event payments, reconcile creator payouts, and manage refunds and recovery."
       isRefreshing={loading}
       onRefresh={() => void load()}
     >
@@ -225,12 +225,15 @@ export default function AdminEventPayoutRecoveryPage() {
 
       {loading && hasLoadedOnce ? <div role="status" aria-live="polite" className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-600"><Loader2 className="h-4 w-4 animate-spin" />Updating event financial records…</div> : null}
 
-      <div role="tablist" aria-label="Event financial record type" className="grid grid-cols-2 gap-2 rounded-2xl border border-zinc-200 bg-zinc-100 p-1.5">
-        <button type="button" role="tab" aria-selected={activeSection === "payments"} onClick={() => setActiveSection("payments")} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 py-3 text-xs font-black uppercase tracking-wider transition sm:text-sm ${activeSection === "payments" ? "bg-zinc-950 text-white shadow-sm" : "text-zinc-500 hover:bg-white hover:text-zinc-900"}`}>
-          <CreditCard className="h-4 w-4" /> Event Payments <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeSection === "payments" ? "bg-white/15 text-white" : "bg-white text-zinc-500"}`}>{eventPayments.length}</span>
+      <div role="tablist" aria-label="Event financial recovery sections" className="grid grid-cols-3 gap-2 rounded-2xl border border-zinc-200 bg-zinc-100 p-1.5">
+        <button type="button" role="tab" aria-selected={activeSection === "payments"} onClick={() => setActiveSection("payments")} className={`flex min-w-0 min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-center text-[10px] font-black uppercase tracking-wide transition sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm sm:tracking-wider ${activeSection === "payments" ? "bg-zinc-950 text-white shadow-sm" : "text-zinc-500 hover:bg-white hover:text-zinc-900"}`}>
+          <CreditCard className="h-4 w-4 shrink-0" /> <span className="leading-tight">Payments</span> <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeSection === "payments" ? "bg-white/15 text-white" : "bg-white text-zinc-500"}`}>{eventPayments.length}</span>
         </button>
-        <button type="button" role="tab" aria-selected={activeSection === "payouts"} onClick={() => setActiveSection("payouts")} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 py-3 text-xs font-black uppercase tracking-wider transition sm:text-sm ${activeSection === "payouts" ? "bg-zinc-950 text-white shadow-sm" : "text-zinc-500 hover:bg-white hover:text-zinc-900"}`}>
-          <Wallet className="h-4 w-4" /> Event Payouts <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeSection === "payouts" ? "bg-white/15 text-white" : "bg-white text-zinc-500"}`}>{payouts.length}</span>
+        <button type="button" role="tab" aria-selected={activeSection === "payouts"} onClick={() => setActiveSection("payouts")} className={`flex min-w-0 min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-center text-[10px] font-black uppercase tracking-wide transition sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm sm:tracking-wider ${activeSection === "payouts" ? "bg-zinc-950 text-white shadow-sm" : "text-zinc-500 hover:bg-white hover:text-zinc-900"}`}>
+          <Wallet className="h-4 w-4 shrink-0" /> <span className="leading-tight">Payouts</span> <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeSection === "payouts" ? "bg-white/15 text-white" : "bg-white text-zinc-500"}`}>{payouts.length}</span>
+        </button>
+        <button type="button" role="tab" aria-selected={activeSection === "refunds"} onClick={() => setActiveSection("refunds")} className={`flex min-w-0 min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-center text-[10px] font-black uppercase tracking-wide transition sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm sm:tracking-wider ${activeSection === "refunds" ? "bg-zinc-950 text-white shadow-sm" : "text-zinc-500 hover:bg-white hover:text-zinc-900"}`}>
+          <RotateCcw className="h-4 w-4 shrink-0" /> <span className="leading-tight">Refunds &amp; Recovery</span> <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeSection === "refunds" ? "bg-white/15 text-white" : "bg-white text-zinc-500"}`}>{liabilities.length}</span>
         </button>
       </div>
 
@@ -302,33 +305,38 @@ export default function AdminEventPayoutRecoveryPage() {
             </div>
           </section>
 
-          <section className="space-y-3">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatusFilterCard label="All liabilities" value={liabilities.length} active={liabilityFilter === "all"} onClick={() => setLiabilityFilter("all")} />
-              <StatusFilterCard label="Due" value={liabilities.filter((row) => getLiabilityStatusGroup(row.status) === "due").length} active={liabilityFilter === "due"} onClick={() => setLiabilityFilter("due")} />
-              <StatusFilterCard label="Recovered" value={liabilities.filter((row) => getLiabilityStatusGroup(row.status) === "recovered").length} active={liabilityFilter === "recovered"} onClick={() => setLiabilityFilter("recovered")} />
-              <StatusFilterCard label="Waived" value={liabilities.filter((row) => getLiabilityStatusGroup(row.status) === "waived").length} active={liabilityFilter === "waived"} onClick={() => setLiabilityFilter("waived")} />
-            </div>
-          </section>
-          <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-            <div className="border-b border-zinc-200 p-5"><h2 className="text-lg font-black">Event refund liabilities</h2><p className="mt-1 text-sm text-zinc-500">Track approved event refunds from outstanding liability through recovery or waiver.</p><p className="mt-2 text-xs font-semibold text-zinc-500">Showing {visibleLiabilities.length} of {liabilities.length} matching liabilities</p></div>
-            <div className="divide-y divide-zinc-100">
-              {visibleLiabilities.length === 0 ? <p className="p-6 text-sm text-zinc-500">{liabilities.length === 0 ? "No event refund liabilities found." : "No refund liabilities match this status."}</p> : visibleLiabilities.map((row) => {
-                const status = text(row.status).toLowerCase();
-                const orderId = text(row.order_id ?? row.orderId);
-                const ticketId = text(row.ticket_id ?? row.ticketId);
-                const dueAt = text(row.due_at ?? row.dueAt);
-                return <div key={text(row.id)} className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2"><p className="text-sm font-black">{amount(row.amount, text(row.currency) || "MWK")}</p><Badge tone={status === "due" ? "amber" : status === "waived" ? "red" : "green"}>{label(status)}</Badge></div>
-                    <p className="mt-1 break-all text-xs font-semibold text-zinc-500">Order {orderId || "—"} · Ticket {ticketId || "entire order"}</p>
-                    <p className="mt-1 break-all text-xs text-zinc-400">Due {dueAt || "—"} · {text(row.id)}</p>
-                  </div>
-                  {status === "due" ? <button type="button" onClick={() => openRecovery(row)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white"><ShieldCheck className="h-4 w-4" />Record recovery</button> : null}
-                </div>;
-              })}
-            </div>
-          </section>
+
+            </>
+          ) : null}
+          {activeSection === "refunds" ? (
+            <>
+            <section className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <StatusFilterCard label="All liabilities" value={liabilities.length} active={liabilityFilter === "all"} onClick={() => setLiabilityFilter("all")} />
+                <StatusFilterCard label="Due" value={liabilities.filter((row) => getLiabilityStatusGroup(row.status) === "due").length} active={liabilityFilter === "due"} onClick={() => setLiabilityFilter("due")} />
+                <StatusFilterCard label="Recovered" value={liabilities.filter((row) => getLiabilityStatusGroup(row.status) === "recovered").length} active={liabilityFilter === "recovered"} onClick={() => setLiabilityFilter("recovered")} />
+                <StatusFilterCard label="Waived" value={liabilities.filter((row) => getLiabilityStatusGroup(row.status) === "waived").length} active={liabilityFilter === "waived"} onClick={() => setLiabilityFilter("waived")} />
+              </div>
+            </section>
+            <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+              <div className="border-b border-zinc-200 p-5"><h2 className="text-lg font-black">Refunds &amp; Recovery</h2><p className="mt-1 text-sm text-zinc-500">Review outstanding refund liabilities, record recoveries, and inspect recovered or waived cases.</p><p className="mt-2 text-xs font-semibold text-zinc-500">Showing {visibleLiabilities.length} of {liabilities.length} matching liabilities</p></div>
+              <div className="divide-y divide-zinc-100">
+                {visibleLiabilities.length === 0 ? <p className="p-6 text-sm text-zinc-500">{liabilities.length === 0 ? "No event refund liabilities found." : "No refund liabilities match this status."}</p> : visibleLiabilities.map((row) => {
+                  const status = text(row.status).toLowerCase();
+                  const orderId = text(row.order_id ?? row.orderId);
+                  const ticketId = text(row.ticket_id ?? row.ticketId);
+                  const dueAt = text(row.due_at ?? row.dueAt);
+                  return <div key={text(row.id)} className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2"><p className="text-sm font-black">{amount(row.amount, text(row.currency) || "MWK")}</p><Badge tone={status === "due" ? "amber" : status === "waived" ? "red" : "green"}>{label(status)}</Badge></div>
+                      <p className="mt-1 break-all text-xs font-semibold text-zinc-500">Order {orderId || "—"} · Ticket {ticketId || "entire order"}</p>
+                      <p className="mt-1 break-all text-xs text-zinc-400">Due {dueAt || "—"} · {text(row.id)}</p>
+                    </div>
+                    {status === "due" ? <button type="button" onClick={() => openRecovery(row)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white"><ShieldCheck className="h-4 w-4" />Record recovery</button> : null}
+                  </div>;
+                })}
+              </div>
+            </section>
             </>
           ) : null}
         </>
