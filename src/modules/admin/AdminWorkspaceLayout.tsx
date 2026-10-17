@@ -1,4 +1,4 @@
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import { navigateToPath } from "../../lib/appNavigation";
 import AdminWorkspaceNav from "./AdminWorkspaceNav";
@@ -9,6 +9,7 @@ type AdminWorkspaceLayoutProps = {
   title: string;
   description?: string;
   onRefresh?: () => void;
+  isRefreshing?: boolean;
   children: ReactNode;
   showNav?: boolean;
 };
@@ -17,6 +18,7 @@ export default function AdminWorkspaceLayout({
   title,
   description,
   onRefresh,
+  isRefreshing = false,
   children,
   showNav = true,
 }: AdminWorkspaceLayoutProps) {
@@ -44,10 +46,12 @@ export default function AdminWorkspaceLayout({
               <button
                 type="button"
                 onClick={onRefresh}
-                className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+                disabled={isRefreshing}
+                aria-busy={isRefreshing}
+                className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-70"
               >
-                <RefreshCw className="h-4 w-4" />
-                Refresh
+                {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                {isRefreshing ? "Refreshing…" : "Refresh"}
               </button>
             ) : null}
           </div>
