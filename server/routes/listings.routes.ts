@@ -8,6 +8,7 @@ import {
 } from "../lib/listingHelpers.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { invalidatePublicListingsCache } from "../lib/publicListingsCache.js";
+import { invalidatePublicSellerListingData } from "../lib/publicSellerCache.js";
 
 export type ListingRouteDeps = {
   db: any;
@@ -252,6 +253,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
         .get(insert.lastInsertRowid) as any;
 
       invalidatePublicListingsCache();
+      void invalidatePublicSellerListingData(uid);
 
       return res.status(201).json({
         success: true,
@@ -459,6 +461,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
         .get(listingId) as any;
 
       invalidatePublicListingsCache();
+      void invalidatePublicSellerListingData(uid);
 
       return res.json({
         success: true,
@@ -473,6 +476,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
 
   app.patch("/api/listings/:id/status", requireAuth, (req, res) => {
     const listingId = Number(req.params.id);
+    const uid = req.user!.uid;
     if (!Number.isInteger(listingId)) return res.status(400).json({ error: "Invalid listing id" });
 
     const checked = getEditableListing(listingId, req.user!.uid);
@@ -481,11 +485,13 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
     const status = normalizeString(req.body?.status).toLowerCase() === "sold" ? "sold" : "available";
     db.prepare("UPDATE listings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(status, listingId);
     invalidatePublicListingsCache();
+      void invalidatePublicSellerListingData(uid);
     return res.json({ success: true, listing: getSerializedListing(listingId) });
   });
 
   app.post("/api/listings/:id/record-sale", requireAuth, (req, res) => {
     const listingId = Number(req.params.id);
+    const uid = req.user!.uid;
     const quantity = Number(req.body?.quantity);
     if (!Number.isInteger(listingId)) return res.status(400).json({ error: "Invalid listing id" });
     if (!Number.isInteger(quantity) || quantity < 1) {
@@ -509,11 +515,13 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       listingId
     );
     invalidatePublicListingsCache();
+      void invalidatePublicSellerListingData(uid);
     return res.json({ success: true, listing: getSerializedListing(listingId), available_quantity: nextAvailableQuantity });
   });
 
   app.post("/api/listings/:id/restock", requireAuth, (req, res) => {
     const listingId = Number(req.params.id);
+    const uid = req.user!.uid;
     const quantity = Number(req.body?.quantity);
     if (!Number.isInteger(listingId)) return res.status(400).json({ error: "Invalid listing id" });
     if (!Number.isInteger(quantity) || quantity < 1) {
@@ -534,11 +542,13 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       listingId
     );
     invalidatePublicListingsCache();
+      void invalidatePublicSellerListingData(uid);
     return res.json({ success: true, listing: getSerializedListing(listingId), available_quantity: nextAvailableQuantity });
   });
 
   app.delete("/api/listings/:id", requireAuth, (req, res) => {
     const listingId = Number(req.params.id);
+    const uid = req.user!.uid;
     if (!Number.isInteger(listingId)) return res.status(400).json({ error: "Invalid listing id" });
 
     const checked = getEditableListing(listingId, req.user!.uid);
@@ -546,6 +556,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
 
     db.prepare("UPDATE listings SET deleted_at = CURRENT_TIMESTAMP, deleted_by_uid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(req.user!.uid, listingId);
     invalidatePublicListingsCache();
+      void invalidatePublicSellerListingData(uid);
     return res.json({ success: true });
   });
 
