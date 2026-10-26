@@ -10,7 +10,7 @@
     "start": "node dist/server.js",
     "dev:server": "tsx server.ts",
     "start:server": "node dist-server/server/entry.js",
-    "test": "npm run check:gemini-secret-exposure && npm run test:event-recovery-filters && npm run test:admin-payout-route-registration && npm run test:ticket-pdf-qr && npm run test:ticket-credential && npm run test:ai-shopping && npm run test:ai-pricing && npm run test:ai-config && npm run test:integration && npm run test:order-state-transition && npm run test:payout-destination-independence && npm run test:routing-guards && npm run test:dispute-state-machines && npm run test:studio-receipt-access && npm run test:seller-dispute-resolution",
+    "test": "npm run check:gemini-secret-exposure && npm run test:event-recovery-filters && npm run test:admin-payout-route-registration && npm run test:ticket-pdf-qr && npm run test:ticket-credential && npm run test:ai-shopping && npm run test:ai-pricing && npm run test:ai-config && npm run test:integration && npm run test:order-state-transition && npm run test:payout-destination-independence && npm run test:routing-guards && npm run test:dispute-state-machines && npm run test:studio-receipt-access && npm run test:seller-dispute-resolution && npm run test:direct-card-store",
     "test:event-recovery-filters": "node --import tsx --test --test-concurrency=1 src/adminEventRecoveryFilters.test.ts",
     "test:admin-payout-route-registration": "node --import tsx --test --test-concurrency=1 server/routes/__tests__/adminPayoutRouteRegistration.test.ts",
     "test:event-refund-recovery": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/events/__tests__/eventRefundLiability.test.ts",
@@ -45,14 +45,15 @@
     "test:studio-receipt-access": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/services/__tests__/studio-receipt-access.test.ts server/modules/services/__tests__/service-payment-public-record.test.ts",
     "test:ticket-pdf-qr": "NODE_ENV=test node --import tsx --test --test-concurrency=1 src/lib/qrcode-generator.test.ts",
     "generate:ticket-signing-keys": "node scripts/generate-ticket-signing-keys.mjs",
-    "test:ticket-credential": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/events/__tests__/ticketCredential.test.ts"
+    "test:ticket-credential": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/events/__tests__/ticketCredential.test.ts",
+    "test:direct-card-store": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/payments/__tests__/paychangu.direct-card.store.test.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
     "@tailwindcss/vite": "^4.1.21",
     "@types/multer": "^2.0.0",
     "@vitejs/plugin-react": "^5.0.4",
-    "@xhovile/platform": "github:Xhovile/Platform#main",
+    "@xhovile/platform": "github:Xhovile/Platform#feat/paychangu-direct-card-foundation",
     "cloudinary": "^2.9.0",
     "dotenv": "^17.2.3",
     "esbuild": "^0.28.0",
