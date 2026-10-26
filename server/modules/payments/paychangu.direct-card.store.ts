@@ -331,8 +331,7 @@ export class BuyMeshoPayChanguDirectCardStore implements DirectCardCheckoutStore
             : result.status;
       const paymentStatus: StoredPayment["status"] =
         status === "failed" || status === "reversed" ? "failed"
-          : status === "cancelled" ? "cancelled"
-            : status === "requires_action" ? "requires_action" : "pending";
+          : status === "requires_action" ? "requires_action" : "pending";
       const now = new Date().toISOString();
 
       await client.query(
