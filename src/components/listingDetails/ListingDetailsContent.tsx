@@ -16,7 +16,7 @@ import ListingHeaderBar from "./ListingHeaderBar";
 import ListingStatusPanel from "./ListingStatusPanel";
 import CheckoutModal from "../CheckoutModal";
 import FloatingCartButton from "../FloatingCartButton";
-import { navigateBackOrPath, navigateToMessages, navigateToPath, EXPLORE_PATH } from "../../lib/appNavigation";
+import { navigateBackOrPath, navigateToPath, EXPLORE_PATH } from "../../lib/appNavigation";
 import type { ListingDetailsPageState } from "../../hooks/useListingDetailsPage";
 import { clearListingDetailsCache } from "../../hooks/useListingDetailsData";
 
@@ -50,6 +50,9 @@ export default function ListingDetailsContent({
   handleBuyNow,
   handleAddToCart,
   handleMessageSeller,
+  isAddingToCart,
+  cartItemAdded,
+  isMessagingSeller,
   handleDetailEdit,
   handleDetailDelete,
   handleDetailHideSeller,
@@ -94,15 +97,9 @@ export default function ListingDetailsContent({
     />
   ) : null;
 
-  const handleQuickMessageSeller = () => {
+  const handleQuickMessageSeller = async () => {
     if (!listing) return;
-    if (!firebaseUser?.uid) {
-      handleMessageSeller();
-      return;
-    }
-
-    navigateToMessages();
-    void handleMessageSeller();
+    await handleMessageSeller();
   };
 
   return (
@@ -153,7 +150,11 @@ export default function ListingDetailsContent({
                   onMessageSeller={handleQuickMessageSeller}
                   onShare={handleShare}
                   onBuyNow={handleBuyNow}
-                  onAddToCart={() => void handleAddToCart()}
+                  onAddToCart={handleAddToCart}
+                  checkoutOpen={checkoutOpen}
+                  isAddingToCart={isAddingToCart}
+                  cartItemAdded={cartItemAdded}
+                  isMessagingSeller={isMessagingSeller}
                   ownerActionsMenu={isOwner ? detailActionsMenu : null}
                 />
                 {showOffersBlock ? <ListingOffersBlock listing={listing} /> : null}
