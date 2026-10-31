@@ -46,7 +46,6 @@ function CartPageContent() {
     toggleItemSelection,
     handleRemoveItem,
     handleCheckoutSelected,
-    requiresTicketHolder,
   } = useCartPageState();
 
   const handleCheckout = () => {
