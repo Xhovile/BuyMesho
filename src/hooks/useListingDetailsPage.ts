@@ -104,7 +104,7 @@ export function useListingDetailsPage(): ListingDetailsPageState {
   const [activeSection, setActiveSection] = useState<SectionKey>("details");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [cartItemAdded, setCartItemAdded] = useState(false);
+  const [cartItemAddedForListingId, setCartItemAddedForListingId] = useState<string | null>(null);
   const [isMessagingSeller, setIsMessagingSeller] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | "cart" | null>(null);
@@ -116,6 +116,7 @@ export function useListingDetailsPage(): ListingDetailsPageState {
   const exploreRef = useRef<HTMLElement | null>(null);
   const reviewsRef = useRef<HTMLElement | null>(null);
   const listingId = routeState.listing || "";
+  const cartItemAdded = cartItemAddedForListingId === listingId;
 
   const {
     listing,
@@ -434,7 +435,7 @@ export function useListingDetailsPage(): ListingDetailsPageState {
     }
 
     setIsAddingToCart(true);
-    setCartItemAdded(false);
+    setCartItemAddedForListingId(null);
     try {
       await setBuyerCartItem({
         listingId: String(listing.id),
@@ -448,7 +449,7 @@ export function useListingDetailsPage(): ListingDetailsPageState {
         availableQuantity,
         addedAt: new Date().toISOString(),
       });
-      setCartItemAdded(true);
+      setCartItemAddedForListingId(String(listing.id));
       openShareNotice("Added to cart.");
     } catch (error) {
       openShareNotice(
