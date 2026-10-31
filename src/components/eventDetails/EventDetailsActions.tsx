@@ -1,4 +1,4 @@
-import { Check, LoaderCircle, MessageCircle, ShoppingCart, BarChart3, Pencil, Share2, Trash2 } from "lucide-react";
+import { Check, LoaderCircle, MessageCircle, Share2, BarChart3, Pencil, Trash2 } from "lucide-react";
 
 import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, navigateToPath } from "../../lib/appNavigation";
 import type { EventRecord } from "./eventDetailsTypes";
@@ -11,8 +11,9 @@ export default function EventDetailsActions({
   canBuyOrCart,
   checkoutLoading,
   ticketHolderOpen,
-  cartItemAdded,
   isMessagingEvent,
+  isSharingEvent,
+  shareCompleted,
   onBuyTicket,
   onMessage,
   onAddToCart,
@@ -25,8 +26,9 @@ export default function EventDetailsActions({
   canBuyOrCart: boolean;
   checkoutLoading: boolean;
   ticketHolderOpen: boolean;
-  cartItemAdded: boolean;
   isMessagingEvent: boolean;
+  isSharingEvent: boolean;
+  shareCompleted: boolean;
   onBuyTicket: () => void;
   onMessage: () => void;
   onAddToCart: () => void;
@@ -74,17 +76,6 @@ export default function EventDetailsActions({
 
         <button
           type="button"
-          onClick={onAddToCart}
-          disabled={!canBuyOrCart}
-          aria-label={cartItemAdded ? "Ticket added to cart" : "Add ticket to cart"}
-          className={`${buyerActionButtonClass} disabled:cursor-not-allowed disabled:opacity-60 focus-visible:ring-yellow-600 sm:w-auto sm:px-4 ${cartItemAdded ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-yellow-500 text-white hover:bg-yellow-400"}`}
-        >
-          {cartItemAdded ? <Check className="h-4 w-4 shrink-0" /> : <ShoppingCart className="h-4 w-4 shrink-0" />}
-          <span className="truncate">{cartItemAdded ? "Added!" : "Add to Cart"}</span>
-        </button>
-
-        <button
-          type="button"
           onClick={onMessage}
           disabled={!canMessageEvent || isMessagingEvent}
           aria-busy={isMessagingEvent}
@@ -95,9 +86,20 @@ export default function EventDetailsActions({
           {isMessagingEvent ? <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-sky-700" /> : <MessageCircle className="h-4 w-4 shrink-0 text-sky-700" />}
           <span className="truncate">{isMessagingEvent ? "Opening…" : "Message"}</span>
         </button>
+        <button
+          type="button"
+          onClick={onShare}
+          disabled={isSharingEvent}
+          aria-busy={isSharingEvent}
+          aria-label={isSharingEvent ? "Sharing event" : "Share event"}
+          className={`${buyerActionButtonClass} border border-zinc-200 bg-white text-zinc-800 shadow-sm hover:bg-zinc-50 focus-visible:ring-violet-600 disabled:cursor-wait disabled:opacity-80 sm:w-auto sm:px-4 `}
+        >
+          {isSharingEvent ? <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-violet-700" /> : shareCompleted ? <Check className="h-4 w-4 shrink-0 text-emerald-600" /> : <Share2 className="h-4 w-4 shrink-0 text-zinc-700" />}
+          <span className="truncate">{isSharingEvent ? "Sharing…" : shareCompleted ? "Shared" : "Share"}</span>
+        </button>
       </div>
       <p className="sr-only" role="status" aria-live="polite">
-        {isMessagingEvent ? "Opening a conversation with the event organizer." : cartItemAdded ? "Ticket added to your cart." : ticketHolderOpen ? "Ticket holder form opened." : ""}
+        {isMessagingEvent ? "Opening a conversation with the event organizer." : isSharingEvent ? "Sharing event." : shareCompleted ? "Event shared successfully." : ticketHolderOpen ? "Ticket holder form opened." : ""}
       </p>
     </div>
   );
