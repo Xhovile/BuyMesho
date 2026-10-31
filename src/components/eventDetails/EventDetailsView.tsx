@@ -73,8 +73,9 @@ export default function EventDetailsView() {
     setError(null);
     setNotice(null);
     setTicketHolderOpen(false);
-    setCartItemAdded(false);
     setIsMessagingEvent(false);
+    setIsSharingEvent(false);
+    setShareCompleted(false);
     setAuthPromptOpen(false);
     setAuthPromptAction(null);
     setLoading(eventId !== null);
@@ -87,8 +88,9 @@ export default function EventDetailsView() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [cartNoticeOpen, setCartNoticeOpen] = useState(false);
-  const [cartItemAdded, setCartItemAdded] = useState(false);
   const [isMessagingEvent, setIsMessagingEvent] = useState(false);
+  const [isSharingEvent, setIsSharingEvent] = useState(false);
+  const [shareCompleted, setShareCompleted] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | "cart" | null>(null);
   const [coreOpen, setCoreOpen] = useState(true);
@@ -271,19 +273,27 @@ export default function EventDetailsView() {
   };
 
   const handleShare = async () => {
-    if (!event || !eventPageUrl) return;
+    if (!event || !eventPageUrl || isSharingEvent) return;
     const shareData = { title: event.event_title, text: `${event.event_title} • ${price}`, url: eventPageUrl };
+    setIsSharingEvent(true);
+    setShareCompleted(false);
     try {
       if (navigator.share) {
         await navigator.share(shareData);
+        setShareCompleted(true);
         return;
       }
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(eventPageUrl);
         setNotice("Event link copied to clipboard.");
+        setShareCompleted(true);
+        return;
       }
+      setNotice("Sharing is unavailable on this device.");
     } catch {
-      // Keep silent if sharing is unavailable.
+      setNotice("Could not share this event. You can copy its link from the event actions menu.");
+    } finally {
+      setIsSharingEvent(false);
     }
   };
 
@@ -380,32 +390,26 @@ export default function EventDetailsView() {
       return;
     }
 
-    setCartItemAdded(false);
-    try {
-      upsertEventCartItem(firebaseUser.uid, {
-        itemType: "event_ticket",
-        eventId: String(event.id),
-        eventTitle: event.event_title,
-        organizerName: event.organizer_name,
-        organizerUid: event.creator_uid,
-        eventDate: event.event_date,
-        startTime: event.start_time,
-        venue: event.venue,
-        location: event.location,
-        ticketPrice: event.ticket_price,
-        ticketLink: event.ticket_link,
-        unitPrice: Number(event.ticket_price || 0),
-        quantity: 1,
-        totalPrice: Number(event.ticket_price || 0),
-        addedAt: new Date().toISOString(),
-      });
+    upsertEventCartItem(firebaseUser.uid, {
+      itemType: "event_ticket",
+      eventId: String(event.id),
+      eventTitle: event.event_title,
+      organizerName: event.organizer_name,
+      organizerUid: event.creator_uid,
+      eventDate: event.event_date,
+      startTime: event.start_time,
+      venue: event.venue,
+      location: event.location,
+      ticketPrice: event.ticket_price,
+      ticketLink: event.ticket_link,
+      unitPrice: Number(event.ticket_price || 0),
+      quantity: 1,
+      totalPrice: Number(event.ticket_price || 0),
+      addedAt: new Date().toISOString(),
+    });
 
-      setCartItemAdded(true);
-      setNotice("Ticket added to cart.");
-      setCartNoticeOpen(true);
-    } catch (error: any) {
-      setNotice(error?.message || "Could not add this ticket to your cart.");
-    }
+    setNotice("Ticket added to cart.");
+    setCartNoticeOpen(true);
   };
 
   const handleCancelEvent = async () => {
@@ -467,7 +471,7 @@ export default function EventDetailsView() {
           {shouldShowMenu ? <section><div className="mb-3 flex justify-start"><EventActionsMenu eventId={event.id} eventTitle={event.event_title} shareUrl={eventPageUrl} /></div></section> : null}
           <EventDetailsHero event={event} posterUrl={posterUrl} posterAlt={posterAlt} accent={accent} price={price} notice={notice} onClearNotice={clearNotice} />
           <EventDetailsSections event={event} coreOpen={coreOpen} extraOpen={extraOpen} onToggleCore={() => setCoreOpen((current) => !current)} onToggleExtra={() => setExtraOpen((current) => !current)} extraSpecEntries={extraSpecEntries} />
-          <EventDetailsActions event={event} canManageEvent={canManageEvent} canMessageEvent={canMessageEvent} canBuyOrCart={canBuyOrCart} checkoutLoading={checkoutLoading} ticketHolderOpen={ticketHolderOpen} cartItemAdded={cartItemAdded} isMessagingEvent={isMessagingEvent} onBuyTicket={handleBuyTicket} onMessage={() => void handleMessage()} onAddToCart={() => void handleAddToCart()} onShare={handleShare} onCancelEvent={() => void handleCancelEvent()} />
+          <EventDetailsActions event={event} canManageEvent={canManageEvent} canMessageEvent={canMessageEvent} canBuyOrCart={canBuyOrCart} checkoutLoading={checkoutLoading} ticketHolderOpen={ticketHolderOpen} isMessagingEvent={isMessagingEvent} isSharingEvent={isSharingEvent} shareCompleted={shareCompleted} onBuyTicket={handleBuyTicket} onMessage={() => void handleMessage()} onAddToCart={() => void handleAddToCart()} onShare={handleShare} onCancelEvent={() => void handleCancelEvent()} />
         </div>
       </main>
 
