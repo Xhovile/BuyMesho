@@ -397,6 +397,9 @@ export class BuyMeshoPayChanguDirectCardStore implements DirectCardCheckoutStore
       if (isTerminalChargeStatus(charge.status)) {
         throw new Error("A terminal Direct Card Charge cannot be settled.");
       }
+      if (charge.requires3dsAuth && !charge.authorizationCompleted) {
+        throw new Error("Cardholder authorization must be confirmed before Direct Card settlement.");
+      }
       const order = await orderRepository.findByIdAsync(charge.orderId, client);
       if (!order || order.paymentReference !== charge.paymentReference) {
         throw new Error("Direct Card Charge no longer matches its stored order payment reference.");
