@@ -10,6 +10,7 @@ export default function EventDetailsActions({
   canMessageEvent,
   canBuyOrCart,
   checkoutLoading,
+  ticketHolderOpen,
   onBuyTicket,
   onMessage,
   onAddToCart,
@@ -21,6 +22,7 @@ export default function EventDetailsActions({
   canMessageEvent: boolean;
   canBuyOrCart: boolean;
   checkoutLoading: boolean;
+  ticketHolderOpen: boolean;
   onBuyTicket: () => void;
   onMessage: () => void;
   onAddToCart: () => void;
@@ -58,6 +60,8 @@ export default function EventDetailsActions({
           type="button"
           onClick={onBuyTicket}
           disabled={!canBuyOrCart || checkoutLoading}
+          aria-haspopup="dialog"
+          aria-expanded={ticketHolderOpen}
           className={`${buyerActionButtonClass} w-full bg-orange-500 text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-5`}
         >
           <BuyBasketIcon className="hidden h-6 w-6 shrink-0 text-[#8F171D] lg:block" />
