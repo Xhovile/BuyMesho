@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, ChevronRight, X } from "lucide-react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 
 import { CartCheckoutBar } from "./cart/CartCheckoutBar";
 import { CartItemCard } from "./cart/CartItemCard";
@@ -15,7 +15,7 @@ import {
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { formatMoney } from "./shared/utils/formatMoney";
-import TicketHolderForm, { type TicketHolderInformation } from "./components/tickets/TicketHolderForm";
+import { CartCheckoutModal } from "./components/checkout/CartCheckoutModal";
 
 export default function CartPage() {
   const ready = useRequireVerifiedUser();
@@ -25,11 +25,12 @@ export default function CartPage() {
 
 function CartPageContent() {
   const { user: firebaseUser } = useAuthUser();
-  const [ticketHolderOpen, setTicketHolderOpen] = useState(false);
+  const [cartCheckoutOpen, setCartCheckoutOpen] = useState(false);
 
   const {
     items,
     itemCount,
+    selectedItems,
     selectedQuantities,
     selectedCount,
     selectedUnits,
@@ -37,6 +38,7 @@ function CartPageContent() {
     latestPendingCheckoutUrl,
     checkoutError,
     checkoutLoading,
+    checkoutSelectionError,
     selectAllRef,
     allSelected,
     setAllSelected,
@@ -48,16 +50,8 @@ function CartPageContent() {
   } = useCartPageState();
 
   const handleCheckout = () => {
-    if (requiresTicketHolder) {
-      setTicketHolderOpen(true);
-      return;
-    }
-    handleCheckoutSelected();
-  };
-
-  const submitTicketHolder = (holder: TicketHolderInformation) => {
-    handleCheckoutSelected(holder);
-    setTicketHolderOpen(false);
+    if (!selectedCount || checkoutSelectionError) return;
+    setCartCheckoutOpen(true);
   };
 
   return (
@@ -195,40 +189,22 @@ function CartPageContent() {
         selectedCount={selectedCount}
         selectedSubtotal={selectedSubtotal}
         checkoutLoading={checkoutLoading}
+        checkoutDisabledReason={checkoutSelectionError}
         onCheckoutSelected={handleCheckout}
       />
 
-      {ticketHolderOpen ? (
-        <div className="fixed inset-0 z-[98] flex items-center justify-center p-4">
-          <button
-            type="button"
-            aria-label="Close ticket holder form"
-            onClick={() => setTicketHolderOpen(false)}
-            className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm"
-          />
-          <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
-            <button
-              type="button"
-              onClick={() => setTicketHolderOpen(false)}
-              disabled={checkoutLoading}
-              className="absolute right-4 top-4 rounded-full p-2 text-zinc-400 hover:bg-zinc-100"
-              aria-label="Close"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <TicketHolderForm
-              initialValue={{
-                fullName: firebaseUser?.displayName ?? "",
-                email: firebaseUser?.email ?? "",
-                phone: firebaseUser?.phoneNumber ?? "",
-              }}
-              onSubmit={submitTicketHolder}
-              onCancel={() => setTicketHolderOpen(false)}
-              submitting={checkoutLoading}
-            />
-          </div>
-        </div>
-      ) : null}
+      <CartCheckoutModal
+        open={cartCheckoutOpen}
+        entries={selectedItems}
+        subtotal={selectedSubtotal}
+        buyerName={firebaseUser?.displayName ?? null}
+        buyerEmail={firebaseUser?.email ?? null}
+        buyerPhone={firebaseUser?.phoneNumber ?? null}
+        checkoutLoading={checkoutLoading}
+        checkoutError={checkoutError}
+        onClose={() => setCartCheckoutOpen(false)}
+        onSubmit={handleCheckoutSelected}
+      />
     </div>
   );
 }
