@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { Check, LoaderCircle, Plus, Share2, ShieldCheck, ShoppingCart } from "lucide-react";
+import { Plus, Share2, ShieldCheck, ShoppingBag, ShoppingCart } from "lucide-react";
 import type { Listing } from "../../types";
 import { InfoPill } from "./ListingDetailsShared";
 import BuyBasketIcon from "../BuyBasketIcon";
@@ -14,29 +14,23 @@ export default function ListingSummary({
   listing,
   seller,
   availableQuantity,
+  isLoggedIn,
   currentUserUid,
   onMessageSeller,
   onShare,
   onBuyNow,
   onAddToCart,
-  checkoutOpen,
-  isAddingToCart,
-  cartItemAdded,
-  isMessagingSeller,
   ownerActionsMenu,
 }: {
   listing: Listing;
   seller: SellerProfile | null;
   availableQuantity: number;
+  isLoggedIn: boolean;
   currentUserUid?: string | null;
   onMessageSeller: () => void | Promise<void>;
   onShare: () => void;
   onBuyNow?: () => void;
   onAddToCart?: () => void | Promise<void>;
-  checkoutOpen: boolean;
-  isAddingToCart: boolean;
-  cartItemAdded: boolean;
-  isMessagingSeller: boolean;
   ownerActionsMenu?: ReactNode;
 }) {
   const isOwner = !!currentUserUid && String(currentUserUid).trim() === String(listing.seller_uid).trim();
@@ -48,7 +42,7 @@ export default function ListingSummary({
   const modeLabel = listingMode === "deal" ? "Deal" : listingMode === "wholesale" ? "Wholesale" : "Normal";
 
   const actionButtonClass =
-    "inline-flex min-w-0 w-full items-center justify-center gap-1.5 rounded-2xl px-2 py-3 text-xs font-extrabold transition-all duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 motion-reduce:transition-none sm:gap-2 sm:px-3 sm:text-sm";
+    "inline-flex min-w-0 w-full items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-extrabold transition-colors";
 
   const stockPillClass = isSold
     ? "border-red-200 bg-red-600 text-white"
@@ -59,16 +53,6 @@ export default function ListingSummary({
   const statusPillClass = isSold
     ? "border-red-200 bg-red-600 text-white"
     : "border-zinc-200 bg-white text-zinc-600";
-
-  const actionStatus = isAddingToCart
-    ? "Adding this item to your cart."
-    : cartItemAdded
-      ? "This item has been added to your cart."
-      : isMessagingSeller
-        ? "Opening a conversation with the seller."
-        : checkoutOpen
-          ? "Checkout is open."
-          : "";
 
   return (
     <aside>
@@ -116,66 +100,39 @@ export default function ListingSummary({
         ) : (
           <div className="border-t border-zinc-200 pt-4">
             <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={onBuyNow}
-                disabled={checkoutOpen}
-                aria-haspopup="dialog"
-                aria-expanded={checkoutOpen}
-                aria-label={checkoutOpen ? "Checkout opened" : "Buy this listing"}
-                className={`${actionButtonClass} bg-lime-400 text-zinc-950 hover:bg-lime-500 focus-visible:ring-lime-600 disabled:cursor-default disabled:bg-lime-500 disabled:opacity-90`}
-              >
-                {checkoutOpen ? <Check className="h-4 w-4 shrink-0" /> : <BuyBasketIcon className="h-5 w-5 shrink-0 text-[#8F171D]" />}
-                <span className="truncate">{checkoutOpen ? "Checkout" : "Buy"}</span>
+              <button type="button" onClick={onBuyNow} className={`${actionButtonClass} bg-lime-400 text-zinc-950 hover:bg-lime-500`}>
+                <BuyBasketIcon className="hidden h-6 w-6 shrink-0 text-[#8F171D] lg:block" />
+                <span>Buy</span>
               </button>
 
               <button
                 type="button"
                 onClick={onAddToCart}
-                disabled={isAddingToCart}
-                aria-busy={isAddingToCart}
-                aria-label={isAddingToCart ? "Adding to cart" : cartItemAdded ? "Added to cart" : "Add to cart"}
-                title={isAddingToCart ? "Adding to cart" : cartItemAdded ? "Added to cart" : "Add to cart"}
-                className={`${actionButtonClass} focus-visible:ring-yellow-600 disabled:cursor-wait disabled:opacity-80 ${cartItemAdded ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-yellow-500 text-white hover:bg-yellow-400"}`}
+                className={`${actionButtonClass} bg-yellow-500 text-white hover:bg-yellow-400`}
+                aria-label="Add to cart"
+                title="Add to cart"
               >
-                {isAddingToCart ? (
-                  <LoaderCircle className="h-4 w-4 shrink-0 animate-spin" />
-                ) : cartItemAdded ? (
-                  <Check className="h-4 w-4 shrink-0" />
-                ) : (
-                  <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center">
+                <span className="inline-flex items-center gap-2" aria-hidden="true">
+                  <span className="relative inline-flex h-5 w-6 items-center justify-center">
                     <ShoppingCart className="h-5 w-5" />
                     <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white text-yellow-600 shadow-sm">
                       <Plus className="h-2.5 w-2.5 stroke-[3]" />
                     </span>
                   </span>
-                )}
-                <span className="truncate">{isAddingToCart ? "Adding…" : cartItemAdded ? "Added!" : "Add to Cart"}</span>
+                  <span className="hidden truncate sm:inline">Add to Cart</span>
+                </span>
               </button>
 
-              <button
-                type="button"
-                onClick={onMessageSeller}
-                disabled={isMessagingSeller}
-                aria-busy={isMessagingSeller}
-                aria-label={isMessagingSeller ? "Opening chat" : "Message seller"}
-                title={isMessagingSeller ? "Opening chat" : "Message seller"}
-                className={`${actionButtonClass} border border-zinc-200 bg-white text-zinc-800 shadow-sm hover:bg-zinc-50 focus-visible:ring-sky-600 disabled:cursor-wait disabled:opacity-80`}
-              >
-                {isMessagingSeller ? (
-                  <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-sky-700" />
-                ) : (
-                  <svg viewBox="190 240 220 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="h-6 w-6 shrink-0 drop-shadow-[0_3px_3px_rgba(0,0,0,0.18)]">
-                    <path d="M232 250 H360 C379 250 394 265 394 284 V351 C394 370 379 385 360 385 H351 V414 C351 424 343 429 335 421 L298 385 H232 C213 385 198 370 198 351 V284 C198 265 213 250 232 250 Z" fill="#198FC7" />
-                    <circle cx="245" cy="316" r="12" fill="#FFFFFF" />
-                    <circle cx="284" cy="316" r="12" fill="#FFFFFF" />
-                    <circle cx="323" cy="316" r="12" fill="#FFFFFF" />
-                  </svg>
-                )}
-                <span className="truncate">{isMessagingSeller ? "Opening…" : "Message"}</span>
+              <button type="button" onClick={onMessageSeller} className="flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white p-0 shadow-sm transition-all hover:bg-zinc-50 active:translate-y-px" aria-label="Message seller" title="Message seller">
+                <svg viewBox="190 240 220 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="h-8 w-9 drop-shadow-[0_3px_3px_rgba(0,0,0,0.18)]">
+                  <path d="M232 250 H360 C379 250 394 265 394 284 V351 C394 370 379 385 360 385 H351 V414 C351 424 343 429 335 421 L298 385 H232 C213 385 198 370 198 351 V284 C198 265 213 250 232 250 Z" fill="#198FC7" />
+                  <circle cx="245" cy="316" r="12" fill="#FFFFFF" />
+                  <circle cx="284" cy="316" r="12" fill="#FFFFFF" />
+                  <circle cx="323" cy="316" r="12" fill="#FFFFFF" />
+                </svg>
+                <span className="hidden truncate font-extrabold sm:inline">Message</span>
               </button>
             </div>
-            <p className="sr-only" role="status" aria-live="polite">{actionStatus}</p>
           </div>
         )}
       </div>
