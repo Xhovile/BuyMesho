@@ -380,6 +380,7 @@ export default function EventDetailsView() {
       return;
     }
 
+    setCartItemAdded(false);
     try {
       upsertEventCartItem(firebaseUser.uid, {
         itemType: "event_ticket",
