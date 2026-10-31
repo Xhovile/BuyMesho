@@ -75,7 +75,6 @@ export default function EventDetailsView() {
     setTicketHolderOpen(false);
     setIsMessagingEvent(false);
     setIsSharingEvent(false);
-    setShareCompleted(false);
     setAuthPromptOpen(false);
     setAuthPromptAction(null);
     setLoading(eventId !== null);
@@ -90,7 +89,6 @@ export default function EventDetailsView() {
   const [cartNoticeOpen, setCartNoticeOpen] = useState(false);
   const [isMessagingEvent, setIsMessagingEvent] = useState(false);
   const [isSharingEvent, setIsSharingEvent] = useState(false);
-  const [shareCompleted, setShareCompleted] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | "cart" | null>(null);
   const [coreOpen, setCoreOpen] = useState(true);
@@ -276,17 +274,16 @@ export default function EventDetailsView() {
     if (!event || !eventPageUrl || isSharingEvent) return;
     const shareData = { title: event.event_title, text: `${event.event_title} • ${price}`, url: eventPageUrl };
     setIsSharingEvent(true);
-    setShareCompleted(false);
     try {
       if (navigator.share) {
         await navigator.share(shareData);
-        setShareCompleted(true);
+        setNotice("Event shared successfully.");
         return;
       }
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(eventPageUrl);
         setNotice("Event link copied to clipboard.");
-        setShareCompleted(true);
+        setNotice("Event shared successfully.");
         return;
       }
       setNotice("Sharing is unavailable on this device.");
@@ -308,6 +305,7 @@ export default function EventDetailsView() {
       return;
     }
     setIsMessagingEvent(true);
+    setNotice("Opening conversation…");
     try {
       const conversation = await startConversationFromEvent(event.id);
       navigateToConversation(conversation.id);
@@ -471,7 +469,7 @@ export default function EventDetailsView() {
           {shouldShowMenu ? <section><div className="mb-3 flex justify-start"><EventActionsMenu eventId={event.id} eventTitle={event.event_title} shareUrl={eventPageUrl} /></div></section> : null}
           <EventDetailsHero event={event} posterUrl={posterUrl} posterAlt={posterAlt} accent={accent} price={price} notice={notice} onClearNotice={clearNotice} />
           <EventDetailsSections event={event} coreOpen={coreOpen} extraOpen={extraOpen} onToggleCore={() => setCoreOpen((current) => !current)} onToggleExtra={() => setExtraOpen((current) => !current)} extraSpecEntries={extraSpecEntries} />
-          <EventDetailsActions event={event} canManageEvent={canManageEvent} canMessageEvent={canMessageEvent} canBuyOrCart={canBuyOrCart} checkoutLoading={checkoutLoading} ticketHolderOpen={ticketHolderOpen} isMessagingEvent={isMessagingEvent} isSharingEvent={isSharingEvent} shareCompleted={shareCompleted} onBuyTicket={handleBuyTicket} onMessage={() => void handleMessage()} onAddToCart={() => void handleAddToCart()} onShare={handleShare} onCancelEvent={() => void handleCancelEvent()} />
+          <EventDetailsActions event={event} canManageEvent={canManageEvent} canMessageEvent={canMessageEvent} canBuyOrCart={canBuyOrCart} checkoutLoading={checkoutLoading} onBuyTicket={handleBuyTicket} onMessage={() => void handleMessage()} onAddToCart={() => void handleAddToCart()} onShare={handleShare} onCancelEvent={() => void handleCancelEvent()} />
         </div>
       </main>
 
