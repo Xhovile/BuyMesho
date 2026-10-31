@@ -14,7 +14,6 @@ export default function ListingSummary({
   listing,
   seller,
   availableQuantity,
-  isLoggedIn,
   currentUserUid,
   onMessageSeller,
   onShare,
@@ -29,7 +28,6 @@ export default function ListingSummary({
   listing: Listing;
   seller: SellerProfile | null;
   availableQuantity: number;
-  isLoggedIn: boolean;
   currentUserUid?: string | null;
   onMessageSeller: () => void | Promise<void>;
   onShare: () => void;
