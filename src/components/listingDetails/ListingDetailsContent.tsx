@@ -50,9 +50,6 @@ export default function ListingDetailsContent({
   handleBuyNow,
   handleAddToCart,
   handleMessageSeller,
-  isAddingToCart,
-  cartItemAdded,
-  isMessagingSeller,
   handleDetailEdit,
   handleDetailDelete,
   handleDetailHideSeller,
@@ -151,10 +148,6 @@ export default function ListingDetailsContent({
                   onShare={handleShare}
                   onBuyNow={handleBuyNow}
                   onAddToCart={handleAddToCart}
-                  checkoutOpen={checkoutOpen}
-                  isAddingToCart={isAddingToCart}
-                  cartItemAdded={cartItemAdded}
-                  isMessagingSeller={isMessagingSeller}
                   ownerActionsMenu={isOwner ? detailActionsMenu : null}
                 />
                 {showOffersBlock ? <ListingOffersBlock listing={listing} /> : null}
