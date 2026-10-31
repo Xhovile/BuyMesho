@@ -1,4 +1,4 @@
-import { Check, LoaderCircle, MessageCircle, Share2, BarChart3, Pencil, Trash2 } from "lucide-react";
+import { BarChart3, Pencil, Share2, Trash2 } from "lucide-react";
 
 import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, navigateToPath } from "../../lib/appNavigation";
 import type { EventRecord } from "./eventDetailsTypes";
@@ -10,10 +10,6 @@ export default function EventDetailsActions({
   canMessageEvent,
   canBuyOrCart,
   checkoutLoading,
-  ticketHolderOpen,
-  isMessagingEvent,
-  isSharingEvent,
-  shareCompleted,
   onBuyTicket,
   onMessage,
   onAddToCart,
@@ -25,10 +21,6 @@ export default function EventDetailsActions({
   canMessageEvent: boolean;
   canBuyOrCart: boolean;
   checkoutLoading: boolean;
-  ticketHolderOpen: boolean;
-  isMessagingEvent: boolean;
-  isSharingEvent: boolean;
-  shareCompleted: boolean;
   onBuyTicket: () => void;
   onMessage: () => void;
   onAddToCart: () => void;
@@ -36,7 +28,7 @@ export default function EventDetailsActions({
   onCancelEvent: () => void;
 }) {
   const ownerActionButtonClass = "inline-flex items-center gap-2 rounded-2xl border border-blue-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-blue-50";
-  const buyerActionButtonClass = "inline-flex min-w-0 w-full items-center justify-center gap-1.5 rounded-2xl px-2 py-3 text-xs font-extrabold transition-all duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 motion-reduce:transition-none sm:gap-2 sm:px-3 sm:text-sm";
+  const buyerActionButtonClass = "inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-extrabold transition-colors";
 
   return canManageEvent ? (
     <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/80 via-zinc-50 to-white p-4 shadow-sm ring-1 ring-blue-100/60">
@@ -66,41 +58,39 @@ export default function EventDetailsActions({
           type="button"
           onClick={onBuyTicket}
           disabled={!canBuyOrCart || checkoutLoading}
-          aria-haspopup="dialog"
-          aria-expanded={ticketHolderOpen}
-          className={`${buyerActionButtonClass} bg-orange-500 text-white hover:bg-orange-600 focus-visible:ring-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-5`}
+          className={`${buyerActionButtonClass} w-full bg-orange-500 text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-5`}
         >
-          {checkoutLoading ? <LoaderCircle className="h-4 w-4 shrink-0 animate-spin" /> : ticketHolderOpen ? <Check className="h-4 w-4 shrink-0" /> : <BuyBasketIcon className="hidden h-6 w-6 shrink-0 text-[#8F171D] lg:block" />}
-          <span className="truncate">{checkoutLoading ? "Processing…" : ticketHolderOpen ? "Details ready" : "Buy Ticket"}</span>
+          <BuyBasketIcon className="hidden h-6 w-6 shrink-0 text-[#8F171D] lg:block" />
+          <span className="truncate">{checkoutLoading ? "Buying…" : "Buy Ticket"}</span>
         </button>
 
         <button
           type="button"
           onClick={onMessage}
-          disabled={!canMessageEvent || isMessagingEvent}
-          aria-busy={isMessagingEvent}
-          className={`${buyerActionButtonClass} border border-zinc-200 bg-white text-zinc-800 shadow-sm hover:bg-zinc-50 focus-visible:ring-sky-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-4`}
-          aria-label={isMessagingEvent ? "Opening chat" : "Message event owner"}
+          disabled={!canMessageEvent}
+          className="flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 shadow-sm transition-all hover:bg-zinc-50 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-4"
+          aria-label="Message event owner"
           title={!canMessageEvent ? "This event is not available for messaging right now." : "Message event owner"}
         >
-          {isMessagingEvent ? <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-sky-700" /> : <MessageCircle className="h-4 w-4 shrink-0 text-sky-700" />}
-          <span className="truncate">{isMessagingEvent ? "Opening…" : "Message"}</span>
+          <svg viewBox="190 240 220 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="h-8 w-9 shrink-0 drop-shadow-[0_3px_3px_rgba(0,0,0,0.18)]">
+            <path d="M232 250 H360 C379 250 394 265 394 284 V351 C394 370 379 385 360 385 H351 V414 C351 424 343 429 335 421 L298 385 H232 C213 385 198 370 198 351 V284 C198 265 213 250 232 250 Z" fill="#198FC7" />
+            <circle cx="245" cy="316" r="12" fill="#FFFFFF" />
+            <circle cx="284" cy="316" r="12" fill="#FFFFFF" />
+            <circle cx="323" cy="316" r="12" fill="#FFFFFF" />
+          </svg>
+          <span className="hidden font-extrabold sm:inline">Message</span>
         </button>
         <button
           type="button"
           onClick={onShare}
-          disabled={isSharingEvent}
-          aria-busy={isSharingEvent}
-          aria-label={isSharingEvent ? "Sharing event" : "Share event"}
-          className={`${buyerActionButtonClass} border border-zinc-200 bg-white text-zinc-800 shadow-sm hover:bg-zinc-50 focus-visible:ring-violet-600 disabled:cursor-wait disabled:opacity-80 sm:w-auto sm:px-4 `}
+          className="flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 transition-colors hover:bg-zinc-50 sm:w-auto sm:px-4"
+          aria-label="Share event"
+          title="Share event"
         >
-          {isSharingEvent ? <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-violet-700" /> : shareCompleted ? <Check className="h-4 w-4 shrink-0 text-emerald-600" /> : <Share2 className="h-4 w-4 shrink-0 text-zinc-700" />}
-          <span className="truncate">{isSharingEvent ? "Sharing…" : shareCompleted ? "Shared" : "Share"}</span>
+          <Share2 className="h-4 w-4 text-zinc-700" />
+          <span className="hidden font-extrabold sm:inline">Share</span>
         </button>
       </div>
-      <p className="sr-only" role="status" aria-live="polite">
-        {isMessagingEvent ? "Opening a conversation with the event organizer." : isSharingEvent ? "Sharing event." : shareCompleted ? "Event shared successfully." : ticketHolderOpen ? "Ticket holder form opened." : ""}
-      </p>
     </div>
   );
 }
