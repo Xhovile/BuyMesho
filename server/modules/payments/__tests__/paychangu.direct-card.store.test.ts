@@ -80,10 +80,12 @@ test("BuyMesho Direct Card store atomically claims an order and settles through 
 
     const initiated = await store.recordInitiationResult(chargeId, {
       chargeId,
-      status: "pending_verification",
-      requires3dsAuth: false,
+      status: "requires_3ds_auth",
+      requires3dsAuth: true,
+      threeDsAuthUrl: "https://paychangu.example.test/3ds",
     });
-    assert.equal(initiated.charge.status, "pending_verification");
+    assert.equal(initiated.charge.status, "requires_action");
+    assert.equal(initiated.charge.authorizationCompleted, false);
 
     const providerVerified = {
       chargeId,
@@ -92,6 +94,12 @@ test("BuyMesho Direct Card store atomically claims an order and settles through 
       amount: 1250,
       currency: "MWK",
     };
+    await assert.rejects(
+      () => store.settleVerifiedCharge(chargeId, providerVerified),
+      /authorization must be confirmed/i,
+    );
+
+    await store.recordAuthorizationResult(chargeId, { completed: true });
     const settled = await store.settleVerifiedCharge(chargeId, providerVerified);
     assert.equal(settled.charge.status, "paid");
     assert.equal(settled.payment.status, "captured");
