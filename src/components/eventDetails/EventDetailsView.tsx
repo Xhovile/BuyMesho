@@ -73,6 +73,8 @@ export default function EventDetailsView() {
     setError(null);
     setNotice(null);
     setTicketHolderOpen(false);
+    setCartItemAdded(false);
+    setIsMessagingEvent(false);
     setAuthPromptOpen(false);
     setAuthPromptAction(null);
     setLoading(eventId !== null);
@@ -85,6 +87,8 @@ export default function EventDetailsView() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [cartNoticeOpen, setCartNoticeOpen] = useState(false);
+  const [cartItemAdded, setCartItemAdded] = useState(false);
+  const [isMessagingEvent, setIsMessagingEvent] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | "cart" | null>(null);
   const [coreOpen, setCoreOpen] = useState(true);
@@ -284,7 +288,7 @@ export default function EventDetailsView() {
   };
 
   const handleMessage = async () => {
-    if (!event) return;
+    if (!event || isMessagingEvent) return;
     if (!firebaseUser?.uid) {
       openAuthPrompt("message");
       return;
@@ -293,11 +297,14 @@ export default function EventDetailsView() {
       setNotice(event.creator_uid ? "This event is inactive right now." : "This event does not yet have an owner profile for messaging.");
       return;
     }
+    setIsMessagingEvent(true);
     try {
       const conversation = await startConversationFromEvent(event.id);
       navigateToConversation(conversation.id);
     } catch (error: any) {
       setNotice(error?.message || "Failed to start event conversation.");
+    } finally {
+      setIsMessagingEvent(false);
     }
   };
 
@@ -373,26 +380,31 @@ export default function EventDetailsView() {
       return;
     }
 
-    upsertEventCartItem(firebaseUser.uid, {
-      itemType: "event_ticket",
-      eventId: String(event.id),
-      eventTitle: event.event_title,
-      organizerName: event.organizer_name,
-      organizerUid: event.creator_uid,
-      eventDate: event.event_date,
-      startTime: event.start_time,
-      venue: event.venue,
-      location: event.location,
-      ticketPrice: event.ticket_price,
-      ticketLink: event.ticket_link,
-      unitPrice: Number(event.ticket_price || 0),
-      quantity: 1,
-      totalPrice: Number(event.ticket_price || 0),
-      addedAt: new Date().toISOString(),
-    });
+    try {
+      upsertEventCartItem(firebaseUser.uid, {
+        itemType: "event_ticket",
+        eventId: String(event.id),
+        eventTitle: event.event_title,
+        organizerName: event.organizer_name,
+        organizerUid: event.creator_uid,
+        eventDate: event.event_date,
+        startTime: event.start_time,
+        venue: event.venue,
+        location: event.location,
+        ticketPrice: event.ticket_price,
+        ticketLink: event.ticket_link,
+        unitPrice: Number(event.ticket_price || 0),
+        quantity: 1,
+        totalPrice: Number(event.ticket_price || 0),
+        addedAt: new Date().toISOString(),
+      });
 
-    setNotice("Ticket added to cart.");
-    setCartNoticeOpen(true);
+      setCartItemAdded(true);
+      setNotice("Ticket added to cart.");
+      setCartNoticeOpen(true);
+    } catch (error: any) {
+      setNotice(error?.message || "Could not add this ticket to your cart.");
+    }
   };
 
   const handleCancelEvent = async () => {
@@ -454,7 +466,7 @@ export default function EventDetailsView() {
           {shouldShowMenu ? <section><div className="mb-3 flex justify-start"><EventActionsMenu eventId={event.id} eventTitle={event.event_title} shareUrl={eventPageUrl} /></div></section> : null}
           <EventDetailsHero event={event} posterUrl={posterUrl} posterAlt={posterAlt} accent={accent} price={price} notice={notice} onClearNotice={clearNotice} />
           <EventDetailsSections event={event} coreOpen={coreOpen} extraOpen={extraOpen} onToggleCore={() => setCoreOpen((current) => !current)} onToggleExtra={() => setExtraOpen((current) => !current)} extraSpecEntries={extraSpecEntries} />
-          <EventDetailsActions event={event} canManageEvent={canManageEvent} canMessageEvent={canMessageEvent} canBuyOrCart={canBuyOrCart} checkoutLoading={checkoutLoading} onBuyTicket={handleBuyTicket} onMessage={() => void handleMessage()} onAddToCart={() => void handleAddToCart()} onShare={handleShare} onCancelEvent={() => void handleCancelEvent()} />
+          <EventDetailsActions event={event} canManageEvent={canManageEvent} canMessageEvent={canMessageEvent} canBuyOrCart={canBuyOrCart} checkoutLoading={checkoutLoading} ticketHolderOpen={ticketHolderOpen} cartItemAdded={cartItemAdded} isMessagingEvent={isMessagingEvent} onBuyTicket={handleBuyTicket} onMessage={() => void handleMessage()} onAddToCart={() => void handleAddToCart()} onShare={handleShare} onCancelEvent={() => void handleCancelEvent()} />
         </div>
       </main>
 
