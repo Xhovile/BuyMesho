@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useListingSEO } from "../../hooks/useListingSEO";
 import ListingActionsMenu from "../ListingActionsMenu";
 import ConfirmModal from "../ConfirmModal";
@@ -19,34 +19,6 @@ import FloatingCartButton from "../FloatingCartButton";
 import { navigateBackOrPath, navigateToMessages, navigateToPath, EXPLORE_PATH } from "../../lib/appNavigation";
 import type { ListingDetailsPageState } from "../../hooks/useListingDetailsPage";
 import { clearListingDetailsCache } from "../../hooks/useListingDetailsData";
-
-const BUYER_CART_KEY = "__buymesho_buyer_cart";
-const BUYER_CART_UPDATED_EVENT = "buymesho:buyer-cart-updated";
-
-function upsertLocalBuyerCartItem(uid: string, item: {
-  listingId: string;
-  listingTitle: string;
-  listingImage?: string | null;
-  listingDescription?: string | null;
-  university?: string | null;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  availableQuantity?: number | null;
-  addedAt: string;
-}) {
-  try {
-    const storageKey = `${BUYER_CART_KEY}_${uid}`;
-    const existingRaw = localStorage.getItem(storageKey);
-    const current = existingRaw ? JSON.parse(existingRaw) as Array<Record<string, unknown>> : [];
-    const next = current.filter((entry) => String(entry.listingId) !== String(item.listingId));
-    next.unshift(item);
-    localStorage.setItem(storageKey, JSON.stringify(next.slice(0, 20)));
-    window.dispatchEvent(new CustomEvent(BUYER_CART_UPDATED_EVENT));
-  } catch {
-    // Ignore local storage failures.
-  }
-}
 
 export default function ListingDetailsContent({
   firebaseUser,
@@ -98,9 +70,6 @@ export default function ListingDetailsContent({
   isLoggedIn,
   onRetry,
 }: ListingDetailsPageState) {
-  const [quickNoticeOpen, setQuickNoticeOpen] = useState(false);
-  const [quickNoticeMessage, setQuickNoticeMessage] = useState("");
-
   useListingSEO(listing, seller?.business_name);
   const isOwner =
     !!firebaseUser?.uid &&
@@ -124,31 +93,6 @@ export default function ListingDetailsContent({
       onRestock={handleDetailRestock}
     />
   ) : null;
-
-  const handleQuickAddToCart = () => {
-    if (!listing) return;
-    if (!firebaseUser?.uid) {
-      handleAddToCart();
-      return;
-    }
-
-    const unitPrice = Number(listing.price || 0);
-    upsertLocalBuyerCartItem(firebaseUser.uid, {
-      listingId: String(listing.id),
-      listingTitle: listing.name,
-      listingImage: listing.photos?.[0] ?? null,
-      listingDescription: listing.description ?? null,
-      university: listing.university ?? null,
-      quantity: 1,
-      unitPrice,
-      totalPrice: unitPrice,
-      availableQuantity,
-      addedAt: new Date().toISOString(),
-    });
-
-    setQuickNoticeMessage("Added to cart.");
-    setQuickNoticeOpen(true);
-  };
 
   const handleQuickMessageSeller = () => {
     if (!listing) return;
@@ -209,7 +153,7 @@ export default function ListingDetailsContent({
                   onMessageSeller={handleQuickMessageSeller}
                   onShare={handleShare}
                   onBuyNow={handleBuyNow}
-                  onAddToCart={handleQuickAddToCart}
+                  onAddToCart={() => void handleAddToCart()}
                   ownerActionsMenu={isOwner ? detailActionsMenu : null}
                 />
                 {showOffersBlock ? <ListingOffersBlock listing={listing} /> : null}
@@ -260,7 +204,6 @@ export default function ListingDetailsContent({
       </main>
 
       <FeedbackModal open={shareNoticeOpen} type="info" title="Notice" message={shareNoticeMessage} onClose={closeShareNotice} />
-      <FeedbackModal open={quickNoticeOpen} type="info" title="Notice" message={quickNoticeMessage} onClose={() => setQuickNoticeOpen(false)} />
 
       <ConfirmModal
         open={authPromptOpen}
