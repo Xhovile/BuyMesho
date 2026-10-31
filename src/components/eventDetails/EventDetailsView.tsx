@@ -274,6 +274,7 @@ export default function EventDetailsView() {
     if (!event || !eventPageUrl || isSharingEvent) return;
     const shareData = { title: event.event_title, text: `${event.event_title} • ${price}`, url: eventPageUrl };
     setIsSharingEvent(true);
+    setNotice("Sharing event…");
     try {
       if (navigator.share) {
         await navigator.share(shareData);
@@ -283,7 +284,6 @@ export default function EventDetailsView() {
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(eventPageUrl);
         setNotice("Event link copied to clipboard.");
-        setNotice("Event shared successfully.");
         return;
       }
       setNotice("Sharing is unavailable on this device.");
