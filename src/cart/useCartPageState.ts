@@ -22,10 +22,17 @@ import {
 } from "../lib/eventCart";
 import { getCartItemKey, type CartCheckoutItem, type CartItemViewModel } from "./cartTypes";
 import type { TicketHolderInformation } from "../components/tickets/TicketHolderForm";
+import type { BuyerDeliveryDetails } from "../components/checkout/BuyerDetailsForm";
 
 export type CartCheckoutEntry = {
   item: CartItemViewModel;
   checkoutQuantity: number;
+};
+
+export type CartCheckoutFormDetails = {
+  buyerDetails?: BuyerDeliveryDetails;
+  saveBuyerDetails?: boolean;
+  ticketHolder?: TicketHolderInformation;
 };
 
 function mapBuyerCartItem(item: BuyerCartItem): CartItemViewModel {
@@ -144,6 +151,13 @@ export function useCartPageState() {
   const allSelected = items.length > 0 && selectedCount === items.length;
   const someSelected = selectedCount > 0 && selectedCount < items.length;
   const requiresTicketHolder = selectedItems.some(({ item }) => item.kind === "event_ticket");
+  const selectedEventIds = new Set(selectedItems.filter(({ item }) => item.kind === "event_ticket").map(({ item }) => item.itemId));
+  const hasSelectedListings = selectedItems.some(({ item }) => item.kind === "listing");
+  const checkoutSelectionError = hasSelectedListings && selectedEventIds.size > 0
+    ? "Marketplace listings and event tickets must be checked out separately. Select one type at a time."
+    : selectedEventIds.size > 1
+      ? "Tickets from multiple events must be checked out separately. Select tickets for one event at a time."
+      : null;
 
   useEffect(() => {
     if (selectAllRef.current) selectAllRef.current.indeterminate = someSelected;
@@ -169,11 +183,32 @@ export function useCartPageState() {
     setSelectedQuantities((current) => { const next = { ...current }; delete next[cartKey]; return next; });
   };
 
-  const handleCheckout = async (checkoutItems: CartCheckoutEntry[], ticketHolder?: TicketHolderInformation) => {
+  const handleCheckout = async (checkoutItems: CartCheckoutEntry[], checkoutDetails: CartCheckoutFormDetails = {}) => {
     if (!checkoutItems.length || checkoutLoading) return;
+    const { buyerDetails, saveBuyerDetails, ticketHolder } = checkoutDetails;
+    const cleanBuyerDetails = buyerDetails ? {
+      fullName: buyerDetails.fullName.trim(),
+      phone: buyerDetails.phone.trim(),
+      addressLine: buyerDetails.addressLine.trim(),
+      area: buyerDetails.area.trim(),
+      townOrDistrict: buyerDetails.townOrDistrict.trim(),
+      landmark: buyerDetails.landmark.trim(),
+    } : undefined;
+    const includesListing = checkoutItems.some(({ item }) => item.kind === "listing");
+    if (includesListing && (!cleanBuyerDetails || cleanBuyerDetails.fullName.length < 2 || cleanBuyerDetails.phone.length < 7 || cleanBuyerDetails.addressLine.length < 3 || cleanBuyerDetails.area.length < 2 || cleanBuyerDetails.townOrDistrict.length < 2)) {
+      setCheckoutError("Complete your delivery details before continuing.");
+      return;
+    }
     setCheckoutLoading(true);
     setCheckoutError(null);
     try {
+      if (includesListing && saveBuyerDetails && cleanBuyerDetails) {
+        await apiFetch("/api/profile/buyer-details", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ buyerDetails: cleanBuyerDetails }),
+        });
+      }
       const listingIds = checkoutItems.filter(({ item }) => item.kind === "listing").map(({ item }) => item.itemId);
       const eventIds = checkoutItems.filter(({ item }) => item.kind === "event_ticket").map(({ item }) => item.itemId);
       const eventCartById = new Map((readEventCart(firebaseUser?.uid ?? null) || []).map((event) => [String(event.eventId), event]));
@@ -204,6 +239,9 @@ export function useCartPageState() {
           method: "mobile_money",
           settlementRoute: eventIds.length && listingIds.length === 0 ? "direct" : undefined,
           ticketHolder: eventIds.length ? ticketHolder : undefined,
+          buyerName: cleanBuyerDetails?.fullName ?? ticketHolder?.fullName ?? firebaseUser?.displayName ?? undefined,
+          buyerPhone: cleanBuyerDetails?.phone ?? ticketHolder?.phone ?? firebaseUser?.phoneNumber ?? undefined,
+          buyerDetails: includesListing ? cleanBuyerDetails : undefined,
           returnUrl,
           cancelUrl,
         }),
@@ -226,9 +264,13 @@ export function useCartPageState() {
     }
   };
 
-  const handleCheckoutSelected = (ticketHolder?: TicketHolderInformation) => {
-    void handleCheckout(selectedItems, ticketHolder);
+  const handleCheckoutSelected = (details: CartCheckoutFormDetails = {}) => {
+    if (checkoutSelectionError) {
+      setCheckoutError(checkoutSelectionError);
+      return;
+    }
+    void handleCheckout(selectedItems, details);
   };
 
-  return { items, itemCount, selectedItems, selectedQuantities, selectedCount, selectedUnits, selectedSubtotal, latestPendingCheckoutUrl, checkoutError, checkoutLoading, selectAllRef, allSelected, setAllSelected, setSelectedQuantity, toggleItemSelection, handleRemoveItem, handleCheckoutSelected, requiresTicketHolder };
+  return { items, itemCount, selectedItems, selectedQuantities, selectedCount, selectedUnits, selectedSubtotal, latestPendingCheckoutUrl, checkoutError, checkoutLoading, checkoutSelectionError, selectAllRef, allSelected, setAllSelected, setSelectedQuantity, toggleItemSelection, handleRemoveItem, handleCheckoutSelected, requiresTicketHolder };
 }
