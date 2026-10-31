@@ -14,6 +14,7 @@ export default function ListingSummary({
   listing,
   seller,
   availableQuantity,
+  isLoggedIn,
   currentUserUid,
   onMessageSeller,
   onShare,
