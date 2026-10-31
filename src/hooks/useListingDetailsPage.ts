@@ -427,19 +427,25 @@ export function useListingDetailsPage(): ListingDetailsPageState {
       return;
     }
 
-    await setBuyerCartItem({
-      listingId: String(listing.id),
-      listingTitle: listing.name,
-      listingImage: listing.photos?.[0] ?? null,
-      listingDescription: listing.description ?? null,
-      university: listing.university ?? null,
-      quantity: 1,
-      unitPrice: Number(listing.price || 0),
-      totalPrice: Number(listing.price || 0),
-      availableQuantity,
-      addedAt: new Date().toISOString(),
-    });
-    openShareNotice("Added to cart.");
+    try {
+      await setBuyerCartItem({
+        listingId: String(listing.id),
+        listingTitle: listing.name,
+        listingImage: listing.photos?.[0] ?? null,
+        listingDescription: listing.description ?? null,
+        university: listing.university ?? null,
+        quantity: 1,
+        unitPrice: Number(listing.price || 0),
+        totalPrice: Number(listing.price || 0),
+        availableQuantity,
+        addedAt: new Date().toISOString(),
+      });
+      openShareNotice("Added to cart.");
+    } catch (error) {
+      openShareNotice(
+        error instanceof Error ? error.message : "Failed to add listing to cart.",
+      );
+    }
   };
 
   const handleMessageSeller = async () => {
