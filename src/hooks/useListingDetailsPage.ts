@@ -41,6 +41,9 @@ export type ListingDetailsPageState = {
   shareNoticeMessage: string;
   activeSection: SectionKey;
   checkoutOpen: boolean;
+  isAddingToCart: boolean;
+  cartItemAdded: boolean;
+  isMessagingSeller: boolean;
   authPromptOpen: boolean;
   authPromptAction: "message" | "buy" | "cart" | null;
   hiddenSellerUids: string[];
@@ -100,6 +103,9 @@ export function useListingDetailsPage(): ListingDetailsPageState {
   const [shareNoticeMessage, setShareNoticeMessage] = useState("");
   const [activeSection, setActiveSection] = useState<SectionKey>("details");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [cartItemAdded, setCartItemAdded] = useState(false);
+  const [isMessagingSeller, setIsMessagingSeller] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | "cart" | null>(null);
   const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() => readHiddenSellerUids());
@@ -421,12 +427,14 @@ export function useListingDetailsPage(): ListingDetailsPageState {
   };
 
   const handleAddToCart = async () => {
-    if (!listing) return;
+    if (!listing || isAddingToCart) return;
     if (!firebaseUser?.uid) {
       openAuthPrompt("cart");
       return;
     }
 
+    setIsAddingToCart(true);
+    setCartItemAdded(false);
     try {
       await setBuyerCartItem({
         listingId: String(listing.id),
@@ -440,26 +448,32 @@ export function useListingDetailsPage(): ListingDetailsPageState {
         availableQuantity,
         addedAt: new Date().toISOString(),
       });
+      setCartItemAdded(true);
       openShareNotice("Added to cart.");
     } catch (error) {
       openShareNotice(
         error instanceof Error ? error.message : "Failed to add listing to cart.",
       );
+    } finally {
+      setIsAddingToCart(false);
     }
   };
 
   const handleMessageSeller = async () => {
-    if (!listing) return;
+    if (!listing || isMessagingSeller) return;
     if (!firebaseUser?.uid) {
       openAuthPrompt("message");
       return;
     }
 
+    setIsMessagingSeller(true);
     try {
       const conversation = await startConversationFromListing(listing.id);
       navigateToConversation(conversation.id);
     } catch (error: any) {
       openShareNotice(error?.message || "Failed to start conversation.");
+    } finally {
+      setIsMessagingSeller(false);
     }
   };
 
@@ -533,6 +547,9 @@ export function useListingDetailsPage(): ListingDetailsPageState {
     shareNoticeMessage,
     activeSection,
     checkoutOpen,
+    isAddingToCart,
+    cartItemAdded,
+    isMessagingSeller,
     authPromptOpen,
     authPromptAction,
     hiddenSellerUids,
