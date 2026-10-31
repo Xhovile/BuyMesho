@@ -469,7 +469,7 @@ export default function EventDetailsView() {
           {shouldShowMenu ? <section><div className="mb-3 flex justify-start"><EventActionsMenu eventId={event.id} eventTitle={event.event_title} shareUrl={eventPageUrl} /></div></section> : null}
           <EventDetailsHero event={event} posterUrl={posterUrl} posterAlt={posterAlt} accent={accent} price={price} notice={notice} onClearNotice={clearNotice} />
           <EventDetailsSections event={event} coreOpen={coreOpen} extraOpen={extraOpen} onToggleCore={() => setCoreOpen((current) => !current)} onToggleExtra={() => setExtraOpen((current) => !current)} extraSpecEntries={extraSpecEntries} />
-          <EventDetailsActions event={event} canManageEvent={canManageEvent} canMessageEvent={canMessageEvent} canBuyOrCart={canBuyOrCart} checkoutLoading={checkoutLoading} onBuyTicket={handleBuyTicket} onMessage={() => void handleMessage()} onAddToCart={() => void handleAddToCart()} onShare={handleShare} onCancelEvent={() => void handleCancelEvent()} />
+          <EventDetailsActions event={event} canManageEvent={canManageEvent} canMessageEvent={canMessageEvent} canBuyOrCart={canBuyOrCart} checkoutLoading={checkoutLoading} ticketHolderOpen={ticketHolderOpen} onBuyTicket={handleBuyTicket} onMessage={() => void handleMessage()} onAddToCart={() => void handleAddToCart()} onShare={handleShare} onCancelEvent={() => void handleCancelEvent()} />
         </div>
       </main>
 
