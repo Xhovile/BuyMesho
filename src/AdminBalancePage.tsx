@@ -126,57 +126,57 @@ export default function AdminBalancePage() {
         ) : null}
 
         <section className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+          <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
               Main balance
             </p>
             <div className="mt-3 flex items-end justify-between gap-3">
-              <p className="text-2xl font-black text-zinc-950">
+              <p className="text-2xl font-black text-zinc-950 dark:text-bm-text">
                 {formatMoney(mainBalance, currency)}
               </p>
-              <Wallet className="h-5 w-5 text-zinc-400" />
+              <Wallet className="h-5 w-5 text-zinc-400 dark:text-bm-text-subtle" />
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+          <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
               Collection balance
             </p>
             <div className="mt-3 flex items-end justify-between gap-3">
-              <p className="text-2xl font-black text-zinc-950">
+              <p className="text-2xl font-black text-zinc-950 dark:text-bm-text">
                 {formatMoney(collectionBalance, currency)}
               </p>
-              <Wallet className="h-5 w-5 text-zinc-400" />
+              <Wallet className="h-5 w-5 text-zinc-400 dark:text-bm-text-subtle" />
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+          <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
               Available / checked
             </p>
-            <p className="mt-3 text-2xl font-black text-zinc-950">
+            <p className="mt-3 text-2xl font-black text-zinc-950 dark:text-bm-text">
               {formatMoney(availableBalance, currency)}
             </p>
-            <p className="mt-2 text-xs text-zinc-500">
+            <p className="mt-2 text-xs text-zinc-500 dark:text-bm-text-subtle">
               Checked at: {formatDate(balance?.checkedAt)}
             </p>
           </div>
         </section>
 
-        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+        <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm">
           <div className="flex items-center gap-2">
             {refreshing ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />}
             <h2 className="text-lg font-black">Raw wallet response</h2>
           </div>
 
           {loading ? (
-            <div className="flex items-center gap-2 py-6 text-sm text-zinc-500">
+            <div className="flex items-center gap-2 py-6 text-sm text-zinc-500 dark:text-bm-text-subtle">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading balance...
             </div>
           ) : (
-            <details className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-              <summary className="cursor-pointer text-sm font-bold text-zinc-700">
+            <details className="mt-4 rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-4">
+              <summary className="cursor-pointer text-sm font-bold text-zinc-700 dark:text-bm-text-muted">
                 Show provider payload
               </summary>
               <pre className="mt-4 overflow-auto rounded-2xl bg-zinc-950 p-4 text-xs leading-relaxed text-zinc-100">
