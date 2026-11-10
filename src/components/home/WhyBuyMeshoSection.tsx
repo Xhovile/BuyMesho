@@ -76,19 +76,19 @@ export default function WhyBuyMeshoSection({
               <motion.article
                 style={reducedMotion ? { y: 0, scale: 1, rotate: cardAnimations[0].rotate } : { y: card1Y, scale: card1Scale, rotate: card1Rotate }}
                 whileHover={reducedMotion ? undefined : { y: -8, rotate: cardAnimations[0].hoverRotate }}
-                className="relative z-30 rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white to-red-50 p-5 text-zinc-900 shadow-[0_30px_70px_-24px_rgba(0,0,0,0.72),0_10px_24px_-14px_rgba(127,29,29,0.22)] ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-[0_38px_80px_-24px_rgba(0,0,0,0.78),0_14px_30px_-14px_rgba(127,29,29,0.24)] sm:p-6 md:min-h-[210px] md:p-6 will-change-transform"
+                className="relative z-30 rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white to-red-50 p-5 text-zinc-900 dark:text-bm-text shadow-[0_30px_70px_-24px_rgba(0,0,0,0.72),0_10px_24px_-14px_rgba(127,29,29,0.22)] ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-[0_38px_80px_-24px_rgba(0,0,0,0.78),0_14px_30px_-14px_rgba(127,29,29,0.24)] sm:p-6 md:min-h-[210px] md:p-6 will-change-transform"
               >
                 <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-red-900/50">01 — Access</p>
-                <p className="mt-4 text-base leading-7 text-zinc-800 sm:text-lg md:text-[1.05rem] md:leading-7">Everyone can buy on BuyMesho.</p>
+                <p className="mt-4 text-base leading-7 text-zinc-800 dark:text-bm-text-muted sm:text-lg md:text-[1.05rem] md:leading-7">Everyone can buy on BuyMesho.</p>
               </motion.article>
 
               <motion.article
                 style={reducedMotion ? { y: 0, scale: 1, rotate: cardAnimations[1].rotate } : { y: card2Y, scale: card2Scale, rotate: card2Rotate }}
                 whileHover={reducedMotion ? undefined : { y: -8, rotate: cardAnimations[1].hoverRotate }}
-                className="relative z-20 -mt-3 rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white to-amber-50 p-5 text-zinc-900 shadow-[0_34px_76px_-24px_rgba(0,0,0,0.74),0_12px_28px_-14px_rgba(180,83,9,0.2)] ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-[0_42px_86px_-24px_rgba(0,0,0,0.8),0_16px_34px_-14px_rgba(180,83,9,0.22)] sm:p-6 md:-ml-5 md:-mt-0 md:min-h-[235px] md:p-6 will-change-transform"
+                className="relative z-20 -mt-3 rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white to-amber-50 p-5 text-zinc-900 dark:text-bm-text shadow-[0_34px_76px_-24px_rgba(0,0,0,0.74),0_12px_28px_-14px_rgba(180,83,9,0.2)] ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-[0_42px_86px_-24px_rgba(0,0,0,0.8),0_16px_34px_-14px_rgba(180,83,9,0.22)] sm:p-6 md:-ml-5 md:-mt-0 md:min-h-[235px] md:p-6 will-change-transform"
               >
                 <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-amber-800/60">02 — Purpose</p>
-                <p className="mt-4 text-base leading-7 text-zinc-800 sm:text-lg md:text-[1.05rem] md:leading-7">
+                <p className="mt-4 text-base leading-7 text-zinc-800 dark:text-bm-text-muted sm:text-lg md:text-[1.05rem] md:leading-7">
                   Seller restrictions apply only because the platform&apos;s primary goal is to help student entrepreneurs develop and grow.
                 </p>
               </motion.article>
@@ -96,10 +96,10 @@ export default function WhyBuyMeshoSection({
               <motion.article
                 style={reducedMotion ? { y: 0, scale: 1, rotate: cardAnimations[2].rotate } : { y: card3Y, scale: card3Scale, rotate: card3Rotate }}
                 whileHover={reducedMotion ? undefined : { y: -8, rotate: cardAnimations[2].hoverRotate }}
-                className="relative z-10 -mt-3 rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white to-sky-50 p-5 text-zinc-900 shadow-[0_30px_70px_-24px_rgba(0,0,0,0.72),0_10px_24px_-14px_rgba(14,116,144,0.18)] ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-[0_38px_80px_-24px_rgba(0,0,0,0.78),0_14px_30px_-14px_rgba(14,116,144,0.2)] sm:p-6 md:-ml-5 md:-mt-0 md:min-h-[210px] md:p-6 will-change-transform"
+                className="relative z-10 -mt-3 rounded-3xl border border-white/80 bg-gradient-to-br from-white via-white to-sky-50 p-5 text-zinc-900 dark:text-bm-text shadow-[0_30px_70px_-24px_rgba(0,0,0,0.72),0_10px_24px_-14px_rgba(14,116,144,0.18)] ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-[0_38px_80px_-24px_rgba(0,0,0,0.78),0_14px_30px_-14px_rgba(14,116,144,0.2)] sm:p-6 md:-ml-5 md:-mt-0 md:min-h-[210px] md:p-6 will-change-transform"
               >
                 <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-sky-800/60">03 — Structure</p>
-                <p className="mt-4 text-base leading-7 text-zinc-800 sm:text-lg md:text-[1.05rem] md:leading-7">
+                <p className="mt-4 text-base leading-7 text-zinc-800 dark:text-bm-text-muted sm:text-lg md:text-[1.05rem] md:leading-7">
                   List products once, get discovered faster, and build trust through a structured marketplace designed for real commerce.
                 </p>
               </motion.article>
@@ -115,7 +115,7 @@ export default function WhyBuyMeshoSection({
         >
           <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Seller call</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Seller call</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Are you ready to sell?</h2>
             </div>
             <div className="flex flex-wrap gap-3 lg:justify-end">
