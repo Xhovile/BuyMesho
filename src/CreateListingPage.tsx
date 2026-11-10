@@ -150,42 +150,42 @@ export default function CreateListingPage() {
   const isBusy = authLoading || profileLoading;
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
+    <div className="min-h-screen bg-zinc-100 dark:bg-bm-surface-muted text-zinc-900 dark:text-bm-text">
+      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 dark:bg-bm-surface/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <BrandMark subtitle="Create listing" />
-          <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50">Back</button>
+          <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 dark:hover:bg-bm-surface-muted">Back</button>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-2 py-8 sm:px-4">
         {isBusy ? (
-          <div className="flex items-center justify-center gap-3 border-b border-zinc-200 bg-transparent px-0 py-20 font-medium text-zinc-500">
+          <div className="flex items-center justify-center gap-3 border-b border-zinc-200 dark:border-bm-border bg-transparent px-0 py-20 font-medium text-zinc-500 dark:text-bm-text-subtle">
             <Loader2 className="h-5 w-5 animate-spin" /> Preparing listing studio...
           </div>
         ) : !firebaseUser ? (
-          <div className="border-b border-zinc-200 pb-12 pt-6 text-center">
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Login required</h1>
-            <p className="mt-3 text-sm text-zinc-500">You need to log in before posting a listing.</p>
+          <div className="border-b border-zinc-200 dark:border-bm-border pb-12 pt-6 text-center">
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text">Login required</h1>
+            <p className="mt-3 text-sm text-zinc-500 dark:text-bm-text-subtle">You need to log in before posting a listing.</p>
             <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Return</button>
           </div>
         ) : !profile?.is_seller ? (
-          <div className="border-b border-zinc-200 pb-12 pt-6 text-center">
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Seller account required</h1>
-            <p className="mt-3 text-sm text-zinc-500">Apply to become a seller before posting listings.</p>
+          <div className="border-b border-zinc-200 dark:border-bm-border pb-12 pt-6 text-center">
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text">Seller account required</h1>
+            <p className="mt-3 text-sm text-zinc-500 dark:text-bm-text-subtle">Apply to become a seller before posting listings.</p>
             <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Return</button>
           </div>
         ) : !emailVerified ? (
-          <div className="border-b border-zinc-200 pb-12 pt-6 text-center">
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Email verification required</h1>
-            <p className="mt-3 text-sm text-zinc-500">Verify your email before posting listings.</p>
+          <div className="border-b border-zinc-200 dark:border-bm-border pb-12 pt-6 text-center">
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text">Email verification required</h1>
+            <p className="mt-3 text-sm text-zinc-500 dark:text-bm-text-subtle">Verify your email before posting listings.</p>
             <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Return</button>
           </div>
         ) : canCreate ? (
           <div className="pb-20">
-            <div className="mb-6 border-b border-zinc-200 pb-4">
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing studio</p>
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Create a listing in a dedicated page.</h1>
+            <div className="mb-6 border-b border-zinc-200 dark:border-bm-border pb-4">
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Listing studio</p>
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 dark:text-bm-text">Create a listing in a dedicated page.</h1>
             </div>
             <ListingStudio
               mode="create"
