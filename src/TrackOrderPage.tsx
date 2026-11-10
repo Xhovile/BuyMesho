@@ -35,7 +35,7 @@ function TrackOrderPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <div className="min-h-screen bg-zinc-100 dark:bg-bm-surface-muted text-zinc-900 dark:text-bm-text">
       <MarketHeaderBar subtitle="Track order" />
 
       <div className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
@@ -44,23 +44,23 @@ function TrackOrderPageContent() {
             <Truck className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.28em] text-zinc-600 sm:text-xl">Track order</p>
-            <h1 className="mt-2 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-zinc-600 dark:text-bm-text-muted sm:text-xl">Track order</p>
+            <h1 className="mt-2 text-4xl font-black tracking-tight text-zinc-950 dark:text-bm-text sm:text-5xl">
               Open order tracking
             </h1>
-            <p className="mt-2 text-sm leading-7 text-zinc-600 sm:text-base">
+            <p className="mt-2 text-sm leading-7 text-zinc-600 dark:text-bm-text-muted sm:text-base">
               Enter the order reference, order ID, or ticket code to open the correct tracking view.
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+        <form onSubmit={handleSubmit} className="mt-8 rounded-[1.75rem] border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               value={reference}
               onChange={(event) => setReference(event.target.value)}
               placeholder="Enter order reference, order ID, or ticket code"
-              className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900"
+              className="w-full rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-3 text-sm text-zinc-900 dark:text-bm-text outline-none focus:ring-2 focus:ring-zinc-900"
             />
             <button
               type="submit"
