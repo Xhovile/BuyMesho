@@ -417,24 +417,24 @@ export default function FilterSection({
   ].filter(Boolean) as { key: string; label: string; onRemove: () => void }[];
 
   const triggerBase =
-    "w-full flex items-center justify-between gap-3 bg-white border border-zinc-200 rounded-2xl px-4 py-3 text-sm font-bold text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 transition-all";
+    "w-full flex items-center justify-between gap-3 bg-white border border-zinc-200 dark:border-bm-border rounded-2xl px-4 py-3 text-sm font-bold text-zinc-700 dark:text-bm-text-muted hover:border-zinc-300 hover:bg-zinc-50 dark:hover:bg-bm-surface-muted transition-all";
   const menuShell =
-    "absolute top-[calc(100%+0.5rem)] left-0 w-full bg-white border border-zinc-200 rounded-2xl shadow-xl z-30 overflow-hidden";
+    "absolute top-[calc(100%+0.5rem)] left-0 w-full bg-white border border-zinc-200 dark:border-bm-border rounded-2xl shadow-xl z-30 overflow-hidden";
   const menuBase = "max-h-64 overflow-y-auto p-2";
   const itemBase =
     "w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors capitalize";
   const activeItem = "bg-zinc-900 text-white";
-  const inactiveItem = "text-zinc-700 hover:bg-zinc-100";
-  const searchWrap = "p-2 border-b border-zinc-100 bg-white";
+  const inactiveItem = "text-zinc-700 dark:text-bm-text-muted hover:bg-zinc-100 dark:hover:bg-bm-surface-muted";
+  const searchWrap = "p-2 border-b border-zinc-100 dark:border-bm-border-subtle bg-white";
   const searchInput =
-    "w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-zinc-300";
+    "w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl text-sm text-zinc-700 dark:text-bm-text-muted placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-zinc-300";
 
   return (
      <>
   <div className="py-3 space-y-3 md:py-6 md:space-y-4">
     <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-3 md:gap-4 items-end">
       <div className="space-y-2 relative" data-filter-dropdown>
-        <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+        <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle flex items-center gap-2">
           <MapPin className="w-3.5 h-3.5 text-primary" /> University
         </label>
 
@@ -449,7 +449,7 @@ export default function FilterSection({
             {selectedUniv || "All Universities"}
           </span>
           <ChevronRight
-            className={`w-4 h-4 text-zinc-400 transition-transform ${
+            className={`w-4 h-4 text-zinc-400 dark:text-bm-text-subtle transition-transform ${
               openDropdown === "university" ? "rotate-90" : "rotate-0"
             }`}
           />
@@ -459,7 +459,7 @@ export default function FilterSection({
           <div className={menuShell}>
             <div className={searchWrap}>
               <div className="relative">
-                <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-zinc-400 dark:text-bm-text-subtle absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={universityQuery}
@@ -503,7 +503,7 @@ export default function FilterSection({
                   </button>
                 ))
               ) : (
-                <div className="px-3 py-3 text-sm text-zinc-500">
+                <div className="px-3 py-3 text-sm text-zinc-500 dark:text-bm-text-subtle">
                   No universities found.
                 </div>
               )}
@@ -522,7 +522,7 @@ export default function FilterSection({
           className={`relative hidden md:inline-flex items-center gap-2 h-[52px] px-5 rounded-2xl border text-sm font-extrabold transition-all shadow-sm ${
             showMoreFilters || activeExtraFilterCount > 0
               ? "bg-zinc-900 text-white border-zinc-900 hover:bg-zinc-800"
-              : "bg-amber-50 text-zinc-900 border-amber-200 hover:bg-amber-100"
+              : "bg-amber-50 text-zinc-900 dark:text-bm-text border-amber-200 hover:bg-amber-100"
           }`}
         >
           <Funnel className="w-4 h-4" />
@@ -532,7 +532,7 @@ export default function FilterSection({
             <span
               className={`inline-flex items-center justify-center min-w-[22px] h-[22px] px-1 rounded-full text-[11px] font-black ${
                 showMoreFilters
-                  ? "bg-white text-zinc-900"
+                  ? "bg-white text-zinc-900 dark:text-bm-text"
                   : "bg-zinc-900 text-white"
               }`}
             >
@@ -544,15 +544,15 @@ export default function FilterSection({
     </div>
 
     {activeFilterCount > 0 && (
-      <div className="rounded-2xl border border-zinc-200 bg-white p-2.5 md:p-4">
+      <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white p-2.5 md:p-4">
         <div className="flex items-center justify-between gap-3 mb-3">
-          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
             Active Filters ({activeFilterCount})
           </p>
           <button
             type="button"
             onClick={clearAllFilters}
-            className="text-xs font-bold text-zinc-600 hover:text-zinc-900"
+            className="text-xs font-bold text-zinc-600 dark:text-bm-text-muted hover:text-zinc-900"
           >
             Clear all
           </button>
@@ -564,7 +564,7 @@ export default function FilterSection({
               key={chip.key}
               type="button"
               onClick={chip.onRemove}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-100 border border-zinc-200 text-xs font-semibold text-zinc-700 hover:bg-zinc-200 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-bm-surface-muted border border-zinc-200 dark:border-bm-border text-xs font-semibold text-zinc-700 dark:text-bm-text-muted hover:bg-zinc-200 transition-colors"
             >
               <span className="max-w-[220px] truncate">{chip.label}</span>
               <X className="w-3.5 h-3.5" />
@@ -575,13 +575,13 @@ export default function FilterSection({
     )}
 
     {showMoreFilters && (
-      <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm p-3 md:p-5 space-y-3">
+      <div className="rounded-3xl border border-zinc-200 dark:border-bm-border bg-white shadow-sm p-3 md:p-5 space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
               More Filters
             </p>
-            <p className="text-sm text-zinc-500 mt-1">
+            <p className="text-sm text-zinc-500 dark:text-bm-text-subtle mt-1">
               Narrow down listings faster
             </p>
           </div>
@@ -592,7 +592,7 @@ export default function FilterSection({
               setShowMoreFilters(false);
               setOpenDropdown(null);
             }}
-            className="h-10 w-10 rounded-full border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 flex items-center justify-center"
+            className="h-10 w-10 rounded-full border border-zinc-200 dark:border-bm-border bg-white text-zinc-600 dark:text-bm-text-muted hover:bg-zinc-50 dark:hover:bg-bm-surface-muted flex items-center justify-center"
             aria-label="Close filters"
           >
             <X className="w-4 h-4" />
@@ -601,7 +601,7 @@ export default function FilterSection({
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <div className="space-y-2 relative" data-filter-dropdown>
-            <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+            <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle flex items-center gap-2">
               <Tag className="w-3.5 h-3.5 text-primary" /> Category
             </label>
 
@@ -616,7 +616,7 @@ export default function FilterSection({
                 {selectedCat || "All Categories"}
               </span>
               <ChevronRight
-                className={`w-4 h-4 text-zinc-400 transition-transform ${
+                className={`w-4 h-4 text-zinc-400 dark:text-bm-text-subtle transition-transform ${
                   openDropdown === "category" ? "rotate-90" : "rotate-0"
                 }`}
               />
@@ -662,7 +662,7 @@ export default function FilterSection({
 
           {selectedCat && (
             <div className="space-y-2 relative" data-filter-dropdown>
-              <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+              <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle flex items-center gap-2">
                 <Tag className="w-3.5 h-3.5 text-primary" /> Subcategory
               </label>
 
@@ -679,7 +679,7 @@ export default function FilterSection({
                   {selectedSubcategory || "All Subcategories"}
                 </span>
                 <ChevronRight
-                  className={`w-4 h-4 text-zinc-400 transition-transform ${
+                  className={`w-4 h-4 text-zinc-400 dark:text-bm-text-subtle transition-transform ${
                     openDropdown === "subcategory" ? "rotate-90" : "rotate-0"
                   }`}
                 />
@@ -728,7 +728,7 @@ export default function FilterSection({
 
           {selectedCat && selectedSubcategory && (
             <div className="space-y-2 relative" data-filter-dropdown>
-              <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+              <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle flex items-center gap-2">
                 <Tag className="w-3.5 h-3.5 text-primary" /> Item Type
               </label>
 
@@ -743,7 +743,7 @@ export default function FilterSection({
                   {selectedItemType || "All Item Types"}
                 </span>
                 <ChevronRight
-                  className={`w-4 h-4 text-zinc-400 transition-transform ${
+                  className={`w-4 h-4 text-zinc-400 dark:text-bm-text-subtle transition-transform ${
                     openDropdown === "itemType" ? "rotate-90" : "rotate-0"
                   }`}
                 />
@@ -787,7 +787,7 @@ export default function FilterSection({
           )}
 
           <div className="space-y-2 relative" data-filter-dropdown>
-            <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+            <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle flex items-center gap-2">
               <Tag className="w-3.5 h-3.5 text-primary" /> Condition
             </label>
 
@@ -802,7 +802,7 @@ export default function FilterSection({
                 {selectedCondition || "All Conditions"}
               </span>
               <ChevronRight
-                className={`w-4 h-4 text-zinc-400 transition-transform ${
+                className={`w-4 h-4 text-zinc-400 dark:text-bm-text-subtle transition-transform ${
                   openDropdown === "condition" ? "rotate-90" : "rotate-0"
                 }`}
               />
@@ -845,7 +845,7 @@ export default function FilterSection({
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+            <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle flex items-center gap-2">
               <Search className="w-3.5 h-3.5 text-primary" /> Price Range
             </label>
 
@@ -856,7 +856,7 @@ export default function FilterSection({
                 placeholder="Min"
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-2xl text-sm font-semibold text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full px-4 py-3 bg-white border border-zinc-200 dark:border-bm-border rounded-2xl text-sm font-semibold text-zinc-700 dark:text-bm-text-muted placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               <input
                 type="number"
@@ -864,13 +864,13 @@ export default function FilterSection({
                 placeholder="Max"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-2xl text-sm font-semibold text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full px-4 py-3 bg-white border border-zinc-200 dark:border-bm-border rounded-2xl text-sm font-semibold text-zinc-700 dark:text-bm-text-muted placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </div>
 
           <div className="space-y-2 relative" data-filter-dropdown>
-            <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+            <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle flex items-center gap-2">
               <RefreshCw className="w-3.5 h-3.5 text-primary" /> Sort
             </label>
 
@@ -884,7 +884,7 @@ export default function FilterSection({
                   "Newest First"}
               </span>
               <ChevronRight
-                className={`w-4 h-4 text-zinc-400 transition-transform ${
+                className={`w-4 h-4 text-zinc-400 dark:text-bm-text-subtle transition-transform ${
                   openDropdown === "sort" ? "rotate-90" : "rotate-0"
                 }`}
               />
@@ -916,7 +916,7 @@ export default function FilterSection({
 
         {canShowSpecFilters && (
           <div className="space-y-3 pt-0.5">
-            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
               Item Specs
             </p>
 
@@ -927,13 +927,13 @@ export default function FilterSection({
                 if (field.type === "boolean") {
                   return (
                     <div key={field.key} className="space-y-2">
-                      <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                      <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
                         {field.label}
                       </label>
                       <select
                         value={value === null ? "" : String(value)}
                         onChange={(e) => updateSpecFilter(field, e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-2xl text-sm font-semibold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        className="w-full px-4 py-3 bg-white border border-zinc-200 dark:border-bm-border rounded-2xl text-sm font-semibold text-zinc-700 dark:text-bm-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
                       >
                         <option value="">Any</option>
                         <option value="true">Yes</option>
@@ -948,7 +948,7 @@ export default function FilterSection({
 
                   return (
                     <div key={field.key} className="space-y-2">
-                      <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                      <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
                         {field.label}
                       </label>
                       <select
@@ -957,7 +957,7 @@ export default function FilterSection({
                           updateSpecFilter(field, e.target.value);
                           e.currentTarget.value = "";
                         }}
-                        className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-2xl text-sm font-semibold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        className="w-full px-4 py-3 bg-white border border-zinc-200 dark:border-bm-border rounded-2xl text-sm font-semibold text-zinc-700 dark:text-bm-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
                       >
                         <option value="">Add option...</option>
                         {(field.options ?? []).map((option) => (
@@ -974,7 +974,7 @@ export default function FilterSection({
                               key={selectedValue}
                               type="button"
                               onClick={() => updateSpecFilter(field, selectedValue)}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-100 border border-zinc-200 text-[11px] font-semibold text-zinc-700"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-bm-surface-muted border border-zinc-200 dark:border-bm-border text-[11px] font-semibold text-zinc-700 dark:text-bm-text-muted"
                             >
                               {selectedValue}
                               <X className="w-3 h-3" />
@@ -988,13 +988,13 @@ export default function FilterSection({
 
                 return (
                   <div key={field.key} className="space-y-2">
-                    <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                    <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
                       {field.label}
                     </label>
                     <select
                       value={value as string}
                       onChange={(e) => updateSpecFilter(field, e.target.value)}
-                      className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-2xl text-sm font-semibold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      className="w-full px-4 py-3 bg-white border border-zinc-200 dark:border-bm-border rounded-2xl text-sm font-semibold text-zinc-700 dark:text-bm-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20"
                     >
                       <option value="">Any</option>
                       {(field.options ?? []).map((option) => (
@@ -1010,12 +1010,12 @@ export default function FilterSection({
           </div>
         )}
 
-        <label className="inline-flex items-center gap-3 text-sm font-semibold text-zinc-700">
+        <label className="inline-flex items-center gap-3 text-sm font-semibold text-zinc-700 dark:text-bm-text-muted">
           <input
             type="checkbox"
             checked={hideSoldOut}
             onChange={(e) => setHideSoldOut(e.target.checked)}
-            className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400"
+            className="h-4 w-4 rounded border-zinc-300 dark:border-bm-border text-zinc-900 dark:text-bm-text focus:ring-zinc-400"
           />
           Hide sold-out listings
         </label>
@@ -1024,7 +1024,7 @@ export default function FilterSection({
           <button
             type="button"
             onClick={clearExtraFilters}
-            className="px-4 py-2 rounded-xl bg-zinc-100 border border-zinc-200 text-sm font-bold text-zinc-700 hover:bg-zinc-200"
+            className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-bm-surface-muted border border-zinc-200 dark:border-bm-border text-sm font-bold text-zinc-700 dark:text-bm-text-muted hover:bg-zinc-200"
           >
             Clear Filters
           </button>
