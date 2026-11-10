@@ -18,7 +18,7 @@ export function CartCheckoutBar({
   onCheckoutSelected,
 }: CartCheckoutBarProps) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-200 bg-white/90 backdrop-blur-md">
+    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-200 dark:border-bm-border bg-white/90 dark:bg-bm-surface/90 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-3 sm:px-6 lg:px-8">
         <button
           type="button"
