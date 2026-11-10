@@ -41,31 +41,31 @@ export default function PasswordPromptModal({
             exit={{ opacity: 0, scale: 0.96, y: 18 }}
             className="relative w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden"
           >
-            <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
+            <div className="p-6 border-b border-zinc-100 dark:border-bm-border-subtle flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center">
-                  <Lock className="w-6 h-6 text-zinc-700" />
+                <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted flex items-center justify-center">
+                  <Lock className="w-6 h-6 text-zinc-700 dark:text-bm-text-muted" />
                 </div>
-                <h3 className="text-lg font-extrabold text-zinc-900">{title}</h3>
+                <h3 className="text-lg font-extrabold text-zinc-900 dark:text-bm-text">{title}</h3>
               </div>
 
               <button
                 type="button"
                 onClick={onCancel}
-                className="p-2 rounded-full hover:bg-zinc-100 transition-colors"
+                className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-bm-surface-muted transition-colors"
               >
-                <X className="w-5 h-5 text-zinc-500" />
+                <X className="w-5 h-5 text-zinc-500 dark:text-bm-text-subtle" />
               </button>
             </div>
 
             <div className="px-6 py-5 space-y-4">
-              <p className="text-sm text-zinc-600 leading-6">{message}</p>
+              <p className="text-sm text-zinc-600 dark:text-bm-text-muted leading-6">{message}</p>
 
               <input
                 type="password"
                 value={password}
                 onChange={(e) => onPasswordChange(e.target.value)}
-                className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                className="w-full px-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
                 placeholder="Enter your password"
               />
             </div>
@@ -75,7 +75,7 @@ export default function PasswordPromptModal({
                 type="button"
                 onClick={onCancel}
                 disabled={busy}
-                className="flex-1 py-3 rounded-2xl font-bold bg-zinc-100 hover:bg-zinc-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex-1 py-3 rounded-2xl font-bold bg-zinc-100 dark:bg-bm-surface-muted hover:bg-zinc-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
