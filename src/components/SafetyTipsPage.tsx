@@ -19,11 +19,11 @@ function Section({
     <section className="space-y-3">
       <div className="flex items-center gap-3">
         {icon}
-        <h3 className="text-sm font-extrabold uppercase tracking-widest text-zinc-900">
+        <h3 className="text-sm font-extrabold uppercase tracking-widest text-zinc-900 dark:text-bm-text">
           {title}
         </h3>
       </div>
-      <div className="space-y-3 text-sm leading-7 text-zinc-700">{children}</div>
+      <div className="space-y-3 text-sm leading-7 text-zinc-700 dark:text-bm-text-muted">{children}</div>
     </section>
   );
 }
@@ -34,7 +34,7 @@ function TipList({ items }: { items: React.ReactNode[] }) {
       {items.map((item, index) => (
         <li
           key={index}
-          className="rounded-2xl border border-zinc-200 bg-white p-4 text-sm leading-7 text-zinc-700"
+          className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white p-4 text-sm leading-7 text-zinc-700 dark:text-bm-text-muted"
         >
           {item}
         </li>
@@ -70,43 +70,43 @@ export default function SafetyTipsPage({
           </div>
 
           <Section
-            icon={<UserCheck className="w-5 h-5 text-zinc-700" />}
+            icon={<UserCheck className="w-5 h-5 text-zinc-700 dark:text-bm-text-muted" />}
             title="1. Buyer Safety Tips"
           >
             <TipList
               items={[
                 <>
-                  <span className="font-bold text-zinc-900">Verify the seller before you commit.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Verify the seller before you commit.</span>{" "}
                   Check the seller profile, listing quality, photos, description
                   clarity, and any visible trust signals. Be extra careful when
                   a listing looks rushed, incomplete, or inconsistent.
                 </>,
                 <>
-                  <span className="font-bold text-zinc-900">Be cautious with prices that are unusually low.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Be cautious with prices that are unusually low.</span>{" "}
                   If the price looks far below normal market value, treat it as
                   a warning sign. Very low prices can be used to rush buyers
                   into poor decisions, fake payments, or unsafe meetups.
                 </>,
                 <>
-                  <span className="font-bold text-zinc-900">Inspect the item properly before paying.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Inspect the item properly before paying.</span>{" "}
                   Do not rely only on photos. Confirm the condition, working
                   state, completeness, and any claimed features in person where
                   possible before handing over money.
                 </>,
                 <>
-                  <span className="font-bold text-zinc-900">Ask direct questions.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Ask direct questions.</span>{" "}
                   Confirm whether the item is still available, whether it has
                   defects, whether accessories are included, and whether the
                   seller has the right to sell it.
                 </>,
                 <>
-                  <span className="font-bold text-zinc-900">Prefer daytime meetings in familiar, public places.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Prefer daytime meetings in familiar, public places.</span>{" "}
                   Where possible, meet in busy and known campus or public
                   environments rather than isolated places. If the transaction
                   feels uncomfortable, postpone or cancel it.
                 </>,
                 <>
-                  <span className="font-bold text-zinc-900">Do not rush because of pressure tactics.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Do not rush because of pressure tactics.</span>{" "}
                   Statements like “many people want it,” “pay now,” or “send a
                   deposit immediately” should make you slow down, not speed up.
                 </>,
@@ -115,39 +115,39 @@ export default function SafetyTipsPage({
           </Section>
 
           <Section
-            icon={<ShieldCheck className="w-5 h-5 text-zinc-700" />}
+            icon={<ShieldCheck className="w-5 h-5 text-zinc-700 dark:text-bm-text-muted" />}
             title="2. Seller Safety Tips"
           >
             <TipList
               items={[
                 <>
-                  <span className="font-bold text-zinc-900">Be careful with urgent or unusual buyers.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Be careful with urgent or unusual buyers.</span>{" "}
                   Treat requests involving strange meeting conditions, rushed
                   decisions, suspicious payment promises, or inconsistent
                   identity details with caution.
                 </>,
                 <>
-                  <span className="font-bold text-zinc-900">Describe your item honestly.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Describe your item honestly.</span>{" "}
                   Clear descriptions and truthful condition details reduce
                   disputes, wasted time, and accusations of deception.
                 </>,
                 <>
-                  <span className="font-bold text-zinc-900">Do not hand over an item until payment is genuinely confirmed.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Do not hand over an item until payment is genuinely confirmed.</span>{" "}
                   Screenshots alone are not always proof. Take time to confirm
                   that money has actually been received where relevant.
                 </>,
                 <>
-                  <span className="font-bold text-zinc-900">Watch for overpayment or refund tricks.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Watch for overpayment or refund tricks.</span>{" "}
                   If someone claims to have sent too much and asks you to return
                   the extra amount quickly, treat that as suspicious.
                 </>,
                 <>
-                  <span className="font-bold text-zinc-900">Protect your personal safety during meetups.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Protect your personal safety during meetups.</span>{" "}
                   If you feel unsafe, do not continue. Bring someone you trust
                   if necessary, and avoid isolated handovers.
                 </>,
                 <>
-                  <span className="font-bold text-zinc-900">Keep useful records.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Keep useful records.</span>{" "}
                   Retain chats, agreed prices, pickup arrangements, and proof of
                   what was handed over in case a dispute is later reported.
                 </>,
@@ -156,35 +156,35 @@ export default function SafetyTipsPage({
           </Section>
 
           <Section
-            icon={<Lock className="w-5 h-5 text-zinc-700" />}
+            icon={<Lock className="w-5 h-5 text-zinc-700 dark:text-bm-text-muted" />}
             title="3. Protecting Your Account and Personal Information"
           >
             <TipList
               items={[
                 <>
-                  <span className="font-bold text-zinc-900">Use a strong password.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Use a strong password.</span>{" "}
                   Choose a password that is hard to guess and not reused across
                   multiple platforms.
                 </>,
                 <>
-                  <span className="font-bold text-zinc-900">Do not share your login credentials.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Do not share your login credentials.</span>{" "}
                   No one else should be using your BuyMesho account. Shared
                   accounts weaken trust and increase the risk of misuse.
                 </>,
                 <>
-                  <span className="font-bold text-zinc-900">Be careful with personal data.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Be careful with personal data.</span>{" "}
                   Avoid sharing unnecessary information such as passwords,
                   banking credentials, private ID details, or other sensitive
                   personal records during ordinary marketplace contact.
                 </>,
                 <>
-                  <span className="font-bold text-zinc-900">Watch for phishing and impersonation.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Watch for phishing and impersonation.</span>{" "}
                   Be suspicious of messages pretending to be official support
                   that ask for your password, verification codes, or sensitive
                   financial details.
                 </>,
                 <>
-                  <span className="font-bold text-zinc-900">Log out or secure your device when needed.</span>{" "}
+                  <span className="font-bold text-zinc-900 dark:text-bm-text">Log out or secure your device when needed.</span>{" "}
                   If you use a shared device or public access point, do not
                   leave your account open.
                 </>,
@@ -193,7 +193,7 @@ export default function SafetyTipsPage({
           </Section>
 
           <Section
-            icon={<AlertTriangle className="w-5 h-5 text-zinc-700" />}
+            icon={<AlertTriangle className="w-5 h-5 text-zinc-700 dark:text-bm-text-muted" />}
             title="4. Scams and Warning Signs"
           >
             <p>Be extra careful if you notice any of the following:</p>
@@ -215,7 +215,7 @@ export default function SafetyTipsPage({
           </Section>
 
           <Section
-            icon={<Flag className="w-5 h-5 text-zinc-700" />}
+            icon={<Flag className="w-5 h-5 text-zinc-700 dark:text-bm-text-muted" />}
             title="5. Reporting Suspicious Activity"
           >
             <p>
@@ -242,7 +242,7 @@ export default function SafetyTipsPage({
           </Section>
 
           <Section
-            icon={<ShieldCheck className="w-5 h-5 text-zinc-700" />}
+            icon={<ShieldCheck className="w-5 h-5 text-zinc-700 dark:text-bm-text-muted" />}
             title="6. Platform Safety Limits"
           >
             <p>
@@ -259,7 +259,7 @@ export default function SafetyTipsPage({
           </Section>
 
           <Section
-            icon={<Lock className="w-5 h-5 text-zinc-700" />}
+            icon={<Lock className="w-5 h-5 text-zinc-700 dark:text-bm-text-muted" />}
             title="7. Good Practice Before Any Transaction"
           >
             <TipList
@@ -275,9 +275,9 @@ export default function SafetyTipsPage({
             />
           </Section>
 
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 space-y-3">
-            <p className="text-sm font-bold text-zinc-900">Related platform resources</p>
-            <p className="text-sm leading-7 text-zinc-700">
+          <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-5 space-y-3">
+            <p className="text-sm font-bold text-zinc-900 dark:text-bm-text">Related platform resources</p>
+            <p className="text-sm leading-7 text-zinc-700 dark:text-bm-text-muted">
               For more information, users should also review BuyMesho’s Privacy
               Policy, Terms &amp; Conditions, and reporting tools available
               through the platform.

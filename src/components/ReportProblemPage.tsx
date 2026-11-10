@@ -60,16 +60,16 @@ export default function ReportProblemPage({
   return (
     <LegalPageShell title="Report a Problem" onBack={onBack} flushContent>
       <div className="w-full space-y-6">
-        <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
-          <p className="text-sm font-semibold text-zinc-900">
+        <div className="space-y-3 rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-5">
+          <p className="text-sm font-semibold text-zinc-900 dark:text-bm-text">
             Help keep BuyMesho safer, more trustworthy, and more useful.
           </p>
-          <p className="text-sm leading-7 text-zinc-700">
+          <p className="text-sm leading-7 text-zinc-700 dark:text-bm-text-muted">
             This page is for reporting problems connected to BuyMesho, including
             suspicious activity, misleading listings, abusive behavior, scam
             attempts, account misuse, and other platform concerns.
           </p>
-          <p className="text-sm leading-7 text-zinc-700">
+          <p className="text-sm leading-7 text-zinc-700 dark:text-bm-text-muted">
             Clear reports help BuyMesho review issues more effectively and take
             moderation, safety, or account action where necessary.
           </p>
@@ -117,17 +117,17 @@ export default function ReportProblemPage({
         ) : (
           <form
             onSubmit={handleSubmit}
-            className="w-full space-y-5 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6"
+            className="w-full space-y-5 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm sm:p-6"
           >
             <div>
-              <label className="mb-1 block text-xs font-bold uppercase text-zinc-400">
+              <label className="mb-1 block text-xs font-bold uppercase text-zinc-400 dark:text-bm-text-subtle">
                 Subject
               </label>
               <input
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-zinc-100 disabled:text-zinc-400"
+                className="w-full rounded-xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-zinc-100 dark:disabled:bg-bm-surface-muted disabled:text-zinc-400"
                 placeholder="Example: Suspicious seller behavior"
                 required
                 disabled={!isLoggedIn || sending}
@@ -135,23 +135,23 @@ export default function ReportProblemPage({
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-bold uppercase text-zinc-400">
+              <label className="mb-1 block text-xs font-bold uppercase text-zinc-400 dark:text-bm-text-subtle">
                 Details
               </label>
               <textarea
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}
-                className="h-40 w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-zinc-100 disabled:text-zinc-400"
+                className="h-40 w-full resize-none rounded-xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-zinc-100 dark:disabled:bg-bm-surface-muted disabled:text-zinc-400"
                 placeholder="Describe clearly what happened, which listing or user was involved, and why you are reporting it."
                 required
                 disabled={!isLoggedIn || sending}
               />
-              <p className="mt-2 text-xs leading-6 text-zinc-500">
+              <p className="mt-2 text-xs leading-6 text-zinc-500 dark:text-bm-text-subtle">
                 Be clear, factual, and specific. Avoid insults or vague claims.
               </p>
             </div>
 
-            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm leading-6 text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-100">
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-4 text-sm leading-6 text-zinc-700 dark:text-bm-text-muted transition-colors hover:border-zinc-300 hover:bg-zinc-100 dark:hover:bg-bm-surface-muted">
               <input
                 type="checkbox"
                 checked={confirmed}
