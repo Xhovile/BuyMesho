@@ -152,22 +152,22 @@ export default function MessageAttachmentViewer({ message, mine = false }: Props
         aria-busy={downloading}
         aria-label={`Download ${message.attachment_name || "file attachment"}`}
         className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-colors disabled:cursor-wait disabled:opacity-80 ${
-          mine ? "border-white/10 bg-white/10 hover:bg-white/15" : "border-zinc-300 bg-white hover:bg-zinc-50"
+          mine ? "border-white/10 bg-white/10 hover:bg-white/15" : "border-zinc-300 dark:border-bm-border bg-white hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
         }`}
       >
         <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-          mine ? "bg-white/10 text-white" : "bg-zinc-100 text-zinc-700"
+          mine ? "bg-white/10 text-white" : "bg-zinc-100 dark:bg-bm-surface-muted text-zinc-700 dark:text-bm-text-muted"
         }`}>
           <FileText className="h-5 w-5" />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-black">{message.attachment_name || "File attachment"}</span>
           <span className={`mt-0.5 block text-[11px] font-semibold ${
-            mine ? "text-zinc-300" : "text-zinc-500"
+            mine ? "text-zinc-300" : "text-zinc-500 dark:text-bm-text-subtle"
           }`}>{message.attachment_size ? formatFileSize(Number(message.attachment_size)) : "File"}</span>
         </span>
         <span className={`inline-flex min-w-[5.5rem] shrink-0 items-center justify-center gap-1 rounded-xl px-2.5 py-2 text-xs font-black ${
-          mine ? "bg-white text-zinc-900" : "bg-zinc-900 text-white"
+          mine ? "bg-white text-zinc-900 dark:text-bm-text" : "bg-zinc-900 text-white"
         }`}>
           {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-label="Downloading" /> : <Download className="h-3.5 w-3.5" />}
           <span>{downloading ? "Downloading" : "Download"}</span>
