@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useLayoutEffect,
   useState,
   type ReactNode,
 } from "react";
@@ -82,7 +83,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mediaQuery.removeListener(handleSystemThemeChange);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = resolvedTheme;
     root.dataset.themePreference = preference;
