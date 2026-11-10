@@ -49,7 +49,7 @@ type LifecycleStep = {
 };
 
 const TONE_CLASSES: Record<Tone, string> = {
-  zinc: "bg-zinc-100 text-zinc-700 border-zinc-200",
+  zinc: "bg-zinc-100 dark:bg-bm-surface-muted text-zinc-700 dark:text-bm-text-muted border-zinc-200 dark:border-bm-border",
   emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
   amber: "bg-amber-50 text-amber-700 border-amber-200",
   rose: "bg-rose-50 text-rose-700 border-rose-200",
@@ -150,9 +150,9 @@ function buildLifecycleSteps(payment?: PaymentRow | null, hooks: WebhookEventRow
 
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
-      <span className="text-zinc-500">{label}</span>
-      <span className="break-all font-semibold text-zinc-900">{value}</span>
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm">
+      <span className="text-zinc-500 dark:text-bm-text-subtle">{label}</span>
+      <span className="break-all font-semibold text-zinc-900 dark:text-bm-text">{value}</span>
     </div>
   );
 }
@@ -184,13 +184,13 @@ function RawWebhookViewer({ hook }: { hook: WebhookEventRow }) {
   };
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm">
+    <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-4 text-sm">
       <div className="flex items-center justify-between gap-3">
-        <p className="font-black text-zinc-900">{toText(hook.event_type)}</p>
+        <p className="font-black text-zinc-900 dark:text-bm-text">{toText(hook.event_type)}</p>
         <StatusPill label={Number(hook.signature_valid) === 1 ? "Valid" : "Invalid"} tone={Number(hook.signature_valid) === 1 ? "emerald" : "rose"} />
       </div>
-      <p className="mt-2 break-all font-mono text-xs text-zinc-500">{toText(hook.reference)}</p>
-      <p className="mt-2 text-xs text-zinc-500">{formatDate(hook.created_at)}</p>
+      <p className="mt-2 break-all font-mono text-xs text-zinc-500 dark:text-bm-text-subtle">{toText(hook.reference)}</p>
+      <p className="mt-2 text-xs text-zinc-500 dark:text-bm-text-subtle">{formatDate(hook.created_at)}</p>
 
       {rawPayload ? (
         <div className="mt-3 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
@@ -201,7 +201,7 @@ function RawWebhookViewer({ hook }: { hook: WebhookEventRow }) {
               aria-expanded={open}
               className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-200"
             >
-              <Webhook className="h-3.5 w-3.5 text-zinc-400" />
+              <Webhook className="h-3.5 w-3.5 text-zinc-400 dark:text-bm-text-subtle" />
               {open ? "Hide raw webhook" : "View raw webhook"}
             </button>
             <button
@@ -220,7 +220,7 @@ function RawWebhookViewer({ hook }: { hook: WebhookEventRow }) {
           ) : null}
         </div>
       ) : (
-        <p className="mt-3 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-500">No raw payload was stored for this webhook event.</p>
+        <p className="mt-3 rounded-xl border border-zinc-200 dark:border-bm-border bg-white px-3 py-2 text-xs text-zinc-500 dark:text-bm-text-subtle">No raw payload was stored for this webhook event.</p>
       )}
     </div>
   );
@@ -275,18 +275,18 @@ export default function AdminPaymentDetailsDrawer({ payment, hooks, onClose }: {
   return (
     <div className="fixed inset-0 z-[90] flex bg-zinc-900/50 backdrop-blur-sm" onClick={onClose}>
       <aside className="ml-auto h-full w-full max-w-xl overflow-y-auto bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="sticky top-0 flex items-center justify-between border-b border-zinc-100 bg-white px-5 py-4">
+        <div className="sticky top-0 flex items-center justify-between border-b border-zinc-100 dark:border-bm-border-subtle bg-white px-5 py-4">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Payment detail</p>
-            <h3 className="mt-1 text-lg font-black text-zinc-950">{toText(payment.reference)}</h3>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Payment detail</p>
+            <h3 className="mt-1 text-lg font-black text-zinc-950 dark:text-bm-text">{toText(payment.reference)}</h3>
           </div>
-          <button type="button" onClick={onClose} className="rounded-2xl border border-zinc-200 p-2 hover:bg-zinc-50">
-            <X className="h-5 w-5 text-zinc-500" />
+          <button type="button" onClick={onClose} className="rounded-2xl border border-zinc-200 dark:border-bm-border p-2 hover:bg-zinc-50 dark:hover:bg-bm-surface-muted">
+            <X className="h-5 w-5 text-zinc-500 dark:text-bm-text-subtle" />
           </button>
         </div>
 
         <div className="space-y-5 p-5">
-          <section className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5">
+          <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-5">
             <h4 className="text-base font-black">Core fields</h4>
             <div className="mt-4 grid gap-3">
               <Row label="BuyMesho reference" value={toText(payment.reference)} />
@@ -334,7 +334,7 @@ export default function AdminPaymentDetailsDrawer({ payment, hooks, onClose }: {
                         maxLength={500}
                         rows={4}
                         placeholder="Explain why the order is being refunded…"
-                        className="w-full rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 disabled:bg-zinc-100"
+                        className="w-full rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm text-zinc-900 dark:text-bm-text outline-none transition placeholder:text-zinc-400 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 disabled:bg-zinc-100 dark:disabled:bg-bm-surface-muted"
                       />
                       <p className="text-xs text-rose-800/70">The reason is stored with the refund action and used for transactional notifications.</p>
 
@@ -353,7 +353,7 @@ export default function AdminPaymentDetailsDrawer({ payment, hooks, onClose }: {
                             setRefundError(null);
                           }}
                           disabled={refundLoading}
-                          className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="rounded-xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 dark:text-bm-text-muted transition hover:bg-zinc-50 dark:hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Cancel
                         </button>
@@ -371,8 +371,8 @@ export default function AdminPaymentDetailsDrawer({ payment, hooks, onClose }: {
                   ) : (
                     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-white p-4">
                       <div>
-                        <p className="text-sm font-black text-zinc-900">{payment.currency} {Number(payment.amount).toLocaleString()}</p>
-                        <p className="mt-1 text-xs text-zinc-500">Escrow balance available for refund</p>
+                        <p className="text-sm font-black text-zinc-900 dark:text-bm-text">{payment.currency} {Number(payment.amount).toLocaleString()}</p>
+                        <p className="mt-1 text-xs text-zinc-500 dark:text-bm-text-subtle">Escrow balance available for refund</p>
                       </div>
                       <button
                         type="button"
@@ -392,22 +392,22 @@ export default function AdminPaymentDetailsDrawer({ payment, hooks, onClose }: {
             </section>
           ) : null}
 
-          <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+          <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
               <h4 className="text-base font-black">Lifecycle snapshot</h4>
             </div>
             <div className="mt-4 grid gap-3">
               {buildLifecycleSteps(payment, hooks).map((step) => (
-                <div key={step.number} className={`rounded-2xl border p-4 ${step.state === "done" ? "border-emerald-200 bg-emerald-50/70" : step.state === "active" ? "border-blue-200 bg-blue-50/70" : step.state === "issue" ? "border-rose-200 bg-rose-50/70" : "border-zinc-200 bg-white"}`}>
+                <div key={step.number} className={`rounded-2xl border p-4 ${step.state === "done" ? "border-emerald-200 bg-emerald-50/70" : step.state === "active" ? "border-blue-200 bg-blue-50/70" : step.state === "issue" ? "border-rose-200 bg-rose-50/70" : "border-zinc-200 dark:border-bm-border bg-white"}`}>
                   <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/80 font-black text-zinc-900 shadow-sm">{step.number}</div>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/80 dark:bg-bm-surface/90 font-black text-zinc-900 dark:text-bm-text shadow-sm">{step.number}</div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h5 className="text-sm font-black tracking-tight text-zinc-900">{step.title}</h5>
+                        <h5 className="text-sm font-black tracking-tight text-zinc-900 dark:text-bm-text">{step.title}</h5>
                         <StatusPill label={step.state === "done" ? "Done" : step.state === "active" ? "Active" : step.state === "issue" ? "Issue" : "Waiting"} tone={lifecycleTone(step.state)} />
                       </div>
-                      <p className="mt-2 text-sm leading-relaxed text-zinc-600">{step.detail}</p>
+                      <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-bm-text-muted">{step.detail}</p>
                     </div>
                   </div>
                 </div>
@@ -415,13 +415,13 @@ export default function AdminPaymentDetailsDrawer({ payment, hooks, onClose }: {
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+          <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2">
               <Webhook className="h-5 w-5" />
               <h4 className="text-base font-black">Webhook history for this reference</h4>
             </div>
             <div className="mt-4 space-y-3">
-              {hooks.length ? hooks.map((hook) => <RawWebhookViewer key={hook.id} hook={hook} />) : <p className="text-sm text-zinc-500">No webhook rows match this reference.</p>}
+              {hooks.length ? hooks.map((hook) => <RawWebhookViewer key={hook.id} hook={hook} />) : <p className="text-sm text-zinc-500 dark:text-bm-text-subtle">No webhook rows match this reference.</p>}
             </div>
           </section>
         </div>

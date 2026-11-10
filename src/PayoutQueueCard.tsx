@@ -17,9 +17,9 @@ type PayoutQueueCardProps = {
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-      <p className="mt-1 break-all font-medium text-zinc-900">{value}</p>
+    <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-3 py-2">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">{label}</p>
+      <p className="mt-1 break-all font-medium text-zinc-900 dark:text-bm-text">{value}</p>
     </div>
   );
 }
@@ -84,7 +84,7 @@ export default function PayoutQueueCard({
     "No provider update recorded yet.";
 
   return (
-    <div className="rounded-[1.75rem] border border-zinc-400 bg-zinc-100 p-4 shadow-sm">
+    <div className="rounded-[1.75rem] border border-zinc-400 bg-zinc-100 dark:bg-bm-surface-muted p-4 shadow-sm">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -92,7 +92,7 @@ export default function PayoutQueueCard({
               {formatStatus(row.status)}
             </span>
             {providerStatus ? (
-              <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-700">
+              <span className="inline-flex items-center rounded-full border border-zinc-200 dark:border-bm-border bg-white px-2.5 py-1 text-xs font-bold text-zinc-700 dark:text-bm-text-muted">
                 PayChangu {providerStatus}
               </span>
             ) : null}
@@ -106,18 +106,18 @@ export default function PayoutQueueCard({
                 retry eligible
               </span>
             ) : (
-              <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-600">
+              <span className="inline-flex items-center rounded-full border border-zinc-200 dark:border-bm-border bg-white px-2.5 py-1 text-xs font-bold text-zinc-600 dark:text-bm-text-muted">
                 {row.retryBlockedReason ?? "retry unavailable"}
               </span>
             )}
             {row.destinationVerificationStatus ? (
-              <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-700">
+              <span className="inline-flex items-center rounded-full border border-zinc-200 dark:border-bm-border bg-white px-2.5 py-1 text-xs font-bold text-zinc-700 dark:text-bm-text-muted">
                 destination {formatStatus(row.destinationVerificationStatus)}
               </span>
             ) : null}
           </div>
 
-          <div className="grid gap-2 text-sm text-zinc-700 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-2 text-sm text-zinc-700 dark:text-bm-text-muted sm:grid-cols-2 xl:grid-cols-4">
             <Info label="Payout ID" value={row.id} />
             <Info label="Seller" value={rowMeta.sellerBusinessName?.trim() || row.sellerId} />
             <Info label="Order ID" value={row.orderId ?? "—"} />
@@ -128,14 +128,14 @@ export default function PayoutQueueCard({
             <Info label="Updated" value={rowMeta.updatedAt ? new Date(rowMeta.updatedAt).toLocaleString() : "—"} />
           </div>
 
-          <div className="rounded-2xl border border-indigo-100 bg-white px-4 py-3 text-sm text-zinc-700">
+          <div className="rounded-2xl border border-indigo-100 bg-white px-4 py-3 text-sm text-zinc-700 dark:text-bm-text-muted">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Latest payout update</p>
-                <p className="mt-1 font-bold text-zinc-950">{latestUpdate}</p>
+                <p className="mt-1 font-bold text-zinc-950 dark:text-bm-text">{latestUpdate}</p>
               </div>
               {row.latestAttemptAt ? (
-                <span className="shrink-0 text-xs font-semibold text-zinc-500">{new Date(row.latestAttemptAt).toLocaleString()}</span>
+                <span className="shrink-0 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">{new Date(row.latestAttemptAt).toLocaleString()}</span>
               ) : null}
             </div>
 
@@ -147,12 +147,12 @@ export default function PayoutQueueCard({
             ) : null}
 
             <details className="mt-3">
-              <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Technical diagnostics</summary>
+              <summary className="cursor-pointer text-xs font-black uppercase tracking-[0.16em] text-zinc-500 dark:text-bm-text-subtle">Technical diagnostics</summary>
               <dl className="mt-2 grid gap-2 sm:grid-cols-2">
                 {Object.entries(diagnostics).map(([key, value]) => (
-                  <div key={key} className="rounded-xl bg-zinc-50 px-2.5 py-2">
-                    <dt className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">{key}</dt>
-                    <dd className="mt-1 break-all font-mono text-[11px] text-zinc-800">{value === null || value === undefined || value === "" ? "—" : typeof value === "object" ? JSON.stringify(value) : String(value)}</dd>
+                  <div key={key} className="rounded-xl bg-zinc-50 dark:bg-bm-surface-subtle px-2.5 py-2">
+                    <dt className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400 dark:text-bm-text-subtle">{key}</dt>
+                    <dd className="mt-1 break-all font-mono text-[11px] text-zinc-800 dark:text-bm-text-muted">{value === null || value === undefined || value === "" ? "—" : typeof value === "object" ? JSON.stringify(value) : String(value)}</dd>
                   </div>
                 ))}
               </dl>
@@ -164,7 +164,7 @@ export default function PayoutQueueCard({
           <button
             type="button"
             onClick={onOpenDetails}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 dark:text-bm-text-muted hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
           >
             <BadgeInfo className="h-4 w-4" />
             Details
@@ -174,7 +174,7 @@ export default function PayoutQueueCard({
             type="button"
             disabled={busy}
             onClick={onOpenReconcile}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 dark:text-bm-text-muted hover:bg-zinc-50 dark:hover:bg-bm-surface-muted disabled:opacity-60"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             Reconcile
