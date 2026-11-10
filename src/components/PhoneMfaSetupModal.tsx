@@ -56,14 +56,14 @@ export default function PhoneMfaSetupModal({
             exit={{ opacity: 0, scale: 0.96, y: 18 }}
             className="relative w-full max-w-xl rounded-3xl bg-white shadow-2xl overflow-hidden"
           >
-            <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
+            <div className="p-6 border-b border-zinc-100 dark:border-bm-border-subtle flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center">
-                  <ShieldCheck className="w-6 h-6 text-zinc-700" />
+                <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted flex items-center justify-center">
+                  <ShieldCheck className="w-6 h-6 text-zinc-700 dark:text-bm-text-muted" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-zinc-900">{title}</h3>
-                  <p className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
+                  <h3 className="text-lg font-extrabold text-zinc-900 dark:text-bm-text">{title}</h3>
+                  <p className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">
                     SMS second factor
                   </p>
                 </div>
@@ -72,20 +72,20 @@ export default function PhoneMfaSetupModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 rounded-full hover:bg-zinc-100 transition-colors"
+                className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-bm-surface-muted transition-colors"
               >
-                <X className="w-5 h-5 text-zinc-500" />
+                <X className="w-5 h-5 text-zinc-500 dark:text-bm-text-subtle" />
               </button>
             </div>
 
             <div className="px-6 py-5 space-y-4">
-              <p className="text-sm text-zinc-600 leading-6">{message}</p>
+              <p className="text-sm text-zinc-600 dark:text-bm-text-muted leading-6">{message}</p>
 
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4">
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+              <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-4">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">
                   Status
                 </p>
-                <p className="mt-1 text-sm font-semibold text-zinc-900">
+                <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-bm-text">
                   {codeSent ? "Code sent — enter the 6-digit SMS code" : "Enter your phone number to get a code"}
                 </p>
               </div>
@@ -93,11 +93,11 @@ export default function PhoneMfaSetupModal({
               {!codeSent ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-zinc-600">
+                    <label className="mb-2 block text-sm font-medium text-zinc-600 dark:text-bm-text-muted">
                       Phone number
                     </label>
-                    <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-                      <Phone className="w-4 h-4 text-zinc-400" />
+                    <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3">
+                      <Phone className="w-4 h-4 text-zinc-400 dark:text-bm-text-subtle" />
                       <input
                         type="tel"
                         inputMode="tel"
@@ -110,11 +110,11 @@ export default function PhoneMfaSetupModal({
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-zinc-600">
+                    <label className="mb-2 block text-sm font-medium text-zinc-600 dark:text-bm-text-muted">
                       Display name
                     </label>
-                    <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-                      <User className="w-4 h-4 text-zinc-400" />
+                    <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3">
+                      <User className="w-4 h-4 text-zinc-400 dark:text-bm-text-subtle" />
                       <input
                         type="text"
                         placeholder="BuyMesho phone"
@@ -127,7 +127,7 @@ export default function PhoneMfaSetupModal({
                 </div>
               ) : (
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-600">
+                  <label className="mb-2 block text-sm font-medium text-zinc-600 dark:text-bm-text-muted">
                     SMS verification code
                   </label>
                   <input
@@ -136,7 +136,7 @@ export default function PhoneMfaSetupModal({
                     value={verificationCode}
                     onChange={(e) => onVerificationCodeChange(e.target.value)}
                     placeholder="Enter 6-digit code"
-                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base outline-none placeholder:text-zinc-400 focus:ring-2 focus:ring-zinc-900/10"
+                    className="w-full rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-base outline-none placeholder:text-zinc-400 focus:ring-2 focus:ring-zinc-900/10"
                   />
                 </div>
               )}
@@ -149,7 +149,7 @@ export default function PhoneMfaSetupModal({
                 <button
                   type="button"
                   onClick={onBack}
-                  className="flex-1 py-3 rounded-2xl font-bold border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors"
+                  className="flex-1 py-3 rounded-2xl font-bold border border-zinc-200 dark:border-bm-border bg-white hover:bg-zinc-50 dark:hover:bg-bm-surface-muted transition-colors"
                 >
                   Back
                 </button>
@@ -157,7 +157,7 @@ export default function PhoneMfaSetupModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-3 rounded-2xl font-bold bg-zinc-100 hover:bg-zinc-200 transition-colors"
+                className="flex-1 py-3 rounded-2xl font-bold bg-zinc-100 dark:bg-bm-surface-muted hover:bg-zinc-200 transition-colors"
               >
                 Cancel
               </button>

@@ -30,14 +30,14 @@ export default function TotpChallengeModal({
       <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Security</p>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">{displayTitle}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-600">{message}</p>
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Security</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text">{displayTitle}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-bm-text-muted">{message}</p>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
+            className="rounded-full p-2 text-zinc-500 dark:text-bm-text-subtle hover:bg-zinc-100 dark:hover:bg-bm-surface-muted hover:text-zinc-900"
             aria-label="Close two-factor authentication"
           >
             <X className="h-5 w-5" />
@@ -46,7 +46,7 @@ export default function TotpChallengeModal({
 
         <div className="mt-6 space-y-4">
           <div>
-            <label className="mb-2 block text-sm font-semibold text-zinc-700">Authenticator code</label>
+            <label className="mb-2 block text-sm font-semibold text-zinc-700 dark:text-bm-text-muted">Authenticator code</label>
             <input
               autoFocus
               type="password"
@@ -57,7 +57,7 @@ export default function TotpChallengeModal({
               onChange={(e) => onCodeChange(e.target.value.replace(/\D/g, ""))}
               placeholder="••••••"
               aria-label="6-digit authenticator code"
-              className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold tracking-[0.3em] outline-none focus:border-zinc-900"
+              className="w-full rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-lg font-semibold tracking-[0.3em] outline-none focus:border-zinc-900"
             />
           </div>
 
@@ -65,7 +65,7 @@ export default function TotpChallengeModal({
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 rounded-2xl border border-zinc-200 bg-white px-4 py-3 font-bold text-zinc-900 hover:bg-zinc-50"
+              className="flex-1 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 font-bold text-zinc-900 dark:text-bm-text hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
             >
               Cancel
             </button>
