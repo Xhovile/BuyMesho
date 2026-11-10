@@ -23,10 +23,10 @@ export default function AdminRouteGuard({ children }: AdminRouteGuardProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-100 text-zinc-900 flex items-center justify-center">
-        <div className="inline-flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-sm">
-          <Loader2 className="h-5 w-5 animate-spin text-zinc-600" />
-          <span className="text-sm font-bold text-zinc-700">Checking access…</span>
+      <div className="min-h-screen bg-zinc-100 dark:bg-bm-surface-muted text-zinc-900 dark:text-bm-text flex items-center justify-center">
+        <div className="inline-flex items-center gap-3 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-5 py-4 shadow-sm">
+          <Loader2 className="h-5 w-5 animate-spin text-zinc-600 dark:text-bm-text-muted" />
+          <span className="text-sm font-bold text-zinc-700 dark:text-bm-text-muted">Checking access…</span>
         </div>
       </div>
     );
@@ -38,11 +38,11 @@ export default function AdminRouteGuard({ children }: AdminRouteGuardProps) {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-zinc-100 text-zinc-900 flex items-center justify-center p-4">
-        <div className="w-full max-w-lg rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">Admin</p>
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">Access required</h1>
-          <p className="mt-3 text-sm text-zinc-600">
+      <div className="min-h-screen bg-zinc-100 dark:bg-bm-surface-muted text-zinc-900 dark:text-bm-text flex items-center justify-center p-4">
+        <div className="w-full max-w-lg rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Admin</p>
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text">Access required</h1>
+          <p className="mt-3 text-sm text-zinc-600 dark:text-bm-text-muted">
             Your account can sign in, but it does not currently have backend admin access.
           </p>
           <button
