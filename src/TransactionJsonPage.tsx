@@ -337,13 +337,13 @@ const handleDownload = () => {
       <section className="border-b border-white/10 bg-zinc-900/60 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 lg:flex-row lg:items-end lg:justify-between lg:px-8">
           <div className="max-w-3xl">
-            <p className="text-[11px] font-black uppercase tracking-[0.28em] text-zinc-400">Deep-link transaction dump</p>
+            <p className="text-[11px] font-black uppercase tracking-[0.28em] text-zinc-400 dark:text-bm-text-subtle">Deep-link transaction dump</p>
             <h1 className="mt-2 text-3xl font-black tracking-tight text-white">Transaction JSON</h1>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <label className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <Search className="h-4 w-4 shrink-0 text-zinc-400" />
+              <Search className="h-4 w-4 shrink-0 text-zinc-400 dark:text-bm-text-subtle" />
               <input
                 value={queryInput}
                 onChange={(event) => setQueryInput(event.target.value)}
@@ -361,7 +361,7 @@ const handleDownload = () => {
             <button
               type="button"
               onClick={handleCopy}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white px-4 text-sm font-black text-zinc-950 transition hover:bg-zinc-200"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white px-4 text-sm font-black text-zinc-950 dark:text-bm-text transition hover:bg-zinc-200"
             >
               <Copy className="h-4 w-4" /> {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy JSON"}
             </button>
@@ -380,7 +380,7 @@ const handleDownload = () => {
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:px-8">
         <section className="grid gap-4">
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-sm">
-            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-zinc-400">Matched update</p>
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-zinc-400 dark:text-bm-text-subtle">Matched update</p>
             <p className="mt-2 text-sm font-semibold text-zinc-100">{loading ? "Loading…" : formatDate(payload.derived.updatedAt ?? null)}</p>
           </div>
         </section>
@@ -415,19 +415,19 @@ const handleDownload = () => {
           <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_1.2fr]">
             <div className="space-y-4 rounded-3xl border border-white/10 bg-black/20 p-4">
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400">Match context</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Match context</p>
                 <div className="mt-3 grid gap-2 text-sm">
-                  <div className="flex items-center justify-between gap-4"><span className="text-zinc-400">Payment ID</span><span className="break-all font-semibold text-white">{payload.matchContext.paymentId ?? "—"}</span></div>
-                  <div className="flex items-center justify-between gap-4"><span className="text-zinc-400">Order ID</span><span className="break-all font-semibold text-white">{payload.matchContext.orderId ?? "—"}</span></div>
-                  <div className="flex items-center justify-between gap-4"><span className="text-zinc-400">Escrow ID</span><span className="break-all font-semibold text-white">{payload.matchContext.escrowId ?? "—"}</span></div>
-                  <div className="flex items-center justify-between gap-4"><span className="text-zinc-400">Payout ID</span><span className="break-all font-semibold text-white">{payload.matchContext.payoutId ?? "—"}</span></div>
-                  <div className="flex items-center justify-between gap-4"><span className="text-zinc-400">Webhook ref</span><span className="break-all font-semibold text-white">{payload.matchContext.webhookReference ?? "—"}</span></div>
+                  <div className="flex items-center justify-between gap-4"><span className="text-zinc-400 dark:text-bm-text-subtle">Payment ID</span><span className="break-all font-semibold text-white">{payload.matchContext.paymentId ?? "—"}</span></div>
+                  <div className="flex items-center justify-between gap-4"><span className="text-zinc-400 dark:text-bm-text-subtle">Order ID</span><span className="break-all font-semibold text-white">{payload.matchContext.orderId ?? "—"}</span></div>
+                  <div className="flex items-center justify-between gap-4"><span className="text-zinc-400 dark:text-bm-text-subtle">Escrow ID</span><span className="break-all font-semibold text-white">{payload.matchContext.escrowId ?? "—"}</span></div>
+                  <div className="flex items-center justify-between gap-4"><span className="text-zinc-400 dark:text-bm-text-subtle">Payout ID</span><span className="break-all font-semibold text-white">{payload.matchContext.payoutId ?? "—"}</span></div>
+                  <div className="flex items-center justify-between gap-4"><span className="text-zinc-400 dark:text-bm-text-subtle">Webhook ref</span><span className="break-all font-semibold text-white">{payload.matchContext.webhookReference ?? "—"}</span></div>
                 </div>
               </div>
 
               {payload.derived.notes.length ? (
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400">Notes</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Notes</p>
                   <ul className="mt-3 space-y-2 text-sm text-zinc-200">
                     {payload.derived.notes.map((note) => (
                       <li key={note}>• {note}</li>
@@ -440,7 +440,7 @@ const handleDownload = () => {
             <div className="min-w-0 rounded-3xl border border-white/10 bg-black/30 p-4 shadow-inner">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400">JSON</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">JSON</p>
                   <h3 className="mt-1 text-sm font-bold text-white">Scoped payload snapshot</h3>
                 </div>
                 <a href="/admin/transaction-inspector" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-zinc-100 transition hover:bg-white/10">
