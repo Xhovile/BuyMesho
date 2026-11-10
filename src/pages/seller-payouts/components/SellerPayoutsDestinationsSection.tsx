@@ -39,7 +39,7 @@ function SectionTitle({
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
-        <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">{eyebrow}</p>
+        <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">{eyebrow}</p>
         <h2 className="mt-2 text-2xl font-black tracking-tight">{title}</h2>
       </div>
       {action ? action : null}
@@ -49,8 +49,8 @@ function SectionTitle({
 
 function EmptyState({ onAdd, disabled }: { onAdd: () => void; disabled: boolean }) {
   return (
-    <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-5 py-6">
-      <p className="text-sm font-semibold text-zinc-600">No payout account has been added yet.</p>
+    <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-5 py-6">
+      <p className="text-sm font-semibold text-zinc-600 dark:text-bm-text-muted">No payout account has been added yet.</p>
       <button
         type="button"
         onClick={onAdd}
@@ -149,13 +149,13 @@ export default function SellerPayoutsDestinationsSection({
               aria-modal="true"
               aria-label={isEditing ? "Replace payout account" : "Add payout account"}
             >
-              <div className="flex items-start justify-between gap-4 border-b border-zinc-100 px-5 py-4 sm:px-6 sm:py-5">
+              <div className="flex items-start justify-between gap-4 border-b border-zinc-100 dark:border-bm-border-subtle px-5 py-4 sm:px-6 sm:py-5">
                 <div>
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Payout account</p>
-                  <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-950">
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Payout account</p>
+                  <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-950 dark:text-bm-text">
                     {isEditing ? "Replace your payout account" : "Add payout account"}
                   </h2>
-                  <p className="mt-1 text-sm font-medium text-zinc-500">
+                  <p className="mt-1 text-sm font-medium text-zinc-500 dark:text-bm-text-subtle">
                     Choose where your earnings should be sent.
                   </p>
                 </div>
@@ -163,7 +163,7 @@ export default function SellerPayoutsDestinationsSection({
                   type="button"
                   onClick={onCancel}
                   disabled={saving}
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 disabled:opacity-50"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 dark:border-bm-border bg-white text-zinc-600 dark:text-bm-text-muted hover:bg-zinc-50 dark:hover:bg-bm-surface-muted disabled:opacity-50"
                   aria-label="Close payout account form"
                 >
                   <X className="h-5 w-5" />
