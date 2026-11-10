@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ChevronLeft, House, LogOut, ShoppingBag } from "lucide-react";
+import { ArrowLeft, ChevronLeft, House, LogOut, ShoppingBag } from "lucide-react";
 import { signOut } from "firebase/auth";
 import {
   EXPLORE_PATH,
@@ -108,8 +108,17 @@ export default function AccountPageShell({
       <main className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8">
         <div className="space-y-6 sm:space-y-8">
           {showBrandHero && (
-            <div className="rounded-[2rem] border border-white/80 bg-white/90 px-5 py-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+            <div className="flex items-center justify-between gap-4 rounded-[2rem] border border-white/80 bg-white/90 px-5 py-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-sm">
               <BrandMark subtitle={brandHeroSubtitle} />
+              <button
+                type="button"
+                onClick={onBack || (() => navigateBackOrPath(HOME_PATH))}
+                aria-label="Go back"
+                title="Go back"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-red-900 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-900 focus-visible:ring-offset-2 active:bg-red-100"
+              >
+                <ArrowLeft className="h-6 w-6" strokeWidth={2.5} />
+              </button>
             </div>
           )}
 
