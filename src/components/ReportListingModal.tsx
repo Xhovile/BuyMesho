@@ -62,12 +62,12 @@ export default function ReportListingModal({ listingId, onClose }: Props) {
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
       >
-        <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
+        <div className="p-6 border-b border-zinc-100 dark:border-bm-border-subtle flex items-center justify-between">
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-600" />
             <div>
-              <h2 className="text-xl font-extrabold text-zinc-900">Report Listing</h2>
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
+              <h2 className="text-xl font-extrabold text-zinc-900 dark:text-bm-text">Report Listing</h2>
+              <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase tracking-widest mt-1">
                 Tell us what is wrong
               </p>
             </div>
@@ -75,7 +75,7 @@ export default function ReportListingModal({ listingId, onClose }: Props) {
 
           <button
             onClick={onClose}
-            className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
+            className="p-2 hover:bg-zinc-100 dark:hover:bg-bm-surface-muted rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -107,7 +107,7 @@ export default function ReportListingModal({ listingId, onClose }: Props) {
           {!successMessage && (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">
                   Reason
                 </label>
                 <input
@@ -115,21 +115,21 @@ export default function ReportListingModal({ listingId, onClose }: Props) {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="e.g. Scam, fake item, abusive content"
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                  className="w-full px-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
                   required
                   disabled={sending}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">
                   Extra Details (Optional)
                 </label>
                 <textarea
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
                   placeholder="Describe the issue clearly..."
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-28 resize-none"
+                  className="w-full px-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-28 resize-none"
                   disabled={sending}
                 />
               </div>

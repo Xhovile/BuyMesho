@@ -78,62 +78,62 @@ export default function ChangePasswordModal({ user, onClose }: Props) {
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
       >
-        <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
+        <div className="p-6 border-b border-zinc-100 dark:border-bm-border-subtle flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-extrabold text-zinc-900">Change Password</h2>
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
+            <h2 className="text-xl font-extrabold text-zinc-900 dark:text-bm-text">Change Password</h2>
+            <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase tracking-widest mt-1">
               Update your account password
             </p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-zinc-100 dark:hover:bg-bm-surface-muted rounded-full transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleChangePassword} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">
               Current Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-bm-text-subtle" />
               <input
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">
               New Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-bm-text-subtle" />
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">
               Confirm New Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-bm-text-subtle" />
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
                 required
               />
             </div>
