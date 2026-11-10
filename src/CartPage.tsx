@@ -54,30 +54,30 @@ function CartPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <div className="min-h-screen bg-zinc-100 dark:bg-bm-surface-muted text-zinc-900 dark:text-bm-text">
       <div className="mx-auto w-full max-w-7xl px-4 pb-28 pt-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
+            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm font-bold text-zinc-800 dark:text-bm-text-muted shadow-sm hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to market
           </button>
-          <div className="text-sm font-semibold text-zinc-500">
+          <div className="text-sm font-semibold text-zinc-500 dark:text-bm-text-subtle">
             {itemCount} item{itemCount === 1 ? "" : "s"} in cart
           </div>
         </div>
 
         <section className="mt-6 w-full">
-          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-4">
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 dark:border-bm-border pb-4">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.28em] text-zinc-400">Cart</p>
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
+              <p className="text-xs font-black uppercase tracking-[0.28em] text-zinc-400 dark:text-bm-text-subtle">Cart</p>
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 dark:text-bm-text sm:text-4xl">
                 Review your items
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500 sm:text-base">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500 dark:text-bm-text-subtle sm:text-base">
                 Tap any item to open it again. Remove anything you do not want before buying.
               </p>
             </div>
@@ -85,7 +85,7 @@ function CartPageContent() {
             <button
               type="button"
               onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-200 dark:border-bm-border bg-white px-4 py-2 text-sm font-bold text-zinc-800 dark:text-bm-text-muted shadow-sm hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
             >
               Continue browsing
               <ChevronRight className="h-4 w-4" />
@@ -93,19 +93,19 @@ function CartPageContent() {
           </div>
 
           {items.length ? (
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-              <label className="inline-flex items-center gap-3 text-sm font-bold text-zinc-800">
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3">
+              <label className="inline-flex items-center gap-3 text-sm font-bold text-zinc-800 dark:text-bm-text-muted">
                 <input
                   ref={selectAllRef}
                   type="checkbox"
                   checked={allSelected}
                   onChange={(event) => setAllSelected(event.target.checked)}
-                  className="h-4 w-4 rounded border-zinc-300 text-zinc-950 focus:ring-zinc-900"
+                  className="h-4 w-4 rounded border-zinc-300 dark:border-bm-border text-zinc-950 dark:text-bm-text focus:ring-zinc-900"
                 />
                 Select all
               </label>
 
-              <div className="text-sm font-semibold text-zinc-500">
+              <div className="text-sm font-semibold text-zinc-500 dark:text-bm-text-subtle">
                 {selectedCount} selected • {selectedUnits} units • {formatMoney(selectedSubtotal)}
               </div>
             </div>
@@ -153,12 +153,12 @@ function CartPageContent() {
                   })}
                 </div>
               ) : (
-                <div className="border-y border-zinc-200 bg-white/70 py-16 text-center">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 text-zinc-400">
+                <div className="border-y border-zinc-200 dark:border-bm-border bg-white/70 py-16 text-center">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-bm-surface-muted text-zinc-400 dark:text-bm-text-subtle">
                     <span className="text-xl">🛒</span>
                   </div>
-                  <h2 className="mt-4 text-2xl font-black text-zinc-950">Cart is empty</h2>
-                  <p className="mt-2 text-sm text-zinc-500">
+                  <h2 className="mt-4 text-2xl font-black text-zinc-950 dark:text-bm-text">Cart is empty</h2>
+                  <p className="mt-2 text-sm text-zinc-500 dark:text-bm-text-subtle">
                     Add items from a listing page or from the events page, then come back here to review them.
                   </p>
                   <button

@@ -27,31 +27,31 @@ export default function PaymentsHubPage() {
   );
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <div className="min-h-screen bg-zinc-100 dark:bg-bm-surface-muted text-zinc-900 dark:text-bm-text">
       <div className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
         <button
           type="button"
           onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-          className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
+          className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm font-bold text-zinc-800 dark:text-bm-text-muted shadow-sm hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
         </button>
 
-        <p className="mt-6 text-lg font-black uppercase tracking-[0.28em] text-zinc-600 sm:text-xl">Payments</p>
-        <h1 className="mt-2 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Payment actions</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-600 sm:text-base">
+        <p className="mt-6 text-lg font-black uppercase tracking-[0.28em] text-zinc-600 dark:text-bm-text-muted sm:text-xl">Payments</p>
+        <h1 className="mt-2 text-4xl font-black tracking-tight text-zinc-950 dark:text-bm-text sm:text-5xl">Payment actions</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-600 dark:text-bm-text-muted sm:text-base">
           Select one section below to open its separate page.
         </p>
 
-        <nav className="mt-8 overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm">
+        <nav className="mt-8 overflow-hidden rounded-[1.75rem] border border-zinc-200 dark:border-bm-border bg-white shadow-sm">
           <ol>
             {visibleActions.map((action, index) => (
-              <li key={action.label} className={index > 0 ? "border-t border-zinc-200" : ""}>
+              <li key={action.label} className={index > 0 ? "border-t border-zinc-200 dark:border-bm-border" : ""}>
                 <button
                   type="button"
                   onClick={() => navigateToPath(action.path)}
-                  className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                  className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-bold text-zinc-800 dark:text-bm-text-muted hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
                   aria-label={`Open ${action.label}`}
                 >
                   <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${action.iconBg} text-white`}>
