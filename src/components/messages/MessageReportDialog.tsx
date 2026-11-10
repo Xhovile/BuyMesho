@@ -47,11 +47,11 @@ export default function MessageReportDialog({
     >
       <div className="space-y-4">
         <label className="block">
-          <span className="mb-2 block text-sm font-bold text-zinc-800">Reason</span>
+          <span className="mb-2 block text-sm font-bold text-zinc-800 dark:text-bm-text-muted">Reason</span>
           <select
             value={reason}
             onChange={(e) => setReason(e.target.value as MessageReportReason)}
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none"
+            className="w-full rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm outline-none"
           >
             {REPORT_REASONS.map((item) => (
               <option key={item.value} value={item.value}>
@@ -62,13 +62,13 @@ export default function MessageReportDialog({
         </label>
 
         <label className="block">
-          <span className="mb-2 block text-sm font-bold text-zinc-800">Details</span>
+          <span className="mb-2 block text-sm font-bold text-zinc-800 dark:text-bm-text-muted">Details</span>
           <textarea
             value={details}
             onChange={(e) => setDetails(e.target.value)}
             rows={4}
             placeholder="Add context for moderation, if needed."
-            className="w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none"
+            className="w-full resize-none rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm outline-none"
           />
         </label>
       </div>

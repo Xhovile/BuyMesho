@@ -327,12 +327,12 @@ export default function MessageThreadPage() {
     event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
 
   if (loading || authLoading) {
-    return <div className="flex min-h-screen items-center justify-center bg-zinc-100"><Loader2 className="h-10 w-10 animate-spin text-zinc-700" /></div>;
+    return <div className="flex min-h-screen items-center justify-center bg-zinc-100 dark:bg-bm-surface-muted"><Loader2 className="h-10 w-10 animate-spin text-zinc-700 dark:text-bm-text-muted" /></div>;
   }
 
   if (!conversation) {
     return (
-      <div className="min-h-screen bg-zinc-100 px-4 py-6 text-zinc-900 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-zinc-100 dark:bg-bm-surface-muted px-4 py-6 text-zinc-900 dark:text-bm-text sm:px-6 lg:px-8">
         <button type="button" onClick={() => navigateToMessages()} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white">
           <ArrowLeft className="h-4 w-4" />Back to inbox
         </button>
@@ -354,8 +354,8 @@ export default function MessageThreadPage() {
   const sellerProfileHref = `/seller?uid=${encodeURIComponent(conversation.seller.uid)}`;
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-zinc-100 text-zinc-900">
-      <header className="z-20 shrink-0 border-b border-zinc-200 bg-zinc-100/95 backdrop-blur">
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-zinc-100 dark:bg-bm-surface-muted text-zinc-900 dark:text-bm-text">
+      <header className="z-20 shrink-0 border-b border-zinc-200 dark:border-bm-border bg-zinc-100/95 backdrop-blur">
         <div className="flex items-center gap-3 px-4 py-4">
           <button type="button" onClick={() => navigateToMessages()} className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-white" aria-label="Back">
             <ArrowLeft className="h-5 w-5" />
@@ -363,35 +363,35 @@ export default function MessageThreadPage() {
 
           {isOrderThread ? (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-base font-extrabold text-zinc-900 sm:text-lg">Dispute conversation</p>
-              <p className="text-sm font-semibold text-zinc-500">Order {conversation.order_id}</p>
+              <p className="truncate text-base font-extrabold text-zinc-900 dark:text-bm-text sm:text-lg">Dispute conversation</p>
+              <p className="text-sm font-semibold text-zinc-500 dark:text-bm-text-subtle">Order {conversation.order_id}</p>
             </div>
           ) : isSellerThread ? (
             <a href={sellerProfileHref} onClick={(event) => { if (!isPlainLeftClick(event)) return; event.preventDefault(); navigateToSellerProfile(conversation.seller.uid); }} className="min-w-0 flex-1 text-left">
-              <p className="truncate text-base font-extrabold text-zinc-900 sm:text-lg">{sellerName}</p>
-              <p className="text-sm font-semibold text-zinc-500">Seller profile</p>
+              <p className="truncate text-base font-extrabold text-zinc-900 dark:text-bm-text sm:text-lg">{sellerName}</p>
+              <p className="text-sm font-semibold text-zinc-500 dark:text-bm-text-subtle">Seller profile</p>
             </a>
           ) : isEventThread ? (
             <a href={`${EVENTS_PATH}?event=${conversation.event?.id}`} onClick={(event) => { if (!isPlainLeftClick(event)) return; event.preventDefault(); if (conversation.event) navigateToPath(`${EVENTS_PATH}?event=${conversation.event.id}`); }} className="min-w-0 flex-1 text-left">
-              <p className="truncate text-base font-extrabold text-zinc-900 sm:text-lg">{eventTitle}</p>
-              <p className="text-sm font-semibold text-zinc-500">{listingPrice > 0 ? `MWK ${listingPrice.toLocaleString()}` : "Free event"}</p>
+              <p className="truncate text-base font-extrabold text-zinc-900 dark:text-bm-text sm:text-lg">{eventTitle}</p>
+              <p className="text-sm font-semibold text-zinc-500 dark:text-bm-text-subtle">{listingPrice > 0 ? `MWK ${listingPrice.toLocaleString()}` : "Free event"}</p>
             </a>
           ) : (
             <a href={`/listing?listing=${conversation.listing.id}`} onClick={(event) => { if (!isPlainLeftClick(event)) return; event.preventDefault(); navigateToListingDetails(conversation.listing.id, 0); }} className="min-w-0 flex-1 text-left">
-              <p className="truncate text-base font-extrabold text-zinc-900 sm:text-lg">{listingName}</p>
-              <p className="text-sm font-semibold text-zinc-500">{listingPrice > 0 ? `MWK ${listingPrice.toLocaleString()}` : "Price unavailable"}</p>
+              <p className="truncate text-base font-extrabold text-zinc-900 dark:text-bm-text sm:text-lg">{listingName}</p>
+              <p className="text-sm font-semibold text-zinc-500 dark:text-bm-text-subtle">{listingPrice > 0 ? `MWK ${listingPrice.toLocaleString()}` : "Price unavailable"}</p>
             </a>
           )}
 
           {isOrderThread || !isEventThread ? (
             <a href={sellerProfileHref} onClick={(event) => { if (!isPlainLeftClick(event)) return; event.preventDefault(); navigateToSellerProfile(conversation.seller.uid); }} className="ml-auto max-w-[10rem] shrink-0 text-right sm:max-w-[14rem]">
-              <p className="truncate text-sm font-bold text-zinc-900 sm:text-base">{sellerName}</p>
-              <p className="text-[11px] font-semibold text-zinc-500">Seller profile</p>
+              <p className="truncate text-sm font-bold text-zinc-900 dark:text-bm-text sm:text-base">{sellerName}</p>
+              <p className="text-[11px] font-semibold text-zinc-500 dark:text-bm-text-subtle">Seller profile</p>
             </a>
           ) : (
             <div className="ml-auto max-w-[10rem] shrink-0 text-right sm:max-w-[14rem]">
-              <p className="truncate text-sm font-bold text-zinc-900 sm:text-base">{conversation.event?.organizer_name || sellerName}</p>
-              <p className="text-[11px] font-semibold text-zinc-500">Event owner</p>
+              <p className="truncate text-sm font-bold text-zinc-900 dark:text-bm-text sm:text-base">{conversation.event?.organizer_name || sellerName}</p>
+              <p className="text-[11px] font-semibold text-zinc-500 dark:text-bm-text-subtle">Event owner</p>
             </div>
           )}
 
@@ -423,39 +423,39 @@ export default function MessageThreadPage() {
             const mine = msg.sender_uid === user?.uid;
             return (
               <div key={msg.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[88%] rounded-3xl px-4 py-3 text-sm ${mine ? "bg-zinc-900 text-white" : "bg-zinc-200 text-zinc-900"}`}>
+                <div className={`max-w-[88%] rounded-3xl px-4 py-3 text-sm ${mine ? "bg-zinc-900 text-white" : "bg-zinc-200 dark:bg-bm-skeleton text-zinc-900 dark:text-bm-text"}`}>
                   {msg.body ? <p className="whitespace-pre-wrap break-words">{msg.body}</p> : null}
                   {msg.attachment_url ? <MessageAttachmentViewer message={msg} mine={mine} /> : null}
-                  <p className={`mt-2 text-[11px] ${mine ? "text-zinc-300" : "text-zinc-500"}`}>{timeLabel(msg.created_at)}</p>
+                  <p className={`mt-2 text-[11px] ${mine ? "text-zinc-300" : "text-zinc-500 dark:text-bm-text-subtle"}`}>{timeLabel(msg.created_at)}</p>
                 </div>
               </div>
             );
           }) : (
-            <div className="flex h-full items-center justify-center text-sm text-zinc-500">No messages yet.</div>
+            <div className="flex h-full items-center justify-center text-sm text-zinc-500 dark:text-bm-text-subtle">No messages yet.</div>
           )}
           <div ref={threadEndRef} />
         </div>
 
-        <div className="shrink-0 border-t border-zinc-200 bg-white px-4 py-4">
+        <div className="shrink-0 border-t border-zinc-200 dark:border-bm-border bg-white px-4 py-4">
           {pendingAttachment ? (
-            <div className="mb-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+            <div className="mb-3 rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-3">
               <div className="flex items-center gap-3">
                 {attachmentCategory === "image" && attachmentPreviewUrl ? (
                   <img src={attachmentPreviewUrl} alt="Selected attachment preview" className="h-16 w-16 shrink-0 rounded-2xl object-cover" />
                 ) : attachmentCategory === "video" && attachmentPreviewUrl ? (
                   <video src={attachmentPreviewUrl} className="h-16 w-16 shrink-0 rounded-2xl bg-black object-cover" muted playsInline />
                 ) : (
-                  <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white text-zinc-700">
+                  <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white text-zinc-700 dark:text-bm-text-muted">
                     <FileText className="h-6 w-6" />
                   </span>
                 )}
 
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-black text-zinc-900">{pendingAttachment.name}</p>
-                  <p className="mt-1 text-xs font-semibold text-zinc-500">{formatFileSize(pendingAttachment.size)}</p>
+                  <p className="truncate text-sm font-black text-zinc-900 dark:text-bm-text">{pendingAttachment.name}</p>
+                  <p className="mt-1 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">{formatFileSize(pendingAttachment.size)}</p>
                 </div>
 
-                <button type="button" onClick={removePendingAttachment} disabled={busy} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-zinc-500 hover:bg-zinc-100 disabled:opacity-40" aria-label="Remove attachment">
+                <button type="button" onClick={removePendingAttachment} disabled={busy} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-zinc-500 dark:text-bm-text-subtle hover:bg-zinc-100 dark:hover:bg-bm-surface-muted disabled:opacity-40" aria-label="Remove attachment">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -470,7 +470,7 @@ export default function MessageThreadPage() {
               onClick={() => setAttachmentPickerOpen(true)}
               disabled={!canReply || busy}
               aria-label="Add attachment"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-400"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 dark:border-bm-border text-zinc-700 dark:text-bm-text-muted hover:bg-zinc-50 dark:hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:text-zinc-400"
             >
               <Paperclip className="h-5 w-5" />
             </button>
@@ -488,7 +488,7 @@ export default function MessageThreadPage() {
               onChange={(event) => setDraft(event.target.value)}
               placeholder={canReply ? "Type your message..." : "Messaging is blocked."}
               disabled={!canReply}
-              className="min-h-12 flex-1 resize-none rounded-2xl border border-zinc-200 px-4 py-3 text-sm outline-none disabled:bg-zinc-100 disabled:text-zinc-500"
+              className="min-h-12 flex-1 resize-none rounded-2xl border border-zinc-200 dark:border-bm-border px-4 py-3 text-sm outline-none disabled:bg-zinc-100 dark:disabled:bg-bm-surface-muted disabled:text-zinc-500"
             />
 
             <button
