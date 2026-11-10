@@ -8,13 +8,13 @@ import type { ListingStripVariant, SectionListing } from "../../home/home.types"
 function ListingCardSkeleton() {
   return (
     <div className="w-[220px] shrink-0 snap-start bg-transparent sm:w-[260px]">
-      <div className="aspect-[4/3] animate-pulse rounded-2xl bg-zinc-100" />
+      <div className="aspect-[4/3] animate-pulse rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted" />
       <div className="space-y-3 px-1 py-4">
-        <div className="h-4 w-3/4 rounded-full bg-zinc-100 animate-pulse" />
-        <div className="h-3 w-full rounded-full bg-zinc-100 animate-pulse" />
-        <div className="h-3 w-5/6 rounded-full bg-zinc-100 animate-pulse" />
-        <div className="h-4 w-24 rounded-full bg-zinc-100 animate-pulse" />
-        <div className="h-3 w-20 rounded-full bg-zinc-100 animate-pulse" />
+        <div className="h-4 w-3/4 rounded-full bg-zinc-100 dark:bg-bm-surface-muted animate-pulse" />
+        <div className="h-3 w-full rounded-full bg-zinc-100 dark:bg-bm-surface-muted animate-pulse" />
+        <div className="h-3 w-5/6 rounded-full bg-zinc-100 dark:bg-bm-surface-muted animate-pulse" />
+        <div className="h-4 w-24 rounded-full bg-zinc-100 dark:bg-bm-surface-muted animate-pulse" />
+        <div className="h-3 w-20 rounded-full bg-zinc-100 dark:bg-bm-surface-muted animate-pulse" />
       </div>
     </div>
   );
@@ -41,14 +41,14 @@ export default function ListingStrip({
   const skeletonCount = typeof window !== "undefined" && window.innerWidth >= 640 ? 4 : 2;
 
   return (
-    <section className="mx-[-1rem] w-[calc(100%+2rem)] rounded-none border-x-0 border-y border-zinc-200 bg-white px-4 py-6 shadow-sm sm:mx-0 sm:w-auto sm:rounded-[2rem] sm:border sm:p-8">
+    <section className="mx-[-1rem] w-[calc(100%+2rem)] rounded-none border-x-0 border-y border-zinc-200 dark:border-bm-border bg-white px-4 py-6 shadow-sm sm:mx-0 sm:w-auto sm:rounded-[2rem] sm:border sm:p-8">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">
+          <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text sm:text-3xl">
             {title}
           </h2>
           {isFeatured ? (
-            <p className="mt-2 text-sm leading-relaxed text-zinc-500">{description}</p>
+            <p className="mt-2 text-sm leading-relaxed text-zinc-500 dark:text-bm-text-subtle">{description}</p>
           ) : null}
         </div>
 
@@ -67,7 +67,7 @@ export default function ListingStrip({
         {loading ? (
           Array.from({ length: skeletonCount }).map((_, index) => <ListingCardSkeleton key={index} />)
         ) : listings.length === 0 ? (
-          <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
+          <div className="w-full rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-6 text-sm text-zinc-500 dark:text-bm-text-subtle shadow-sm">
             No listings yet
           </div>
         ) : (
@@ -81,7 +81,7 @@ export default function ListingStrip({
                 onClick={() => navigateToListingDetails(item.id)}
                 className="group flex w-[220px] shrink-0 snap-start flex-col bg-transparent text-left sm:w-[260px]"
               >
-                <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted">
                   <ListingImage
                     src={imageSrc}
                     alt={item.name}
@@ -90,8 +90,8 @@ export default function ListingStrip({
                 </div>
 
                 <div className="px-1 py-4">
-                  <p className="line-clamp-1 text-sm font-extrabold text-zinc-900">{item.name}</p>
-                  <p className="mt-1 line-clamp-2 text-sm text-zinc-500">
+                  <p className="line-clamp-1 text-sm font-extrabold text-zinc-900 dark:text-bm-text">{item.name}</p>
+                  <p className="mt-1 line-clamp-2 text-sm text-zinc-500 dark:text-bm-text-subtle">
                     {item.description || item.university || "Tap to open the full listing details."}
                   </p>
                   <p className="mt-2 text-sm font-bold text-red-900">
