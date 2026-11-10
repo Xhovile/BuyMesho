@@ -21,7 +21,7 @@ function SectionTitle({
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
-        <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">{eyebrow}</p>
+        <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">{eyebrow}</p>
         <h2 className="mt-2 text-2xl font-black tracking-tight">{title}</h2>
       </div>
       {action ? action : null}
@@ -32,7 +32,7 @@ function SectionTitle({
 function EmptyRow({ message }: { message: string }) {
   return (
     <tr>
-      <td colSpan={5} className="px-4 py-6 text-zinc-500">
+      <td colSpan={5} className="px-4 py-6 text-zinc-500 dark:text-bm-text-subtle">
         {message}
       </td>
     </tr>
@@ -67,7 +67,7 @@ export default function SellerPayoutsHistorySection({
           <td className="px-4 py-4">
             <div className="space-y-2">
               <PayoutStatusBadge status={payout.status} />
-              <div className="text-xs font-semibold text-zinc-600">
+              <div className="text-xs font-semibold text-zinc-600 dark:text-bm-text-muted">
                 {getSellerPayoutStatusLabel(payout.status)}
               </div>
               {payout.status === "held" ? (
@@ -79,13 +79,13 @@ export default function SellerPayoutsHistorySection({
             </div>
           </td>
 
-          <td className="px-4 py-4 text-zinc-700">
-            <div className="font-bold text-zinc-900">
+          <td className="px-4 py-4 text-zinc-700 dark:text-bm-text-muted">
+            <div className="font-bold text-zinc-900 dark:text-bm-text">
               {money(payoutMath.sellerReceivesAmount, payoutMath.currency)}
             </div>
 
             {payoutMath.hasFormula ? (
-              <div className="mt-2 space-y-1 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-[11px] font-semibold text-zinc-500">
+              <div className="mt-2 space-y-1 rounded-xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-2.5 py-2 text-[11px] font-semibold text-zinc-500 dark:text-bm-text-subtle">
                 <div className="flex justify-between gap-3">
                   <span>Item sold total</span>
                   <span>{money(payoutMath.grossAmount, payoutMath.currency)}</span>
@@ -104,20 +104,20 @@ export default function SellerPayoutsHistorySection({
                     <span>-{money(payoutMath.reserveAmount, payoutMath.currency)}</span>
                   </div>
                 ) : null}
-                <div className="flex justify-between gap-3 border-t border-zinc-200 pt-1 font-bold text-zinc-700">
+                <div className="flex justify-between gap-3 border-t border-zinc-200 dark:border-bm-border pt-1 font-bold text-zinc-700 dark:text-bm-text-muted">
                   <span>Total you will receive</span>
                   <span>{money(payoutMath.sellerReceivesAmount, payoutMath.currency)}</span>
                 </div>
-                <div className="rounded-lg bg-white px-2 py-1 text-[10px] leading-4 text-zinc-600">
+                <div className="rounded-lg bg-white px-2 py-1 text-[10px] leading-4 text-zinc-600 dark:text-bm-text-muted">
                   {payoutFeeNote(payout)}
                 </div>
               </div>
             ) : null}
           </td>
 
-          <td className="px-4 py-4 text-zinc-600">{payout.orderId || payout.escrowId || "—"}</td>
+          <td className="px-4 py-4 text-zinc-600 dark:text-bm-text-muted">{payout.orderId || payout.escrowId || "—"}</td>
 
-          <td className="px-4 py-4 text-zinc-600">
+          <td className="px-4 py-4 text-zinc-600 dark:text-bm-text-muted">
             <div className="space-y-1">
               {operationalSignals.length === 0 ? (
                 <span>—</span>
@@ -125,19 +125,19 @@ export default function SellerPayoutsHistorySection({
                 operationalSignals.map((message) => (
                   <div
                     key={`${payout.id}-${message}`}
-                    className="rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold"
+                    className="rounded-xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-2.5 py-1 text-xs font-semibold"
                   >
                     {message}
                   </div>
                 ))
               )}
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold">
+              <div className="rounded-xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-2.5 py-1 text-xs font-semibold">
                 {getSellerPayoutStatusDetail(payout.status)}
               </div>
             </div>
           </td>
 
-          <td className="px-4 py-4 text-zinc-500">{formatDate(payout.updatedAt)}</td>
+          <td className="px-4 py-4 text-zinc-500 dark:text-bm-text-subtle">{formatDate(payout.updatedAt)}</td>
         </tr>
       );
     })
@@ -148,13 +148,13 @@ export default function SellerPayoutsHistorySection({
       <SectionTitle
         eyebrow="Payout history"
         title="Release, paid, failed."
-        action={<Wallet className="h-5 w-5 text-zinc-400" />}
+        action={<Wallet className="h-5 w-5 text-zinc-400 dark:text-bm-text-subtle" />}
       />
 
-      <div className="mt-5 overflow-x-auto rounded-2xl border border-zinc-200">
+      <div className="mt-5 overflow-x-auto rounded-2xl border border-zinc-200 dark:border-bm-border">
         <div className="max-h-[520px] min-w-[760px] overflow-auto">
-          <table className="w-full divide-y divide-zinc-200 text-left text-sm">
-            <thead className="sticky top-0 bg-zinc-50 text-zinc-500">
+          <table className="w-full divide-y divide-zinc-200 dark:divide-bm-border text-left text-sm">
+            <thead className="sticky top-0 bg-zinc-50 dark:bg-bm-surface-subtle text-zinc-500 dark:text-bm-text-subtle">
               <tr>
                 <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Status</th>
                 <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Amount</th>
@@ -167,7 +167,7 @@ export default function SellerPayoutsHistorySection({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100 bg-white">{content}</tbody>
+            <tbody className="divide-y divide-zinc-100 dark:divide-bm-border-subtle bg-white">{content}</tbody>
           </table>
         </div>
       </div>
