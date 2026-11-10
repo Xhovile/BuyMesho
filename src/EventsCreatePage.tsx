@@ -214,17 +214,17 @@ function AppDropdown({
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-label={label}
-        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm text-zinc-900 outline-none transition hover:border-zinc-300 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-left text-sm text-zinc-900 dark:text-bm-text outline-none transition hover:border-zinc-300 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
       >
-        <span className={selected ? "font-medium" : "text-zinc-400"}>{selected?.label || placeholder}</span>
-        <ChevronDown className={`h-4 w-4 shrink-0 text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`} />
+        <span className={selected ? "font-medium" : "text-zinc-400 dark:text-bm-text-subtle"}>{selected?.label || placeholder}</span>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-zinc-400 dark:text-bm-text-subtle transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && menuStyle && typeof document !== "undefined"
         ? createPortal(
             <div
               ref={menuRef}
-              className="z-[9999] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_24px_70px_-35px_rgba(0,0,0,0.28)]"
+              className="z-[9999] overflow-hidden rounded-2xl border border-zinc-200 dark:border-bm-border bg-white shadow-[0_24px_70px_-35px_rgba(0,0,0,0.28)]"
               style={{
                 position: "fixed",
                 top: menuStyle.top,
@@ -245,7 +245,7 @@ function AppDropdown({
                         setOpen(false);
                       }}
                       className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm transition ${
-                        active ? "bg-zinc-950 text-white" : "text-zinc-700 hover:bg-zinc-100"
+                        active ? "bg-zinc-950 text-white" : "text-zinc-700 dark:text-bm-text-muted hover:bg-zinc-100 dark:hover:bg-bm-surface-muted"
                       }`}
                     >
                       <span>{option.label}</span>
@@ -291,7 +291,7 @@ function TimePicker({ value, onChange }: { value: unknown; onChange: (nextValue:
   return (
     <div className="mt-2 grid grid-cols-2 gap-3">
       <div>
-        <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-400">Hour</span>
+        <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">Hour</span>
         <AppDropdown
           label="Hour"
           value={hour}
@@ -304,7 +304,7 @@ function TimePicker({ value, onChange }: { value: unknown; onChange: (nextValue:
         />
       </div>
       <div>
-        <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-400">Minute</span>
+        <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">Minute</span>
         <AppDropdown
           label="Minute"
           value={minute}
@@ -322,15 +322,15 @@ function TimePicker({ value, onChange }: { value: unknown; onChange: (nextValue:
 
 function RenderField({ field, value, error, onChange }: { field: EventSpecField; value: EventSpecValue; error?: string; onChange: (nextValue: EventSpecValue) => void }) {
   const baseClass =
-    "mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10";
+    "mt-2 w-full rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm text-zinc-900 dark:text-bm-text outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10";
 
   return (
     <label className="block">
-      <span className="text-sm font-bold text-zinc-900">
+      <span className="text-sm font-bold text-zinc-900 dark:text-bm-text">
         {field.label}
         {field.required ? <span className="ml-1 text-red-900">*</span> : null}
       </span>
-      {field.helpText ? <span className="mt-1 block text-xs text-zinc-500">{field.helpText}</span> : null}
+      {field.helpText ? <span className="mt-1 block text-xs text-zinc-500 dark:text-bm-text-subtle">{field.helpText}</span> : null}
 
       {isDateLikeField(field) ? (
         <input type="date" value={typeof value === "string" ? value : ""} onChange={(e) => onChange(e.target.value)} className={baseClass} />
@@ -361,12 +361,12 @@ function RenderField({ field, value, error, onChange }: { field: EventSpecField;
           className={baseClass}
         />
       ) : field.type === "boolean" ? (
-        <label className="mt-2 flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
+        <label className="mt-2 flex items-center gap-3 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm text-zinc-700 dark:text-bm-text-muted">
           <input
             type="checkbox"
             checked={value === true}
             onChange={(e) => onChange(e.target.checked)}
-            className="h-4 w-4 rounded border-zinc-300 text-red-900 focus:ring-red-900"
+            className="h-4 w-4 rounded border-zinc-300 dark:border-bm-border text-red-900 focus:ring-red-900"
           />
           <span>{field.helpText || "Toggle this option"}</span>
         </label>
@@ -375,7 +375,7 @@ function RenderField({ field, value, error, onChange }: { field: EventSpecField;
           {(field.options || []).map((option) => {
             const selected = Array.isArray(value) ? value.includes(option) : false;
             return (
-              <label key={option} className="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
+              <label key={option} className="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm text-zinc-700 dark:text-bm-text-muted">
                 <input
                   type="checkbox"
                   checked={selected}
@@ -383,7 +383,7 @@ function RenderField({ field, value, error, onChange }: { field: EventSpecField;
                     const current = Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
                     onChange(e.target.checked ? [...current, option] : current.filter((item) => item !== option));
                   }}
-                  className="h-4 w-4 rounded border-zinc-300 text-red-900 focus:ring-red-900"
+                  className="h-4 w-4 rounded border-zinc-300 dark:border-bm-border text-red-900 focus:ring-red-900"
                 />
                 <span>{option}</span>
               </label>
@@ -650,9 +650,9 @@ export default function EventsCreatePage() {
 
   if (authLoading || creatorLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-100 px-4 text-zinc-600">
-        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-lg shadow-zinc-200/50">
-          <Ticket className="h-5 w-5 animate-pulse text-zinc-700" />
+      <div className="flex min-h-screen items-center justify-center bg-zinc-100 dark:bg-bm-surface-muted px-4 text-zinc-600 dark:text-bm-text-muted">
+        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-5 py-4 shadow-lg shadow-zinc-200/50">
+          <Ticket className="h-5 w-5 animate-pulse text-zinc-700 dark:text-bm-text-muted" />
           Checking event creator access...
         </div>
       </div>
@@ -661,10 +661,10 @@ export default function EventsCreatePage() {
 
   if (!firebaseUser) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-100 px-4">
-        <div className="max-w-lg rounded-[2rem] border border-zinc-200 bg-white p-6 text-center shadow-lg shadow-zinc-200/50">
-          <h1 className="text-2xl font-black tracking-tight text-zinc-950">Sign in to create events</h1>
-          <p className="mt-3 text-sm text-zinc-600">Event publishing is limited to logged-in approved event creators.</p>
+      <div className="flex min-h-screen items-center justify-center bg-zinc-100 dark:bg-bm-surface-muted px-4">
+        <div className="max-w-lg rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 text-center shadow-lg shadow-zinc-200/50">
+          <h1 className="text-2xl font-black tracking-tight text-zinc-950 dark:text-bm-text">Sign in to create events</h1>
+          <p className="mt-3 text-sm text-zinc-600 dark:text-bm-text-muted">Event publishing is limited to logged-in approved event creators.</p>
           <button type="button" onClick={() => navigateToPath(EVENTS_PATH)} className="mt-5 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-bold text-white">Back to events</button>
         </div>
       </div>
@@ -673,11 +673,11 @@ export default function EventsCreatePage() {
 
   if (!canCreateEvents) {
     return (
-      <div className="min-h-screen bg-zinc-100 px-4 py-10 text-zinc-900">
-        <form onSubmit={handleCreatorOnboarding} className="mx-auto max-w-2xl rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-lg shadow-zinc-200/50 sm:p-8">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Event creator onboarding</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950">Register as an event creator</h1>
-          <p className="mt-3 text-sm leading-relaxed text-zinc-600">Event creator access is separate from seller approval. Submissions are auto-approved, saved for admin audit, and stay active for 30 days before you need to renew.</p>
+      <div className="min-h-screen bg-zinc-100 dark:bg-bm-surface-muted px-4 py-10 text-zinc-900 dark:text-bm-text">
+        <form onSubmit={handleCreatorOnboarding} className="mx-auto max-w-2xl rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-lg shadow-zinc-200/50 sm:p-8">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">Event creator onboarding</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 dark:text-bm-text">Register as an event creator</h1>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-bm-text-muted">Event creator access is separate from seller approval. Submissions are auto-approved, saved for admin audit, and stay active for 30 days before you need to renew.</p>
           <div className="mt-6 grid gap-4">
             {[
               ["display_name", "Your name"],
@@ -687,19 +687,19 @@ export default function EventsCreatePage() {
               ["event_types", "Types of events you host"],
             ].map(([key, label]) => (
               <label key={key} className="block">
-                <span className="text-sm font-bold text-zinc-900">{label}</span>
-                <input value={creatorForm[key as keyof typeof creatorForm]} onChange={(e) => setCreatorForm((current) => ({ ...current, [key]: e.target.value }))} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10" />
+                <span className="text-sm font-bold text-zinc-900 dark:text-bm-text">{label}</span>
+                <input value={creatorForm[key as keyof typeof creatorForm]} onChange={(e) => setCreatorForm((current) => ({ ...current, [key]: e.target.value }))} className="mt-2 w-full rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10" />
               </label>
             ))}
             <label className="block">
-              <span className="text-sm font-bold text-zinc-900">Why are you publishing events?</span>
-              <textarea value={creatorForm.reason} onChange={(e) => setCreatorForm((current) => ({ ...current, reason: e.target.value }))} rows={4} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10" />
+              <span className="text-sm font-bold text-zinc-900 dark:text-bm-text">Why are you publishing events?</span>
+              <textarea value={creatorForm.reason} onChange={(e) => setCreatorForm((current) => ({ ...current, reason: e.target.value }))} rows={4} className="mt-2 w-full rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10" />
             </label>
           </div>
           {creatorError ? <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{creatorError}</div> : null}
           <div className="mt-6 flex flex-wrap gap-3">
             <button type="submit" disabled={creatorSubmitting} className="rounded-2xl bg-red-900 px-5 py-3 text-sm font-extrabold text-white disabled:opacity-60">{creatorSubmitting ? "Submitting..." : "Submit and continue"}</button>
-            <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-bold text-zinc-900">Cancel</button>
+            <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-5 py-3 text-sm font-bold text-zinc-900 dark:text-bm-text">Cancel</button>
           </div>
         </form>
       </div>
@@ -708,9 +708,9 @@ export default function EventsCreatePage() {
 
   if (editingEventId && loadingExistingEvent) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-100 px-4 text-zinc-600">
-        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-lg shadow-zinc-200/50">
-          <Ticket className="h-5 w-5 animate-pulse text-zinc-700" />
+      <div className="flex min-h-screen items-center justify-center bg-zinc-100 dark:bg-bm-surface-muted px-4 text-zinc-600 dark:text-bm-text-muted">
+        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-5 py-4 shadow-lg shadow-zinc-200/50">
+          <Ticket className="h-5 w-5 animate-pulse text-zinc-700 dark:text-bm-text-muted" />
           Loading event for editing...
         </div>
       </div>
@@ -718,20 +718,20 @@ export default function EventsCreatePage() {
   }
 
   return (
-    <div className="min-h-screen w-screen max-w-none overflow-x-clip bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
+    <div className="min-h-screen w-screen max-w-none overflow-x-clip bg-zinc-100 dark:bg-bm-surface-muted text-zinc-900 dark:text-bm-text">
+      <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/90 dark:bg-bm-surface/90 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-7xl min-w-0 items-center justify-between gap-4 px-4 py-3">
           <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex min-w-0 items-center gap-2.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-900 text-xl font-extrabold text-white shadow-lg shadow-red-900/20">B</div>
             <div className="text-left">
               <p className="text-lg font-extrabold tracking-tight">
                 <span className="text-red-900">Buy</span>
-                <span className="text-zinc-700">Mesho</span>
+                <span className="text-zinc-700 dark:text-bm-text-muted">Mesho</span>
               </p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">{isEditing ? "Edit event" : "Create event"}</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">{isEditing ? "Edit event" : "Create event"}</p>
             </div>
           </button>
-          <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50">
+          <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 dark:hover:bg-bm-surface-muted">
             Back
           </button>
         </div>
@@ -739,18 +739,18 @@ export default function EventsCreatePage() {
 
       <main className="mx-auto w-full min-w-0 max-w-7xl px-4 py-8 sm:px-4 lg:py-10">
         <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
-          <section className="min-w-0 rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.15)] sm:p-8">
+          <section className="min-w-0 rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.15)] sm:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Event creator</p>
-                <h1 className="mt-2 text-3xl font-black tracking-[-0.06em] text-zinc-950 sm:text-5xl">{isEditing ? "Edit event" : "Create an event"}</h1>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">Event creator</p>
+                <h1 className="mt-2 text-3xl font-black tracking-[-0.06em] text-zinc-950 dark:text-bm-text sm:text-5xl">{isEditing ? "Edit event" : "Create an event"}</h1>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 dark:text-bm-text-muted sm:text-base">
                   {isEditing
                     ? "Update the existing event details, then save the changes."
                     : "Choose the event type first, then fill in the schema fields that appear for that type."}
                 </p>
                 {isEditing && editingEventId ? (
-                  <p className="mt-4 inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-zinc-500">
+                  <p className="mt-4 inline-flex items-center rounded-full border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-zinc-500 dark:text-bm-text-subtle">
                     Editing event #{editingEventId}
                   </p>
                 ) : null}
@@ -763,7 +763,7 @@ export default function EventsCreatePage() {
             <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
               <div className="grid gap-6">
                 <label className="block">
-                  <span className="text-sm font-bold text-zinc-900">Event type</span>
+                  <span className="text-sm font-bold text-zinc-900 dark:text-bm-text">Event type</span>
                   <AppDropdown
                     label="Event type"
                     value={eventType}
@@ -781,9 +781,9 @@ export default function EventsCreatePage() {
                     if (fields.length === 0) return null;
 
                     return (
-                      <section key={group.title} className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5">
+                      <section key={group.title} className="rounded-[1.75rem] border border-zinc-200 dark:border-bm-border bg-zinc-50/70 p-4 sm:p-5">
                         <div className="flex items-center justify-between gap-4">
-                          <h2 className="text-sm font-extrabold uppercase tracking-[0.2em] text-zinc-500">{group.title}</h2>
+                          <h2 className="text-sm font-extrabold uppercase tracking-[0.2em] text-zinc-500 dark:text-bm-text-subtle">{group.title}</h2>
                           <span className="h-2.5 w-2.5 rounded-full bg-red-900" />
                         </div>
                         <div className="mt-4 grid gap-4">
@@ -810,13 +810,13 @@ export default function EventsCreatePage() {
                   })
                 )}
 
-                <section className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5">
+                <section className="rounded-[1.75rem] border border-zinc-200 dark:border-bm-border bg-zinc-50/70 p-4 sm:p-5">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-500">Poster</p>
-                      <h2 className="mt-1 text-lg font-black tracking-tight text-zinc-950">Upload event poster</h2>
+                      <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-500 dark:text-bm-text-subtle">Poster</p>
+                      <h2 className="mt-1 text-lg font-black tracking-tight text-zinc-950 dark:text-bm-text">Upload event poster</h2>
                     </div>
-                    <button type="button" onClick={handlePosterPick} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50" disabled={posterUploading}>
+                    <button type="button" onClick={handlePosterPick} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 dark:text-bm-text hover:bg-zinc-50 dark:hover:bg-bm-surface-muted" disabled={posterUploading}>
                       <Upload className="h-4 w-4" />
                       {posterUploading ? "Uploading…" : posterAssetUrl ? "Replace poster" : "Choose poster"}
                     </button>
@@ -830,7 +830,7 @@ export default function EventsCreatePage() {
                     onChange={handlePosterChange}
                   />
                   {posterAssetUrl ? (
-                    <div className="relative mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white">
+                    <div className="relative mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200 dark:border-bm-border bg-white">
                       <img src={posterAssetUrl} alt="Poster preview" className="h-56 w-full object-cover" />
                       <button
                         type="button"
@@ -844,7 +844,7 @@ export default function EventsCreatePage() {
                       </button>
                     </div>
                   ) : (
-                    <div className="mt-4 rounded-[1.5rem] border border-dashed border-zinc-300 bg-white p-5 text-sm text-zinc-500">
+                    <div className="mt-4 rounded-[1.5rem] border border-dashed border-zinc-300 dark:border-bm-border bg-white p-5 text-sm text-zinc-500 dark:text-bm-text-subtle">
                       Upload a poster image to make the event more visible.
                     </div>
                   )}
@@ -865,7 +865,7 @@ export default function EventsCreatePage() {
                     {submitting ? "Saving…" : isEditing ? "Save changes" : "Publish event"}
                     <ArrowRight className="h-4 w-4" />
                   </button>
-                  <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50">
+                  <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-5 py-3 text-sm font-bold text-zinc-900 dark:text-bm-text hover:bg-zinc-50 dark:hover:bg-bm-surface-muted">
                     Cancel
                   </button>
                 </div>
@@ -874,19 +874,19 @@ export default function EventsCreatePage() {
           </section>
 
           <section className="min-w-0 space-y-6">
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.15)] sm:p-6">
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Live preview</p>
-              <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-zinc-50/70">
+            <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.15)] sm:p-6">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">Live preview</p>
+              <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-zinc-200 dark:border-bm-border bg-zinc-50/70">
                 <div className={`aspect-[16/10] bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900`}>
                   {posterAssetUrl ? <img src={posterAssetUrl} alt="Poster preview" className="h-full w-full object-cover" /> : null}
                 </div>
                 <div className="p-5">
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">{previewDate || "Date TBD"}</p>
-                  <h3 className="mt-2 text-2xl font-black tracking-tight text-zinc-950">{previewTitle}</h3>
-                  <p className="mt-2 text-sm text-zinc-600">{previewLocation}</p>
-                  <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-500">
-                    <span className="rounded-full border border-zinc-200 bg-white px-3 py-1">{previewTicketMode || "Ticket mode"}</span>
-                    <span className="rounded-full border border-zinc-200 bg-white px-3 py-1">{previewPrice}</span>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">{previewDate || "Date TBD"}</p>
+                  <h3 className="mt-2 text-2xl font-black tracking-tight text-zinc-950 dark:text-bm-text">{previewTitle}</h3>
+                  <p className="mt-2 text-sm text-zinc-600 dark:text-bm-text-muted">{previewLocation}</p>
+                  <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-500 dark:text-bm-text-subtle">
+                    <span className="rounded-full border border-zinc-200 dark:border-bm-border bg-white px-3 py-1">{previewTicketMode || "Ticket mode"}</span>
+                    <span className="rounded-full border border-zinc-200 dark:border-bm-border bg-white px-3 py-1">{previewPrice}</span>
                   </div>
                 </div>
               </div>
