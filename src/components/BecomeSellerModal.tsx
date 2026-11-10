@@ -67,17 +67,17 @@ export default function BecomeSellerModal({
       />
 
       <div className="relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl">
-        <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
+        <div className="p-6 border-b border-zinc-100 dark:border-bm-border-subtle flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-extrabold text-zinc-900">Become a Seller</h2>
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
+            <h2 className="text-2xl font-extrabold text-zinc-900 dark:text-bm-text">Become a Seller</h2>
+            <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase tracking-widest mt-1">
               Unlock listing tools
             </p>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
+            className="p-2 hover:bg-zinc-100 dark:hover:bg-bm-surface-muted rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -85,7 +85,7 @@ export default function BecomeSellerModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">
               Seller Name
             </label>
             <input
@@ -93,18 +93,18 @@ export default function BecomeSellerModal({
               type="text"
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
-              className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+              className="w-full px-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">
               Campus
             </label>
             <select
               value={university}
               onChange={(e) => setUniversity(e.target.value as University)}
-              className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+              className="w-full px-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
             >
               {UNIVERSITIES.map((u) => (
                 <option key={u} value={u}>
@@ -115,7 +115,7 @@ export default function BecomeSellerModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">
               WhatsApp Number
             </label>
             <input
@@ -124,18 +124,18 @@ export default function BecomeSellerModal({
               placeholder="265..."
               value={whatsappNumber}
               onChange={(e) => setWhatsappNumber(e.target.value)}
-              className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+              className="w-full px-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">
               Seller Bio (Optional)
             </label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-24 resize-none"
+              className="w-full px-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-24 resize-none"
             />
           </div>
 
