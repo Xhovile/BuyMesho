@@ -43,24 +43,24 @@ export function CartItemCard({
         }
       }}
       className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 ${
-        isSelected ? "border-zinc-900 ring-1 ring-zinc-900/10" : "border-zinc-200"
+        isSelected ? "border-zinc-900 ring-1 ring-zinc-900/10" : "border-zinc-200 dark:border-bm-border"
       }`}
     >
       <div className="flex gap-3 p-3">
-        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-zinc-100 sm:h-24 sm:w-24">
+        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-zinc-100 dark:bg-bm-surface-muted sm:h-24 sm:w-24">
           <input
             type="checkbox"
             checked={isSelected}
             onClick={(event) => event.stopPropagation()}
             onChange={onToggleSelection}
-            className="absolute left-2 top-2 z-10 h-4 w-4 rounded border-zinc-300 text-zinc-950 focus:ring-zinc-900"
+            className="absolute left-2 top-2 z-10 h-4 w-4 rounded border-zinc-300 dark:border-bm-border text-zinc-950 dark:text-bm-text focus:ring-zinc-900"
             aria-label={`Select ${item.title}`}
           />
 
           {item.image ? (
             <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-zinc-500">
+            <div className="flex h-full w-full items-center justify-center text-zinc-500 dark:text-bm-text-subtle">
               <ShoppingCart className="h-6 w-6" />
             </div>
           )}
@@ -69,29 +69,29 @@ export function CartItemCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-zinc-950 sm:text-base">{item.title}</p>
-              <p className="mt-0.5 text-xs font-semibold text-zinc-500 sm:text-sm">{formatMoney(item.unitPrice)} each</p>
-              <p className="mt-0.5 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">{kindLabel}</p>
+              <p className="truncate text-sm font-bold text-zinc-950 dark:text-bm-text sm:text-base">{item.title}</p>
+              <p className="mt-0.5 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle sm:text-sm">{formatMoney(item.unitPrice)} each</p>
+              <p className="mt-0.5 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">{kindLabel}</p>
             </div>
 
-            <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
+            <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400 dark:text-bm-text-subtle" />
           </div>
 
-          {subtitle ? <p className="mt-1 line-clamp-1 text-xs text-zinc-500 sm:text-sm">{subtitle}</p> : null}
-          {description ? <p className="mt-1 line-clamp-1 text-xs text-zinc-500 sm:text-sm">{description}</p> : null}
+          {subtitle ? <p className="mt-1 line-clamp-1 text-xs text-zinc-500 dark:text-bm-text-subtle sm:text-sm">{subtitle}</p> : null}
+          {description ? <p className="mt-1 line-clamp-1 text-xs text-zinc-500 dark:text-bm-text-subtle sm:text-sm">{description}</p> : null}
 
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[11px] font-semibold text-zinc-500">
+            <span className="rounded-full border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-2.5 py-1 text-[11px] font-semibold text-zinc-500 dark:text-bm-text-subtle">
               Available {availableQuantity ?? "—"}
             </span>
-            <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[11px] font-semibold text-zinc-500">
+            <span className="rounded-full border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-2.5 py-1 text-[11px] font-semibold text-zinc-500 dark:text-bm-text-subtle">
               Qty {selectedQuantity || 0}
             </span>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2 border-t border-zinc-100 px-3 py-3">
+      <div className="flex items-center justify-between gap-2 border-t border-zinc-100 dark:border-bm-border-subtle px-3 py-3">
         <div className="flex items-center gap-1.5">
           <button
             type="button"
@@ -100,13 +100,13 @@ export function CartItemCard({
               onDecrease();
             }}
             disabled={!isSelected}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-sm font-black text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 dark:border-bm-border bg-white text-sm font-black text-zinc-700 dark:text-bm-text-muted disabled:cursor-not-allowed disabled:opacity-40"
             aria-label={`Decrease checkout quantity for ${item.title}`}
           >
             −
           </button>
 
-          <span className="min-w-7 text-center text-xs font-black text-zinc-900 sm:text-sm">
+          <span className="min-w-7 text-center text-xs font-black text-zinc-900 dark:text-bm-text sm:text-sm">
             {selectedQuantity || 0}
           </span>
 
@@ -117,7 +117,7 @@ export function CartItemCard({
               onIncrease();
             }}
             disabled={selectedQuantity >= maxSelectable}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-sm font-black text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 dark:border-bm-border bg-white text-sm font-black text-zinc-700 dark:text-bm-text-muted disabled:cursor-not-allowed disabled:opacity-40"
             aria-label={`Increase checkout quantity for ${item.title}`}
           >
             +
@@ -130,7 +130,7 @@ export function CartItemCard({
             event.stopPropagation();
             onRemove();
           }}
-          className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-bold text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 sm:px-3 sm:text-xs"
+          className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-bm-border bg-white px-2.5 py-1 text-[11px] font-bold text-zinc-600 dark:text-bm-text-muted hover:bg-zinc-50 dark:hover:bg-bm-surface-muted hover:text-zinc-900 sm:px-3 sm:text-xs"
         >
           <Trash2 className="h-3.5 w-3.5" />
           Remove

@@ -128,17 +128,17 @@ export function CartCheckoutModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="cart-checkout-title"
-        className="relative flex max-h-[94vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-zinc-50 shadow-2xl"
+        className="relative flex max-h-[94vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-zinc-50 dark:bg-bm-surface-subtle shadow-2xl"
       >
-        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-zinc-200 bg-white px-5 py-4 sm:px-6">
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-zinc-200 dark:border-bm-border bg-white px-5 py-4 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-zinc-950 text-white">
               <ShoppingBag className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Cart checkout</p>
-              <h2 id="cart-checkout-title" className="text-lg font-black text-zinc-950">Complete your order</h2>
-              <p className="mt-0.5 text-xs text-zinc-500">Review your selection and confirm the details before payment.</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Cart checkout</p>
+              <h2 id="cart-checkout-title" className="text-lg font-black text-zinc-950 dark:text-bm-text">Complete your order</h2>
+              <p className="mt-0.5 text-xs text-zinc-500 dark:text-bm-text-subtle">Review your selection and confirm the details before payment.</p>
             </div>
           </div>
           <button
@@ -146,43 +146,43 @@ export function CartCheckoutModal({
             onClick={onClose}
             disabled={checkoutLoading}
             aria-label="Close"
-            className="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100 disabled:opacity-40"
+            className="rounded-full p-2 text-zinc-500 dark:text-bm-text-subtle transition hover:bg-zinc-100 dark:hover:bg-bm-surface-muted disabled:opacity-40"
           >
             <X className="h-5 w-5" />
           </button>
         </header>
 
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4">
+          <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h3 className="text-sm font-extrabold text-zinc-900">Items for checkout</h3>
-              <span className="text-xs font-semibold text-zinc-500">{entries.length} selected</span>
+              <h3 className="text-sm font-extrabold text-zinc-900 dark:text-bm-text">Items for checkout</h3>
+              <span className="text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">{entries.length} selected</span>
             </div>
-            <div className="divide-y divide-zinc-100">
+            <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
               {entries.map(({ item, checkoutQuantity }) => (
                 <div key={item.cartKey} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                   {item.image ? (
                     <img src={item.image} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
                   ) : (
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-400">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-bm-surface-muted text-zinc-400 dark:text-bm-text-subtle">
                       <ShoppingBag className="h-5 w-5" />
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-zinc-900">{item.title}</p>
-                    <p className="mt-0.5 text-xs text-zinc-500">
+                    <p className="truncate text-sm font-bold text-zinc-900 dark:text-bm-text">{item.title}</p>
+                    <p className="mt-0.5 text-xs text-zinc-500 dark:text-bm-text-subtle">
                       {item.kind === "event_ticket" ? "Event ticket" : "Marketplace item"} · Qty {checkoutQuantity}
                     </p>
                   </div>
-                  <p className="shrink-0 text-sm font-extrabold text-zinc-900">
+                  <p className="shrink-0 text-sm font-extrabold text-zinc-900 dark:text-bm-text">
                     {formatMoney(item.unitPrice * checkoutQuantity)}
                   </p>
                 </div>
               ))}
             </div>
-            <div className="mt-4 flex items-center justify-between border-t border-zinc-200 pt-4">
-              <span className="text-sm font-bold text-zinc-600">Selected total</span>
-              <span className="text-lg font-black text-zinc-950">{formatMoney(subtotal)}</span>
+            <div className="mt-4 flex items-center justify-between border-t border-zinc-200 dark:border-bm-border pt-4">
+              <span className="text-sm font-bold text-zinc-600 dark:text-bm-text-muted">Selected total</span>
+              <span className="text-lg font-black text-zinc-950 dark:text-bm-text">{formatMoney(subtotal)}</span>
             </div>
           </div>
 
@@ -193,7 +193,7 @@ export function CartCheckoutModal({
           ) : null}
 
           {isEventCheckout ? (
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5">
+            <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white p-5">
               <TicketHolderForm
                 initialValue={{
                   fullName: buyerName ?? "",
