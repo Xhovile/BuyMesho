@@ -87,24 +87,24 @@ export default function ChangePasswordPage() {
       onBack={() => navigateToPath("/profile")}
     >
       {authLoading ? (
-        <div className="p-8 text-sm text-zinc-500">Loading account…</div>
+        <div className="p-8 text-sm text-zinc-500 dark:text-bm-text-subtle">Loading account…</div>
       ) : !firebaseUser ? (
-        <div className="p-8 text-sm text-zinc-500">Login required.</div>
+        <div className="p-8 text-sm text-zinc-500 dark:text-bm-text-subtle">Login required.</div>
       ) : (
         <form onSubmit={handleChangePassword} className="p-8 space-y-5 w-full">
           <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">
               Current Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-bm-text-subtle" />
               <input
                 type="password"
                 value={currentPassword}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
                   setCurrentPassword(e.target.value)
                 }
-                className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none"
+                className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl outline-none"
                 placeholder="Enter your current password"
                 autoComplete="current-password"
                 required
@@ -113,18 +113,18 @@ export default function ChangePasswordPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">
               New Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-bm-text-subtle" />
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
                   setNewPassword(e.target.value)
                 }
-                className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none"
+                className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl outline-none"
                 placeholder="Enter a new password"
                 autoComplete="new-password"
                 required
@@ -133,18 +133,18 @@ export default function ChangePasswordPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">
               Confirm New Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-bm-text-subtle" />
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
                   setConfirmPassword(e.target.value)
                 }
-                className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none"
+                className="w-full pl-10 pr-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl outline-none"
                 placeholder="Repeat the new password"
                 autoComplete="new-password"
                 required
