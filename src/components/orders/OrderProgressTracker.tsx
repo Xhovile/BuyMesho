@@ -8,8 +8,8 @@ export default function OrderProgressTracker({
   activeIndex,
 }: OrderProgressTrackerProps) {
   return (
-    <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
-      <h2 className="text-lg font-black text-zinc-950">Progress</h2>
+    <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-5 sm:p-6">
+      <h2 className="text-lg font-black text-zinc-950 dark:text-bm-text">Progress</h2>
 
       <div className="mt-4 grid gap-3">
         {stages.map((stage, index) => {
@@ -21,14 +21,14 @@ export default function OrderProgressTracker({
               className={`flex items-center gap-3 rounded-2xl border p-4 ${
                 active
                   ? 'border-zinc-900 bg-zinc-900 text-white'
-                  : 'border-zinc-200 bg-white text-zinc-700'
+                  : 'border-zinc-200 dark:border-bm-border bg-white text-zinc-700 dark:text-bm-text-muted'
               }`}
             >
               <div
                 className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black ${
                   active
-                    ? 'bg-white text-zinc-900'
-                    : 'bg-zinc-100 text-zinc-700'
+                    ? 'bg-white text-zinc-900 dark:text-bm-text'
+                    : 'bg-zinc-100 dark:bg-bm-surface-muted text-zinc-700 dark:text-bm-text-muted'
                 }`}
               >
                 {index + 1}
@@ -40,7 +40,7 @@ export default function OrderProgressTracker({
                 {index === activeIndex ? (
                   <p
                     className={`text-xs ${
-                      active ? 'text-zinc-200' : 'text-zinc-500'
+                      active ? 'text-zinc-200' : 'text-zinc-500 dark:text-bm-text-subtle'
                     }`}
                   >
                     Current state
