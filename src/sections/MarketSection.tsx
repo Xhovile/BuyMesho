@@ -75,15 +75,15 @@ type MarketSectionProps = {
 function ListingCardSkeleton() {
   return (
     <div className="w-full max-w-[160px] md:max-w-none">
-      <div className="aspect-square animate-pulse rounded-2xl bg-zinc-100 md:aspect-[4/3]" />
+      <div className="aspect-square animate-pulse rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted md:aspect-[4/3]" />
       <div className="space-y-1.5 py-2">
-        <div className="h-3.5 w-11/12 animate-pulse rounded-full bg-zinc-100" />
-        <div className="h-3 w-4/5 animate-pulse rounded-full bg-zinc-100" />
+        <div className="h-3.5 w-11/12 animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
+        <div className="h-3 w-4/5 animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
         <div className="flex gap-1">
-          <div className="h-3.5 w-10 animate-pulse rounded-full bg-zinc-100" />
-          <div className="h-3.5 w-8 animate-pulse rounded-full bg-zinc-100" />
+          <div className="h-3.5 w-10 animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
+          <div className="h-3.5 w-8 animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
         </div>
-        <div className="h-3 w-14 animate-pulse rounded-full bg-zinc-100" />
+        <div className="h-3 w-14 animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
       </div>
     </div>
   );
@@ -250,10 +250,10 @@ export default function MarketSection({
 
       <div className="mb-2 grid grid-cols-[1fr_auto] items-end gap-2">
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
             Listings
           </p>
-          <h3 className="mt-1 flex items-center gap-2 text-lg font-bold text-zinc-900 sm:text-xl">
+          <h3 className="mt-1 flex items-center gap-2 text-lg font-bold text-zinc-900 dark:text-bm-text sm:text-xl">
             Recent listings
             <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
           </h3>
@@ -262,13 +262,13 @@ export default function MarketSection({
         <button
           type="button"
           onClick={() => setShowMoreFilters((prev) => !prev)}
-          className="inline-flex h-[48px] items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-sm font-extrabold text-zinc-900 shadow-sm md:hidden"
+          className="inline-flex h-[48px] items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-sm font-extrabold text-zinc-900 dark:text-bm-text shadow-sm md:hidden"
         >
           <Funnel className="h-4 w-4" />
           Filters
         </button>
 
-        <div className="col-span-2 text-xs font-bold text-zinc-400">
+        <div className="col-span-2 text-xs font-bold text-zinc-400 dark:text-bm-text-subtle">
           {visibleListings.length > 0
             ? `Showing ${startItem}–${endItem} of ${totalListingsCount} listings`
             : `Showing 0 of ${totalListingsCount} listings`}
@@ -314,7 +314,7 @@ export default function MarketSection({
                 type="button"
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 disabled:opacity-50"
+                className="rounded-xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2 text-sm font-bold text-zinc-700 dark:text-bm-text-muted disabled:opacity-50"
               >
                 Prev
               </button>
@@ -327,7 +327,7 @@ export default function MarketSection({
                   className={`rounded-xl border px-4 py-2 text-sm font-bold ${
                     currentPage === pageNum
                       ? "border-zinc-900 bg-zinc-900 text-white"
-                      : "border-zinc-200 bg-white text-zinc-700"
+                      : "border-zinc-200 dark:border-bm-border bg-white text-zinc-700 dark:text-bm-text-muted"
                   }`}
                 >
                   {pageNum}
@@ -338,7 +338,7 @@ export default function MarketSection({
                 type="button"
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 disabled:opacity-50"
+                className="rounded-xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2 text-sm font-bold text-zinc-700 dark:text-bm-text-muted disabled:opacity-50"
               >
                 Next
               </button>
@@ -347,13 +347,13 @@ export default function MarketSection({
         </>
       ) : (
         <div className="py-20 text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-zinc-100">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-zinc-100 dark:bg-bm-surface-muted">
             <Search className="h-8 w-8 text-zinc-300" />
           </div>
-          <h3 className="text-lg font-bold text-zinc-900">
+          <h3 className="text-lg font-bold text-zinc-900 dark:text-bm-text">
             {activeChip === "Wholesale" ? "No wholesale listings found" : "No listings found"}
           </h3>
-          <p className="text-zinc-500">
+          <p className="text-zinc-500 dark:text-bm-text-subtle">
             {activeChip === "Wholesale"
               ? "Wholesale listings on BuyMesho are offered in packs or bulk quantities. Check back as sellers add new wholesale offers."
               : hasActiveFilters
@@ -372,7 +372,7 @@ export default function MarketSection({
               <button
                 type="button"
                 onClick={() => setCurrentPage(1)}
-                className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+                className="rounded-xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2 text-sm font-bold text-zinc-700 dark:text-bm-text-muted hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
               >
                 Start from first page
               </button>
