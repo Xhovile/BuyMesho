@@ -344,7 +344,7 @@ export default function AdminPayoutDetailDrawer(props: Props) {
         }
       `}</style>
 
-      <div ref={drawerRef} data-admin-payout-workspace className="min-h-screen w-full bg-slate-50 outline-none">
+      <div ref={drawerRef} data-admin-payout-workspace className="min-h-screen w-full bg-slate-50 dark:bg-bm-surface-muted outline-none">
         {notice ? (
           <div className={`sticky top-0 z-[96] mx-auto w-full max-w-6xl border-b px-4 py-3 text-sm font-semibold ${
             notice.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-800"
@@ -353,16 +353,16 @@ export default function AdminPayoutDetailDrawer(props: Props) {
           </div>
         ) : null}
 
-        <div className="sticky top-0 z-[95] border-b border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
+        <div className="sticky top-0 z-[95] border-b border-zinc-200 dark:border-bm-border bg-white/95 dark:bg-bm-surface/95 px-4 py-3 backdrop-blur sm:px-6">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Payout detail workspace</p>
-              <p className="mt-1 text-sm font-black text-zinc-950">{displaySelected.id}</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Payout detail workspace</p>
+              <p className="mt-1 text-sm font-black text-zinc-950 dark:text-bm-text">{displaySelected.id}</p>
             </div>
             <button
               type="button"
               onClick={() => void handleCopyDetails()}
-              className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 shadow-sm hover:bg-zinc-50"
+              className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 dark:text-bm-text shadow-sm hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
             >
               Copy Details
             </button>

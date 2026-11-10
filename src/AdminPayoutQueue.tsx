@@ -86,7 +86,7 @@ function pillClass(t: string) {
     case "amber":
       return "bg-amber-50 text-amber-700 border-amber-200";
     default:
-      return "bg-zinc-100 text-zinc-700 border-zinc-200";
+      return "bg-zinc-100 dark:bg-bm-surface-muted text-zinc-700 dark:text-bm-text-muted border-zinc-200 dark:border-bm-border";
   }
 }
 
@@ -102,7 +102,7 @@ function specialBadges(row: PayoutRow) {
     badges.push({ label: "retry blocked", className: "border-rose-200 bg-rose-50 text-rose-700" });
   }
   if (row.latestWebhookEventType === "payout_webhook_duplicate") {
-    badges.push({ label: "duplicate webhook ignored", className: "border-zinc-200 bg-white text-zinc-700" });
+    badges.push({ label: "duplicate webhook ignored", className: "border-zinc-200 dark:border-bm-border bg-white text-zinc-700 dark:text-bm-text-muted" });
   }
   if (row.latestWebhookEventType === "payout_reconciled") {
     badges.push({ label: "reconciled from provider callback", className: "border-emerald-200 bg-emerald-50 text-emerald-700" });
@@ -185,12 +185,12 @@ export default function AdminPayoutQueue() {
   };
 
   return (
-    <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+    <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Admin payout queue</p>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Admin payout queue</p>
           <h2 className="mt-2 text-2xl font-black tracking-tight">Seller payout control</h2>
-          <p className="mt-2 text-sm text-zinc-600">
+          <p className="mt-2 text-sm text-zinc-600 dark:text-bm-text-muted">
             Review payout states, retry failed transfers, or mark items paid/held after manual review.
           </p>
         </div>
@@ -213,8 +213,8 @@ export default function AdminPayoutQueue() {
         <Stat label="Failed" value={stats.failed} />
       </div>
 
-      <div className="mt-3 text-sm text-zinc-500">
-        Provider attempts tracked: <span className="font-bold text-zinc-900">{stats.attempts}</span>
+      <div className="mt-3 text-sm text-zinc-500 dark:text-bm-text-subtle">
+        Provider attempts tracked: <span className="font-bold text-zinc-900 dark:text-bm-text">{stats.attempts}</span>
       </div>
 
       {error ? (
@@ -226,12 +226,12 @@ export default function AdminPayoutQueue() {
 
       <div className="mt-5 space-y-3">
         {loading ? (
-          <div className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-sm text-zinc-600">
+          <div className="flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-4 text-sm text-zinc-600 dark:text-bm-text-muted">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading payout queue...
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-6 text-sm text-zinc-600">
+          <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-6 text-sm text-zinc-600 dark:text-bm-text-muted">
             No payouts found yet.
           </div>
         ) : (
@@ -240,7 +240,7 @@ export default function AdminPayoutQueue() {
             const rowTone = tone(row.status);
             const badges = specialBadges(row);
             return (
-              <div key={row.id} className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-4">
+              <div key={row.id} className="rounded-[1.75rem] border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -248,12 +248,12 @@ export default function AdminPayoutQueue() {
                         {getSellerPayoutStatusLabel(row.status)}
                       </span>
                       {row.provider ? (
-                        <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-700">
+                        <span className="inline-flex items-center rounded-full border border-zinc-200 dark:border-bm-border bg-white px-2.5 py-1 text-xs font-bold text-zinc-700 dark:text-bm-text-muted">
                           {row.provider}
                         </span>
                       ) : null}
                       {row.destinationVerificationStatus ? (
-                        <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-700">
+                        <span className="inline-flex items-center rounded-full border border-zinc-200 dark:border-bm-border bg-white px-2.5 py-1 text-xs font-bold text-zinc-700 dark:text-bm-text-muted">
                           destination {row.destinationVerificationStatus}
                         </span>
                       ) : null}
@@ -264,7 +264,7 @@ export default function AdminPayoutQueue() {
                       ))}
                     </div>
 
-                    <div className="grid gap-2 text-sm text-zinc-700 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-2 text-sm text-zinc-700 dark:text-bm-text-muted sm:grid-cols-2 xl:grid-cols-3">
                       <Info label="Payout ID" value={row.id} />
                       <Info label="Seller ID" value={row.sellerId} />
                       <Info label="Order ID" value={row.orderId ?? "—"} />
@@ -289,7 +289,7 @@ export default function AdminPayoutQueue() {
                         <strong>Review:</strong> {row.manualReviewReason}
                       </p>
                     ) : null}
-                    <div className="grid gap-2 text-sm text-zinc-700 sm:grid-cols-2">
+                    <div className="grid gap-2 text-sm text-zinc-700 dark:text-bm-text-muted sm:grid-cols-2">
                       <Info label="Attempts used" value={String(row.attemptCount ?? row.latestAttemptNo ?? 0)} />
                       <Info label="Retry eligibility" value={row.retryEligible ? "Can retry safely" : row.retryBlockedReason ?? "Retry unavailable"} />
                       <Info label="Last provider response" value={row.lastError ?? "No provider error captured"} />
@@ -338,7 +338,7 @@ export default function AdminPayoutQueue() {
                       />
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-500">
+                    <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-3 py-2 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">
                       Admin actions hidden
                     </div>
                   )}
@@ -354,18 +354,18 @@ export default function AdminPayoutQueue() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-      <p className="mt-1 text-2xl font-black tracking-tight text-zinc-900">{value}</p>
+    <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white p-4 shadow-sm">
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">{label}</p>
+      <p className="mt-1 text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text">{value}</p>
     </div>
   );
 }
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-      <p className="mt-1 break-all font-medium text-zinc-900">{value}</p>
+    <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-3 py-2">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">{label}</p>
+      <p className="mt-1 break-all font-medium text-zinc-900 dark:text-bm-text">{value}</p>
     </div>
   );
 }
