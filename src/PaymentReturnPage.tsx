@@ -258,13 +258,13 @@ export default function PaymentReturnPage() {
   }, []);
 
   return (
-    <div className="min-h-screen w-full bg-white text-zinc-900">
+    <div className="min-h-screen w-full bg-white text-zinc-900 dark:text-bm-text">
       <div className="w-full px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
         {status === "loading" && (
           <div className="flex flex-col items-center gap-4 text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-zinc-500" />
-            <h1 className="text-xl font-extrabold text-zinc-900">Finalizing payment…</h1>
-            <p className="text-sm text-zinc-500">
+            <Loader2 className="h-12 w-12 animate-spin text-zinc-500 dark:text-bm-text-subtle" />
+            <h1 className="text-xl font-extrabold text-zinc-900 dark:text-bm-text">Finalizing payment…</h1>
+            <p className="text-sm text-zinc-500 dark:text-bm-text-subtle">
               We are confirming your order
             </p>
           </div>
@@ -273,19 +273,19 @@ export default function PaymentReturnPage() {
         {status === "success" && (
           <div className="flex flex-col items-center gap-4 text-center">
             <CheckCircle2 className="h-16 w-16 text-emerald-500" />
-            <h1 className="text-2xl font-black text-zinc-900">Payment received!</h1>
-            <p className="text-sm leading-6 text-zinc-600">
+            <h1 className="text-2xl font-black text-zinc-900 dark:text-bm-text">Payment received!</h1>
+            <p className="text-sm leading-6 text-zinc-600 dark:text-bm-text-muted">
               Your payment was received successfully. Opening your tracking page.
             </p>
 
             {reference && (
-              <p className="rounded-xl bg-zinc-50 px-4 py-2 text-xs font-mono text-zinc-400">
+              <p className="rounded-xl bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-2 text-xs font-mono text-zinc-400 dark:text-bm-text-subtle">
                 Ref: {reference}
               </p>
             )}
 
             {orderId && (
-              <p className="text-xs text-zinc-400">Order: {orderId}</p>
+              <p className="text-xs text-zinc-400 dark:text-bm-text-subtle">Order: {orderId}</p>
             )}
           </div>
         )}
@@ -293,14 +293,14 @@ export default function PaymentReturnPage() {
         {status === "failed" && (
           <div className="flex flex-col items-center gap-4 text-center">
             <AlertTriangle className="h-16 w-16 text-amber-500" />
-            <h1 className="text-2xl font-black text-zinc-900">Payment not completed</h1>
-            <p className="max-w-xl text-sm leading-6 text-zinc-600">
+            <h1 className="text-2xl font-black text-zinc-900 dark:text-bm-text">Payment not completed</h1>
+            <p className="max-w-xl text-sm leading-6 text-zinc-600 dark:text-bm-text-muted">
               {errorMessage || "We could not confirm your payment."}
             </p>
             <button
               type="button"
               onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm font-bold text-zinc-800 dark:text-bm-text-muted hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
             >
               <ChevronLeft className="h-4 w-4" />
               Back to market
@@ -310,15 +310,15 @@ export default function PaymentReturnPage() {
 
         {status === "cancelled" && (
           <div className="flex flex-col items-center gap-4 text-center">
-            <AlertTriangle className="h-16 w-16 text-zinc-400" />
-            <h1 className="text-2xl font-black text-zinc-900">Payment cancelled</h1>
-            <p className="max-w-xl text-sm leading-6 text-zinc-600">
+            <AlertTriangle className="h-16 w-16 text-zinc-400 dark:text-bm-text-subtle" />
+            <h1 className="text-2xl font-black text-zinc-900 dark:text-bm-text">Payment cancelled</h1>
+            <p className="max-w-xl text-sm leading-6 text-zinc-600 dark:text-bm-text-muted">
               You cancelled the checkout before it completed.
             </p>
             <button
               type="button"
               onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm font-bold text-zinc-800 dark:text-bm-text-muted hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
             >
               <ChevronLeft className="h-4 w-4" />
               Back to market
