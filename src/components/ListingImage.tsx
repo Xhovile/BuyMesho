@@ -85,12 +85,12 @@ export default function ListingImage({
       {showFallback ? (
         <div
           aria-label={alt ? `No image available for ${alt}` : "No image available"}
-          className="absolute inset-0 flex h-full w-full flex-col items-center justify-center text-zinc-400"
+          className="absolute inset-0 flex h-full w-full flex-col items-center justify-center text-zinc-400 dark:text-bm-text-subtle"
         >
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/80 bg-white/75 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.35)] backdrop-blur-sm sm:h-16 sm:w-16">
-            <FallbackIcon className="h-7 w-7 text-zinc-400 sm:h-8 sm:w-8" strokeWidth={1.65} />
+            <FallbackIcon className="h-7 w-7 text-zinc-400 dark:text-bm-text-subtle sm:h-8 sm:w-8" strokeWidth={1.65} />
           </div>
-          <span className="mt-2 text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400">
+          <span className="mt-2 text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">
             No image
           </span>
         </div>
