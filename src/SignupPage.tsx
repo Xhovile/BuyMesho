@@ -123,9 +123,9 @@ export default function SignupPage() {
         eyebrow="Account"
         title="Create your BuyMesho account"
         description="Start with your identity and login details. We’ll collect marketplace information after your email is verified."
-        backLabel="Go to Log In"
         onBack={() => navigateToLogin()}
         hideNavigation
+        hideBackButton
         showBrandHero
       >
         <form onSubmit={handleSignUp} className="w-full space-y-6 pb-28">
