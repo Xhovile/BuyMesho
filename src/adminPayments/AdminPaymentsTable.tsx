@@ -11,7 +11,7 @@ import {
 
 function StatusPill({ label, tone }: { label: string; tone: Tone }) {
   const toneClass: Record<Tone, string> = {
-    zinc: "bg-zinc-100 text-zinc-700 border-zinc-200",
+    zinc: "bg-zinc-100 dark:bg-bm-surface-muted text-zinc-700 dark:text-bm-text-muted border-zinc-200 dark:border-bm-border",
     emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
     amber: "bg-amber-50 text-amber-700 border-amber-200",
     rose: "bg-rose-50 text-rose-700 border-rose-200",
@@ -32,8 +32,8 @@ export default function AdminPaymentsTable({
   onSelectPayment: (payment: PaymentRow) => void;
 }) {
   return (
-    <section className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
-      <div className="border-b border-zinc-100 px-5 py-4">
+    <section className="overflow-hidden rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white shadow-sm">
+      <div className="border-b border-zinc-100 dark:border-bm-border-subtle px-5 py-4">
         <div className="flex items-center gap-2">
           <CreditCard className="h-5 w-5" />
           <h2 className="text-lg font-black">{searchActive ? "Matching payment records" : "Payment records"}</h2>
@@ -41,13 +41,13 @@ export default function AdminPaymentsTable({
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center p-12"><Loader2 className="h-6 w-6 animate-spin text-zinc-500" /></div>
+        <div className="flex items-center justify-center p-12"><Loader2 className="h-6 w-6 animate-spin text-zinc-500 dark:text-bm-text-subtle" /></div>
       ) : payments.length === 0 ? (
-        <div className="p-8 text-center text-sm text-zinc-500">{searchActive ? "No payment records matched this investigation query." : "No payments found."}</div>
+        <div className="p-8 text-center text-sm text-zinc-500 dark:text-bm-text-subtle">{searchActive ? "No payment records matched this investigation query." : "No payments found."}</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-zinc-50 text-zinc-500">
+            <thead className="bg-zinc-50 dark:bg-bm-surface-subtle text-zinc-500 dark:text-bm-text-subtle">
               <tr>
                 <th className="p-4 text-left">Payment</th>
                 <th className="p-4 text-left">Reference / Seller</th>
@@ -59,7 +59,7 @@ export default function AdminPaymentsTable({
             </thead>
             <tbody>
               {payments.map((payment) => (
-                <tr key={payment.id} className="cursor-pointer border-t border-zinc-100 hover:bg-zinc-50" onClick={() => onSelectPayment(payment)}>
+                <tr key={payment.id} className="cursor-pointer border-t border-zinc-100 dark:border-bm-border-subtle hover:bg-zinc-50 dark:hover:bg-bm-surface-muted" onClick={() => onSelectPayment(payment)}>
                   <td className="p-4">
                     <button
                       type="button"
@@ -67,37 +67,37 @@ export default function AdminPaymentsTable({
                       onClick={(event) => { event.stopPropagation(); onSelectPayment(payment); }}
                       aria-label={`Open payment ${payment.reference}`}
                     >
-                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Payment ID</p>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Payment ID</p>
                       <p className="mt-1 break-all font-mono text-xs font-semibold">{payment.id}</p>
                       <div className="mt-2"><StatusPill label={payment.payment_status} tone={getPaymentTone(payment.payment_status)} /></div>
-                      <div className="mt-2 text-xs text-zinc-500">{payment.method}</div>
-                      <div className="mt-1 text-[11px] text-zinc-400">Verified: {Number(payment.verified) === 1 ? "yes" : "no"}</div>
+                      <div className="mt-2 text-xs text-zinc-500 dark:text-bm-text-subtle">{payment.method}</div>
+                      <div className="mt-1 text-[11px] text-zinc-400 dark:text-bm-text-subtle">Verified: {Number(payment.verified) === 1 ? "yes" : "no"}</div>
                     </button>
                   </td>
                   <td className="p-4">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">BuyMesho reference</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">BuyMesho reference</p>
                     <p className="mt-1 break-all font-mono text-xs">{payment.reference}</p>
-                    <p className="mt-2 text-[11px] text-zinc-400">Provider: {payment.provider}</p>
-                    {payment.provider_reference ? <p className="mt-1 break-all text-[11px] text-zinc-400">Gateway: {payment.provider_reference}</p> : null}
-                    {payment.seller_uuid || payment.seller_id ? <p className="mt-1 break-all text-[11px] text-zinc-400">Seller UUID: {String(payment.seller_uuid ?? payment.seller_id)}</p> : null}
-                    {payment.ticket_id ? <p className="mt-1 break-all text-[11px] text-zinc-400">Ticket: {String(payment.ticket_id)}</p> : null}
-                    {payment.ticket_code ? <p className="mt-1 break-all text-[11px] text-zinc-400">Ticket code: {String(payment.ticket_code)}</p> : null}
+                    <p className="mt-2 text-[11px] text-zinc-400 dark:text-bm-text-subtle">Provider: {payment.provider}</p>
+                    {payment.provider_reference ? <p className="mt-1 break-all text-[11px] text-zinc-400 dark:text-bm-text-subtle">Gateway: {payment.provider_reference}</p> : null}
+                    {payment.seller_uuid || payment.seller_id ? <p className="mt-1 break-all text-[11px] text-zinc-400 dark:text-bm-text-subtle">Seller UUID: {String(payment.seller_uuid ?? payment.seller_id)}</p> : null}
+                    {payment.ticket_id ? <p className="mt-1 break-all text-[11px] text-zinc-400 dark:text-bm-text-subtle">Ticket: {String(payment.ticket_id)}</p> : null}
+                    {payment.ticket_code ? <p className="mt-1 break-all text-[11px] text-zinc-400 dark:text-bm-text-subtle">Ticket code: {String(payment.ticket_code)}</p> : null}
                   </td>
                   <td className="p-4">
                     <StatusPill label={normalizeStatusLabel(payment.order_status)} tone={getOrderTone(payment.order_status)} />
-                    <div className="mt-2 break-all text-xs text-zinc-500">{payment.order_id}</div>
-                    <div className="mt-1 text-[11px] text-zinc-400">Order paid: {formatDate(payment.order_paid_at)}</div>
+                    <div className="mt-2 break-all text-xs text-zinc-500 dark:text-bm-text-subtle">{payment.order_id}</div>
+                    <div className="mt-1 text-[11px] text-zinc-400 dark:text-bm-text-subtle">Order paid: {formatDate(payment.order_paid_at)}</div>
                   </td>
                   <td className="p-4">
                     <StatusPill label={normalizeStatusLabel(payment.escrow_state)} tone={getEscrowTone(payment.escrow_state)} />
-                    <div className="mt-2 text-xs text-zinc-500">{payment.escrow_id || "No settlement yet"}</div>
-                    <div className="mt-1 text-[11px] text-zinc-400">Settlement updated: {formatDate(payment.escrow_updated_at)}</div>
+                    <div className="mt-2 text-xs text-zinc-500 dark:text-bm-text-subtle">{payment.escrow_id || "No settlement yet"}</div>
+                    <div className="mt-1 text-[11px] text-zinc-400 dark:text-bm-text-subtle">Settlement updated: {formatDate(payment.escrow_updated_at)}</div>
                   </td>
                   <td className="p-4">
                     <div className="font-bold">{payment.currency} {payment.amount}</div>
-                    <div className="mt-1 text-[11px] text-zinc-400">Provider: {payment.provider}</div>
+                    <div className="mt-1 text-[11px] text-zinc-400 dark:text-bm-text-subtle">Provider: {payment.provider}</div>
                   </td>
-                  <td className="p-4 text-xs text-zinc-500">{formatDate(payment.updated_at)}</td>
+                  <td className="p-4 text-xs text-zinc-500 dark:text-bm-text-subtle">{formatDate(payment.updated_at)}</td>
                 </tr>
               ))}
             </tbody>
