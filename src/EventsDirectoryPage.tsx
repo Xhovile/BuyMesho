@@ -85,17 +85,17 @@ function readEventsSnapshot() {
 
 function EventCardSkeleton() {
   return (
-    <div className="w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm sm:w-[260px]">
-      <div className="aspect-[4/3] animate-pulse bg-zinc-100" />
+    <div className="w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 dark:border-bm-border bg-white shadow-sm sm:w-[260px]">
+      <div className="aspect-[4/3] animate-pulse bg-zinc-100 dark:bg-bm-surface-muted" />
       <div className="space-y-3 p-4">
-        <div className="h-4 w-3/4 animate-pulse rounded-full bg-zinc-100" />
-        <div className="h-3 w-full animate-pulse rounded-full bg-zinc-100" />
-        <div className="h-3 w-5/6 animate-pulse rounded-full bg-zinc-100" />
+        <div className="h-4 w-3/4 animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
+        <div className="h-3 w-full animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
+        <div className="h-3 w-5/6 animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
         <div className="grid gap-2 pt-1">
-          <div className="h-3 w-2/3 animate-pulse rounded-full bg-zinc-100" />
-          <div className="h-3 w-1/2 animate-pulse rounded-full bg-zinc-100" />
+          <div className="h-3 w-2/3 animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
+          <div className="h-3 w-1/2 animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
         </div>
-        <div className="h-10 w-full animate-pulse rounded-2xl bg-zinc-100" />
+        <div className="h-10 w-full animate-pulse rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted" />
       </div>
     </div>
   );
@@ -106,13 +106,13 @@ function CategoryStrip({ title, items }: { title: string; items: EventRecord[] }
 
   return (
     <section className="mx-auto max-w-7xl px-4 pt-8">
-      <div className="mb-5 border-t border-zinc-200 pt-5">
+      <div className="mb-5 border-t border-zinc-200 dark:border-bm-border pt-5">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Category</p>
-            <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950">{title}</h3>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">Category</p>
+            <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950 dark:text-bm-text">{title}</h3>
           </div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">{items.length} events</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 dark:text-bm-text-subtle">{items.length} events</p>
         </div>
       </div>
 
@@ -131,13 +131,13 @@ function EventsLoadingStrip() {
   return (
     <div className="pb-12">
       <section className="pt-8">
-        <div className="mb-5 border-t border-zinc-200 pt-5">
+        <div className="mb-5 border-t border-zinc-200 dark:border-bm-border pt-5">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Category</p>
-              <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950">Loading events</h3>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">Category</p>
+              <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950 dark:text-bm-text">Loading events</h3>
             </div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">Preparing cards</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 dark:text-bm-text-subtle">Preparing cards</p>
           </div>
         </div>
 
@@ -154,13 +154,13 @@ function EventsLoadingStrip() {
 function AllListingsPanel({ items }: { items: EventRecord[] }) {
   return (
     <section className="pt-8">
-      <div className="mb-5 border-t border-zinc-200 pt-5">
+      <div className="mb-5 border-t border-zinc-200 dark:border-bm-border pt-5">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">All listings</p>
-            <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950">Every event in one panel</h3>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">All listings</p>
+            <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950 dark:text-bm-text">Every event in one panel</h3>
           </div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">{items.length} events</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 dark:text-bm-text-subtle">{items.length} events</p>
         </div>
       </div>
 
@@ -318,7 +318,7 @@ export default function EventsDirectoryPage() {
   }, [filteredEvents, categories]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-100 text-zinc-900 pb-20">
+    <div className="flex min-h-screen flex-col bg-zinc-100 dark:bg-bm-surface-muted text-zinc-900 dark:text-bm-text pb-20">
       <FloatingCartButton isLoggedIn={!!firebaseUser} />
       <Header
         searchValue={searchTerm}
@@ -438,8 +438,8 @@ export default function EventsDirectoryPage() {
             </div>
             <div>
               <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-green-700">For event organizers</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight text-zinc-950">Need to validate tickets?</h2>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-700">Use Ticket Validator to check event tickets at entry.</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight text-zinc-950 dark:text-bm-text">Need to validate tickets?</h2>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-700 dark:text-bm-text-muted">Use Ticket Validator to check event tickets at entry.</p>
             </div>
           </div>
           <a
