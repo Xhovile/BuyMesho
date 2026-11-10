@@ -112,7 +112,7 @@ export default function AccountPageShell({
               <BrandMark subtitle={brandHeroSubtitle} />
               <button
                 type="button"
-                onClick={onBack || (() => navigateBackOrPath(HOME_PATH))}
+                onClick={() => navigateBackOrPath(HOME_PATH)}
                 aria-label="Go back"
                 title="Go back"
                 className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-red-900 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-900 focus-visible:ring-offset-2 active:bg-red-100"
