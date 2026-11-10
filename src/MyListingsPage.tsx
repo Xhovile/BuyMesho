@@ -100,12 +100,12 @@ function ListingRow({
       : `https://picsum.photos/seed/${encodeURIComponent(String(listing.id ?? "listing"))}/400/400`;
 
   return (
-    <article className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-[0_8px_24px_rgba(24,24,27,0.05)]">
+    <article className="overflow-hidden rounded-[1.75rem] border border-zinc-200 dark:border-bm-border bg-white shadow-[0_8px_24px_rgba(24,24,27,0.05)]">
       <div className="grid gap-4 p-4 sm:grid-cols-[120px_1fr_auto] sm:items-center">
         <button
           type="button"
           onClick={() => onOpenDetails(listing)}
-          className="group relative aspect-square overflow-hidden rounded-2xl bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
+          className="group relative aspect-square overflow-hidden rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
           aria-label={`Open ${titleLabel}`}
           disabled={busy}
         >
@@ -129,7 +129,7 @@ function ListingRow({
             >
               {sellerName}
             </button>
-            <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600">
+            <span className="rounded-full bg-zinc-100 dark:bg-bm-surface-muted px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600 dark:text-bm-text-muted">
               {campusLabel}
             </span>
             <span
@@ -146,18 +146,18 @@ function ListingRow({
             ) : null}
           </div>
 
-          <h3 className="mt-2 line-clamp-1 text-[18px] font-black tracking-tight text-zinc-900">
+          <h3 className="mt-2 line-clamp-1 text-[18px] font-black tracking-tight text-zinc-900 dark:text-bm-text">
             {titleLabel}
           </h3>
 
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-zinc-600">
-            <span className="rounded-lg bg-zinc-100 px-2.5 py-1 font-bold text-zinc-700">
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-bm-text-muted">
+            <span className="rounded-lg bg-zinc-100 dark:bg-bm-surface-muted px-2.5 py-1 font-bold text-zinc-700 dark:text-bm-text-muted">
               {formatMWK(Number(listing.price) || 0)}
             </span>
-            <span className="rounded-lg bg-zinc-100 px-2.5 py-1 font-medium">
+            <span className="rounded-lg bg-zinc-100 dark:bg-bm-surface-muted px-2.5 py-1 font-medium">
               Stock: {quantity}
             </span>
-            <span className="rounded-lg bg-zinc-100 px-2.5 py-1 font-medium">
+            <span className="rounded-lg bg-zinc-100 dark:bg-bm-surface-muted px-2.5 py-1 font-medium">
               Sold: {soldQuantity}
             </span>
           </div>
@@ -167,7 +167,7 @@ function ListingRow({
           <button
             type="button"
             onClick={() => onOpenDetails(listing)}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+            className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2 text-sm font-bold text-zinc-900 dark:text-bm-text hover:bg-zinc-50 dark:hover:bg-bm-surface-muted disabled:opacity-50"
             disabled={busy}
           >
             Open
@@ -175,7 +175,7 @@ function ListingRow({
           <button
             type="button"
             onClick={() => onEdit(listing)}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+            className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2 text-sm font-bold text-zinc-900 dark:text-bm-text hover:bg-zinc-50 dark:hover:bg-bm-surface-muted disabled:opacity-50"
             disabled={busy}
           >
             Edit
@@ -183,7 +183,7 @@ function ListingRow({
           <button
             type="button"
             onClick={() => onToggleStatus(listing)}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+            className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2 text-sm font-bold text-zinc-900 dark:text-bm-text hover:bg-zinc-50 dark:hover:bg-bm-surface-muted disabled:opacity-50"
             disabled={busy}
           >
             {listing.status === "sold" ? "Mark available" : "Mark sold"}
@@ -196,7 +196,7 @@ function ListingRow({
               );
               if (quantityToSell !== null) onRecordSale(listing, quantityToSell);
             }}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+            className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2 text-sm font-bold text-zinc-900 dark:text-bm-text hover:bg-zinc-50 dark:hover:bg-bm-surface-muted disabled:opacity-50"
             disabled={busy}
           >
             Sale
@@ -209,7 +209,7 @@ function ListingRow({
               );
               if (quantityToAdd !== null) onRestock(listing, quantityToAdd);
             }}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+            className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2 text-sm font-bold text-zinc-900 dark:text-bm-text hover:bg-zinc-50 dark:hover:bg-bm-surface-muted disabled:opacity-50"
             disabled={busy}
           >
             Restock
@@ -405,14 +405,14 @@ export default function MyListingsPage() {
       childrenSectionClassName="w-full"
     >
       {authLoading || profileLoading || loadingListings ? (
-        <div className="flex items-center justify-center gap-3 p-10 font-medium text-zinc-500">
+        <div className="flex items-center justify-center gap-3 p-10 font-medium text-zinc-500 dark:text-bm-text-subtle">
           <Loader2 className="h-5 w-5 animate-spin" />
           Loading your listings...
         </div>
       ) : !firebaseUser ? (
         <div className="p-10 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-zinc-900">Login required</h2>
-          <p className="mt-3 text-sm text-zinc-500">
+          <h2 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text">Login required</h2>
+          <p className="mt-3 text-sm text-zinc-500 dark:text-bm-text-subtle">
             You need to log in before opening your listings page.
           </p>
           <button
@@ -425,8 +425,8 @@ export default function MyListingsPage() {
         </div>
       ) : !profile?.is_seller ? (
         <div className="p-10 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-zinc-900">Seller access required</h2>
-          <p className="mt-3 text-sm text-zinc-500">Only seller accounts can access My Listings.</p>
+          <h2 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text">Seller access required</h2>
+          <p className="mt-3 text-sm text-zinc-500 dark:text-bm-text-subtle">Only seller accounts can access My Listings.</p>
           <button
             type="button"
             onClick={() => navigateToPath("/become-seller")}
@@ -438,8 +438,8 @@ export default function MyListingsPage() {
       ) : listings.length === 0 ? (
         <div className="space-y-5 p-10 text-center">
           <div>
-            <h2 className="text-2xl font-black tracking-tight text-zinc-900">No listings yet</h2>
-            <p className="mt-3 text-sm text-zinc-500">You have not posted any listings yet.</p>
+            <h2 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text">No listings yet</h2>
+            <p className="mt-3 text-sm text-zinc-500 dark:text-bm-text-subtle">You have not posted any listings yet.</p>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -447,7 +447,7 @@ export default function MyListingsPage() {
               type="button"
               onClick={() => void refreshListings()}
               disabled={refreshing}
-              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 dark:text-bm-text hover:bg-zinc-50 dark:hover:bg-bm-surface-muted disabled:opacity-50"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Refreshing..." : "Refresh"}
@@ -470,18 +470,18 @@ export default function MyListingsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-[1.75rem] border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="rounded-[1.75rem] border border-zinc-200 dark:border-bm-border bg-white p-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Seller</p>
-                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">Your listings</h2>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Seller</p>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900 dark:text-bm-text">Your listings</h2>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => void refreshListings()}
                   disabled={refreshing}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2 text-sm font-bold text-zinc-900 dark:text-bm-text hover:bg-zinc-50 dark:hover:bg-bm-surface-muted disabled:opacity-50"
                 >
                   <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
                   {refreshing ? "Refreshing..." : "Refresh"}
