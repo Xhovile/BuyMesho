@@ -111,31 +111,31 @@ export default function ChangeEmailPage() {
       onBack={() => navigateToPath("/settings?section=security")}
     >
       {authLoading ? (
-        <div className="p-8 text-sm text-zinc-500">Loading account…</div>
+        <div className="p-8 text-sm text-zinc-500 dark:text-bm-text-subtle">Loading account…</div>
       ) : !firebaseUser ? (
-        <div className="p-8 text-sm text-zinc-500">Login required.</div>
+        <div className="p-8 text-sm text-zinc-500 dark:text-bm-text-subtle">Login required.</div>
       ) : (
         <form onSubmit={handleChangeEmail} className="w-full space-y-5 p-6 sm:p-8">
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+          <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-3">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">
               Current email
             </p>
-            <p className="mt-1 text-sm font-semibold text-zinc-900">
+            <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-bm-text">
               {firebaseUser.email}
             </p>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-bold uppercase text-zinc-400">
+            <label className="mb-1 block text-xs font-bold uppercase text-zinc-400 dark:text-bm-text-subtle">
               Current Password
             </label>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-bm-text-subtle" />
               <input
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-3 pl-10 pr-4 outline-none"
+                className="w-full rounded-xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle py-3 pl-10 pr-4 outline-none"
                 placeholder="Enter your password"
                 autoComplete="current-password"
                 required
@@ -144,16 +144,16 @@ export default function ChangeEmailPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-bold uppercase text-zinc-400">
+            <label className="mb-1 block text-xs font-bold uppercase text-zinc-400 dark:text-bm-text-subtle">
               New Email
             </label>
             <div className="relative">
-              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-bm-text-subtle" />
               <input
                 type="email"
                 value={nextEmail}
                 onChange={(e) => setNextEmail(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-3 pl-10 pr-4 outline-none"
+                className="w-full rounded-xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle py-3 pl-10 pr-4 outline-none"
                 placeholder="Enter new email"
                 autoComplete="email"
                 required
@@ -162,16 +162,16 @@ export default function ChangeEmailPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-bold uppercase text-zinc-400">
+            <label className="mb-1 block text-xs font-bold uppercase text-zinc-400 dark:text-bm-text-subtle">
               Confirm New Email
             </label>
             <div className="relative">
-              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-bm-text-subtle" />
               <input
                 type="email"
                 value={confirmEmail}
                 onChange={(e) => setConfirmEmail(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-3 pl-10 pr-4 outline-none"
+                className="w-full rounded-xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle py-3 pl-10 pr-4 outline-none"
                 placeholder="Repeat new email"
                 autoComplete="email"
                 required
@@ -192,7 +192,7 @@ export default function ChangeEmailPage() {
             <button
               type="button"
               onClick={() => navigateToPath("/settings?section=security")}
-              className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 py-3 font-bold text-zinc-900 hover:bg-zinc-50"
+              className="inline-flex items-center justify-center rounded-xl border border-zinc-200 dark:border-bm-border bg-white px-6 py-3 font-bold text-zinc-900 dark:text-bm-text hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
             >
               Cancel
             </button>

@@ -81,8 +81,8 @@ export default function EmailActionPage() {
       onBack={() => navigateToPath(redirectTarget)}
     >
       <div className="p-8 space-y-4 w-full">
-        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4">
-          <p className="text-sm font-semibold text-zinc-900">
+        <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-4">
+          <p className="text-sm font-semibold text-zinc-900 dark:text-bm-text">
             {processing
               ? "Please wait while the link is checked."
               : "You can continue to your next screen now."}

@@ -131,13 +131,13 @@ export default function ForgotPasswordPage() {
     >
       <form onSubmit={handleReset} className="p-8 space-y-5 w-full">
         <div>
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Email Address</label>
+          <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Email Address</label>
           <input
             required
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+            className="w-full px-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
           />
         </div>
 
