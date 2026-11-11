@@ -23,7 +23,7 @@ export default function ReviewMediaGallery({ media }: Props) {
           {media.map((item) => (
             <div
               key={item.id}
-              className="relative h-56 w-56 shrink-0 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100 sm:h-64 sm:w-64"
+              className="relative h-56 w-56 shrink-0 overflow-hidden rounded-2xl border border-bm-border bg-bm-surface-muted sm:h-64 sm:w-64"
             >
               {item.media_type === "image" ? (
                 <button
@@ -72,7 +72,7 @@ export default function ReviewMediaGallery({ media }: Props) {
           <button
             type="button"
             onClick={() => setImageOpen(null)}
-            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white backdrop-blur hover:bg-white/20"
+            className="absolute right-4 top-4 rounded-full bg-bm-surface/10 p-2 text-white backdrop-blur hover:bg-bm-surface/20"
             aria-label="Close image preview"
           >
             <X className="h-5 w-5" />
