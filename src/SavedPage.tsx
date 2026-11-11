@@ -170,7 +170,7 @@ export default function SavedPage() {
                       </span>
                       <span
                         className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.12em] ${
-                          isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-zinc-200 dark:bg-bm-skeleton text-bm-text-muted dark:text-bm-text-muted"
+                          isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-bm-surface-raised dark:bg-bm-skeleton text-bm-text-muted dark:text-bm-text-muted"
                         }`}
                       >
                         {isAvailable ? "Available" : "Sold out"}
