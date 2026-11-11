@@ -61,7 +61,7 @@ function FlowRow({
       ? "border-blue-200 bg-blue-50/60"
       : tone === "red"
         ? "border-red-200 bg-red-50/60"
-        : "border-bm-border bg-white";
+        : "border-bm-border bg-bm-surface";
 
   return (
     <div className={`rounded-2xl border ${toneClasses} p-4 sm:p-5`}>
@@ -313,7 +313,7 @@ export default function BuyOnlineMalawiPage() {
             order details, and delivery progress.
           </p>
 
-          <div className="border border-bm-border bg-white p-5">
+          <div className="border border-bm-border bg-bm-surface p-5">
             <div className="flex items-start gap-3">
               <FileSearch className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
               <div>
@@ -382,7 +382,7 @@ export default function BuyOnlineMalawiPage() {
             </FlowRow>
           </div>
 
-          <div className="border border-bm-border bg-white p-5">
+          <div className="border border-bm-border bg-bm-surface p-5">
             <p className="font-extrabold text-bm-text">Available issue types include</p>
             <p className="mt-2 text-sm leading-6 text-bm-text-muted">
               Order cancellation, seller non-fulfilment, product/item problems, delivery problems, payment/platform
@@ -390,7 +390,7 @@ export default function BuyOnlineMalawiPage() {
             </p>
           </div>
 
-          <div className="border border-bm-border bg-white p-5">
+          <div className="border border-bm-border bg-bm-surface p-5">
             <p className="font-extrabold text-bm-text">Available requested resolutions include</p>
             <p className="mt-2 text-sm leading-6 text-bm-text-muted">
               Refund, return, return plus refund, or asking BuyMesho to review the issue.
@@ -438,7 +438,7 @@ export default function BuyOnlineMalawiPage() {
             </p>
           </div>
 
-          <div className="mt-7 border border-bm-border bg-white">
+          <div className="mt-7 border border-bm-border bg-bm-surface">
             <div className="grid gap-4 border-b border-bm-border p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
               <div className="flex items-start gap-2">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
