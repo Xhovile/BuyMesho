@@ -311,8 +311,8 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
             </div>
 
             <div className="max-w-3xl space-y-2">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">BUYER ORDER TRACKING</p>
-              <h1 className="text-3xl font-black tracking-tight text-zinc-950 dark:text-bm-text sm:text-4xl">ORDER STATUS OVERVIEW</h1>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">BUYER ORDER TRACKING</p>
+              <h1 className="text-3xl font-black tracking-tight text-bm-text dark:text-bm-text sm:text-4xl">ORDER STATUS OVERVIEW</h1>
               <p className="text-sm leading-7 text-bm-text-muted dark:text-bm-text-muted sm:text-base">Monitor payment, escrow, and delivery progress in one place.</p>
             </div>
           </div>
@@ -334,13 +334,13 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
 
               {mixedHasEvent ? (
                 <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 sm:p-6">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Linked ticket</p>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Linked ticket</p>
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h2 className="text-xl font-black tracking-tight text-zinc-950 dark:text-bm-text">This order includes an event ticket</h2>
+                      <h2 className="text-xl font-black tracking-tight text-bm-text dark:text-bm-text">This order includes an event ticket</h2>
                       <p className="mt-1 text-sm text-bm-text-muted dark:text-bm-text-muted">Open Tickets for ticket details.</p>
                     </div>
-                    <button type="button" onClick={() => navigateToPath(`/tickets?reference=${encodeURIComponent(effectiveReference ?? "")}`)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800">
+                    <button type="button" onClick={() => navigateToPath(`/tickets?reference=${encodeURIComponent(effectiveReference ?? "")}`)} className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-brand px-4 py-2.5 text-sm font-bold text-white hover:bg-bm-brand-hover">
                       <ExternalLink className="h-4 w-4" />
                       Open tickets
                     </button>
@@ -355,7 +355,7 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
               <OrderDetailsCard reference={effectiveReference} firstItemTitle={firstItemTitle} items={order.items} paymentStatus={paymentStatus} orderStatus={order.status} escrowState={escrowState} orderId={order.id} totalCurrency={totalCurrency} totalAmount={totalAmount} sellerPayout={null} />
 
               <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 sm:p-6">
-                <h2 className="text-lg font-black text-zinc-950 dark:text-bm-text">Delivery and dispute</h2>
+                <h2 className="text-lg font-black text-bm-text dark:text-bm-text">Delivery and dispute</h2>
                 <div className="mt-4">
                   <DisputeActionsCard
                     submitting={submitting}
