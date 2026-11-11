@@ -10,12 +10,12 @@ interface Props {
 }
 
 export default function SettingsHelpLegalSection({ expanded, onToggle, onOpenView }: Props) {
-  return <section className="overflow-hidden rounded-3xl border border-zinc-200 dark:border-bm-border bg-white shadow-sm">
-    <button type="button" onClick={onToggle} className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-zinc-50 dark:hover:bg-bm-surface-muted transition-colors" aria-expanded={expanded}>
-      <span className="inline-flex items-center gap-3 min-w-0"><span className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted flex items-center justify-center shrink-0"><Settings className="w-5 h-5 text-zinc-700 dark:text-bm-text-muted" /></span><span className="min-w-0"><span className="block text-sm font-extrabold uppercase tracking-[0.14em] text-zinc-400 dark:text-bm-text-subtle">Help &amp; Legal</span></span></span>
-      <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500 dark:text-bm-text-subtle">{expanded ? "Hide" : "Show"}<ChevronDown className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""}`} /></span>
+  return <section className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
+    <button type="button" onClick={onToggle} className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-bm-surface-subtle dark:hover:bg-bm-surface-muted transition-colors" aria-expanded={expanded}>
+      <span className="inline-flex items-center gap-3 min-w-0"><span className="w-10 h-10 rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted flex items-center justify-center shrink-0"><Settings className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" /></span><span className="min-w-0"><span className="block text-sm font-extrabold uppercase tracking-[0.14em] text-bm-text-subtle dark:text-bm-text-subtle">Help &amp; Legal</span></span></span>
+      <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-bm-text-subtle dark:text-bm-text-subtle">{expanded ? "Hide" : "Show"}<ChevronDown className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""}`} /></span>
     </button>
-    {expanded ? <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
+    {expanded ? <div className="divide-y divide-bm-border-subtle dark:divide-bm-border-subtle">
       {[
         { key: "privacy" as const, label: "Privacy Policy", icon: FileText },
         { key: "terms" as const, label: "Terms of Use", icon: FileText },
@@ -23,7 +23,7 @@ export default function SettingsHelpLegalSection({ expanded, onToggle, onOpenVie
         { key: "report" as const, label: "Report a Problem", icon: HelpCircle },
       ].map((item) => {
         const Icon = item.icon;
-        return <button key={item.key} type="button" onClick={() => onOpenView(item.key)} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 dark:hover:bg-bm-surface-muted transition-colors"><span className="inline-flex items-center gap-3 min-w-0"><span className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-zinc-700 dark:text-bm-text-muted" /></span><span className="font-bold text-zinc-900 dark:text-bm-text">{item.label}</span></span><ChevronRight className="w-4 h-4 text-zinc-400 dark:text-bm-text-subtle" /></button>;
+        return <button key={item.key} type="button" onClick={() => onOpenView(item.key)} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-bm-surface-subtle dark:hover:bg-bm-surface-muted transition-colors"><span className="inline-flex items-center gap-3 min-w-0"><span className="w-10 h-10 rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-bm-text-muted dark:text-bm-text-muted" /></span><span className="font-bold text-bm-text dark:text-bm-text">{item.label}</span></span><ChevronRight className="w-4 h-4 text-bm-text-subtle dark:text-bm-text-subtle" /></button>;
       })}
     </div> : null}
   </section>;
