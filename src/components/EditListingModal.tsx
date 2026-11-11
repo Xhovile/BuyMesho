@@ -335,7 +335,7 @@ export default function EditListingModal({
               onClick={() => handleSpecValueChange(field.key, null)}
               className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
                 boolValue === null
-                  ? "bg-bm-brand text-bm-on-brand border-zinc-900"
+                  ? "bg-bm-brand text-bm-on-brand border-bm-border"
                   : "bg-bm-surface-muted text-bm-text-muted border-bm-border hover:bg-bm-surface-muted"
               }`}
             >
@@ -346,7 +346,7 @@ export default function EditListingModal({
               onClick={() => handleSpecValueChange(field.key, true)}
               className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
                 boolValue === true
-                  ? "bg-bm-brand text-bm-on-brand border-zinc-900"
+                  ? "bg-bm-brand text-bm-on-brand border-bm-border"
                   : "bg-bm-surface-muted text-bm-text-muted border-bm-border hover:bg-bm-surface-muted"
               }`}
             >
@@ -357,7 +357,7 @@ export default function EditListingModal({
               onClick={() => handleSpecValueChange(field.key, false)}
               className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
                 boolValue === false
-                  ? "bg-bm-brand text-bm-on-brand border-zinc-900"
+                  ? "bg-bm-brand text-bm-on-brand border-bm-border"
                   : "bg-bm-surface-muted text-bm-text-muted border-bm-border hover:bg-bm-surface-muted"
               }`}
             >
