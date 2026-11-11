@@ -99,7 +99,7 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
   };
 
   return (
-    <div className="bg-linear-to-r from-emerald-900/5 via-teal-900/5 to-emerald-800/10 border border-emerald-200/80 rounded-2xl p-4 space-y-3">
+    <div className="bg-linear-to-r from-bm-success-bg via-bm-success-bg to-bm-success-bg border border-bm-success/25 rounded-2xl p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="p-1 bg-bm-surface/20 rounded-lg">
@@ -117,7 +117,7 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
           type="button"
           onClick={handleEnhanceDraft}
           disabled={loadingAction !== null}
-          className="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 disabled:opacity-50 text-white font-medium text-xs rounded-xl flex items-center gap-1.5 transition-colors shadow-xs"
+          className="px-3 py-1.5 bg-bm-brand hover:bg-bm-brand-hover disabled:opacity-50 text-bm-on-brand font-medium text-xs rounded-xl flex items-center gap-1.5 transition-colors shadow-xs"
         >
           {loadingAction === "draft" ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <AiIcon className="w-4 h-4" />}
           Improve Listing
@@ -127,9 +127,9 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
           type="button"
           onClick={handleSuggestPrice}
           disabled={loadingAction !== null}
-          className="px-3 py-1.5 bg-bm-surface hover:bg-emerald-50 border border-emerald-300 text-emerald-900 font-medium text-xs rounded-xl flex items-center gap-1.5 transition-colors"
+          className="px-3 py-1.5 bg-bm-surface hover:bg-bm-surface-muted border border-bm-border text-bm-text font-medium text-xs rounded-xl flex items-center gap-1.5 transition-colors"
         >
-          {loadingAction === "pricing" ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <DollarSign className="w-3.5 h-3.5 text-emerald-700" />}
+          {loadingAction === "pricing" ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <DollarSign className="w-3.5 h-3.5 text-bm-success" />}
           AI Price Suggestion
         </button>
 
@@ -139,18 +139,18 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
           disabled={loadingAction !== null}
           className="px-3 py-1.5 bg-bm-surface hover:bg-bm-surface-muted border border-bm-border text-bm-text-muted font-medium text-xs rounded-xl flex items-center gap-1.5 transition-colors"
         >
-          {loadingAction === "moderation" ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />}
+          {loadingAction === "moderation" ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5 text-bm-text-muted" />}
           Safety Review
         </button>
       </div>
 
       {pricingResult && (
-        <div className="mt-3 bg-bm-surface p-3.5 rounded-xl border border-emerald-200 text-xs space-y-2 animate-in fade-in">
+        <div className="mt-3 bg-bm-surface p-3.5 rounded-xl border border-bm-success/25 text-xs space-y-2 animate-in fade-in">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-bm-text flex items-center gap-1">
-              <Tag className="w-3.5 h-3.5 text-emerald-700" /> AI Price Suggestion
+              <Tag className="w-3.5 h-3.5 text-bm-success" /> AI Price Suggestion
             </span>
-            <span className="font-bold text-emerald-800 text-sm">{formatMoney(pricingResult.recommended_price)}</span>
+            <span className="font-bold text-bm-success text-sm">{formatMoney(pricingResult.recommended_price)}</span>
           </div>
 
           <div className="flex items-center justify-between text-bm-text-muted pt-1 border-t border-bm-border-subtle">
@@ -171,7 +171,7 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
               onApplyDraftSuggestion({ price: String(pricingResult.recommended_price) });
               showFeedback("success", "Price applied", `Set price to ${formatMoney(pricingResult.recommended_price)}.`);
             }}
-            className="w-full mt-1 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-semibold rounded-lg text-center transition-colors"
+            className="w-full mt-1 py-1.5 bg-bm-success-bg hover:bg-bm-success-bg text-bm-success font-semibold rounded-lg text-center transition-colors"
           >
             Apply Suggested Price
           </button>
@@ -181,13 +181,13 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
       {moderationResult && (
         <div
           className={`mt-3 p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
-            moderationResult.is_safe ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-amber-50 border-amber-300 text-amber-900"
+            moderationResult.is_safe ? "bg-bm-success-bg border-bm-success/25 text-bm-success" : "bg-bm-warning-bg border-bm-warning/25 text-bm-warning"
           }`}
         >
           {moderationResult.is_safe ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-bm-success shrink-0 mt-0.5" />
           ) : (
-            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-4 h-4 text-bm-warning shrink-0 mt-0.5" />
           )}
           <div>
             <p className="font-semibold">{moderationResult.is_safe ? "No obvious safety issues detected" : "Potential safety issue detected"}</p>
