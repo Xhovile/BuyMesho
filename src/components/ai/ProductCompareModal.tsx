@@ -140,7 +140,7 @@ export default function ProductCompareModal({ isOpen, onClose, items }: Props) {
                       className={`p-4 rounded-xl border flex flex-col justify-between space-y-4 transition-all ${
                         isWinner
                           ? "bg-emerald-50/50 border-emerald-400 ring-2 ring-emerald-600/20"
-                          : "bg-white border-neutral-200"
+                          : "bg-bm-surface border-bm-border"
                       }`}
                     >
                       <div className="space-y-2">
