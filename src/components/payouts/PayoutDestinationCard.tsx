@@ -61,7 +61,7 @@ export default function PayoutDestinationCard({
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <h3 className="text-lg font-black tracking-tight text-bm-text dark:text-bm-text">{destination.providerName}</h3>
             {destination.isDefault ? (
-              <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700">
+              <span className="inline-flex items-center rounded-full border border-bm-border bg-bm-surface-muted px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-bm-text-muted">
                 Default
               </span>
             ) : null}
@@ -78,7 +78,7 @@ export default function PayoutDestinationCard({
           </p>
 
           {needsAttention ? (
-            <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs font-semibold text-amber-800">
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-bm-border bg-bm-warning-bg px-3 py-2.5 text-xs font-semibold text-bm-warning">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{destination.lastError || `Destination status: ${destination.verificationStatus}`}</span>
             </div>
@@ -136,7 +136,7 @@ export default function PayoutDestinationCard({
                   onRemove?.(destination);
                 }}
                 disabled={actionsDisabled || !canRemove}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-bold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-bold text-bm-danger hover:bg-bm-danger-bg disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Trash2 className="h-4 w-4" />
                 Remove
