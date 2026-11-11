@@ -63,9 +63,9 @@ function FlowRow({
 }) {
   const toneClasses =
     tone === "blue"
-      ? "border-blue-200 bg-blue-50/60"
+      ? "border-bm-border bg-bm-surface-muted"
       : tone === "red"
-        ? "border-red-200 bg-red-50/60"
+        ? "border-bm-danger/25 bg-bm-danger-bg"
         : "border-bm-border bg-bm-surface";
 
   return (
@@ -93,7 +93,7 @@ function GuideLink({
       className={`group inline-flex items-center gap-2 py-2 text-base font-extrabold ${toneClasses} sm:text-lg`}
     >
       {children}
-      <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
+      <ArrowRight className="h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5" />
     </a>
   );
 }
@@ -137,11 +137,11 @@ export default function EventBuyerGuidePage() {
                 <a
                   key={section.id}
                   href={`#${section.id}`}
-                  className="group flex min-h-16 items-center gap-4 border-b border-bm-border px-1 py-4 text-base font-bold text-bm-text transition-colors hover:text-blue-700 sm:min-h-20 sm:border-r sm:px-4 sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(5n)]:border-r-0"
+                  className="group flex min-h-16 items-center gap-4 border-b border-bm-border px-1 py-4 text-base font-bold text-bm-text transition-colors hover:text-bm-brand sm:min-h-20 sm:border-r sm:px-4 sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(5n)]:border-r-0"
                 >
                   <span className="guide-chapter-number text-2xl sm:text-3xl">{section.number}</span>
                   <span>{section.label}</span>
-                  <ArrowRight className="ml-auto h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="ml-auto h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5" />
                 </a>
               ))}
             </div>
@@ -161,7 +161,7 @@ export default function EventBuyerGuidePage() {
           </div>
 
           <div className="flex items-start gap-3 border-t border-bm-border pt-5">
-            <Ticket className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+            <Ticket className="mt-0.5 h-5 w-5 shrink-0 text-bm-brand" />
             <p className="text-sm leading-6 text-bm-text-muted">
               Check the event information carefully before moving on to payment.
             </p>
@@ -233,7 +233,7 @@ export default function EventBuyerGuidePage() {
           </div>
 
           <div className="flex items-start gap-3 border-t border-bm-border pt-5">
-            <QrCode className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+            <QrCode className="mt-0.5 h-5 w-5 shrink-0 text-bm-brand" />
             <p className="text-sm leading-6 text-bm-text-muted">
               The exact ticket-checking method can vary by event, so follow the instructions provided for that event.
             </p>
