@@ -452,12 +452,12 @@ export default function ListingStudio({
         </div>
       </div>
 
-      <section className="sticky bottom-0 z-30 border-t border-zinc-200 bg-zinc-100/95 py-3 backdrop-blur">
+      <section className="sticky bottom-0 z-30 border-t border-bm-border bg-bm-surface-muted/95 py-3 backdrop-blur">
         <div className="flex flex-row gap-3">
-          <button type="button" onClick={onCancel} className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-700 hover:bg-zinc-50">
+          <button type="button" onClick={onCancel} className="w-full rounded-2xl border border-bm-border bg-bm-surface px-5 py-3 text-sm font-extrabold text-bm-text-muted hover:bg-bm-surface-subtle">
             Cancel
           </button>
-          <button type="button" onClick={() => void handleSave()} disabled={isSubmitting || uploadingMedia} className="w-full rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:opacity-50">
+          <button type="button" onClick={() => void handleSave()} disabled={isSubmitting || uploadingMedia} className="w-full rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover disabled:opacity-50">
             {isSubmitting || uploadingMedia ? resolvedSubmitBusyLabel : resolvedSubmitLabel}
           </button>
         </div>
