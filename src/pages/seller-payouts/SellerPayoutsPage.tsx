@@ -123,7 +123,7 @@ function SellerPayoutsManageView() {
           <BrandMark />
           <div className="flex w-full items-center gap-3 sm:w-auto">
             <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted sm:flex-none"><ArrowLeft className="h-4 w-4" /> Back</button>
-            <button type="button" onClick={() => void handleRefresh()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover sm:flex-none">{refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Refresh</button>
+            <button type="button" onClick={() => void handleRefresh()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover sm:flex-none">{refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Refresh</button>
           </div>
         </div>
       </header>
