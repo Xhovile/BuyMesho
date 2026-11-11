@@ -9,7 +9,7 @@ type PayoutStatusBadgeProps = {
 const PAYOUT_STATUS_META: Record<string, { label: string; className: string }> = {
   paid: { label: "Paid", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
   failed: { label: "Failed", className: "border-red-200 bg-red-50 text-red-700" },
-  cancelled: { label: "Cancelled", className: "border-zinc-200 bg-zinc-100 text-zinc-700" },
+  cancelled: { label: "Cancelled", className: "border-bm-border bg-bm-surface-muted text-bm-text-muted" },
   eligible: { label: "Eligible", className: "border-amber-200 bg-amber-50 text-amber-700" },
   queued: { label: "Queued for review", className: "border-amber-200 bg-amber-50 text-amber-700" },
   processing: { label: "Sent to provider", className: "border-amber-200 bg-amber-50 text-amber-700" },
@@ -21,13 +21,13 @@ const DESTINATION_STATUS_META: Record<string, { label: string; className: string
   verified: { label: "Verified", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
   pending: { label: "Pending", className: "border-amber-200 bg-amber-50 text-amber-700" },
   failed: { label: "Failed", className: "border-red-200 bg-red-50 text-red-700" },
-  unverified: { label: "Unverified", className: "border-zinc-200 bg-zinc-100 text-zinc-700" },
+  unverified: { label: "Unverified", className: "border-bm-border bg-bm-surface-muted text-bm-text-muted" },
 };
 
 const DESTINATION_STATE_META: Record<string, { label: string; className: string }> = {
   default: { label: "Default", className: "border-sky-200 bg-sky-50 text-sky-700" },
   active: { label: "Active", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
-  inactive: { label: "Inactive", className: "border-zinc-200 bg-zinc-100 text-zinc-700" },
+  inactive: { label: "Inactive", className: "border-bm-border bg-bm-surface-muted text-bm-text-muted" },
 };
 
 function toTitleLabel(status: string) {
@@ -43,7 +43,7 @@ export function getPayoutStatusBadgeMeta(status: string | boolean, kind: PayoutS
   const dictionary = kind === "destination" ? DESTINATION_STATUS_META : kind === "destination_state" ? DESTINATION_STATE_META : PAYOUT_STATUS_META;
   return dictionary[normalized] ?? {
     label: typeof status === "boolean" ? (status ? "Active" : "Inactive") : toTitleLabel(status),
-    className: "border-zinc-200 bg-zinc-100 text-zinc-700",
+    className: "border-bm-border bg-bm-surface-muted text-bm-text-muted",
   };
 }
 
