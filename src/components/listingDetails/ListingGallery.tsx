@@ -26,7 +26,7 @@ function ImageShimmer({ className = "" }: { className?: string }) {
       aria-hidden="true"
       className={`absolute inset-0 overflow-hidden bg-bm-surface ${className}`}
     >
-      <div className="absolute inset-y-0 -left-1/2 w-1/2 animate-[listing-gallery-shimmer_1.25s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-zinc-100 to-transparent" />
+      <div className="absolute inset-y-0 -left-1/2 w-1/2 animate-[listing-gallery-shimmer_1.25s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-bm-surface-muted to-transparent" />
     </div>
   );
 }
@@ -139,7 +139,7 @@ export default function ListingGallery({
       type="button"
       onClick={() => onSelectImage(idx)}
       className={`relative overflow-hidden border transition-all ${
-        idx === currentGalleryIndex ? "border-zinc-900" : "border-bm-border hover:border-zinc-400"
+        idx === currentGalleryIndex ? "border-bm-brand" : "border-bm-border hover:border-bm-border"
       } ${className}`}
       aria-label={`View image ${idx + 1}`}
     >
@@ -165,7 +165,7 @@ export default function ListingGallery({
       </button>
 
       <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-black">
-        {fullscreenImageLoading ? <ImageShimmer className="bg-zinc-950" /> : null}
+        {fullscreenImageLoading ? <ImageShimmer className="bg-bm-surface-muted" /> : null}
 
         <img
           src={getListingImageUrl(currentImage, "fullscreen")}
@@ -296,7 +296,7 @@ export default function ListingGallery({
 
         {videoUrl ? (
           <div className="mt-3">
-            <div className="overflow-hidden rounded-2xl border border-blue-200 bg-black">
+            <div className="overflow-hidden rounded-2xl border border-bm-border bg-black">
               <video src={videoUrl} controls className="w-full" />
             </div>
           </div>
