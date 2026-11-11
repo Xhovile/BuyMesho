@@ -57,12 +57,12 @@ export default function DisputeActionsCard({
     const statusLabel = disputeStatusLabel(disputeStatus);
     return (
       <div className="space-y-3">
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        <div className="rounded-2xl border border-bm-border bg-bm-warning-bg p-4">
           <div className="flex items-start gap-3">
-            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-bm-warning" />
             <div>
-              <p className="text-sm font-black text-amber-950">This order is under dispute review.</p>
-              <p className="mt-1 text-sm leading-6 text-amber-900/80">Your dispute has been submitted and is currently {statusLabel.toLowerCase()}. You cannot submit another dispute for this order while this case remains active.</p>
+              <p className="text-sm font-black text-bm-text">This order is under dispute review.</p>
+              <p className="mt-1 text-sm leading-6 text-bm-text-muted/80">Your dispute has been submitted and is currently {statusLabel.toLowerCase()}. You cannot submit another dispute for this order while this case remains active.</p>
             </div>
           </div>
         </div>
