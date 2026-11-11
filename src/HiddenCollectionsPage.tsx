@@ -212,7 +212,7 @@ export default function HiddenCollectionsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={`Search hidden ${activeTab}...`}
-              className="w-full pl-12 pr-4 py-3 bg-bm-surface-muted dark:bg-bm-surface-subtle border border-bm-border dark:border-bm-border rounded-2xl text-sm text-bm-text dark:text-bm-text-muted placeholder:text-bm-text-subtle dark:placeholder:text-bm-text-subtle shadow-sm focus:border-bm-brand focus:ring-4 focus:ring-zinc-900/10 outline-none transition-all"
+              className="w-full pl-12 pr-4 py-3 bg-bm-surface-muted dark:bg-bm-surface-subtle border border-bm-border dark:border-bm-border rounded-2xl text-sm text-bm-text dark:text-bm-text-muted placeholder:text-bm-text-subtle dark:placeholder:text-bm-text-subtle shadow-sm focus:border-bm-brand focus:ring-4 focus:ring-bm-focus outline-none transition-all"
             />
           </div>
         </section>
@@ -275,7 +275,7 @@ export default function HiddenCollectionsPage() {
                           </span>
                           <span
                             className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.12em] ${
-                              isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-zinc-200 dark:bg-bm-skeleton text-bm-text-muted dark:text-bm-text-muted"
+                              isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-bm-surface-raised dark:bg-bm-skeleton text-bm-text-muted dark:text-bm-text-muted"
                             }`}
                           >
                             {isAvailable ? "Available" : "Sold out"}
