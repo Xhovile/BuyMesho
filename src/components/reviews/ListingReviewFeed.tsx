@@ -204,7 +204,7 @@ export default function ListingReviewFeed({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 rounded-[2rem] border border-blue-200 bg-white px-5 py-4 text-sm text-zinc-500 shadow-sm">
+      <div className="flex items-center gap-3 rounded-[2rem] border border-blue-200 bg-bm-surface px-5 py-4 text-sm text-bm-text-subtle shadow-sm">
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading reviews...
       </div>
@@ -268,7 +268,7 @@ export default function ListingReviewFeed({
           </div>
         )
       ) : !ownReview ? (
-        <div className="rounded-[2rem] border border-dashed border-blue-200 bg-white px-5 py-6 text-sm text-zinc-500 shadow-sm">
+        <div className="rounded-[2rem] border border-dashed border-blue-200 bg-bm-surface px-5 py-6 text-sm text-bm-text-subtle shadow-sm">
           No written reviews yet.
         </div>
       ) : null}
@@ -276,7 +276,7 @@ export default function ListingReviewFeed({
       {isFullPage && hasMore ? (
         <div ref={loadMoreSentinelRef} className="flex min-h-16 items-center justify-center pt-2" aria-live="polite">
           {loadingMore ? (
-            <span className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-500">
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-bm-text-subtle">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading more reviews...
             </span>
@@ -289,7 +289,7 @@ export default function ListingReviewFeed({
           <button
             type="button"
             onClick={onViewAll}
-            className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-white px-5 py-2.5 text-sm font-bold text-zinc-900 transition hover:bg-zinc-50"
+            className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-bm-surface px-5 py-2.5 text-sm font-bold text-bm-text transition hover:bg-bm-surface-muted"
           >
             View all reviews
           </button>
@@ -297,13 +297,13 @@ export default function ListingReviewFeed({
       ) : null}
 
       {isFullPage && !hasMore && items.length > 0 ? (
-        <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">
+        <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-bm-text-subtle">
           Showing {Math.min(items.length, total)} of {total} reviews
         </p>
       ) : null}
 
       {compact && summary ? (
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-bm-text-subtle">
           Showing {Math.min(items.length, total)} of {total} reviews
         </p>
       ) : null}
