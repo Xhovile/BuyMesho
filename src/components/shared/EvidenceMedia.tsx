@@ -32,16 +32,16 @@ export default function EvidenceMedia({ evidence, title = "Evidence" }: Evidence
   if (!items.length) return null;
 
   return (
-    <div className="mt-4 rounded-xl border border-zinc-200 bg-white p-4">
+    <div className="mt-4 rounded-xl border border-bm-border bg-bm-surface p-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500">{title}</p>
-        <span className="text-xs font-semibold text-zinc-400">{items.length} item{items.length === 1 ? "" : "s"}</span>
+        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-bm-text-subtle">{title}</p>
+        <span className="text-xs font-semibold text-bm-text-subtle">{items.length} item{items.length === 1 ? "" : "s"}</span>
       </div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         {items.map((url, index) => {
           const kind = mediaKind(url);
           return (
-            <div key={url} className="overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+            <div key={url} className="overflow-hidden rounded-xl border border-bm-border bg-bm-surface-subtle">
               {kind === "image" ? (
                 <a href={url} target="_blank" rel="noreferrer" className="block">
                   <img src={url} alt={`Dispute evidence ${index + 1}`} className="h-44 w-full object-cover" loading="lazy" />
@@ -49,11 +49,11 @@ export default function EvidenceMedia({ evidence, title = "Evidence" }: Evidence
               ) : kind === "video" ? (
                 <video src={url} controls preload="metadata" className="h-44 w-full bg-black object-contain" />
               ) : null}
-              <div className="flex items-center justify-between gap-2 border-t border-zinc-200 px-3 py-2">
-                <span className="min-w-0 truncate text-xs font-semibold text-zinc-600">
+              <div className="flex items-center justify-between gap-2 border-t border-bm-border px-3 py-2">
+                <span className="min-w-0 truncate text-xs font-semibold text-bm-text-muted">
                   {kind === "video" ? `Video ${index + 1}` : kind === "image" ? `Photo ${index + 1}` : `Evidence ${index + 1}`}
                 </span>
-                <a href={url} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center gap-1 text-xs font-black text-zinc-800 hover:text-red-700">
+                <a href={url} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center gap-1 text-xs font-black text-bm-text hover:text-bm-brand">
                   Open
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
