@@ -115,9 +115,9 @@ export default function FormDropdown({
   const isDark = tone === "dark";
   const triggerBase = isDark
     ? "w-full min-w-0 flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white/95 backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/15"
-    : "w-full min-w-0 flex items-center justify-between gap-3 rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface-subtle dark:bg-bm-surface-subtle px-4 py-3 text-sm font-semibold text-bm-text-muted dark:text-bm-text-muted transition-all hover:border-bm-border hover:bg-white";
-  const menuWrapper = "rounded-2xl border border-bm-border dark:border-bm-border bg-white shadow-2xl overflow-hidden";
-  const searchWrap = "p-2 border-b border-bm-border-subtle dark:border-bm-border-subtle bg-white sticky top-0 z-10";
+    : "w-full min-w-0 flex items-center justify-between gap-3 rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface-subtle dark:bg-bm-surface-subtle px-4 py-3 text-sm font-semibold text-bm-text-muted dark:text-bm-text-muted transition-all hover:border-bm-border hover:bg-bm-surface";
+  const menuWrapper = "rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-2xl overflow-hidden";
+  const searchWrap = "p-2 border-b border-bm-border-subtle dark:border-bm-border-subtle bg-bm-surface sticky top-0 z-10";
   const searchInput =
     "w-full pl-10 pr-4 py-2.5 bg-bm-surface-subtle dark:bg-bm-surface-subtle border border-bm-border dark:border-bm-border rounded-xl text-sm text-bm-text-muted dark:text-bm-text-muted placeholder:text-bm-text-subtle dark:placeholder:text-bm-text-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-bm-border";
   const listWrap = "max-h-64 overflow-y-auto p-2";
