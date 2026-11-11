@@ -364,7 +364,7 @@ export default function CategoryPage() {
 
   if (!requestedCategory) {
     return (
-      <main className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted px-4 py-10 text-zinc-950 dark:text-bm-text">
+      <main className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted px-4 py-10 text-bm-text">
         <div className="mx-auto max-w-2xl rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-8 text-center shadow-sm sm:p-12">
           <h1 className="text-3xl font-black tracking-tight">Category not found</h1>
           <p className="mt-3 text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted">
@@ -373,7 +373,7 @@ export default function CategoryPage() {
           <button
             type="button"
             onClick={() => navigateToPath("/explore")}
-            className="mt-6 inline-flex rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-black text-white"
+            className="mt-6 inline-flex rounded-2xl bg-bm-brand px-5 py-3 text-sm font-black text-bm-on-brand"
           >
             Explore marketplace
           </button>
@@ -421,7 +421,7 @@ export default function CategoryPage() {
               <button
                 type="button"
                 onClick={() => navigateToExplore()}
-                className="inline-flex items-center gap-2 rounded-2xl bg-red-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-red-800"
+                className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover"
               >
                 Browse all filters
                 <ArrowRight className="w-4 h-4" />
@@ -431,7 +431,7 @@ export default function CategoryPage() {
                 type="button"
                 onClick={handleSellClick}
                 disabled={profileLoading}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(0,0,0,0.45)] transition-all hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_20px_40px_-14px_rgba(0,0,0,0.5)] disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand shadow-bm-brand/20 transition-all hover:-translate-y-0.5 hover:bg-bm-brand-hover hover:shadow-bm-brand/30 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <Plus className="w-4 h-4" />
                 {firebaseUser && profile?.is_seller ? "List Item" : "Sell"}
@@ -502,7 +502,7 @@ export default function CategoryPage() {
         <section className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-end justify-between gap-3 mb-4">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Featured listings</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">Featured listings</p>
               <h3 className="mt-2 text-2xl font-black tracking-tight">Tap any card to open details</h3>
             </div>
             <span className="text-sm font-bold text-bm-text-subtle dark:text-bm-text-subtle">
@@ -511,7 +511,7 @@ export default function CategoryPage() {
           </div>
 
           {error ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">
               {error}
             </div>
           ) : null}
@@ -550,11 +550,11 @@ export default function CategoryPage() {
         <SeoInternalLinks context="category" />
 
         <section className="max-w-7xl mx-auto px-4 pb-16">
-          <div className="rounded-[2rem] bg-zinc-900 text-white p-6 sm:p-8 shadow-xl">
+          <div className="rounded-[2rem] bg-bm-brand text-bm-on-brand p-6 sm:p-8 shadow-xl shadow-bm-brand/20">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h3 className="text-2xl font-black tracking-tight">Need the full marketplace view?</h3>
-                <p className="mt-2 text-sm text-zinc-300">Open Market for all filters, sorting, and broader browsing.</p>
+                <p className="mt-2 text-sm text-bm-on-brand/80">Open Market for all filters, sorting, and broader browsing.</p>
               </div>
 
               <button
