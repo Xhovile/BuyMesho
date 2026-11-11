@@ -102,12 +102,12 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
     <div className="bg-linear-to-r from-emerald-900/5 via-teal-900/5 to-emerald-800/10 border border-emerald-200/80 rounded-2xl p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-1 bg-white/20 rounded-lg">
+          <div className="p-1 bg-bm-surface/20 rounded-lg">
             <AiIcon className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="font-semibold text-sm text-neutral-900">Listing AI Studio</h4>
-            <p className="text-xs text-neutral-600">Improve listing content, get an AI price suggestion, and review safety signals.</p>
+            <h4 className="font-semibold text-sm text-bm-text">Listing AI Studio</h4>
+            <p className="text-xs text-bm-text-muted">Improve listing content, get an AI price suggestion, and review safety signals.</p>
           </div>
         </div>
       </div>
@@ -127,7 +127,7 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
           type="button"
           onClick={handleSuggestPrice}
           disabled={loadingAction !== null}
-          className="px-3 py-1.5 bg-white hover:bg-emerald-50 border border-emerald-300 text-emerald-900 font-medium text-xs rounded-xl flex items-center gap-1.5 transition-colors"
+          className="px-3 py-1.5 bg-bm-surface hover:bg-emerald-50 border border-emerald-300 text-emerald-900 font-medium text-xs rounded-xl flex items-center gap-1.5 transition-colors"
         >
           {loadingAction === "pricing" ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <DollarSign className="w-3.5 h-3.5 text-emerald-700" />}
           AI Price Suggestion
@@ -137,7 +137,7 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
           type="button"
           onClick={handleAuditSafety}
           disabled={loadingAction !== null}
-          className="px-3 py-1.5 bg-white hover:bg-neutral-100 border border-neutral-300 text-neutral-700 font-medium text-xs rounded-xl flex items-center gap-1.5 transition-colors"
+          className="px-3 py-1.5 bg-bm-surface hover:bg-bm-surface-muted border border-bm-border text-bm-text-muted font-medium text-xs rounded-xl flex items-center gap-1.5 transition-colors"
         >
           {loadingAction === "moderation" ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />}
           Safety Review
@@ -145,21 +145,21 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
       </div>
 
       {pricingResult && (
-        <div className="mt-3 bg-white p-3.5 rounded-xl border border-emerald-200 text-xs space-y-2 animate-in fade-in">
+        <div className="mt-3 bg-bm-surface p-3.5 rounded-xl border border-emerald-200 text-xs space-y-2 animate-in fade-in">
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-neutral-800 flex items-center gap-1">
+            <span className="font-semibold text-bm-text flex items-center gap-1">
               <Tag className="w-3.5 h-3.5 text-emerald-700" /> AI Price Suggestion
             </span>
             <span className="font-bold text-emerald-800 text-sm">{formatMoney(pricingResult.recommended_price)}</span>
           </div>
 
-          <div className="flex items-center justify-between text-neutral-600 pt-1 border-t border-neutral-100">
+          <div className="flex items-center justify-between text-bm-text-muted pt-1 border-t border-bm-border-subtle">
             <span>AI-suggested range:</span>
-            <span className="font-medium text-neutral-800">{formatMoney(pricingResult.min_price)} - {formatMoney(pricingResult.max_price)}</span>
+            <span className="font-medium text-bm-text">{formatMoney(pricingResult.min_price)} - {formatMoney(pricingResult.max_price)}</span>
           </div>
 
-          <p className="text-neutral-600 text-[11px] leading-relaxed pt-1">{pricingResult.market_insight}</p>
-          <p className="text-[10px] text-neutral-500">
+          <p className="text-bm-text-muted text-[11px] leading-relaxed pt-1">{pricingResult.market_insight}</p>
+          <p className="text-[10px] text-bm-text-subtle">
             AI decision support only · Confidence {Math.round(pricingResult.confidence_score)}% · Not a market valuation
             {pricingResult.evidence_source === "marketplace_comparables" ? ` · Based on ${pricingResult.comparable_count ?? 0} BuyMesho comparable${(pricingResult.comparable_count ?? 0) === 1 ? "" : "s"}` : null}
             {pricingResult.evidence_source === "insufficient_data" ? " · Insufficient market data" : null}
@@ -192,7 +192,7 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
           <div>
             <p className="font-semibold">{moderationResult.is_safe ? "No obvious safety issues detected" : "Potential safety issue detected"}</p>
             <p className="text-[11px] mt-0.5">{moderationResult.explanation}</p>
-            <p className="text-[10px] mt-1 text-neutral-500">AI review only; this is not a safety certification.</p>
+            <p className="text-[10px] mt-1 text-bm-text-subtle">AI review only; this is not a safety certification.</p>
           </div>
         </div>
       )}
