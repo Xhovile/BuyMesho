@@ -76,13 +76,13 @@ export default function ReportProblemPage({
         </div>
 
         {!isLoggedIn && (
-          <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" />
+          <div className="flex items-start gap-3 rounded-2xl border border-bm-warning/35 bg-bm-warning-bg p-4">
+            <AlertTriangle className="mt-0.5 h-5 w-5 text-bm-warning" />
             <div>
-              <p className="text-sm font-bold text-amber-800">
+              <p className="text-sm font-bold text-bm-warning">
                 Login required to submit
               </p>
-              <p className="text-sm leading-7 text-amber-700">
+              <p className="text-sm leading-7 text-bm-warning">
                 You can read the reporting form now, but you need to log in
                 before sending a report through the platform.
               </p>
@@ -91,14 +91,14 @@ export default function ReportProblemPage({
         )}
 
         {successMessage ? (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <div className="rounded-2xl border border-bm-success/35 bg-bm-success-bg p-4">
             <div className="flex items-start gap-3">
-              <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
+              <CheckCircle2 className="mt-0.5 h-5 w-5 text-bm-success" />
               <div className="flex-1">
-                <p className="text-sm font-bold text-emerald-800">
+                <p className="text-sm font-bold text-bm-success">
                   Report submitted
                 </p>
-                <p className="text-sm leading-7 text-emerald-700">
+                <p className="text-sm leading-7 text-bm-success">
                   {successMessage}
                 </p>
               </div>
@@ -108,7 +108,7 @@ export default function ReportProblemPage({
               <button
                 type="button"
                 onClick={onBack}
-                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-bm-on-brand transition-colors hover:bg-emerald-700"
+                className="rounded-xl bg-bm-brand px-4 py-2 text-sm font-bold text-bm-on-brand transition-colors hover:bg-bm-brand-hover"
               >
                 Back
               </button>
