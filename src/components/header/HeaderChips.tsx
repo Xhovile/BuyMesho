@@ -93,7 +93,7 @@ export default function HeaderChips({ selectedChip, isAdmin = false, onChipChang
   }, [selectedChip, isAdmin]);
 
   return (
-    <div className="px-3 py-1.5 bg-zinc-100 border-t border-zinc-200">
+    <div className="px-3 py-1.5 bg-bm-surface-muted border-t border-bm-border">
       <div className="mx-auto max-w-7xl">
         <div
           ref={scrollRef}
@@ -115,7 +115,7 @@ export default function HeaderChips({ selectedChip, isAdmin = false, onChipChang
                   className={`inline-flex items-center whitespace-nowrap border-b-2 px-0 py-0.5 text-base font-bold font-sans leading-none transition-all ${
                     isActive
                       ? "border-red-900 text-red-900 drop-shadow-[0_0_6px_rgba(127,29,29,0.35)]"
-                      : "border-transparent text-zinc-700 hover:text-red-900"
+                      : "border-transparent text-bm-text-muted hover:text-red-900"
                   }`}
                   aria-pressed={isActive}
                   aria-label={chip}
