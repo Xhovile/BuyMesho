@@ -217,7 +217,7 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
                 <div
                   key={destination.id}
                   className={`rounded-2xl border px-4 transition ${
-                    selected ? "border-zinc-950 bg-bm-surface py-5 shadow-sm" : "border-bm-border bg-bm-surface py-4"
+                    selected ? "border-bm-border bg-bm-surface py-5 shadow-sm" : "border-bm-border bg-bm-surface py-4"
                   }`}
                 >
                   <div className="flex items-center gap-3">
