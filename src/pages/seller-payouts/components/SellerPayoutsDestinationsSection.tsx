@@ -133,7 +133,7 @@ export default function SellerPayoutsDestinationsSection({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-zinc-950/55 backdrop-blur-sm"
+              className="absolute inset-0 bg-bm-overlay backdrop-blur-sm"
               onClick={() => {
                 if (!saving) onCancel();
               }}
