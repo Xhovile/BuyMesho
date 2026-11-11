@@ -184,7 +184,7 @@ export default function PayoutTimeline({ payouts }: PayoutTimelineProps) {
         {steps.map((step, index) => (
           <div key={step.key} className="flex gap-3">
             <div className="flex flex-col items-center">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-bm-surface-muted ring-1 ring-zinc-200">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-bm-surface-muted ring-1 ring-bm-border">
                 {stepIcon(step.state)}
               </div>
               {index < steps.length - 1 ? (
