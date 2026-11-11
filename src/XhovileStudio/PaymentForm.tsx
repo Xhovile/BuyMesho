@@ -184,7 +184,7 @@ function PaymentForm() {
       </header>
 
       <section
-        className={`overflow-hidden rounded-[26px] border bg-white shadow-[0_18px_55px_rgba(30,25,20,0.10)] transition ${
+        className={`overflow-hidden rounded-[26px] border bg-bm-surface shadow-[0_18px_55px_rgba(30,25,20,0.10)] transition ${
           theme === "blue"
             ? "border-[#168cff]/50"
             : theme === "red"
@@ -275,7 +275,7 @@ function PaymentForm() {
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              className="mt-2 min-h-16 w-full resize-none rounded-xl border border-bm-border bg-white px-3 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-muted focus:border-white/30"
+              className="mt-2 min-h-16 w-full resize-none rounded-xl border border-bm-border bg-bm-surface px-3 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-muted focus:border-white/30"
               placeholder={needsWebsite && !needsGraphic ? "e.g. One-page business website for my clothing brand." : "e.g. Poster for a campus event."}
             />
           </div>
