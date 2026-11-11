@@ -80,11 +80,11 @@ function tone(status: string) {
 function pillClass(t: string) {
   switch (t) {
     case "emerald":
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      return "bg-bm-success-bg text-bm-success border-bm-success/35";
     case "rose":
-      return "bg-rose-50 text-rose-700 border-rose-200";
+      return "bg-bm-danger-bg text-bm-danger border-bm-danger/35";
     case "amber":
-      return "bg-amber-50 text-amber-700 border-amber-200";
+      return "bg-bm-warning-bg text-bm-warning border-bm-warning/35";
     default:
       return "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted border-bm-border dark:border-bm-border";
   }
@@ -93,19 +93,19 @@ function pillClass(t: string) {
 function specialBadges(row: PayoutRow) {
   const badges: Array<{ label: string; className: string }> = [];
   if (["provider_unavailable", "provider_timeout", "provider_rate_limited"].includes((row.failureReason ?? "").toLowerCase())) {
-    badges.push({ label: "provider outage", className: "border-amber-200 bg-amber-50 text-amber-700" });
+    badges.push({ label: "provider outage", className: "border-bm-warning/35 bg-bm-warning-bg text-bm-warning" });
   }
   if (row.status === "held") {
-    badges.push({ label: "manual review", className: "border-sky-200 bg-sky-50 text-sky-700" });
+    badges.push({ label: "manual review", className: "border-bm-border bg-bm-surface-muted text-bm-text-muted" });
   }
   if (row.status === "held" && (row.failureReason ?? "").startsWith("provider_")) {
-    badges.push({ label: "retry blocked", className: "border-rose-200 bg-rose-50 text-rose-700" });
+    badges.push({ label: "retry blocked", className: "border-bm-danger/35 bg-bm-danger-bg text-bm-danger" });
   }
   if (row.latestWebhookEventType === "payout_webhook_duplicate") {
     badges.push({ label: "duplicate webhook ignored", className: "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted" });
   }
   if (row.latestWebhookEventType === "payout_reconciled") {
-    badges.push({ label: "reconciled from provider callback", className: "border-emerald-200 bg-emerald-50 text-emerald-700" });
+    badges.push({ label: "reconciled from provider callback", className: "border-bm-success/35 bg-bm-success-bg text-bm-success" });
   }
   return badges;
 }
@@ -389,7 +389,7 @@ function ActionButton({
       disabled={busy}
       onClick={onClick}
       className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold disabled:opacity-60 ${
-        danger ? "bg-rose-600 text-bm-on-brand hover:bg-rose-700" : "bg-bm-brand text-bm-on-brand hover:bg-bm-brand-hover"
+        danger ? "bg-bm-danger-bg text-bm-danger hover:brightness-95" : "bg-bm-brand text-bm-on-brand hover:bg-bm-brand-hover"
       }`}
     >
       {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
