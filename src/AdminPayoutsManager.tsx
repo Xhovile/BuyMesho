@@ -870,7 +870,7 @@ export default function AdminPayoutsManager() {
         ) : null}
 
         {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">
+          <div className="rounded-2xl border border-bm-danger/35 bg-bm-danger-bg px-4 py-3 text-sm font-semibold text-bm-danger">
             {error}
           </div>
         ) : null}
