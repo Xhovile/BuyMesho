@@ -63,13 +63,13 @@ function formatDateTime(value: string | null | undefined) {
 function statusClass(status: string) {
   switch (status.toLowerCase()) {
     case "published":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+      return "border-bm-success/25 bg-bm-success-bg text-bm-success";
     case "inactive":
-      return "border-amber-200 bg-amber-50 text-amber-700";
+      return "border-bm-warning/25 bg-bm-warning-bg text-bm-warning";
     case "cancelled":
-      return "border-rose-200 bg-rose-50 text-rose-700";
+      return "border-bm-danger/25 bg-bm-danger-bg text-bm-danger";
     case "draft":
-      return "border-sky-200 bg-sky-50 text-sky-700";
+      return "border-bm-border bg-bm-surface-muted text-bm-text-muted";
     default:
       return "border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-muted dark:text-bm-text-muted";
   }
@@ -77,10 +77,10 @@ function statusClass(status: string) {
 
 function transactionStatusClass(hasRevenue: boolean, pendingIssues: boolean) {
   if (hasRevenue) {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    return "border-bm-success/25 bg-bm-success-bg text-bm-success";
   }
   if (pendingIssues) {
-    return "border-amber-200 bg-amber-50 text-amber-700";
+    return "border-bm-warning/25 bg-bm-warning-bg text-bm-warning";
   }
   return "border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-muted dark:text-bm-text-muted";
 }
@@ -270,27 +270,27 @@ function buildPrintableDashboardHtml(params: {
 function SettlementBanner({ summary }: { summary: DashboardResponse["summary"] }) {
   const hasRevenue = summary.grossRevenueAmount > 0;
   return (
-    <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+    <div className="rounded-[1.5rem] border border-bm-success/25 bg-bm-success-bg p-4 shadow-sm">
       <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-bm-surface text-emerald-700">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-bm-surface text-bm-success">
           <Clock3 className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-emerald-600">Settlement status</p>
-          <h3 className="mt-1 text-xl font-black tracking-tight text-emerald-950">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-bm-success">Settlement status</p>
+          <h3 className="mt-1 text-xl font-black tracking-tight text-bm-success">
             {hasRevenue ? "Successful transactions are waiting for midnight settlement" : "No captured transactions yet"}
           </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-emerald-900/90">
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-bm-success/90">
             Payments made today will be available the next day after midnight. The exact time may vary slightly, but it follows the T+1 cycle.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.16em] text-emerald-900">
-            <span className="rounded-full border border-emerald-200 bg-bm-surface px-3 py-1">
+          <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.16em] text-bm-success">
+            <span className="rounded-full border border-bm-success/25 bg-bm-surface px-3 py-1">
               Captured: {formatMoney(summary.grossRevenueAmount, summary.revenueCurrency)}
             </span>
-            <span className="rounded-full border border-emerald-200 bg-bm-surface px-3 py-1">
+            <span className="rounded-full border border-bm-success/25 bg-bm-surface px-3 py-1">
               Est. net: {formatMoney(summary.netRevenueAmount, summary.revenueCurrency)}
             </span>
-            <span className="rounded-full border border-emerald-200 bg-bm-surface px-3 py-1">
+            <span className="rounded-full border border-bm-success/25 bg-bm-surface px-3 py-1">
               T+1 settlement
             </span>
           </div>
@@ -594,7 +594,7 @@ export default function EventCreatorOverviewPage() {
           </div>
         </div>
 
-        {error ? <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
+        {error ? <div className="rounded-[1.5rem] border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">{error}</div> : null}
 
         <div className="overflow-hidden rounded-[1.5rem] border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
           <div className="flex items-center justify-between gap-3 border-b border-bm-border dark:border-bm-border px-4 py-4">
@@ -642,7 +642,7 @@ export default function EventCreatorOverviewPage() {
                       </td>
                       <td className="px-4 py-4">
                         <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${statusClass(event.status)}`}>{event.status}</span>
-                        {event.pending_issues ? <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.16em] text-rose-600">Needs attention</p> : null}
+                        {event.pending_issues ? <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.16em] text-bm-danger">Needs attention</p> : null}
                       </td>
                       <td className="px-4 py-4 text-bm-text-muted dark:text-bm-text-muted">
                         {formatDate(event.event_date)}
