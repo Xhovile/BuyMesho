@@ -86,7 +86,7 @@ export default function ListingSummary({
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle">Owner view</p>
-                <h2 className="mt-1 text-lg font-black tracking-tight text-white">Manage this listing</h2>
+                <h2 className="mt-1 text-lg font-black tracking-tight text-bm-text">Manage this listing</h2>
                 <p className="mt-1 text-sm leading-6 text-bm-text-muted">Use the tools here to edit details, update stock, record sales, or remove the listing.</p>
               </div>
               <div className="relative z-20 flex shrink-0 items-center gap-2">
