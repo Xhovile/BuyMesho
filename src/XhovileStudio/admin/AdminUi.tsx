@@ -51,7 +51,7 @@ export function StatCard({
   helper?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-bm-border bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-bm-border bg-bm-surface p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-bm-text-subtle">{label}</p>
@@ -78,7 +78,7 @@ export function SectionCard({
   action?: ReactNode;
 }) {
   return (
-    <section className="rounded-[2rem] border border-bm-border bg-white p-5 shadow-sm">
+    <section className="rounded-[2rem] border border-bm-border bg-bm-surface p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           {eyebrow ? <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle">{eyebrow}</p> : null}
