@@ -364,10 +364,10 @@ export default function CategoryPage() {
 
   if (!requestedCategory) {
     return (
-      <main className="min-h-screen bg-zinc-100 dark:bg-bm-surface-muted px-4 py-10 text-zinc-950 dark:text-bm-text">
-        <div className="mx-auto max-w-2xl rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-8 text-center shadow-sm sm:p-12">
+      <main className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted px-4 py-10 text-zinc-950 dark:text-bm-text">
+        <div className="mx-auto max-w-2xl rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-8 text-center shadow-sm sm:p-12">
           <h1 className="text-3xl font-black tracking-tight">Category not found</h1>
-          <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-bm-text-muted">
+          <p className="mt-3 text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted">
             That marketplace category does not exist. Choose a category from the BuyMesho marketplace.
           </p>
           <button
@@ -383,7 +383,7 @@ export default function CategoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-100 dark:bg-bm-surface-muted text-zinc-900 dark:text-bm-text">
+    <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text">
       <Header
         searchValue={headerSearch}
         onSearch={handleHeaderSearch}
@@ -397,7 +397,7 @@ export default function CategoryPage() {
       />
 
       <main>
-        <section className={`bg-gradient-to-br ${config.accent} border-b border-zinc-200 dark:border-bm-border`}>
+        <section className={`bg-gradient-to-br ${config.accent} border-b border-bm-border dark:border-bm-border`}>
           <div className="max-w-7xl mx-auto px-4 py-8 sm:py-10">
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
@@ -412,7 +412,7 @@ export default function CategoryPage() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="mt-4 text-sm sm:text-base text-zinc-600 dark:text-bm-text-muted max-w-2xl leading-relaxed"
+              className="mt-4 text-sm sm:text-base text-bm-text-muted dark:text-bm-text-muted max-w-2xl leading-relaxed"
             >
               {config.description}
             </motion.p>
@@ -441,26 +441,26 @@ export default function CategoryPage() {
         </section>
 
         <section className="max-w-7xl mx-auto px-4 py-5">
-          <div className="rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-4 shadow-sm">
+          <div className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setFiltersOpen((value) => !value)}
-                className="min-w-0 flex-1 inline-flex items-center justify-between rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-3 text-left text-sm font-extrabold text-zinc-900 dark:text-bm-text hover:bg-zinc-100 dark:hover:bg-bm-surface-muted transition-colors"
+                className="min-w-0 flex-1 inline-flex items-center justify-between rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-left text-sm font-extrabold text-bm-text dark:text-bm-text hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted transition-colors"
                 aria-label="Toggle filter options"
                 aria-expanded={filtersOpen}
                 aria-controls="category-filter-panel"
               >
                 <span>Filter</span>
                 <ChevronDown
-                  className={`w-4 h-4 text-zinc-600 dark:text-bm-text-muted transition-transform ${filtersOpen ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 text-bm-text-muted dark:text-bm-text-muted transition-transform ${filtersOpen ? "rotate-180" : ""}`}
                 />
               </button>
 
               <button
                 type="button"
                 onClick={clearFilters}
-                className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm font-extrabold text-zinc-700 dark:text-bm-text-muted hover:bg-zinc-50 dark:hover:bg-bm-surface-muted transition-colors"
+                className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm font-extrabold text-bm-text-muted dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted transition-colors"
               >
                 Clear filters
               </button>
@@ -505,7 +505,7 @@ export default function CategoryPage() {
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Featured listings</p>
               <h3 className="mt-2 text-2xl font-black tracking-tight">Tap any card to open details</h3>
             </div>
-            <span className="text-sm font-bold text-zinc-500 dark:text-bm-text-subtle">
+            <span className="text-sm font-bold text-bm-text-subtle dark:text-bm-text-subtle">
               {filteredAndSortedItems.length} item{filteredAndSortedItems.length === 1 ? "" : "s"}
             </span>
           </div>
@@ -518,12 +518,12 @@ export default function CategoryPage() {
 
           <div className="grid grid-cols-[repeat(auto-fit,160px)] justify-between gap-x-2 gap-y-4 md:gap-x-8 md:gap-y-6">
             {loading ? (
-              <div className="col-span-full rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-8 text-sm text-zinc-500 dark:text-bm-text-subtle shadow-sm flex items-center gap-3">
+              <div className="col-span-full rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-8 text-sm text-bm-text-subtle dark:text-bm-text-subtle shadow-sm flex items-center gap-3">
                 <Loader2 className="w-5 h-5 animate-spin" />
                 Loading listings...
               </div>
             ) : filteredAndSortedItems.length === 0 ? (
-              <div className="col-span-full rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-8 text-sm text-zinc-500 dark:text-bm-text-subtle shadow-sm">
+              <div className="col-span-full rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-8 text-sm text-bm-text-subtle dark:text-bm-text-subtle shadow-sm">
                 No listings found in this category.
               </div>
             ) : (
@@ -560,7 +560,7 @@ export default function CategoryPage() {
               <button
                 type="button"
                 onClick={() => navigateToExplore()}
-                className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 dark:text-bm-text hover:bg-zinc-100 dark:hover:bg-bm-surface-muted"
+                className="inline-flex items-center gap-2 rounded-2xl bg-bm-surface px-5 py-3 text-sm font-extrabold text-bm-text dark:text-bm-text hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
               >
                 Open Market
                 <ArrowRight className="w-4 h-4" />
@@ -577,7 +577,7 @@ export default function CategoryPage() {
           <button
             type="button"
             onClick={() => setCopilotOpen(true)}
-            className="group flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-zinc-200 dark:border-bm-border shadow-xl hover:shadow-2xl transition-all"
+            className="group flex h-12 w-12 items-center justify-center rounded-2xl bg-bm-surface border border-bm-border dark:border-bm-border shadow-xl hover:shadow-2xl transition-all"
             aria-label="Open BuyMesho AI Assistant"
           >
             <AiIcon className="h-7 w-7 transition-transform group-hover:scale-105" />

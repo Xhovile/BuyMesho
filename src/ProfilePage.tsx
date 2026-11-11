@@ -59,14 +59,14 @@ export default function ProfilePage() {
       backLabel="Back to Market"
     >
       {authLoading || profileLoading ? (
-        <div className="p-10 flex items-center justify-center gap-3 text-zinc-500 dark:text-bm-text-subtle font-medium">
+        <div className="p-10 flex items-center justify-center gap-3 text-bm-text-subtle dark:text-bm-text-subtle font-medium">
           <Loader2 className="w-5 h-5 animate-spin" />
           Loading your profile...
         </div>
       ) : !firebaseUser ? (
         <div className="p-10 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text">Login required</h2>
-          <p className="mt-3 text-sm text-zinc-500 dark:text-bm-text-subtle">
+          <h2 className="text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">Login required</h2>
+          <p className="mt-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
             You need to log in before opening your profile page.
           </p>
           <button
@@ -79,8 +79,8 @@ export default function ProfilePage() {
         </div>
       ) : !profile ? (
         <div className="p-10 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text">Complete profile setup</h2>
-          <p className="mt-3 text-sm text-zinc-500 dark:text-bm-text-subtle">
+          <h2 className="text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">Complete profile setup</h2>
+          <p className="mt-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
             Your account exists but we could not find your profile details. Create your BuyMesho
             profile to continue.
           </p>
@@ -94,8 +94,8 @@ export default function ProfilePage() {
         </div>
       ) : (
         <div>
-          <div className="flex items-center gap-4 bg-zinc-50 dark:bg-bm-surface-subtle border-b border-zinc-100 dark:border-bm-border-subtle px-6 py-5">
-            <div className="w-20 h-20 rounded-full bg-white overflow-hidden border border-zinc-200 dark:border-bm-border shadow-sm flex items-center justify-center flex-shrink-0">
+          <div className="flex items-center gap-4 bg-bm-surface-muted dark:bg-bm-surface-subtle border-b border-zinc-100 dark:border-bm-border-subtle px-6 py-5">
+            <div className="w-20 h-20 rounded-full bg-bm-surface overflow-hidden border border-bm-border dark:border-bm-border shadow-sm flex items-center justify-center flex-shrink-0">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
               ) : (
@@ -104,13 +104,13 @@ export default function ProfilePage() {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text truncate">
+                <h2 className="text-2xl font-black tracking-tight text-bm-text dark:text-bm-text truncate">
                   {displayName}
                 </h2>
                 {profile.is_verified && <ShieldCheck className="w-5 h-5 text-blue-500 shrink-0" />}
               </div>
-              <p className="text-sm text-zinc-500 dark:text-bm-text-subtle truncate">{profile.email}</p>
-              <p className="text-sm text-zinc-500 dark:text-bm-text-subtle">
+              <p className="text-sm text-bm-text-subtle dark:text-bm-text-subtle truncate">{profile.email}</p>
+              <p className="text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                 {profile.user_type === "student"
                   ? `Student • ${profile.university || "Institution not set"}`
                   : "Public / Non-Student user"}
@@ -148,7 +148,7 @@ export default function ProfilePage() {
                             );
                           }
                         }}
-                        className="px-4 py-2 rounded-xl bg-white border border-amber-200 text-sm font-bold hover:bg-amber-100"
+                        className="px-4 py-2 rounded-xl bg-bm-surface border border-amber-200 text-sm font-bold hover:bg-amber-100"
                       >
                         Resend verification email
                       </button>
@@ -159,14 +159,14 @@ export default function ProfilePage() {
             )}
 
             {!profile.profile_setup_complete && (
-              <section className="rounded-3xl border border-zinc-200 dark:border-bm-border bg-white shadow-sm p-5">
+              <section className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm p-5">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">
                   Profile setup
                 </p>
-                <h3 className="mt-2 text-lg font-black text-zinc-900 dark:text-bm-text">
+                <h3 className="mt-2 text-lg font-black text-bm-text dark:text-bm-text">
                   Complete your BuyMesho profile
                 </h3>
-                <p className="mt-1 text-sm text-zinc-500 dark:text-bm-text-subtle">
+                <p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                   Choose Student or Public / Non-Student and add the information you want BuyMesho
                   to use for your marketplace experience.
                 </p>
@@ -181,8 +181,8 @@ export default function ProfilePage() {
               </section>
             )}
 
-            <section className="overflow-hidden rounded-3xl border border-zinc-200 dark:border-bm-border bg-white shadow-sm">
-              <div className="border-b border-zinc-100 dark:border-bm-border-subtle px-5 py-3 bg-zinc-50/80 dark:bg-bm-surface-subtle/80">
+            <section className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
+              <div className="border-b border-zinc-100 dark:border-bm-border-subtle px-5 py-3 bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">Account</p>
               </div>
               <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
@@ -190,15 +190,15 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => navigateToPath("/account/setup")}
                   disabled={profileActionsDisabled}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 dark:hover:bg-bm-surface-muted transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 dark:disabled:bg-bm-surface-muted disabled:opacity-50"
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted transition-colors disabled:cursor-not-allowed disabled:bg-bm-surface-muted dark:disabled:bg-bm-surface-muted disabled:opacity-50"
                 >
                   <span className="flex items-center gap-3 min-w-0">
-                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted flex items-center justify-center shrink-0">
-                      <User className="w-5 h-5 text-zinc-700 dark:text-bm-text-muted" />
+                    <span className="w-10 h-10 rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted flex items-center justify-center shrink-0">
+                      <User className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" />
                     </span>
                     <span className="min-w-0">
-                      <span className="block font-bold text-zinc-900 dark:text-bm-text">Edit Account</span>
-                      <span className="hidden md:block text-sm text-zinc-500 dark:text-bm-text-subtle">
+                      <span className="block font-bold text-bm-text dark:text-bm-text">Edit Account</span>
+                      <span className="hidden md:block text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                         Update identity, user type, student details, and delivery information.
                       </span>
                     </span>
@@ -211,15 +211,15 @@ export default function ProfilePage() {
                     type="button"
                     onClick={() => navigateToPath("/edit-profile")}
                     disabled={profileActionsDisabled}
-                    className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 dark:hover:bg-bm-surface-muted transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 dark:disabled:bg-bm-surface-muted disabled:opacity-50"
+                    className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted transition-colors disabled:cursor-not-allowed disabled:bg-bm-surface-muted dark:disabled:bg-bm-surface-muted disabled:opacity-50"
                   >
                     <span className="flex items-center gap-3 min-w-0">
-                      <span className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted flex items-center justify-center shrink-0">
-                        <User className="w-5 h-5 text-zinc-700 dark:text-bm-text-muted" />
+                      <span className="w-10 h-10 rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted flex items-center justify-center shrink-0">
+                        <User className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" />
                       </span>
                       <span className="min-w-0">
-                        <span className="block font-bold text-zinc-900 dark:text-bm-text">Edit Seller Profile</span>
-                        <span className="hidden md:block text-sm text-zinc-500 dark:text-bm-text-subtle">
+                        <span className="block font-bold text-bm-text dark:text-bm-text">Edit Seller Profile</span>
+                        <span className="hidden md:block text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                           Update your seller profile.
                         </span>
                       </span>
@@ -230,23 +230,23 @@ export default function ProfilePage() {
               </div>
             </section>
 
-            <section className="overflow-hidden rounded-3xl border border-zinc-200 dark:border-bm-border bg-white shadow-sm">
-              <div className="border-b border-zinc-100 dark:border-bm-border-subtle px-5 py-3 bg-zinc-50/80 dark:bg-bm-surface-subtle/80">
+            <section className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
+              <div className="border-b border-zinc-100 dark:border-bm-border-subtle px-5 py-3 bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">Set Up</p>
               </div>
               <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
                 <button
                   type="button"
                   onClick={() => navigateToPath("/settings")}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 dark:hover:bg-bm-surface-muted transition-colors"
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted transition-colors"
                 >
                   <span className="flex items-center gap-3 min-w-0">
-                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted flex items-center justify-center shrink-0">
-                      <Settings className="w-5 h-5 text-zinc-700 dark:text-bm-text-muted" />
+                    <span className="w-10 h-10 rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted flex items-center justify-center shrink-0">
+                      <Settings className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" />
                     </span>
                     <span className="min-w-0">
-                      <span className="block font-bold text-zinc-900 dark:text-bm-text">Settings</span>
-                      <span className="hidden md:block text-sm text-zinc-500 dark:text-bm-text-subtle">Open account settings.</span>
+                      <span className="block font-bold text-bm-text dark:text-bm-text">Settings</span>
+                      <span className="hidden md:block text-sm text-bm-text-subtle dark:text-bm-text-subtle">Open account settings.</span>
                     </span>
                   </span>
                   <ChevronRight className="w-5 h-5 text-zinc-400 dark:text-bm-text-subtle shrink-0" />
@@ -256,15 +256,15 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => navigateToPath("/change-password")}
                   disabled={profileActionsDisabled}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 dark:hover:bg-bm-surface-muted transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 dark:disabled:bg-bm-surface-muted disabled:opacity-50"
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted transition-colors disabled:cursor-not-allowed disabled:bg-bm-surface-muted dark:disabled:bg-bm-surface-muted disabled:opacity-50"
                 >
                   <span className="flex items-center gap-3 min-w-0">
-                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted flex items-center justify-center shrink-0">
-                      <Lock className="w-5 h-5 text-zinc-700 dark:text-bm-text-muted" />
+                    <span className="w-10 h-10 rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted flex items-center justify-center shrink-0">
+                      <Lock className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" />
                     </span>
                     <span className="min-w-0">
-                      <span className="block font-bold text-zinc-900 dark:text-bm-text">Change Password</span>
-                      <span className="hidden md:block text-sm text-zinc-500 dark:text-bm-text-subtle">
+                      <span className="block font-bold text-bm-text dark:text-bm-text">Change Password</span>
+                      <span className="hidden md:block text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                         Update your account password securely.
                       </span>
                     </span>
@@ -274,23 +274,23 @@ export default function ProfilePage() {
               </div>
             </section>
 
-            <section className="overflow-hidden rounded-3xl border border-zinc-200 dark:border-bm-border bg-white shadow-sm">
-              <div className="border-b border-zinc-100 dark:border-bm-border-subtle px-5 py-3 bg-zinc-50/80 dark:bg-bm-surface-subtle/80">
+            <section className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
+              <div className="border-b border-zinc-100 dark:border-bm-border-subtle px-5 py-3 bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80">
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">Security</p>
               </div>
               <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 dark:hover:bg-bm-surface-muted transition-colors"
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted transition-colors"
                 >
                   <span className="flex items-center gap-3 min-w-0">
-                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted flex items-center justify-center shrink-0">
-                      <LogOut className="w-5 h-5 text-zinc-700 dark:text-bm-text-muted" />
+                    <span className="w-10 h-10 rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted flex items-center justify-center shrink-0">
+                      <LogOut className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" />
                     </span>
                     <span className="min-w-0">
-                      <span className="block font-bold text-zinc-900 dark:text-bm-text">Log Out</span>
-                      <span className="hidden md:block text-sm text-zinc-500 dark:text-bm-text-subtle">Sign out of this device.</span>
+                      <span className="block font-bold text-bm-text dark:text-bm-text">Log Out</span>
+                      <span className="hidden md:block text-sm text-bm-text-subtle dark:text-bm-text-subtle">Sign out of this device.</span>
                     </span>
                   </span>
                   <ChevronRight className="w-5 h-5 text-zinc-400 dark:text-bm-text-subtle shrink-0" />
