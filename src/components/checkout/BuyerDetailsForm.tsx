@@ -168,7 +168,7 @@ export default function BuyerDetailsForm({
       </label>
 
       {!loading && loaded && !isComplete(value) ? (
-        <p className="text-[11px] font-semibold text-red-600">Complete the required delivery details before continuing.</p>
+        <p className="text-[11px] font-semibold text-bm-danger">Complete the required delivery details before continuing.</p>
       ) : null}
     </div>
   );
