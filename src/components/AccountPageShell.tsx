@@ -95,7 +95,7 @@ export default function AccountPageShell({
               <button
                 type="button"
                 onClick={() => navigateToPath(EXPLORE_PATH)}
-                className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-slate-800"
+                className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"
               >
                 <ShoppingBag className="h-4 w-4" />
                 Market
@@ -134,7 +134,7 @@ export default function AccountPageShell({
                 <button
                   type="button"
                   onClick={onBack || (() => navigateBackOrPath(EXPLORE_PATH))}
-                  className={backButtonClassName || "inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-black px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"}
+                  className={backButtonClassName || "inline-flex items-center gap-2 rounded-2xl border border-bm-brand bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"}
                 >
                   <ChevronLeft className="h-4 w-4" />
                   {backLabel}
