@@ -98,15 +98,15 @@ export default function AdminWorkspaceViews({
 
               <SectionCard title="Attention" eyebrow="Operational signals">
                 <div className="space-y-3">
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-amber-700">Pending payments</p>
-                    <p className="mt-1 text-2xl font-black text-amber-900">{summary.pendingPayments}</p>
-                    <p className="mt-1 text-xs leading-5 text-amber-800">Payments that have not yet reached a confirmed paid state.</p>
+                  <div className="rounded-2xl border border-bm-warning/25 bg-bm-warning-bg p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-warning">Pending payments</p>
+                    <p className="mt-1 text-2xl font-black text-bm-warning">{summary.pendingPayments}</p>
+                    <p className="mt-1 text-xs leading-5 text-bm-warning">Payments that have not yet reached a confirmed paid state.</p>
                   </div>
-                  <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-red-700">Failed notifications</p>
-                    <p className="mt-1 text-2xl font-black text-red-900">{summary.notificationFailed}</p>
-                    <p className="mt-1 text-xs leading-5 text-red-800">Successful payments whose internal notification email needs attention.</p>
+                  <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-danger">Failed notifications</p>
+                    <p className="mt-1 text-2xl font-black text-bm-danger">{summary.notificationFailed}</p>
+                    <p className="mt-1 text-xs leading-5 text-bm-danger">Successful payments whose internal notification email needs attention.</p>
                   </div>
                   <div className="rounded-2xl border border-bm-border bg-bm-surface-subtle p-4">
                     <p className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-text-subtle">Webhook failures</p>
@@ -158,7 +158,7 @@ export default function AdminWorkspaceViews({
                       className={
                         "rounded-2xl px-3 py-2 text-xs font-black uppercase tracking-[0.12em] " +
                         (paymentStatusFilter === status
-                          ? "bg-bm-brand text-white"
+                          ? "bg-bm-brand text-bm-on-brand"
                           : "border border-bm-border bg-bm-surface text-bm-text-muted hover:bg-bm-surface-subtle")
                       }
                     >
@@ -250,7 +250,7 @@ export default function AdminWorkspaceViews({
                 ) : null}
 
                 {selectedPayment.successNotificationError ? (
-                  <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                  <div className="mt-3 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg p-4 text-sm text-bm-danger">
                     <p className="font-black">Notification error</p>
                     <p className="mt-1 whitespace-pre-wrap">{selectedPayment.successNotificationError}</p>
                   </div>
@@ -353,18 +353,18 @@ export default function AdminWorkspaceViews({
                     <StatusPill value={payment.successNotificationStatus} />
                     <div className="text-xs text-bm-text-subtle">
                       <p>{formatDate(payment.updatedAt)}</p>
-                      {payment.successNotificationError ? <p className="mt-1 truncate text-red-600">{payment.successNotificationError}</p> : null}
+                      {payment.successNotificationError ? <p className="mt-1 truncate text-bm-danger">{payment.successNotificationError}</p> : null}
                     </div>
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+              <div className="rounded-2xl border border-bm-success/25 bg-bm-success-bg p-5">
                 <div className="flex items-start gap-3">
-                  <BadgeCheck className="h-5 w-5 text-emerald-600" />
+                  <BadgeCheck className="h-5 w-5 text-bm-success" />
                   <div>
-                    <p className="font-black text-emerald-900">No notification issues in the latest records.</p>
-                    <p className="mt-1 text-sm text-emerald-800">Successful Studio payments with unsent, sending, or failed internal notifications would appear here.</p>
+                    <p className="font-black text-bm-success">No notification issues in the latest records.</p>
+                    <p className="mt-1 text-sm text-bm-success">Successful Studio payments with unsent, sending, or failed internal notifications would appear here.</p>
                   </div>
                 </div>
               </div>
@@ -399,7 +399,7 @@ export default function AdminWorkspaceViews({
                       </td>
                       <td className="px-4 py-3"><StatusPill value={webhook.status} /></td>
                       <td className="px-4 py-3 text-bm-text-subtle">{formatDate(webhook.createdAt)}</td>
-                      <td className="max-w-xs px-4 py-3 text-red-600">{webhook.error || "—"}</td>
+                      <td className="max-w-xs px-4 py-3 text-bm-danger">{webhook.error || "—"}</td>
                     </tr>
                   )) : (
                     <tr><td colSpan={6}><EmptyState label="No Studio webhook events have been recorded yet." /></td></tr>
