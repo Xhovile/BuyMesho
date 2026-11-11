@@ -165,7 +165,7 @@ export default function AdminPaymentsPage() {
       />
 
       {error ? <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">{error}</div> : null}
-      {investigationError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-bm-danger">{investigationError}</div> : null}
+      {investigationError ? <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm font-semibold text-bm-danger">{investigationError}</div> : null}
       {investigationLoading ? <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm text-bm-text-muted dark:text-bm-text-muted"><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Investigating transactions…</div> : null}
 
       {submittedSearchQuery && investigation ? (
