@@ -130,8 +130,8 @@ function BuyerPaymentsPageContent() {
       <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Purchases</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 dark:text-bm-text sm:text-4xl">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Purchases</p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-bm-text dark:text-bm-text sm:text-4xl">
               Purchase activity
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-bm-text-muted dark:text-bm-text-muted sm:text-base">
@@ -142,7 +142,7 @@ function BuyerPaymentsPageContent() {
           <button
             type="button"
             onClick={handleClearLogs}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800"
+            className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-brand px-4 py-3 text-sm font-bold text-white hover:bg-bm-brand-hover"
           >
             <Trash2 className="h-4 w-4" />
             Clear logs
@@ -151,12 +151,12 @@ function BuyerPaymentsPageContent() {
 
         <div className="mt-8 flex flex-wrap items-end justify-between gap-4 border-b border-bm-border dark:border-bm-border pb-4">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Purchase feed</p>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950 dark:text-bm-text">Your purchase records</h2>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Purchase feed</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">Your purchase records</h2>
           </div>
           <p className="text-sm text-bm-text-subtle dark:text-bm-text-subtle">
             Showing <span className="font-bold text-bm-text dark:text-bm-text-muted">{visibleRecords.length}</span> of <span className="font-bold text-bm-text dark:text-bm-text-muted">{summary.records.length}</span>
-            {loading ? <span className="ml-2 font-medium text-zinc-400 dark:text-bm-text-subtle">Syncing…</span> : null}
+            {loading ? <span className="ml-2 font-medium text-bm-text-subtle dark:text-bm-text-subtle">Syncing…</span> : null}
           </p>
         </div>
 
@@ -178,13 +178,13 @@ function BuyerPaymentsPageContent() {
                 onClick={() => toggleFilter(key)}
                 className={`group flex min-h-[5.75rem] flex-col justify-between rounded-2xl border px-3.5 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:px-4 ${
                   active
-                    ? "border-zinc-950 bg-zinc-950 text-white shadow-zinc-950/15"
+                    ? "border-bm-border bg-bm-brand text-white shadow-zinc-950/15"
                     : "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text hover:border-bm-border hover:bg-bm-surface"
                 }`}
                 aria-pressed={active}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${active ? "text-zinc-300" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
+                  <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${active ? "text-bm-on-brand" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
                     {label}
                   </p>
                   <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] ${active ? "bg-bm-surface/15 text-white" : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-subtle dark:text-bm-text-subtle group-hover:bg-bm-surface-raised/70"}`}>
@@ -193,7 +193,7 @@ function BuyerPaymentsPageContent() {
                 </div>
                 <div className="mt-3 flex items-end justify-between gap-3">
                   <p className="text-2xl font-black leading-none tracking-tight sm:text-3xl">{count}</p>
-                  <span className={`h-1.5 w-8 rounded-full ${active ? "bg-bm-surface/60" : "bg-bm-surface-raised dark:bg-bm-skeleton group-hover:bg-zinc-300"}`} />
+                  <span className={`h-1.5 w-8 rounded-full ${active ? "bg-bm-surface/60" : "bg-bm-surface-raised dark:bg-bm-skeleton group-hover:bg-bm-brand-hover"}`} />
                 </div>
               </button>
             );
@@ -209,7 +209,7 @@ function BuyerPaymentsPageContent() {
             <button
               type="button"
               onClick={() => setActiveFilter("all")}
-              className="font-bold text-bm-text dark:text-bm-text-muted underline decoration-zinc-300 underline-offset-4 hover:text-zinc-950"
+              className="font-bold text-bm-text dark:text-bm-text-muted underline decoration-zinc-300 underline-offset-4 hover:text-bm-text"
             >
               Show all
             </button>
@@ -241,7 +241,7 @@ function BuyerPaymentsPageContent() {
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <p className="font-black text-zinc-950 dark:text-bm-text">{record.title}</p>
+                    <p className="font-black text-bm-text dark:text-bm-text">{record.title}</p>
                     <p className="text-sm text-bm-text-subtle dark:text-bm-text-subtle">{record.reference}</p>
                   </div>
 
@@ -250,19 +250,19 @@ function BuyerPaymentsPageContent() {
                   </span>
                 </div>
 
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 dark:border-bm-border-subtle pt-4">
-                  <p className="text-base font-black text-zinc-950 dark:text-bm-text">{formatMoney(record.amount, record.currency)}</p>
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-bm-border-subtle dark:border-bm-border-subtle pt-4">
+                  <p className="text-base font-black text-bm-text dark:text-bm-text">{formatMoney(record.amount, record.currency)}</p>
                   <p className="text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted">{record.detail}</p>
                 </div>
 
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 dark:border-bm-border-subtle pt-4">
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-bm-border-subtle dark:border-bm-border-subtle pt-4">
                   <button
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
                       openTracking(record.reference, record.flowType);
                     }}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-brand px-4 py-2.5 text-sm font-bold text-white hover:bg-bm-brand-hover"
                   >
                     Order Details
                     <ArrowUpRight className="h-4 w-4" />
