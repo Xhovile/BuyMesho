@@ -140,7 +140,7 @@ export default function DiagnosticsDrawer({ onRecorded }: { onRecorded?: () => v
 
                   <details className="rounded-2xl border border-bm-border dark:border-bm-border">
                     <summary className="cursor-pointer px-4 py-3 text-sm font-bold text-bm-text dark:text-bm-text-muted">View JSON</summary>
-                    <pre className="max-h-[55vh] overflow-auto border-t border-bm-border dark:border-bm-border bg-zinc-950 p-4 text-xs text-zinc-100">
+                    <pre className="max-h-[55vh] overflow-auto border-t border-bm-border dark:border-bm-border bg-bm-surface-subtle p-4 text-xs text-bm-text">
                       {JSON.stringify(result, null, 2)}
                     </pre>
                   </details>
