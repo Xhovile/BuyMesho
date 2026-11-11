@@ -63,12 +63,12 @@ export default function SavedPage() {
             onClick={() => navigateToPath(HOME_PATH)}
             className="flex items-center gap-2.5 min-w-0"
           >
-            <div className="w-10 h-10 bg-red-900 rounded-2xl flex items-center justify-center text-bm-on-brand font-extrabold text-xl shadow-lg shadow-red-900/20">
+            <div className="w-10 h-10 bg-bm-brand rounded-2xl flex items-center justify-center text-bm-on-brand font-extrabold text-xl shadow-lg shadow-bm-brand/20">
               B
             </div>
             <div className="text-left">
               <p className="text-lg font-extrabold tracking-tight">
-                <span className="text-red-900">Buy</span>
+                <span className="text-bm-brand">Buy</span>
                 <span className="text-bm-text-muted dark:text-bm-text-muted">Mesho</span>
               </p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">
@@ -153,7 +153,7 @@ export default function SavedPage() {
                         <p className="text-sm text-bm-text-subtle dark:text-bm-text-subtle line-clamp-1">{listing.business_name}</p>
                       </div>
                       {listing.is_verified ? (
-                        <ShieldCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                        <ShieldCheck className="w-4 h-4 text-bm-success flex-shrink-0" />
                       ) : null}
                     </div>
 
@@ -170,7 +170,7 @@ export default function SavedPage() {
                       </span>
                       <span
                         className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.12em] ${
-                          isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-bm-surface-raised dark:bg-bm-skeleton text-bm-text-muted dark:text-bm-text-muted"
+                          isAvailable ? "bg-bm-success-bg text-bm-success" : "bg-bm-surface-raised dark:bg-bm-skeleton text-bm-text-muted dark:text-bm-text-muted"
                         }`}
                       >
                         {isAvailable ? "Available" : "Sold out"}
