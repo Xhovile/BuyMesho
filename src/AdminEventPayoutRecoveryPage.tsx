@@ -496,6 +496,6 @@ function RawJsonViewer({ data }: { data: unknown }) {
         {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy"}
       </button>
     </div>
-    {open ? <pre className="max-h-[32rem] overflow-auto border-t border-bm-border dark:border-bm-border bg-bm-brand p-4 text-[11px] leading-5 text-zinc-100 [scrollbar-width:thin]">{raw}</pre> : null}
+    {open ? <pre className="max-h-[32rem] overflow-auto border-t border-bm-border dark:border-bm-border bg-bm-surface-subtle p-4 text-[11px] leading-5 text-bm-text [scrollbar-width:thin]">{raw}</pre> : null}
   </div>;
 }
