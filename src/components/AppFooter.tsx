@@ -11,7 +11,7 @@ import Logo from "../../photos/LOGO.svg";
 
 export default function AppFooter() {
   return (
-    <footer className="mt-20 border-t border-zinc-100 dark:border-bm-border-subtle bg-white py-12">
+    <footer className="mt-20 border-t border-bm-border-subtle dark:border-bm-border-subtle bg-bm-surface py-12">
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-8 px-4">
         <button
           type="button"
@@ -23,11 +23,11 @@ export default function AppFooter() {
           </span>
           <span className="text-xl font-extrabold tracking-tight md:text-lg">
             <span className="text-red-900">Buy</span>
-            <span className="text-zinc-700 dark:text-bm-text-muted">Mesho Ltd</span>
+            <span className="text-bm-text-muted dark:text-bm-text-muted">Mesho Ltd</span>
           </span>
         </button>
 
-        <div className="flex flex-wrap items-center justify-center gap-8 text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-bm-text-subtle">
+        <div className="flex flex-wrap items-center justify-center gap-8 text-xs font-bold uppercase tracking-widest text-bm-text-subtle dark:text-bm-text-subtle">
           <button type="button" onClick={() => navigateToPath(ABOUT_PATH)} className="transition-colors hover:text-primary">
             About
           </button>
@@ -47,7 +47,7 @@ export default function AppFooter() {
             href="https://www.facebook.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-14 w-14 items-center justify-center rounded-xl border border-zinc-200 dark:border-bm-border bg-white text-zinc-700 dark:text-bm-text-muted shadow-sm transition-all duration-300 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md"
+            className="flex h-14 w-14 items-center justify-center rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted shadow-sm transition-all duration-300 hover:border-red-600 hover:bg-red-600 hover:text-bm-on-brand hover:shadow-md"
             aria-label="Facebook"
           >
             <Facebook className="h-5.5 w-5.5 stroke-[1.75]" />
@@ -56,7 +56,7 @@ export default function AppFooter() {
             href="https://www.instagram.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-14 w-14 items-center justify-center rounded-xl border border-zinc-200 dark:border-bm-border bg-white text-zinc-700 dark:text-bm-text-muted shadow-sm transition-all duration-300 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md"
+            className="flex h-14 w-14 items-center justify-center rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted shadow-sm transition-all duration-300 hover:border-red-600 hover:bg-red-600 hover:text-bm-on-brand hover:shadow-md"
             aria-label="Instagram"
           >
             <Instagram className="h-5.5 w-5.5 stroke-[1.75]" />
@@ -65,16 +65,16 @@ export default function AppFooter() {
             href="https://x.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-14 w-14 items-center justify-center rounded-xl border border-zinc-200 dark:border-bm-border bg-white text-zinc-700 dark:text-bm-text-muted shadow-sm transition-all duration-300 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md"
+            className="flex h-14 w-14 items-center justify-center rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted shadow-sm transition-all duration-300 hover:border-red-600 hover:bg-red-600 hover:text-bm-on-brand hover:shadow-md"
             aria-label="X (Twitter)"
           >
             <Twitter className="h-5.5 w-5.5 stroke-[1.75]" />
           </a>
         </div>
 
-        <div className="h-px w-full max-w-[240px] bg-zinc-200 dark:bg-bm-skeleton" />
+        <div className="h-px w-full max-w-[240px] bg-bm-surface-raised dark:bg-bm-skeleton" />
 
-        <div className="text-xs font-bold text-zinc-300">© 2026 Crafted For You</div>
+        <div className="text-xs font-bold text-bm-text-subtle">© 2026 Crafted For You</div>
       </div>
     </footer>
   );
