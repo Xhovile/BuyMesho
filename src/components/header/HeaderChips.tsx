@@ -114,8 +114,8 @@ export default function HeaderChips({ selectedChip, isAdmin = false, onChipChang
                   }}
                   className={`inline-flex items-center whitespace-nowrap border-b-2 px-0 py-0.5 text-base font-bold font-sans leading-none transition-all ${
                     isActive
-                      ? "border-red-900 text-red-900 drop-shadow-[0_0_6px_rgba(127,29,29,0.35)]"
-                      : "border-transparent text-bm-text-muted hover:text-red-900"
+                      ? "border-bm-brand text-bm-brand"
+                      : "border-transparent text-bm-text-muted hover:text-bm-brand"
                   }`}
                   aria-pressed={isActive}
                   aria-label={chip}
