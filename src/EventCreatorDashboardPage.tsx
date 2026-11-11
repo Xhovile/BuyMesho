@@ -422,7 +422,7 @@ export default function EventCreatorDashboardPage() {
       childrenSectionClassName="w-full"
     >
       <div className="space-y-6">
-        {error ? <div className="rounded-[2rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
+        {error ? <div className="rounded-[2rem] border border-bm-danger/35 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">{error}</div> : null}
 
         <div className="grid gap-4 md:grid-cols-4">
           <MetricCard label="Owned events" value={String(allEvents.length)} icon={Ticket} helper="Only your events are listed." />
