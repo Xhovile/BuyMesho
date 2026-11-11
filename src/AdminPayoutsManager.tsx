@@ -207,9 +207,9 @@ function toDate(value: string | null | undefined) {
 
 function statusTone(status: string) {
   const normalized = String(status || "").toLowerCase();
-  if (normalized === "paid") return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  if (["failed", "cancelled"].includes(normalized)) return "border-rose-200 bg-rose-50 text-rose-700";
-  if (PENDING_STATES.includes(normalized)) return "border-amber-200 bg-amber-50 text-amber-700";
+  if (normalized === "paid") return "border-bm-success/35 bg-bm-success-bg text-bm-success";
+  if (["failed", "cancelled"].includes(normalized)) return "border-bm-danger/35 bg-bm-danger-bg text-bm-danger";
+  if (PENDING_STATES.includes(normalized)) return "border-bm-warning/35 bg-bm-warning-bg text-bm-warning";
   return "border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted";
 }
 
@@ -861,8 +861,8 @@ export default function AdminPayoutsManager() {
           <div
             className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${
               notice.type === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border-rose-200 bg-rose-50 text-rose-800"
+                ? "border-bm-success/35 bg-bm-success-bg text-bm-success"
+                : "border-bm-danger/35 bg-bm-danger-bg text-bm-danger"
             }`}
           >
             {notice.message}
@@ -928,8 +928,8 @@ export default function AdminPayoutsManager() {
                           {formatStatus(row.status)}
                         </span>
                         {row.status === "held" || row.status === "failed" ? (
-                          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                            <div className="font-black text-amber-950">Exact error</div>
+                          <div className="rounded-2xl border border-bm-warning/35 bg-bm-warning-bg px-3 py-2 text-xs text-bm-warning">
+                            <div className="font-black text-bm-warning">Exact error</div>
                             <div className="mt-1 leading-5">
                               {row.lastError ?? row.holdReason ?? row.manualReviewReason ?? row.latestAttemptFailureReason ?? row.failureReason ?? "Awaiting detail"}
                             </div>
