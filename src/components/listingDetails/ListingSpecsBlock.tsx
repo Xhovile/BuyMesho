@@ -19,12 +19,12 @@ function SpecAccordion({
     >
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 sm:px-6">
         <div className="min-w-0">
-          <h3 className="text-base font-extrabold tracking-tight text-zinc-900 sm:text-lg">{group.title}</h3>
-          <p className="mt-1 text-xs font-medium text-zinc-500">
+          <h3 className="text-base font-extrabold tracking-tight text-bm-text sm:text-lg">{group.title}</h3>
+          <p className="mt-1 text-xs font-medium text-bm-text-subtle">
             {group.rows.length} {group.rows.length === 1 ? "detail" : "details"}
           </p>
         </div>
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-zinc-50 text-zinc-500 transition-transform duration-200 group-open:rotate-180">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-bm-surface-subtle text-bm-text-subtle transition-transform duration-200 group-open:rotate-180">
           <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
             <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -34,9 +34,9 @@ function SpecAccordion({
       <div className="border-t border-blue-100 px-5 py-5 sm:px-6">
         <dl className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {group.rows.map((row) => (
-            <div key={row.key} className="rounded-2xl border border-blue-100 bg-zinc-50 px-3 py-3 sm:px-4">
-              <dt className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">{row.label}</dt>
-              <dd className="mt-1 text-sm font-semibold text-zinc-900">{row.value}</dd>
+            <div key={row.key} className="rounded-2xl border border-blue-100 bg-bm-surface-subtle px-3 py-3 sm:px-4">
+              <dt className="text-[10px] font-bold uppercase tracking-[0.18em] text-bm-text-subtle">{row.label}</dt>
+              <dd className="mt-1 text-sm font-semibold text-bm-text">{row.value}</dd>
             </div>
           ))}
         </dl>
@@ -51,7 +51,7 @@ export default function ListingSpecsBlock({ groups }: { groups: ListingSpecsGrou
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">Product details</h2>
+      <h2 className="text-2xl font-black tracking-tight text-bm-text sm:text-3xl">Product details</h2>
 
       {groups.length ? (
         <>
@@ -75,7 +75,7 @@ export default function ListingSpecsBlock({ groups }: { groups: ListingSpecsGrou
           </div>
         </>
       ) : (
-        <div className="rounded-[1.75rem] border border-dashed border-blue-200 bg-white px-4 py-5 text-sm text-zinc-500 shadow-sm">
+        <div className="rounded-[1.75rem] border border-dashed border-blue-200 bg-white px-4 py-5 text-sm text-bm-text-subtle shadow-sm">
           No grouped specs are available for this listing.
         </div>
       )}
