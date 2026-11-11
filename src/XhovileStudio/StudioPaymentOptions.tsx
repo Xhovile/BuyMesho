@@ -55,7 +55,7 @@ export default function StudioPaymentOptions({
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#168cff]">Graphic Design</p>
-                      <p className="mt-0.5 text-[10px] text-zinc-500">Choose a design from the poster.</p>
+                      <p className="mt-0.5 text-[10px] text-bm-text-subtle">Choose a design from the poster.</p>
                     </div>
                     <Palette className="h-4 w-4 text-[#168cff]" />
                   </div>
@@ -67,13 +67,13 @@ export default function StudioPaymentOptions({
                       <input
                         value={graphicCustomTotal}
                         onChange={(event) => onGraphicCustomTotalChange(event.target.value.replace(/[^0-9.]/g, ""))}
-                        className="w-32 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-[#168cff]"
+                        className="w-32 rounded-xl border border-bm-border bg-white px-3 py-2.5 text-sm text-bm-text outline-none focus:border-[#168cff]"
                         placeholder="Total MWK"
                         inputMode="numeric"
                       />
                     ) : null}
                   </div>
-                  <p className="mt-2 text-[10px] text-zinc-500">
+                  <p className="mt-2 text-[10px] text-bm-text-subtle">
                     Project price: <span className="font-black text-white">{formatMoney(graphicTotal)}</span>
                   </p>
                 </div>
@@ -84,7 +84,7 @@ export default function StudioPaymentOptions({
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#ff5b61]">Web Development</p>
-                      <p className="mt-0.5 text-[10px] text-zinc-500">Websites from MWK 80,000.</p>
+                      <p className="mt-0.5 text-[10px] text-bm-text-subtle">Websites from MWK 80,000.</p>
                     </div>
                     <Monitor className="h-4 w-4 text-[#ff5b61]" />
                   </div>
@@ -93,7 +93,7 @@ export default function StudioPaymentOptions({
                     <input
                       value={websiteTotal}
                       onChange={(event) => onWebsiteTotalChange(event.target.value.replace(/[^0-9.]/g, ""))}
-                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-700 focus:border-[#ff1d25]"
+                      className="w-full rounded-xl border border-bm-border bg-white px-3 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-muted focus:border-[#ff1d25]"
                       placeholder="Agreed project price (MWK)"
                       inputMode="numeric"
                     />
@@ -106,31 +106,31 @@ export default function StudioPaymentOptions({
                   <input
                     value={projectReference}
                     onChange={(event) => onProjectReferenceChange(event.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 bg-[#fffdfa] px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
+                    className="w-full rounded-xl border border-bm-border bg-[#fffdfa] px-3 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
                     placeholder="Project reference"
                   />
 
                   {needsWebsite ? (
                     <div>
-                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.14em] text-zinc-600">
+                      <label className="mb-1.5 block text-[10px] uppercase tracking-[0.14em] text-bm-text-muted">
                         Website balance to pay
                       </label>
                       <input
                         value={balanceAmount}
                         onChange={(event) => onBalanceAmountChange(event.target.value.replace(/[^0-9.]/g, ""))}
-                        className="w-full rounded-xl border border-zinc-200 bg-[#fffdfa] px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
+                        className="w-full rounded-xl border border-bm-border bg-[#fffdfa] px-3 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
                         placeholder="Enter website balance (MWK)"
                         inputMode="numeric"
                       />
-                      <p className="mt-1 text-[10px] text-zinc-500">
+                      <p className="mt-1 text-[10px] text-bm-text-subtle">
                         Enter the agreed remaining website balance. Graphic balances remain 50%.
                       </p>
                     </div>
                   ) : (
                     <div className="rounded-xl border border-[#168cff]/20 bg-[#168cff]/5 px-3 py-2.5">
                       <p className="text-[10px] uppercase tracking-[0.14em] text-[#168cff]">Graphic balance</p>
-                      <p className="mt-0.5 text-sm font-black text-zinc-900">{formatMoney(graphicTotal / 2)}</p>
-                      <p className="mt-0.5 text-[10px] text-zinc-500">Fixed at 50% of the listed project price.</p>
+                      <p className="mt-0.5 text-sm font-black text-bm-text">{formatMoney(graphicTotal / 2)}</p>
+                      <p className="mt-0.5 text-[10px] text-bm-text-subtle">Fixed at 50% of the listed project price.</p>
                     </div>
                   )}
                 </div>
@@ -140,10 +140,10 @@ export default function StudioPaymentOptions({
           <div>
             <div className="mb-2 flex items-center justify-between">
               <div>
-                <p className="text-xs font-black text-zinc-900">Payment</p>
-                <p className="mt-0.5 text-[10px] text-zinc-500">We start new work after a 50% deposit.</p>
+                <p className="text-xs font-black text-bm-text">Payment</p>
+                <p className="mt-0.5 text-[10px] text-bm-text-subtle">We start new work after a 50% deposit.</p>
               </div>
-              <span className="text-sm font-black text-zinc-900">{formatMoney(amountDue)}</span>
+              <span className="text-sm font-black text-bm-text">{formatMoney(amountDue)}</span>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
