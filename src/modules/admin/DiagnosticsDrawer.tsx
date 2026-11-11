@@ -84,7 +84,7 @@ export default function DiagnosticsDrawer({ onRecorded }: { onRecorded?: () => v
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-[80] bg-black/20" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-[80] bg-bm-overlay" onClick={() => setOpen(false)}>
           <aside
             className="absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto bg-bm-surface shadow-2xl"
             onClick={(event) => event.stopPropagation()}
