@@ -216,7 +216,7 @@ export default function ReferenceUploader({
       ) : null}
 
       {referenceVideo && referenceVideoPreviewUrl ? (
-        <div className="mt-2 overflow-hidden rounded-xl border border-bm-border bg-white">
+        <div className="mt-2 overflow-hidden rounded-xl border border-bm-border bg-bm-surface">
           <video src={referenceVideoPreviewUrl} controls preload="metadata" className="max-h-64 w-full bg-black" />
           <div className="flex items-center justify-between gap-3 px-3 py-2">
             <div className="min-w-0">
