@@ -176,7 +176,7 @@ export default function EventDetailsHero({
         <h1 className="max-w-4xl text-4xl font-black tracking-[-0.06em] leading-[0.94] text-bm-text sm:text-5xl lg:text-6xl">
           {event.event_title}
         </h1>
-        <p className="text-3xl font-black tracking-tight text-red-950 sm:text-4xl">{price}</p>
+        <p className="text-3xl font-black tracking-tight text-bm-brand sm:text-4xl">{price}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4">
