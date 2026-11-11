@@ -48,7 +48,7 @@ export default function SellerOrderPayoutPanel({ model }: SellerOrderPayoutPanel
         <Item icon={<Wallet className="h-4 w-4" />} label="Destination" value={model.payoutDestinationMask} />
       </div>
 
-      <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <div className="mt-4 rounded-2xl border border-bm-border bg-bm-warning-bg px-4 py-3 text-sm text-bm-text-muted">
         <div className="flex items-center gap-2 font-black">
           <ShieldAlert className="h-4 w-4" />
           Next step
