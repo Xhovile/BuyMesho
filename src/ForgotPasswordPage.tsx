@@ -131,13 +131,13 @@ export default function ForgotPasswordPage() {
     >
       <form onSubmit={handleReset} className="p-8 space-y-5 w-full">
         <div>
-          <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Email Address</label>
+          <label className="block text-xs font-bold text-bm-text-subtle dark:text-bm-text-subtle uppercase mb-1">Email Address</label>
           <input
             required
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+            className="w-full px-4 py-3 bg-bm-surface-muted dark:bg-bm-surface-subtle border border-bm-border dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
           />
         </div>
 
@@ -153,8 +153,8 @@ export default function ForgotPasswordPage() {
           }
           className={`w-full sm:w-auto min-w-[200px] py-3 px-6 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
             sending || cooldownSeconds > 0
-              ? "bg-zinc-500 text-white cursor-not-allowed"
-              : "bg-zinc-900 text-white hover:bg-zinc-800 active:scale-[0.98]"
+              ? "bg-bm-surface-muted0 text-bm-on-brand cursor-not-allowed"
+              : "bg-bm-brand text-bm-on-brand hover:bg-bm-brand-hover active:scale-[0.98]"
           }`}
         >
           {sending ? (
