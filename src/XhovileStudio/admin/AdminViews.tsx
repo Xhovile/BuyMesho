@@ -78,10 +78,10 @@ export default function AdminWorkspaceViews({
             </section>
 
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(300px,0.7fr)]">
-              <SectionCard title="Recent payments" eyebrow="Live activity" action={<span className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-400">Latest 250 records</span>}>
+              <SectionCard title="Recent payments" eyebrow="Live activity" action={<span className="text-[10px] font-black uppercase tracking-[0.16em] text-bm-text-subtle">Latest 250 records</span>}>
                 {snapshot?.payments.length ? (
-                  <div className="overflow-hidden rounded-2xl border border-zinc-200">
-                    <div className="hidden grid-cols-[minmax(150px,1.15fr)_minmax(140px,1fr)_auto_auto] gap-4 bg-zinc-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400 sm:grid sm:grid-cols-[minmax(170px,1.1fr)_minmax(200px,1fr)_auto_auto]">
+                  <div className="overflow-hidden rounded-2xl border border-bm-border">
+                    <div className="hidden grid-cols-[minmax(150px,1.15fr)_minmax(140px,1fr)_auto_auto] gap-4 bg-bm-surface-subtle px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-bm-text-subtle sm:grid sm:grid-cols-[minmax(170px,1.1fr)_minmax(200px,1fr)_auto_auto]">
                       <span>Customer</span>
                       <span>Service / Project</span>
                       <span className="text-right">Amount / Time</span>
@@ -108,10 +108,10 @@ export default function AdminWorkspaceViews({
                     <p className="mt-1 text-2xl font-black text-red-900">{summary.notificationFailed}</p>
                     <p className="mt-1 text-xs leading-5 text-red-800">Successful payments whose internal notification email needs attention.</p>
                   </div>
-                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">Webhook failures</p>
-                    <p className="mt-1 text-2xl font-black text-zinc-900">{summary.webhookFailed}</p>
-                    <p className="mt-1 text-xs leading-5 text-zinc-600">PayChangu webhook events recorded as failed.</p>
+                  <div className="rounded-2xl border border-bm-border bg-bm-surface-subtle p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-text-subtle">Webhook failures</p>
+                    <p className="mt-1 text-2xl font-black text-bm-text">{summary.webhookFailed}</p>
+                    <p className="mt-1 text-xs leading-5 text-bm-text-muted">PayChangu webhook events recorded as failed.</p>
                   </div>
                 </div>
               </SectionCard>
@@ -119,17 +119,17 @@ export default function AdminWorkspaceViews({
 
             <SectionCard title="Today" eyebrow="Confirmed payment activity">
               <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">Paid today</p>
-                  <p className="mt-2 text-2xl font-black text-zinc-950">{summary.todayPaidPayments}</p>
+                <div className="rounded-2xl border border-bm-border bg-bm-surface-subtle p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-text-subtle">Paid today</p>
+                  <p className="mt-2 text-2xl font-black text-bm-text">{summary.todayPaidPayments}</p>
                 </div>
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">Revenue today</p>
-                  <p className="mt-2 text-2xl font-black text-zinc-950">{formatMoney(summary.todayPaidRevenue)}</p>
+                <div className="rounded-2xl border border-bm-border bg-bm-surface-subtle p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-text-subtle">Revenue today</p>
+                  <p className="mt-2 text-2xl font-black text-bm-text">{formatMoney(summary.todayPaidRevenue)}</p>
                 </div>
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">Last payment activity</p>
-                  <p className="mt-2 text-sm font-black text-zinc-950">{formatDate(summary.lastPaymentAt)}</p>
+                <div className="rounded-2xl border border-bm-border bg-bm-surface-subtle p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-text-subtle">Last payment activity</p>
+                  <p className="mt-2 text-sm font-black text-bm-text">{formatDate(summary.lastPaymentAt)}</p>
                 </div>
               </div>
             </SectionCard>
@@ -141,11 +141,11 @@ export default function AdminWorkspaceViews({
             <SectionCard title="Payments" eyebrow="Studio payment ledger">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-bm-text-subtle" />
                   <input
                     value={paymentQuery}
                     onChange={(event) => setPaymentQuery(event.target.value)}
-                    className="w-full rounded-2xl border border-zinc-200 bg-white py-3 pl-10 pr-4 text-sm text-zinc-900 outline-none focus:border-zinc-400"
+                    className="w-full rounded-2xl border border-bm-border bg-bm-surface py-3 pl-10 pr-4 text-sm text-bm-text outline-none focus:border-bm-focus"
                     placeholder="Search customer, phone, email, reference, or description"
                   />
                 </div>
@@ -158,8 +158,8 @@ export default function AdminWorkspaceViews({
                       className={
                         "rounded-2xl px-3 py-2 text-xs font-black uppercase tracking-[0.12em] " +
                         (paymentStatusFilter === status
-                          ? "bg-zinc-950 text-white"
-                          : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50")
+                          ? "bg-bm-brand text-white"
+                          : "border border-bm-border bg-bm-surface text-bm-text-muted hover:bg-bm-surface-subtle")
                       }
                     >
                       {status}
@@ -168,7 +168,7 @@ export default function AdminWorkspaceViews({
                 </div>
               </div>
 
-              <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200">
+              <div className="mt-4 overflow-hidden rounded-2xl border border-bm-border">
                 {filteredPayments.length ? (
                   filteredPayments.map((payment) => (
                     <PaymentRow key={payment.id} payment={payment} onSelect={() => setSelectedPayment(payment)} />
@@ -177,7 +177,7 @@ export default function AdminWorkspaceViews({
                   <EmptyState label="No payments match the current filters." />
                 )}
               </div>
-              <p className="mt-3 text-[11px] text-zinc-400">Showing up to the latest 250 records from the Studio database.</p>
+              <p className="mt-3 text-[11px] text-bm-text-subtle">Showing up to the latest 250 records from the Studio database.</p>
             </SectionCard>
 
             {selectedPayment ? (
@@ -188,7 +188,7 @@ export default function AdminWorkspaceViews({
                   <button
                     type="button"
                     onClick={() => setSelectedPayment(null)}
-                    className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-black text-zinc-600 hover:bg-zinc-50"
+                    className="rounded-2xl border border-bm-border bg-bm-surface px-3 py-2 text-xs font-black text-bm-text-muted hover:bg-bm-surface-subtle"
                   >
                     Close
                   </button>
@@ -211,15 +211,15 @@ export default function AdminWorkspaceViews({
                   <DetailField label="Email notification" value={<StatusPill value={selectedPayment.successNotificationStatus} />} />
                 </div>
 
-                <div className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">Customer brief</p>
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-700">{selectedPayment.description}</p>
+                <div className="mt-3 rounded-2xl border border-bm-border bg-bm-surface-subtle p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-text-subtle">Customer brief</p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-bm-text-muted">{selectedPayment.description}</p>
                 </div>
 
                 {selectedPayment.referenceMedia.length ? (
-                  <div className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">References</p>
-                    <p className="mt-1 text-xs text-zinc-500">{selectedPayment.referenceMedia.length} file{selectedPayment.referenceMedia.length === 1 ? "" : "s"} attached by the customer.</p>
+                  <div className="mt-3 rounded-2xl border border-bm-border bg-bm-surface-subtle p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-text-subtle">References</p>
+                    <p className="mt-1 text-xs text-bm-text-subtle">{selectedPayment.referenceMedia.length} file{selectedPayment.referenceMedia.length === 1 ? "" : "s"} attached by the customer.</p>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       {selectedPayment.referenceMedia.map((media, index) => (
                         <a
@@ -227,7 +227,7 @@ export default function AdminWorkspaceViews({
                           href={media.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="group overflow-hidden rounded-xl border border-zinc-200 bg-white"
+                          className="group overflow-hidden rounded-xl border border-bm-border bg-bm-surface"
                         >
                           {media.kind === "image" ? (
                             <img
@@ -239,9 +239,9 @@ export default function AdminWorkspaceViews({
                           ) : (
                             <video src={media.url} controls preload="metadata" className="aspect-square w-full bg-black object-cover" />
                           )}
-                          <div className="border-t border-zinc-100 px-2.5 py-2">
-                            <p className="truncate text-[10px] font-bold text-zinc-800">{media.originalName}</p>
-                            <p className="mt-0.5 text-[9px] uppercase tracking-[0.12em] text-zinc-400">{media.kind}</p>
+                          <div className="border-t border-bm-border-subtle px-2.5 py-2">
+                            <p className="truncate text-[10px] font-bold text-bm-text">{media.originalName}</p>
+                            <p className="mt-0.5 text-[9px] uppercase tracking-[0.12em] text-bm-text-subtle">{media.kind}</p>
                           </div>
                         </a>
                       ))}
@@ -262,10 +262,10 @@ export default function AdminWorkspaceViews({
 
         {view === "customers" && snapshot ? (
           <SectionCard title="Customers" eyebrow="Customer activity">
-            <div className="overflow-x-auto rounded-2xl border border-zinc-200">
+            <div className="overflow-x-auto rounded-2xl border border-bm-border">
               <table className="min-w-full text-left">
-                <thead className="bg-zinc-50">
-                  <tr className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">
+                <thead className="bg-bm-surface-subtle">
+                  <tr className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-text-subtle">
                     <th className="px-4 py-3">Customer</th>
                     <th className="px-4 py-3">Contact</th>
                     <th className="px-4 py-3">Payments</th>
@@ -274,18 +274,18 @@ export default function AdminWorkspaceViews({
                     <th className="px-4 py-3">Last activity</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100">
+                <tbody className="divide-y divide-bm-border-subtle">
                   {snapshot.customers.length ? snapshot.customers.map((customer) => (
                     <tr key={customer.customerPhone} className="text-sm">
-                      <td className="px-4 py-3 font-black text-zinc-900">{customer.customerName}</td>
-                      <td className="px-4 py-3 text-zinc-600">
+                      <td className="px-4 py-3 font-black text-bm-text">{customer.customerName}</td>
+                      <td className="px-4 py-3 text-bm-text-muted">
                         <p>{customer.customerPhone}</p>
-                        <p className="mt-0.5 text-xs text-zinc-400">{customer.customerEmail || "No email"}</p>
+                        <p className="mt-0.5 text-xs text-bm-text-subtle">{customer.customerEmail || "No email"}</p>
                       </td>
-                      <td className="px-4 py-3">{customer.paymentCount} <span className="text-xs text-zinc-400">({customer.paidCount} paid)</span></td>
+                      <td className="px-4 py-3">{customer.paymentCount} <span className="text-xs text-bm-text-subtle">({customer.paidCount} paid)</span></td>
                       <td className="px-4 py-3">{customer.projectCount}</td>
                       <td className="px-4 py-3 font-black">{formatMoney(customer.paidAmount)}</td>
-                      <td className="px-4 py-3 text-xs text-zinc-500">{formatDate(customer.lastActivityAt)}</td>
+                      <td className="px-4 py-3 text-xs text-bm-text-subtle">{formatDate(customer.lastActivityAt)}</td>
                     </tr>
                   )) : (
                     <tr><td colSpan={6}><EmptyState label="No customers have been recorded yet." /></td></tr>
@@ -298,10 +298,10 @@ export default function AdminWorkspaceViews({
 
         {view === "projects" && snapshot ? (
           <SectionCard title="Projects" eyebrow="Project references">
-            <div className="overflow-x-auto rounded-2xl border border-zinc-200">
+            <div className="overflow-x-auto rounded-2xl border border-bm-border">
               <table className="min-w-full text-left">
-                <thead className="bg-zinc-50">
-                  <tr className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">
+                <thead className="bg-bm-surface-subtle">
+                  <tr className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-text-subtle">
                     <th className="px-4 py-3">Project</th>
                     <th className="px-4 py-3">Customer</th>
                     <th className="px-4 py-3">Payments</th>
@@ -310,18 +310,18 @@ export default function AdminWorkspaceViews({
                     <th className="px-4 py-3">Last activity</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100">
+                <tbody className="divide-y divide-bm-border-subtle">
                   {snapshot.projects.length ? snapshot.projects.map((project) => (
                     <tr key={`${project.projectReference}-${project.customerPhone}`} className="text-sm">
-                      <td className="px-4 py-3 font-mono text-xs font-black text-zinc-900">{project.projectReference}</td>
+                      <td className="px-4 py-3 font-mono text-xs font-black text-bm-text">{project.projectReference}</td>
                       <td className="px-4 py-3">
-                        <p className="font-black text-zinc-900">{project.customerName}</p>
-                        <p className="mt-0.5 text-xs text-zinc-400">{project.customerPhone}</p>
+                        <p className="font-black text-bm-text">{project.customerName}</p>
+                        <p className="mt-0.5 text-xs text-bm-text-subtle">{project.customerPhone}</p>
                       </td>
                       <td className="px-4 py-3">{project.paymentCount}</td>
                       <td className="px-4 py-3 font-black">{formatMoney(project.paidAmount)}</td>
                       <td className="px-4 py-3"><StatusPill value={project.latestStatus} /></td>
-                      <td className="px-4 py-3 text-xs text-zinc-500">{formatDate(project.lastActivityAt)}</td>
+                      <td className="px-4 py-3 text-xs text-bm-text-subtle">{formatDate(project.lastActivityAt)}</td>
                     </tr>
                   )) : (
                     <tr><td colSpan={6}><EmptyState label="No project references have been recorded yet." /></td></tr>
@@ -333,9 +333,9 @@ export default function AdminWorkspaceViews({
         ) : null}
 
         {view === "notifications" && snapshot ? (
-          <SectionCard title="Notifications" eyebrow="Internal payment email delivery" action={<span className="text-xs text-zinc-400">Recipient: {system?.notificationEmail}</span>}>
+          <SectionCard title="Notifications" eyebrow="Internal payment email delivery" action={<span className="text-xs text-bm-text-subtle">Recipient: {system?.notificationEmail}</span>}>
             {snapshot.notifications.length ? (
-              <div className="overflow-hidden rounded-2xl border border-zinc-200">
+              <div className="overflow-hidden rounded-2xl border border-bm-border">
                 {snapshot.notifications.map((payment) => (
                   <button
                     key={payment.id}
@@ -344,14 +344,14 @@ export default function AdminWorkspaceViews({
                       setSelectedPayment(payment);
                       selectView("payments");
                     }}
-                    className="grid w-full gap-3 border-b border-zinc-100 px-4 py-3 text-left last:border-b-0 hover:bg-zinc-50 sm:grid-cols-[minmax(180px,1fr)_auto_minmax(150px,0.8fr)] sm:items-center"
+                    className="grid w-full gap-3 border-b border-bm-border-subtle px-4 py-3 text-left last:border-b-0 hover:bg-bm-surface-subtle sm:grid-cols-[minmax(180px,1fr)_auto_minmax(150px,0.8fr)] sm:items-center"
                   >
                     <div>
-                      <p className="text-sm font-black text-zinc-900">{payment.customerName}</p>
-                      <p className="mt-0.5 text-xs text-zinc-500">{payment.paymentReference || payment.id}</p>
+                      <p className="text-sm font-black text-bm-text">{payment.customerName}</p>
+                      <p className="mt-0.5 text-xs text-bm-text-subtle">{payment.paymentReference || payment.id}</p>
                     </div>
                     <StatusPill value={payment.successNotificationStatus} />
-                    <div className="text-xs text-zinc-500">
+                    <div className="text-xs text-bm-text-subtle">
                       <p>{formatDate(payment.updatedAt)}</p>
                       {payment.successNotificationError ? <p className="mt-1 truncate text-red-600">{payment.successNotificationError}</p> : null}
                     </div>
@@ -374,10 +374,10 @@ export default function AdminWorkspaceViews({
 
         {view === "webhooks" && snapshot ? (
           <SectionCard title="Webhooks" eyebrow="PayChangu event audit">
-            <div className="overflow-x-auto rounded-2xl border border-zinc-200">
+            <div className="overflow-x-auto rounded-2xl border border-bm-border">
               <table className="min-w-full text-left">
-                <thead className="bg-zinc-50">
-                  <tr className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400">
+                <thead className="bg-bm-surface-subtle">
+                  <tr className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-text-subtle">
                     <th className="px-4 py-3">Event</th>
                     <th className="px-4 py-3">Payment reference</th>
                     <th className="px-4 py-3">Signature</th>
@@ -386,19 +386,19 @@ export default function AdminWorkspaceViews({
                     <th className="px-4 py-3">Error</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100">
+                <tbody className="divide-y divide-bm-border-subtle">
                   {snapshot.webhooks.length ? snapshot.webhooks.map((webhook) => (
                     <tr key={webhook.id} className="text-xs">
                       <td className="px-4 py-3">
-                        <p className="font-black text-zinc-900">{webhook.eventType || "Unknown event"}</p>
-                        <p className="mt-0.5 font-mono text-[10px] text-zinc-400">{webhook.providerEventId || "No provider event id"}</p>
+                        <p className="font-black text-bm-text">{webhook.eventType || "Unknown event"}</p>
+                        <p className="mt-0.5 font-mono text-[10px] text-bm-text-subtle">{webhook.providerEventId || "No provider event id"}</p>
                       </td>
-                      <td className="px-4 py-3 font-mono text-[10px] text-zinc-700">{webhook.paymentReference || "—"}</td>
+                      <td className="px-4 py-3 font-mono text-[10px] text-bm-text-muted">{webhook.paymentReference || "—"}</td>
                       <td className="px-4 py-3">
                         <StatusPill value={webhook.signatureValid ? "valid" : "invalid"} />
                       </td>
                       <td className="px-4 py-3"><StatusPill value={webhook.status} /></td>
-                      <td className="px-4 py-3 text-zinc-500">{formatDate(webhook.createdAt)}</td>
+                      <td className="px-4 py-3 text-bm-text-subtle">{formatDate(webhook.createdAt)}</td>
                       <td className="max-w-xs px-4 py-3 text-red-600">{webhook.error || "—"}</td>
                     </tr>
                   )) : (
@@ -421,11 +421,11 @@ export default function AdminWorkspaceViews({
                   ["Brevo email", system.brevoConfigured, "Email transport credentials are configured.", Mail],
                   ["Cloudinary media", system.cloudinaryConfigured, "Reference media storage credentials are configured.", FileText],
                 ] as Array<[string, boolean, string, LucideIcon]>).map(([label, ready, helper, Icon]) => (
-                  <div key={String(label)} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                  <div key={String(label)} className="rounded-2xl border border-bm-border bg-bm-surface-subtle p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4 text-zinc-500" />
-                        <p className="text-sm font-black text-zinc-900">{String(label)}</p>
+                        <Icon className="h-4 w-4 text-bm-text-subtle" />
+                        <p className="text-sm font-black text-bm-text">{String(label)}</p>
                       </div>
                       {Boolean(ready) ? (
                         <CheckCircle2 className="h-5 w-5 text-emerald-500" />
@@ -433,7 +433,7 @@ export default function AdminWorkspaceViews({
                         <AlertTriangle className="h-5 w-5 text-amber-500" />
                       )}
                     </div>
-                    <p className="mt-2 text-xs leading-5 text-zinc-500">{String(helper)}</p>
+                    <p className="mt-2 text-xs leading-5 text-bm-text-subtle">{String(helper)}</p>
                   </div>
                 ))}
               </div>
@@ -451,7 +451,7 @@ export default function AdminWorkspaceViews({
             </SectionCard>
 
             <SectionCard title="Monitoring notes" eyebrow="How to use this page">
-              <div className="space-y-3 text-sm leading-6 text-zinc-600">
+              <div className="space-y-3 text-sm leading-6 text-bm-text-muted">
                 <p>This control room is read-only. It does not approve, refund, resend, or otherwise mutate Studio payments.</p>
                 <p>Successful payment records are kept in the dedicated Xhovilé Studio PostgreSQL database rather than BuyMesho marketplace payment tables.</p>
                 <p>The page refreshes automatically while visible and can also be refreshed manually.</p>
@@ -459,9 +459,9 @@ export default function AdminWorkspaceViews({
             </SectionCard>
 
             <SectionCard title="Current endpoint" eyebrow="Admin API">
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="font-mono text-xs text-zinc-700">GET /api/admin/xhovile-studio</p>
-                <p className="mt-2 text-xs leading-5 text-zinc-500">Protected by BuyMesho authentication and backend admin authorization.</p>
+              <div className="rounded-2xl border border-bm-border bg-bm-surface-subtle p-4">
+                <p className="font-mono text-xs text-bm-text-muted">GET /api/admin/xhovile-studio</p>
+                <p className="mt-2 text-xs leading-5 text-bm-text-subtle">Protected by BuyMesho authentication and backend admin authorization.</p>
               </div>
             </SectionCard>
           </div>
