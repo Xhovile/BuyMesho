@@ -62,7 +62,7 @@ export default function ListingReviewSummary({ summary }: { summary: ListingRevi
       </div>
 
       {!ratingCount ? (
-        <div className="mt-5 rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm text-blue-700/70">
+        <div className="mt-5 rounded-2xl border border-blue-100 bg-bm-surface px-4 py-3 text-sm text-blue-700/70">
           No written reviews yet. Be the first to rate this listing.
         </div>
       ) : null}
