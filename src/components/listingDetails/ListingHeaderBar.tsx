@@ -35,7 +35,7 @@ export default function ListingHeaderBar({ subtitle, backPath, onBack }: Listing
               if (onBack) onBack();
               else navigateBackOrPath(backPath ?? EXPLORE_PATH);
             }}
-            className="rounded-2xl border border-zinc-900 bg-black px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+            className="rounded-2xl border border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-text hover:bg-bm-surface-muted"
           >
             <span className="inline-flex items-center gap-2">
               <ChevronLeft className="h-4 w-4" />
