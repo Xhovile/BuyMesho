@@ -237,7 +237,7 @@ export default function AdminDisputesPage() {
                 type="button"
                 onClick={() => setStatus(value)}
                 className={`rounded-full px-3 py-2 text-xs font-black capitalize ${
-                  status === value ? "bg-zinc-900 text-bm-success" : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted"
+                  status === value ? "bg-bm-brand text-bm-on-brand" : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted"
                 }`}
               >
                 {value === "active" ? "Active" : label(value)}
@@ -262,16 +262,16 @@ export default function AdminDisputesPage() {
                   onClick={() => openDetail(item.id)}
                   className={`block w-full border-l-4 p-4 text-left transition ${
                     selectedItem
-                      ? "border-zinc-950 bg-zinc-950 text-bm-success"
+                      ? "border-bm-brand bg-bm-brand text-bm-on-brand"
                       : "border-transparent text-bm-text dark:text-bm-text hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className={`text-sm font-black ${selectedItem ? "text-bm-success" : "text-bm-text dark:text-bm-text"}`}>
+                      <p className={`text-sm font-black ${selectedItem ? "text-bm-on-brand" : "text-bm-text dark:text-bm-text"}`}>
                         {money(item.refund_requested_amount ?? item.latest_amount_requested ?? item.total_amount, item.total_currency)}
                       </p>
-                      <p className={`mt-1 text-xs font-semibold ${selectedItem ? "text-zinc-300" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
+                      <p className={`mt-1 text-xs font-semibold ${selectedItem ? "text-bm-on-brand/80" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
                         Order {item.order_id}
                       </p>
                     </div>
@@ -280,19 +280,19 @@ export default function AdminDisputesPage() {
                         activeItem
                           ? "bg-bm-warning-bg text-bm-warning"
                           : selectedItem
-                            ? "bg-bm-surface/15 text-bm-success"
+                            ? "bg-bm-surface/15 text-bm-on-brand"
                             : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted"
                       }`}
                     >
                       {label(item.status)}
                     </span>
                   </div>
-                  <p className={`mt-3 line-clamp-2 text-sm ${selectedItem ? "text-zinc-200" : "text-bm-text-muted dark:text-bm-text-muted"}`}>
+                  <p className={`mt-3 line-clamp-2 text-sm ${selectedItem ? "text-bm-on-brand/90" : "text-bm-text-muted dark:text-bm-text-muted"}`}>
                     {item.latest_reason || "No reason recorded"}
                   </p>
                   <div
                     className={`mt-3 flex items-center justify-between gap-2 text-[11px] font-bold ${
-                      selectedItem ? "text-zinc-300" : "text-zinc-400 dark:text-bm-text-subtle"
+                      selectedItem ? "text-bm-on-brand/80" : "text-zinc-400 dark:text-bm-text-subtle"
                     }`}
                   >
                     <span>
@@ -451,7 +451,7 @@ export default function AdminDisputesPage() {
                       onChange={(event) => setNote(event.target.value)}
                       rows={3}
                       placeholder="Decision or execution note…"
-                      className="mt-4 w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-3 text-sm outline-none focus:border-zinc-400"
+                      className="mt-4 w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-3 text-sm outline-none focus:border-bm-focus"
                     />
                     <div className="mt-4 flex flex-wrap gap-2">
                       {effectiveStatus === "open" ? (
@@ -459,7 +459,7 @@ export default function AdminDisputesPage() {
                           type="button"
                           disabled={busy || !note.trim()}
                           onClick={() => void act("review")}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-bm-success disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand disabled:opacity-50"
                         >
                           <RefreshCw className="h-4 w-4" />
                           Start review
@@ -508,7 +508,7 @@ export default function AdminDisputesPage() {
                           type="button"
                           disabled={busy || !note.trim()}
                           onClick={() => void act("reject")}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-danger disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-2xl border border-bm-danger/35 bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-danger disabled:opacity-50"
                         >
                           <XCircle className="h-4 w-4" />
                           Reject dispute
