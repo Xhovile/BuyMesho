@@ -53,21 +53,21 @@ export default function ReportListingModal({ listingId, onClose }: Props) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-bm-overlay backdrop-blur-sm"
       />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-lg bg-bm-surface rounded-3xl shadow-2xl overflow-hidden"
       >
-        <div className="p-6 border-b border-zinc-100 dark:border-bm-border-subtle flex items-center justify-between">
+        <div className="p-6 border-b border-bm-border-subtle dark:border-bm-border-subtle flex items-center justify-between">
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-600" />
             <div>
-              <h2 className="text-xl font-extrabold text-zinc-900 dark:text-bm-text">Report Listing</h2>
-              <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase tracking-widest mt-1">
+              <h2 className="text-xl font-extrabold text-bm-text dark:text-bm-text">Report Listing</h2>
+              <p className="text-xs font-bold text-bm-text-subtle dark:text-bm-text-subtle uppercase tracking-widest mt-1">
                 Tell us what is wrong
               </p>
             </div>
@@ -75,7 +75,7 @@ export default function ReportListingModal({ listingId, onClose }: Props) {
 
           <button
             onClick={onClose}
-            className="p-2 hover:bg-zinc-100 dark:hover:bg-bm-surface-muted rounded-full transition-colors"
+            className="p-2 hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -96,7 +96,7 @@ export default function ReportListingModal({ listingId, onClose }: Props) {
       <button
         type="button"
         onClick={onClose}
-        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors"
+        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-bm-on-brand text-sm font-bold transition-colors"
       >
         Close
       </button>
@@ -107,7 +107,7 @@ export default function ReportListingModal({ listingId, onClose }: Props) {
           {!successMessage && (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">
+                <label className="block text-xs font-bold text-bm-text-subtle dark:text-bm-text-subtle uppercase mb-1">
                   Reason
                 </label>
                 <input
@@ -115,21 +115,21 @@ export default function ReportListingModal({ listingId, onClose }: Props) {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="e.g. Scam, fake item, abusive content"
-                  className="w-full px-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                  className="w-full px-4 py-3 bg-bm-surface-muted dark:bg-bm-surface-subtle border border-bm-border dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
                   required
                   disabled={sending}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">
+                <label className="block text-xs font-bold text-bm-text-subtle dark:text-bm-text-subtle uppercase mb-1">
                   Extra Details (Optional)
                 </label>
                 <textarea
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
                   placeholder="Describe the issue clearly..."
-                  className="w-full px-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-28 resize-none"
+                  className="w-full px-4 py-3 bg-bm-surface-muted dark:bg-bm-surface-subtle border border-bm-border dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-28 resize-none"
                   disabled={sending}
                 />
               </div>
@@ -137,7 +137,7 @@ export default function ReportListingModal({ listingId, onClose }: Props) {
               <button
                 type="submit"
                 disabled={sending}
-                className="w-full bg-zinc-900 text-white py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 disabled:bg-zinc-300 disabled:hover:bg-zinc-300 disabled:cursor-not-allowed"
+                className="w-full bg-bm-brand text-bm-on-brand py-3 rounded-xl font-bold hover:bg-bm-brand-hover transition-colors flex items-center justify-center gap-2 disabled:bg-bm-surface-raised disabled:hover:bg-bm-surface-raised disabled:cursor-not-allowed"
               >
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Report"}
               </button>
