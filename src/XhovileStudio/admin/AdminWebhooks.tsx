@@ -10,9 +10,9 @@ function formatDate(value: string | null | undefined) {
 
 function statusClasses(status: string) {
   const normalized = status.toLowerCase();
-  if (normalized === "paid" || normalized === "processed" || normalized === "sent" || normalized === "valid") return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  if (normalized === "pending" || normalized === "received" || normalized === "sending") return "border-amber-200 bg-amber-50 text-amber-700";
-  if (normalized === "failed" || normalized === "refunded" || normalized === "invalid") return "border-red-200 bg-red-50 text-red-700";
+  if (normalized === "paid" || normalized === "processed" || normalized === "sent" || normalized === "valid") return "border-bm-success/25 bg-bm-success-bg text-bm-success";
+  if (normalized === "pending" || normalized === "received" || normalized === "sending") return "border-bm-warning/25 bg-bm-warning-bg text-bm-warning";
+  if (normalized === "failed" || normalized === "refunded" || normalized === "invalid") return "border-bm-danger/25 bg-bm-danger-bg text-bm-danger";
   return "border-bm-border bg-bm-surface-muted text-bm-text-muted";
 }
 
@@ -47,7 +47,7 @@ export default function AdminWebhooks({ webhooks }: { webhooks: AdminWebhook[] }
                 <td className="px-4 py-3"><StatusPill value={webhook.signatureValid ? "valid" : "invalid"} /></td>
                 <td className="px-4 py-3"><StatusPill value={webhook.status} /></td>
                 <td className="px-4 py-3 text-bm-text-subtle">{formatDate(webhook.createdAt)}</td>
-                <td className="max-w-xs px-4 py-3 text-red-600">{webhook.error || "—"}</td>
+                <td className="max-w-xs px-4 py-3 text-bm-danger">{webhook.error || "—"}</td>
               </tr>
             )) : <tr><td colSpan={6}><EmptyState label="No Studio webhook events have been recorded yet." /></td></tr>}
           </tbody>
