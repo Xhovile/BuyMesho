@@ -11,9 +11,9 @@ function formatDate(value: string | null | undefined, includeTime = true) {
 
 function statusClasses(status: string) {
   const normalized = status.toLowerCase();
-  if (normalized === "paid" || normalized === "processed" || normalized === "sent") return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  if (normalized === "pending" || normalized === "received" || normalized === "sending") return "border-amber-200 bg-amber-50 text-amber-700";
-  if (normalized === "failed" || normalized === "refunded") return "border-red-200 bg-red-50 text-red-700";
+  if (normalized === "paid" || normalized === "processed" || normalized === "sent") return "border-bm-success/25 bg-bm-success-bg text-bm-success";
+  if (normalized === "pending" || normalized === "received" || normalized === "sending") return "border-bm-warning/25 bg-bm-warning-bg text-bm-warning";
+  if (normalized === "failed" || normalized === "refunded") return "border-bm-danger/25 bg-bm-danger-bg text-bm-danger";
   return "border-bm-border bg-bm-surface-muted text-bm-text-muted";
 }
 
@@ -118,7 +118,7 @@ export default function AdminPayments({
           </div>
           <div className="mt-3 rounded-2xl border border-bm-border bg-bm-surface-subtle p-4"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-text-subtle">Customer brief</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-bm-text-muted">{selectedPayment.description}</p></div>
           {selectedPayment.referenceMedia.length ? <div className="mt-3 rounded-2xl border border-bm-border bg-bm-surface-subtle p-4"><p className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-text-subtle">References</p><p className="mt-1 text-xs text-bm-text-subtle">{selectedPayment.referenceMedia.length} file{selectedPayment.referenceMedia.length === 1 ? "" : "s"} attached by the customer.</p><div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{selectedPayment.referenceMedia.map((media,index)=><a key={media.url+"-"+index} href={media.url} target="_blank" rel="noreferrer" className="group overflow-hidden rounded-xl border border-bm-border bg-bm-surface">{media.kind === "image" ? <img src={media.url} alt={media.originalName || "Reference"} className="aspect-square w-full object-cover transition group-hover:scale-[1.02]" loading="lazy" /> : <video src={media.url} controls preload="metadata" className="aspect-square w-full bg-black object-cover" />}<div className="border-t border-bm-border-subtle px-2.5 py-2"><p className="truncate text-[10px] font-bold text-bm-text">{media.originalName}</p><p className="mt-0.5 text-[9px] uppercase tracking-[0.12em] text-bm-text-subtle">{media.kind}</p></div></a>)}</div></div> : null}
-          {selectedPayment.successNotificationError ? <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><p className="font-black">Notification error</p><p className="mt-1 whitespace-pre-wrap">{selectedPayment.successNotificationError}</p></div> : null}
+          {selectedPayment.successNotificationError ? <div className="mt-3 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg p-4 text-sm text-bm-danger"><p className="font-black">Notification error</p><p className="mt-1 whitespace-pre-wrap">{selectedPayment.successNotificationError}</p></div> : null}
         </SectionCard>
       ) : null}
     </div>
