@@ -122,7 +122,7 @@ export default function FormDropdown({
     "w-full pl-10 pr-4 py-2.5 bg-bm-surface-subtle dark:bg-bm-surface-subtle border border-bm-border dark:border-bm-border rounded-xl text-sm text-bm-text-muted dark:text-bm-text-muted placeholder:text-bm-text-subtle dark:placeholder:text-bm-text-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-bm-border";
   const listWrap = "max-h-64 overflow-y-auto p-2";
   const itemBase = "w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors";
-  const activeItem = "bg-bm-brand text-white";
+  const activeItem = "bg-bm-brand text-bm-on-brand";
   const inactiveItem = "text-bm-text-muted dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted";
 
   const menu = open && typeof document !== "undefined" ? (
