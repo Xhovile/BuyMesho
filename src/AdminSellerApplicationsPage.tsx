@@ -91,15 +91,15 @@ export default function AdminSellerApplicationsPage() {
     finally { setUpdatingId(null); }
   };
 
-  const statusBadgeClass = (status: SellerApplicationStatus) => status === "approved" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : status === "rejected" ? "bg-red-50 text-red-700 border border-red-200" : "bg-amber-50 text-amber-700 border border-amber-200";
-  const documentLink = (label: string, url: string | null) => url ? <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">View {label}</a> : <span>—</span>;
+  const statusBadgeClass = (status: SellerApplicationStatus) => status === "approved" ? "bg-bm-success-bg text-bm-success border border-bm-success/35" : status === "rejected" ? "bg-bm-danger-bg text-bm-danger border border-bm-danger/35" : "bg-bm-warning-bg text-bm-warning border border-bm-warning/35";
+  const documentLink = (label: string, url: string | null) => url ? <a href={url} target="_blank" rel="noopener noreferrer" className="text-bm-brand hover:underline break-all">View {label}</a> : <span>—</span>;
 
   return (
     <AdminWorkspaceLayout title="Seller applications" description="Review pending, approved, and rejected seller onboarding requests." onRefresh={() => void fetchApplications()}>
       <div className="space-y-6">
         <header className="sticky top-0 z-40 border-b border-bm-border bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-            <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex items-center gap-2.5 min-w-0"><div className="w-10 h-10 bg-red-900 rounded-2xl flex items-center justify-center text-bm-on-brand font-extrabold text-xl shadow-lg shadow-red-900/20">B</div><div className="text-left"><p className="text-lg font-extrabold tracking-tight"><span className="text-red-900">Buy</span><span className="text-bm-text-muted dark:text-bm-text-muted">Mesho</span></p><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Seller applications</p></div></button>
+            <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex items-center gap-2.5 min-w-0"><div className="w-10 h-10 bg-bm-brand rounded-2xl flex items-center justify-center text-bm-on-brand font-extrabold text-xl shadow-lg shadow-bm-brand/20">B</div><div className="text-left"><p className="text-lg font-extrabold tracking-tight"><span className="text-bm-brand">Buy</span><span className="text-bm-text-muted dark:text-bm-text-muted">Mesho</span></p><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Seller applications</p></div></button>
             <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="px-4 py-2.5 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface text-sm font-bold hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted items-center gap-2 inline-flex"><ChevronLeft className="w-4 h-4" />Back</button>
           </div>
         </header>
