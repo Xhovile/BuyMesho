@@ -186,7 +186,7 @@ function statusBadge(status: string) {
     case "cancelled":
       return "border-bm-danger/35 bg-bm-danger-bg text-bm-danger";
     case "pending":
-      return "border-bm-border bg-bm-surface-muted text-bm-text-muted";
+      return "border-bm-warning/35 bg-bm-warning-bg text-bm-warning";
     default:
       return "border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-muted dark:text-bm-text-muted";
   }
