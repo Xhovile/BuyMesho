@@ -54,7 +54,7 @@ export default function PaymentsHubPage() {
                   className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-bold text-bm-text dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
                   aria-label={`Open ${action.label}`}
                 >
-                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${action.iconBg} text-bm-on-brand`}>
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${action.iconBg} ${action.label === "Disputes" ? "text-bm-text" : "text-bm-on-brand"}`}>
                     <action.icon className="h-4 w-4" />
                   </span>
                   <span>{action.label}</span>
