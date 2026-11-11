@@ -67,20 +67,20 @@ function buildTimeline(payout: PayoutRecord): TimelineStep[] {
 }
 
 function StepIcon({ state }: { state: TimelineStepState }) {
-  if (state === 'done') return <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
-  if (state === 'warning') return <CircleAlert className="h-4 w-4 text-amber-600" />;
-  if (state === 'active') return <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />;
+  if (state === 'done') return <CheckCircle2 className="h-4 w-4 text-bm-success" />;
+  if (state === 'warning') return <CircleAlert className="h-4 w-4 text-bm-warning" />;
+  if (state === 'active') return <Loader2 className="h-4 w-4 animate-spin text-bm-brand" />;
   return <Clock3 className="h-4 w-4 text-bm-text-subtle" />;
 }
 
 function StepLine({ state }: { state: TimelineStepState }) {
   const classes =
     state === 'done'
-      ? 'bg-emerald-500'
+      ? 'bg-bm-success'
       : state === 'warning'
-        ? 'bg-amber-500'
+        ? 'bg-bm-warning'
         : state === 'active'
-          ? 'bg-indigo-500'
+          ? 'bg-bm-brand'
           : 'bg-bm-border';
 
   return <div className={`h-full w-px ${classes}`} />;
