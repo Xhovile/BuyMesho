@@ -149,7 +149,7 @@ function SellerRatingBlock({
     <div className="mt-6 border-t border-bm-border dark:border-bm-border pt-5">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Ratings</p>
+          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">Ratings</p>
           <div className="mt-2 flex items-center gap-3 flex-wrap">
             <span className="text-4xl font-black tracking-tight text-bm-text dark:text-bm-text">
               {normalized.hasRatings ? normalized.averageRating.toFixed(1) : "—"}
@@ -187,7 +187,7 @@ function SellerRatingBlock({
       )}
 
       <div className="mt-5 border-t border-bm-border dark:border-bm-border pt-4">
-        <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">Your rating</p>
+        <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-bm-text-subtle dark:text-bm-text-subtle">Your rating</p>
         {!isAuthenticated ? (
           <p className="mt-2 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Log in to leave a seller rating.</p>
         ) : !canRate ? (
@@ -203,7 +203,7 @@ function SellerRatingBlock({
                     type="button"
                     onClick={() => void onRate(star)}
                     disabled={ratingSubmitting}
-                    className={`p-1 rounded-md ${active ? "text-amber-500" : "text-zinc-300"} ${
+                    className={`p-1 rounded-md ${active ? "text-amber-500" : "text-bm-text-subtle"} ${
                       ratingSubmitting ? "opacity-60" : "hover:text-amber-500"
                     }`}
                     aria-label={`Rate ${star} star${star === 1 ? "" : "s"}`}
@@ -517,7 +517,7 @@ export default function SellerProfilePage() {
                         type="button"
                         onClick={() => void handleMessageSeller()}
                         disabled={messageLoading}
-                        className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-extrabold text-bm-on-brand shadow-sm transition hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {messageLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
                         {messageLoading ? "Opening…" : "Message Seller"}
@@ -565,12 +565,12 @@ export default function SellerProfilePage() {
             <section className="mt-6 space-y-4">
               <div className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm">
                 <div className="flex items-center gap-3 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3">
-                  <Search className="w-4 h-4 text-zinc-400 dark:text-bm-text-subtle" />
+                  <Search className="w-4 h-4 text-bm-text-subtle dark:text-bm-text-subtle" />
                   <input
                     value={listingSearch}
                     onChange={(e) => setListingSearch(e.target.value)}
                     placeholder="Search seller listings"
-                    className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-400"
+                    className="w-full bg-transparent text-sm outline-none placeholder:text-bm-text-subtle"
                   />
                 </div>
               </div>
