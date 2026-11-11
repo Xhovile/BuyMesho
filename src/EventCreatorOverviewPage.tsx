@@ -315,7 +315,7 @@ function TransactionHistorySection({ events }: { events: DashboardEvent[] }) {
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-bm-border dark:border-bm-border">
         <div className="max-h-[540px] min-w-[940px] overflow-auto">
-          <table className="w-full divide-y divide-zinc-200 dark:divide-bm-border text-left text-sm">
+          <table className="w-full divide-y divide-bm-border dark:divide-bm-border text-left text-sm">
             <thead className="sticky top-0 bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-subtle dark:text-bm-text-subtle">
               <tr>
                 <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Settlement</th>
@@ -325,7 +325,7 @@ function TransactionHistorySection({ events }: { events: DashboardEvent[] }) {
                 <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Updated</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-bm-border-subtle bg-bm-surface">
+            <tbody className="divide-y divide-bm-border-subtle dark:divide-bm-border-subtle bg-bm-surface">
               {events.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-6 text-bm-text-subtle dark:text-bm-text-subtle">
@@ -619,7 +619,7 @@ export default function EventCreatorOverviewPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-zinc-200 dark:divide-bm-border text-left">
+              <table className="min-w-full divide-y divide-bm-border dark:divide-bm-border text-left">
                 <thead className="bg-bm-surface-muted dark:bg-bm-surface-subtle text-[11px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">
                   <tr>
                     <th className="px-4 py-3">Event</th>
@@ -632,7 +632,7 @@ export default function EventCreatorOverviewPage() {
                     <th className="px-4 py-3">Last updated</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-bm-border-subtle bg-bm-surface text-sm">
+                <tbody className="divide-y divide-bm-border-subtle dark:divide-bm-border-subtle bg-bm-surface text-sm">
                   {filteredEvents.map((event) => (
                     <tr key={event.id} className="align-top hover:bg-bm-surface-muted/50">
                       <td className="px-4 py-4">
