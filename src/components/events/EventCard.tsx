@@ -89,7 +89,7 @@ export function EventCard({ item }: { item: EventCardItem }) {
   const posterAlt = getPosterAlt(item);
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-bm-surface ring-1 ring-zinc-200/90 shadow-sm text-left transition-shadow hover:shadow-md">
+    <div className="overflow-hidden rounded-2xl bg-bm-surface ring-1 ring-bm-border/90 shadow-sm text-left transition-shadow hover:shadow-md">
       <a
         href={EVENTS_PATH + "?event=" + encodeURIComponent(String(item.id))}
         onClick={(event) => {
