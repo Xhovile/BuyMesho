@@ -254,7 +254,7 @@ export default function EditListingModal({
     const fieldError = editFieldErrors[field.key];
     const inputClass = `w-full px-4 py-2 bg-bm-surface-muted border rounded-xl outline-none ${
       fieldError
-        ? "border-red-500 focus:ring-2 focus:ring-red-200"
+        ? "border-bm-danger focus:ring-2 focus:ring-bm-danger/20"
         : "border-bm-border focus:ring-2 focus:ring-primary/20"
     }`;
 
@@ -266,7 +266,7 @@ export default function EditListingModal({
             editSpecFieldRefs.current[field.key] = el;
           }}
         >
-          <div className={fieldError ? "rounded-xl ring-2 ring-red-200" : ""}>
+          <div className={fieldError ? "rounded-xl ring-2 ring-bm-danger/20" : ""}>
             <FormDropdown
               label={labelText}
               value={value as string}
@@ -276,7 +276,7 @@ export default function EditListingModal({
             />
           </div>
           {fieldError ? (
-            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+            <p className="mt-1 text-xs text-bm-danger">{fieldError}</p>
           ) : null}
           {field.helpText ? (
             <p className="mt-1 text-xs text-bm-text-subtle">{field.helpText}</p>
@@ -303,7 +303,7 @@ export default function EditListingModal({
             placeholder={field.placeholder || ""}
           />
           {fieldError ? (
-            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+            <p className="mt-1 text-xs text-bm-danger">{fieldError}</p>
           ) : null}
           {field.helpText ? (
             <p className="mt-1 text-xs text-bm-text-subtle">{field.helpText}</p>
@@ -327,7 +327,7 @@ export default function EditListingModal({
           </label>
           <div
             className={`grid grid-cols-3 gap-2 rounded-xl ${
-              fieldError ? "ring-2 ring-red-200 p-1" : ""
+              fieldError ? "ring-2 ring-bm-danger/20 p-1" : ""
             }`}
           >
             <button
@@ -365,7 +365,7 @@ export default function EditListingModal({
             </button>
           </div>
           {fieldError ? (
-            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+            <p className="mt-1 text-xs text-bm-danger">{fieldError}</p>
           ) : null}
           {field.helpText ? (
             <p className="mt-1 text-xs text-bm-text-subtle">{field.helpText}</p>
@@ -389,7 +389,7 @@ export default function EditListingModal({
           </label>
           <div
             className={`grid grid-cols-2 gap-2 rounded-xl border bg-bm-surface-muted p-3 ${
-              fieldError ? "border-red-500 ring-2 ring-red-200" : "border-bm-border"
+              fieldError ? "border-bm-danger ring-2 ring-bm-danger/20" : "border-bm-border"
             }`}
           >
             {(field.options || []).map((option: string) => {
@@ -424,7 +424,7 @@ export default function EditListingModal({
             })}
           </div>
           {fieldError ? (
-            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+            <p className="mt-1 text-xs text-bm-danger">{fieldError}</p>
           ) : null}
           {field.helpText ? (
             <p className="mt-1 text-xs text-bm-text-subtle">{field.helpText}</p>
@@ -457,7 +457,7 @@ export default function EditListingModal({
             placeholder={field.placeholder || ""}
           />
           {fieldError ? (
-            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+            <p className="mt-1 text-xs text-bm-danger">{fieldError}</p>
           ) : null}
           {field.helpText ? (
             <p className="mt-1 text-xs text-bm-text-subtle">{field.helpText}</p>
@@ -484,7 +484,7 @@ export default function EditListingModal({
           placeholder={field.placeholder || ""}
         />
         {fieldError ? (
-          <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+          <p className="mt-1 text-xs text-bm-danger">{fieldError}</p>
         ) : null}
         {field.helpText ? (
           <p className="mt-1 text-xs text-bm-text-subtle">{field.helpText}</p>
@@ -809,12 +809,12 @@ onSave({
                   placeholder="Product name"
                   className={`w-full px-4 py-3 bg-bm-surface border rounded-xl outline-none ${
                     editFieldErrors.name
-                      ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                      ? "border-bm-danger focus:ring-2 focus:ring-bm-danger/20"
                       : "border-bm-border focus:ring-2 focus:ring-primary/20"
                   }`}
                 />
                 {editFieldErrors.name ? (
-                  <p className="mt-1 text-xs text-red-600">{editFieldErrors.name}</p>
+                  <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.name}</p>
                 ) : null}
               </div>
 
@@ -833,12 +833,12 @@ onSave({
                     placeholder="Price"
                     className={`w-full px-4 py-3 bg-bm-surface border rounded-xl outline-none ${
                       editFieldErrors.price
-                        ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                        ? "border-bm-danger focus:ring-2 focus:ring-bm-danger/20"
                         : "border-bm-border focus:ring-2 focus:ring-primary/20"
                     }`}
                   />
                   {editFieldErrors.price ? (
-                    <p className="mt-1 text-xs text-red-600">{editFieldErrors.price}</p>
+                    <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.price}</p>
                   ) : null}
                 </div>
               </div>
@@ -864,12 +864,12 @@ onSave({
                     }}
                     className={`w-full px-4 py-3 bg-bm-surface border rounded-xl outline-none ${
                       editFieldErrors.quantity
-                        ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                        ? "border-bm-danger focus:ring-2 focus:ring-bm-danger/20"
                         : "border-bm-border focus:ring-2 focus:ring-primary/20"
                     }`}
                   />
                   {editFieldErrors.quantity ? (
-                    <p className="mt-1 text-xs text-red-600">{editFieldErrors.quantity}</p>
+                    <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.quantity}</p>
                   ) : null}
                 </div>
 
@@ -887,12 +887,12 @@ onSave({
                     }}
                     className={`w-full px-4 py-3 bg-bm-surface border rounded-xl outline-none ${
                       editFieldErrors.sold_quantity
-                        ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                        ? "border-bm-danger focus:ring-2 focus:ring-bm-danger/20"
                         : "border-bm-border focus:ring-2 focus:ring-primary/20"
                     }`}
                   />
                   {editFieldErrors.sold_quantity ? (
-                    <p className="mt-1 text-xs text-red-600">{editFieldErrors.sold_quantity}</p>
+                    <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.sold_quantity}</p>
                   ) : null}
                 </div>
               </div>
@@ -949,12 +949,12 @@ onSave({
                   rows={4}
                   className={`w-full px-4 py-3 bg-bm-surface border rounded-xl focus:ring-2 outline-none resize-none ${
                     editFieldErrors.description
-                      ? "border-red-400 ring-2 ring-red-200"
+                      ? "border-bm-danger ring-2 ring-bm-danger/20"
                       : "border-bm-border focus:ring-primary/20"
                   }`}
                 />
                 {editFieldErrors.description ? (
-                  <p className="mt-1 text-xs text-red-600">{editFieldErrors.description}</p>
+                  <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.description}</p>
                 ) : null}
               </div>
             </div>
@@ -979,12 +979,12 @@ onSave({
         }}
         className={`w-full px-4 py-3 bg-bm-surface border rounded-xl outline-none ${
           editFieldErrors.original_price
-            ? "border-red-500 focus:ring-2 focus:ring-red-200"
+            ? "border-bm-danger focus:ring-2 focus:ring-bm-danger/20"
             : "border-bm-border focus:ring-2 focus:ring-primary/20"
         }`}
       />
       {editFieldErrors.original_price ? (
-        <p className="mt-1 text-xs text-red-600">{editFieldErrors.original_price}</p>
+        <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.original_price}</p>
       ) : null}
     </div>
 
@@ -1003,12 +1003,12 @@ onSave({
         }}
         className={`w-full px-4 py-3 bg-bm-surface border rounded-xl outline-none ${
           editFieldErrors.discount_percent
-            ? "border-red-500 focus:ring-2 focus:ring-red-200"
+            ? "border-bm-danger focus:ring-2 focus:ring-bm-danger/20"
             : "border-bm-border focus:ring-2 focus:ring-primary/20"
         }`}
       />
       {editFieldErrors.discount_percent ? (
-        <p className="mt-1 text-xs text-red-600">{editFieldErrors.discount_percent}</p>
+        <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.discount_percent}</p>
       ) : null}
     </div>
 
@@ -1047,7 +1047,7 @@ onSave({
                   <div>
                     <div
                       className={
-                        editFieldErrors.subcategory ? "rounded-xl ring-2 ring-red-200" : ""
+                        editFieldErrors.subcategory ? "rounded-xl ring-2 ring-bm-danger/20" : ""
                       }
                     >
                       <FormDropdown
@@ -1058,14 +1058,14 @@ onSave({
                       />
                     </div>
                     {editFieldErrors.subcategory ? (
-                      <p className="mt-1 text-xs text-red-600">{editFieldErrors.subcategory}</p>
+                      <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.subcategory}</p>
                     ) : null}
                   </div>
 
                   <div>
                     <div
                       className={
-                        editFieldErrors.item_type ? "rounded-xl ring-2 ring-red-200" : ""
+                        editFieldErrors.item_type ? "rounded-xl ring-2 ring-bm-danger/20" : ""
                       }
                     >
                       <FormDropdown
@@ -1076,7 +1076,7 @@ onSave({
                       />
                     </div>
                     {editFieldErrors.item_type ? (
-                      <p className="mt-1 text-xs text-red-600">{editFieldErrors.item_type}</p>
+                      <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.item_type}</p>
                     ) : null}
                   </div>
                 </div>
@@ -1164,12 +1164,12 @@ onSave({
                   disabled={uploadingMedia || form.photos.length >= 5}
                   className={`w-full rounded-xl border p-2 ${
                     editFieldErrors.photos
-                      ? "border-red-500 ring-2 ring-red-200"
+                      ? "border-bm-danger ring-2 ring-bm-danger/20"
                       : "border-bm-border"
                   }`}
                 />
                 {editFieldErrors.photos ? (
-                  <p className="mt-1 text-xs text-red-600">{editFieldErrors.photos}</p>
+                  <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.photos}</p>
                 ) : null}
               </div>
 
