@@ -234,7 +234,7 @@ export default function SellersDirectoryPage() {
 
         {error ? (
           <div className="mx-auto mt-0 max-w-7xl px-4">
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+            <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm font-medium text-bm-danger">
               {error}
             </div>
           </div>
@@ -296,7 +296,7 @@ export default function SellersDirectoryPage() {
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-bm-text-subtle">
                           <span>Joined {formatDate(card.joinedAt)}</span>
                           {card.isVerified ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 font-black text-blue-700">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-bm-success-bg px-2 py-1 font-black text-bm-success">
                               <ShieldCheck className="h-3 w-3" />
                               Verified
                             </span>
