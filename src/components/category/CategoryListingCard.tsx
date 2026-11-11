@@ -57,7 +57,7 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
     <button
       type="button"
       onClick={() => navigateToListingDetails(item.id)}
-      className="group w-full max-w-[235px] max-h-[340px] overflow-hidden bg-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
+      className="group w-full max-w-[235px] max-h-[340px] overflow-hidden bg-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-bm-focus/40"
       aria-label={`Open listing details for ${item.name}`}
     >
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted">
@@ -80,7 +80,7 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
               <span className="text-[10px] font-extrabold leading-none text-red-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">{offerValue}</span>
             </div>
           ) : (
-            <div className="rounded-xl border border-white/25 bg-bm-surface/90 dark:bg-bm-surface/90 px-2.5 py-1 text-xs font-extrabold text-zinc-950 dark:text-bm-text shadow-md backdrop-blur-md">
+            <div className="rounded-xl border border-white/25 bg-bm-surface/90 dark:bg-bm-surface/90 px-2.5 py-1 text-xs font-extrabold text-bm-text dark:text-bm-text shadow-md backdrop-blur-md">
               {formatMoney(Number(item.price) || 0)}
             </div>
           )}
