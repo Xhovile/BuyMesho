@@ -15,13 +15,13 @@ export function formatDate(value: string | null | undefined, includeTime = true)
 export function statusClasses(status: string) {
   const normalized = status.toLowerCase();
   if (normalized === "paid" || normalized === "processed" || normalized === "sent") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    return "border-bm-success/25 bg-bm-success-bg text-bm-success";
   }
   if (normalized === "pending" || normalized === "received" || normalized === "sending") {
-    return "border-amber-200 bg-amber-50 text-amber-700";
+    return "border-bm-warning/25 bg-bm-warning-bg text-bm-warning";
   }
   if (normalized === "failed" || normalized === "refunded") {
-    return "border-red-200 bg-red-50 text-red-700";
+    return "border-bm-danger/25 bg-bm-danger-bg text-bm-danger";
   }
   return "border-bm-border bg-bm-surface-muted text-bm-text-muted";
 }
