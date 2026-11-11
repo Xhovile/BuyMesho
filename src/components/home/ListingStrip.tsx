@@ -55,7 +55,7 @@ export default function ListingStrip({
         <button
           type="button"
           onClick={() => navigateToPath(viewMorePath)}
-          className="inline-flex items-center gap-2 rounded-2xl border border-red-950/15 bg-bm-surface px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-red-900 shadow-sm shadow-zinc-900/10 transition-all hover:-translate-y-0.5 hover:border-red-900/25 hover:shadow-md sm:px-4 sm:py-2.5 sm:text-sm sm:font-bold sm:normal-case sm:tracking-normal"
+          className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-surface px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-bm-brand shadow-sm shadow-bm-brand/10 transition-all hover:-translate-y-0.5 hover:border-bm-brand/30 hover:shadow-md sm:px-4 sm:py-2.5 sm:text-sm sm:font-bold sm:normal-case sm:tracking-normal"
         >
           <span className="sm:hidden">All</span>
           <span className="hidden sm:inline">Browse all</span>
@@ -94,10 +94,10 @@ export default function ListingStrip({
                   <p className="mt-1 line-clamp-2 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                     {item.description || item.university || "Tap to open the full listing details."}
                   </p>
-                  <p className="mt-2 text-sm font-bold text-red-900">
+                  <p className="mt-2 text-sm font-bold text-bm-brand">
                     MWK {Number(item.price).toLocaleString()}
                   </p>
-                  <div className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-red-900">
+                  <div className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-bm-brand">
                     Open listing <ArrowRight className="h-3.5 w-3.5" />
                   </div>
                 </div>
