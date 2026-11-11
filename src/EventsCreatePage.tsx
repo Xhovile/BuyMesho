@@ -838,7 +838,7 @@ export default function EventsCreatePage() {
                         disabled={posterUploading}
                         aria-label="Remove poster"
                         title="Remove poster"
-                        className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-black/60 text-bm-on-brand shadow-lg backdrop-blur-sm transition hover:bg-black/75 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-bm-overlay text-bm-on-brand shadow-lg backdrop-blur-sm transition hover:bg-bm-overlay disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <X className="h-4 w-4" />
                       </button>
