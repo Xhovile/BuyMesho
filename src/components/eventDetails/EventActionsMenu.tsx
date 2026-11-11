@@ -113,7 +113,7 @@ export default function EventActionsMenu({ eventId, eventTitle, shareUrl }: Even
             <Flag className="h-4 w-4" />
             Report event
           </button>
-          <button type="button" onClick={handleDelete} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50">
+          <button type="button" onClick={handleDelete} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-bm-danger hover:bg-bm-danger-bg">
             <Trash2 className="h-4 w-4" />
             Delete event
           </button>
