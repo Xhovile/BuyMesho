@@ -423,7 +423,7 @@ export default function FilterSection({
   const menuBase = "max-h-64 overflow-y-auto p-2";
   const itemBase =
     "w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors capitalize";
-  const activeItem = "bg-bm-brand text-white";
+  const activeItem = "bg-bm-brand text-bm-on-brand";
   const inactiveItem = "text-bm-text-muted dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted";
   const searchWrap = "p-2 border-b border-bm-border-subtle dark:border-bm-border-subtle bg-bm-surface";
   const searchInput =
@@ -521,8 +521,8 @@ export default function FilterSection({
           }}
           className={`relative hidden md:inline-flex items-center gap-2 h-[52px] px-5 rounded-2xl border text-sm font-extrabold transition-all shadow-sm ${
             showMoreFilters || activeExtraFilterCount > 0
-              ? "bg-bm-brand text-white border-bm-border hover:bg-bm-brand-hover"
-              : "bg-amber-50 text-bm-text dark:text-bm-text border-amber-200 hover:bg-amber-100"
+              ? "bg-bm-brand text-bm-on-brand border-bm-border hover:bg-bm-brand-hover"
+              : "bg-bm-surface-muted text-bm-text border-bm-border hover:bg-bm-surface-raised"
           }`}
         >
           <Funnel className="w-4 h-4" />
@@ -533,7 +533,7 @@ export default function FilterSection({
               className={`inline-flex items-center justify-center min-w-[22px] h-[22px] px-1 rounded-full text-[11px] font-black ${
                 showMoreFilters
                   ? "bg-bm-surface text-bm-text dark:text-bm-text"
-                  : "bg-bm-brand text-white"
+                  : "bg-bm-brand text-bm-on-brand"
               }`}
             >
               {activeExtraFilterCount}
