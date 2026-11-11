@@ -80,7 +80,7 @@ export default function PayoutDestinationForm({
   return (
     <div>
       {error ? (
-        <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+        <div className="mb-5 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm font-semibold text-bm-danger">
           {error}
         </div>
       ) : null}
@@ -166,7 +166,7 @@ export default function PayoutDestinationForm({
           disabled={loading || disabled}
           className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold transition disabled:opacity-60 ${
             value.isDefault
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              ? "border-bm-success/25 bg-bm-success-bg text-bm-success"
               : "border-bm-border bg-bm-surface text-bm-text-muted hover:bg-bm-surface-muted"
           }`}
         >
