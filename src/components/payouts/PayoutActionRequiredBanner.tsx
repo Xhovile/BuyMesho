@@ -148,10 +148,10 @@ export default function PayoutActionRequiredBanner({
   const Icon = content.icon;
   const toneClass =
     content.tone === "red"
-      ? "border-red-200 bg-red-50 text-red-900"
+      ? "border-bm-border bg-bm-danger-bg text-bm-danger"
       : content.tone === "amber"
-        ? "border-amber-200 bg-amber-50 text-amber-900"
-        : "border-emerald-200 bg-emerald-50 text-emerald-900";
+        ? "border-bm-border bg-bm-warning-bg text-bm-warning"
+        : "border-bm-border bg-bm-success-bg text-bm-success";
 
   return (
     <div
