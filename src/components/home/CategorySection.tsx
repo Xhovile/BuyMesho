@@ -26,12 +26,12 @@ const LOAD_MORE_COUNT = 4;
 function PreviewSkeleton() {
   return (
     <div className="snap-start shrink-0 w-[174px] bg-transparent sm:w-[260px]">
-      <div className="aspect-[4/3] animate-pulse rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted" />
+      <div className="aspect-[4/3] animate-pulse rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted" />
       <div className="space-y-3 px-1 py-4">
-        <div className="h-4 w-3/4 rounded-full bg-zinc-100 dark:bg-bm-surface-muted animate-pulse" />
-        <div className="h-3 w-full rounded-full bg-zinc-100 dark:bg-bm-surface-muted animate-pulse" />
-        <div className="h-3 w-5/6 rounded-full bg-zinc-100 dark:bg-bm-surface-muted animate-pulse" />
-        <div className="h-4 w-24 rounded-full bg-zinc-100 dark:bg-bm-surface-muted animate-pulse" />
+        <div className="h-4 w-3/4 rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted animate-pulse" />
+        <div className="h-3 w-full rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted animate-pulse" />
+        <div className="h-3 w-5/6 rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted animate-pulse" />
+        <div className="h-4 w-24 rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted animate-pulse" />
       </div>
     </div>
   );
@@ -94,7 +94,7 @@ const CategorySection: FC<CategorySectionProps> = ({
   const skeletonCount = isDesktopViewport ? 4 : 2;
 
   return (
-    <div className="group relative border-y border-zinc-200 dark:border-bm-border bg-gradient-to-b from-white to-zinc-50 py-4 sm:py-5">
+    <div className="group relative border-y border-bm-border dark:border-bm-border bg-gradient-to-b from-white to-zinc-50 py-4 sm:py-5">
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-900 via-red-700 to-amber-300 opacity-70" />
 
       <div className="flex items-start justify-between gap-3 px-4 sm:px-5 sm:gap-4">
@@ -102,7 +102,7 @@ const CategorySection: FC<CategorySectionProps> = ({
           <h3 className="text-[1rem] font-black tracking-tight text-zinc-950 dark:text-bm-text sm:text-2xl">
             {title}
           </h3>
-          <p className="mt-1.5 hidden text-sm leading-relaxed text-zinc-500 dark:text-bm-text-subtle sm:block">
+          <p className="mt-1.5 hidden text-sm leading-relaxed text-bm-text-subtle dark:text-bm-text-subtle sm:block">
             {description}
           </p>
         </div>
@@ -133,7 +133,7 @@ const CategorySection: FC<CategorySectionProps> = ({
             {visibleCount < listings.length ? (
               <div
                 ref={sentinelRef}
-                className="snap-start shrink-0 w-[174px] sm:w-[260px] rounded-2xl border border-dashed border-zinc-300 dark:border-bm-border bg-white/80 dark:bg-bm-surface/90 p-3 text-left text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle sm:p-4"
+                className="snap-start shrink-0 w-[174px] sm:w-[260px] rounded-2xl border border-dashed border-bm-border dark:border-bm-border bg-bm-surface/80 dark:bg-bm-surface/90 p-3 text-left text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle sm:p-4"
               >
                 Scroll to load more
               </div>
@@ -146,7 +146,7 @@ const CategorySection: FC<CategorySectionProps> = ({
         <button
           type="button"
           onClick={() => navigateToExploreWithCategory(categoryKey)}
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-950 bg-white px-5 py-3 text-sm font-extrabold text-zinc-950 dark:text-bm-text shadow-[inset_0_0_0_1px_#d4d4d8] transition-all hover:-translate-y-0.5 hover:bg-zinc-950 hover:text-white hover:shadow-[inset_0_0_0_1px_#ffffff]"
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-950 bg-bm-surface px-5 py-3 text-sm font-extrabold text-zinc-950 dark:text-bm-text shadow-[inset_0_0_0_1px_#d4d4d8] transition-all hover:-translate-y-0.5 hover:bg-zinc-950 hover:text-white hover:shadow-[inset_0_0_0_1px_#ffffff]"
         >
           View all
           <ArrowRight className="w-4 h-4" />
