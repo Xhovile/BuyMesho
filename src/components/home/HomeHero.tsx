@@ -39,10 +39,10 @@ export default function HomeHero({
   isSellerProfileLoading?: boolean;
 }) {
   return (
-    <section className="relative overflow-hidden border-b border-bm-border dark:border-bm-border bg-gradient-to-br from-zinc-100 via-zinc-100 to-white pb-10 pt-10 sm:pb-14 sm:pt-12">
+    <section className="relative overflow-hidden border-b border-bm-border dark:border-bm-border bg-gradient-to-br from-bm-surface-muted via-bm-surface-muted to-bm-surface pb-10 pt-10 sm:pb-14 sm:pt-12">
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
         <div className="absolute left-[68%] top-8 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-red-700/8 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-52 w-52 rounded-full bg-zinc-300/18 blur-3xl" />
+        <div className="absolute bottom-0 right-0 h-52 w-52 rounded-full bg-bm-surface-raised/20 blur-3xl" />
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
@@ -53,9 +53,9 @@ export default function HomeHero({
               A PUBLIC MARKETPLACE
             </div>
 
-            <h1 className="mt-6 text-5xl font-black leading-[0.92] tracking-[-0.065em] text-zinc-950 dark:text-bm-text sm:text-7xl lg:text-[5rem]">
+            <h1 className="mt-6 text-5xl font-black leading-[0.92] tracking-[-0.065em] text-bm-text dark:text-bm-text sm:text-7xl lg:text-[5rem]">
               <span className="block">Buy. Sell.</span>
-              <span className="mt-1 block text-red-800">Everything <span className="text-zinc-950 dark:text-bm-text">Online.</span></span>
+              <span className="mt-1 block text-red-800">Everything <span className="text-bm-text dark:text-bm-text">Online.</span></span>
             </h1>
 
             <p className="mt-5 max-w-xl text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted sm:text-base">
@@ -63,11 +63,11 @@ export default function HomeHero({
             </p>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3 md:mt-10 lg:mt-12 md:justify-start">
-              <button type="button" onClick={onBrowseMarket} className="inline-flex items-center justify-center gap-2 rounded-[1.05rem] bg-red-800 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(185,15,32,0.45)] ring-2 ring-red-700/30 ring-offset-2 ring-offset-white transition-all hover:-translate-y-0.5 hover:bg-red-900 hover:shadow-[0_20px_40px_-14px_rgba(185,15,32,0.5)] focus:outline-none">
+              <button type="button" onClick={onBrowseMarket} className="inline-flex items-center justify-center gap-2 rounded-[1.05rem] bg-red-800 px-5 py-3.5 text-sm font-extrabold text-bm-on-brand shadow-[0_16px_32px_-14px_rgba(185,15,32,0.45)] ring-2 ring-red-700/30 ring-offset-2 ring-offset-bm-surface transition-all hover:-translate-y-0.5 hover:bg-red-900 hover:shadow-[0_20px_40px_-14px_rgba(185,15,32,0.5)] focus:outline-none">
                 Browse Market
                 <ArrowRight className="h-4 w-4" />
               </button>
-              <button type="button" onClick={onSellItem} disabled={!onSellItem || isSellerProfileLoading} className="hidden items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_32px_-14px_rgba(0,0,0,0.45)] ring-2 ring-zinc-950/30 ring-offset-2 ring-offset-white transition-all hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_20px_40px_-14px_rgba(0,0,0,0.5)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex">
+              <button type="button" onClick={onSellItem} disabled={!onSellItem || isSellerProfileLoading} className="hidden items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand shadow-[0_16px_32px_-14px_rgba(0,0,0,0.45)] ring-2 ring-bm-focus ring-offset-2 ring-offset-bm-surface transition-all hover:-translate-y-0.5 hover:bg-bm-brand-hover hover:shadow-[0_20px_40px_-14px_rgba(0,0,0,0.5)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex">
                 <Plus className="h-4 w-4" />
                 <span>{isSellerProfileLoading ? "Loading..." : isSeller ? "List Item" : "Sell"}</span>
               </button>
@@ -78,7 +78,7 @@ export default function HomeHero({
             {heroCards.map((card) => (
               <article key={card.title} className={`absolute z-20 w-56 rounded-[1.65rem] border-2 p-5 shadow-[0_24px_65px_-20px_rgba(0,0,0,0.20),0_10px_25px_-12px_rgba(0,0,0,0.10)] backdrop-blur-sm sm:w-60 lg:w-64 ${card.tone} ${card.className}`}>
                 <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle/90">BuyMesho</span>
-                <h2 className="mt-5 text-xl font-black leading-tight tracking-[-0.04em] text-zinc-950 dark:text-bm-text">{card.title}</h2>
+                <h2 className="mt-5 text-xl font-black leading-tight tracking-[-0.04em] text-bm-text dark:text-bm-text">{card.title}</h2>
                 <p className="mt-2 text-sm leading-relaxed text-bm-text-muted/80">{card.description}</p>
               </article>
             ))}
