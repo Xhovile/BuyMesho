@@ -175,10 +175,10 @@ function PaymentForm() {
   return (
     <Shell>
       <header className="mb-5 text-center sm:mb-6">
-        <h1 className="text-xl font-black uppercase tracking-[0.28em] text-zinc-900 sm:text-2xl">
+        <h1 className="text-xl font-black uppercase tracking-[0.28em] text-bm-text sm:text-2xl">
           Service Payment
         </h1>
-        <p className="mx-auto mt-2 max-w-xl text-xs leading-5 text-zinc-500">
+        <p className="mx-auto mt-2 max-w-xl text-xs leading-5 text-bm-text-subtle">
           Choose what you need, confirm the amount due today, then continue to PayChangu.
         </p>
       </header>
@@ -189,10 +189,10 @@ function PaymentForm() {
             ? "border-[#168cff]/50"
             : theme === "red"
               ? "border-[#ff1d25]/50"
-              : "border-zinc-300"
+              : "border-bm-border"
         }`}
       >
-        <div className="grid grid-cols-3 gap-2 border-b border-zinc-200 p-2">
+        <div className="grid grid-cols-3 gap-2 border-b border-bm-border p-2">
           <ServiceChoice
             active={serviceType === "graphic_design"}
             color="blue"
@@ -222,21 +222,21 @@ function PaymentForm() {
         <div className="space-y-4 p-4 sm:p-5">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-zinc-500">Full name</span>
+              <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-bm-text-subtle">Full name</span>
               <input
                 value={customerName}
                 onChange={(event) => setCustomerName(event.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-[#fffdfa] px-3.5 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
+                className="w-full rounded-xl border border-bm-border bg-[#fffdfa] px-3.5 py-3 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
                 placeholder="Your name"
                 autoComplete="name"
               />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-zinc-500">Phone</span>
+              <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-bm-text-subtle">Phone</span>
               <input
                 value={customerPhone}
                 onChange={(event) => setCustomerPhone(event.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-[#fffdfa] px-3.5 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
+                className="w-full rounded-xl border border-bm-border bg-[#fffdfa] px-3.5 py-3 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
                 placeholder="0999 123 456"
                 autoComplete="tel"
               />
@@ -264,33 +264,33 @@ function PaymentForm() {
             onProjectReferenceChange={setProjectReference}
           />
 
-          <div className="rounded-xl border border-zinc-200 bg-[#fffdfa] p-3">
+          <div className="rounded-xl border border-bm-border bg-[#fffdfa] p-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-black text-zinc-900">Your brief</p>
-                <p className="mt-0.5 text-[10px] text-zinc-500">A sentence or two is enough.</p>
+                <p className="text-xs font-black text-bm-text">Your brief</p>
+                <p className="mt-0.5 text-[10px] text-bm-text-subtle">A sentence or two is enough.</p>
               </div>
-              <span className="text-[10px] text-zinc-700">Required</span>
+              <span className="text-[10px] text-bm-text-muted">Required</span>
             </div>
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              className="mt-2 min-h-16 w-full resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-700 focus:border-white/30"
+              className="mt-2 min-h-16 w-full resize-none rounded-xl border border-bm-border bg-white px-3 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-muted focus:border-white/30"
               placeholder={needsWebsite && !needsGraphic ? "e.g. One-page business website for my clothing brand." : "e.g. Poster for a campus event."}
             />
           </div>
 
           <ReferenceUploader onChange={setReferenceFiles} />
 
-          <details className="rounded-xl border border-zinc-200 bg-[#fffdfa]">
-            <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-bold text-zinc-400">
-              Email address <span className="font-normal text-zinc-600">(optional)</span>
+          <details className="rounded-xl border border-bm-border bg-[#fffdfa]">
+            <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-bold text-bm-text-subtle">
+              Email address <span className="font-normal text-bm-text-muted">(optional)</span>
             </summary>
-            <div className="border-t border-zinc-200 p-3">
+            <div className="border-t border-bm-border p-3">
               <input
                 value={customerEmail}
                 onChange={(event) => setCustomerEmail(event.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-[#fffdfa] px-3.5 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400"
+                className="w-full rounded-xl border border-bm-border bg-[#fffdfa] px-3.5 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
                 placeholder="you@example.com"
                 type="email"
                 autoComplete="email"
@@ -305,15 +305,15 @@ function PaymentForm() {
             </div>
           ) : null}
 
-          <div className="rounded-2xl border border-zinc-200 bg-[#f8f5f1] p-3">
+          <div className="rounded-2xl border border-bm-border bg-[#f8f5f1] p-3">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">Amount to pay now</p>
-                <p className="mt-1 text-2xl font-black text-zinc-950">{formatMoney(amountDue)}</p>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-bm-text-muted">Amount to pay now</p>
+                <p className="mt-1 text-2xl font-black text-bm-text">{formatMoney(amountDue)}</p>
               </div>
-              <div className="text-right text-[10px] text-zinc-500">
+              <div className="text-right text-[10px] text-bm-text-subtle">
                 <p>Project price</p>
-                <p className="mt-0.5 font-bold text-zinc-400">
+                <p className="mt-0.5 font-bold text-bm-text-subtle">
                   {paymentMode === "balance"
                     ? needsWebsite
                       ? "Website balance entered"
@@ -332,8 +332,8 @@ function PaymentForm() {
             onClick={() => void submit()}
           />
 
-          <div className="flex items-center justify-center gap-2.5 text-[10px] text-zinc-500">
-            <ShieldCheck className="h-3.5 w-3.5 text-zinc-500" />
+          <div className="flex items-center justify-center gap-2.5 text-[10px] text-bm-text-subtle">
+            <ShieldCheck className="h-3.5 w-3.5 text-bm-text-subtle" />
             <span>Secure payment by</span>
             <PayChanguLogo />
           </div>
