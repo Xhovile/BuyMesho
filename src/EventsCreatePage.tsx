@@ -214,7 +214,7 @@ function AppDropdown({
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-label={label}
-        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-left text-sm text-bm-text dark:text-bm-text outline-none transition hover:border-bm-border focus:border-bm-brand focus:ring-2 focus:ring-zinc-900/10"
+        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-left text-sm text-bm-text dark:text-bm-text outline-none transition hover:border-bm-border focus:border-bm-brand focus:ring-2 focus:ring-bm-focus/10"
       >
         <span className={selected ? "font-medium" : "text-bm-text-subtle dark:text-bm-text-subtle"}>{selected?.label || placeholder}</span>
         <ChevronDown className={`h-4 w-4 shrink-0 text-bm-text-subtle dark:text-bm-text-subtle transition-transform ${open ? "rotate-180" : ""}`} />
@@ -322,7 +322,7 @@ function TimePicker({ value, onChange }: { value: unknown; onChange: (nextValue:
 
 function RenderField({ field, value, error, onChange }: { field: EventSpecField; value: EventSpecValue; error?: string; onChange: (nextValue: EventSpecValue) => void }) {
   const baseClass =
-    "mt-2 w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm text-bm-text dark:text-bm-text outline-none transition focus:border-bm-brand focus:ring-2 focus:ring-zinc-900/10";
+    "mt-2 w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm text-bm-text dark:text-bm-text outline-none transition focus:border-bm-brand focus:ring-2 focus:ring-bm-focus/10";
 
   return (
     <label className="block">
@@ -688,12 +688,12 @@ export default function EventsCreatePage() {
             ].map(([key, label]) => (
               <label key={key} className="block">
                 <span className="text-sm font-bold text-bm-text dark:text-bm-text">{label}</span>
-                <input value={creatorForm[key as keyof typeof creatorForm]} onChange={(e) => setCreatorForm((current) => ({ ...current, [key]: e.target.value }))} className="mt-2 w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm outline-none focus:border-bm-brand focus:ring-2 focus:ring-zinc-900/10" />
+                <input value={creatorForm[key as keyof typeof creatorForm]} onChange={(e) => setCreatorForm((current) => ({ ...current, [key]: e.target.value }))} className="mt-2 w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm outline-none focus:border-bm-brand focus:ring-2 focus:ring-bm-focus/10" />
               </label>
             ))}
             <label className="block">
               <span className="text-sm font-bold text-bm-text dark:text-bm-text">Why are you publishing events?</span>
-              <textarea value={creatorForm.reason} onChange={(e) => setCreatorForm((current) => ({ ...current, reason: e.target.value }))} rows={4} className="mt-2 w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm outline-none focus:border-bm-brand focus:ring-2 focus:ring-zinc-900/10" />
+              <textarea value={creatorForm.reason} onChange={(e) => setCreatorForm((current) => ({ ...current, reason: e.target.value }))} rows={4} className="mt-2 w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm outline-none focus:border-bm-brand focus:ring-2 focus:ring-bm-focus/10" />
             </label>
           </div>
           {creatorError ? <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{creatorError}</div> : null}
