@@ -51,7 +51,7 @@ export default function StudioPaymentOptions({
 <>
           <div className="space-y-3">
               {needsGraphic ? (
-                <div className="rounded-xl border border-[#168cff]/25 bg-[#eef8ff] p-3">
+                <div className="rounded-xl border border-[#168cff]/25 bg-bm-surface-muted p-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#168cff]">Graphic Design</p>
@@ -74,13 +74,13 @@ export default function StudioPaymentOptions({
                     ) : null}
                   </div>
                   <p className="mt-2 text-[10px] text-bm-text-subtle">
-                    Project price: <span className="font-black text-white">{formatMoney(graphicTotal)}</span>
+                    Project price: <span className="font-black text-bm-text">{formatMoney(graphicTotal)}</span>
                   </p>
                 </div>
               ) : null}
 
               {needsWebsite ? (
-                <div className="rounded-xl border border-[#ff1d25]/25 bg-[#fff1f1] p-3">
+                <div className="rounded-xl border border-[#ff1d25]/25 bg-bm-surface-muted p-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#ff5b61]">Web Development</p>
@@ -106,7 +106,7 @@ export default function StudioPaymentOptions({
                   <input
                     value={projectReference}
                     onChange={(event) => onProjectReferenceChange(event.target.value)}
-                    className="w-full rounded-xl border border-bm-border bg-[#fffdfa] px-3 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
+                    className="w-full rounded-xl border border-bm-border bg-bm-surface px-3 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
                     placeholder="Project reference"
                   />
 
@@ -118,7 +118,7 @@ export default function StudioPaymentOptions({
                       <input
                         value={balanceAmount}
                         onChange={(event) => onBalanceAmountChange(event.target.value.replace(/[^0-9.]/g, ""))}
-                        className="w-full rounded-xl border border-bm-border bg-[#fffdfa] px-3 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
+                        className="w-full rounded-xl border border-bm-border bg-bm-surface px-3 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
                         placeholder="Enter website balance (MWK)"
                         inputMode="numeric"
                       />
@@ -127,7 +127,7 @@ export default function StudioPaymentOptions({
                       </p>
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-[#168cff]/20 bg-[#168cff]/5 px-3 py-2.5">
+                    <div className="rounded-xl border border-[#168cff]/20 bg-bm-surface-muted px-3 py-2.5">
                       <p className="text-[10px] uppercase tracking-[0.14em] text-[#168cff]">Graphic balance</p>
                       <p className="mt-0.5 text-sm font-black text-bm-text">{formatMoney(graphicTotal / 2)}</p>
                       <p className="mt-0.5 text-[10px] text-bm-text-subtle">Fixed at 50% of the listed project price.</p>
