@@ -35,17 +35,17 @@ function GuideSection({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-28 border-t border-zinc-200 py-12 sm:py-16 lg:py-20">
+    <section id={id} className="scroll-mt-28 border-t border-bm-border py-12 sm:py-16 lg:py-20">
       <div className="grid gap-5 sm:grid-cols-[96px_minmax(0,1fr)] sm:gap-8 lg:grid-cols-[132px_minmax(0,1fr)] lg:gap-10">
         <div className="pt-1">
           <p className="guide-chapter-number text-6xl leading-none sm:text-7xl lg:text-8xl">{number}</p>
         </div>
         <div className="max-w-5xl">
           <p className="mt-1 text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f] sm:text-base">{eyebrow}</p>
-          <h2 className="guide-display mt-2 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-zinc-950 sm:text-5xl lg:text-6xl">
+          <h2 className="guide-display mt-2 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-bm-text sm:text-5xl lg:text-6xl">
             {title}
           </h2>
-          <div className="mt-7 space-y-6 text-base leading-7 text-zinc-700 sm:mt-9 sm:text-[17px] sm:leading-8">{children}</div>
+          <div className="mt-7 space-y-6 text-base leading-7 text-bm-text-muted sm:mt-9 sm:text-[17px] sm:leading-8">{children}</div>
         </div>
       </div>
     </section>
@@ -66,12 +66,12 @@ function FlowRow({
       ? "border-blue-200 bg-blue-50/60"
       : tone === "red"
         ? "border-red-200 bg-red-50/60"
-        : "border-zinc-200 bg-white";
+        : "border-bm-border bg-bm-surface";
 
   return (
     <div className={`rounded-2xl border ${toneClasses} p-4 sm:p-5`}>
-      <p className="text-sm font-extrabold text-zinc-950">{title}</p>
-      <div className="mt-1.5 text-sm leading-6 text-zinc-600">{children}</div>
+      <p className="text-sm font-extrabold text-bm-text">{title}</p>
+      <div className="mt-1.5 text-sm leading-6 text-bm-text-muted">{children}</div>
     </div>
   );
 }
@@ -85,7 +85,7 @@ function GuideLink({
   children: ReactNode;
   tone?: "burgundy" | "dark";
 }) {
-  const toneClasses = tone === "dark" ? "text-zinc-950 hover:text-zinc-700" : "text-[#74152f] hover:text-[#560d22]";
+  const toneClasses = tone === "dark" ? "text-bm-text hover:text-bm-text-muted" : "text-[#74152f] hover:text-[#560d22]";
 
   return (
     <a
@@ -100,15 +100,15 @@ function GuideLink({
 
 export default function EventBuyerGuidePage() {
   return (
-    <div className="guide-page min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur">
+    <div className="guide-page min-h-screen bg-bm-surface-muted text-bm-text">
+      <header className="sticky top-0 z-50 border-b border-bm-border bg-bm-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <a href={EXPLORE_PATH} aria-label="Open BuyMesho marketplace">
             <BrandMark subtitle="Event ticket guide" />
           </a>
           <a
             href={EVENTS_PATH}
-            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+            className="inline-flex items-center gap-2 rounded-xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"
           >
             Browse Events
             <ArrowRight className="h-4 w-4" />
@@ -123,21 +123,21 @@ export default function EventBuyerGuidePage() {
             <div className="mt-4 text-sm font-black uppercase tracking-[0.18em] text-[#74152f] sm:text-base">
               BuyMesho Event Ticket Guide
             </div>
-            <h1 className="guide-display mx-auto mt-4 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-zinc-950 sm:text-6xl lg:text-7xl">
+            <h1 className="guide-display mx-auto mt-4 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-bm-text sm:text-6xl lg:text-7xl">
               Buying an event ticket on BuyMesho, step by step.
             </h1>
-            <p className="mx-auto mt-6 max-w-3xl text-base leading-7 text-zinc-700 sm:text-lg">
+            <p className="mx-auto mt-6 max-w-3xl text-base leading-7 text-bm-text-muted sm:text-lg">
               Everything you need to know from finding an event and paying for a ticket to receiving it and entering the event.
             </p>
           </div>
 
-          <nav aria-label="Event buyer guide sections" className="mt-9 border-y border-zinc-200">
+          <nav aria-label="Event buyer guide sections" className="mt-9 border-y border-bm-border">
             <div className="grid sm:grid-cols-2 lg:grid-cols-5">
               {guideSections.map((section) => (
                 <a
                   key={section.id}
                   href={`#${section.id}`}
-                  className="group flex min-h-16 items-center gap-4 border-b border-zinc-200 px-1 py-4 text-base font-bold text-zinc-800 transition-colors hover:text-blue-700 sm:min-h-20 sm:border-r sm:px-4 sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(5n)]:border-r-0"
+                  className="group flex min-h-16 items-center gap-4 border-b border-bm-border px-1 py-4 text-base font-bold text-bm-text transition-colors hover:text-blue-700 sm:min-h-20 sm:border-r sm:px-4 sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(5n)]:border-r-0"
                 >
                   <span className="guide-chapter-number text-2xl sm:text-3xl">{section.number}</span>
                   <span>{section.label}</span>
@@ -160,9 +160,9 @@ export default function EventBuyerGuidePage() {
             <FlowRow title="Ticket holder">Enter the full name, email, and phone number for the person who will use the ticket.</FlowRow>
           </div>
 
-          <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
+          <div className="flex items-start gap-3 border-t border-bm-border pt-5">
             <Ticket className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
-            <p className="text-sm leading-6 text-zinc-600">
+            <p className="text-sm leading-6 text-bm-text-muted">
               Check the event information carefully before moving on to payment.
             </p>
           </div>
@@ -190,9 +190,9 @@ export default function EventBuyerGuidePage() {
             </FlowRow>
           </div>
 
-          <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
-            <WalletCards className="mt-0.5 h-5 w-5 shrink-0 text-zinc-700" />
-            <p className="text-sm leading-6 text-zinc-600">
+          <div className="flex items-start gap-3 border-t border-bm-border pt-5">
+            <WalletCards className="mt-0.5 h-5 w-5 shrink-0 text-bm-text-muted" />
+            <p className="text-sm leading-6 text-bm-text-muted">
               A payment page returning to BuyMesho does not by itself mean the purchase is complete. Wait for the confirmation result.
             </p>
           </div>
@@ -212,9 +212,9 @@ export default function EventBuyerGuidePage() {
             <FlowRow title="Keep it safe">Do not alter the ticket information, and do not assume the ticket can be transferred unless the event says so.</FlowRow>
           </div>
 
-          <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
-            <FileText className="mt-0.5 h-5 w-5 shrink-0 text-zinc-700" />
-            <p className="text-sm leading-6 text-zinc-600">
+          <div className="flex items-start gap-3 border-t border-bm-border pt-5">
+            <FileText className="mt-0.5 h-5 w-5 shrink-0 text-bm-text-muted" />
+            <p className="text-sm leading-6 text-bm-text-muted">
               Your ticket is the document you should have ready when you arrive at the venue.
             </p>
           </div>
@@ -232,9 +232,9 @@ export default function EventBuyerGuidePage() {
             <FlowRow title="Keep the ticket available">Keep the ticket accessible until you have completed entry.</FlowRow>
           </div>
 
-          <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
+          <div className="flex items-start gap-3 border-t border-bm-border pt-5">
             <QrCode className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
-            <p className="text-sm leading-6 text-zinc-600">
+            <p className="text-sm leading-6 text-bm-text-muted">
               The exact ticket-checking method can vary by event, so follow the instructions provided for that event.
             </p>
           </div>
@@ -260,9 +260,9 @@ export default function EventBuyerGuidePage() {
             </FlowRow>
           </div>
 
-          <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
-            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-zinc-700" />
-            <p className="text-sm leading-6 text-zinc-600">
+          <div className="flex items-start gap-3 border-t border-bm-border pt-5">
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-bm-text-muted" />
+            <p className="text-sm leading-6 text-bm-text-muted">
               Use the official BuyMesho ticket and payment routes when checking your purchase or asking for help.
             </p>
           </div>
@@ -271,7 +271,7 @@ export default function EventBuyerGuidePage() {
         </GuideSection>
 
         <section className="py-10 sm:py-12">
-          <div className="border border-zinc-200 bg-white/45 p-5 sm:p-7">
+          <div className="border border-bm-border bg-bm-surface/45 p-5 sm:p-7">
             <div className="grid gap-8 sm:grid-cols-2 sm:gap-10">
               <div>
                 <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f]">Continue with events</p>
