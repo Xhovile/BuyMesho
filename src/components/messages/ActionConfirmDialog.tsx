@@ -27,7 +27,7 @@ export default function ActionConfirmDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bm-overlay px-4 py-6 backdrop-blur-sm">
       <div className="w-full max-w-lg rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-2xl sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
