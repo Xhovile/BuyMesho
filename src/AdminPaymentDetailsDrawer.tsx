@@ -193,13 +193,13 @@ function RawWebhookViewer({ hook }: { hook: WebhookEventRow }) {
       <p className="mt-2 text-xs text-bm-text-subtle dark:text-bm-text-subtle">{formatDate(hook.created_at)}</p>
 
       {rawPayload ? (
-        <div className="mt-3 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
+        <div className="mt-3 overflow-hidden rounded-2xl border border-bm-border bg-bm-surface-subtle">
           <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
             <button
               type="button"
               onClick={() => setOpen((value) => !value)}
               aria-expanded={open}
-              className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-200"
+              className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-bm-text-muted"
             >
               <Webhook className="h-3.5 w-3.5 text-bm-text-subtle dark:text-bm-text-subtle" />
               {open ? "Hide raw webhook" : "View raw webhook"}
@@ -209,14 +209,14 @@ function RawWebhookViewer({ hook }: { hook: WebhookEventRow }) {
               onClick={handleCopy}
               title="Copy raw webhook JSON"
               aria-label="Copy raw webhook JSON"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-bm-surface/5 px-2.5 py-1.5 text-xs font-bold text-zinc-200 transition hover:bg-bm-surface/10"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-bm-surface/5 px-2.5 py-1.5 text-xs font-bold text-bm-text-muted transition hover:bg-bm-surface/10"
             >
               {copyState === "copied" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy"}
             </button>
           </div>
           {open ? (
-            <pre className="max-h-96 overflow-auto whitespace-pre p-4 text-[11px] leading-5 text-zinc-100 [scrollbar-width:thin]">{displayedPayload}</pre>
+            <pre className="max-h-96 overflow-auto whitespace-pre p-4 text-[11px] leading-5 text-bm-text [scrollbar-width:thin]">{displayedPayload}</pre>
           ) : null}
         </div>
       ) : (
