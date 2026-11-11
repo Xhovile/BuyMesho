@@ -85,17 +85,17 @@ function readEventsSnapshot() {
 
 function EventCardSkeleton() {
   return (
-    <div className="w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 dark:border-bm-border bg-white shadow-sm sm:w-[260px]">
-      <div className="aspect-[4/3] animate-pulse bg-zinc-100 dark:bg-bm-surface-muted" />
+    <div className="w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm sm:w-[260px]">
+      <div className="aspect-[4/3] animate-pulse bg-bm-surface-muted dark:bg-bm-surface-muted" />
       <div className="space-y-3 p-4">
-        <div className="h-4 w-3/4 animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
-        <div className="h-3 w-full animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
-        <div className="h-3 w-5/6 animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
+        <div className="h-4 w-3/4 animate-pulse rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted" />
+        <div className="h-3 w-full animate-pulse rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted" />
+        <div className="h-3 w-5/6 animate-pulse rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted" />
         <div className="grid gap-2 pt-1">
-          <div className="h-3 w-2/3 animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
-          <div className="h-3 w-1/2 animate-pulse rounded-full bg-zinc-100 dark:bg-bm-surface-muted" />
+          <div className="h-3 w-2/3 animate-pulse rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted" />
+          <div className="h-3 w-1/2 animate-pulse rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted" />
         </div>
-        <div className="h-10 w-full animate-pulse rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted" />
+        <div className="h-10 w-full animate-pulse rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted" />
       </div>
     </div>
   );
@@ -106,13 +106,13 @@ function CategoryStrip({ title, items }: { title: string; items: EventRecord[] }
 
   return (
     <section className="mx-auto max-w-7xl px-4 pt-8">
-      <div className="mb-5 border-t border-zinc-200 dark:border-bm-border pt-5">
+      <div className="mb-5 border-t border-bm-border dark:border-bm-border pt-5">
         <div className="flex items-end justify-between gap-4">
           <div>
             <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">Category</p>
             <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950 dark:text-bm-text">{title}</h3>
           </div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 dark:text-bm-text-subtle">{items.length} events</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">{items.length} events</p>
         </div>
       </div>
 
@@ -131,13 +131,13 @@ function EventsLoadingStrip() {
   return (
     <div className="pb-12">
       <section className="pt-8">
-        <div className="mb-5 border-t border-zinc-200 dark:border-bm-border pt-5">
+        <div className="mb-5 border-t border-bm-border dark:border-bm-border pt-5">
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">Category</p>
               <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950 dark:text-bm-text">Loading events</h3>
             </div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 dark:text-bm-text-subtle">Preparing cards</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Preparing cards</p>
           </div>
         </div>
 
@@ -154,13 +154,13 @@ function EventsLoadingStrip() {
 function AllListingsPanel({ items }: { items: EventRecord[] }) {
   return (
     <section className="pt-8">
-      <div className="mb-5 border-t border-zinc-200 dark:border-bm-border pt-5">
+      <div className="mb-5 border-t border-bm-border dark:border-bm-border pt-5">
         <div className="flex items-end justify-between gap-4">
           <div>
             <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">All listings</p>
             <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950 dark:text-bm-text">Every event in one panel</h3>
           </div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 dark:text-bm-text-subtle">{items.length} events</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">{items.length} events</p>
         </div>
       </div>
 
@@ -318,7 +318,7 @@ export default function EventsDirectoryPage() {
   }, [filteredEvents, categories]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-100 dark:bg-bm-surface-muted text-zinc-900 dark:text-bm-text pb-20">
+    <div className="flex min-h-screen flex-col bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text pb-20">
       <FloatingCartButton isLoggedIn={!!firebaseUser} />
       <Header
         searchValue={searchTerm}
@@ -338,10 +338,10 @@ export default function EventsDirectoryPage() {
               {!heroImageLoaded ? (
                 <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black">
                   <div className="absolute inset-0 opacity-45">
-                    <div className="absolute left-5 top-5 h-16 w-24 animate-pulse rounded-[1.5rem] bg-white/10" />
-                    <div className="absolute right-6 top-6 h-24 w-24 animate-pulse rounded-[1.5rem] bg-white/10" />
-                    <div className="absolute left-5 top-28 h-3 w-44 animate-pulse rounded-full bg-white/10" />
-                    <div className="absolute left-5 top-36 h-3 w-60 animate-pulse rounded-full bg-white/10" />
+                    <div className="absolute left-5 top-5 h-16 w-24 animate-pulse rounded-[1.5rem] bg-bm-surface/10" />
+                    <div className="absolute right-6 top-6 h-24 w-24 animate-pulse rounded-[1.5rem] bg-bm-surface/10" />
+                    <div className="absolute left-5 top-28 h-3 w-44 animate-pulse rounded-full bg-bm-surface/10" />
+                    <div className="absolute left-5 top-36 h-3 w-60 animate-pulse rounded-full bg-bm-surface/10" />
                   </div>
                 </div>
               ) : null}
@@ -360,11 +360,11 @@ export default function EventsDirectoryPage() {
               </div>
 
               <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/68 to-black/42" />
-              <div className="absolute -right-16 top-10 h-52 w-52 rounded-full bg-white/10 blur-3xl sm:h-64 sm:w-64" />
+              <div className="absolute -right-16 top-10 h-52 w-52 rounded-full bg-bm-surface/10 blur-3xl sm:h-64 sm:w-64" />
             </div>
 
             <div className="relative z-10 space-y-6 px-5 py-8 sm:px-8 sm:py-10 lg:px-10">
-              <div className="rounded-[2.25rem] border border-white/10 bg-white/6 px-5 py-8 text-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.4)] backdrop-blur-md sm:px-8 sm:py-10 lg:px-10">
+              <div className="rounded-[2.25rem] border border-white/10 bg-bm-surface/6 px-5 py-8 text-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.4)] backdrop-blur-md sm:px-8 sm:py-10 lg:px-10">
                 <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-white/70">Events directory</p>
                 <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
                   <div className="max-w-2xl">
@@ -378,7 +378,7 @@ export default function EventsDirectoryPage() {
                         type="button"
                         onClick={() => navigateToPath(EVENTS_MANAGE_PATH)}
                         disabled={creatorAccessLoading}
-                        className="inline-flex min-w-[170px] shrink-0 items-center justify-center gap-2 rounded-none border border-red-900 bg-white px-6 py-3 text-sm font-extrabold text-blue-900 shadow-lg shadow-black/15 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-70"
+                        className="inline-flex min-w-[170px] shrink-0 items-center justify-center gap-2 rounded-none border border-red-900 bg-bm-surface px-6 py-3 text-sm font-extrabold text-blue-900 shadow-lg shadow-black/15 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-70"
                       >
                         {creatorAccessLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
                         {creatorAccessLoading ? "Checking access…" : "Manage Events"}
@@ -397,7 +397,7 @@ export default function EventsDirectoryPage() {
               </div>
 
               <div className="border-t border-white/10 pt-4">
-                <div className="bg-white/6 px-0 py-0 text-white backdrop-blur-md">
+                <div className="bg-bm-surface/6 px-0 py-0 text-white backdrop-blur-md">
                   <FormDropdown
                     label="Filter by category"
                     value={selectedCategory}
@@ -439,7 +439,7 @@ export default function EventsDirectoryPage() {
             <div>
               <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-green-700">For event organizers</p>
               <h2 className="mt-1 text-2xl font-black tracking-tight text-zinc-950 dark:text-bm-text">Need to validate tickets?</h2>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-700 dark:text-bm-text-muted">Use Ticket Validator to check event tickets at entry.</p>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted">Use Ticket Validator to check event tickets at entry.</p>
             </div>
           </div>
           <a
