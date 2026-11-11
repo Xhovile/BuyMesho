@@ -204,8 +204,8 @@ function ToastItem({
       case "info":
       default:
         return {
-          bg: "bg-bm-brand/95 text-bm-on-brand border-zinc-700/80 shadow-zinc-950/20",
-          iconBg: "bg-zinc-800 text-zinc-300",
+          bg: "bg-bm-brand/95 text-bm-on-brand border-bm-border shadow-zinc-950/20",
+          iconBg: "bg-white/15 text-bm-on-brand",
           icon: Info,
           defaultTitle: "Notice",
         };
