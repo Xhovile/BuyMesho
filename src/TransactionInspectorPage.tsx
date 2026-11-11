@@ -174,7 +174,7 @@ function JsonBlock({ title, value }: { title: string; value: unknown }) {
   }, [value]);
 
   return (
-    <div className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-bm-border dark:border-bm-border bg-zinc-950 p-4 text-zinc-100 shadow-sm">
+    <div className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-subtle p-4 text-bm-text shadow-sm">
       <p className="text-xs font-black uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">{title}</p>
       <pre className="mt-3 max-h-80 max-w-full overflow-auto whitespace-pre-wrap break-words text-xs leading-5">{formatted}</pre>
     </div>
@@ -731,7 +731,7 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
             <h2 className="text-lg font-black text-bm-text dark:text-bm-text">Select a transaction</h2>
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {matchingPayments.map((payment) => (
-                <button key={payment.id} type="button" onClick={() => setSelectedPaymentId(payment.id)} className={`rounded-2xl border p-4 text-left transition hover:border-zinc-400 ${latestPayment?.id === payment.id ? "border-zinc-950 bg-bm-surface-muted dark:bg-bm-surface-subtle" : "border-bm-border dark:border-bm-border bg-bm-surface"}`}>
+                <button key={payment.id} type="button" onClick={() => setSelectedPaymentId(payment.id)} className={`rounded-2xl border p-4 text-left transition hover:border-bm-border ${latestPayment?.id === payment.id ? "border-bm-brand bg-bm-surface-muted dark:bg-bm-surface-subtle" : "border-bm-border dark:border-bm-border bg-bm-surface"}`}>
                   <p className="break-all font-mono text-xs font-black text-bm-text dark:text-bm-text">{payment.reference}</p>
                   <p className="mt-2 text-sm text-bm-text-muted dark:text-bm-text-muted">Order {payment.order_id}</p>
                   <p className="mt-1 text-sm text-bm-text-muted dark:text-bm-text-muted">{payment.currency} {Number(payment.amount).toLocaleString()} · {normalizeStatusLabel(payment.payment_status)}</p>
