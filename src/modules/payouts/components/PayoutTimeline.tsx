@@ -70,7 +70,7 @@ function StepIcon({ state }: { state: TimelineStepState }) {
   if (state === 'done') return <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
   if (state === 'warning') return <CircleAlert className="h-4 w-4 text-amber-600" />;
   if (state === 'active') return <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />;
-  return <Clock3 className="h-4 w-4 text-zinc-400" />;
+  return <Clock3 className="h-4 w-4 text-bm-text-subtle" />;
 }
 
 function StepLine({ state }: { state: TimelineStepState }) {
@@ -81,7 +81,7 @@ function StepLine({ state }: { state: TimelineStepState }) {
         ? 'bg-amber-500'
         : state === 'active'
           ? 'bg-indigo-500'
-          : 'bg-zinc-200';
+          : 'bg-bm-border';
 
   return <div className={`h-full w-px ${classes}`} />;
 }
@@ -97,17 +97,17 @@ export default function PayoutTimeline({ payout, className = '' }: PayoutTimelin
         : 'Payout in progress';
 
   return (
-    <section className={`rounded-[1.75rem] border border-zinc-200 bg-white p-4 shadow-sm ${className}`.trim()}>
+    <section className={`rounded-[1.75rem] border border-bm-border bg-bm-surface p-4 shadow-sm ${className}`.trim()}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle">
             Payout timeline
           </p>
-          <h4 className="mt-2 text-base font-black tracking-tight text-zinc-900">
+          <h4 className="mt-2 text-base font-black tracking-tight text-bm-text">
             {headline}
           </h4>
         </div>
-        <div className="rounded-full bg-zinc-100 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] text-zinc-600">
+        <div className="rounded-full bg-bm-surface-muted px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] text-bm-text-muted">
           {status || 'unknown'}
         </div>
       </div>
@@ -116,15 +116,15 @@ export default function PayoutTimeline({ payout, className = '' }: PayoutTimelin
         {steps.map((step, index) => (
           <div key={step.label} className="flex gap-3">
             <div className="flex flex-col items-center">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-50 ring-1 ring-zinc-200">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-bm-surface-subtle ring-1 ring-bm-border">
                 <StepIcon state={step.state} />
               </div>
               {index < steps.length - 1 ? <div className="mt-1 h-full min-h-8"><StepLine state={step.state} /></div> : null}
             </div>
 
             <div className="min-w-0 pb-1">
-              <p className="text-sm font-bold text-zinc-900">{step.label}</p>
-              <p className="mt-1 text-sm text-zinc-500">{step.detail}</p>
+              <p className="text-sm font-bold text-bm-text">{step.label}</p>
+              <p className="mt-1 text-sm text-bm-text-subtle">{step.detail}</p>
             </div>
           </div>
         ))}
