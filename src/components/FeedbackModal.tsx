@@ -53,7 +53,7 @@ export default function FeedbackModal({ open, type, title, message, onClose, act
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 cursor-default bg-zinc-950/45 backdrop-blur-[3px]"
+            className="absolute inset-0 cursor-default bg-bm-overlay backdrop-blur-[3px]"
           />
 
           <motion.div
