@@ -66,7 +66,7 @@ export default function ReviewReplyComposer({ listingId, review, canReply, onSav
             setError(null);
             setOpen(true);
           }}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-200 bg-bm-surface text-bm-text-muted dark:text-bm-text-muted transition hover:bg-blue-50 hover:text-bm-text"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted transition hover:bg-bm-surface-muted hover:text-bm-text"
           aria-label="Edit seller reply"
           title="Edit seller reply"
         >
@@ -109,7 +109,7 @@ export default function ReviewReplyComposer({ listingId, review, canReply, onSav
             <span>{reply.trim() ? "Visible to buyers." : "Leave blank to clear the reply."}</span>
           </div>
 
-          {error ? <p className="mt-3 text-sm font-semibold text-red-600">{error}</p> : null}
+          {error ? <p className="mt-3 text-sm font-semibold text-bm-danger">{error}</p> : null}
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
