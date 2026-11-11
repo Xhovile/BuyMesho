@@ -77,7 +77,7 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
           {offerLabel ? (
             <div className="inline-flex flex-col gap-0.5 rounded-xl border border-white/30 bg-black/45 px-2.5 py-1.5 text-left shadow-lg backdrop-blur-[2px]">
               <span className="text-[8px] font-black uppercase tracking-[0.18em] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">{offerLabel}</span>
-              <span className="text-[10px] font-extrabold leading-none text-red-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">{offerValue}</span>
+              <span className="text-[10px] font-extrabold leading-none text-bm-brand drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">{offerValue}</span>
             </div>
           ) : (
             <div className="rounded-xl border border-white/25 bg-bm-surface/90 dark:bg-bm-surface/90 px-2.5 py-1 text-xs font-extrabold text-bm-text dark:text-bm-text shadow-md backdrop-blur-md">
