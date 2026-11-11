@@ -433,7 +433,7 @@ export default function EventsDirectoryPage() {
       <section className="mx-auto w-full max-w-7xl px-4 pb-10 pt-4 sm:px-6 sm:pb-12 lg:px-8">
         <div className="flex flex-col gap-5 rounded-[2rem] border border-bm-success/35 bg-bm-success-bg p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-7">
           <div className="flex items-start gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-bm-success-bg text-bm-on-brand shadow-sm">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-bm-success text-bm-bg shadow-sm">
               <span className="text-lg font-black">✓</span>
             </div>
             <div>
@@ -446,7 +446,7 @@ export default function EventsDirectoryPage() {
             href={TICKET_VALIDATOR_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-bm-success-bg px-5 py-3 text-sm font-black text-bm-on-brand shadow-sm transition hover:brightness-95"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-bm-success px-5 py-3 text-sm font-black text-bm-bg shadow-sm transition hover:brightness-95"
           >
             Open Ticket Validator
             <ArrowRight className="h-4 w-4" />
