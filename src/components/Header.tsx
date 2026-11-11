@@ -308,7 +308,7 @@ export default function Header({
                     onClick={() => handleSellClick()}
                     className={`hidden sm:flex items-center gap-2 ${headerCardButtonClass} px-4 sm:px-5 py-2.5 text-sm font-bold`}
                   >
-                    <Plus className="w-4 h-4 text-red-500" />
+                    <Plus className="w-4 h-4 text-bm-brand" />
                     <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
                   </button>
 
@@ -326,7 +326,7 @@ export default function Header({
                       avatarUrl ? (
                         <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
+                        <div className="w-full h-full bg-bm-brand/5 flex items-center justify-center text-bm-brand font-bold">
                           {fallbackLetter}
                         </div>
                       )
@@ -402,7 +402,7 @@ export default function Header({
                       placeholder="Search listings, products, or services..."
                       className="w-full min-w-0 bg-transparent pl-1 text-sm text-bm-text dark:text-bm-text-muted placeholder:text-bm-text-subtle dark:placeholder:text-bm-text-subtle outline-none"
                     />
-                    <button type="submit" aria-label="Search listings" className="inline-flex shrink-0 items-center justify-center rounded-xl bg-red-900 px-3 py-1.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4">
+                    <button type="submit" aria-label="Search listings" className="inline-flex shrink-0 items-center justify-center rounded-xl bg-bm-brand px-3 py-1.5 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover sm:px-4">
                       Search
                     </button>
                   </div>
