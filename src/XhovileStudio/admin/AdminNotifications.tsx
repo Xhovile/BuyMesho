@@ -23,7 +23,7 @@ function StatusPill({ value }: { value: string }) {
 
 function SectionCard({ title, eyebrow, children, action }: { title: string; eyebrow?: string; children: ReactNode; action?: ReactNode }) {
   return (
-    <section className="rounded-[2rem] border border-bm-border bg-white p-5 shadow-sm">
+    <section className="rounded-[2rem] border border-bm-border bg-bm-surface p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>{eyebrow ? <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle">{eyebrow}</p> : null}<h2 className="mt-1 text-xl font-black tracking-tight text-bm-text">{title}</h2></div>
         {action}
