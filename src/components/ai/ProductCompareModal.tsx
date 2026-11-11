@@ -87,7 +87,7 @@ export default function ProductCompareModal({ isOpen, onClose, items }: Props) {
                   Decision support
                 </span>
               </h3>
-              <p className="text-xs text-bm-on-brand/80/80">Compares canonical BuyMesho listing records</p>
+              <p className="text-xs text-bm-on-brand/80">Compares canonical BuyMesho listing records</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-bm-surface/10 rounded-lg text-bm-on-brand/80 hover:text-bm-on-brand" aria-label="Close product comparison">
