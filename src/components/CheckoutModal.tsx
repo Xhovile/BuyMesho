@@ -91,7 +91,7 @@ const settlementOptions: Array<{
   //   route: "connect",
   //   label: "Pay directly to seller",
   //   description: "Money goes to the seller's connected account.",
-  //   buttonClassName: "border-zinc-900 bg-bm-brand text-bm-on-brand hover:bg-bm-brand-hover",
+  //   buttonClassName: "border-bm-border bg-bm-brand text-bm-on-brand hover:bg-bm-brand-hover",
   // },
 ];
 
