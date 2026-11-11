@@ -57,7 +57,7 @@ export default function ListingSectionTabs({
   const displaySection = scrollActiveSection ?? activeSection;
 
   return (
-    <div className="sticky top-[73px] z-30 -mx-4 mt-8 border-y border-zinc-200 bg-white/90 px-4 backdrop-blur-sm sm:top-[77px]">
+    <div className="sticky top-[73px] z-30 -mx-4 mt-8 border-y border-bm-border bg-white/90 px-4 backdrop-blur-sm sm:top-[77px]">
       <div className="mx-auto flex max-w-7xl items-end justify-between gap-4 overflow-x-auto">
         <div className="flex gap-6">
           <TabButton active={displaySection === "details"} onClick={() => onNavigate("details")}>Details</TabButton>
@@ -66,8 +66,8 @@ export default function ListingSectionTabs({
         </div>
 
         <div className="hidden shrink-0 items-center gap-2 pb-3 sm:flex">
-          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Viewing</span>
-          <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-zinc-900">
+          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-bm-text-subtle">Viewing</span>
+          <span className="rounded-full border border-bm-border bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-bm-text">
             {SECTION_LABELS[displaySection]}
           </span>
         </div>
