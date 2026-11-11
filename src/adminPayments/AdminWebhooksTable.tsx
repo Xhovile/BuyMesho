@@ -3,7 +3,7 @@ import { formatDate, type Tone, type WebhookEventRow } from "./adminPayments.uti
 
 function StatusPill({ label, tone }: { label: string; tone: Tone }) {
   const toneClass: Record<Tone, string> = {
-    zinc: "bg-zinc-100 dark:bg-bm-surface-muted text-zinc-700 dark:text-bm-text-muted border-zinc-200 dark:border-bm-border",
+    zinc: "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted border-bm-border dark:border-bm-border",
     emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
     amber: "bg-amber-50 text-amber-700 border-amber-200",
     rose: "bg-rose-50 text-rose-700 border-rose-200",
@@ -22,8 +22,8 @@ export default function AdminWebhooksTable({
   searchActive: boolean;
 }) {
   return (
-    <section className="overflow-hidden rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white shadow-sm">
-      <div className="border-b border-zinc-100 dark:border-bm-border-subtle px-5 py-4">
+    <section className="overflow-hidden rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
+      <div className="border-b border-bm-border-subtle dark:border-bm-border-subtle px-5 py-4">
         <div className="flex items-center gap-2">
           <Webhook className="h-5 w-5" />
           <h2 className="text-lg font-black">{searchActive ? "Matching webhook events" : "Webhook log"}</h2>
@@ -31,13 +31,13 @@ export default function AdminWebhooksTable({
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center p-12"><Loader2 className="h-6 w-6 animate-spin text-zinc-500 dark:text-bm-text-subtle" /></div>
+        <div className="flex items-center justify-center p-12"><Loader2 className="h-6 w-6 animate-spin text-bm-text-subtle dark:text-bm-text-subtle" /></div>
       ) : events.length === 0 ? (
-        <div className="p-8 text-center text-sm text-zinc-500 dark:text-bm-text-subtle">{searchActive ? "No webhook events matched this investigation query." : "No webhook events captured yet."}</div>
+        <div className="p-8 text-center text-sm text-bm-text-subtle dark:text-bm-text-subtle">{searchActive ? "No webhook events matched this investigation query." : "No webhook events captured yet."}</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-zinc-50 dark:bg-bm-surface-subtle text-zinc-500 dark:text-bm-text-subtle">
+            <thead className="bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-subtle dark:text-bm-text-subtle">
               <tr>
                 <th className="p-4 text-left">Event</th>
                 <th className="p-4 text-left">Reference</th>
@@ -48,28 +48,28 @@ export default function AdminWebhooksTable({
             </thead>
             <tbody>
               {events.map((event) => (
-                <tr key={event.id} className="border-t border-zinc-100 dark:border-bm-border-subtle">
+                <tr key={event.id} className="border-t border-bm-border-subtle dark:border-bm-border-subtle">
                   <td className="p-4 align-top">
                     <p className="font-semibold">{event.event_type || "—"}</p>
-                    <div className="mt-1 text-[11px] text-zinc-400 dark:text-bm-text-subtle">Event row ID: {event.id}</div>
-                    {event.event_id ? <div className="mt-1 break-all font-mono text-[11px] text-zinc-500 dark:text-bm-text-subtle">Event ID: {String(event.event_id)}</div> : null}
-                    {event.provider_event_id ? <div className="mt-1 break-all font-mono text-[11px] text-zinc-500 dark:text-bm-text-subtle">Provider event: {String(event.provider_event_id)}</div> : null}
-                    <div className="mt-1 text-[11px] text-zinc-400 dark:text-bm-text-subtle">Provider: {event.provider}</div>
+                    <div className="mt-1 text-[11px] text-bm-text-subtle dark:text-bm-text-subtle">Event row ID: {event.id}</div>
+                    {event.event_id ? <div className="mt-1 break-all font-mono text-[11px] text-bm-text-subtle dark:text-bm-text-subtle">Event ID: {String(event.event_id)}</div> : null}
+                    {event.provider_event_id ? <div className="mt-1 break-all font-mono text-[11px] text-bm-text-subtle dark:text-bm-text-subtle">Provider event: {String(event.provider_event_id)}</div> : null}
+                    <div className="mt-1 text-[11px] text-bm-text-subtle dark:text-bm-text-subtle">Provider: {event.provider}</div>
                   </td>
                   <td className="break-all p-4 align-top font-mono text-xs">
                     <div>Reference: {event.reference || "—"}</div>
-                    {event.tx_ref ? <div className="mt-1 text-[11px] text-zinc-400 dark:text-bm-text-subtle">Tx ref: {String(event.tx_ref)}</div> : null}
+                    {event.tx_ref ? <div className="mt-1 text-[11px] text-bm-text-subtle dark:text-bm-text-subtle">Tx ref: {String(event.tx_ref)}</div> : null}
                   </td>
                   <td className="p-4 align-top">
                     <StatusPill label={Number(event.signature_valid) === 1 ? "Valid" : "Invalid"} tone={Number(event.signature_valid) === 1 ? "emerald" : "rose"} />
-                    {event.processing_status ? <div className="mt-2 text-[11px] text-zinc-400 dark:text-bm-text-subtle">Processing: {String(event.processing_status)}</div> : null}
+                    {event.processing_status ? <div className="mt-2 text-[11px] text-bm-text-subtle dark:text-bm-text-subtle">Processing: {String(event.processing_status)}</div> : null}
                   </td>
-                  <td className="p-4 align-top text-zinc-500 dark:text-bm-text-subtle">{formatDate(event.created_at)}</td>
+                  <td className="p-4 align-top text-bm-text-subtle dark:text-bm-text-subtle">{formatDate(event.created_at)}</td>
                   <td className="p-4 align-top">
                     {event.error ? <p className="mb-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">{String(event.error)}</p> : null}
                     {event.payload ? (
                       <details className="group">
-                        <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-3 py-1 text-xs font-bold text-zinc-700 dark:text-bm-text-muted"><BadgeInfo className="h-3.5 w-3.5" /> View payload</summary>
+                        <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-3 py-1 text-xs font-bold text-bm-text-muted dark:text-bm-text-muted"><BadgeInfo className="h-3.5 w-3.5" /> View payload</summary>
                         <pre className="mt-3 max-h-72 overflow-auto rounded-2xl bg-zinc-950 p-4 text-[11px] leading-relaxed text-zinc-100">{event.payload}</pre>
                       </details>
                     ) : "—"}
