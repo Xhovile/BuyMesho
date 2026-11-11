@@ -32,21 +32,21 @@ function StatButton({
       aria-pressed={active}
       className={`group flex min-h-[5.75rem] flex-col justify-between rounded-2xl border px-3.5 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:px-4 ${
         active
-          ? "border-zinc-950 bg-zinc-950 text-bm-on-brand shadow-zinc-950/15"
+          ? "border-bm-brand bg-bm-brand text-bm-on-brand shadow-zinc-950/15"
           : "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text hover:border-bm-border hover:bg-bm-surface"
       }`}
     >
       <div className="flex items-center justify-between gap-3">
-        <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${active ? "text-zinc-300" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
+        <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${active ? "text-bm-on-brand" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
           {label}
         </p>
-        <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] ${active ? "bg-bm-surface/15 text-bm-on-brand" : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-subtle dark:text-bm-text-subtle group-hover:bg-zinc-200/70"}`}>
+        <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] ${active ? "bg-bm-surface/15 text-bm-on-brand" : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-subtle dark:text-bm-text-subtle group-hover:bg-bm-surface-raised"}`}>
           {badge}
         </span>
       </div>
       <div className="mt-3 flex items-end justify-between gap-3">
         <p className="text-2xl font-black leading-none tracking-tight sm:text-3xl">{value}</p>
-        <span className={`h-1.5 w-8 rounded-full ${active ? "bg-bm-surface/60" : "bg-zinc-200 dark:bg-bm-skeleton group-hover:bg-zinc-300"}`} />
+        <span className={`h-1.5 w-8 rounded-full ${active ? "bg-bm-surface/60" : "bg-bm-skeleton dark:bg-bm-skeleton group-hover:bg-bm-surface-raised"}`} />
       </div>
     </button>
   );
@@ -133,7 +133,7 @@ export default function AdminPaymentsToolbar({
                 className="min-h-11 w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle pl-11 pr-4 text-sm font-semibold text-bm-text dark:text-bm-text outline-none transition focus:border-bm-focus focus:bg-bm-surface"
               />
             </div>
-            <button type="submit" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-4 text-sm font-black text-bm-on-brand transition hover:bg-bm-brand-hover">
+            <button type="submit" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-bm-brand px-4 text-sm font-black text-bm-on-brand transition hover:bg-bm-brand-hover">
               <Search className="h-4 w-4" /> Search
             </button>
           </form>
