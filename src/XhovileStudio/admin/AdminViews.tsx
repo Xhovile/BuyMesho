@@ -428,9 +428,9 @@ export default function AdminWorkspaceViews({
                         <p className="text-sm font-black text-bm-text">{String(label)}</p>
                       </div>
                       {Boolean(ready) ? (
-                        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                        <CheckCircle2 className="h-5 w-5 text-bm-success" />
                       ) : (
-                        <AlertTriangle className="h-5 w-5 text-amber-500" />
+                        <AlertTriangle className="h-5 w-5 text-bm-warning" />
                       )}
                     </div>
                     <p className="mt-2 text-xs leading-5 text-bm-text-subtle">{String(helper)}</p>
