@@ -7,26 +7,26 @@ type PayoutStatusBadgeProps = {
 };
 
 const PAYOUT_STATUS_META: Record<string, { label: string; className: string }> = {
-  paid: { label: "Paid", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
-  failed: { label: "Failed", className: "border-red-200 bg-red-50 text-red-700" },
+  paid: { label: "Paid", className: "border-bm-success/25 bg-bm-success-bg text-bm-success" },
+  failed: { label: "Failed", className: "border-bm-danger/25 bg-bm-danger-bg text-bm-danger" },
   cancelled: { label: "Cancelled", className: "border-bm-border bg-bm-surface-muted text-bm-text-muted" },
-  eligible: { label: "Eligible", className: "border-amber-200 bg-amber-50 text-amber-700" },
-  queued: { label: "Queued for review", className: "border-amber-200 bg-amber-50 text-amber-700" },
-  processing: { label: "Sent to provider", className: "border-amber-200 bg-amber-50 text-amber-700" },
-  pending: { label: "Provider pending", className: "border-amber-200 bg-amber-50 text-amber-700" },
-  held: { label: "Held for review", className: "border-amber-200 bg-amber-50 text-amber-700" },
+  eligible: { label: "Eligible", className: "border-bm-warning/25 bg-bm-warning-bg text-bm-warning" },
+  queued: { label: "Queued for review", className: "border-bm-warning/25 bg-bm-warning-bg text-bm-warning" },
+  processing: { label: "Sent to provider", className: "border-bm-warning/25 bg-bm-warning-bg text-bm-warning" },
+  pending: { label: "Provider pending", className: "border-bm-warning/25 bg-bm-warning-bg text-bm-warning" },
+  held: { label: "Held for review", className: "border-bm-warning/25 bg-bm-warning-bg text-bm-warning" },
 };
 
 const DESTINATION_STATUS_META: Record<string, { label: string; className: string }> = {
-  verified: { label: "Verified", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
-  pending: { label: "Pending", className: "border-amber-200 bg-amber-50 text-amber-700" },
-  failed: { label: "Failed", className: "border-red-200 bg-red-50 text-red-700" },
+  verified: { label: "Verified", className: "border-bm-success/25 bg-bm-success-bg text-bm-success" },
+  pending: { label: "Pending", className: "border-bm-warning/25 bg-bm-warning-bg text-bm-warning" },
+  failed: { label: "Failed", className: "border-bm-danger/25 bg-bm-danger-bg text-bm-danger" },
   unverified: { label: "Unverified", className: "border-bm-border bg-bm-surface-muted text-bm-text-muted" },
 };
 
 const DESTINATION_STATE_META: Record<string, { label: string; className: string }> = {
   default: { label: "Default", className: "border-sky-200 bg-sky-50 text-sky-700" },
-  active: { label: "Active", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  active: { label: "Active", className: "border-bm-success/25 bg-bm-success-bg text-bm-success" },
   inactive: { label: "Inactive", className: "border-bm-border bg-bm-surface-muted text-bm-text-muted" },
 };
 
