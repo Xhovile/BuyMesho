@@ -100,7 +100,7 @@ function CartPageContent() {
                   type="checkbox"
                   checked={allSelected}
                   onChange={(event) => setAllSelected(event.target.checked)}
-                  className="h-4 w-4 rounded border-bm-border dark:border-bm-border text-bm-text focus:ring-zinc-900"
+                  className="h-4 w-4 rounded border-bm-border dark:border-bm-border text-bm-text focus:ring-bm-focus"
                 />
                 Select all
               </label>
