@@ -364,12 +364,12 @@ export default function EventsDirectoryPage() {
             </div>
 
             <div className="relative z-10 space-y-6 px-5 py-8 sm:px-8 sm:py-10 lg:px-10">
-              <div className="rounded-[2.25rem] border border-white/10 bg-bm-surface/6 px-5 py-8 text-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.4)] backdrop-blur-md sm:px-8 sm:py-10 lg:px-10">
-                <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-white/70">Events directory</p>
+              <div className="rounded-[2.25rem] border border-white/10 bg-bm-surface/6 px-5 py-8 text-bm-on-brand shadow-[0_30px_80px_-40px_rgba(0,0,0,0.4)] backdrop-blur-md sm:px-8 sm:py-10 lg:px-10">
+                <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-bm-on-brand/70">Events directory</p>
                 <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
                   <div className="max-w-2xl">
-                    <h1 className="text-4xl font-black tracking-[-0.06em] leading-[0.92] text-white sm:text-5xl lg:text-6xl">Browse events and happenings.</h1>
-                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/75 sm:text-base">Don't miss!</p>
+                    <h1 className="text-4xl font-black tracking-[-0.06em] leading-[0.92] text-bm-on-brand sm:text-5xl lg:text-6xl">Browse events and happenings.</h1>
+                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-bm-on-brand/75 sm:text-base">Don't miss!</p>
                   </div>
 
                   <div className="flex flex-wrap gap-3 sm:justify-end">
@@ -378,7 +378,7 @@ export default function EventsDirectoryPage() {
                         type="button"
                         onClick={() => navigateToPath(EVENTS_MANAGE_PATH)}
                         disabled={creatorAccessLoading}
-                        className="inline-flex min-w-[170px] shrink-0 items-center justify-center gap-2 rounded-none border border-red-900 bg-bm-surface px-6 py-3 text-sm font-extrabold text-blue-900 shadow-lg shadow-black/15 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-70"
+                        className="inline-flex min-w-[170px] shrink-0 items-center justify-center gap-2 rounded-none border border-bm-border bg-bm-surface px-6 py-3 text-sm font-extrabold text-bm-text shadow-lg shadow-black/15 hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:opacity-70"
                       >
                         {creatorAccessLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
                         {creatorAccessLoading ? "Checking access…" : "Manage Events"}
@@ -387,7 +387,7 @@ export default function EventsDirectoryPage() {
                     <button
                       type="button"
                       onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
-                      className="inline-flex min-w-[170px] shrink-0 items-center justify-center gap-2 rounded-none bg-emerald-600 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-black/20 hover:bg-emerald-700"
+                      className="inline-flex min-w-[170px] shrink-0 items-center justify-center gap-2 rounded-none bg-bm-brand px-6 py-3 text-sm font-extrabold text-bm-on-brand shadow-lg shadow-black/20 hover:bg-bm-brand-hover"
                     >
                       Create Event
                       <ArrowRight className="h-4 w-4" />
@@ -397,7 +397,7 @@ export default function EventsDirectoryPage() {
               </div>
 
               <div className="border-t border-white/10 pt-4">
-                <div className="bg-bm-surface/6 px-0 py-0 text-white backdrop-blur-md">
+                <div className="bg-bm-surface/6 px-0 py-0 text-bm-on-brand backdrop-blur-md">
                   <FormDropdown
                     label="Filter by category"
                     value={selectedCategory}
@@ -415,7 +415,7 @@ export default function EventsDirectoryPage() {
           {loading ? (
             <EventsLoadingStrip />
           ) : error ? (
-            <div className="mt-6 rounded-[2rem] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-900 shadow-sm">{error}</div>
+            <div className="mt-6 rounded-[2rem] border border-bm-danger/35 bg-bm-danger-bg px-5 py-4 text-sm text-bm-danger shadow-sm">{error}</div>
           ) : viewAll ? (
             <AllListingsPanel items={filteredEvents} />
           ) : (
@@ -431,13 +431,13 @@ export default function EventsDirectoryPage() {
       <SeoInternalLinks context="events" />
 
       <section className="mx-auto w-full max-w-7xl px-4 pb-10 pt-4 sm:px-6 sm:pb-12 lg:px-8">
-        <div className="flex flex-col gap-5 rounded-[2rem] border border-green-200 bg-green-50/70 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-7">
+        <div className="flex flex-col gap-5 rounded-[2rem] border border-bm-success/35 bg-bm-success-bg p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-7">
           <div className="flex items-start gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-green-600 text-white shadow-sm">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-bm-success-bg text-bm-on-brand shadow-sm">
               <span className="text-lg font-black">✓</span>
             </div>
             <div>
-              <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-green-700">For event organizers</p>
+              <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-bm-success">For event organizers</p>
               <h2 className="mt-1 text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">Need to validate tickets?</h2>
               <p className="mt-1 max-w-2xl text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted">Use Ticket Validator to check event tickets at entry.</p>
             </div>
@@ -446,7 +446,7 @@ export default function EventsDirectoryPage() {
             href={TICKET_VALIDATOR_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-green-700"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-bm-success-bg px-5 py-3 text-sm font-black text-bm-on-brand shadow-sm transition hover:brightness-95"
           >
             Open Ticket Validator
             <ArrowRight className="h-4 w-4" />
