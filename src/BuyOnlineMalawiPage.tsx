@@ -58,9 +58,9 @@ function FlowRow({
 }) {
   const toneClasses =
     tone === "blue"
-      ? "border-blue-200 bg-blue-50/60"
+      ? "border-bm-border bg-bm-surface-muted"
       : tone === "red"
-        ? "border-red-200 bg-red-50/60"
+        ? "border-bm-danger/25 bg-bm-danger-bg"
         : "border-bm-border bg-bm-surface";
 
   return (
@@ -121,7 +121,7 @@ export default function BuyOnlineMalawiPage() {
                 >
                   <span className="guide-chapter-number text-2xl sm:text-3xl">{section.number}</span>
                   <span>{section.label}</span>
-                  <ArrowRight className="ml-auto h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="ml-auto h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5" />
                 </a>
               ))}
             </div>
@@ -166,7 +166,7 @@ export default function BuyOnlineMalawiPage() {
             email verification and account setup before returning you to the saved page you were trying to use.
           </p>
 
-          <div className="border-l-2 border-blue-600 pl-4 text-sm text-bm-text-muted">
+          <div className="border-l-2 border-bm-brand pl-4 text-sm text-bm-text-muted">
             <strong className="text-bm-text">For a new buyer:</strong> create account → verify email → complete
             account setup → return to the original listing → start checkout.
           </div>
@@ -201,7 +201,7 @@ export default function BuyOnlineMalawiPage() {
             className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg"
           >
             Open the marketplace
-            <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight className="h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5" />
           </a>
         </GuideSection>
 
@@ -230,7 +230,7 @@ export default function BuyOnlineMalawiPage() {
           </div>
 
           <div className="flex items-start gap-3 border-t border-bm-border pt-5">
-            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-bm-brand" />
             <p className="text-sm leading-6 text-bm-text-muted">
               These are signals to help you inspect a seller. The Verified badge does not replace checking the actual
               listing details, delivery arrangements, ratings, and communication.
@@ -315,7 +315,7 @@ export default function BuyOnlineMalawiPage() {
 
           <div className="border border-bm-border bg-bm-surface p-5">
             <div className="flex items-start gap-3">
-              <FileSearch className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+              <FileSearch className="mt-0.5 h-5 w-5 shrink-0 text-bm-brand" />
               <div>
                 <p className="font-extrabold text-bm-text">What the order can show</p>
                 <p className="mt-1 text-sm leading-6 text-bm-text-muted">
@@ -398,7 +398,7 @@ export default function BuyOnlineMalawiPage() {
           </div>
 
           <div className="flex items-start gap-3 border-t border-bm-border pt-5">
-            <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-bm-warning" />
             <p className="text-sm leading-6 text-bm-text-muted">
               A submitted dispute is reviewed based on the circumstances and evidence provided; submitting one does not
               guarantee a particular outcome. An active dispute blocks a second dispute, and a settled dispute cannot
@@ -422,7 +422,7 @@ export default function BuyOnlineMalawiPage() {
             className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-bm-text hover:text-bm-brand"
           >
             Open Disputes
-            <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
+            <ArrowRight className="h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
           </a>
         </GuideSection>
 
@@ -441,7 +441,7 @@ export default function BuyOnlineMalawiPage() {
           <div className="mt-7 border border-bm-border bg-bm-surface">
             <div className="grid gap-4 border-b border-bm-border p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
               <div className="flex items-start gap-2">
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-bm-brand" />
                 <p className="text-sm font-extrabold text-bm-text">Account security</p>
               </div>
               <p className="text-sm leading-6 text-bm-text-muted">
@@ -455,7 +455,7 @@ export default function BuyOnlineMalawiPage() {
 
             <div className="grid gap-4 border-b border-bm-border p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
               <div className="flex items-start gap-2">
-                <WalletCards className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                <WalletCards className="mt-0.5 h-4 w-4 shrink-0 text-bm-brand" />
                 <p className="text-sm font-extrabold text-bm-text">Transaction protection</p>
               </div>
               <p className="text-sm leading-6 text-bm-text-muted">
@@ -489,7 +489,7 @@ export default function BuyOnlineMalawiPage() {
 
             <div className="grid gap-4 p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
               <div className="flex items-start gap-2">
-                <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-bm-warning" />
                 <p className="text-sm font-extrabold text-bm-text">Important terms</p>
               </div>
               <div className="space-y-3 text-sm leading-6 text-bm-text-muted">
@@ -509,14 +509,14 @@ export default function BuyOnlineMalawiPage() {
                     className="group inline-flex items-center gap-1.5 py-2 font-extrabold text-bm-text hover:text-bm-brand"
                   >
                     Read Terms & Conditions
-                    <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
+                    <ArrowRight className="h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
                   </a>
                   <a
                     href="/safety"
                     className="group inline-flex items-center gap-1.5 py-2 font-extrabold text-bm-text hover:text-bm-brand"
                   >
                     Read Safety Tips
-                    <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
+                    <ArrowRight className="h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
                   </a>
                 </div>
               </div>
@@ -539,14 +539,14 @@ export default function BuyOnlineMalawiPage() {
                 className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg"
               >
                 Open Market
-                <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
+                <ArrowRight className="h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
               </a>
               <a
                 href={SELL_ONLINE_MALAWI_PATH}
                 className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg"
               >
                 Want to sell instead?
-                <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
+                <ArrowRight className="h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
               </a>
             </div>
           </div>
