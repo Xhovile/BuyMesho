@@ -145,7 +145,7 @@ export default function ListingCard({
       aria-label={`Open listing details for ${titleLabel}`}
     >
       <div className="relative overflow-hidden">
-        <div className={`relative overflow-hidden rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted ${imageAspect}`}>
+        <div className={`relative overflow-hidden rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted ${imageAspect}`}>
           <a
             href={`/listing?listing=${encodeURIComponent(String(listing.id))}`}
             aria-label={`Open listing details for ${titleLabel}`}
@@ -240,7 +240,7 @@ export default function ListingCard({
               </div>
             ) : (
               <div
-                className={`rounded-xl border border-white/25 bg-white/90 dark:bg-bm-surface/90 font-extrabold shadow-md ${
+                className={`rounded-xl border border-white/25 bg-bm-surface/90 dark:bg-bm-surface/90 font-extrabold shadow-md ${
                   performanceMode ? "" : "backdrop-blur-md"
                 } ${
                   fillGrid
@@ -282,12 +282,12 @@ export default function ListingCard({
             <h3
               className={
                 fillGrid
-                  ? "line-clamp-1 text-[13px] font-extrabold tracking-tight text-zinc-900 dark:text-bm-text md:text-[15px] md:group-hover:text-primary"
+                  ? "line-clamp-1 text-[13px] font-extrabold tracking-tight text-bm-text dark:text-bm-text md:text-[15px] md:group-hover:text-primary"
                   : ultraCompact
-                    ? "line-clamp-1 text-[13px] font-extrabold tracking-tight text-zinc-900 dark:text-bm-text"
+                    ? "line-clamp-1 text-[13px] font-extrabold tracking-tight text-bm-text dark:text-bm-text"
                     : compact
-                      ? "line-clamp-1 text-[15px] font-extrabold tracking-tight text-zinc-900 dark:text-bm-text group-hover:text-primary"
-                      : "line-clamp-1 text-[18px] font-bold tracking-tight text-zinc-900 dark:text-bm-text group-hover:text-primary"
+                      ? "line-clamp-1 text-[15px] font-extrabold tracking-tight text-bm-text dark:text-bm-text group-hover:text-primary"
+                      : "line-clamp-1 text-[18px] font-bold tracking-tight text-bm-text dark:text-bm-text group-hover:text-primary"
               }
             >
               {titleLabel}
@@ -300,13 +300,13 @@ export default function ListingCard({
             }`}
           >
             {cardSpecs.map((spec) => (
-              <span key={spec.key} className="rounded-full bg-zinc-100 dark:bg-bm-surface-muted px-1.5 py-px font-semibold leading-tight text-zinc-700 dark:text-bm-text-muted">
+              <span key={spec.key} className="rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted px-1.5 py-px font-semibold leading-tight text-bm-text-muted dark:text-bm-text-muted">
                 {spec.label}: {spec.value}
               </span>
             ))}
           </div>
 
-          <div className="min-h-[1.1rem] text-[10px] font-extrabold uppercase tracking-wider text-zinc-600 dark:text-bm-text-muted">
+          <div className="min-h-[1.1rem] text-[10px] font-extrabold uppercase tracking-wider text-bm-text-muted dark:text-bm-text-muted">
             {[conditionLabel, availabilityLabel].filter(Boolean).join(" | ")}
           </div>
 

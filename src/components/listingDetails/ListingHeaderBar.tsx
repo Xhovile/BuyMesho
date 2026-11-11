@@ -17,7 +17,7 @@ export default function ListingHeaderBar({ subtitle, backPath, onBack }: Listing
   const resolvedSubtitle = subtitle ?? getDefaultSubtitle();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 dark:bg-bm-surface/90 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 border-b border-bm-border/80 bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
         <BrandMark subtitle={resolvedSubtitle} />
 
@@ -25,7 +25,7 @@ export default function ListingHeaderBar({ subtitle, backPath, onBack }: Listing
           <button
             type="button"
             onClick={() => navigateToPath(EXPLORE_PATH)}
-            className="hidden rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 dark:hover:bg-bm-surface-muted sm:inline-flex"
+            className="hidden rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted sm:inline-flex"
           >
             Market
           </button>
