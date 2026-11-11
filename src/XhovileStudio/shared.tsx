@@ -47,7 +47,7 @@ export function StudioBackToTop() {
       title="Back to top"
       className="group fixed bottom-5 right-4 z-[120] flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#168cff] via-[#8f1528] to-[#ff1d25] p-[1px] shadow-[0_10px_30px_rgba(15,15,15,0.22)] transition hover:-translate-y-0.5 sm:bottom-6 sm:right-6"
     >
-      <span className="flex h-full w-full items-center justify-center rounded-full bg-bm-surface text-[#8f1528] transition group-hover:bg-[#fffaf5]">
+      <span className="flex h-full w-full items-center justify-center rounded-full bg-bm-surface text-[#8f1528] transition group-hover:bg-bm-surface-muted">
         <ArrowUp className="h-5 w-5" />
       </span>
     </button>
@@ -98,10 +98,10 @@ export function ServiceChoice({
 }) {
   const activeClass =
     color === "blue"
-      ? "border-[#168cff] bg-[#eef8ff] shadow-[0_0_0_1px_rgba(22,140,255,0.10),0_8px_22px_rgba(22,140,255,0.10)]"
+      ? "border-[#168cff] bg-bm-surface-muted shadow-[0_0_0_1px_rgba(22,140,255,0.10),0_8px_22px_rgba(22,140,255,0.10)]"
       : color === "red"
-        ? "border-[#ff1d25] bg-[#fff1f1] shadow-[0_0_0_1px_rgba(255,29,37,0.10),0_8px_22px_rgba(255,29,37,0.10)]"
-        : "border-[#8f1528] bg-gradient-to-r from-[#eef8ff] to-[#fff1f1] shadow-[0_0_0_1px_rgba(143,21,40,0.10),0_8px_22px_rgba(143,21,40,0.08)]";
+        ? "border-[#ff1d25] bg-bm-surface-muted shadow-[0_0_0_1px_rgba(255,29,37,0.10),0_8px_22px_rgba(255,29,37,0.10)]"
+        : "border-[#8f1528] bg-gradient-to-r from-bm-brand/10 to-bm-danger/10 shadow-[0_0_0_1px_rgba(143,21,40,0.10),0_8px_22px_rgba(143,21,40,0.08)]";
 
   return (
     <button
