@@ -461,7 +461,7 @@ export default function EventCreatorDashboardPage() {
                     type="button"
                     onClick={() => setStatus(item)}
                     className={`rounded-full border px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] transition ${
-                      active ? "border-zinc-950 bg-bm-brand text-bm-on-brand" : "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-subtle dark:text-bm-text-subtle hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
+                      active ? "border-bm-border bg-bm-brand text-bm-on-brand" : "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-subtle dark:text-bm-text-subtle hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
                     }`}
                   >
                     {label}
@@ -491,7 +491,7 @@ export default function EventCreatorDashboardPage() {
                       onClick={() => handleSelectEvent(event.id)}
                       className={`w-full rounded-[1.5rem] border p-4 text-left transition ${
                         active
-                          ? "border-zinc-950 bg-bm-brand text-bm-on-brand shadow-lg shadow-zinc-950/10"
+                          ? "border-bm-border bg-bm-brand text-bm-on-brand shadow-lg shadow-zinc-950/10"
                           : "border-bm-border dark:border-bm-border bg-bm-surface hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
                       }`}
                     >
