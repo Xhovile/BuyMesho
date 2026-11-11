@@ -146,22 +146,22 @@ function SellerRatingBlock({
   const normalized = useMemo(() => normalizeRatingSummary(ratingSummary), [ratingSummary]);
 
   return (
-    <div className="mt-6 border-t border-zinc-200 dark:border-bm-border pt-5">
+    <div className="mt-6 border-t border-bm-border dark:border-bm-border pt-5">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Ratings</p>
           <div className="mt-2 flex items-center gap-3 flex-wrap">
-            <span className="text-4xl font-black tracking-tight text-zinc-900 dark:text-bm-text">
+            <span className="text-4xl font-black tracking-tight text-bm-text dark:text-bm-text">
               {normalized.hasRatings ? normalized.averageRating.toFixed(1) : "—"}
             </span>
-            <span className="inline-flex items-center gap-1 text-sm font-semibold text-zinc-600 dark:text-bm-text-muted">
+            <span className="inline-flex items-center gap-1 text-sm font-semibold text-bm-text-muted dark:text-bm-text-muted">
               <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
               {normalized.hasRatings
                 ? `${normalized.ratingCount} rating${normalized.ratingCount === 1 ? "" : "s"}`
                 : "No ratings yet"}
             </span>
             {normalized.hasRatings ? (
-              <span className="rounded-full bg-zinc-100 dark:bg-bm-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-zinc-700 dark:text-bm-text-muted">
+              <span className="rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-bm-text-muted dark:text-bm-text-muted">
                 {ratingTierLabel(normalized.averageRating)}
               </span>
             ) : null}
@@ -170,28 +170,28 @@ function SellerRatingBlock({
       </div>
 
       {ratingLoading ? (
-        <p className="mt-4 text-sm text-zinc-500 dark:text-bm-text-subtle">Loading rating...</p>
+        <p className="mt-4 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Loading rating...</p>
       ) : (
         <div className="mt-5 space-y-2">
           {normalized.distribution.map((row) => (
             <div key={row.stars} className="grid grid-cols-[52px_minmax(0,1fr)_46px] items-center gap-2">
-              <span className="text-xs font-bold text-zinc-600 dark:text-bm-text-muted">{row.stars} ★</span>
-              <div className="h-2 rounded-full bg-zinc-200 dark:bg-bm-skeleton overflow-hidden">
+              <span className="text-xs font-bold text-bm-text-muted dark:text-bm-text-muted">{row.stars} ★</span>
+              <div className="h-2 rounded-full bg-bm-surface-raised dark:bg-bm-skeleton overflow-hidden">
                 <div className="h-full bg-amber-400" style={{ width: `${row.percentage}%` }} />
               </div>
-              <span className="text-xs text-zinc-500 dark:text-bm-text-subtle text-right">{row.count}</span>
+              <span className="text-xs text-bm-text-subtle dark:text-bm-text-subtle text-right">{row.count}</span>
             </div>
           ))}
-          {!normalized.hasRatings ? <p className="pt-1 text-sm text-zinc-500 dark:text-bm-text-subtle">No ratings yet.</p> : null}
+          {!normalized.hasRatings ? <p className="pt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No ratings yet.</p> : null}
         </div>
       )}
 
-      <div className="mt-5 border-t border-zinc-200 dark:border-bm-border pt-4">
+      <div className="mt-5 border-t border-bm-border dark:border-bm-border pt-4">
         <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">Your rating</p>
         {!isAuthenticated ? (
-          <p className="mt-2 text-sm text-zinc-500 dark:text-bm-text-subtle">Log in to leave a seller rating.</p>
+          <p className="mt-2 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Log in to leave a seller rating.</p>
         ) : !canRate ? (
-          <p className="mt-2 text-sm text-zinc-500 dark:text-bm-text-subtle">You cannot rate your own seller account.</p>
+          <p className="mt-2 text-sm text-bm-text-subtle dark:text-bm-text-subtle">You cannot rate your own seller account.</p>
         ) : (
           <>
             <div className="mt-3 flex items-center gap-1">
@@ -215,18 +215,18 @@ function SellerRatingBlock({
             </div>
             {normalized.myRating ? (
               <div className="mt-3 flex items-center justify-between gap-3">
-                <p className="text-sm text-zinc-600 dark:text-bm-text-muted">Your rating: {normalized.myRating}/5</p>
+                <p className="text-sm text-bm-text-muted dark:text-bm-text-muted">Your rating: {normalized.myRating}/5</p>
                 <button
                   type="button"
                   onClick={() => void onRemoveRating()}
                   disabled={ratingSubmitting}
-                  className="text-xs font-bold text-zinc-600 dark:text-bm-text-muted hover:text-zinc-900 underline underline-offset-2 disabled:opacity-50"
+                  className="text-xs font-bold text-bm-text-muted dark:text-bm-text-muted hover:text-bm-text underline underline-offset-2 disabled:opacity-50"
                 >
                   Remove rating
                 </button>
               </div>
             ) : (
-              <p className="mt-3 text-sm text-zinc-500 dark:text-bm-text-subtle">Select a star to rate this seller.</p>
+              <p className="mt-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Select a star to rate this seller.</p>
             )}
           </>
         )}
@@ -451,24 +451,24 @@ export default function SellerProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100 dark:bg-bm-surface-muted text-zinc-900 dark:text-bm-text">
+    <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text">
       <ListingHeaderBar />
       <FloatingCartButton isLoggedIn={!!firebaseUser} />
 
       <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         {loading ? (
-          <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-10 shadow-sm flex items-center justify-center gap-3 text-zinc-500 dark:text-bm-text-subtle font-medium">
+          <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-10 shadow-sm flex items-center justify-center gap-3 text-bm-text-subtle dark:text-bm-text-subtle font-medium">
             <Loader2 className="w-5 h-5 animate-spin" />
             Loading seller profile...
           </div>
         ) : !sellerUid || !profile ? (
-          <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-10 shadow-sm text-center">
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text">Seller profile not found</h1>
-            <p className="mt-3 text-sm text-zinc-500 dark:text-bm-text-subtle">This seller could not be loaded or may no longer be available.</p>
+          <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-10 shadow-sm text-center">
+            <h1 className="text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">Seller profile not found</h1>
+            <p className="mt-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">This seller could not be loaded or may no longer be available.</p>
             <button
               type="button"
               onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-              className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-5 py-3 text-sm font-extrabold text-black hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
+              className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-5 py-3 text-sm font-extrabold text-black hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
             >
               <ChevronLeft className="w-4 h-4" />
               Back
@@ -476,10 +476,10 @@ export default function SellerProfilePage() {
           </div>
         ) : (
           <>
-            <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 sm:p-8 shadow-sm">
+            <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 sm:p-8 shadow-sm">
               <div className="flex flex-col gap-6">
                 <div className="flex flex-row items-start gap-4 sm:gap-5">
-                  <div className="w-28 h-28 rounded-[2rem] overflow-hidden border border-zinc-200 dark:border-bm-border bg-zinc-100 dark:bg-bm-surface-muted shadow-sm flex items-center justify-center shrink-0">
+                  <div className="w-28 h-28 rounded-[2rem] overflow-hidden border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-muted shadow-sm flex items-center justify-center shrink-0">
                     {profile.business_logo ? (
                       <img
                         src={profile.business_logo}
@@ -487,7 +487,7 @@ export default function SellerProfilePage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-sm font-black text-zinc-500 dark:text-bm-text-subtle px-3 text-center">
+                      <div className="w-full h-full flex items-center justify-center text-sm font-black text-bm-text-subtle dark:text-bm-text-subtle px-3 text-center">
                         {(profile.business_name || "Seller")
                           .split(" ")
                           .map((word) => word[0])
@@ -499,7 +499,7 @@ export default function SellerProfilePage() {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-zinc-900 dark:text-bm-text break-words">
+                    <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-bm-text dark:text-bm-text break-words">
                       {profile.business_name || "Seller Profile"}
                     </h1>
 
@@ -527,24 +527,24 @@ export default function SellerProfilePage() {
                 </div>
 
                 <div className="min-w-0">
-                  <div className="space-y-2 text-sm sm:text-base leading-6 text-zinc-600 dark:text-bm-text-muted">
+                  <div className="space-y-2 text-sm sm:text-base leading-6 text-bm-text-muted dark:text-bm-text-muted">
                     <p>
-                      <span className="font-black text-zinc-900 dark:text-bm-text">Joined:</span> {formatDate(profile.join_date)}
+                      <span className="font-black text-bm-text dark:text-bm-text">Joined:</span> {formatDate(profile.join_date)}
                     </p>
 
                     {profile.bio ? (
                       <p className="max-w-2xl whitespace-pre-wrap">
-                        <span className="font-black text-zinc-900 dark:text-bm-text">Description:</span> {profile.bio}
+                        <span className="font-black text-bm-text dark:text-bm-text">Description:</span> {profile.bio}
                       </p>
                     ) : null}
 
                     <p>
-                      <span className="font-black text-zinc-900 dark:text-bm-text">Listings:</span> {listings.length} listing
+                      <span className="font-black text-bm-text dark:text-bm-text">Listings:</span> {listings.length} listing
                       {listings.length === 1 ? "" : "s"}
                     </p>
 
                     <p>
-                      <span className="font-black text-zinc-900 dark:text-bm-text">Profile Views:</span> {profile.profile_views ?? 0}
+                      <span className="font-black text-bm-text dark:text-bm-text">Profile Views:</span> {profile.profile_views ?? 0}
                     </p>
                   </div>
 
@@ -563,8 +563,8 @@ export default function SellerProfilePage() {
             </section>
 
             <section className="mt-6 space-y-4">
-              <div className="rounded-[1.75rem] border border-zinc-200 dark:border-bm-border bg-white p-4 shadow-sm">
-                <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-3">
+              <div className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm">
+                <div className="flex items-center gap-3 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3">
                   <Search className="w-4 h-4 text-zinc-400 dark:text-bm-text-subtle" />
                   <input
                     value={listingSearch}
@@ -575,11 +575,11 @@ export default function SellerProfilePage() {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm">
+              <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div>
-                    <h2 className="text-xl font-black text-zinc-900 dark:text-bm-text">Listings</h2>
-                    <p className="mt-1 text-sm text-zinc-500 dark:text-bm-text-subtle">
+                    <h2 className="text-xl font-black text-bm-text dark:text-bm-text">Listings</h2>
+                    <p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                       {filteredListings.length} result{filteredListings.length === 1 ? "" : "s"}
                       {listingSearch.trim() ? ` for “${listingSearch.trim()}”` : ""}
                     </p>
@@ -596,9 +596,9 @@ export default function SellerProfilePage() {
                           event.preventDefault();
                           navigateToListingDetails(listing.id);
                         }}
-                        className="group rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                        className="group rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                       >
-                        <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted">
+                        <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted">
                           {listing.photos?.[0] ? (
                             <img
                               src={listing.photos[0]}
@@ -608,14 +608,14 @@ export default function SellerProfilePage() {
                           ) : null}
                         </div>
                         <div className="mt-3 space-y-1">
-                          <h3 className="line-clamp-1 text-sm font-extrabold text-zinc-900 dark:text-bm-text">{listing.name}</h3>
+                          <h3 className="line-clamp-1 text-sm font-extrabold text-bm-text dark:text-bm-text">{listing.name}</h3>
                           <p className="text-sm font-bold text-red-900">MK{Number(listing.price).toLocaleString()}</p>
-                          <p className="text-xs text-zinc-500 dark:text-bm-text-subtle line-clamp-2">{listing.description}</p>
+                          <p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle line-clamp-2">{listing.description}</p>
                         </div>
                       </a>
                     ))
                   ) : (
-                    <div className="col-span-full rounded-3xl border border-dashed border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-8 text-center text-sm text-zinc-500 dark:text-bm-text-subtle">
+                    <div className="col-span-full rounded-3xl border border-dashed border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-8 text-center text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                       No listings found for this seller.
                     </div>
                   )}
