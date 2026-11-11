@@ -505,7 +505,7 @@ export default function SellerProfilePage() {
 
                     <div className="mt-3 flex items-center gap-2 flex-wrap">
                       {profile.is_verified ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-bm-surface-muted px-3 py-1 text-xs font-bold text-bm-text-muted">
                           <ShieldCheck className="w-4 h-4" />
                           Verified
                         </span>
@@ -609,7 +609,7 @@ export default function SellerProfilePage() {
                         </div>
                         <div className="mt-3 space-y-1">
                           <h3 className="line-clamp-1 text-sm font-extrabold text-bm-text dark:text-bm-text">{listing.name}</h3>
-                          <p className="text-sm font-bold text-red-900">MK{Number(listing.price).toLocaleString()}</p>
+                          <p className="text-sm font-bold text-bm-brand">MK{Number(listing.price).toLocaleString()}</p>
                           <p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle line-clamp-2">{listing.description}</p>
                         </div>
                       </a>
