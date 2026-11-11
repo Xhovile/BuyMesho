@@ -106,15 +106,15 @@ export default function DiagnosticsDrawer({ onRecorded }: { onRecorded?: () => v
 
             <div className="space-y-5 p-5">
               {error ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</div>
+                <div className="rounded-2xl border border-bm-danger/35 bg-bm-danger-bg p-4 text-sm text-bm-danger">{error}</div>
               ) : result ? (
                 <>
                   <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-4">
                     <div className="flex items-center gap-3">
                       {result.overall === "PASS" ? (
-                        <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                        <CheckCircle2 className="h-6 w-6 text-bm-success" />
                       ) : (
-                        <XCircle className="h-6 w-6 text-rose-600" />
+                        <XCircle className="h-6 w-6 text-bm-danger" />
                       )}
                       <div>
                         <p className="text-sm font-bold text-bm-text dark:text-bm-text">{result.overall}</p>
