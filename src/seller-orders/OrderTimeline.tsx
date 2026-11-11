@@ -65,12 +65,12 @@ export default function OrderTimeline({ bundle }: { bundle: OrderBundle }) {
   const events = buildEvents(bundle);
 
   return (
-    <section className="mt-5 rounded-2xl border border-zinc-200 bg-white p-5">
+    <section className="mt-5 rounded-2xl border border-bm-border bg-bm-surface p-5">
       <div className="flex items-center gap-2">
-        <CalendarClock className="h-4 w-4 text-zinc-500" />
+        <CalendarClock className="h-4 w-4 text-bm-text-subtle" />
         <div>
-          <p className="text-xs font-black uppercase tracking-wider text-zinc-400">Order timeline</p>
-          <p className="mt-0.5 text-xs font-semibold text-zinc-500">Times shown in Malawi time (Africa/Blantyre)</p>
+          <p className="text-xs font-black uppercase tracking-wider text-bm-text-subtle">Order timeline</p>
+          <p className="mt-0.5 text-xs font-semibold text-bm-text-subtle">Times shown in Malawi time (Africa/Blantyre)</p>
         </div>
       </div>
 
@@ -82,15 +82,15 @@ export default function OrderTimeline({ bundle }: { bundle: OrderBundle }) {
             return (
               <li key={`${event.label}-${event.at}`} className="relative flex gap-4">
                 {index < events.length - 1 ? (
-                  <span className="absolute left-[5px] top-3 h-[calc(100%+1rem)] w-px bg-zinc-200" aria-hidden="true" />
+                  <span className="absolute left-[5px] top-3 h-[calc(100%+1rem)] w-px bg-bm-border" aria-hidden="true" />
                 ) : null}
-                <span className="relative mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-zinc-950 ring-4 ring-zinc-100" aria-hidden="true" />
+                <span className="relative mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-bm-brand ring-4 ring-bm-border-subtle" aria-hidden="true" />
                 <div className="min-w-0 flex-1 sm:flex sm:items-baseline sm:justify-between sm:gap-4">
-                  <p className="text-sm font-extrabold text-zinc-950">{event.label}</p>
-                  <div className="mt-1 text-xs font-semibold text-zinc-500 sm:mt-0 sm:text-right">
+                  <p className="text-sm font-extrabold text-bm-text">{event.label}</p>
+                  <div className="mt-1 text-xs font-semibold text-bm-text-subtle sm:mt-0 sm:text-right">
                     <span>{formatted.date}</span>
-                    <span className="mx-1.5 text-zinc-300">•</span>
-                    <span className="text-zinc-700">{formatted.time}</span>
+                    <span className="mx-1.5 text-bm-text-subtle">•</span>
+                    <span className="text-bm-text-muted">{formatted.time}</span>
                   </div>
                 </div>
               </li>
@@ -98,7 +98,7 @@ export default function OrderTimeline({ bundle }: { bundle: OrderBundle }) {
           })}
         </ol>
       ) : (
-        <p className="mt-4 text-sm font-semibold text-zinc-500">No order events have been recorded yet.</p>
+        <p className="mt-4 text-sm font-semibold text-bm-text-subtle">No order events have been recorded yet.</p>
       )}
     </section>
   );
