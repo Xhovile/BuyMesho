@@ -81,16 +81,16 @@ function DeferredHomeSkeleton() {
         </div>
       </section>
 
-      <section className="rounded-[2rem] bg-zinc-900 p-6 shadow-xl shadow-zinc-400/20 sm:p-8 lg:p-10">
+      <section className="rounded-[2rem] bg-bm-brand p-6 shadow-xl shadow-bm-brand/20 sm:p-8 lg:p-10">
         <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
           <div className="space-y-3">
-            <div className="h-3 w-24 rounded-full bg-bm-surface/15 animate-pulse" />
-            <div className="h-7 w-56 max-w-full rounded-full bg-bm-surface/15 animate-pulse" />
+            <div className="h-3 w-24 rounded-full bg-bm-on-brand/15 animate-pulse" />
+            <div className="h-7 w-56 max-w-full rounded-full bg-bm-on-brand/15 animate-pulse" />
           </div>
           <div className="flex flex-wrap gap-3 lg:justify-end">
-            <div className="h-12 w-32 rounded-2xl bg-bm-surface/15 animate-pulse" />
-            <div className="h-12 w-28 rounded-2xl bg-bm-surface/15 animate-pulse" />
-            <div className="h-12 w-32 rounded-2xl bg-bm-surface/15 animate-pulse" />
+            <div className="h-12 w-32 rounded-2xl bg-bm-on-brand/15 animate-pulse" />
+            <div className="h-12 w-28 rounded-2xl bg-bm-on-brand/15 animate-pulse" />
+            <div className="h-12 w-32 rounded-2xl bg-bm-on-brand/15 animate-pulse" />
           </div>
         </div>
       </section>
@@ -247,7 +247,7 @@ export default function HomePage() {
 
         {controller.error ? (
           <section className="mx-auto max-w-7xl px-4 pb-2">
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">
               {controller.error}
             </div>
           </section>
@@ -255,7 +255,7 @@ export default function HomePage() {
 
         <section className="relative left-1/2 w-screen -translate-x-1/2 border-y border-bm-border dark:border-bm-border bg-bm-surface py-6 sm:py-8">
           <div className="mx-auto max-w-7xl px-4">
-            <h2 className="mb-5 text-2xl font-black tracking-[-0.04em] text-zinc-950 dark:text-bm-text sm:text-4xl">
+            <h2 className="mb-5 text-2xl font-black tracking-[-0.04em] text-bm-text sm:text-4xl">
               FEATURED CATEGORIES
             </h2>
           </div>
