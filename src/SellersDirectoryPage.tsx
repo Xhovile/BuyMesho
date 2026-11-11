@@ -276,7 +276,7 @@ export default function SellersDirectoryPage() {
                 <div className="relative flex items-start gap-4">
                   <div className="relative shrink-0">
                     <div className="absolute inset-0 rounded-[1.75rem] bg-red-900/10 blur-xl" />
-                    <div className="relative flex h-18 w-18 items-center justify-center overflow-hidden rounded-[1.75rem] border border-white/70 bg-bm-surface-muted ring-1 ring-zinc-200">
+                    <div className="relative flex h-18 w-18 items-center justify-center overflow-hidden rounded-[1.75rem] border border-white/70 bg-bm-surface-muted ring-1 ring-bm-border">
                       {card.logoUrl ? (
                         <img src={card.logoUrl} alt="Seller logo" className="h-full w-full object-cover" />
                       ) : (
