@@ -26,7 +26,7 @@ export default function TotpChallengeModal({
   const displayTitle = title === "Two-factor verification" ? "Two-factor authentication" : title;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bm-overlay px-4">
       <div className="w-full max-w-md rounded-3xl bg-bm-surface p-6 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div>
