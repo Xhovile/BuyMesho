@@ -521,7 +521,7 @@ export default function FilterSection({
           }}
           className={`relative hidden md:inline-flex items-center gap-2 h-[52px] px-5 rounded-2xl border text-sm font-extrabold transition-all shadow-sm ${
             showMoreFilters || activeExtraFilterCount > 0
-              ? "bg-bm-brand text-white border-zinc-900 hover:bg-bm-brand-hover"
+              ? "bg-bm-brand text-white border-bm-border hover:bg-bm-brand-hover"
               : "bg-amber-50 text-bm-text dark:text-bm-text border-amber-200 hover:bg-amber-100"
           }`}
         >
@@ -1015,7 +1015,7 @@ export default function FilterSection({
             type="checkbox"
             checked={hideSoldOut}
             onChange={(e) => setHideSoldOut(e.target.checked)}
-            className="h-4 w-4 rounded border-bm-border dark:border-bm-border text-bm-text dark:text-bm-text focus:ring-zinc-400"
+            className="h-4 w-4 rounded border-bm-border dark:border-bm-border text-bm-text dark:text-bm-text focus:ring-bm-focus"
           />
           Hide sold-out listings
         </label>
