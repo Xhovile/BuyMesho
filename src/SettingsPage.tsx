@@ -10,6 +10,7 @@ import PasswordPromptModal from "./components/PasswordPromptModal";
 import TotpSetupModal from "./components/TotpSetupModal";
 import AccountDeletionModal, { type AccountDeletionResult } from "./components/AccountDeletionModal";
 import SettingsAccountSection from "./components/settings/SettingsAccountSection";
+import SettingsAppearanceSection from "./components/settings/SettingsAppearanceSection";
 import SettingsSecuritySection from "./components/settings/SettingsSecuritySection";
 import SettingsPrivacySection from "./components/settings/SettingsPrivacySection";
 import SettingsHelpLegalSection from "./components/settings/SettingsHelpLegalSection";
@@ -487,6 +488,7 @@ export default function SettingsPage() {
         </section>
 
         <section className="space-y-4">
+          <SettingsAppearanceSection />
           <SettingsAccountSection
             expanded={expandedSections.account}
             onToggle={() => toggleSection("account")}
