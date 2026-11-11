@@ -105,7 +105,7 @@ function ListingRow({
         <button
           type="button"
           onClick={() => onOpenDetails(listing)}
-          className="group relative aspect-square overflow-hidden rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
+          className="group relative aspect-square overflow-hidden rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-bm-focus"
           aria-label={`Open ${titleLabel}`}
           disabled={busy}
         >
@@ -418,7 +418,7 @@ export default function MyListingsPage() {
           <button
             type="button"
             onClick={() => navigateToPath("/login")}
-            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover"
           >
             Go to Login
           </button>
@@ -430,7 +430,7 @@ export default function MyListingsPage() {
           <button
             type="button"
             onClick={() => navigateToPath("/become-seller")}
-            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover"
           >
             Become a Seller
           </button>
@@ -455,14 +455,14 @@ export default function MyListingsPage() {
             <button
               type="button"
               onClick={() => navigateToPath(SELLER_DASHBOARD_PATH)}
-              className="inline-flex items-center gap-2 rounded-2xl bg-[#34C759] px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-[#30B955] transition-colors"
+              className="inline-flex items-center gap-2 rounded-2xl bg-[#34C759] px-5 py-3 text-sm font-extrabold text-bm-on-brand shadow-sm hover:bg-[#30B955] transition-colors"
             >
               Open Dashboard
             </button>
             <button
               type="button"
               onClick={() => navigateToPath("/create")}
-              className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+              className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover"
             >
               Create Listing
             </button>
@@ -473,7 +473,7 @@ export default function MyListingsPage() {
           <div className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Seller</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Seller</p>
                 <h2 className="mt-1 text-xl font-black tracking-tight text-bm-text dark:text-bm-text">Your listings</h2>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -489,14 +489,14 @@ export default function MyListingsPage() {
                 <button
                   type="button"
                   onClick={() => navigateToPath(SELLER_DASHBOARD_PATH)}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-[#34C759] px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-[#30B955] transition-colors"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-[#34C759] px-5 py-3 text-sm font-extrabold text-bm-on-brand shadow-sm hover:bg-[#30B955] transition-colors"
                 >
                   Open Dashboard
                 </button>
                 <button
                   type="button"
                   onClick={() => navigateToPath("/create")}
-                  className="rounded-2xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
+                  className="rounded-2xl bg-bm-brand px-4 py-2 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"
                 >
                   Create Listing
                 </button>
