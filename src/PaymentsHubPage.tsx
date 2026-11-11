@@ -12,10 +12,10 @@ import {
 import { useAccountProfile } from "./hooks/useAccountProfile";
 
 const paymentActions = [
-  { label: "Purchases", path: BUYER_PAYMENTS_PATH, icon: Receipt, iconBg: "bg-emerald-300" },
+  { label: "Purchases", path: BUYER_PAYMENTS_PATH, icon: Receipt, iconBg: "bg-bm-success" },
   { label: "Tickets", path: TICKETS_PATH, icon: Ticket, iconBg: "bg-bm-brand" },
-  { label: "Track Order", path: TRACK_ORDER_PATH, icon: Truck, iconBg: "bg-blue-500" },
-  { label: "Disputes", path: DISPUTES_PATH, icon: ShieldAlert, iconBg: "bg-red-900" },
+  { label: "Track Order", path: TRACK_ORDER_PATH, icon: Truck, iconBg: "bg-bm-brand" },
+  { label: "Disputes", path: DISPUTES_PATH, icon: ShieldAlert, iconBg: "bg-bm-warning" },
 ] as const;
 
 export default function PaymentsHubPage() {
