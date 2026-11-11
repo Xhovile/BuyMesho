@@ -40,7 +40,7 @@ export default function OrderProgressTracker({
                 {index === activeIndex ? (
                   <p
                     className={`text-xs ${
-                      active ? 'text-zinc-200' : 'text-bm-text-subtle dark:text-bm-text-subtle'
+                      active ? 'text-bm-on-brand' : 'text-bm-text-subtle dark:text-bm-text-subtle'
                     }`}
                   >
                     Current state
