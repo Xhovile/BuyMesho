@@ -37,19 +37,19 @@ export default function EventDetailsActions({
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-blue-700/80">Owner view</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle">Owner view</p>
             <h2 className="mt-1 text-lg font-black tracking-tight text-bm-text">Manage this event</h2>
             <p className="mt-1 text-sm leading-6 text-bm-text-muted">Use these tools to edit details, publish changes, or remove the event from the public directory.</p>
           </div>
           <button type="button" onClick={onShare} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-bm-border bg-bm-surface shadow-sm transition-colors hover:bg-bm-surface-muted" aria-label="Share event" title="Share event">
-            <Share2 className="h-4 w-4 text-blue-700" />
+            <Share2 className="h-4 w-4 text-bm-brand" />
           </button>
         </div>
 
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?event=${event.id}`)} className={ownerActionButtonClass}><BarChart3 className="h-4 w-4" />Open Event Manager</button>
           <button type="button" onClick={() => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${event.id}&skipCreatorCheck=1`)} className={ownerActionButtonClass}><Pencil className="h-4 w-4" />Edit event</button>
-          <button type="button" onClick={onCancelEvent} className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100"><Trash2 className="h-4 w-4" />Cancel event</button>
+          <button type="button" onClick={onCancelEvent} className="inline-flex items-center gap-2 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-2.5 text-sm font-bold text-bm-danger hover:bg-bm-danger-bg"><Trash2 className="h-4 w-4" />Cancel event</button>
         </div>
       </div>
     </div>
