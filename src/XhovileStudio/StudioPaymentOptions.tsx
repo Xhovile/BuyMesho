@@ -67,7 +67,7 @@ export default function StudioPaymentOptions({
                       <input
                         value={graphicCustomTotal}
                         onChange={(event) => onGraphicCustomTotalChange(event.target.value.replace(/[^0-9.]/g, ""))}
-                        className="w-32 rounded-xl border border-bm-border bg-white px-3 py-2.5 text-sm text-bm-text outline-none focus:border-[#168cff]"
+                        className="w-32 rounded-xl border border-bm-border bg-bm-surface px-3 py-2.5 text-sm text-bm-text outline-none focus:border-[#168cff]"
                         placeholder="Total MWK"
                         inputMode="numeric"
                       />
@@ -93,7 +93,7 @@ export default function StudioPaymentOptions({
                     <input
                       value={websiteTotal}
                       onChange={(event) => onWebsiteTotalChange(event.target.value.replace(/[^0-9.]/g, ""))}
-                      className="w-full rounded-xl border border-bm-border bg-white px-3 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-muted focus:border-[#ff1d25]"
+                      className="w-full rounded-xl border border-bm-border bg-bm-surface px-3 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-muted focus:border-[#ff1d25]"
                       placeholder="Agreed project price (MWK)"
                       inputMode="numeric"
                     />
