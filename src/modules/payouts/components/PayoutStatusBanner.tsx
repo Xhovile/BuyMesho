@@ -47,15 +47,22 @@ function toneClasses(status: string): { wrapper: string; icon: React.ReactNode }
 
   if (normalized === 'paid') {
     return {
-      wrapper: 'border-emerald-200 bg-emerald-50 text-emerald-950',
-      icon: <CheckCircle2 className="h-5 w-5 text-emerald-600" />,
+      wrapper: 'border-bm-success/25 bg-bm-success-bg text-bm-success',
+      icon: <CheckCircle2 className="h-5 w-5 text-bm-success" />,
     };
   }
 
-  if (normalized === 'held' || normalized === 'failed') {
+  if (normalized === 'held') {
     return {
-      wrapper: 'border-amber-200 bg-amber-50 text-amber-950',
-      icon: <AlertTriangle className="h-5 w-5 text-amber-600" />,
+      wrapper: 'border-bm-warning/25 bg-bm-warning-bg text-bm-warning',
+      icon: <AlertTriangle className="h-5 w-5 text-bm-warning" />,
+    };
+  }
+
+  if (normalized === 'failed') {
+    return {
+      wrapper: 'border-bm-danger/25 bg-bm-danger-bg text-bm-danger',
+      icon: <AlertTriangle className="h-5 w-5 text-bm-danger" />,
     };
   }
 
@@ -108,7 +115,7 @@ export default function PayoutStatusBanner({
   return (
     <section className={`rounded-2xl border p-4 shadow-sm ${tone.wrapper} ${className}`.trim()}>
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-bm-surface/70 ring-1 ring-black/5">
+        <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-bm-surface/70 ring-1 ring-bm-border/60">
           {tone.icon}
         </div>
 
@@ -126,21 +133,21 @@ export default function PayoutStatusBanner({
           </div>
 
           <div className="grid gap-2 text-sm text-current/80 sm:grid-cols-2">
-            <div className="rounded-xl bg-bm-surface/60 px-3 py-2 ring-1 ring-black/5">
+            <div className="rounded-xl bg-bm-surface/60 px-3 py-2 ring-1 ring-bm-border/60">
               <span className="font-bold text-current">Payout provider:</span> {providerName}
             </div>
             {updatedLabel ? (
-              <div className="rounded-xl bg-bm-surface/60 px-3 py-2 ring-1 ring-black/5">
+              <div className="rounded-xl bg-bm-surface/60 px-3 py-2 ring-1 ring-bm-border/60">
                 <span className="font-bold text-current">Last updated:</span> {updatedLabel}
               </div>
             ) : null}
             {manualReviewPending ? (
-              <div className="rounded-xl bg-bm-surface/60 px-3 py-2 ring-1 ring-black/5">
+              <div className="rounded-xl bg-bm-surface/60 px-3 py-2 ring-1 ring-bm-border/60">
                 <span className="font-bold text-current">Next step:</span> Waiting for admin review
               </div>
             ) : null}
             {retryAllowed === false && String(status).toLowerCase() === 'failed' ? (
-              <div className="rounded-xl bg-bm-surface/60 px-3 py-2 ring-1 ring-black/5">
+              <div className="rounded-xl bg-bm-surface/60 px-3 py-2 ring-1 ring-bm-border/60">
                 <span className="font-bold text-current">Retry:</span> Not available
               </div>
             ) : null}
@@ -167,7 +174,7 @@ export default function PayoutStatusBanner({
               {signals.slice(0, 4).map((signal) => (
                 <span
                   key={signal}
-                  className="inline-flex items-center rounded-full bg-bm-surface/70 px-3 py-1 text-[11px] font-semibold text-current/80 ring-1 ring-black/5"
+                  className="inline-flex items-center rounded-full bg-bm-surface/70 px-3 py-1 text-[11px] font-semibold text-current/80 ring-1 ring-bm-border/60"
                 >
                   {signal}
                 </span>
@@ -180,7 +187,7 @@ export default function PayoutStatusBanner({
               <button
                 type="button"
                 onClick={onRetry}
-                className="inline-flex items-center gap-2 rounded-xl bg-bm-surface px-4 py-2 text-sm font-bold text-bm-text shadow-sm ring-1 ring-black/5 transition hover:bg-bm-surface-muted"
+                className="inline-flex items-center gap-2 rounded-xl bg-bm-surface px-4 py-2 text-sm font-bold text-bm-text shadow-sm ring-1 ring-bm-border/60 transition hover:bg-bm-surface-muted"
               >
                 <RefreshCw className="h-4 w-4" />
                 Try again
@@ -191,7 +198,7 @@ export default function PayoutStatusBanner({
               <button
                 type="button"
                 onClick={onViewDetails}
-                className="inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2 text-sm font-bold text-bm-on-brand shadow-sm transition hover:bg-black/85"
+                className="inline-flex items-center gap-2 rounded-xl bg-bm-brand px-4 py-2 text-sm font-bold text-bm-on-brand shadow-sm transition hover:bg-bm-brand-hover"
               >
                 <MessageCircleQuestion className="h-4 w-4" />
                 Open payout details
@@ -202,7 +209,7 @@ export default function PayoutStatusBanner({
               <button
                 type="button"
                 onClick={onContactSupport}
-                className="inline-flex items-center gap-2 rounded-xl bg-bm-surface/80 px-4 py-2 text-sm font-bold text-current shadow-sm ring-1 ring-black/5 transition hover:bg-bm-surface"
+                className="inline-flex items-center gap-2 rounded-xl bg-bm-surface/80 px-4 py-2 text-sm font-bold text-current shadow-sm ring-1 ring-bm-border/60 transition hover:bg-bm-surface"
               >
                 Get help
               </button>
