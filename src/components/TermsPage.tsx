@@ -14,10 +14,10 @@ function Section({
 }) {
   return (
     <section className="space-y-3">
-      <h3 className="text-sm font-extrabold uppercase tracking-widest text-zinc-900 dark:text-bm-text">
+      <h3 className="text-sm font-extrabold uppercase tracking-widest text-bm-text dark:text-bm-text">
         {title}
       </h3>
-      <div className="space-y-3 text-sm leading-7 text-zinc-700 dark:text-bm-text-muted">{children}</div>
+      <div className="space-y-3 text-sm leading-7 text-bm-text-muted dark:text-bm-text-muted">{children}</div>
     </section>
   );
 }
@@ -30,17 +30,17 @@ export default function TermsPage({
       <div className="p-6 overflow-y-auto flex-1">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="space-y-4">
-            <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-5 space-y-3">
-              <p className="text-sm font-semibold text-zinc-800 dark:text-bm-text-muted">
+            <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-5 space-y-3">
+              <p className="text-sm font-semibold text-bm-text dark:text-bm-text-muted">
                 Effective Date: 25 March 2026
               </p>
-              <p className="text-sm leading-7 text-zinc-700 dark:text-bm-text-muted">
+              <p className="text-sm leading-7 text-bm-text-muted dark:text-bm-text-muted">
                 BuyMesho is independently owned and operated by Isaac Mtsiriza.
                 These Terms &amp; Conditions govern access to and use of the
                 BuyMesho platform, including user accounts, seller applications,
                 listings, reports, and related marketplace features.
               </p>
-              <p className="text-sm leading-7 text-zinc-700 dark:text-bm-text-muted">
+              <p className="text-sm leading-7 text-bm-text-muted dark:text-bm-text-muted">
                 By accessing or using BuyMesho, you agree to be bound by these
                 Terms. If you do not agree, you should not use the platform.
               </p>
