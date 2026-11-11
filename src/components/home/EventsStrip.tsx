@@ -6,7 +6,7 @@ import { EventCard } from "../events/EventCard";
 
 function EventCardSkeleton() {
   return (
-    <div className="w-[220px] shrink-0 snap-start overflow-hidden rounded-2xl bg-bm-surface ring-1 ring-zinc-200/90 shadow-sm sm:w-[260px]">
+    <div className="w-[220px] shrink-0 snap-start overflow-hidden rounded-2xl bg-bm-surface ring-1 ring-bm-border shadow-sm sm:w-[260px]">
       <div className="aspect-[4/3] animate-pulse rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted" />
       <div className="pt-3">
         <div className="mx-0 h-4 w-3/4 animate-pulse rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted" />
@@ -39,7 +39,7 @@ export default function EventsStrip({
             <div>
               <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-red-200/80">Live on BuyMesho</p>
               <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-white sm:text-3xl">What is happening now.</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-bm-text-muted sm:text-base">
                 See campus launches, workshops, parties, sports, and student moments before they fill up.
               </p>
             </div>
@@ -50,7 +50,7 @@ export default function EventsStrip({
                 event.preventDefault();
                 navigateToPath(viewMorePath);
               }}
-              className="inline-flex items-center gap-2 rounded-2xl border border-red-950/15 bg-bm-surface px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-red-900 shadow-sm shadow-black/10 transition-all hover:-translate-y-0.5 hover:border-red-900/25 hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted hover:shadow-md sm:px-4 sm:py-2.5 sm:text-sm sm:font-bold sm:normal-case sm:tracking-normal"
+              className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-surface px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-bm-brand shadow-sm shadow-black/10 transition-all hover:-translate-y-0.5 hover:border-bm-brand/30 hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted hover:shadow-md sm:px-4 sm:py-2.5 sm:text-sm sm:font-bold sm:normal-case sm:tracking-normal"
             >
               <span className="sm:hidden">All</span>
               <span className="hidden sm:inline">Open Events</span>
