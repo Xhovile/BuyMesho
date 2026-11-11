@@ -124,7 +124,7 @@ function ListingRow({
             <button
               type="button"
               onClick={() => sellerUid && onOpenSeller(sellerUid)}
-              className="max-w-full truncate text-left text-sm font-extrabold text-red-900"
+              className="max-w-full truncate text-left text-sm font-extrabold text-bm-brand"
               disabled={busy}
             >
               {sellerName}
@@ -134,13 +134,13 @@ function ListingRow({
             </span>
             <span
               className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                isSoldOut ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"
+                isSoldOut ? "bg-bm-danger-bg text-bm-danger" : "bg-bm-success-bg text-bm-success"
               }`}
             >
               {isSoldOut ? "Sold out" : `${availableQuantity} left`}
             </span>
             {listing.is_verified ? (
-              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-blue-700">
+              <span className="rounded-full bg-bm-surface-muted px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-bm-text-muted">
                 Verified
               </span>
             ) : null}
@@ -217,7 +217,7 @@ function ListingRow({
           <button
             type="button"
             onClick={() => onDelete(listing.id)}
-            className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-50"
+            className="rounded-2xl border border-bm-danger/35 bg-bm-danger-bg px-4 py-2 text-sm font-bold text-bm-danger hover:brightness-95 disabled:opacity-50"
             disabled={busy}
           >
             Delete
