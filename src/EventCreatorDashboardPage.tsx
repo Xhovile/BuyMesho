@@ -102,13 +102,13 @@ function formatDateTime(value: string | null | undefined) {
 function statusClass(status: string) {
   switch (status.toLowerCase()) {
     case "published":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+      return "border-bm-success/35 bg-bm-success-bg text-bm-success";
     case "inactive":
-      return "border-amber-200 bg-amber-50 text-amber-700";
+      return "border-bm-warning/35 bg-bm-warning-bg text-bm-warning";
     case "cancelled":
-      return "border-rose-200 bg-rose-50 text-rose-700";
+      return "border-bm-danger/35 bg-bm-danger-bg text-bm-danger";
     case "draft":
-      return "border-sky-200 bg-sky-50 text-sky-700";
+      return "border-bm-border bg-bm-surface-muted text-bm-text-muted";
     default:
       return "border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-muted dark:text-bm-text-muted";
   }
@@ -154,7 +154,7 @@ function ActionButton({
 }) {
   const className =
     variant === "danger"
-      ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+      ? "border-bm-danger/35 bg-bm-danger-bg text-bm-danger hover:bg-rose-100"
       : variant === "ghost"
         ? "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
         : "border-bm-brand bg-bm-brand text-bm-on-brand hover:bg-bm-brand-hover";
