@@ -70,7 +70,7 @@ export default function AdminWebhooksTable({
                     {event.payload ? (
                       <details className="group">
                         <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-3 py-1 text-xs font-bold text-bm-text-muted dark:text-bm-text-muted"><BadgeInfo className="h-3.5 w-3.5" /> View payload</summary>
-                        <pre className="mt-3 max-h-72 overflow-auto rounded-2xl bg-zinc-950 p-4 text-[11px] leading-relaxed text-zinc-100">{event.payload}</pre>
+                        <pre className="mt-3 max-h-72 overflow-auto rounded-2xl bg-bm-surface-subtle p-4 text-[11px] leading-relaxed text-bm-text">{event.payload}</pre>
                       </details>
                     ) : "—"}
                   </td>
