@@ -12,34 +12,34 @@ export default function SellerPayoutsHero({
   canEditSettings: boolean;
 }) {
   return (
-    <section className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)] sm:p-8">
+    <section className="rounded-[28px] border border-bm-border bg-bm-surface p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)] sm:p-8">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">
             Seller payouts
           </p>
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
             Payout control center.
           </h1>
-          <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-zinc-600 dark:text-bm-text-muted sm:text-base">
+          <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-bm-text-muted dark:text-bm-text-muted sm:text-base">
             Set up your payout destination, track payout status, and keep a clean view of what is
             pending, paid, or failed.
           </p>
 
-          <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-zinc-600 dark:text-bm-text-muted">
-            <span className="rounded-full border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-3 py-1.5">
+          <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-bm-text-muted dark:text-bm-text-muted">
+            <span className="rounded-full border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-3 py-1.5">
               Active destinations: {summary.activeDestinations}
             </span>
-            <span className="rounded-full border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-3 py-1.5">
+            <span className="rounded-full border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-3 py-1.5">
               Default: {summary.defaultDestination ? summary.defaultDestination.maskedAccount : "Not set"}
             </span>
-            <span className="rounded-full border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-3 py-1.5">
+            <span className="rounded-full border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-3 py-1.5">
               Permissions: {canEditSettings ? "Edit enabled" : "View only"}
             </span>
           </div>
         </div>
 
-        <div className="rounded-[1.75rem] border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-3 shadow-sm lg:min-w-[520px]">
+        <div className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-3 shadow-sm lg:min-w-[520px]">
           <SellerEarningsSummary summary={earningsSummary} compact />
         </div>
       </div>
