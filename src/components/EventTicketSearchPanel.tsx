@@ -68,20 +68,20 @@ export default function EventTicketSearchPanel({ mode }: EventTicketSearchPanelP
   };
 
   return (
-    <section className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
+    <section className="rounded-[1.5rem] border border-bm-border bg-bm-surface p-4 shadow-sm">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-zinc-950 text-white">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-bm-brand text-bm-on-brand">
           <Ticket className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Event ticket search</p>
-          <h2 className="mt-1 text-lg font-black tracking-tight text-zinc-950">Find an event transaction by Ticket ID</h2>
-          <p className="mt-1 text-sm text-zinc-600">Use the canonical Ticket ID to jump from the event to its order, payment, and dispute trail.</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle">Event ticket search</p>
+          <h2 className="mt-1 text-lg font-black tracking-tight text-bm-text">Find an event transaction by Ticket ID</h2>
+          <p className="mt-1 text-sm text-bm-text-muted">Use the canonical Ticket ID to jump from the event to its order, payment, and dispute trail.</p>
         </div>
       </div>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-        <label className="flex min-h-12 flex-1 items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-500">
+        <label className="flex min-h-12 flex-1 items-center gap-2 rounded-2xl border border-bm-border bg-bm-surface-subtle px-4 text-sm text-bm-text-subtle">
           <Search className="h-4 w-4 shrink-0" />
           <input
             value={ticketId}
@@ -90,14 +90,14 @@ export default function EventTicketSearchPanel({ mode }: EventTicketSearchPanelP
               if (event.key === "Enter") void handleSearch();
             }}
             placeholder="Enter Ticket ID"
-            className="w-full bg-transparent text-sm font-semibold text-zinc-900 outline-none"
+            className="w-full bg-transparent text-sm font-semibold text-bm-text outline-none"
           />
         </label>
         <button
           type="button"
           onClick={() => void handleSearch()}
           disabled={!ticketId.trim() || loading}
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-black text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-bm-brand px-5 text-sm font-black text-bm-on-brand hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
           {loading ? "Searching…" : "Search Ticket"}
@@ -112,9 +112,9 @@ export default function EventTicketSearchPanel({ mode }: EventTicketSearchPanelP
             <div>
               <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Ticket found</p>
               <p className="mt-1 break-all font-mono text-sm font-black text-emerald-950">{result.ticketId}</p>
-              <p className="mt-2 text-sm font-bold text-zinc-950">{eventTitle}</p>
+              <p className="mt-2 text-sm font-bold text-bm-text">{eventTitle}</p>
             </div>
-            <button type="button" onClick={openEvent} disabled={!eventId} className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-black text-zinc-900 hover:bg-zinc-50 disabled:opacity-50">
+            <button type="button" onClick={openEvent} disabled={!eventId} className="rounded-2xl border border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-black text-bm-text hover:bg-bm-surface-subtle disabled:opacity-50">
               Open event
             </button>
             {mode === "creator" ? (
@@ -122,18 +122,18 @@ export default function EventTicketSearchPanel({ mode }: EventTicketSearchPanelP
                 href={TICKET_VALIDATOR_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-2xl border border-green-600 bg-green-600 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-green-700"
+                className="inline-flex items-center gap-2 rounded-2xl border border-green-600 bg-green-600 px-4 py-2.5 text-sm font-black text-bm-on-brand shadow-sm transition hover:bg-green-700"
               >
                 <ExternalLink className="h-4 w-4" />
                 Open Ticket Validator
               </a>
             ) : null}
           </div>
-          <div className="mt-3 grid gap-2 text-xs text-zinc-700 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2"><span className="text-zinc-500">Order</span><p className="mt-1 break-all font-semibold">{orderId || "—"}</p></div>
-            <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2"><span className="text-zinc-500">Payment</span><p className="mt-1 font-semibold">{payment?.status ?? "—"}</p><p className="break-all text-[11px] text-zinc-500">{payment?.reference ?? "—"}</p></div>
-            <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2"><span className="text-zinc-500">Amount</span><p className="mt-1 font-semibold">{payment?.currency ?? "MWK"} {payment?.amount == null ? "—" : Number(payment.amount).toLocaleString()}</p></div>
-            <div className="rounded-xl border border-zinc-200 bg-white px-3 py-2"><span className="text-zinc-500">Dispute</span><p className="mt-1 font-semibold">{dispute?.status ?? "None"}</p><p className="break-all text-[11px] text-zinc-500">{dispute?.id ?? "—"}</p></div>
+          <div className="mt-3 grid gap-2 text-xs text-bm-text-muted sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-xl border border-bm-border bg-bm-surface px-3 py-2"><span className="text-bm-text-subtle">Order</span><p className="mt-1 break-all font-semibold">{orderId || "—"}</p></div>
+            <div className="rounded-xl border border-bm-border bg-bm-surface px-3 py-2"><span className="text-bm-text-subtle">Payment</span><p className="mt-1 font-semibold">{payment?.status ?? "—"}</p><p className="break-all text-[11px] text-bm-text-subtle">{payment?.reference ?? "—"}</p></div>
+            <div className="rounded-xl border border-bm-border bg-bm-surface px-3 py-2"><span className="text-bm-text-subtle">Amount</span><p className="mt-1 font-semibold">{payment?.currency ?? "MWK"} {payment?.amount == null ? "—" : Number(payment.amount).toLocaleString()}</p></div>
+            <div className="rounded-xl border border-bm-border bg-bm-surface px-3 py-2"><span className="text-bm-text-subtle">Dispute</span><p className="mt-1 font-semibold">{dispute?.status ?? "None"}</p><p className="break-all text-[11px] text-bm-text-subtle">{dispute?.id ?? "—"}</p></div>
           </div>
         </div>
       ) : null}
