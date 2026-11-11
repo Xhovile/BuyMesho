@@ -333,10 +333,10 @@ export default function MessageThreadPage() {
   if (!conversation) {
     return (
       <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted px-4 py-6 text-bm-text dark:text-bm-text sm:px-6 lg:px-8">
-        <button type="button" onClick={() => navigateToMessages()} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white">
+        <button type="button" onClick={() => navigateToMessages()} className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2 text-sm font-bold text-bm-on-brand">
           <ArrowLeft className="h-4 w-4" />Back to inbox
         </button>
-        {status ? <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{status}</div> : null}
+        {status ? <div className="mt-4 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">{status}</div> : null}
       </div>
     );
   }
@@ -357,7 +357,7 @@ export default function MessageThreadPage() {
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text">
       <header className="z-20 shrink-0 border-b border-bm-border dark:border-bm-border bg-bm-surface-muted/95 backdrop-blur">
         <div className="flex items-center gap-3 px-4 py-4">
-          <button type="button" onClick={() => navigateToMessages()} className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-white" aria-label="Back">
+          <button type="button" onClick={() => navigateToMessages()} className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-bm-brand text-bm-on-brand" aria-label="Back">
             <ArrowLeft className="h-5 w-5" />
           </button>
 
@@ -410,23 +410,23 @@ export default function MessageThreadPage() {
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {(conversation.blocked_by_you || conversation.blocked_by_other) ? (
-          <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="border-b border-bm-warning/25 bg-bm-warning-bg px-4 py-3 text-sm text-bm-warning">
             <div className="flex items-center gap-2 font-semibold"><ShieldAlert className="h-4 w-4" />Messaging is restricted.</div>
             <p className="mt-1 text-xs">{conversation.blocked_by_you ? "You blocked this user. Unblock them from the actions menu if needed." : "This user blocked messaging. You cannot send new messages here."}</p>
           </div>
         ) : null}
 
-        {status ? <div className="mx-4 mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{status}</div> : null}
+        {status ? <div className="mx-4 mt-4 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">{status}</div> : null}
 
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
           {messages.length ? messages.map((msg) => {
             const mine = msg.sender_uid === user?.uid;
             return (
               <div key={msg.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[88%] rounded-3xl px-4 py-3 text-sm ${mine ? "bg-zinc-900 text-white" : "bg-bm-surface-raised dark:bg-bm-skeleton text-bm-text dark:text-bm-text"}`}>
+                <div className={`max-w-[88%] rounded-3xl px-4 py-3 text-sm ${mine ? "bg-bm-brand text-bm-on-brand" : "bg-bm-surface-raised dark:bg-bm-skeleton text-bm-text dark:text-bm-text"}`}>
                   {msg.body ? <p className="whitespace-pre-wrap break-words">{msg.body}</p> : null}
                   {msg.attachment_url ? <MessageAttachmentViewer message={msg} mine={mine} /> : null}
-                  <p className={`mt-2 text-[11px] ${mine ? "text-zinc-300" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>{timeLabel(msg.created_at)}</p>
+                  <p className={`mt-2 text-[11px] ${mine ? "text-bm-on-brand/75" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>{timeLabel(msg.created_at)}</p>
                 </div>
               </div>
             );
@@ -462,7 +462,7 @@ export default function MessageThreadPage() {
             </div>
           ) : null}
 
-          {attachmentError ? <div className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-700">{attachmentError}</div> : null}
+          {attachmentError ? <div className="mb-3 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-2.5 text-xs font-semibold text-bm-danger">{attachmentError}</div> : null}
 
           <div className="flex items-end gap-3">
             <button
@@ -470,7 +470,7 @@ export default function MessageThreadPage() {
               onClick={() => setAttachmentPickerOpen(true)}
               disabled={!canReply || busy}
               aria-label="Add attachment"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-bm-border dark:border-bm-border text-bm-text-muted dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:text-zinc-400"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-bm-border dark:border-bm-border text-bm-text-muted dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:text-bm-text-subtle"
             >
               <Paperclip className="h-5 w-5" />
             </button>
@@ -495,7 +495,7 @@ export default function MessageThreadPage() {
               type="button"
               disabled={busy || (!draft.trim() && !pendingAttachment) || !canReply}
               onClick={() => void handleSend()}
-              className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-3 text-white disabled:opacity-50"
+              className="inline-flex items-center justify-center rounded-2xl bg-bm-brand px-4 py-3 text-bm-on-brand disabled:opacity-50"
               aria-label="Send message"
             >
               {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-label="Sending" /> : <SendHorizontal className="h-5 w-5" />}
