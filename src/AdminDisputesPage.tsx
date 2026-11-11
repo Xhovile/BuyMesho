@@ -251,7 +251,7 @@ export default function AdminDisputesPage() {
         ) : cases.length === 0 ? (
           <div className="p-8 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No dispute cases in this view.</div>
         ) : (
-          <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
+          <div className="divide-y divide-bm-border-subtle">
             {cases.map((item) => {
               const activeItem = item.status === "open" || item.status === "under_review";
               const selectedItem = selectedId === item.id;
@@ -322,7 +322,7 @@ export default function AdminDisputesPage() {
               <div className="sticky top-0 z-20 flex items-center justify-between border-b border-bm-border dark:border-bm-border bg-bm-surface/95 dark:bg-bm-surface/95 px-5 py-4 backdrop-blur sm:px-6">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">Dispute details</p>
-                  <h2 id="admin-dispute-detail-title" className="mt-1 text-lg font-black text-zinc-950 dark:text-bm-text">
+                  <h2 id="admin-dispute-detail-title" className="mt-1 text-lg font-black text-bm-text">
                     Case {selected.id}
                   </h2>
                 </div>
@@ -540,7 +540,7 @@ export default function AdminDisputesPage() {
 
 function Info({ icon, title, value }: { icon: ReactNode; title: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-zinc-100 dark:border-bm-border-subtle bg-bm-surface-muted dark:bg-bm-surface-subtle p-3">
+    <div className="rounded-2xl border border-bm-border-subtle bg-bm-surface-muted dark:bg-bm-surface-subtle p-3">
       <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-bm-text-subtle dark:text-bm-text-subtle">
         {icon}
         {title}
@@ -552,7 +552,7 @@ function Info({ icon, title, value }: { icon: ReactNode; title: string; value: s
 
 function Row({ title, value }: { title: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-zinc-100 dark:border-bm-border-subtle pb-3">
+    <div className="flex items-start justify-between gap-4 border-b border-bm-border-subtle pb-3">
       <span className="text-bm-text-subtle dark:text-bm-text-subtle">{title}</span>
       <span className="max-w-[65%] text-right font-bold text-bm-text dark:text-bm-text">{value}</span>
     </div>
