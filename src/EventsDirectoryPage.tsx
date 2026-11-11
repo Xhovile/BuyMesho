@@ -109,8 +109,8 @@ function CategoryStrip({ title, items }: { title: string; items: EventRecord[] }
       <div className="mb-5 border-t border-bm-border dark:border-bm-border pt-5">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">Category</p>
-            <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950 dark:text-bm-text">{title}</h3>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle dark:text-bm-text-subtle">Category</p>
+            <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-bm-text dark:text-bm-text">{title}</h3>
           </div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">{items.length} events</p>
         </div>
@@ -134,8 +134,8 @@ function EventsLoadingStrip() {
         <div className="mb-5 border-t border-bm-border dark:border-bm-border pt-5">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">Category</p>
-              <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950 dark:text-bm-text">Loading events</h3>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle dark:text-bm-text-subtle">Category</p>
+              <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-bm-text dark:text-bm-text">Loading events</h3>
             </div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Preparing cards</p>
           </div>
@@ -157,8 +157,8 @@ function AllListingsPanel({ items }: { items: EventRecord[] }) {
       <div className="mb-5 border-t border-bm-border dark:border-bm-border pt-5">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">All listings</p>
-            <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950 dark:text-bm-text">Every event in one panel</h3>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle dark:text-bm-text-subtle">All listings</p>
+            <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-bm-text dark:text-bm-text">Every event in one panel</h3>
           </div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">{items.length} events</p>
         </div>
@@ -333,7 +333,7 @@ export default function EventsDirectoryPage() {
 
       <main className="flex-1">
         <section className="mx-auto max-w-7xl px-4 pb-6 pt-0 sm:pt-0">
-          <div className="relative -mx-4 overflow-hidden border-y border-white/10 bg-zinc-950/20 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.45)]">
+          <div className="relative -mx-4 overflow-hidden border-y border-white/10 bg-bm-brand/20 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.45)]">
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
               {!heroImageLoaded ? (
                 <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black">
@@ -438,7 +438,7 @@ export default function EventsDirectoryPage() {
             </div>
             <div>
               <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-green-700">For event organizers</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight text-zinc-950 dark:text-bm-text">Need to validate tickets?</h2>
+              <h2 className="mt-1 text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">Need to validate tickets?</h2>
               <p className="mt-1 max-w-2xl text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted">Use Ticket Validator to check event tickets at entry.</p>
             </div>
           </div>
