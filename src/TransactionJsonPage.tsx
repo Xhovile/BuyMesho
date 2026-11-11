@@ -386,12 +386,12 @@ const handleDownload = () => {
         </section>
 
         {error ? (
-          <section className="rounded-3xl border border-rose-500/30 bg-rose-500/10 p-5 text-rose-100">
+          <section className="rounded-3xl border border-bm-danger/25 bg-bm-danger-bg p-5 text-bm-danger">
             <div className="flex items-start gap-3">
               <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
               <div>
                 <p className="font-black">Load failed</p>
-                <p className="mt-1 text-sm text-rose-100/90">{error}</p>
+                <p className="mt-1 text-sm text-bm-danger/90">{error}</p>
               </div>
             </div>
           </section>
@@ -413,7 +413,7 @@ const handleDownload = () => {
           </div>
 
           <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_1.2fr]">
-            <div className="space-y-4 rounded-3xl border border-bm-border-subtle bg-black/20 p-4">
+            <div className="space-y-4 rounded-3xl border border-bm-border-subtle bg-bm-surface-muted p-4">
               <div className="rounded-2xl border border-bm-border-subtle bg-bm-brand/5 p-4">
                 <p className="text-[11px] font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Match context</p>
                 <div className="mt-3 grid gap-2 text-sm">
@@ -437,7 +437,7 @@ const handleDownload = () => {
               ) : null}
             </div>
 
-            <div className="min-w-0 rounded-3xl border border-bm-border-subtle bg-black/30 p-4 shadow-inner">
+            <div className="min-w-0 rounded-3xl border border-bm-border-subtle bg-bm-surface-subtle p-4 shadow-inner">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">JSON</p>
