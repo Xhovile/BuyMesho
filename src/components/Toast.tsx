@@ -182,21 +182,21 @@ function ToastItem({
     switch (type) {
       case "success":
         return {
-          bg: "bg-emerald-900/95 text-white border-emerald-700/80 shadow-emerald-950/20",
+          bg: "bg-emerald-900/95 text-bm-on-brand border-emerald-700/80 shadow-emerald-950/20",
           iconBg: "bg-emerald-800 text-emerald-200",
           icon: CheckCircle2,
           defaultTitle: "Success",
         };
       case "error":
         return {
-          bg: "bg-rose-900/95 text-white border-rose-700/80 shadow-rose-950/20",
+          bg: "bg-rose-900/95 text-bm-on-brand border-rose-700/80 shadow-rose-950/20",
           iconBg: "bg-rose-800 text-rose-200",
           icon: AlertCircle,
           defaultTitle: "Error",
         };
       case "warning":
         return {
-          bg: "bg-amber-900/95 text-white border-amber-700/80 shadow-amber-950/20",
+          bg: "bg-amber-900/95 text-bm-on-brand border-amber-700/80 shadow-amber-950/20",
           iconBg: "bg-amber-800 text-amber-200",
           icon: AlertTriangle,
           defaultTitle: "Warning",
@@ -204,7 +204,7 @@ function ToastItem({
       case "info":
       default:
         return {
-          bg: "bg-zinc-900/95 text-white border-zinc-700/80 shadow-zinc-950/20",
+          bg: "bg-bm-brand/95 text-bm-on-brand border-zinc-700/80 shadow-zinc-950/20",
           iconBg: "bg-zinc-800 text-zinc-300",
           icon: Info,
           defaultTitle: "Notice",
@@ -232,11 +232,11 @@ function ToastItem({
 
       <div className="min-w-0 flex-1 pt-0.5">
         {toast.title ? (
-          <h4 className="text-xs font-black uppercase tracking-wider text-white/90">
+          <h4 className="text-xs font-black uppercase tracking-wider text-bm-on-brand/90">
             {toast.title}
           </h4>
         ) : null}
-        <p className="text-xs font-medium leading-relaxed text-white/95 break-words">
+        <p className="text-xs font-medium leading-relaxed text-bm-on-brand/95 break-words">
           {toast.message}
         </p>
       </div>
@@ -245,7 +245,7 @@ function ToastItem({
         type="button"
         onClick={() => onDismiss(toast.id)}
         aria-label="Close notification"
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-bm-on-brand/70 transition-colors hover:bg-bm-surface/10 hover:text-bm-on-brand"
       >
         <X className="h-4 w-4" />
       </button>
