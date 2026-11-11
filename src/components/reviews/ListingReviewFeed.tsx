@@ -204,7 +204,7 @@ export default function ListingReviewFeed({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 rounded-[2rem] border border-blue-200 bg-bm-surface px-5 py-4 text-sm text-bm-text-subtle shadow-sm">
+      <div className="flex items-center gap-3 rounded-[2rem] border border-bm-border bg-bm-surface px-5 py-4 text-sm text-bm-text-subtle shadow-sm">
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading reviews...
       </div>
@@ -214,7 +214,7 @@ export default function ListingReviewFeed({
   return (
     <section className="space-y-4">
       {error ? (
-        <div className="rounded-[2rem] border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700">
+        <div className="rounded-[2rem] border border-bm-danger/35 bg-bm-danger-bg px-5 py-4 text-sm font-medium text-bm-danger">
           {error}
         </div>
       ) : null}
@@ -268,7 +268,7 @@ export default function ListingReviewFeed({
           </div>
         )
       ) : !ownReview ? (
-        <div className="rounded-[2rem] border border-dashed border-blue-200 bg-bm-surface px-5 py-6 text-sm text-bm-text-subtle shadow-sm">
+        <div className="rounded-[2rem] border border-dashed border-bm-border bg-bm-surface px-5 py-6 text-sm text-bm-text-subtle shadow-sm">
           No written reviews yet.
         </div>
       ) : null}
@@ -289,7 +289,7 @@ export default function ListingReviewFeed({
           <button
             type="button"
             onClick={onViewAll}
-            className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-bm-surface px-5 py-2.5 text-sm font-bold text-bm-text transition hover:bg-bm-surface-muted"
+            className="inline-flex items-center justify-center rounded-full border border-bm-border bg-bm-surface px-5 py-2.5 text-sm font-bold text-bm-text transition hover:bg-bm-surface-muted"
           >
             View all reviews
           </button>
