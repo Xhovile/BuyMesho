@@ -21,29 +21,29 @@ export function SectionHeading({
   description?: string;
 }) {
   return (
-    <div className="space-y-2 border-b border-zinc-200 pb-4">
-      {eyebrow ? <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-600">{eyebrow}</p> : null}
+    <div className="space-y-2 border-b border-bm-border pb-4">
+      {eyebrow ? <p className="text-xs font-black uppercase tracking-[0.22em] text-bm-text-muted">{eyebrow}</p> : null}
       <h2 className="font-serif text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">{title}</h2>
-      {description ? <p className="max-w-3xl text-sm leading-6 text-zinc-500">{description}</p> : null}
+      {description ? <p className="max-w-3xl text-sm leading-6 text-bm-text-subtle">{description}</p> : null}
     </div>
   );
 }
 
 export function StatTile({ label, value, icon }: { label: string; value: string | number; icon?: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-3 border-t border-zinc-200 pt-3">
+    <div className="flex items-start justify-between gap-3 border-t border-bm-border pt-3">
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-        <p className="mt-1 text-base font-extrabold text-zinc-900">{value}</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-bm-text-subtle">{label}</p>
+        <p className="mt-1 text-base font-extrabold text-bm-text">{value}</p>
       </div>
-      {icon ? <div className="shrink-0 text-zinc-400">{icon}</div> : null}
+      {icon ? <div className="shrink-0 text-bm-text-subtle">{icon}</div> : null}
     </div>
   );
 }
 
 export function InfoPill({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-600">
+    <span className="inline-flex items-center rounded-full border border-bm-border bg-bm-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-bm-text-muted">
       {children}
     </span>
   );
@@ -54,7 +54,7 @@ export function TabButton({ active, children, onClick }: { active: boolean; chil
     <button
       type="button"
       onClick={onClick}
-      className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-extrabold transition-colors ${active ? "border-zinc-900 text-zinc-900" : "border-transparent text-zinc-500 hover:text-zinc-900"}`}
+      className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-extrabold transition-colors ${active ? "border-bm-brand text-bm-text" : "border-transparent text-bm-text-subtle hover:text-bm-text"}`}
     >
       {children}
     </button>
@@ -108,7 +108,7 @@ export function RelatedRailCard({
 
   return (
     <article
-      className={`group overflow-hidden rounded-3xl border border-blue-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
+      className={`group overflow-hidden rounded-3xl border border-blue-200 bg-bm-surface shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
         isDesktop ? "h-full" : ""
       }`}
     >
@@ -120,7 +120,7 @@ export function RelatedRailCard({
         }}
         className="block w-full text-left"
       >
-        <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
+        <div className="relative aspect-[4/3] overflow-hidden bg-bm-surface-muted">
           <img
             src={firstPhoto}
             alt={item.name}
@@ -139,7 +139,7 @@ export function RelatedRailCard({
           className="block w-full text-left"
         >
           <h3
-            className={`line-clamp-1 tracking-tight text-zinc-900 ${
+            className={`line-clamp-1 tracking-tight text-bm-text ${
               isDesktop ? "text-sm font-extrabold" : "text-[12px] font-extrabold"
             }`}
           >
@@ -155,7 +155,7 @@ export function RelatedRailCard({
                 <span className="text-[9px] font-extrabold leading-none text-red-700">{offerValue}</span>
               </div>
             ) : (
-              <p className={isDesktop ? "text-base font-bold text-red-900" : "text-xs font-black text-zinc-900"}>
+              <p className={isDesktop ? "text-base font-bold text-red-900" : "text-xs font-black text-bm-text"}>
                 MK {Number(item.price).toLocaleString()}
               </p>
             )}
@@ -164,7 +164,7 @@ export function RelatedRailCard({
 
         {item.description?.trim() ? (
           <p
-            className={`min-h-[1.25rem] text-zinc-500 ${isDesktop ? "line-clamp-2 text-[11px] leading-5" : "line-clamp-1 text-[10px] leading-4"}`}
+            className={`min-h-[1.25rem] text-bm-text-subtle ${isDesktop ? "line-clamp-2 text-[11px] leading-5" : "line-clamp-1 text-[10px] leading-4"}`}
           >
             {item.description.trim()}
           </p>
@@ -179,14 +179,14 @@ export function RelatedRailCard({
               event.preventDefault();
               onOpenSeller(item.seller_uid!);
             }}
-            className={`block w-full text-left font-semibold text-zinc-500 transition-colors hover:text-zinc-900 ${
+            className={`block w-full text-left font-semibold text-bm-text-subtle transition-colors hover:text-bm-text ${
               isDesktop ? "text-[11px]" : "text-[10px]"
             }`}
           >
             <span className="line-clamp-1">{sellerName}</span>
           </a>
         ) : (
-          <span className={`block w-full text-left font-semibold text-zinc-500 ${
+          <span className={`block w-full text-left font-semibold text-bm-text-subtle ${
             isDesktop ? "text-[11px]" : "text-[10px]"
           }`}>
             <span className="line-clamp-1">{sellerName}</span>
