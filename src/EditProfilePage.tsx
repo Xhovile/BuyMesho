@@ -142,7 +142,7 @@ export default function EditProfilePage() {
           <button
             type="button"
             onClick={() => navigateToPath("/edit-account")}
-            className="inline-flex items-center gap-2 rounded-xl bg-bm-brand px-4 py-2 text-sm font-bold text-white hover:bg-bm-brand-hover"
+            className="inline-flex items-center gap-2 rounded-xl bg-bm-brand px-4 py-2 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"
           >
             Go to Edit Account
           </button>
@@ -178,7 +178,7 @@ export default function EditProfilePage() {
                   <button
                     type="button"
                     onClick={() => setForm((prev) => ({ ...prev, logoUrl: "" }))}
-                    className="inline-flex px-4 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-sm font-bold text-red-600"
+                    className="inline-flex px-4 py-2 rounded-xl bg-bm-danger-bg hover:bg-bm-danger-bg text-sm font-bold text-bm-danger"
                   >
                     Remove Logo
                   </button>
@@ -190,7 +190,7 @@ export default function EditProfilePage() {
             <label className="block text-xs font-bold text-bm-text-subtle dark:text-bm-text-subtle uppercase mb-1">Short Bio</label>
             <textarea value={form.bio} onChange={(e) => setForm((prev) => ({ ...prev, bio: e.target.value }))} className="w-full px-4 py-3 bg-bm-surface-subtle dark:bg-bm-surface-subtle border border-bm-border dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-24 resize-none" />
           </div>
-          <button type="submit" disabled={saving || uploading} className="bg-bm-brand text-white py-3 px-6 rounded-xl font-bold hover:bg-bm-brand-hover">
+          <button type="submit" disabled={saving || uploading} className="bg-bm-brand text-bm-on-brand py-3 px-6 rounded-xl font-bold hover:bg-bm-brand-hover">
             {saving ? "Saving..." : "Save Changes"}
           </button>
         </form>
