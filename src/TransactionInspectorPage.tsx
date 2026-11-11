@@ -56,7 +56,7 @@ type Diagnostic = { title: string; detail: string; tone: Tone };
 type PayoutSortMode = "recent" | "paid" | "failed" | "held";
 
 const TONE_CLASSES: Record<Tone, string> = {
-  zinc: "bg-zinc-100 dark:bg-bm-surface-muted text-zinc-700 dark:text-bm-text-muted border-zinc-200 dark:border-bm-border",
+  zinc: "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted border-bm-border dark:border-bm-border",
   emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
   amber: "bg-amber-50 text-amber-700 border-amber-200",
   rose: "bg-rose-50 text-rose-700 border-rose-200",
@@ -134,27 +134,27 @@ function StatusPill({ label, tone = "zinc" }: { label: string; tone?: Tone }) {
 
 function SummaryCard({ label, value, detail, tone = "zinc" }: { label: string; value: string | number; detail?: string; tone?: Tone }) {
   return (
-    <div className="rounded-[1.75rem] border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm">
-      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">{label}</p>
+    <div className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
+      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">{label}</p>
       <div className="mt-2 flex items-end justify-between gap-4">
-        <p className="text-3xl font-black tracking-tight text-zinc-950 dark:text-bm-text">{value}</p>
+        <p className="text-3xl font-black tracking-tight text-bm-text dark:text-bm-text">{value}</p>
         <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${TONE_CLASSES[tone]}`}>{label}</span>
       </div>
-      {detail ? <p className="mt-2 text-sm text-zinc-600 dark:text-bm-text-muted">{detail}</p> : null}
+      {detail ? <p className="mt-2 text-sm text-bm-text-muted dark:text-bm-text-muted">{detail}</p> : null}
     </div>
   );
 }
 
 function DiagnosticCard({ diagnostic }: { diagnostic: Diagnostic }) {
   return (
-    <div className={`rounded-2xl border p-4 shadow-sm ${diagnostic.tone === "emerald" ? "border-emerald-200 bg-emerald-50/70" : diagnostic.tone === "amber" ? "border-amber-200 bg-amber-50/70" : diagnostic.tone === "rose" ? "border-rose-200 bg-rose-50/70" : diagnostic.tone === "blue" ? "border-blue-200 bg-blue-50/70" : "border-zinc-200 dark:border-bm-border bg-white"}`}>
+    <div className={`rounded-2xl border p-4 shadow-sm ${diagnostic.tone === "emerald" ? "border-emerald-200 bg-emerald-50/70" : diagnostic.tone === "amber" ? "border-amber-200 bg-amber-50/70" : diagnostic.tone === "rose" ? "border-rose-200 bg-rose-50/70" : diagnostic.tone === "blue" ? "border-blue-200 bg-blue-50/70" : "border-bm-border dark:border-bm-border bg-bm-surface"}`}>
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/80 dark:bg-bm-surface/90 font-black text-zinc-900 dark:text-bm-text shadow-sm">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-bm-surface/80 dark:bg-bm-surface/90 font-black text-bm-text dark:text-bm-text shadow-sm">
           {diagnostic.tone === "emerald" ? "✓" : diagnostic.tone === "rose" ? "!" : diagnostic.tone === "amber" ? "?" : "i"}
         </div>
         <div className="min-w-0">
-          <h4 className="text-sm font-black tracking-tight text-zinc-900 dark:text-bm-text">{diagnostic.title}</h4>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-bm-text-muted">{diagnostic.detail}</p>
+          <h4 className="text-sm font-black tracking-tight text-bm-text dark:text-bm-text">{diagnostic.title}</h4>
+          <p className="mt-2 text-sm leading-relaxed text-bm-text-muted dark:text-bm-text-muted">{diagnostic.detail}</p>
         </div>
       </div>
     </div>
@@ -174,8 +174,8 @@ function JsonBlock({ title, value }: { title: string; value: unknown }) {
   }, [value]);
 
   return (
-    <div className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-950 p-4 text-zinc-100 shadow-sm">
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">{title}</p>
+    <div className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-bm-border dark:border-bm-border bg-zinc-950 p-4 text-zinc-100 shadow-sm">
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">{title}</p>
       <pre className="mt-3 max-h-80 max-w-full overflow-auto whitespace-pre-wrap break-words text-xs leading-5">{formatted}</pre>
     </div>
   );
@@ -183,9 +183,9 @@ function JsonBlock({ title, value }: { title: string; value: unknown }) {
 
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm">
-      <span className="text-zinc-500 dark:text-bm-text-subtle">{label}</span>
-      <span className="break-all font-semibold text-zinc-900 dark:text-bm-text">{value}</span>
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm">
+      <span className="text-bm-text-subtle dark:text-bm-text-subtle">{label}</span>
+      <span className="break-all font-semibold text-bm-text dark:text-bm-text">{value}</span>
     </div>
   );
 }
@@ -215,26 +215,26 @@ function PayoutTableRow({
   });
 
   return (
-    <tr className="cursor-pointer border-t border-zinc-100 dark:border-bm-border-subtle hover:bg-zinc-50 dark:hover:bg-bm-surface-muted" onClick={() => onSelect(payout)}>
+    <tr className="cursor-pointer border-t border-bm-border-subtle dark:border-bm-border-subtle hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted" onClick={() => onSelect(payout)}>
       <td className="p-4 align-top">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Payout</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">Payout</p>
         <p className="mt-1 break-all font-mono text-xs">{payout.id}</p>
-        <p className="mt-2 text-[11px] text-zinc-400 dark:text-bm-text-subtle">Seller {payout.sellerId}</p>
+        <p className="mt-2 text-[11px] text-bm-text-subtle dark:text-bm-text-subtle">Seller {payout.sellerId}</p>
       </td>
       <td className="p-4 align-top">
         <StatusPill label={getSellerPayoutStatusLabel(payout.status)} tone={token(payout.status) === "paid" ? "emerald" : token(payout.status) === "failed" ? "rose" : token(payout.status) === "held" ? "amber" : "zinc"} />
-        <div className="mt-2 text-xs text-zinc-500 dark:text-bm-text-subtle">{getSellerPayoutStatusDetail(payout.status)}</div>
+        <div className="mt-2 text-xs text-bm-text-subtle dark:text-bm-text-subtle">{getSellerPayoutStatusDetail(payout.status)}</div>
         <div className="mt-2 space-y-1">
           {signals.slice(0, 3).map((message) => (
-            <div key={`${payout.id}-${message}`} className="rounded-xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-2.5 py-1 text-[11px] font-semibold text-zinc-700 dark:text-bm-text-muted">
+            <div key={`${payout.id}-${message}`} className="rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-2.5 py-1 text-[11px] font-semibold text-bm-text-muted dark:text-bm-text-muted">
               {message}
             </div>
           ))}
         </div>
       </td>
-      <td className="p-4 align-top text-zinc-600 dark:text-bm-text-muted">
-        <div className="font-bold text-zinc-900 dark:text-bm-text">{money(Number(payoutMath.sellerReceivesAmount), payoutMath.currency)}</div>
-        <div className="mt-2 space-y-1 rounded-xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-2.5 py-2 text-[11px] font-semibold text-zinc-500 dark:text-bm-text-subtle">
+      <td className="p-4 align-top text-bm-text-muted dark:text-bm-text-muted">
+        <div className="font-bold text-bm-text dark:text-bm-text">{money(Number(payoutMath.sellerReceivesAmount), payoutMath.currency)}</div>
+        <div className="mt-2 space-y-1 rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-2.5 py-2 text-[11px] font-semibold text-bm-text-subtle dark:text-bm-text-subtle">
           <div className="flex justify-between gap-3">
             <span>Gross</span>
             <span>{money(Number(payoutMath.grossAmount), payoutMath.currency)}</span>
@@ -247,11 +247,11 @@ function PayoutTableRow({
             <span>Total you receive</span>
             <span>{money(Number(payoutMath.sellerReceivesAmount), payoutMath.currency)}</span>
           </div>
-          <div className="rounded-lg bg-white px-2 py-1 text-[10px] leading-4 text-zinc-600 dark:text-bm-text-muted">{payoutFeeNote({ ...payout, grossAmount: payout.grossAmount ?? undefined, platformFeeAmount: payout.platformFeeAmount ?? undefined, reserveAmount: payout.reserveAmount ?? undefined, payoutFeeAmount: payout.legacyProcessingFeeAmount ?? undefined, sellerReceivesAmount: payout.netAmount ?? payout.amount } as PayoutRecord)}</div>
+          <div className="rounded-lg bg-bm-surface px-2 py-1 text-[10px] leading-4 text-bm-text-muted dark:text-bm-text-muted">{payoutFeeNote({ ...payout, grossAmount: payout.grossAmount ?? undefined, platformFeeAmount: payout.platformFeeAmount ?? undefined, reserveAmount: payout.reserveAmount ?? undefined, payoutFeeAmount: payout.legacyProcessingFeeAmount ?? undefined, sellerReceivesAmount: payout.netAmount ?? payout.amount } as PayoutRecord)}</div>
         </div>
       </td>
-      <td className="p-4 align-top text-zinc-600 dark:text-bm-text-muted">{payout.orderId || payout.escrowId || "—"}</td>
-      <td className="p-4 align-top text-zinc-500 dark:text-bm-text-subtle">{formatDate(payout.updatedAt)}</td>
+      <td className="p-4 align-top text-bm-text-muted dark:text-bm-text-muted">{payout.orderId || payout.escrowId || "—"}</td>
+      <td className="p-4 align-top text-bm-text-subtle dark:text-bm-text-subtle">{formatDate(payout.updatedAt)}</td>
     </tr>
   );
 }
@@ -667,12 +667,12 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
       onRefresh={() => window.location.reload()}
     >
       <main className="space-y-8">
-        <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm">
+        <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">One source of truth</p>
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 dark:text-bm-text">Inspect one transaction from checkout to seller paid.</h1>
-              <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-bm-text-muted">Paste an Order ID, Escrow ID, Buyer Email, Seller ID, payment reference, PayChangu reference, provider transaction ID, payout ID, listing/event ID, or webhook reference. Results appear only after search, then select a transaction to open the investigation record.</p>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-bm-text-subtle dark:text-bm-text-subtle">One source of truth</p>
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-bm-text dark:text-bm-text">Inspect one transaction from checkout to seller paid.</h1>
+              <p className="mt-3 text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted">Paste an Order ID, Escrow ID, Buyer Email, Seller ID, payment reference, PayChangu reference, provider transaction ID, payout ID, listing/event ID, or webhook reference. Results appear only after search, then select a transaction to open the investigation record.</p>
             </div>
             <form onSubmit={handleSearchSubmit} className="flex w-full flex-col gap-3 sm:flex-row lg:max-w-2xl">
               <label className="sr-only" htmlFor="transaction-inspector-search">Search transaction identifiers</label>
@@ -681,23 +681,23 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="Ticket ID, order, escrow, buyer, seller, payout, webhook, PayChangu ref…"
-                className="min-h-12 flex-1 rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 text-sm font-semibold text-zinc-900 dark:text-bm-text outline-none transition focus:border-zinc-400 focus:bg-white"
+                className="min-h-12 flex-1 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 text-sm font-semibold text-bm-text dark:text-bm-text outline-none transition focus:border-bm-focus focus:bg-bm-surface"
               />
-              <button type="submit" disabled={ticketLookupLoading} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-black text-white shadow-sm transition hover:bg-zinc-800 disabled:opacity-60">
+              <button type="submit" disabled={ticketLookupLoading} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-bm-brand px-5 text-sm font-black text-bm-on-brand shadow-sm transition hover:bg-bm-brand-hover disabled:opacity-60">
                 {ticketLookupLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} Submit
               </button>
               <a
                 href={transactionJsonHref}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 text-sm font-black text-zinc-950 dark:text-bm-text transition hover:bg-zinc-100 dark:hover:bg-bm-surface-muted"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 text-sm font-black text-bm-text dark:text-bm-text transition hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
                 >
                 <SquareArrowOutUpRight className="h-4 w-4" />
                 View JSON
               </a>
             </form>
           </div>
-          {hasSubmittedSearch ? <p className="mt-4 text-sm font-semibold text-zinc-600 dark:text-bm-text-muted">Search results for <span className="text-zinc-950 dark:text-bm-text">{submittedQuery}</span>: {matchingPayments.length} linked payment transaction(s){ticketLookup ? " · Event Ticket matched" : ""}{unmatchedPayouts.length ? ` · ${unmatchedPayouts.length} payout-only match(es)` : ""}</p> : null}
+          {hasSubmittedSearch ? <p className="mt-4 text-sm font-semibold text-bm-text-muted dark:text-bm-text-muted">Search results for <span className="text-bm-text dark:text-bm-text">{submittedQuery}</span>: {matchingPayments.length} linked payment transaction(s){ticketLookup ? " · Event Ticket matched" : ""}{unmatchedPayouts.length ? ` · ${unmatchedPayouts.length} payout-only match(es)` : ""}</p> : null}
           {ticketLookupError ? <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">{ticketLookupError}</p> : null}
         </section>
 
@@ -706,35 +706,35 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">Event Ticket match</p>
-                <h2 className="mt-1 break-all text-xl font-black text-zinc-950 dark:text-bm-text">{String(ticketLookup.ticketId ?? submittedQuery)}</h2>
-                <div className="mt-3 grid gap-x-6 gap-y-2 text-sm text-zinc-700 dark:text-bm-text-muted sm:grid-cols-2">
+                <h2 className="mt-1 break-all text-xl font-black text-bm-text dark:text-bm-text">{String(ticketLookup.ticketId ?? submittedQuery)}</h2>
+                <div className="mt-3 grid gap-x-6 gap-y-2 text-sm text-bm-text-muted dark:text-bm-text-muted sm:grid-cols-2">
                   <span>Event: <strong>{String(ticketLookup.identity?.eventId ?? "—")}</strong></span>
                   <span>Order: <strong>{String(ticketLookup.identity?.orderId ?? ticketLookup.transaction?.payment?.orderId ?? "—")}</strong></span>
                   <span>Status: <strong>{String(ticketLookup.identity?.status ?? "—")}</strong></span>
                   <span>Payment: <strong>{String(ticketLookup.transaction?.payment?.reference ?? "—")}</strong></span>
                 </div>
               </div>
-              <span className="inline-flex items-center rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-blue-700">Canonical ticket lookup</span>
+              <span className="inline-flex items-center rounded-full border border-blue-200 bg-bm-surface px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-blue-700">Canonical ticket lookup</span>
             </div>
           </section>
         ) : null}
 
         {!hasSubmittedSearch ? (
-          <section className="rounded-[2rem] border border-dashed border-zinc-300 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-10 text-center">
-            <p className="text-lg font-black text-zinc-950 dark:text-bm-text">Start with search.</p>
-            <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-bm-text-muted">The primary view stays intentionally simple. Search any transaction-related identifier to load matching records, then choose a transaction to see payment, webhook, order, escrow, payout, seller history, reconciliation, and debugging details.</p>
+          <section className="rounded-[2rem] border border-dashed border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-10 text-center">
+            <p className="text-lg font-black text-bm-text dark:text-bm-text">Start with search.</p>
+            <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted">The primary view stays intentionally simple. Search any transaction-related identifier to load matching records, then choose a transaction to see payment, webhook, order, escrow, payout, seller history, reconciliation, and debugging details.</p>
           </section>
         ) : null}
 
         {hasSubmittedSearch && matchingPayments.length > 1 ? (
-          <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-black text-zinc-950 dark:text-bm-text">Select a transaction</h2>
+          <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
+            <h2 className="text-lg font-black text-bm-text dark:text-bm-text">Select a transaction</h2>
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {matchingPayments.map((payment) => (
-                <button key={payment.id} type="button" onClick={() => setSelectedPaymentId(payment.id)} className={`rounded-2xl border p-4 text-left transition hover:border-zinc-400 ${latestPayment?.id === payment.id ? "border-zinc-950 bg-zinc-50 dark:bg-bm-surface-subtle" : "border-zinc-200 dark:border-bm-border bg-white"}`}>
-                  <p className="break-all font-mono text-xs font-black text-zinc-950 dark:text-bm-text">{payment.reference}</p>
-                  <p className="mt-2 text-sm text-zinc-600 dark:text-bm-text-muted">Order {payment.order_id}</p>
-                  <p className="mt-1 text-sm text-zinc-600 dark:text-bm-text-muted">{payment.currency} {Number(payment.amount).toLocaleString()} · {normalizeStatusLabel(payment.payment_status)}</p>
+                <button key={payment.id} type="button" onClick={() => setSelectedPaymentId(payment.id)} className={`rounded-2xl border p-4 text-left transition hover:border-zinc-400 ${latestPayment?.id === payment.id ? "border-zinc-950 bg-bm-surface-muted dark:bg-bm-surface-subtle" : "border-bm-border dark:border-bm-border bg-bm-surface"}`}>
+                  <p className="break-all font-mono text-xs font-black text-bm-text dark:text-bm-text">{payment.reference}</p>
+                  <p className="mt-2 text-sm text-bm-text-muted dark:text-bm-text-muted">Order {payment.order_id}</p>
+                  <p className="mt-1 text-sm text-bm-text-muted dark:text-bm-text-muted">{payment.currency} {Number(payment.amount).toLocaleString()} · {normalizeStatusLabel(payment.payment_status)}</p>
                 </button>
               ))}
             </div>
@@ -747,27 +747,27 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
 
         {hasSubmittedSearch && (latestPayment || selectedPayout) ? <>
         {latestPayment ? (
-          <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm">
+          <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
             <div className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
               <h2 className="text-lg font-black">Latest Transaction Lifecycle</h2>
             </div>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-bm-text-muted">Showing latest order reference: {toText(latestPayment.reference)}</p>
+            <p className="mt-2 text-sm text-bm-text-muted dark:text-bm-text-muted">Showing latest order reference: {toText(latestPayment.reference)}</p>
             <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {lifecycleSteps.map((step) => (
-                <div key={step.number} className={`rounded-2xl border p-4 shadow-sm ${step.state === "done" ? "border-emerald-200 bg-emerald-50/70" : step.state === "active" ? "border-blue-200 bg-blue-50/70" : step.state === "issue" ? "border-rose-200 bg-rose-50/70" : "border-zinc-200 dark:border-bm-border bg-white"}`}>
+                <div key={step.number} className={`rounded-2xl border p-4 shadow-sm ${step.state === "done" ? "border-emerald-200 bg-emerald-50/70" : step.state === "active" ? "border-blue-200 bg-blue-50/70" : step.state === "issue" ? "border-rose-200 bg-rose-50/70" : "border-bm-border dark:border-bm-border bg-bm-surface"}`}>
                   <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/80 dark:bg-bm-surface/90 font-black text-zinc-900 dark:text-bm-text shadow-sm">{step.number}</div>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-bm-surface/80 dark:bg-bm-surface/90 font-black text-bm-text dark:text-bm-text shadow-sm">{step.number}</div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h3 className="text-sm font-black tracking-tight text-zinc-900 dark:text-bm-text">{step.title}</h3>
+                        <h3 className="text-sm font-black tracking-tight text-bm-text dark:text-bm-text">{step.title}</h3>
                         <StatusPill label={step.state === "done" ? "Done" : step.state === "active" ? "Active" : step.state === "issue" ? "Issue" : "Waiting"} tone={lifecycleTone(step.state)} />
                       </div>
-                      <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-bm-text-muted">{step.detail}</p>
-                      <div className="mt-3 space-y-1 text-[11px] font-semibold text-zinc-500 dark:text-bm-text-subtle">
-                        <p>Timestamp: <span className="text-zinc-800 dark:text-bm-text-muted">{formatDate(step.timestamp)}</span></p>
-                        <p>Database record: <span className="break-all text-zinc-800 dark:text-bm-text-muted">{toText(step.dbRecord)}</span></p>
-                        <p>External reference: <span className="break-all text-zinc-800 dark:text-bm-text-muted">{toText(step.externalRef)}</span></p>
+                      <p className="mt-2 text-sm leading-relaxed text-bm-text-muted dark:text-bm-text-muted">{step.detail}</p>
+                      <div className="mt-3 space-y-1 text-[11px] font-semibold text-bm-text-subtle dark:text-bm-text-subtle">
+                        <p>Timestamp: <span className="text-bm-text dark:text-bm-text-muted">{formatDate(step.timestamp)}</span></p>
+                        <p>Database record: <span className="break-all text-bm-text dark:text-bm-text-muted">{toText(step.dbRecord)}</span></p>
+                        <p>External reference: <span className="break-all text-bm-text dark:text-bm-text-muted">{toText(step.externalRef)}</span></p>
                         {step.error ? <p className="text-rose-700">Error: {step.error}</p> : null}
                       </div>
                     </div>
@@ -779,12 +779,12 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
         ) : null}
 
         <section className="grid gap-4 xl:grid-cols-[1.4fr_0.9fr]">
-          <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm">
+          <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted text-zinc-700 dark:text-bm-text-muted"><ShieldCheck className="h-5 w-5" /></div>
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted"><ShieldCheck className="h-5 w-5" /></div>
               <div className="space-y-2">
-                <p className="text-sm font-black text-zinc-900 dark:text-bm-text">Transaction integrity</p>
-                <p className="text-sm leading-relaxed text-zinc-600 dark:text-bm-text-muted">These checks surface payment capture, webhook verification, payout routing, destination verification, and seller history problems before you jump between pages.</p>
+                <p className="text-sm font-black text-bm-text dark:text-bm-text">Transaction integrity</p>
+                <p className="text-sm leading-relaxed text-bm-text-muted dark:text-bm-text-muted">These checks surface payment capture, webhook verification, payout routing, destination verification, and seller history problems before you jump between pages.</p>
               </div>
             </div>
 
@@ -806,7 +806,7 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
             ) : null}
           </div>
 
-          <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm">
+          <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
             <div className="flex items-center gap-2">
               <Wallet className="h-5 w-5" />
               <h3 className="text-base font-black">Payout snapshot</h3>
@@ -821,8 +821,8 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
                 <Row label="Destination type" value={toText(selectedPayout.destinationType)} />
                 <Row label="Requested at" value={formatDate(selectedPayout.requestedAt)} />
                 <Row label="Updated at" value={formatDate(selectedPayout.updatedAt)} />
-                <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-3 text-sm text-zinc-700 dark:text-bm-text-muted">
-                  <p className="font-black text-zinc-950 dark:text-bm-text">Quick read</p>
+                <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-sm text-bm-text-muted dark:text-bm-text-muted">
+                  <p className="font-black text-bm-text dark:text-bm-text">Quick read</p>
                   <p className="mt-2">{getSellerPayoutStatusDetail(selectedPayout.status)}</p>
                   <div className="mt-3 space-y-1">
                     {sellerOperationalSignals({
@@ -832,24 +832,24 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
                       manualReviewPending: selectedPayout.manualReviewPending,
                       verificationBlockers: selectedPayout.verificationBlockers,
                     }).map((message) => (
-                      <div key={message} className="rounded-xl border border-zinc-200 dark:border-bm-border bg-white px-2.5 py-1 text-xs font-semibold">{message}</div>
+                      <div key={message} className="rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface px-2.5 py-1 text-xs font-semibold">{message}</div>
                     ))}
                   </div>
                 </div>
               </div>
             ) : (
-              <p className="mt-4 text-sm text-zinc-500 dark:text-bm-text-subtle">No payout row selected yet.</p>
+              <p className="mt-4 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No payout row selected yet.</p>
             )}
 
-            <div className="mt-5 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm text-zinc-600 dark:text-bm-text-muted">
-              <p className="font-black text-zinc-950 dark:text-bm-text">Seller history summary</p>
+            <div className="mt-5 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm text-bm-text-muted dark:text-bm-text-muted">
+              <p className="font-black text-bm-text dark:text-bm-text">Seller history summary</p>
               <p className="mt-2">Total: {historySummary.total} · Paid: {historySummary.paid} · Held: {historySummary.held} · Failed: {historySummary.failed}</p>
             </div>
           </div>
         </section>
 
         <section className="grid gap-4 xl:grid-cols-2">
-          <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm">
+          <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
             <div className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
               <h3 className="text-base font-black">Latest payment</h3>
@@ -859,11 +859,11 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
                 {latestPaymentDiagnosis.map((item) => <Row key={item.label} label={item.label} value={item.value} />)}
               </div>
             ) : (
-              <p className="mt-4 text-sm text-zinc-500 dark:text-bm-text-subtle">No payment row loaded.</p>
+              <p className="mt-4 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No payment row loaded.</p>
             )}
           </div>
 
-          <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm">
+          <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
             <div className="flex items-center gap-2">
               <Webhook className="h-5 w-5" />
               <h3 className="text-base font-black">Latest webhook</h3>
@@ -873,13 +873,13 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
                 {latestWebhookDiagnosis.map((item) => <Row key={item.label} label={item.label} value={item.value} />)}
               </div>
             ) : (
-              <p className="mt-4 text-sm text-zinc-500 dark:text-bm-text-subtle">No webhook event loaded.</p>
+              <p className="mt-4 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No webhook event loaded.</p>
             )}
           </div>
         </section>
 
         <section className="grid gap-4 xl:grid-cols-3">
-          <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm">
+          <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
             <h3 className="text-base font-black">Order & escrow record</h3>
             {latestPayment ? (
               <div className="mt-4 grid gap-2">
@@ -891,10 +891,10 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
                 <Row label="Escrow state" value={<StatusPill label={normalizeStatusLabel(latestPayment.escrow_state)} tone={escrowTone(latestPayment.escrow_state)} />} />
                 <Row label="Escrow amount" value={latestPayment.balance_amount === null ? "—" : `${latestPayment.balance_currency || latestPayment.currency} ${Number(latestPayment.balance_amount).toLocaleString()}`} />
               </div>
-            ) : <p className="mt-4 text-sm text-zinc-500 dark:text-bm-text-subtle">No order or escrow record correlated to this search.</p>}
+            ) : <p className="mt-4 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No order or escrow record correlated to this search.</p>}
           </div>
 
-          <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm">
+          <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
             <h3 className="text-base font-black">Payout attempts & overrides</h3>
             {selectedPayout ? (
               <div className="mt-4 grid gap-2">
@@ -905,10 +905,10 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
                 <Row label="Manual review" value={selectedPayout.manualReviewPending ? "Pending" : "Not pending"} />
                 <Row label="Adjustments" value={selectedPayoutAdjustmentsLoading ? "Loading…" : selectedPayoutAdjustments.length} />
               </div>
-            ) : <p className="mt-4 text-sm text-zinc-500 dark:text-bm-text-subtle">No payout record correlated to this search.</p>}
+            ) : <p className="mt-4 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No payout record correlated to this search.</p>}
           </div>
 
-          <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm">
+          <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
             <h3 className="text-base font-black">Provider & destination</h3>
             {selectedPayout ? (
               <div className="mt-4 grid gap-2">
@@ -919,13 +919,13 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
                 <Row label="Destination active" value={selectedPayout.destinationActive === false ? "No" : "Yes / unknown"} />
                 <Row label="Last error" value={toText(selectedPayout.lastError || selectedPayout.destinationLastError || selectedPayout.latestAttemptFailureReason)} />
               </div>
-            ) : <p className="mt-4 text-sm text-zinc-500 dark:text-bm-text-subtle">No destination record correlated to this search.</p>}
+            ) : <p className="mt-4 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No destination record correlated to this search.</p>}
           </div>
         </section>
 
-        <section className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm">
+        <section className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
           <h3 className="text-base font-black">Developer debugging</h3>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-bm-text-muted">Raw records exposed for webhook payload inspection, parsed payload comparison, payment/escrow/payout database state, retry logs, API response fields, processing errors, and validation results.</p>
+          <p className="mt-2 text-sm text-bm-text-muted dark:text-bm-text-muted">Raw records exposed for webhook payload inspection, parsed payload comparison, payment/escrow/payout database state, retry logs, API response fields, processing errors, and validation results.</p>
           <div className="mt-5 grid min-w-0 gap-4 xl:grid-cols-2">
             <JsonBlock title="Raw webhook payload" value={latestWebhook?.payload ?? null} />
             <JsonBlock title="Parsed webhook payload" value={latestWebhook?.payload ? (() => { try { return JSON.parse(latestWebhook.payload); } catch { return { parseError: "Payload is not valid JSON", raw: latestWebhook.payload }; } })() : null} />
@@ -939,21 +939,21 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-bm-text-subtle">Payouts</p>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-bm-text-muted">Current sort: <span className="font-bold text-zinc-900 dark:text-bm-text">{payoutSortLabel}</span></p>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Payouts</p>
+              <p className="mt-1 text-sm text-bm-text-muted dark:text-bm-text-muted">Current sort: <span className="font-bold text-bm-text dark:text-bm-text">{payoutSortLabel}</span></p>
             </div>
-            <div className="rounded-full border border-zinc-200 dark:border-bm-border bg-white px-3 py-1 text-xs font-bold text-zinc-600 dark:text-bm-text-muted">Read-only review</div>
+            <div className="rounded-full border border-bm-border dark:border-bm-border bg-bm-surface px-3 py-1 text-xs font-bold text-bm-text-muted dark:text-bm-text-muted">Read-only review</div>
           </div>
 
-          <div className="overflow-hidden rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white shadow-sm">
+          <div className="overflow-hidden rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
             {loading ? (
-              <div className="flex items-center justify-center p-12"><Loader2 className="h-6 w-6 animate-spin text-zinc-500 dark:text-bm-text-subtle" /></div>
+              <div className="flex items-center justify-center p-12"><Loader2 className="h-6 w-6 animate-spin text-bm-text-subtle dark:text-bm-text-subtle" /></div>
             ) : payoutRowsForReview.length === 0 ? (
-              <div className="p-8 text-center text-sm text-zinc-500 dark:text-bm-text-subtle">No payout rows found.</div>
+              <div className="p-8 text-center text-sm text-bm-text-subtle dark:text-bm-text-subtle">No payout rows found.</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-zinc-50 dark:bg-bm-surface-subtle text-zinc-500 dark:text-bm-text-subtle">
+                  <thead className="bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-subtle dark:text-bm-text-subtle">
                     <tr>
                       <th className="p-4 text-left">Payout</th>
                       <th className="p-4 text-left">Status</th>
@@ -977,12 +977,12 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
           <SellerPayoutsHistorySection payouts={sellerHistory} canViewHistory={true} />
         </section>
 
-        <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 shadow-sm">
+        <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted text-zinc-700 dark:text-bm-text-muted"><BadgeInfo className="h-5 w-5" /></div>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted"><BadgeInfo className="h-5 w-5" /></div>
             <div className="space-y-2">
-              <p className="text-sm font-black text-zinc-900 dark:text-bm-text">How to read this page</p>
-              <p className="text-sm leading-relaxed text-zinc-600 dark:text-bm-text-muted">This page is the deep-dive layer. The main admin payments console stays separate; this page focuses on payout state, reconciliation signals, and seller payout history.</p>
+              <p className="text-sm font-black text-bm-text dark:text-bm-text">How to read this page</p>
+              <p className="text-sm leading-relaxed text-bm-text-muted dark:text-bm-text-muted">This page is the deep-dive layer. The main admin payments console stays separate; this page focuses on payout state, reconciliation signals, and seller payout history.</p>
               <p className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700"><CircleAlert className="h-3.5 w-3.5" />Escrow control belongs in the order flow, not here.</p>
             </div>
           </div>
