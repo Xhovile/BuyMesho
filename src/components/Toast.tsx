@@ -182,30 +182,30 @@ function ToastItem({
     switch (type) {
       case "success":
         return {
-          bg: "bg-emerald-900/95 text-bm-on-brand border-emerald-700/80 shadow-emerald-950/20",
-          iconBg: "bg-emerald-800 text-emerald-200",
+          bg: "bg-bm-success/95 text-bm-on-brand border-bm-success/80 shadow-bm-success/20",
+          iconBg: "bg-bm-on-brand/10 text-bm-on-brand/85",
           icon: CheckCircle2,
           defaultTitle: "Success",
         };
       case "error":
         return {
-          bg: "bg-rose-900/95 text-bm-on-brand border-rose-700/80 shadow-rose-950/20",
-          iconBg: "bg-rose-800 text-rose-200",
+          bg: "bg-bm-danger/95 text-bm-on-brand border-bm-danger/80 shadow-bm-danger/20",
+          iconBg: "bg-bm-on-brand/10 text-bm-on-brand/85",
           icon: AlertCircle,
           defaultTitle: "Error",
         };
       case "warning":
         return {
-          bg: "bg-amber-900/95 text-bm-on-brand border-amber-700/80 shadow-amber-950/20",
-          iconBg: "bg-amber-800 text-amber-200",
+          bg: "bg-bm-warning/95 text-bm-on-brand border-bm-warning/80 shadow-bm-warning/20",
+          iconBg: "bg-bm-on-brand/10 text-bm-on-brand/85",
           icon: AlertTriangle,
           defaultTitle: "Warning",
         };
       case "info":
       default:
         return {
-          bg: "bg-bm-brand/95 text-bm-on-brand border-bm-border shadow-zinc-950/20",
-          iconBg: "bg-white/15 text-bm-on-brand",
+          bg: "bg-bm-brand/95 text-bm-on-brand border-bm-border shadow-bm-brand/20",
+          iconBg: "bg-bm-on-brand/10 text-bm-on-brand/85",
           icon: Info,
           defaultTitle: "Notice",
         };
