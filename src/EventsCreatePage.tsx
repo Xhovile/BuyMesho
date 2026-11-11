@@ -328,7 +328,7 @@ function RenderField({ field, value, error, onChange }: { field: EventSpecField;
     <label className="block">
       <span className="text-sm font-bold text-bm-text dark:text-bm-text">
         {field.label}
-        {field.required ? <span className="ml-1 text-red-900">*</span> : null}
+        {field.required ? <span className="ml-1 text-bm-danger">*</span> : null}
       </span>
       {field.helpText ? <span className="mt-1 block text-xs text-bm-text-subtle dark:text-bm-text-subtle">{field.helpText}</span> : null}
 
@@ -366,7 +366,7 @@ function RenderField({ field, value, error, onChange }: { field: EventSpecField;
             type="checkbox"
             checked={value === true}
             onChange={(e) => onChange(e.target.checked)}
-            className="h-4 w-4 rounded border-bm-border dark:border-bm-border text-red-900 focus:ring-red-900"
+            className="h-4 w-4 rounded border-bm-border dark:border-bm-border text-bm-danger focus:ring-bm-focus"
           />
           <span>{field.helpText || "Toggle this option"}</span>
         </label>
@@ -383,7 +383,7 @@ function RenderField({ field, value, error, onChange }: { field: EventSpecField;
                     const current = Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
                     onChange(e.target.checked ? [...current, option] : current.filter((item) => item !== option));
                   }}
-                  className="h-4 w-4 rounded border-bm-border dark:border-bm-border text-red-900 focus:ring-red-900"
+                  className="h-4 w-4 rounded border-bm-border dark:border-bm-border text-bm-danger focus:ring-bm-focus"
                 />
                 <span>{option}</span>
               </label>
@@ -722,10 +722,10 @@ export default function EventsCreatePage() {
       <header className="sticky top-0 z-40 w-full border-b border-bm-border/80 bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-7xl min-w-0 items-center justify-between gap-4 px-4 py-3">
           <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-bm-brand text-xl font-extrabold text-bm-on-brand shadow-lg shadow-red-900/20">B</div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-bm-brand text-xl font-extrabold text-bm-on-brand shadow-lg shadow-bm-brand/20">B</div>
             <div className="text-left">
               <p className="text-lg font-extrabold tracking-tight">
-                <span className="text-red-900">Buy</span>
+                <span className="text-bm-danger">Buy</span>
                 <span className="text-bm-text-muted dark:text-bm-text-muted">Mesho</span>
               </p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">{isEditing ? "Edit event" : "Create event"}</p>
@@ -893,7 +893,7 @@ export default function EventsCreatePage() {
             </div>
 
             {!isEditing ? (
-              <div className="rounded-[2rem] border border-blue-200 bg-blue-50 p-5 text-sm text-blue-950 shadow-sm">
+              <div className="rounded-[2rem] border border-bm-border bg-bm-surface-muted p-5 text-sm text-bm-text-muted shadow-sm">
                 Event creator access is required before you can publish.
               </div>
             ) : null}
