@@ -209,31 +209,31 @@ export default function AdminEventPayoutRecoveryPage() {
       isRefreshing={loading}
       onRefresh={() => void load()}
     >
-      <form onSubmit={submitSearch} className="rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-4 shadow-sm">
+      <form onSubmit={submitSearch} className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-bm-text-subtle" />
-            <input value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Search buyer email, buyer UUID, creator email/UUID, order ID, ticket ID…" className="w-full rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle py-3 pl-10 pr-4 text-sm outline-none transition focus:border-zinc-400 focus:bg-white" aria-label="Search event financial records" />
+            <input value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Search buyer email, buyer UUID, creator email/UUID, order ID, ticket ID…" className="w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle py-3 pl-10 pr-4 text-sm outline-none transition focus:border-zinc-400 focus:bg-bm-surface" aria-label="Search event financial records" />
           </div>
           <button type="submit" disabled={loading} aria-busy={loading} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-70">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}Search</button>
-          {search ? <button type="button" onClick={clearSearch} className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm font-bold text-zinc-700 dark:text-bm-text-muted hover:bg-zinc-50 dark:hover:bg-bm-surface-muted">Clear</button> : null}
+          {search ? <button type="button" onClick={clearSearch} className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm font-bold text-bm-text-muted dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted">Clear</button> : null}
         </div>
-        <p className="mt-2 text-xs text-zinc-500 dark:text-bm-text-subtle">Searches across event title/ID, buyer and creator identity, order ID, and ticket ID/code. The same search applies to both tabs; switch tabs to review matching payments or payouts.</p>
+        <p className="mt-2 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Searches across event title/ID, buyer and creator identity, order ID, and ticket ID/code. The same search applies to both tabs; switch tabs to review matching payments or payouts.</p>
       </form>
       {error ? <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div> : null}
       {notice ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">{notice}</div> : null}
 
-      {loading && hasLoadedOnce ? <div role="status" aria-live="polite" className="flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm font-semibold text-zinc-600 dark:text-bm-text-muted"><Loader2 className="h-4 w-4 animate-spin" />Updating event financial records…</div> : null}
+      {loading && hasLoadedOnce ? <div role="status" aria-live="polite" className="flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm font-semibold text-bm-text-muted dark:text-bm-text-muted"><Loader2 className="h-4 w-4 animate-spin" />Updating event financial records…</div> : null}
 
-      <div role="tablist" aria-label="Event financial recovery sections" className="grid grid-cols-3 gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-100 dark:bg-bm-surface-muted p-1.5">
-        <button type="button" role="tab" aria-selected={activeSection === "payments"} onClick={() => setActiveSection("payments")} className={`flex min-w-0 min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-center text-[10px] font-black uppercase tracking-wide transition sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm sm:tracking-wider ${activeSection === "payments" ? "bg-zinc-950 text-white shadow-sm" : "text-zinc-500 dark:text-bm-text-subtle hover:bg-white hover:text-zinc-900"}`}>
-          <CreditCard className="h-4 w-4 shrink-0" /> <span className="leading-tight">Payments</span> <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeSection === "payments" ? "bg-white/15 text-white" : "bg-white text-zinc-500 dark:text-bm-text-subtle"}`}>{eventPayments.length}</span>
+      <div role="tablist" aria-label="Event financial recovery sections" className="grid grid-cols-3 gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-muted p-1.5">
+        <button type="button" role="tab" aria-selected={activeSection === "payments"} onClick={() => setActiveSection("payments")} className={`flex min-w-0 min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-center text-[10px] font-black uppercase tracking-wide transition sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm sm:tracking-wider ${activeSection === "payments" ? "bg-zinc-950 text-white shadow-sm" : "text-bm-text-subtle dark:text-bm-text-subtle hover:bg-bm-surface hover:text-bm-text"}`}>
+          <CreditCard className="h-4 w-4 shrink-0" /> <span className="leading-tight">Payments</span> <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeSection === "payments" ? "bg-bm-surface/15 text-white" : "bg-bm-surface text-bm-text-subtle dark:text-bm-text-subtle"}`}>{eventPayments.length}</span>
         </button>
-        <button type="button" role="tab" aria-selected={activeSection === "payouts"} onClick={() => setActiveSection("payouts")} className={`flex min-w-0 min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-center text-[10px] font-black uppercase tracking-wide transition sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm sm:tracking-wider ${activeSection === "payouts" ? "bg-zinc-950 text-white shadow-sm" : "text-zinc-500 dark:text-bm-text-subtle hover:bg-white hover:text-zinc-900"}`}>
-          <Wallet className="h-4 w-4 shrink-0" /> <span className="leading-tight">Payouts</span> <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeSection === "payouts" ? "bg-white/15 text-white" : "bg-white text-zinc-500 dark:text-bm-text-subtle"}`}>{payouts.length}</span>
+        <button type="button" role="tab" aria-selected={activeSection === "payouts"} onClick={() => setActiveSection("payouts")} className={`flex min-w-0 min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-center text-[10px] font-black uppercase tracking-wide transition sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm sm:tracking-wider ${activeSection === "payouts" ? "bg-zinc-950 text-white shadow-sm" : "text-bm-text-subtle dark:text-bm-text-subtle hover:bg-bm-surface hover:text-bm-text"}`}>
+          <Wallet className="h-4 w-4 shrink-0" /> <span className="leading-tight">Payouts</span> <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeSection === "payouts" ? "bg-bm-surface/15 text-white" : "bg-bm-surface text-bm-text-subtle dark:text-bm-text-subtle"}`}>{payouts.length}</span>
         </button>
-        <button type="button" role="tab" aria-selected={activeSection === "refunds"} onClick={() => setActiveSection("refunds")} className={`flex min-w-0 min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-center text-[10px] font-black uppercase tracking-wide transition sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm sm:tracking-wider ${activeSection === "refunds" ? "bg-zinc-950 text-white shadow-sm" : "text-zinc-500 dark:text-bm-text-subtle hover:bg-white hover:text-zinc-900"}`}>
-          <RotateCcw className="h-4 w-4 shrink-0" /> <span className="leading-tight">Refunds &amp; Recovery</span> <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeSection === "refunds" ? "bg-white/15 text-white" : "bg-white text-zinc-500 dark:text-bm-text-subtle"}`}>{liabilities.length}</span>
+        <button type="button" role="tab" aria-selected={activeSection === "refunds"} onClick={() => setActiveSection("refunds")} className={`flex min-w-0 min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-center text-[10px] font-black uppercase tracking-wide transition sm:min-h-12 sm:flex-row sm:gap-2 sm:px-3 sm:text-sm sm:tracking-wider ${activeSection === "refunds" ? "bg-zinc-950 text-white shadow-sm" : "text-bm-text-subtle dark:text-bm-text-subtle hover:bg-bm-surface hover:text-bm-text"}`}>
+          <RotateCcw className="h-4 w-4 shrink-0" /> <span className="leading-tight">Refunds &amp; Recovery</span> <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeSection === "refunds" ? "bg-bm-surface/15 text-white" : "bg-bm-surface text-bm-text-subtle dark:text-bm-text-subtle"}`}>{liabilities.length}</span>
         </button>
       </div>
 
@@ -251,19 +251,19 @@ export default function AdminEventPayoutRecoveryPage() {
               <StatusFilterCard label="Other" value={eventPayments.filter((row) => getPaymentStatusGroup(row.payment_status) === "other").length} active={paymentFilter === "other"} onClick={() => setPaymentFilter("other")} />
             </div>
           </section>
-          <section className="overflow-hidden rounded-3xl border border-zinc-200 dark:border-bm-border bg-white shadow-sm">
-            <div className="border-b border-zinc-200 dark:border-bm-border p-5"><h2 className="text-lg font-black">Event payment activity</h2><p className="mt-1 text-sm text-zinc-500 dark:text-bm-text-subtle">Event-ticket payments, buyer identity, and payment state. Open a payment for full diagnostics.</p><p className="mt-2 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">Showing {visibleEventPayments.length} of {eventPayments.length} matching payments</p></div>
+          <section className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
+            <div className="border-b border-bm-border dark:border-bm-border p-5"><h2 className="text-lg font-black">Event payment activity</h2><p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Event-ticket payments, buyer identity, and payment state. Open a payment for full diagnostics.</p><p className="mt-2 text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">Showing {visibleEventPayments.length} of {eventPayments.length} matching payments</p></div>
             <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
-              {visibleEventPayments.length === 0 ? <div className="p-6 text-sm text-zinc-500 dark:text-bm-text-subtle">{eventPayments.length === 0 ? (search ? "No event payments match this search." : "No event payments found.") : "No event payments match this status."}{payouts.length > 0 ? <button type="button" onClick={() => setActiveSection("payouts")} className="ml-2 font-bold text-zinc-900 dark:text-bm-text underline underline-offset-4">View {payouts.length} matching event payouts</button> : null}</div> : visibleEventPayments.map((row) => {
+              {visibleEventPayments.length === 0 ? <div className="p-6 text-sm text-bm-text-subtle dark:text-bm-text-subtle">{eventPayments.length === 0 ? (search ? "No event payments match this search." : "No event payments found.") : "No event payments match this status."}{payouts.length > 0 ? <button type="button" onClick={() => setActiveSection("payouts")} className="ml-2 font-bold text-bm-text dark:text-bm-text underline underline-offset-4">View {payouts.length} matching event payouts</button> : null}</div> : visibleEventPayments.map((row) => {
                 const status = text(row.payment_status).toLowerCase();
                 const buyerEmails = Array.isArray(row.buyer_emails) ? row.buyer_emails.map(text).filter(Boolean).join(", ") : text(row.buyer_emails);
                 const ticketIds = Array.isArray(row.ticket_ids) ? row.ticket_ids.map(text).filter(Boolean).join(", ") : text(row.ticket_ids);
-                return <button key={text(row.id)} type="button" onClick={() => void openEventPayment(row)} className="block w-full p-5 text-left hover:bg-zinc-50 dark:hover:bg-bm-surface-muted">
+                return <button key={text(row.id)} type="button" onClick={() => void openEventPayment(row)} className="block w-full p-5 text-left hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-black">{text(row.event_title) || "Event"}</p>
-                      <p className="mt-1 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">Payment {text(row.id)} · Order {text(row.order_id)}</p>
-                      <p className="mt-1 text-xs text-zinc-500 dark:text-bm-text-subtle">Buyer {buyerEmails || text(row.buyer_id) || "—"} · Ticket {ticketIds || "—"}</p>
+                      <p className="mt-1 text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">Payment {text(row.id)} · Order {text(row.order_id)}</p>
+                      <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Buyer {buyerEmails || text(row.buyer_id) || "—"} · Ticket {ticketIds || "—"}</p>
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
                       <Badge tone={["paid","captured","successful","completed"].includes(status) ? "green" : ["failed","cancelled"].includes(status) ? "red" : "amber"}>{label(row.payment_status)}</Badge>
@@ -289,15 +289,15 @@ export default function AdminEventPayoutRecoveryPage() {
               <StatusFilterCard label="Other" value={payouts.filter((row) => getPayoutStatusGroup(row.status) === "other").length} active={payoutFilter === "other"} onClick={() => setPayoutFilter("other")} />
             </div>
           </section>
-          <section className="overflow-hidden rounded-3xl border border-zinc-200 dark:border-bm-border bg-white shadow-sm">
-            <div className="border-b border-zinc-200 dark:border-bm-border p-5"><h2 className="text-lg font-black">Event payout queue</h2><p className="mt-1 text-sm text-zinc-500 dark:text-bm-text-subtle">Review provider state and refund-related payout blockers.</p><p className="mt-2 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">Showing {visiblePayouts.length} of {payouts.length} matching payouts</p></div>
+          <section className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
+            <div className="border-b border-bm-border dark:border-bm-border p-5"><h2 className="text-lg font-black">Event payout queue</h2><p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Review provider state and refund-related payout blockers.</p><p className="mt-2 text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">Showing {visiblePayouts.length} of {payouts.length} matching payouts</p></div>
             <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
-              {visiblePayouts.length === 0 ? <div className="p-6 text-sm text-zinc-500 dark:text-bm-text-subtle">{payouts.length === 0 ? (search ? "No event payouts match this search." : "No event payouts found.") : "No event payouts match this status."}{eventPayments.length > 0 ? <button type="button" onClick={() => setActiveSection("payments")} className="ml-2 font-bold text-zinc-900 dark:text-bm-text underline underline-offset-4">View {eventPayments.length} matching event payments</button> : null}</div> : visiblePayouts.map((row) => {
+              {visiblePayouts.length === 0 ? <div className="p-6 text-sm text-bm-text-subtle dark:text-bm-text-subtle">{payouts.length === 0 ? (search ? "No event payouts match this search." : "No event payouts found.") : "No event payouts match this status."}{eventPayments.length > 0 ? <button type="button" onClick={() => setActiveSection("payments")} className="ml-2 font-bold text-bm-text dark:text-bm-text underline underline-offset-4">View {eventPayments.length} matching event payments</button> : null}</div> : visiblePayouts.map((row) => {
                 const status = text(row.status).toLowerCase();
                 const liabilityStatus = text(row.liability_status).toLowerCase();
-                return <button key={text(row.id)} type="button" onClick={() => void openPayout(row)} className="block w-full p-5 text-left hover:bg-zinc-50 dark:hover:bg-bm-surface-muted">
+                return <button key={text(row.id)} type="button" onClick={() => void openPayout(row)} className="block w-full p-5 text-left hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted">
                   <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div><p className="text-sm font-black">{text(row.event_title) || "Event"}</p><p className="mt-1 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">Payout {text(row.id)} · Order {text(row.order_id)}</p><p className="mt-2 text-sm font-bold">{amount(row.net_amount ?? row.amount, text(row.currency) || "MWK")}</p></div>
+                    <div><p className="text-sm font-black">{text(row.event_title) || "Event"}</p><p className="mt-1 text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">Payout {text(row.id)} · Order {text(row.order_id)}</p><p className="mt-2 text-sm font-bold">{amount(row.net_amount ?? row.amount, text(row.currency) || "MWK")}</p></div>
                     <div className="flex flex-wrap gap-2"><Badge tone={status === "paid" ? "green" : status === "failed" || status === "cancelled" ? "red" : "amber"}>{label(status)}</Badge>{liabilityStatus ? <Badge tone={liabilityStatus === "due" ? "amber" : "green"}>Refund {label(liabilityStatus)}</Badge> : null}</div>
                   </div>
                 </button>;
@@ -318,10 +318,10 @@ export default function AdminEventPayoutRecoveryPage() {
                 <StatusFilterCard label="Waived" value={liabilities.filter((row) => getLiabilityStatusGroup(row.status) === "waived").length} active={liabilityFilter === "waived"} onClick={() => setLiabilityFilter("waived")} />
               </div>
             </section>
-            <section className="overflow-hidden rounded-3xl border border-zinc-200 dark:border-bm-border bg-white shadow-sm">
-              <div className="border-b border-zinc-200 dark:border-bm-border p-5"><h2 className="text-lg font-black">Refunds &amp; Recovery</h2><p className="mt-1 text-sm text-zinc-500 dark:text-bm-text-subtle">Review outstanding refund liabilities, record recoveries, and inspect recovered or waived cases.</p><p className="mt-2 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">Showing {visibleLiabilities.length} of {liabilities.length} matching liabilities</p></div>
+            <section className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
+              <div className="border-b border-bm-border dark:border-bm-border p-5"><h2 className="text-lg font-black">Refunds &amp; Recovery</h2><p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Review outstanding refund liabilities, record recoveries, and inspect recovered or waived cases.</p><p className="mt-2 text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">Showing {visibleLiabilities.length} of {liabilities.length} matching liabilities</p></div>
               <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
-                {visibleLiabilities.length === 0 ? <p className="p-6 text-sm text-zinc-500 dark:text-bm-text-subtle">{liabilities.length === 0 ? "No event refund liabilities found." : "No refund liabilities match this status."}</p> : visibleLiabilities.map((row) => {
+                {visibleLiabilities.length === 0 ? <p className="p-6 text-sm text-bm-text-subtle dark:text-bm-text-subtle">{liabilities.length === 0 ? "No event refund liabilities found." : "No refund liabilities match this status."}</p> : visibleLiabilities.map((row) => {
                   const status = text(row.status).toLowerCase();
                   const orderId = text(row.order_id ?? row.orderId);
                   const ticketId = text(row.ticket_id ?? row.ticketId);
@@ -329,7 +329,7 @@ export default function AdminEventPayoutRecoveryPage() {
                   return <div key={text(row.id)} className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2"><p className="text-sm font-black">{amount(row.amount, text(row.currency) || "MWK")}</p><Badge tone={status === "due" ? "amber" : status === "waived" ? "red" : "green"}>{label(status)}</Badge></div>
-                      <p className="mt-1 break-all text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">Order {orderId || "—"} · Ticket {ticketId || "entire order"}</p>
+                      <p className="mt-1 break-all text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">Order {orderId || "—"} · Ticket {ticketId || "entire order"}</p>
                       <p className="mt-1 break-all text-xs text-zinc-400 dark:text-bm-text-subtle">Due {dueAt || "—"} · {text(row.id)}</p>
                     </div>
                     {status === "due" ? <button type="button" onClick={() => openRecovery(row)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white"><ShieldCheck className="h-4 w-4" />Record recovery</button> : null}
@@ -343,10 +343,10 @@ export default function AdminEventPayoutRecoveryPage() {
       )}
 
       {selectedPayout ? <div className="fixed inset-0 z-[90] flex items-center justify-center bg-zinc-950/55 p-3 backdrop-blur-sm">
-        <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-zinc-50 dark:bg-bm-surface-subtle shadow-2xl">
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 dark:border-bm-border bg-white/95 dark:bg-bm-surface/95 px-5 py-4">
+        <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-bm-surface-muted dark:bg-bm-surface-subtle shadow-2xl">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-bm-border dark:border-bm-border bg-bm-surface/95 dark:bg-bm-surface/95 px-5 py-4">
             <div><p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Event payout</p><h2 className="mt-1 text-lg font-black">{text(detail?.payout?.event_title) || text(selectedPayout.event_title) || text(selectedPayout.id)}</h2></div>
-            <button type="button" onClick={() => { payoutDetailRequest.current += 1; setPayoutDetailLoading(false); setDetail(null); setSelectedPayout(null); setPayoutDetailError(null); setPendingAction(null); setNote(""); }} className="rounded-full p-2 text-zinc-500 dark:text-bm-text-subtle hover:bg-zinc-100 dark:hover:bg-bm-surface-muted" aria-label="Close"><XCircle className="h-5 w-5" /></button>
+            <button type="button" onClick={() => { payoutDetailRequest.current += 1; setPayoutDetailLoading(false); setDetail(null); setSelectedPayout(null); setPayoutDetailError(null); setPendingAction(null); setNote(""); }} className="rounded-full p-2 text-bm-text-subtle dark:text-bm-text-subtle hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted" aria-label="Close"><XCircle className="h-5 w-5" /></button>
           </div>
           {payoutDetailLoading ? <LoadingPanel message="Loading payout details and financial diagnostics…" /> : detail ? (
             <div className="space-y-5 p-5">
@@ -359,23 +359,23 @@ export default function AdminEventPayoutRecoveryPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 {![ "paid", "cancelled" ].includes(text(detail.payout?.status).toLowerCase()) ? <>
-                  <button type="button" disabled={busy} onClick={() => void runAction("reconcile")} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2.5 text-sm font-bold disabled:opacity-50">{busyAction === "reconcile" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}{busyAction === "reconcile" ? "Reconciling…" : "Reconcile"}</button>
+                  <button type="button" disabled={busy} onClick={() => void runAction("reconcile")} className="inline-flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold disabled:opacity-50">{busyAction === "reconcile" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}{busyAction === "reconcile" ? "Reconciling…" : "Reconcile"}</button>
                   <button type="button" disabled={busy || ["processing","pending"].includes(text(detail.payout?.status).toLowerCase())} onClick={() => void runAction("retry")} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{busyAction === "retry" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}{busyAction === "retry" ? "Retrying…" : "Retry"}</button>
                   <button type="button" disabled={busy} onClick={() => void runAction("hold")} className="inline-flex items-center gap-2 rounded-2xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{busyAction === "hold" ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}{busyAction === "hold" ? "Holding…" : "Hold"}</button>
-                  <button type="button" disabled={busy || ["processing","pending"].includes(text(detail.payout?.status).toLowerCase())} onClick={() => void runAction("cancel")} className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50">{busyAction === "cancel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}{busyAction === "cancel" ? "Cancelling…" : "Cancel"}</button>
+                  <button type="button" disabled={busy || ["processing","pending"].includes(text(detail.payout?.status).toLowerCase())} onClick={() => void runAction("cancel")} className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-bm-surface px-4 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50">{busyAction === "cancel" ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}{busyAction === "cancel" ? "Cancelling…" : "Cancel"}</button>
                 </> : null}
               </div>
-              {pendingAction ? <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4"><h3 className="font-black text-amber-950">{pendingAction === "hold" ? "Hold payout" : "Cancel payout"}</h3><p className="mt-1 text-sm text-amber-900">Provide a reason for this administrative action.</p><textarea autoFocus value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={2000} placeholder={pendingAction === "hold" ? "Why should this payout be held?" : "Why should this payout be cancelled?"} className="mt-3 w-full rounded-2xl border border-amber-300 bg-white p-3 text-sm outline-none" /><div className="mt-3 flex flex-wrap justify-end gap-2"><button type="button" disabled={busy} onClick={() => { setPendingAction(null); setNote(""); }} className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 dark:text-bm-text-muted">Back</button><button type="button" disabled={busy || !note.trim()} onClick={() => void executeAction(pendingAction)} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}{busy ? "Submitting…" : pendingAction === "hold" ? "Place on hold" : "Cancel payout"}</button></div></div> : null}
+              {pendingAction ? <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4"><h3 className="font-black text-amber-950">{pendingAction === "hold" ? "Hold payout" : "Cancel payout"}</h3><p className="mt-1 text-sm text-amber-900">Provide a reason for this administrative action.</p><textarea autoFocus value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={2000} placeholder={pendingAction === "hold" ? "Why should this payout be held?" : "Why should this payout be cancelled?"} className="mt-3 w-full rounded-2xl border border-amber-300 bg-bm-surface p-3 text-sm outline-none" /><div className="mt-3 flex flex-wrap justify-end gap-2"><button type="button" disabled={busy} onClick={() => { setPendingAction(null); setNote(""); }} className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-text-muted dark:text-bm-text-muted">Back</button><button type="button" disabled={busy || !note.trim()} onClick={() => void executeAction(pendingAction)} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}{busy ? "Submitting…" : pendingAction === "hold" ? "Place on hold" : "Cancel payout"}</button></div></div> : null}
               <List title="Payout attempts" items={Array.isArray(detail.attempts) ? detail.attempts as Row[] : []} fields={["attempt_no","status","provider_transaction_id"]} />
               <RawJsonViewer data={detail.rawData ?? { payout: detail.payout, payoutAttempts: detail.attempts, payoutEvents: detail.payoutEvents, refundLiabilities: detail.refundLiabilities }} />
-              {Array.isArray(detail.refundLiabilities) && detail.refundLiabilities.length ? <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4"><h3 className="font-black text-amber-950">Refund liabilities</h3><div className="mt-3 space-y-2">{(detail.refundLiabilities as Row[]).map((row) => <div key={text(row.id)} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-3"><div><p className="text-sm font-black">{amount(row.amount, text(row.currency) || "MWK")}</p><p className="text-xs text-zinc-500 dark:text-bm-text-subtle">{label(row.status)} · {text(row.id)}</p></div>{text(row.status).toLowerCase() === "due" ? <button type="button" onClick={() => openRecovery(row)} className="rounded-xl bg-zinc-900 px-3 py-2 text-xs font-bold text-white">Record recovery</button> : <Badge tone="green">Recovered</Badge>}</div>)}</div></div> : null}
+              {Array.isArray(detail.refundLiabilities) && detail.refundLiabilities.length ? <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4"><h3 className="font-black text-amber-950">Refund liabilities</h3><div className="mt-3 space-y-2">{(detail.refundLiabilities as Row[]).map((row) => <div key={text(row.id)} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-bm-surface p-3"><div><p className="text-sm font-black">{amount(row.amount, text(row.currency) || "MWK")}</p><p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle">{label(row.status)} · {text(row.id)}</p></div>{text(row.status).toLowerCase() === "due" ? <button type="button" onClick={() => openRecovery(row)} className="rounded-xl bg-zinc-900 px-3 py-2 text-xs font-bold text-white">Record recovery</button> : <Badge tone="green">Recovered</Badge>}</div>)}</div></div> : null}
             </div>
           ) : (
             <div className="space-y-3 p-5">
               <p className="text-sm font-semibold text-red-700">{payoutDetailError || "Could not load payout details."}</p>
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={() => void openPayout(selectedPayout)} className="rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white">Try again</button>
-                <button type="button" onClick={() => { payoutDetailRequest.current += 1; setPayoutDetailLoading(false); setSelectedPayout(null); setPayoutDetailError(null); }} className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 dark:text-bm-text-muted">Close</button>
+                <button type="button" onClick={() => { payoutDetailRequest.current += 1; setPayoutDetailLoading(false); setSelectedPayout(null); setPayoutDetailError(null); }} className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-text-muted dark:text-bm-text-muted">Close</button>
               </div>
             </div>
           )}
@@ -383,10 +383,10 @@ export default function AdminEventPayoutRecoveryPage() {
       </div> : null}
 
       {selectedPayment ? <div className="fixed inset-0 z-[95] flex items-center justify-center bg-zinc-950/55 p-3 backdrop-blur-sm">
-        <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-zinc-50 dark:bg-bm-surface-subtle shadow-2xl">
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 dark:border-bm-border bg-white/95 dark:bg-bm-surface/95 px-5 py-4">
+        <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-bm-surface-muted dark:bg-bm-surface-subtle shadow-2xl">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-bm-border dark:border-bm-border bg-bm-surface/95 dark:bg-bm-surface/95 px-5 py-4">
             <div><p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Event payment</p><h2 className="mt-1 text-lg font-black">{text(selectedPayment.event_title) || text(selectedPayment.id)}</h2></div>
-            <button type="button" onClick={() => { paymentDetailRequest.current += 1; setPaymentDetailLoading(false); setSelectedPayment(null); setPaymentDetail(null); setPaymentDetailError(null); }} className="rounded-full p-2 text-zinc-500 dark:text-bm-text-subtle hover:bg-zinc-100 dark:hover:bg-bm-surface-muted" aria-label="Close"><XCircle className="h-5 w-5" /></button>
+            <button type="button" onClick={() => { paymentDetailRequest.current += 1; setPaymentDetailLoading(false); setSelectedPayment(null); setPaymentDetail(null); setPaymentDetailError(null); }} className="rounded-full p-2 text-bm-text-subtle dark:text-bm-text-subtle hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted" aria-label="Close"><XCircle className="h-5 w-5" /></button>
           </div>
           {paymentDetailLoading ? <LoadingPanel message="Loading payment and ticket diagnostics…" /> : paymentDetail ? (
             <div className="space-y-4 p-5">
@@ -409,7 +409,7 @@ export default function AdminEventPayoutRecoveryPage() {
               <p className="text-sm font-semibold text-red-700">{paymentDetailError || "Could not load payment diagnostics."}</p>
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={() => void openEventPayment(selectedPayment)} className="rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white">Try again</button>
-                <button type="button" onClick={() => { paymentDetailRequest.current += 1; setPaymentDetailLoading(false); setSelectedPayment(null); setPaymentDetailError(null); }} className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 dark:text-bm-text-muted">Close</button>
+                <button type="button" onClick={() => { paymentDetailRequest.current += 1; setPaymentDetailLoading(false); setSelectedPayment(null); setPaymentDetailError(null); }} className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-text-muted dark:text-bm-text-muted">Close</button>
               </div>
             </div>
           )}
@@ -417,18 +417,18 @@ export default function AdminEventPayoutRecoveryPage() {
       </div> : null}
 
       {selectedLiability ? <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/55 p-3 backdrop-blur-sm">
-        <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl">
-          <div className="flex items-start justify-between border-b border-zinc-200 dark:border-bm-border p-5"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Refund recovery</p><h2 className="mt-1 text-lg font-black">{amount(selectedLiability.amount, text(selectedLiability.currency) || "MWK")}</h2><p className="mt-1 text-xs text-zinc-500 dark:text-bm-text-subtle">Liability {text(selectedLiability.id)} · Order {text(selectedLiability.order_id)}</p></div><button type="button" onClick={() => setSelectedLiability(null)} className="rounded-full p-2 text-zinc-500 dark:text-bm-text-subtle" aria-label="Close"><XCircle className="h-5 w-5" /></button></div>
+        <div className="w-full max-w-xl rounded-3xl bg-bm-surface shadow-2xl">
+          <div className="flex items-start justify-between border-b border-bm-border dark:border-bm-border p-5"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Refund recovery</p><h2 className="mt-1 text-lg font-black">{amount(selectedLiability.amount, text(selectedLiability.currency) || "MWK")}</h2><p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Liability {text(selectedLiability.id)} · Order {text(selectedLiability.order_id)}</p></div><button type="button" onClick={() => setSelectedLiability(null)} className="rounded-full p-2 text-bm-text-subtle dark:text-bm-text-subtle" aria-label="Close"><XCircle className="h-5 w-5" /></button></div>
           <div className="space-y-4 p-5">
             {error ? <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</div> : null}
-            <label className="block text-sm font-bold">Recovery amount<input value={recoverAmount} onChange={(e) => setRecoverAmount(e.target.value)} type="number" step="0.01" min="0" className="mt-2 w-full rounded-2xl border border-zinc-200 dark:border-bm-border px-4 py-3 text-sm" /></label>
-            <label className="block text-sm font-bold">Transaction ID<input value={transactionId} onChange={(e) => setTransactionId(e.target.value)} className="mt-2 w-full rounded-2xl border border-zinc-200 dark:border-bm-border px-4 py-3 text-sm" /></label>
+            <label className="block text-sm font-bold">Recovery amount<input value={recoverAmount} onChange={(e) => setRecoverAmount(e.target.value)} type="number" step="0.01" min="0" className="mt-2 w-full rounded-2xl border border-bm-border dark:border-bm-border px-4 py-3 text-sm" /></label>
+            <label className="block text-sm font-bold">Transaction ID<input value={transactionId} onChange={(e) => setTransactionId(e.target.value)} className="mt-2 w-full rounded-2xl border border-bm-border dark:border-bm-border px-4 py-3 text-sm" /></label>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm font-bold">Refund method<select value={refundMethod} onChange={(e) => setRefundMethod(e.target.value)} className="mt-2 w-full rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm"><option value="mobile_money">Mobile Money</option><option value="bank_transfer">Bank transfer</option><option value="cash">Cash</option><option value="other">Other</option></select></label>
-              <label className="block text-sm font-bold">Refund date<input value={refundDate} onChange={(e) => setRefundDate(e.target.value)} type="date" className="mt-2 w-full rounded-2xl border border-zinc-200 dark:border-bm-border px-4 py-3 text-sm" /></label>
+              <label className="block text-sm font-bold">Refund method<select value={refundMethod} onChange={(e) => setRefundMethod(e.target.value)} className="mt-2 w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm"><option value="mobile_money">Mobile Money</option><option value="bank_transfer">Bank transfer</option><option value="cash">Cash</option><option value="other">Other</option></select></label>
+              <label className="block text-sm font-bold">Refund date<input value={refundDate} onChange={(e) => setRefundDate(e.target.value)} type="date" className="mt-2 w-full rounded-2xl border border-bm-border dark:border-bm-border px-4 py-3 text-sm" /></label>
             </div>
-            <label className="block text-sm font-bold">Destination (optional)<input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Mobile number or transfer reference" className="mt-2 w-full rounded-2xl border border-zinc-200 dark:border-bm-border px-4 py-3 text-sm" /></label>
-            <label className="block text-sm font-bold">Recovery note<textarea value={recoveryNote} onChange={(e) => setRecoveryNote(e.target.value)} rows={4} placeholder="Describe how the buyer was refunded." className="mt-2 w-full rounded-2xl border border-zinc-200 dark:border-bm-border px-4 py-3 text-sm" /></label>
+            <label className="block text-sm font-bold">Destination (optional)<input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Mobile number or transfer reference" className="mt-2 w-full rounded-2xl border border-bm-border dark:border-bm-border px-4 py-3 text-sm" /></label>
+            <label className="block text-sm font-bold">Recovery note<textarea value={recoveryNote} onChange={(e) => setRecoveryNote(e.target.value)} rows={4} placeholder="Describe how the buyer was refunded." className="mt-2 w-full rounded-2xl border border-bm-border dark:border-bm-border px-4 py-3 text-sm" /></label>
             <button type="button" disabled={busy} onClick={() => void recover()} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{busyAction === "recover" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}{busy ? "Recording…" : "Record refund recovery"}</button>
           </div>
         </div>
@@ -439,8 +439,8 @@ export default function AdminEventPayoutRecoveryPage() {
 
 function LoadingPanel({ message }: { message: string }) {
   return (
-    <div role="status" aria-live="polite" className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-8 text-center text-sm font-semibold text-zinc-600 dark:text-bm-text-muted shadow-sm">
-      <Loader2 className="h-7 w-7 animate-spin text-zinc-800 dark:text-bm-text-muted" aria-hidden="true" />
+    <div role="status" aria-live="polite" className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-8 text-center text-sm font-semibold text-bm-text-muted dark:text-bm-text-muted shadow-sm">
+      <Loader2 className="h-7 w-7 animate-spin text-bm-text dark:text-bm-text-muted" aria-hidden="true" />
       <span>{message}</span>
     </div>
   );
@@ -451,25 +451,25 @@ function StatusFilterCard({ label: cardLabel, value, active, onClick }: { label:
     type="button"
     onClick={onClick}
     aria-pressed={active}
-    className={`group flex min-h-[5.25rem] flex-col justify-between rounded-2xl border px-3.5 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:px-4 ${active ? "border-zinc-950 bg-zinc-950 text-white shadow-zinc-950/15" : "border-zinc-200 dark:border-bm-border bg-white text-zinc-900 dark:text-bm-text hover:border-zinc-300"}`}
+    className={`group flex min-h-[5.25rem] flex-col justify-between rounded-2xl border px-3.5 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:px-4 ${active ? "border-zinc-950 bg-zinc-950 text-white shadow-zinc-950/15" : "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text hover:border-bm-border"}`}
   >
     <div className="flex min-w-0 items-center justify-between gap-2">
-      <p className={`text-[10px] font-black uppercase tracking-[0.12em] sm:text-[11px] sm:tracking-[0.16em] ${active ? "text-zinc-300" : "text-zinc-500 dark:text-bm-text-subtle"}`}>{cardLabel}</p>
-      <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${active ? "bg-white/15 text-white" : "bg-zinc-100 dark:bg-bm-surface-muted text-zinc-500 dark:text-bm-text-subtle"}`}>{active ? "Active" : "Filter"}</span>
+      <p className={`text-[10px] font-black uppercase tracking-[0.12em] sm:text-[11px] sm:tracking-[0.16em] ${active ? "text-zinc-300" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>{cardLabel}</p>
+      <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${active ? "bg-bm-surface/15 text-white" : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-subtle dark:text-bm-text-subtle"}`}>{active ? "Active" : "Filter"}</span>
     </div>
     <p className="mt-3 text-2xl font-black leading-none tracking-tight sm:text-3xl">{value}</p>
   </button>;
 }
 
 function Metric({ title, value }: { title: string; value: string }) {
-  return <div className="rounded-2xl bg-white p-3"><p className="text-xs font-black uppercase tracking-wider text-zinc-400 dark:text-bm-text-subtle">{title}</p><p className="mt-2 break-all text-sm font-bold">{value || "—"}</p></div>;
+  return <div className="rounded-2xl bg-bm-surface p-3"><p className="text-xs font-black uppercase tracking-wider text-zinc-400 dark:text-bm-text-subtle">{title}</p><p className="mt-2 break-all text-sm font-bold">{value || "—"}</p></div>;
 }
 function Badge({ tone, children }: { tone: "green" | "amber" | "red"; children: React.ReactNode }) {
   const classes = tone === "green" ? "bg-emerald-100 text-emerald-800" : tone === "red" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-900";
   return <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${classes}`}>{children}</span>;
 }
 function List({ title, items, fields }: { title: string; items: Row[]; fields: string[] }) {
-  return <div className="rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-4"><h3 className="font-black">{title}</h3><div className="mt-3 max-h-60 space-y-2 overflow-auto">{items.length ? items.map((item, index) => <div key={text(item.id) || index} className="rounded-2xl bg-zinc-50 dark:bg-bm-surface-subtle p-3 text-xs">{fields.map((field) => <p key={field}><span className="font-bold">{label(field)}:</span> {label(item[field])}</p>)}</div>) : <p className="text-sm text-zinc-500 dark:text-bm-text-subtle">No records.</p>}</div></div>;
+  return <div className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-4"><h3 className="font-black">{title}</h3><div className="mt-3 max-h-60 space-y-2 overflow-auto">{items.length ? items.map((item, index) => <div key={text(item.id) || index} className="rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-subtle p-3 text-xs">{fields.map((field) => <p key={field}><span className="font-bold">{label(field)}:</span> {label(item[field])}</p>)}</div>) : <p className="text-sm text-bm-text-subtle dark:text-bm-text-subtle">No records.</p>}</div></div>;
 }
 
 function RawJsonViewer({ data }: { data: unknown }) {
@@ -488,14 +488,14 @@ function RawJsonViewer({ data }: { data: unknown }) {
       window.setTimeout(() => setCopyState("idle"), 1500);
     }
   };
-  return <div className="overflow-hidden rounded-3xl border border-zinc-200 dark:border-bm-border bg-white">
+  return <div className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface">
     <div className="flex items-center justify-between gap-3 p-4">
       <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} className="text-sm font-black">{open ? "Hide raw JSON" : "View raw JSON"}</button>
-      <button type="button" onClick={() => void copy()} className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-2.5 py-1.5 text-xs font-bold text-zinc-700 dark:text-bm-text-muted hover:bg-zinc-100 dark:hover:bg-bm-surface-muted">
+      <button type="button" onClick={() => void copy()} className="inline-flex items-center gap-1.5 rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-2.5 py-1.5 text-xs font-bold text-bm-text-muted dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted">
         {copyState === "copied" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
         {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy"}
       </button>
     </div>
-    {open ? <pre className="max-h-[32rem] overflow-auto border-t border-zinc-200 dark:border-bm-border bg-zinc-950 p-4 text-[11px] leading-5 text-zinc-100 [scrollbar-width:thin]">{raw}</pre> : null}
+    {open ? <pre className="max-h-[32rem] overflow-auto border-t border-bm-border dark:border-bm-border bg-zinc-950 p-4 text-[11px] leading-5 text-zinc-100 [scrollbar-width:thin]">{raw}</pre> : null}
   </div>;
 }

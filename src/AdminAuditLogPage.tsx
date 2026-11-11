@@ -215,8 +215,8 @@ export default function AdminAuditLogPage() {
         </div>
       ) : null}
 
-      <section className="overflow-hidden rounded-3xl border border-zinc-200 dark:border-bm-border bg-white shadow-sm">
-        <div className="border-b border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-3">
+      <section className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
+        <div className="border-b border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3">
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-[180px] flex-1">
               <FormDropdown
@@ -244,19 +244,19 @@ export default function AdminAuditLogPage() {
               />
             </div>
 
-            <label className="flex min-w-[180px] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-bm-text-muted">
+            <label className="flex min-w-[180px] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-bm-text-muted dark:text-bm-text-muted">
               Admin
               <input
                 value={filters.admin}
                 onChange={(event) =>
                   setFilters((prev) => ({ ...prev, admin: event.target.value }))
                 }
-                className="rounded-lg border border-zinc-300 dark:border-bm-border bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-zinc-900 dark:text-bm-text"
+                className="rounded-lg border border-bm-border dark:border-bm-border bg-bm-surface px-3 py-2 text-sm font-medium normal-case tracking-normal text-bm-text dark:text-bm-text"
                 placeholder="UID or email"
               />
             </label>
 
-            <label className="flex min-w-[140px] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-bm-text-muted">
+            <label className="flex min-w-[140px] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-bm-text-muted dark:text-bm-text-muted">
               From
               <input
                 type="date"
@@ -264,11 +264,11 @@ export default function AdminAuditLogPage() {
                 onChange={(event) =>
                   setFilters((prev) => ({ ...prev, from: event.target.value }))
                 }
-                className="rounded-lg border border-zinc-300 dark:border-bm-border bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-zinc-900 dark:text-bm-text"
+                className="rounded-lg border border-bm-border dark:border-bm-border bg-bm-surface px-3 py-2 text-sm font-medium normal-case tracking-normal text-bm-text dark:text-bm-text"
               />
             </label>
 
-            <label className="flex min-w-[140px] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-bm-text-muted">
+            <label className="flex min-w-[140px] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-bm-text-muted dark:text-bm-text-muted">
               To
               <input
                 type="date"
@@ -276,18 +276,18 @@ export default function AdminAuditLogPage() {
                 onChange={(event) =>
                   setFilters((prev) => ({ ...prev, to: event.target.value }))
                 }
-                className="rounded-lg border border-zinc-300 dark:border-bm-border bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-zinc-900 dark:text-bm-text"
+                className="rounded-lg border border-bm-border dark:border-bm-border bg-bm-surface px-3 py-2 text-sm font-medium normal-case tracking-normal text-bm-text dark:text-bm-text"
               />
             </label>
 
-            <label className="flex min-w-[220px] flex-[2] flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-bm-text-muted">
+            <label className="flex min-w-[220px] flex-[2] flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-bm-text-muted dark:text-bm-text-muted">
               Search
               <input
                 value={filters.q}
                 onChange={(event) =>
                   setFilters((prev) => ({ ...prev, q: event.target.value }))
                 }
-                className="rounded-lg border border-zinc-300 dark:border-bm-border bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-zinc-900 dark:text-bm-text"
+                className="rounded-lg border border-bm-border dark:border-bm-border bg-bm-surface px-3 py-2 text-sm font-medium normal-case tracking-normal text-bm-text dark:text-bm-text"
                 placeholder="Listing ID / seller UID / admin email"
               />
             </label>
@@ -304,7 +304,7 @@ export default function AdminAuditLogPage() {
                   q: "",
                 })
               }
-              className="rounded-lg border border-zinc-300 dark:border-bm-border bg-white px-3 py-2 text-sm font-semibold text-zinc-700 dark:text-bm-text-muted transition hover:bg-zinc-100 dark:hover:bg-bm-surface-muted"
+              className="rounded-lg border border-bm-border dark:border-bm-border bg-bm-surface px-3 py-2 text-sm font-semibold text-bm-text-muted dark:text-bm-text-muted transition hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
             >
               Reset filters
             </button>
@@ -312,37 +312,37 @@ export default function AdminAuditLogPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center p-10 text-zinc-500 dark:text-bm-text-subtle">
+          <div className="flex items-center justify-center p-10 text-bm-text-subtle dark:text-bm-text-subtle">
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
         ) : rows.length === 0 ? (
-          <div className="p-10 text-center text-sm text-zinc-500 dark:text-bm-text-subtle">
+          <div className="p-10 text-center text-sm text-bm-text-subtle dark:text-bm-text-subtle">
             No admin actions logged yet.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-bm-text-subtle">
+            <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-bm-text-subtle dark:text-bm-text-subtle">
               {total !== null
                 ? `Showing ${rows.length} of ${total}`
                 : `Showing ${rows.length} results`}
             </div>
 
             <table className="min-w-full divide-y divide-zinc-200 dark:divide-bm-border text-sm">
-              <thead className="bg-zinc-50 dark:bg-bm-surface-subtle">
+              <thead className="bg-bm-surface-muted dark:bg-bm-surface-subtle">
                 <tr>
-                  <th className="w-12 px-3 py-3 text-left font-black text-zinc-500 dark:text-bm-text-subtle">
+                  <th className="w-12 px-3 py-3 text-left font-black text-bm-text-subtle dark:text-bm-text-subtle">
                     Details
                   </th>
-                  <th className="px-4 py-3 text-left font-black text-zinc-500 dark:text-bm-text-subtle">
+                  <th className="px-4 py-3 text-left font-black text-bm-text-subtle dark:text-bm-text-subtle">
                     When
                   </th>
-                  <th className="px-4 py-3 text-left font-black text-zinc-500 dark:text-bm-text-subtle">
+                  <th className="px-4 py-3 text-left font-black text-bm-text-subtle dark:text-bm-text-subtle">
                     Action
                   </th>
-                  <th className="px-4 py-3 text-left font-black text-zinc-500 dark:text-bm-text-subtle">
+                  <th className="px-4 py-3 text-left font-black text-bm-text-subtle dark:text-bm-text-subtle">
                     Target
                   </th>
-                  <th className="px-4 py-3 text-left font-black text-zinc-500 dark:text-bm-text-subtle">
+                  <th className="px-4 py-3 text-left font-black text-bm-text-subtle dark:text-bm-text-subtle">
                     Actor
                   </th>
                 </tr>
@@ -361,7 +361,7 @@ export default function AdminAuditLogPage() {
                             <button
                               type="button"
                               onClick={() => toggleRow(row.id)}
-                              className="inline-flex rounded p-1 text-zinc-500 dark:text-bm-text-subtle transition hover:bg-zinc-100 dark:hover:bg-bm-surface-muted hover:text-zinc-700"
+                              className="inline-flex rounded p-1 text-bm-text-subtle dark:text-bm-text-subtle transition hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted hover:text-bm-text-muted"
                               aria-label={
                                 isExpanded ? "Collapse details" : "Expand details"
                               }
@@ -378,42 +378,42 @@ export default function AdminAuditLogPage() {
                           )}
                         </td>
 
-                        <td className="px-4 py-2 text-zinc-700 dark:text-bm-text-muted">
+                        <td className="px-4 py-2 text-bm-text-muted dark:text-bm-text-muted">
                           <div className="flex flex-col gap-1">
-                            <span className="inline-flex items-center gap-1 font-medium text-zinc-900 dark:text-bm-text">
-                              <Clock3 className="h-3.5 w-3.5 text-zinc-500 dark:text-bm-text-subtle" />
+                            <span className="inline-flex items-center gap-1 font-medium text-bm-text dark:text-bm-text">
+                              <Clock3 className="h-3.5 w-3.5 text-bm-text-subtle dark:text-bm-text-subtle" />
                               {new Date(row.created_at).toLocaleString()}
                             </span>
                           </div>
                         </td>
 
-                        <td className="px-4 py-2 font-semibold text-zinc-900 dark:text-bm-text">
+                        <td className="px-4 py-2 font-semibold text-bm-text dark:text-bm-text">
                           {isAdminActionType(row.action_type)
                             ? ADMIN_ACTION_LABELS[row.action_type]
                             : row.action_type}
                         </td>
 
-                        <td className="px-4 py-2 text-zinc-700 dark:text-bm-text-muted">
+                        <td className="px-4 py-2 text-bm-text-muted dark:text-bm-text-muted">
                           {isAdminTargetType(row.target_type)
                             ? ADMIN_TARGET_LABELS[row.target_type]
                             : row.target_type}
                           {row.target_id ? `:${row.target_id}` : ""}
                         </td>
 
-                        <td className="px-4 py-2 break-all text-zinc-700 dark:text-bm-text-muted">
+                        <td className="px-4 py-2 break-all text-bm-text-muted dark:text-bm-text-muted">
                           {row.admin_email || row.admin_uid || "—"}
                         </td>
                       </tr>
 
                       {isExpanded ? (
-                        <tr className="bg-zinc-50/60 dark:bg-bm-surface-subtle/60">
+                        <tr className="bg-bm-surface-muted/60 dark:bg-bm-surface-subtle/60">
                           <td colSpan={5} className="px-4 pb-3 pt-1">
                             <dl className="grid gap-x-5 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
                               <div className="min-w-0">
-                                <dt className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-bm-text-subtle">
+                                <dt className="text-[11px] font-semibold uppercase tracking-wide text-bm-text-subtle dark:text-bm-text-subtle">
                                   Logged at
                                 </dt>
-                                <dd className="mt-0.5 text-xs text-zinc-800 dark:text-bm-text-muted">
+                                <dd className="mt-0.5 text-xs text-bm-text dark:text-bm-text-muted">
                                   {new Date(row.created_at).toLocaleString()}
                                 </dd>
                               </div>
@@ -424,12 +424,12 @@ export default function AdminAuditLogPage() {
 
                                 return (
                                   <div key={`${row.id}-${key}`} className="min-w-0">
-                                    <dt className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-bm-text-subtle">
+                                    <dt className="text-[11px] font-semibold uppercase tracking-wide text-bm-text-subtle dark:text-bm-text-subtle">
                                       {key}
                                     </dt>
-                                    <dd className="mt-0.5 text-xs text-zinc-800 dark:text-bm-text-muted">
+                                    <dd className="mt-0.5 text-xs text-bm-text dark:text-bm-text-muted">
                                       {isJson ? (
-                                        <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded bg-zinc-100 dark:bg-bm-surface-muted px-2 py-1 font-mono text-[11px] leading-4">
+                                        <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded bg-bm-surface-muted dark:bg-bm-surface-muted px-2 py-1 font-mono text-[11px] leading-4">
                                           {formatted}
                                         </pre>
                                       ) : (
@@ -449,12 +449,12 @@ export default function AdminAuditLogPage() {
               </tbody>
             </table>
 
-            <div className="flex justify-center border-t border-zinc-200 dark:border-bm-border px-4 py-4">
+            <div className="flex justify-center border-t border-bm-border dark:border-bm-border px-4 py-4">
               <button
                 type="button"
                 onClick={() => void loadMore()}
                 disabled={!hasMore || loadingMore}
-                className="rounded-lg border border-zinc-300 dark:border-bm-border bg-white px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-bm-text-muted transition enabled:hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2 text-sm font-semibold text-bm-text-muted dark:text-bm-text-muted transition enabled:hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loadingMore
                   ? "Loading…"
