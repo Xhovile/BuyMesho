@@ -39,11 +39,9 @@ export default function SettingsAppearanceSection() {
       </div>
 
       <div className="space-y-4 px-5 py-5">
-        <div role="radiogroup" aria-label="Theme preference" className="flex flex-col gap-2 sm:flex-row">
+        <div role="group" aria-label="Theme preference" className="flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
-            role="radio"
-            aria-checked={preference === "light"}
             aria-pressed={preference === "light"}
             onClick={() => choose("light")}
             className={`${optionBase} ${preference === "light" ? selectedClass : idleClass}`}
@@ -54,8 +52,6 @@ export default function SettingsAppearanceSection() {
 
           <button
             type="button"
-            role="radio"
-            aria-checked={preference === "dark"}
             aria-pressed={preference === "dark"}
             onClick={() => choose("dark")}
             className={`${optionBase} ${preference === "dark" ? selectedClass : idleClass}`}
@@ -66,8 +62,6 @@ export default function SettingsAppearanceSection() {
 
           <button
             type="button"
-            role="radio"
-            aria-checked={preference === "system"}
             aria-pressed={preference === "system"}
             onClick={() => choose("system")}
             className={`${optionBase} ${preference === "system" ? selectedClass : idleClass}`}
