@@ -466,7 +466,7 @@ export default function SettingsPage() {
           <BrandMark />
           <div className="flex items-center gap-3">
             <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface text-sm font-bold hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted items-center gap-2"><House className="w-4 h-4" />Home</button>
-            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"><ShoppingBag className="w-4 h-4" />Market</button>
+            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"><ShoppingBag className="w-4 h-4" />Market</button>
           </div>
         </div>
       </header>
@@ -475,12 +475,12 @@ export default function SettingsPage() {
         <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 sm:p-8 shadow-sm mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Settings</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Settings</p>
               <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-bm-text dark:text-bm-text">Your account control center.</h1>
               <p className="mt-3 max-w-2xl text-sm sm:text-base text-bm-text-muted dark:text-bm-text-muted leading-relaxed font-medium">Manage your account details, security posture, visibility controls, and legal/help resources from one page.</p>
             </div>
             <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-5 py-4 min-w-[220px]">
-              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Current section</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">Current section</p>
               <p className="mt-2 text-2xl font-black tracking-tight text-bm-text dark:text-bm-text capitalize">{view === "menu" ? "Settings" : view}</p>
             </div>
           </div>
@@ -589,7 +589,7 @@ export default function SettingsPage() {
       />
 
       {deleteRecoveryBusy && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-bm-overlay backdrop-blur-sm">
           <div className="flex flex-col items-center gap-4 rounded-3xl bg-bm-surface px-8 py-7 shadow-2xl">
             <Loader2 className="h-10 w-10 animate-spin text-red-600" />
             <div className="text-center">
