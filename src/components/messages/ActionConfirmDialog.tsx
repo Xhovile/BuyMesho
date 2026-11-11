@@ -28,16 +28,16 @@ export default function ActionConfirmDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-2xl sm:p-6">
+      <div className="w-full max-w-lg rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-2xl sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-extrabold text-zinc-900 dark:text-bm-text">{title}</h2>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-bm-text-muted">{description}</p>
+            <h2 className="text-xl font-extrabold text-bm-text dark:text-bm-text">{title}</h2>
+            <p className="mt-2 text-sm text-bm-text-muted dark:text-bm-text-muted">{description}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-2 text-zinc-600 dark:text-bm-text-muted hover:bg-zinc-100 dark:hover:bg-bm-surface-muted"
+            className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-2 text-bm-text-muted dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
             aria-label="Close dialog"
           >
             <X className="h-4 w-4" />
@@ -50,7 +50,7 @@ export default function ActionConfirmDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm font-bold text-zinc-700 dark:text-bm-text-muted hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
+            className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm font-bold text-bm-text-muted dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
           >
             Cancel
           </button>
@@ -58,8 +58,8 @@ export default function ActionConfirmDialog({
             type="button"
             onClick={() => void onConfirm()}
             disabled={busy}
-            className={`rounded-2xl px-4 py-3 text-sm font-bold text-white disabled:opacity-60 ${
-              tone === "danger" ? "bg-red-600 hover:bg-red-700" : "bg-zinc-900 hover:bg-zinc-800"
+            className={`rounded-2xl px-4 py-3 text-sm font-bold text-bm-on-brand disabled:opacity-60 ${
+              tone === "danger" ? "bg-red-600 hover:bg-red-700" : "bg-bm-brand hover:bg-bm-brand-hover"
             }`}
           >
             {busy ? "Working..." : confirmLabel}
