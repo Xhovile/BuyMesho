@@ -218,7 +218,7 @@ export default function HiddenCollectionsPage() {
         </section>
 
         {error ? (
-          <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <section className="mt-6 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">
             {error}
           </section>
         ) : null}
@@ -258,7 +258,7 @@ export default function HiddenCollectionsPage() {
                             <p className="text-sm text-bm-text-subtle dark:text-bm-text-subtle line-clamp-1">{listing.business_name}</p>
                           </div>
                           {listing.is_verified ? (
-                            <ShieldCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                            <ShieldCheck className="w-4 h-4 text-bm-success flex-shrink-0" />
                           ) : null}
                         </div>
 
@@ -275,7 +275,7 @@ export default function HiddenCollectionsPage() {
                           </span>
                           <span
                             className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.12em] ${
-                              isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-bm-surface-raised dark:bg-bm-skeleton text-bm-text-muted dark:text-bm-text-muted"
+                              isAvailable ? "bg-bm-success-bg text-bm-success" : "bg-bm-surface-raised dark:bg-bm-skeleton text-bm-text-muted dark:text-bm-text-muted"
                             }`}
                           >
                             {isAvailable ? "Available" : "Sold out"}
@@ -322,7 +322,7 @@ export default function HiddenCollectionsPage() {
                     <div className="flex items-center gap-4">
                       <div className="w-16 h-16 rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted border border-bm-border dark:border-bm-border flex items-center justify-center flex-shrink-0">
                         {seller.is_verified ? (
-                          <ShieldCheck className="w-7 h-7 text-blue-500" />
+                          <ShieldCheck className="w-7 h-7 text-bm-success" />
                         ) : (
                           <Store className="w-7 h-7 text-bm-text-subtle dark:text-bm-text-subtle" />
                         )}
