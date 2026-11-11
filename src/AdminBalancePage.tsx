@@ -120,41 +120,41 @@ export default function AdminBalancePage() {
     >
       <main className="space-y-6">
         {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">
             {error}
           </div>
         ) : null}
 
         <section className="grid gap-3 md:grid-cols-3">
           <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle">
               Main balance
             </p>
             <div className="mt-3 flex items-end justify-between gap-3">
-              <p className="text-2xl font-black text-zinc-950 dark:text-bm-text">
+              <p className="text-2xl font-black text-bm-text">
                 {formatMoney(mainBalance, currency)}
               </p>
-              <Wallet className="h-5 w-5 text-zinc-400 dark:text-bm-text-subtle" />
+              <Wallet className="h-5 w-5 text-bm-text-subtle" />
             </div>
           </div>
 
           <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle">
               Collection balance
             </p>
             <div className="mt-3 flex items-end justify-between gap-3">
-              <p className="text-2xl font-black text-zinc-950 dark:text-bm-text">
+              <p className="text-2xl font-black text-bm-text">
                 {formatMoney(collectionBalance, currency)}
               </p>
-              <Wallet className="h-5 w-5 text-zinc-400 dark:text-bm-text-subtle" />
+              <Wallet className="h-5 w-5 text-bm-text-subtle" />
             </div>
           </div>
 
           <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle">
               Available / checked
             </p>
-            <p className="mt-3 text-2xl font-black text-zinc-950 dark:text-bm-text">
+            <p className="mt-3 text-2xl font-black text-bm-text">
               {formatMoney(availableBalance, currency)}
             </p>
             <p className="mt-2 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
@@ -186,7 +186,7 @@ export default function AdminBalancePage() {
           )}
         </section>
 
-        <section className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">
+        <section className="rounded-[2rem] border border-bm-warning/25 bg-bm-warning-bg p-5 text-sm text-bm-warning">
           <div className="flex items-center gap-2 font-black">
             <CircleAlert className="h-4 w-4" />
             Read this correctly
