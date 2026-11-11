@@ -14,7 +14,7 @@ function SpecAccordion({
 }) {
   return (
     <details
-      className="group rounded-[1.75rem] border border-blue-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+      className="group rounded-[1.75rem] border border-bm-border bg-bm-surface shadow-sm transition-shadow hover:shadow-md"
       open={defaultOpen}
     >
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 sm:px-6">
@@ -24,17 +24,17 @@ function SpecAccordion({
             {group.rows.length} {group.rows.length === 1 ? "detail" : "details"}
           </p>
         </div>
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-bm-surface-subtle text-bm-text-subtle transition-transform duration-200 group-open:rotate-180">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-bm-border bg-bm-surface-subtle text-bm-text-subtle transition-transform duration-200 group-open:rotate-180">
           <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-5 w-5">
             <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
       </summary>
 
-      <div className="border-t border-blue-100 px-5 py-5 sm:px-6">
+      <div className="border-t border-bm-border-subtle px-5 py-5 sm:px-6">
         <dl className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {group.rows.map((row) => (
-            <div key={row.key} className="rounded-2xl border border-blue-100 bg-bm-surface-subtle px-3 py-3 sm:px-4">
+            <div key={row.key} className="rounded-2xl border border-bm-border-subtle bg-bm-surface-subtle px-3 py-3 sm:px-4">
               <dt className="text-[10px] font-bold uppercase tracking-[0.18em] text-bm-text-subtle">{row.label}</dt>
               <dd className="mt-1 text-sm font-semibold text-bm-text">{row.value}</dd>
             </div>
@@ -75,7 +75,7 @@ export default function ListingSpecsBlock({ groups }: { groups: ListingSpecsGrou
           </div>
         </>
       ) : (
-        <div className="rounded-[1.75rem] border border-dashed border-blue-200 bg-white px-4 py-5 text-sm text-bm-text-subtle shadow-sm">
+        <div className="rounded-[1.75rem] border border-dashed border-bm-border bg-bm-surface px-4 py-5 text-sm text-bm-text-subtle shadow-sm">
           No grouped specs are available for this listing.
         </div>
       )}
