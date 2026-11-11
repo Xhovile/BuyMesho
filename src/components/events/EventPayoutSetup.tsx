@@ -188,25 +188,25 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
   };
 
   return (
-    <section className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5">
+    <section className="rounded-[1.75rem] border border-bm-border bg-bm-surface-muted/70 p-4 sm:p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-500">Payout details</p>
-          <h2 className="mt-1 text-lg font-black tracking-tight text-zinc-950">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">Payout details</p>
+          <h2 className="mt-1 text-lg font-black tracking-tight text-bm-text">
             Where should ticket money be sent?
             {required ? <span className="ml-1 text-red-900">*</span> : null}
           </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-bm-text-muted">
             Select the payout destination for this event. Your creator default is separate and can be changed at any time for future events.
           </p>
         </div>
-        <WalletCards className="mt-1 hidden h-5 w-5 text-zinc-500 sm:block" />
+        <WalletCards className="mt-1 hidden h-5 w-5 text-bm-text-subtle sm:block" />
       </div>
 
       {error ? <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
 
       {loading ? (
-        <div className="mt-4 rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-500">Loading payout destinations…</div>
+        <div className="mt-4 rounded-2xl border border-bm-border bg-bm-surface px-4 py-4 text-sm text-bm-text-subtle">Loading payout destinations…</div>
       ) : (
         <>
           <div className="mt-4 grid gap-3">
@@ -217,7 +217,7 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
                 <div
                   key={destination.id}
                   className={`rounded-2xl border px-4 transition ${
-                    selected ? "border-zinc-950 bg-white py-5 shadow-sm" : "border-zinc-200 bg-white py-4"
+                    selected ? "border-zinc-950 bg-bm-surface py-5 shadow-sm" : "border-bm-border bg-bm-surface py-4"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -228,31 +228,31 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
                       className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
-                        selected ? "bg-zinc-950 text-white" : "bg-zinc-100 text-zinc-600"
+                        selected ? "bg-bm-brand text-bm-on-brand" : "bg-bm-surface-muted text-bm-text-muted"
                       }`}
                       >
                         {destination.destinationType === "bank" ? <Landmark className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-extrabold text-zinc-950">{destination.providerName}</span>
+                          <span className="text-sm font-extrabold text-bm-text">{destination.providerName}</span>
                           {destination.isDefault ? (
-                            <span className="rounded-full bg-zinc-100 px-2 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-zinc-600">
+                            <span className="rounded-full bg-bm-surface-muted px-2 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-bm-text-muted">
                               Default
                             </span>
                           ) : null}
                         </span>
-                        <span className="mt-1 block truncate text-xs font-medium text-zinc-500">
+                        <span className="mt-1 block truncate text-xs font-medium text-bm-text-subtle">
                           {destination.accountName} · {destination.accountDisplay}
                         </span>
                       </span>
                       {selected ? (
-                        <span className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-zinc-950 px-3 py-2 text-[10px] font-extrabold leading-tight text-white sm:text-[11px]">
+                        <span className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-bm-brand px-3 py-2 text-[10px] font-extrabold leading-tight text-bm-on-brand sm:text-[11px]">
                           <Check className="h-4 w-4" />
                           <span>Selected for this event</span>
                         </span>
                       ) : (
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-transparent">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-bm-border text-transparent">
                           <Check className="h-4 w-4" />
                         </span>
                       )}
@@ -265,7 +265,7 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
                           void handleMakeDefault(destination.id);
                         }}
                         disabled={disabled || saving || makingDefault || !selected}
-                        className="shrink-0 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-extrabold text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-45"
+                        className="shrink-0 rounded-xl border border-bm-border bg-bm-surface px-3 py-2 text-xs font-extrabold text-bm-text transition hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:opacity-45"
                       >
                         {makingDefault ? "Setting…" : "Make default"}
                       </button>
@@ -280,14 +280,14 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
               This event's payout destination is locked after its first successful ticket sale. You can still change your creator default for future events.
             </div>
           ) : protectionLoading ? (
-            <p className="mt-3 text-xs font-medium text-zinc-400">Checking this event's payout binding…</p>
+            <p className="mt-3 text-xs font-medium text-bm-text-subtle">Checking this event's payout binding…</p>
           ) : null}
           <div className="mt-4">
             <button
               type="button"
               onClick={() => setShowNew((current) => !current)}
               disabled={disabled || saving || providerMetadataLoading || providerOptions.length === 0}
-              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-surface px-4 py-3 text-sm font-bold text-bm-text hover:bg-bm-surface-muted disabled:opacity-60"
             >
               <Plus className="h-4 w-4" />
               {showNew ? 'Close new destination' : 'Add a new payout destination'}
@@ -295,7 +295,7 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
           </div>
 
           {showNew ? (
-            <div className="mt-4 rounded-[1.5rem] border border-zinc-200 bg-white p-4 sm:p-5">
+            <div className="mt-4 rounded-[1.5rem] border border-bm-border bg-bm-surface p-4 sm:p-5">
               <PayoutDestinationForm
                 value={form}
                 onChange={setForm}
