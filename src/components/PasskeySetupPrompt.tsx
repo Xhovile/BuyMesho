@@ -117,7 +117,7 @@ export default function PasskeySetupPrompt() {
         <div className="px-6 py-6">
           {state === "success" ? (
             <div className="py-4 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-bm-success-bg text-bm-success">
                 <ShieldCheck className="h-8 w-8" />
               </div>
               <h3 className="mt-5 text-xl font-black text-bm-text">Passkey added</h3>
@@ -142,7 +142,7 @@ export default function PasskeySetupPrompt() {
               </div>
 
               {state === "error" ? (
-                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-relaxed text-red-800">
+                <div className="mt-4 rounded-2xl border border-bm-danger/35 bg-bm-danger-bg px-4 py-3 text-sm font-medium leading-relaxed text-bm-danger">
                   {errorMessage}
                 </div>
               ) : null}
