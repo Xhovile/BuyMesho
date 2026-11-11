@@ -207,8 +207,8 @@ function StatCard({
     <div className="rounded-[1.5rem] border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm shadow-zinc-200/30">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">{label}</p>
-          <p className="mt-2 text-2xl font-black tracking-tight text-zinc-950 dark:text-bm-text">{value}</p>
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">{label}</p>
+          <p className="mt-2 text-2xl font-black tracking-tight text-bm-text">{value}</p>
           {helper ? <p className="mt-1 text-xs font-medium text-bm-text-subtle dark:text-bm-text-subtle">{helper}</p> : null}
         </div>
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-muted dark:text-bm-text-muted">
@@ -519,22 +519,22 @@ export default function AdminEventModerationPage() {
             <div className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Event creator submissions</p>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">Event creator submissions</p>
                   <h2 className="mt-1 text-xl font-black tracking-tight text-bm-text dark:text-bm-text">Creators and approvals</h2>
                 </div>
                 <label className="flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-3 py-2">
-                  <Search className="h-4 w-4 text-zinc-400 dark:text-bm-text-subtle" />
+                  <Search className="h-4 w-4 text-bm-text-subtle" />
                   <input
                     value={creatorQuery}
                     onChange={(event) => setCreatorQuery(event.target.value)}
                     placeholder="Search creators"
-                    className="w-52 bg-transparent text-sm outline-none placeholder:text-zinc-400"
+                    className="w-52 bg-transparent text-sm outline-none placeholder:text-bm-text-subtle"
                   />
                 </label>
               </div>
 
               <div className="mt-4 max-w-full overflow-x-auto rounded-[1.5rem] border border-bm-border dark:border-bm-border">
-                <div className="grid min-w-[760px] grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] gap-3 border-b border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">
+                <div className="grid min-w-[760px] grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] gap-3 border-b border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle">
                   <div>Creator</div>
                   <div>Organisation</div>
                   <div>Status</div>
@@ -542,7 +542,7 @@ export default function AdminEventModerationPage() {
                   <div>Messages</div>
                   <div>Activity</div>
                 </div>
-                <div className="max-h-[460px] divide-y divide-zinc-200 dark:divide-bm-border overflow-auto bg-bm-surface">
+                <div className="max-h-[460px] divide-y divide-bm-border overflow-auto bg-bm-surface">
                   {creators.length === 0 ? (
                     <div className="p-5 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No creators found.</div>
                   ) : (
@@ -557,7 +557,7 @@ export default function AdminEventModerationPage() {
                         className={`grid min-w-[760px] w-full grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] gap-3 px-4 py-3 text-left transition hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted ${selectedCreatorUid === creator.uid ? "bg-bm-surface-muted dark:bg-bm-surface-subtle" : "bg-bm-surface"}`}
                       >
                         <div>
-                          <p className="font-bold text-zinc-950 dark:text-bm-text">{creator.display_name}</p>
+                          <p className="font-bold text-bm-text">{creator.display_name}</p>
                           <p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle">{creator.email}</p>
                         </div>
                         <div>
@@ -586,29 +586,29 @@ export default function AdminEventModerationPage() {
             <div className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Posted events</p>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">Posted events</p>
                   <h2 className="mt-1 text-xl font-black tracking-tight text-bm-text dark:text-bm-text">Event status and activity</h2>
                 </div>
                 <label className="flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-3 py-2">
-                  <Search className="h-4 w-4 text-zinc-400 dark:text-bm-text-subtle" />
+                  <Search className="h-4 w-4 text-bm-text-subtle" />
                   <input
                     value={eventQuery}
                     onChange={(event) => setEventQuery(event.target.value)}
                     placeholder="Search events"
-                    className="w-52 bg-transparent text-sm outline-none placeholder:text-zinc-400"
+                    className="w-52 bg-transparent text-sm outline-none placeholder:text-bm-text-subtle"
                   />
                 </label>
               </div>
 
               <div className="mt-4 max-w-full overflow-x-auto rounded-[1.5rem] border border-bm-border dark:border-bm-border">
-                <div className="grid min-w-[680px] grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] gap-3 border-b border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">
+                <div className="grid min-w-[680px] grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] gap-3 border-b border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle">
                   <div>Event</div>
                   <div>Status</div>
                   <div>Messages</div>
                   <div>Traffic</div>
                   <div>Records</div>
                 </div>
-                <div className="max-h-[520px] divide-y divide-zinc-200 dark:divide-bm-border overflow-auto bg-bm-surface">
+                <div className="max-h-[520px] divide-y divide-bm-border overflow-auto bg-bm-surface">
                   {events.length === 0 ? (
                     <div className="p-5 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No events found for the selected creator.</div>
                   ) : (
@@ -623,7 +623,7 @@ export default function AdminEventModerationPage() {
                         className={`grid min-w-[680px] w-full grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] gap-3 px-4 py-3 text-left transition hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted ${selectedEventId === event.id ? "bg-bm-surface-muted dark:bg-bm-surface-subtle" : "bg-bm-surface"}`}
                       >
                         <div>
-                          <p className="font-bold text-zinc-950 dark:text-bm-text">{event.event_title}</p>
+                          <p className="font-bold text-bm-text">{event.event_title}</p>
                           <p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle">
                             {event.event_type} • {event.organizer_name}
                           </p>
@@ -658,7 +658,7 @@ export default function AdminEventModerationPage() {
             <div className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Selected creator</p>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">Selected creator</p>
                   <h3 className="mt-1 text-lg font-black tracking-tight text-bm-text dark:text-bm-text">{selectedCreator?.display_name || "No creator selected"}</h3>
                   <p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">{selectedCreator?.organization_name || "Choose a creator row to inspect their profile."}</p>
                 </div>
@@ -669,19 +669,19 @@ export default function AdminEventModerationPage() {
 
               <div className="mt-4 grid gap-3 text-sm text-bm-text-muted dark:text-bm-text-muted">
                 <div className="rounded-[1.4rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80 p-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Profile</p>
-                  <p className="mt-1 font-semibold text-zinc-950 dark:text-bm-text">{selectedCreator?.email || "—"}</p>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle">Profile</p>
+                  <p className="mt-1 font-semibold text-bm-text">{selectedCreator?.email || "—"}</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">{selectedCreator?.organization_type || "—"}</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">WhatsApp: {selectedCreator?.contact_whatsapp || "—"}</p>
                 </div>
                 <div className="rounded-[1.4rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80 p-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Submission</p>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle">Submission</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Latest: {selectedCreator?.latest_submission_status || "—"}</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Reason: {selectedCreator?.latest_submission_reason || "—"}</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Applied: {formatDateTime(selectedCreator?.latest_submission_created_at)}</p>
                 </div>
                 <div className="rounded-[1.4rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80 p-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Activity summary</p>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle">Activity summary</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Events: {selectedCreator?.event_count ?? 0}</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Messages: {selectedCreator?.message_threads ?? 0}</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Traffic: {selectedCreator?.cart_adds ?? 0} cart / {selectedCreator?.ticket_clicks ?? 0} clicks</p>
@@ -713,7 +713,7 @@ export default function AdminEventModerationPage() {
             <div className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
               <div className="flex items-start justify-between gap-3 border-b border-bm-border dark:border-bm-border pb-4">
                 <div>
-                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Selected event</p>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">Selected event</p>
                   <h3 className="mt-1 text-lg font-black tracking-tight text-bm-text dark:text-bm-text">{selectedEvent?.event_title || "No event selected"}</h3>
                   <p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">{selectedEvent ? `${selectedEvent.event_type} • ${selectedEvent.organizer_name}` : "Choose an event to inspect records and actions."}</p>
                 </div>
@@ -724,19 +724,19 @@ export default function AdminEventModerationPage() {
 
               <div className="mt-4 grid gap-3 text-sm text-bm-text-muted dark:text-bm-text-muted">
                 <div className="rounded-[1.4rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80 p-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Details</p>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle">Details</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">{selectedEvent ? `${selectedEvent.location} • ${selectedEvent.venue}` : "—"}</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Date: {formatDate(selectedEvent?.event_date)}</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Start: {selectedEvent?.start_time || "—"}</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Ticket: {formatMoney(selectedEvent?.ticket_price)}</p>
                 </div>
                 <div className="rounded-[1.4rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80 p-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Payout receiving destination</p>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle">Payout receiving destination</p>
                   {recordsLoading && !selectedRecordPayload ? (
                     <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Loading destination...</p>
                   ) : selectedRecordPayload?.payoutDestination ? (
                     <>
-                      <p className="mt-1 font-semibold text-zinc-950 dark:text-bm-text">
+                      <p className="mt-1 font-semibold text-bm-text">
                         {selectedRecordPayload.payoutDestination.provider_name} • {selectedRecordPayload.payoutDestination.destination_type.replace(/_/g, " ")}
                       </p>
                       <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
@@ -745,14 +745,14 @@ export default function AdminEventModerationPage() {
                       <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
                         {selectedRecordPayload.payoutDestination.currency} • {selectedRecordPayload.payoutDestination.verification_status} • {selectedRecordPayload.payoutDestination.is_active ? "Active" : "Inactive"}
                       </p>
-                      <p className="mt-1 text-[11px] text-zinc-400 dark:text-bm-text-subtle">Destination ID: {selectedRecordPayload.payoutDestination.id}</p>
+                      <p className="mt-1 text-[11px] text-bm-text-subtle">Destination ID: {selectedRecordPayload.payoutDestination.id}</p>
                     </>
                   ) : (
                     <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">No payout receiving destination is assigned to this event.</p>
                   )}
                 </div>
                 <div className="rounded-[1.4rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80 p-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Moderation totals</p>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle">Moderation totals</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Messages: {selectedEvent?.message_threads ?? 0}</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Unread: {selectedEvent?.unread_messages ?? 0}</p>
                   <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Cart adds: {selectedEvent?.cart_adds ?? 0}</p>
@@ -799,10 +799,10 @@ export default function AdminEventModerationPage() {
             <div className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
               <div className="flex items-center justify-between gap-3 border-b border-bm-border dark:border-bm-border pb-4">
                 <div>
-                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Event records</p>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">Event records</p>
                   <h3 className="mt-1 text-lg font-black tracking-tight text-bm-text dark:text-bm-text">Ticket and purchase trail</h3>
                 </div>
-                <ReceiptText className="h-5 w-5 text-zinc-400 dark:text-bm-text-subtle" />
+                <ReceiptText className="h-5 w-5 text-bm-text-subtle" />
               </div>
 
               {recordsLoading ? (
@@ -817,7 +817,7 @@ export default function AdminEventModerationPage() {
               ) : selectedRecordPayload ? (
                 <div className="mt-4 space-y-4">
                   <div className="rounded-[1.4rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80 p-4 text-sm text-bm-text-muted dark:text-bm-text-muted">
-                    <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Activities</p>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle">Activities</p>
                     <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">{selectedRecordPayload.activities.length} activity rows</p>
                     <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">{selectedRecordPayload.conversations.length} conversation threads</p>
                     <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">{selectedRecordPayload.purchaseRecords.length} purchase records</p>
@@ -831,7 +831,7 @@ export default function AdminEventModerationPage() {
                         <div key={activity.id} className="rounded-[1.4rem] border border-bm-border dark:border-bm-border bg-bm-surface p-4 text-sm text-bm-text-muted dark:text-bm-text-muted">
                           <div className="flex items-start justify-between gap-3">
                             <div>
-                              <p className="font-bold text-zinc-950 dark:text-bm-text">{activity.activity_type}</p>
+                              <p className="font-bold text-bm-text">{activity.activity_type}</p>
                               <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">{formatDateTime(activity.created_at)}</p>
                             </div>
                             <span className="rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-bm-text-subtle dark:text-bm-text-subtle">
@@ -845,7 +845,7 @@ export default function AdminEventModerationPage() {
                   </div>
 
                   <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Purchase records</p>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">Purchase records</p>
                     <div className="mt-2 space-y-2 max-h-64 overflow-auto">
                       {selectedRecordPayload.purchaseRecords.length === 0 ? (
                         <div className="rounded-[1.4rem] border border-dashed border-bm-border dark:border-bm-border bg-bm-surface p-4 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
@@ -856,7 +856,7 @@ export default function AdminEventModerationPage() {
                           <div key={String(purchase.id)} className="rounded-[1.4rem] border border-bm-border dark:border-bm-border bg-bm-surface p-4 text-sm text-bm-text-muted dark:text-bm-text-muted">
                             <div className="flex items-start justify-between gap-3">
                               <div>
-                                <p className="font-bold text-zinc-950 dark:text-bm-text">Order {String(purchase.id)}</p>
+                                <p className="font-bold text-bm-text">Order {String(purchase.id)}</p>
                                 <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
                                   {String(purchase.status ?? "—")} • {String(purchase.total_currency ?? purchase.currency ?? "MWK")} {String(purchase.total_amount ?? "0")}
                                 </p>
@@ -885,7 +885,7 @@ export default function AdminEventModerationPage() {
         <section className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
           <div className="flex items-center justify-between gap-3 border-b border-bm-border dark:border-bm-border pb-4">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Submissions audit</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">Submissions audit</p>
               <h3 className="mt-1 text-lg font-black tracking-tight text-bm-text dark:text-bm-text">Recent creator applications</h3>
             </div>
             <span className="rounded-full border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-bm-text-subtle dark:text-bm-text-subtle">
@@ -893,18 +893,18 @@ export default function AdminEventModerationPage() {
             </span>
           </div>
           <div className="mt-4 max-w-full overflow-x-auto rounded-[1.5rem] border border-bm-border dark:border-bm-border">
-            <div className="grid min-w-[680px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1.2fr)] gap-3 border-b border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">
+            <div className="grid min-w-[680px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1.2fr)] gap-3 border-b border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle">
               <div>Creator</div>
               <div>Organisation</div>
               <div>Status</div>
               <div>Applied</div>
               <div>Reason</div>
             </div>
-            <div className="divide-y divide-zinc-200 dark:divide-bm-border bg-bm-surface">
+            <div className="divide-y divide-bm-border bg-bm-surface">
               {(overview?.submissions ?? []).map((submission) => (
                 <div key={submission.id} className="grid min-w-[680px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1.2fr)] gap-3 px-4 py-3 text-sm">
                   <div>
-                    <p className="font-bold text-zinc-950 dark:text-bm-text">{submission.display_name}</p>
+                    <p className="font-bold text-bm-text">{submission.display_name}</p>
                     <p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle">{submission.applicant_email || submission.applicant_uid}</p>
                   </div>
                   <div>
