@@ -13,11 +13,11 @@ function AdminStatusPill({ value }: { value: string }) {
   const normalized = value.toLowerCase();
   const classes =
     normalized === "paid" || normalized === "processed" || normalized === "sent"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      ? "border-bm-success/25 bg-bm-success-bg text-bm-success"
       : normalized === "pending" || normalized === "received" || normalized === "sending"
-        ? "border-amber-200 bg-amber-50 text-amber-700"
+        ? "border-bm-warning/25 bg-bm-warning-bg text-bm-warning"
         : normalized === "failed" || normalized === "refunded"
-          ? "border-red-200 bg-red-50 text-red-700"
+          ? "border-bm-danger/25 bg-bm-danger-bg text-bm-danger"
           : "border-bm-border bg-bm-surface-muted text-bm-text-muted";
 
   return (
