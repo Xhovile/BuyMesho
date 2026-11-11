@@ -29,19 +29,19 @@ export default function EventDetailsActions({
   onShare: () => void;
   onCancelEvent: () => void;
 }) {
-  const ownerActionButtonClass = "inline-flex items-center gap-2 rounded-2xl border border-blue-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-blue-50";
+  const ownerActionButtonClass = "inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-text hover:bg-bm-surface-muted";
   const buyerActionButtonClass = "inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-extrabold transition-colors";
 
   return canManageEvent ? (
-    <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/80 via-zinc-50 to-white p-4 shadow-sm ring-1 ring-blue-100/60">
+    <div className="rounded-3xl border border-bm-border bg-gradient-to-br from-bm-surface-muted via-bm-bg to-bm-surface p-4 shadow-sm ring-1 ring-bm-border">
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-blue-700/80">Owner view</p>
-            <h2 className="mt-1 text-lg font-black tracking-tight text-zinc-900">Manage this event</h2>
-            <p className="mt-1 text-sm leading-6 text-zinc-600">Use these tools to edit details, publish changes, or remove the event from the public directory.</p>
+            <h2 className="mt-1 text-lg font-black tracking-tight text-bm-text">Manage this event</h2>
+            <p className="mt-1 text-sm leading-6 text-bm-text-muted">Use these tools to edit details, publish changes, or remove the event from the public directory.</p>
           </div>
-          <button type="button" onClick={onShare} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-blue-200 bg-white shadow-sm transition-colors hover:bg-blue-50" aria-label="Share event" title="Share event">
+          <button type="button" onClick={onShare} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-bm-border bg-bm-surface shadow-sm transition-colors hover:bg-bm-surface-muted" aria-label="Share event" title="Share event">
             <Share2 className="h-4 w-4 text-blue-700" />
           </button>
         </div>
@@ -54,7 +54,7 @@ export default function EventDetailsActions({
       </div>
     </div>
   ) : (
-    <div className="border-t border-zinc-200 pt-4 pb-24">
+    <div className="border-t border-bm-border pt-4 pb-24">
       <div className="grid grid-cols-3 items-center gap-2 sm:flex sm:flex-wrap sm:justify-start sm:gap-3">
         <button
           type="button"
@@ -72,7 +72,7 @@ export default function EventDetailsActions({
           type="button"
           onClick={onMessage}
           disabled={!canMessageEvent}
-          className="flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 shadow-sm transition-all hover:bg-zinc-50 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-4"
+          className="flex h-12 w-full min-w-0 items-center justify-center gap-2 rounded-2xl border border-bm-border bg-bm-surface px-3 shadow-sm transition-all hover:bg-bm-surface-subtle active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-4"
           aria-label="Message event owner"
           title={!canMessageEvent ? "This event is not available for messaging right now." : "Message event owner"}
         >
@@ -87,11 +87,11 @@ export default function EventDetailsActions({
         <button
           type="button"
           onClick={onShare}
-          className="flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 transition-colors hover:bg-zinc-50 sm:w-auto sm:px-4"
+          className="flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-xl border border-bm-border bg-bm-surface px-3 transition-colors hover:bg-bm-surface-subtle sm:w-auto sm:px-4"
           aria-label="Share event"
           title="Share event"
         >
-          <Share2 className="h-4 w-4 text-zinc-700" />
+          <Share2 className="h-4 w-4 text-bm-text-muted" />
           <span className="hidden font-extrabold sm:inline">Share</span>
         </button>
       </div>
