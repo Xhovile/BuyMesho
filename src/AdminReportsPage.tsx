@@ -142,7 +142,7 @@ function MessageReportCard({
             <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-bm-danger-bg text-bm-danger border border-bm-danger/35">
               chat report
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-amber-50 text-bm-warning border border-amber-200">
+            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-bm-warning-bg text-bm-warning border border-bm-warning/35">
               {report.status}
             </span>
             <span className="text-xs text-zinc-400 dark:text-bm-text-subtle font-bold">#{report.id}</span>
@@ -259,7 +259,7 @@ function ContentReportCard({
             <span
               className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${
                 isListing
-                  ? "bg-red-50 text-bm-danger border-red-200"
+                  ? "bg-bm-danger-bg text-bm-danger border-bm-danger/35"
                   : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted border-bm-border dark:border-bm-border"
               }`}
             >
@@ -268,10 +268,10 @@ function ContentReportCard({
             <span
               className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${
                 report.status === "resolved"
-                  ? "bg-emerald-50 text-bm-success border-emerald-200"
+                  ? "bg-bm-success-bg text-bm-success border-bm-success/35"
                   : report.status === "reviewed"
-                  ? "bg-blue-50 text-bm-text-muted border-blue-200"
-                  : "bg-amber-50 text-bm-warning border-amber-200"
+                  ? "bg-bm-surface-muted text-bm-text-muted border-bm-border"
+                  : "bg-bm-warning-bg text-bm-warning border-bm-warning/35"
               }`}
             >
               {report.status}
@@ -584,7 +584,7 @@ export default function AdminReportsPage() {
             onClick={() => navigateToPath(HOME_PATH)}
             className="flex items-center gap-2.5 min-w-0"
           >
-            <div className="w-10 h-10 bg-bm-brand rounded-2xl flex items-center justify-center text-bm-on-brand font-extrabold text-xl shadow-lg shadow-red-900/20">
+            <div className="w-10 h-10 bg-bm-brand rounded-2xl flex items-center justify-center text-bm-on-brand font-extrabold text-xl shadow-lg shadow-bm-brand/20">
               B
             </div>
             <div className="text-left">
