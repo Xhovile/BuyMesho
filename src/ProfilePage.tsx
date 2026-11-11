@@ -72,7 +72,7 @@ export default function ProfilePage() {
           <button
             type="button"
             onClick={() => navigateToPath("/login")}
-            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover"
           >
             Go to Login
           </button>
@@ -87,19 +87,19 @@ export default function ProfilePage() {
           <button
             type="button"
             onClick={() => navigateToPath("/account/setup")}
-            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover"
           >
             Complete profile
           </button>
         </div>
       ) : (
         <div>
-          <div className="flex items-center gap-4 bg-bm-surface-muted dark:bg-bm-surface-subtle border-b border-zinc-100 dark:border-bm-border-subtle px-6 py-5">
+          <div className="flex items-center gap-4 bg-bm-surface-muted dark:bg-bm-surface-subtle border-b border-bm-border-subtle dark:border-bm-border-subtle px-6 py-5">
             <div className="w-20 h-20 rounded-full bg-bm-surface overflow-hidden border border-bm-border dark:border-bm-border shadow-sm flex items-center justify-center flex-shrink-0">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                <User className="w-8 h-8 text-zinc-400 dark:text-bm-text-subtle" />
+                <User className="w-8 h-8 text-bm-text-subtle dark:text-bm-text-subtle" />
               )}
             </div>
             <div className="min-w-0">
@@ -160,7 +160,7 @@ export default function ProfilePage() {
 
             {!profile.profile_setup_complete && (
               <section className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm p-5">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-bm-text-subtle dark:text-bm-text-subtle">
                   Profile setup
                 </p>
                 <h3 className="mt-2 text-lg font-black text-bm-text dark:text-bm-text">
@@ -174,7 +174,7 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => navigateToPath("/account/setup")}
                   disabled={!emailVerified}
-                  className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Complete profile
                 </button>
@@ -182,10 +182,10 @@ export default function ProfilePage() {
             )}
 
             <section className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
-              <div className="border-b border-zinc-100 dark:border-bm-border-subtle px-5 py-3 bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">Account</p>
+              <div className="border-b border-bm-border-subtle dark:border-bm-border-subtle px-5 py-3 bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-bm-text-subtle dark:text-bm-text-subtle">Account</p>
               </div>
-              <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
+              <div className="divide-y divide-bm-border-subtle dark:divide-bm-border-subtle">
                 <button
                   type="button"
                   onClick={() => navigateToPath("/account/setup")}
@@ -203,7 +203,7 @@ export default function ProfilePage() {
                       </span>
                     </span>
                   </span>
-                  <ChevronRight className="w-5 h-5 text-zinc-400 dark:text-bm-text-subtle shrink-0" />
+                  <ChevronRight className="w-5 h-5 text-bm-text-subtle dark:text-bm-text-subtle shrink-0" />
                 </button>
 
                 {profile.is_seller ? (
@@ -224,17 +224,17 @@ export default function ProfilePage() {
                         </span>
                       </span>
                     </span>
-                    <ChevronRight className="w-5 h-5 text-zinc-400 dark:text-bm-text-subtle shrink-0" />
+                    <ChevronRight className="w-5 h-5 text-bm-text-subtle dark:text-bm-text-subtle shrink-0" />
                   </button>
                 ) : null}
               </div>
             </section>
 
             <section className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
-              <div className="border-b border-zinc-100 dark:border-bm-border-subtle px-5 py-3 bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">Set Up</p>
+              <div className="border-b border-bm-border-subtle dark:border-bm-border-subtle px-5 py-3 bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-bm-text-subtle dark:text-bm-text-subtle">Set Up</p>
               </div>
-              <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
+              <div className="divide-y divide-bm-border-subtle dark:divide-bm-border-subtle">
                 <button
                   type="button"
                   onClick={() => navigateToPath("/settings")}
@@ -249,7 +249,7 @@ export default function ProfilePage() {
                       <span className="hidden md:block text-sm text-bm-text-subtle dark:text-bm-text-subtle">Open account settings.</span>
                     </span>
                   </span>
-                  <ChevronRight className="w-5 h-5 text-zinc-400 dark:text-bm-text-subtle shrink-0" />
+                  <ChevronRight className="w-5 h-5 text-bm-text-subtle dark:text-bm-text-subtle shrink-0" />
                 </button>
 
                 <button
@@ -269,16 +269,16 @@ export default function ProfilePage() {
                       </span>
                     </span>
                   </span>
-                  <ChevronRight className="w-5 h-5 text-zinc-400 dark:text-bm-text-subtle shrink-0" />
+                  <ChevronRight className="w-5 h-5 text-bm-text-subtle dark:text-bm-text-subtle shrink-0" />
                 </button>
               </div>
             </section>
 
             <section className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
-              <div className="border-b border-zinc-100 dark:border-bm-border-subtle px-5 py-3 bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">Security</p>
+              <div className="border-b border-bm-border-subtle dark:border-bm-border-subtle px-5 py-3 bg-bm-surface-muted/80 dark:bg-bm-surface-subtle/80">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-bm-text-subtle dark:text-bm-text-subtle">Security</p>
               </div>
-              <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
+              <div className="divide-y divide-bm-border-subtle dark:divide-bm-border-subtle">
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -293,7 +293,7 @@ export default function ProfilePage() {
                       <span className="hidden md:block text-sm text-bm-text-subtle dark:text-bm-text-subtle">Sign out of this device.</span>
                     </span>
                   </span>
-                  <ChevronRight className="w-5 h-5 text-zinc-400 dark:text-bm-text-subtle shrink-0" />
+                  <ChevronRight className="w-5 h-5 text-bm-text-subtle dark:text-bm-text-subtle shrink-0" />
                 </button>
               </div>
             </section>
