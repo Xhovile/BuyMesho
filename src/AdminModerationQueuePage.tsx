@@ -43,7 +43,7 @@ export default function AdminModerationQueuePage() {
       onRefresh={() => void refresh()}
     >
       {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
+        <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">{error}</div>
       ) : null}
 
       <section className="grid gap-4 md:grid-cols-3">
