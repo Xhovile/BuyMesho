@@ -74,7 +74,7 @@ export default function ProductCompareModal({ isOpen, onClose, items }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
-      <div className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-bm-surface w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         <div className="px-6 py-4 bg-linear-to-r from-emerald-900 to-teal-800 text-white flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-white/10 rounded-xl">
@@ -97,8 +97,8 @@ export default function ProductCompareModal({ isOpen, onClose, items }: Props) {
 
         <div className="p-6 overflow-y-auto space-y-6">
           {comparisonItems.length >= 2 && (
-            <div className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-600 flex items-start gap-2">
-              <Scale className="w-4 h-4 text-zinc-800 shrink-0 mt-0.5" />
+            <div className="p-3.5 bg-bm-surface-muted border border-bm-border rounded-xl text-xs text-bm-text-muted flex items-start gap-2">
+              <Scale className="w-4 h-4 text-bm-text shrink-0 mt-0.5" />
               <p>
                 This comparison uses the canonical BuyMesho listing records identified by the selected listing IDs. Missing information is not treated as a fact, and the result is not an official valuation, verification or guarantee.
               </p>
@@ -108,7 +108,7 @@ export default function ProductCompareModal({ isOpen, onClose, items }: Props) {
           {loading && (
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
               <RefreshCw className="w-8 h-8 text-emerald-700 animate-spin" />
-              <p className="text-sm font-medium text-neutral-700">Comparing canonical BuyMesho listing information…</p>
+              <p className="text-sm font-medium text-bm-text-muted">Comparing canonical BuyMesho listing information…</p>
             </div>
           )}
 
@@ -125,8 +125,8 @@ export default function ProductCompareModal({ isOpen, onClose, items }: Props) {
                 <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm">
                   <Trophy className="w-4 h-4 text-amber-500" /> Best overall option from the canonical listing information
                 </div>
-                <p className="text-xs text-neutral-800 leading-relaxed">{result.winner_reason}</p>
-                <p className="text-xs text-neutral-600 leading-relaxed">{result.summary}</p>
+                <p className="text-xs text-bm-text leading-relaxed">{result.winner_reason}</p>
+                <p className="text-xs text-bm-text-muted leading-relaxed">{result.summary}</p>
               </div>
 
               <div className={`grid gap-4 grid-cols-1 ${comparisonItems.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
@@ -149,23 +149,23 @@ export default function ProductCompareModal({ isOpen, onClose, items }: Props) {
                             <Trophy className="w-3 h-3 text-amber-300" /> Best Pick
                           </span>
                         )}
-                        <h4 className="font-bold text-sm text-neutral-900 line-clamp-2">{item.name}</h4>
+                        <h4 className="font-bold text-sm text-bm-text line-clamp-2">{item.name}</h4>
                         <p className="text-sm font-bold text-emerald-800">{formatMoney(item.price)}</p>
-                        {item.condition && <p className="text-xs text-neutral-500">Condition: {item.condition}</p>}
-                        {item.category && <p className="text-xs text-neutral-500">Category: {item.category}</p>}
-                        {item.university && <p className="text-xs text-neutral-500">University: {item.university}</p>}
+                        {item.condition && <p className="text-xs text-bm-text-subtle">Condition: {item.condition}</p>}
+                        {item.category && <p className="text-xs text-bm-text-subtle">Category: {item.category}</p>}
+                        {item.university && <p className="text-xs text-bm-text-subtle">University: {item.university}</p>}
                       </div>
 
                       {evalData && (
-                        <div className="space-y-3 pt-3 border-t border-neutral-100 text-xs">
+                        <div className="space-y-3 pt-3 border-t border-bm-border-subtle text-xs">
                           <div className="flex items-center justify-between">
-                            <span className="text-neutral-500">Relative value score:</span>
-                            <span className="font-bold text-neutral-900">{evalData.value_score} / 10</span>
+                            <span className="text-bm-text-subtle">Relative value score:</span>
+                            <span className="font-bold text-bm-text">{evalData.value_score} / 10</span>
                           </div>
 
                           <div className="space-y-1">
                             <p className="font-semibold text-emerald-800 text-[11px]">Best for</p>
-                            <p className="text-neutral-700">{evalData.best_for}</p>
+                            <p className="text-bm-text-muted">{evalData.best_for}</p>
                           </div>
 
                           {evalData.pros?.length > 0 && (
@@ -173,7 +173,7 @@ export default function ProductCompareModal({ isOpen, onClose, items }: Props) {
                               <p className="font-semibold text-emerald-700 text-[11px]">Pros</p>
                               <ul className="space-y-0.5">
                                 {evalData.pros.map((pro, pIdx) => (
-                                  <li key={pIdx} className="flex items-start gap-1 text-neutral-600 text-[11px]">
+                                  <li key={pIdx} className="flex items-start gap-1 text-bm-text-muted text-[11px]">
                                     <Check className="w-3 h-3 text-emerald-600 shrink-0 mt-0.5" /> {pro}
                                   </li>
                                 ))}
@@ -186,7 +186,7 @@ export default function ProductCompareModal({ isOpen, onClose, items }: Props) {
                               <p className="font-semibold text-amber-700 text-[11px]">Consider</p>
                               <ul className="space-y-0.5">
                                 {evalData.cons.map((con, cIdx) => (
-                                  <li key={cIdx} className="flex items-start gap-1 text-neutral-600 text-[11px]">
+                                  <li key={cIdx} className="flex items-start gap-1 text-bm-text-muted text-[11px]">
                                     <AlertCircle className="w-3 h-3 text-amber-600 shrink-0 mt-0.5" /> {con}
                                   </li>
                                 ))}
