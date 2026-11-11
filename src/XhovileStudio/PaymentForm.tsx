@@ -275,7 +275,7 @@ function PaymentForm() {
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              className="mt-2 min-h-16 w-full resize-none rounded-xl border border-bm-border bg-bm-surface px-3 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-muted focus:border-white/30"
+              className="mt-2 min-h-16 w-full resize-none rounded-xl border border-bm-border bg-bm-surface px-3 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-muted focus:border-bm-focus"
               placeholder={needsWebsite && !needsGraphic ? "e.g. One-page business website for my clothing brand." : "e.g. Poster for a campus event."}
             />
           </div>
@@ -299,7 +299,7 @@ function PaymentForm() {
           </details>
 
           {error ? (
-            <div className="flex gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+            <div className="flex gap-2.5 rounded-xl border border-bm-danger/25 bg-bm-danger-bg p-3 text-xs text-bm-danger">
               <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
               <p>{error}</p>
             </div>
