@@ -145,7 +145,7 @@ export default function SellerEarningsSummary({
               : "border-emerald-200 bg-emerald-50 text-emerald-900"
           }`}
         >
-          <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/80">
+          <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-bm-surface/80">
             <notice.icon className="h-5 w-5" />
           </span>
           <div>
@@ -175,15 +175,15 @@ function SellerEarningsSummaryCard({
 
   return (
     <div
-      className={`rounded-2xl border border-zinc-200 bg-white ${compact ? "p-3" : "p-4"} shadow-sm`}
+      className={`rounded-2xl border border-bm-border bg-bm-surface ${compact ? "p-3" : "p-4"} shadow-sm`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-400">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-bm-text-subtle">
             {card.label}
           </p>
           <p
-            className={`${compact ? "text-base" : "text-xl"} mt-1 whitespace-nowrap font-black tabular-nums tracking-tight text-zinc-900`}
+            className={`${compact ? "text-base" : "text-xl"} mt-1 whitespace-nowrap font-black tabular-nums tracking-tight text-bm-text`}
             aria-label={`${card.label}: ${formatSellerEarningsAmount(value, currency)}`}
           >
             {formatSellerEarningsAmount(value, currency)}
@@ -195,7 +195,7 @@ function SellerEarningsSummaryCard({
           <Icon className="h-4 w-4" />
         </span>
       </div>
-      <p className="mt-3 text-[11px] font-semibold leading-4 text-zinc-500">
+      <p className="mt-3 text-[11px] font-semibold leading-4 text-bm-text-subtle">
         {card.helper}
       </p>
     </div>
