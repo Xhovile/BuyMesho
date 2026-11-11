@@ -45,7 +45,7 @@ export default function MessageAttachmentPicker({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-black/30 p-3 sm:items-center sm:p-6"
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-bm-overlay p-3 sm:items-center sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="message-attachment-title"
