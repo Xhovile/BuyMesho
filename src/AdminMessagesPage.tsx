@@ -104,8 +104,8 @@ export default function AdminMessagesPage() {
       <section className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm"><p className="text-xs font-bold uppercase text-bm-text-subtle dark:text-bm-text-subtle">Messages</p><p className="mt-1 text-2xl font-black text-bm-text dark:text-bm-text">{summary.unread}</p><p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle">unread for admin review</p></div>
-          <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm"><p className="text-xs font-bold uppercase text-bm-text-subtle dark:text-bm-text-subtle">Reports</p><p className="mt-1 text-2xl font-black text-amber-700">{summary.reported}</p><p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle">open/reviewed cases</p></div>
-          <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm"><p className="text-xs font-bold uppercase text-bm-text-subtle dark:text-bm-text-subtle">Blocked</p><p className="mt-1 text-2xl font-black text-red-700">{summary.blocked}</p><p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle">conversation threads</p></div>
+          <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm"><p className="text-xs font-bold uppercase text-bm-text-subtle dark:text-bm-text-subtle">Reports</p><p className="mt-1 text-2xl font-black text-bm-warning">{summary.reported}</p><p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle">open/reviewed cases</p></div>
+          <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm"><p className="text-xs font-bold uppercase text-bm-text-subtle dark:text-bm-text-subtle">Blocked</p><p className="mt-1 text-2xl font-black text-bm-danger">{summary.blocked}</p><p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle">conversation threads</p></div>
         </div>
 
         <div className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm sm:p-5">
@@ -125,7 +125,7 @@ export default function AdminMessagesPage() {
         {loading ? (
           <div className="flex min-h-56 items-center justify-center rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm"><Loader2 className="h-6 w-6 animate-spin text-bm-text-subtle dark:text-bm-text-subtle" aria-label="Loading conversations" /></div>
         ) : error ? (
-          <div className="rounded-[1.75rem] border border-red-200 bg-red-50 p-6 text-sm text-red-700 shadow-sm">{error}</div>
+          <div className="rounded-[1.75rem] border border-bm-danger/35 bg-bm-danger-bg p-6 text-sm text-bm-danger shadow-sm">{error}</div>
         ) : items.length ? (
           <>
             <div className="space-y-3">
