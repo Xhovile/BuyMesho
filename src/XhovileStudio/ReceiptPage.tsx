@@ -196,7 +196,7 @@ function ReceiptPage() {
 
   return (
     <Shell>
-      <section className="rounded-[26px] border border-bm-border bg-[#10151a] p-5 text-white shadow-2xl sm:p-7">
+      <section className="rounded-[26px] border border-bm-border bg-bm-surface p-5 text-bm-text shadow-2xl sm:p-7">
         <div className="text-center">
           {loading ? (
             <Loader2 className="mx-auto h-14 w-14 animate-spin text-bm-text-subtle" />
@@ -214,7 +214,7 @@ function ReceiptPage() {
         </div>
 
         {payment ? (
-          <div className="mt-6 divide-y divide-white/10 overflow-hidden rounded-2xl border border-bm-border">
+          <div className="mt-6 divide-y divide-bm-border-subtle overflow-hidden rounded-2xl border border-bm-border">
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-bm-text-subtle">Service</span>
               <span className="text-right font-bold text-bm-on-brand">{SERVICE_LABELS[payment.serviceType]}</span>
@@ -229,7 +229,7 @@ function ReceiptPage() {
             </div>
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-bm-text-subtle">Amount</span>
-              <span className="font-black text-white">{formatMoney(payment.amount, payment.currency)}</span>
+              <span className="font-black text-bm-text">{formatMoney(payment.amount, payment.currency)}</span>
             </div>
             <div className="p-3.5 text-sm">
               <span className="text-bm-text-subtle">Description</span>
@@ -253,7 +253,7 @@ function ReceiptPage() {
           <button
             type="button"
             onClick={() => window.location.assign("/Services/XhovileStudio")}
-            className="flex items-center justify-center gap-2 rounded-xl border border-white/20 px-5 py-3 text-sm font-black text-white hover:bg-white/5"
+            className="flex items-center justify-center gap-2 rounded-xl border border-bm-border px-5 py-3 text-sm font-black text-bm-text hover:bg-bm-surface-muted"
           >
             <RotateCcw className="h-4 w-4" />
             Start Another Payment
