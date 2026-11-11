@@ -66,9 +66,9 @@ function FlowRow({
 }) {
   const toneClasses =
     tone === "blue"
-      ? "border-blue-200 bg-blue-50/60"
+      ? "border-bm-border bg-bm-surface-muted"
       : tone === "red"
-        ? "border-red-200 bg-red-50/60"
+        ? "border-bm-danger/25 bg-bm-danger-bg"
         : "border-bm-border bg-bm-surface";
 
   return (
@@ -96,7 +96,7 @@ function GuideLink({
       className={`group inline-flex items-center gap-2 py-2 text-base font-extrabold ${toneClasses} sm:text-lg`}
     >
       {children}
-      <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
+      <ArrowRight className="h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5" />
     </a>
   );
 }
@@ -140,11 +140,11 @@ export default function EventCreatorGuidePage() {
                 <a
                   key={section.id}
                   href={`#${section.id}`}
-                  className="group flex min-h-16 items-center gap-4 border-b border-bm-border px-1 py-4 text-base font-bold text-bm-text transition-colors hover:text-blue-700 sm:min-h-20 sm:border-r sm:px-4 sm:text-lg sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(3n)]:border-r-0"
+                  className="group flex min-h-16 items-center gap-4 border-b border-bm-border px-1 py-4 text-base font-bold text-bm-text transition-colors hover:text-bm-brand sm:min-h-20 sm:border-r sm:px-4 sm:text-lg sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(3n)]:border-r-0"
                 >
                   <span className="guide-chapter-number text-2xl sm:text-3xl">{section.number}</span>
                   <span>{section.label}</span>
-                  <ArrowRight className="ml-auto h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="ml-auto h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5" />
                 </a>
               ))}
             </div>
@@ -187,7 +187,7 @@ export default function EventCreatorGuidePage() {
           </div>
 
           <div className="flex items-start gap-3 border-t border-bm-border pt-5">
-            <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+            <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-bm-brand" />
             <p className="text-sm leading-6 text-bm-text-muted">
               Before publishing, review the event information the way a buyer would see it.
             </p>
@@ -264,7 +264,7 @@ export default function EventCreatorGuidePage() {
             </FlowRow>
           </div>
 
-          <div className="border-l-2 border-blue-600 pl-4 text-sm text-bm-text-muted">
+          <div className="border-l-2 border-bm-brand pl-4 text-sm text-bm-text-muted">
             Event ticket money follows the event payout process; it is not released as a marketplace Listings escrow payment.
           </div>
         </GuideSection>
@@ -290,7 +290,7 @@ export default function EventCreatorGuidePage() {
           </div>
 
           <div className="flex items-start gap-3 border-t border-bm-border pt-5">
-            <QrCode className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+            <QrCode className="mt-0.5 h-5 w-5 shrink-0 text-bm-brand" />
             <p className="text-sm leading-6 text-bm-text-muted">
               Use the event's ticket validation tools to check tickets as people arrive.
             </p>
@@ -321,13 +321,13 @@ export default function EventCreatorGuidePage() {
         </section>
 
         <section className="pb-10 sm:pb-12">
-          <div className="flex flex-col gap-5 rounded-[2rem] border border-green-200 bg-green-50/70 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-7">
+          <div className="flex flex-col gap-5 rounded-[2rem] border border-bm-success/25 bg-bm-success-bg p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-7">
             <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-green-600 text-bm-on-brand shadow-sm">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-bm-success text-bm-on-brand shadow-sm">
                 <QrCode className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-green-700">Ticket entry</p>
+                <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-bm-success">Ticket entry</p>
                 <h2 className="mt-1 text-2xl font-black tracking-tight text-bm-text">Need to validate tickets?</h2>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-bm-text-muted">Use Ticket Validator to check event tickets at entry.</p>
               </div>
@@ -336,7 +336,7 @@ export default function EventCreatorGuidePage() {
               href={TICKET_VALIDATOR_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-3 text-sm font-black text-bm-on-brand shadow-sm transition hover:bg-green-700"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-bm-success px-5 py-3 text-sm font-black text-bm-on-brand shadow-sm transition hover:bg-bm-success"
             >
               Open Ticket Validator
               <ArrowRight className="h-4 w-4" />
