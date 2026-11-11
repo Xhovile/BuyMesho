@@ -170,7 +170,7 @@ export default function ListingCard({
             <>
               <div className="pointer-events-none absolute inset-0 bg-black/30" />
               <div className="absolute right-3 top-3">
-                <span className="rounded-xl bg-red-900 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-sm">
+                <span className="rounded-xl bg-bm-brand px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-bm-on-brand shadow-sm">
                   Sold
                 </span>
               </div>
@@ -225,7 +225,7 @@ export default function ListingCard({
                   {offerLabel}
                 </span>
                 <span
-                  className={`font-extrabold leading-none text-red-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] ${
+                  className={`font-extrabold leading-none text-bm-brand drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] ${
                     fillGrid
                       ? "text-[9px] md:text-[10px]"
                       : ultraCompact
@@ -320,7 +320,7 @@ export default function ListingCard({
                 <BuyBasketIcon className="h-6 w-6 shrink-0 text-[#8F171D]" />
                 <span>Buy</span>
               </button>
-              {buyNotice ? <p className="text-[10px] font-bold text-red-700">{buyNotice}</p> : null}
+              {buyNotice ? <p className="text-[10px] font-bold text-bm-danger">{buyNotice}</p> : null}
             </div>
           ) : null}
         </div>
