@@ -91,7 +91,7 @@ export default function EventActionsMenu({ eventId, eventTitle, shareUrl }: Even
           if (busy) return;
           setOpen((value) => !value);
         }}
-        className="flex h-11 w-11 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-11 w-11 items-center justify-center rounded-2xl border border-bm-border bg-bm-surface text-bm-text-muted shadow-sm transition-colors hover:bg-bm-surface-subtle disabled:cursor-not-allowed disabled:opacity-50"
         aria-label="Event actions"
         aria-expanded={open}
         disabled={busy}
@@ -100,16 +100,16 @@ export default function EventActionsMenu({ eventId, eventTitle, shareUrl }: Even
       </button>
 
       {open ? (
-        <div className="absolute left-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
-          <button type="button" onClick={handleShare} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+        <div className="absolute left-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-2xl border border-bm-border bg-bm-surface shadow-2xl">
+          <button type="button" onClick={handleShare} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-bm-text hover:bg-bm-surface-subtle">
             <Share2 className="h-4 w-4" />
             Share event
           </button>
-          <button type="button" onClick={handleCopyLink} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+          <button type="button" onClick={handleCopyLink} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-bm-text hover:bg-bm-surface-subtle">
             <Link2 className="h-4 w-4" />
             Copy link
           </button>
-          <button type="button" onClick={handleReport} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+          <button type="button" onClick={handleReport} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-bm-text hover:bg-bm-surface-subtle">
             <Flag className="h-4 w-4" />
             Report event
           </button>
