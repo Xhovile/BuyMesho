@@ -51,18 +51,18 @@ export default function SafetyTipsPage({
       <div className="p-6 overflow-y-auto flex-1">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="space-y-4">
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 space-y-3">
-              <p className="text-sm font-semibold text-emerald-900">
+            <div className="rounded-2xl border border-bm-success/35 bg-bm-success-bg p-5 space-y-3">
+              <p className="text-sm font-semibold text-bm-success">
                 Your safety matters on BuyMesho.
               </p>
-              <p className="text-sm leading-7 text-emerald-800">
+              <p className="text-sm leading-7 text-bm-success">
                 BuyMesho is designed to support safer campus marketplace
                 activity through seller review, reporting tools, account
                 controls, and platform moderation. Even so, no marketplace can
                 remove all risk. Safe use of the platform depends on both
                 platform safeguards and user judgment.
               </p>
-              <p className="text-sm leading-7 text-emerald-800">
+              <p className="text-sm leading-7 text-bm-success">
                 Use the guidance below before you buy, sell, meet, pay, or move
                 a conversation outside the platform.
               </p>
