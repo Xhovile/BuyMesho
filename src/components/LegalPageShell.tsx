@@ -19,15 +19,15 @@ export default function LegalPageShell({
   flushContent = false,
 }: LegalPageShellProps) {
   return (
-    <div className="min-h-screen bg-zinc-100 dark:bg-bm-surface-muted text-zinc-900 dark:text-bm-text">
-      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 dark:bg-bm-surface/90 backdrop-blur-sm">
+    <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text">
+      <header className="sticky top-0 z-40 border-b border-bm-border bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <BrandMark />
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => navigateToPath(HOME_PATH)}
-              className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white text-sm font-bold hover:bg-zinc-50 dark:hover:bg-bm-surface-muted items-center gap-2"
+              className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface text-sm font-bold hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted items-center gap-2"
             >
               <House className="w-4 h-4" />
               Home
@@ -35,7 +35,7 @@ export default function LegalPageShell({
             <button
               type="button"
               onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+              className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"
             >
               <ShoppingBag className="w-4 h-4" />
               Market
@@ -44,20 +44,20 @@ export default function LegalPageShell({
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 sm:p-8 shadow-sm mb-6">
+        <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 sm:p-8 shadow-sm mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">
                 {subtitle}
               </p>
-              <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 dark:text-bm-text">
+              <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-bm-text dark:text-bm-text">
                 {title}
               </h1>
             </div>
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white text-sm font-bold hover:bg-zinc-50 dark:hover:bg-bm-surface-muted self-start"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface text-sm font-bold hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted self-start"
             >
               <ChevronLeft className="w-4 h-4" />
               Back
@@ -67,7 +67,7 @@ export default function LegalPageShell({
         {flushContent ? (
           children
         ) : (
-          <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white shadow-sm overflow-hidden">
+          <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm overflow-hidden">
             {children}
           </section>
         )}
