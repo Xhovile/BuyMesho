@@ -125,7 +125,7 @@ export default function ActionModal({
                 disabled={isLoading}
                 className={`flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-extrabold transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
                   danger
-                    ? "bg-red-600 text-bm-on-brand hover:bg-red-700"
+                    ? "bg-bm-danger text-bm-on-brand hover:bg-bm-danger/90"
                     : "bg-bm-brand text-bm-on-brand hover:bg-bm-brand-hover"
                 }`}
               >
