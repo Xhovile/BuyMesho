@@ -2,6 +2,8 @@
 
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
   --font-display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
@@ -15,28 +17,128 @@
   --radius-4xl: 2rem;
 }
 
+@theme inline {
+  --color-bm-bg: var(--bm-bg);
+  --color-bm-surface: var(--bm-surface);
+  --color-bm-surface-raised: var(--bm-surface-raised);
+  --color-bm-surface-muted: var(--bm-surface-muted);
+  --color-bm-surface-subtle: var(--bm-surface-subtle);
+  --color-bm-text: var(--bm-text);
+  --color-bm-text-muted: var(--bm-text-muted);
+  --color-bm-text-subtle: var(--bm-text-subtle);
+  --color-bm-border: var(--bm-border);
+  --color-bm-border-subtle: var(--bm-border-subtle);
+  --color-bm-input: var(--bm-input);
+  --color-bm-brand: var(--bm-brand);
+  --color-bm-brand-hover: var(--bm-brand-hover);
+  --color-bm-on-brand: var(--bm-on-brand);
+  --color-bm-focus: var(--bm-focus);
+  --color-bm-overlay: var(--bm-overlay);
+  --color-bm-success: var(--bm-success);
+  --color-bm-success-bg: var(--bm-success-bg);
+  --color-bm-warning: var(--bm-warning);
+  --color-bm-warning-bg: var(--bm-warning-bg);
+  --color-bm-danger: var(--bm-danger);
+  --color-bm-danger-bg: var(--bm-danger-bg);
+  --color-bm-skeleton: var(--bm-skeleton);
+}
+
+:root {
+  color-scheme: light;
+  --bm-bg: #FAFAFA;
+  --bm-surface: #FFFFFF;
+  --bm-surface-raised: #FFFFFF;
+  --bm-surface-muted: #F4F4F5;
+  --bm-surface-subtle: #FAFAFA;
+  --bm-text: #18181B;
+  --bm-text-muted: #71717A;
+  --bm-text-subtle: #A1A1AA;
+  --bm-border: #E4E4E7;
+  --bm-border-subtle: #F4F4F5;
+  --bm-input: #FFFFFF;
+  --bm-brand: #E00106;
+  --bm-brand-hover: #B90005;
+  --bm-on-brand: #FFFFFF;
+  --bm-focus: rgba(224, 1, 6, 0.28);
+  --bm-overlay: rgba(9, 9, 11, 0.55);
+  --bm-success: #15803D;
+  --bm-success-bg: #DCFCE7;
+  --bm-warning: #B45309;
+  --bm-warning-bg: #FEF3C7;
+  --bm-danger: #B91C1C;
+  --bm-danger-bg: #FEE2E2;
+  --bm-skeleton: #F4F4F5;
+  --bm-glass-bg: rgba(255, 255, 255, 0.82);
+  --bm-glass-border: rgba(255, 255, 255, 0.35);
+  --bm-shadow-card: 0 4px 20px -4px rgba(0, 0, 0, 0.04), 0 2px 8px -2px rgba(0, 0, 0, 0.02);
+  --bm-shadow-hover: 0 20px 40px -12px rgba(0, 0, 0, 0.08), 0 8px 16px -8px rgba(0, 0, 0, 0.04);
+  --bm-scrollbar-thumb: #D4D4D8;
+  --bm-page-pattern: radial-gradient(circle at 2px 2px, rgba(0, 0, 0, 0.02) 1px, transparent 0);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bm-bg: #0B0F16;
+  --bm-surface: #121821;
+  --bm-surface-raised: #18212D;
+  --bm-surface-muted: #1C2633;
+  --bm-surface-subtle: #151E29;
+  --bm-text: #F4F4F5;
+  --bm-text-muted: #B8C0CC;
+  --bm-text-subtle: #929CAB;
+  --bm-border: #303A48;
+  --bm-border-subtle: #25303D;
+  --bm-input: #18212D;
+  --bm-brand: #E00106;
+  --bm-brand-hover: #B90005;
+  --bm-on-brand: #FFFFFF;
+  --bm-focus: rgba(255, 82, 88, 0.48);
+  --bm-overlay: rgba(0, 0, 0, 0.72);
+  --bm-success: #4ADE80;
+  --bm-success-bg: rgba(20, 83, 45, 0.35);
+  --bm-warning: #FBBF24;
+  --bm-warning-bg: rgba(120, 53, 15, 0.35);
+  --bm-danger: #F87171;
+  --bm-danger-bg: rgba(127, 29, 29, 0.35);
+  --bm-skeleton: #243040;
+  --bm-glass-bg: rgba(18, 24, 33, 0.88);
+  --bm-glass-border: rgba(148, 163, 184, 0.16);
+  --bm-shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.28), 0 2px 8px -2px rgba(0, 0, 0, 0.20);
+  --bm-shadow-hover: 0 20px 40px -12px rgba(0, 0, 0, 0.42), 0 8px 16px -8px rgba(0, 0, 0, 0.28);
+  --bm-scrollbar-thumb: #3D4857;
+  --bm-page-pattern: radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.025) 1px, transparent 0);
+}
+
 @layer base {
-  body {
-    @apply bg-[#FAFAFA] text-zinc-900 antialiased selection:bg-primary/10 selection:text-primary font-sans;
-    background-image: radial-gradient(circle at 2px 2px, rgba(0,0,0,0.02) 1px, transparent 0);
-    background-size: 40px 40px;
+  html {
+    background-color: var(--bm-bg);
   }
-  
+
+  body {
+    background-color: var(--bm-bg);
+    color: var(--bm-text);
+    background-image: var(--bm-page-pattern);
+    background-size: 40px 40px;
+    @apply antialiased selection:bg-primary/10 selection:text-primary font-sans;
+  }
+
   h1, h2, h3, h4 {
     @apply font-display font-bold tracking-tight;
   }
 }
 
 .glass {
-  @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-sm;
+  background-color: var(--bm-glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--bm-glass-border);
 }
 
 .card-shadow {
-  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.04), 0 2px 8px -2px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--bm-shadow-card);
 }
 
 .card-shadow-hover {
-  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.08), 0 8px 16px -8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--bm-shadow-hover);
 }
 
 /* Custom Scrollbar */
@@ -45,11 +147,17 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-zinc-200 rounded-full hover:bg-zinc-300 transition-colors;
+  background-color: var(--bm-scrollbar-thumb);
+  border-radius: 9999px;
+  transition: background-color 150ms ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  filter: brightness(0.9);
 }
 
 /* Seller-level message threads already show the seller name on the left.
@@ -87,14 +195,20 @@ form.w-full.space-y-6 > button.min-w-\[180px\] {
   width: 100%;
 }
 
-/* Payout action card: use a premium black border against the white surface. */
+/* Payout action card: keep its outline consistent with the active theme. */
 body [data-admin-payout-workspace] header > div > div:nth-child(2) {
-  border-color: #09090b !important;
+  border-color: var(--bm-border) !important;
 }
 
 /* Active escrow disputes are Admin-owned. Keep the legacy seller action panel
    hidden only while payout is not yet available. Once seller payout is paid,
    the original Contact Buyer / Confirm Refunded UI is shown unchanged. */
+main .bg-sky-50:has(button):not(:has(button.border-zinc-300)) {
+  background-color: var(--bm-surface-muted);
+  border-color: var(--bm-border);
+  color: var(--bm-text);
+}
+
 main .bg-sky-50:has(button):not(:has(button.border-zinc-300)) > * {
   display: none !important;
 }
@@ -102,7 +216,7 @@ main .bg-sky-50:has(button):not(:has(button.border-zinc-300)) > * {
 main .bg-sky-50:has(button):not(:has(button.border-zinc-300))::before {
   content: "Dispute under BuyMesho review";
   display: block;
-  color: #082f49;
+  color: var(--bm-text);
   font-size: 0.875rem;
   line-height: 1.25rem;
   font-weight: 800;
@@ -112,7 +226,7 @@ main .bg-sky-50:has(button):not(:has(button.border-zinc-300))::after {
   content: "The buyer’s dispute is being handled by BuyMesho. Funds remain in escrow while the case is reviewed.";
   display: block;
   margin-top: 0.375rem;
-  color: rgba(7, 89, 133, 0.8);
+  color: var(--bm-text-muted);
   font-size: 0.875rem;
   line-height: 1.5rem;
 }

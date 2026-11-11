@@ -21,10 +21,10 @@ export default function BrandMark({ subtitle = "Home" }: BrandMarkProps) {
       </span>
       <div className="min-w-0 text-left">
         <p className="text-xl font-extrabold tracking-tight md:text-lg">
-          <span className="text-red-900">Buy</span>
-          <span className="text-zinc-700">Mesho</span>
+          <span className="text-bm-brand">Buy</span>
+          <span className="text-bm-text-muted">Mesho</span>
         </p>
-        <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-400">
+        <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-bm-text-subtle">
           {subtitle}
         </p>
       </div>

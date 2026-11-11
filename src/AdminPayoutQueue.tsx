@@ -80,32 +80,32 @@ function tone(status: string) {
 function pillClass(t: string) {
   switch (t) {
     case "emerald":
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      return "bg-bm-success-bg text-bm-success border-bm-success/35";
     case "rose":
-      return "bg-rose-50 text-rose-700 border-rose-200";
+      return "bg-bm-danger-bg text-bm-danger border-bm-danger/35";
     case "amber":
-      return "bg-amber-50 text-amber-700 border-amber-200";
+      return "bg-bm-warning-bg text-bm-warning border-bm-warning/35";
     default:
-      return "bg-zinc-100 text-zinc-700 border-zinc-200";
+      return "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted border-bm-border dark:border-bm-border";
   }
 }
 
 function specialBadges(row: PayoutRow) {
   const badges: Array<{ label: string; className: string }> = [];
   if (["provider_unavailable", "provider_timeout", "provider_rate_limited"].includes((row.failureReason ?? "").toLowerCase())) {
-    badges.push({ label: "provider outage", className: "border-amber-200 bg-amber-50 text-amber-700" });
+    badges.push({ label: "provider outage", className: "border-bm-warning/35 bg-bm-warning-bg text-bm-warning" });
   }
   if (row.status === "held") {
-    badges.push({ label: "manual review", className: "border-sky-200 bg-sky-50 text-sky-700" });
+    badges.push({ label: "manual review", className: "border-bm-border bg-bm-surface-muted text-bm-text-muted" });
   }
   if (row.status === "held" && (row.failureReason ?? "").startsWith("provider_")) {
-    badges.push({ label: "retry blocked", className: "border-rose-200 bg-rose-50 text-rose-700" });
+    badges.push({ label: "retry blocked", className: "border-bm-danger/35 bg-bm-danger-bg text-bm-danger" });
   }
   if (row.latestWebhookEventType === "payout_webhook_duplicate") {
-    badges.push({ label: "duplicate webhook ignored", className: "border-zinc-200 bg-white text-zinc-700" });
+    badges.push({ label: "duplicate webhook ignored", className: "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted" });
   }
   if (row.latestWebhookEventType === "payout_reconciled") {
-    badges.push({ label: "reconciled from provider callback", className: "border-emerald-200 bg-emerald-50 text-emerald-700" });
+    badges.push({ label: "reconciled from provider callback", className: "border-bm-success/35 bg-bm-success-bg text-bm-success" });
   }
   return badges;
 }
@@ -185,12 +185,12 @@ export default function AdminPayoutQueue() {
   };
 
   return (
-    <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+    <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Admin payout queue</p>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Admin payout queue</p>
           <h2 className="mt-2 text-2xl font-black tracking-tight">Seller payout control</h2>
-          <p className="mt-2 text-sm text-zinc-600">
+          <p className="mt-2 text-sm text-bm-text-muted dark:text-bm-text-muted">
             Review payout states, retry failed transfers, or mark items paid/held after manual review.
           </p>
         </div>
@@ -199,7 +199,7 @@ export default function AdminPayoutQueue() {
           type="button"
           onClick={() => void load()}
           disabled={refreshing}
-          className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand disabled:opacity-60"
         >
           {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           Refresh queue
@@ -213,12 +213,12 @@ export default function AdminPayoutQueue() {
         <Stat label="Failed" value={stats.failed} />
       </div>
 
-      <div className="mt-3 text-sm text-zinc-500">
-        Provider attempts tracked: <span className="font-bold text-zinc-900">{stats.attempts}</span>
+      <div className="mt-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
+        Provider attempts tracked: <span className="font-bold text-bm-text dark:text-bm-text">{stats.attempts}</span>
       </div>
 
       {error ? (
-        <div className="mt-4 flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="mt-4 flex items-center gap-2 rounded-2xl border border-bm-danger/35 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">
           <TriangleAlert className="h-4 w-4" />
           {error}
         </div>
@@ -226,12 +226,12 @@ export default function AdminPayoutQueue() {
 
       <div className="mt-5 space-y-3">
         {loading ? (
-          <div className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-sm text-zinc-600">
+          <div className="flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-4 text-sm text-bm-text-muted dark:text-bm-text-muted">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading payout queue...
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-6 text-sm text-zinc-600">
+          <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-6 text-sm text-bm-text-muted dark:text-bm-text-muted">
             No payouts found yet.
           </div>
         ) : (
@@ -240,7 +240,7 @@ export default function AdminPayoutQueue() {
             const rowTone = tone(row.status);
             const badges = specialBadges(row);
             return (
-              <div key={row.id} className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-4">
+              <div key={row.id} className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -248,12 +248,12 @@ export default function AdminPayoutQueue() {
                         {getSellerPayoutStatusLabel(row.status)}
                       </span>
                       {row.provider ? (
-                        <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-700">
+                        <span className="inline-flex items-center rounded-full border border-bm-border dark:border-bm-border bg-bm-surface px-2.5 py-1 text-xs font-bold text-bm-text-muted dark:text-bm-text-muted">
                           {row.provider}
                         </span>
                       ) : null}
                       {row.destinationVerificationStatus ? (
-                        <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-700">
+                        <span className="inline-flex items-center rounded-full border border-bm-border dark:border-bm-border bg-bm-surface px-2.5 py-1 text-xs font-bold text-bm-text-muted dark:text-bm-text-muted">
                           destination {row.destinationVerificationStatus}
                         </span>
                       ) : null}
@@ -264,7 +264,7 @@ export default function AdminPayoutQueue() {
                       ))}
                     </div>
 
-                    <div className="grid gap-2 text-sm text-zinc-700 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-2 text-sm text-bm-text-muted dark:text-bm-text-muted sm:grid-cols-2 xl:grid-cols-3">
                       <Info label="Payout ID" value={row.id} />
                       <Info label="Seller ID" value={row.sellerId} />
                       <Info label="Order ID" value={row.orderId ?? "—"} />
@@ -279,17 +279,17 @@ export default function AdminPayoutQueue() {
                     </div>
 
                     {(row.latestAttemptFailureReason ?? row.failureReason) ? (
-                      <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                      <p className="rounded-2xl border border-bm-danger/35 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">
                         <strong>Last error:</strong> {row.latestAttemptFailureReason ?? row.failureReason}
                       </p>
                     ) : null}
 
                     {row.manualReviewReason ? (
-                      <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                      <p className="rounded-2xl border border-bm-warning/35 bg-bm-warning-bg px-4 py-3 text-sm text-bm-warning">
                         <strong>Review:</strong> {row.manualReviewReason}
                       </p>
                     ) : null}
-                    <div className="grid gap-2 text-sm text-zinc-700 sm:grid-cols-2">
+                    <div className="grid gap-2 text-sm text-bm-text-muted dark:text-bm-text-muted sm:grid-cols-2">
                       <Info label="Attempts used" value={String(row.attemptCount ?? row.latestAttemptNo ?? 0)} />
                       <Info label="Retry eligibility" value={row.retryEligible ? "Can retry safely" : row.retryBlockedReason ?? "Retry unavailable"} />
                       <Info label="Last provider response" value={row.lastError ?? "No provider error captured"} />
@@ -338,7 +338,7 @@ export default function AdminPayoutQueue() {
                       />
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-500">
+                    <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-3 py-2 text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">
                       Admin actions hidden
                     </div>
                   )}
@@ -354,18 +354,18 @@ export default function AdminPayoutQueue() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-      <p className="mt-1 text-2xl font-black tracking-tight text-zinc-900">{value}</p>
+    <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm">
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">{label}</p>
+      <p className="mt-1 text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">{value}</p>
     </div>
   );
 }
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-      <p className="mt-1 break-all font-medium text-zinc-900">{value}</p>
+    <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-3 py-2">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">{label}</p>
+      <p className="mt-1 break-all font-medium text-bm-text dark:text-bm-text">{value}</p>
     </div>
   );
 }
@@ -389,7 +389,7 @@ function ActionButton({
       disabled={busy}
       onClick={onClick}
       className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold disabled:opacity-60 ${
-        danger ? "bg-rose-600 text-white hover:bg-rose-700" : "bg-zinc-900 text-white hover:bg-zinc-800"
+        danger ? "bg-bm-danger-bg text-bm-danger hover:brightness-95" : "bg-bm-brand text-bm-on-brand hover:bg-bm-brand-hover"
       }`}
     >
       {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}

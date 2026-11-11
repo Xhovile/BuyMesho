@@ -252,10 +252,10 @@ export default function EditListingModal({
       !!field.required || !!selectedItemConfig?.requiredKeys.includes(field.key);
     const labelText = `${field.label}${isRequired ? " *" : ""}`;
     const fieldError = editFieldErrors[field.key];
-    const inputClass = `w-full px-4 py-2 bg-zinc-50 border rounded-xl outline-none ${
+    const inputClass = `w-full px-4 py-2 bg-bm-surface-muted border rounded-xl outline-none ${
       fieldError
-        ? "border-red-500 focus:ring-2 focus:ring-red-200"
-        : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+        ? "border-bm-danger focus:ring-2 focus:ring-bm-danger/20"
+        : "border-bm-border focus:ring-2 focus:ring-primary/20"
     }`;
 
     if (field.type === "select") {
@@ -266,7 +266,7 @@ export default function EditListingModal({
             editSpecFieldRefs.current[field.key] = el;
           }}
         >
-          <div className={fieldError ? "rounded-xl ring-2 ring-red-200" : ""}>
+          <div className={fieldError ? "rounded-xl ring-2 ring-bm-danger/20" : ""}>
             <FormDropdown
               label={labelText}
               value={value as string}
@@ -276,10 +276,10 @@ export default function EditListingModal({
             />
           </div>
           {fieldError ? (
-            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+            <p className="mt-1 text-xs text-bm-danger">{fieldError}</p>
           ) : null}
           {field.helpText ? (
-            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+            <p className="mt-1 text-xs text-bm-text-subtle">{field.helpText}</p>
           ) : null}
         </div>
       );
@@ -293,7 +293,7 @@ export default function EditListingModal({
             editSpecFieldRefs.current[field.key] = el;
           }}
         >
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+          <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-1">
             {labelText}
           </label>
           <textarea
@@ -303,10 +303,10 @@ export default function EditListingModal({
             placeholder={field.placeholder || ""}
           />
           {fieldError ? (
-            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+            <p className="mt-1 text-xs text-bm-danger">{fieldError}</p>
           ) : null}
           {field.helpText ? (
-            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+            <p className="mt-1 text-xs text-bm-text-subtle">{field.helpText}</p>
           ) : null}
         </div>
       );
@@ -322,12 +322,12 @@ export default function EditListingModal({
             editSpecFieldRefs.current[field.key] = el;
           }}
         >
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+          <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-1">
             {labelText}
           </label>
           <div
             className={`grid grid-cols-3 gap-2 rounded-xl ${
-              fieldError ? "ring-2 ring-red-200 p-1" : ""
+              fieldError ? "ring-2 ring-bm-danger/20 p-1" : ""
             }`}
           >
             <button
@@ -335,8 +335,8 @@ export default function EditListingModal({
               onClick={() => handleSpecValueChange(field.key, null)}
               className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
                 boolValue === null
-                  ? "bg-zinc-900 text-white border-zinc-900"
-                  : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
+                  ? "bg-bm-brand text-bm-on-brand border-bm-border"
+                  : "bg-bm-surface-muted text-bm-text-muted border-bm-border hover:bg-bm-surface-muted"
               }`}
             >
               Not set
@@ -346,8 +346,8 @@ export default function EditListingModal({
               onClick={() => handleSpecValueChange(field.key, true)}
               className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
                 boolValue === true
-                  ? "bg-zinc-900 text-white border-zinc-900"
-                  : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
+                  ? "bg-bm-brand text-bm-on-brand border-bm-border"
+                  : "bg-bm-surface-muted text-bm-text-muted border-bm-border hover:bg-bm-surface-muted"
               }`}
             >
               Yes
@@ -357,18 +357,18 @@ export default function EditListingModal({
               onClick={() => handleSpecValueChange(field.key, false)}
               className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
                 boolValue === false
-                  ? "bg-zinc-900 text-white border-zinc-900"
-                  : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
+                  ? "bg-bm-brand text-bm-on-brand border-bm-border"
+                  : "bg-bm-surface-muted text-bm-text-muted border-bm-border hover:bg-bm-surface-muted"
               }`}
             >
               No
             </button>
           </div>
           {fieldError ? (
-            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+            <p className="mt-1 text-xs text-bm-danger">{fieldError}</p>
           ) : null}
           {field.helpText ? (
-            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+            <p className="mt-1 text-xs text-bm-text-subtle">{field.helpText}</p>
           ) : null}
         </div>
       );
@@ -384,12 +384,12 @@ export default function EditListingModal({
             editSpecFieldRefs.current[field.key] = el;
           }}
         >
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">
+          <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-2">
             {labelText}
           </label>
           <div
-            className={`grid grid-cols-2 gap-2 rounded-xl border bg-zinc-50 p-3 ${
-              fieldError ? "border-red-500 ring-2 ring-red-200" : "border-zinc-200"
+            className={`grid grid-cols-2 gap-2 rounded-xl border bg-bm-surface-muted p-3 ${
+              fieldError ? "border-bm-danger ring-2 ring-bm-danger/20" : "border-bm-border"
             }`}
           >
             {(field.options || []).map((option: string) => {
@@ -398,7 +398,7 @@ export default function EditListingModal({
               return (
                 <label
                   key={option}
-                  className="flex items-center gap-2 text-sm text-zinc-700"
+                  className="flex items-center gap-2 text-sm text-bm-text-muted"
                 >
                   <input
                     type="checkbox"
@@ -424,10 +424,10 @@ export default function EditListingModal({
             })}
           </div>
           {fieldError ? (
-            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+            <p className="mt-1 text-xs text-bm-danger">{fieldError}</p>
           ) : null}
           {field.helpText ? (
-            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+            <p className="mt-1 text-xs text-bm-text-subtle">{field.helpText}</p>
           ) : null}
         </div>
       );
@@ -441,7 +441,7 @@ export default function EditListingModal({
             editSpecFieldRefs.current[field.key] = el;
           }}
         >
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+          <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-1">
             {labelText}
           </label>
           <input
@@ -457,10 +457,10 @@ export default function EditListingModal({
             placeholder={field.placeholder || ""}
           />
           {fieldError ? (
-            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+            <p className="mt-1 text-xs text-bm-danger">{fieldError}</p>
           ) : null}
           {field.helpText ? (
-            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+            <p className="mt-1 text-xs text-bm-text-subtle">{field.helpText}</p>
           ) : null}
         </div>
       );
@@ -473,7 +473,7 @@ export default function EditListingModal({
           editSpecFieldRefs.current[field.key] = el;
         }}
       >
-        <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+        <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-1">
           {labelText}
         </label>
         <input
@@ -484,10 +484,10 @@ export default function EditListingModal({
           placeholder={field.placeholder || ""}
         />
         {fieldError ? (
-          <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+          <p className="mt-1 text-xs text-bm-danger">{fieldError}</p>
         ) : null}
         {field.helpText ? (
-          <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          <p className="mt-1 text-xs text-bm-text-subtle">{field.helpText}</p>
         ) : null}
       </div>
     );
@@ -764,39 +764,39 @@ onSave({
   return (
     <div className="fixed inset-0 z-[90] flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <div
-        className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-bm-overlay backdrop-blur-sm"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-3xl bg-white rounded-3xl overflow-hidden shadow-2xl h-[92vh] flex flex-col">
-        <div className="p-6 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/60 flex-shrink-0">
+      <div className="relative w-full max-w-3xl bg-bm-surface rounded-3xl overflow-hidden shadow-2xl h-[92vh] flex flex-col">
+        <div className="p-6 border-b border-bm-border-subtle flex items-center justify-between bg-bm-surface-muted/60 flex-shrink-0">
           <div>
-            <h2 className="text-2xl font-extrabold text-zinc-900 tracking-tight">
+            <h2 className="text-2xl font-extrabold text-bm-text tracking-tight">
               Edit Listing
             </h2>
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
+            <p className="text-xs font-bold text-bm-text-subtle uppercase tracking-widest mt-1">
               Update your listing details
             </p>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2.5 hover:bg-white hover:shadow-md rounded-2xl transition-all border border-transparent hover:border-zinc-100"
+            className="p-2.5 hover:bg-bm-surface hover:shadow-md rounded-2xl transition-all border border-transparent hover:border-bm-border-subtle"
             aria-label="Close edit listing modal"
           >
-            <X className="w-5 h-5 text-zinc-400" />
+            <X className="w-5 h-5 text-bm-text-subtle" />
           </button>
         </div>
 
         <div className="p-6 flex-1 min-h-0 flex flex-col gap-4">
           <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
-            <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+            <div className="space-y-4 rounded-2xl border border-bm-border bg-bm-surface-muted p-4">
+              <p className="text-xs font-bold text-bm-text-subtle uppercase tracking-widest">
                 Basic Info
               </p>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-1">
                   Product Name
                 </label>
                 <input
@@ -807,20 +807,20 @@ onSave({
                     setForm({ ...form, name: e.target.value });
                   }}
                   placeholder="Product name"
-                  className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+                  className={`w-full px-4 py-3 bg-bm-surface border rounded-xl outline-none ${
                     editFieldErrors.name
-                      ? "border-red-500 focus:ring-2 focus:ring-red-200"
-                      : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+                      ? "border-bm-danger focus:ring-2 focus:ring-bm-danger/20"
+                      : "border-bm-border focus:ring-2 focus:ring-primary/20"
                   }`}
                 />
                 {editFieldErrors.name ? (
-                  <p className="mt-1 text-xs text-red-600">{editFieldErrors.name}</p>
+                  <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.name}</p>
                 ) : null}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                  <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-1">
                     Price (MK)
                   </label>
                   <input
@@ -831,27 +831,27 @@ onSave({
                       setForm({ ...form, price: e.target.value });
                     }}
                     placeholder="Price"
-                    className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+                    className={`w-full px-4 py-3 bg-bm-surface border rounded-xl outline-none ${
                       editFieldErrors.price
-                        ? "border-red-500 focus:ring-2 focus:ring-red-200"
-                        : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+                        ? "border-bm-danger focus:ring-2 focus:ring-bm-danger/20"
+                        : "border-bm-border focus:ring-2 focus:ring-primary/20"
                     }`}
                   />
                   {editFieldErrors.price ? (
-                    <p className="mt-1 text-xs text-red-600">{editFieldErrors.price}</p>
+                    <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.price}</p>
                   ) : null}
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+            <div className="space-y-4 rounded-2xl border border-bm-border bg-bm-surface-muted p-4">
+              <p className="text-xs font-bold text-bm-text-subtle uppercase tracking-widest">
                 Listing Setup
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                  <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-1">
                     Total Quantity
                   </label>
                   <input
@@ -862,19 +862,19 @@ onSave({
                       clearEditFieldError("quantity");
                       setForm({ ...form, quantity: e.target.value });
                     }}
-                    className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+                    className={`w-full px-4 py-3 bg-bm-surface border rounded-xl outline-none ${
                       editFieldErrors.quantity
-                        ? "border-red-500 focus:ring-2 focus:ring-red-200"
-                        : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+                        ? "border-bm-danger focus:ring-2 focus:ring-bm-danger/20"
+                        : "border-bm-border focus:ring-2 focus:ring-primary/20"
                     }`}
                   />
                   {editFieldErrors.quantity ? (
-                    <p className="mt-1 text-xs text-red-600">{editFieldErrors.quantity}</p>
+                    <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.quantity}</p>
                   ) : null}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                  <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-1">
                     Sold Quantity
                   </label>
                   <input
@@ -885,14 +885,14 @@ onSave({
                       clearEditFieldError("sold_quantity");
                       setForm({ ...form, sold_quantity: e.target.value });
                     }}
-                    className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+                    className={`w-full px-4 py-3 bg-bm-surface border rounded-xl outline-none ${
                       editFieldErrors.sold_quantity
-                        ? "border-red-500 focus:ring-2 focus:ring-red-200"
-                        : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+                        ? "border-bm-danger focus:ring-2 focus:ring-bm-danger/20"
+                        : "border-bm-border focus:ring-2 focus:ring-primary/20"
                     }`}
                   />
                   {editFieldErrors.sold_quantity ? (
-                    <p className="mt-1 text-xs text-red-600">{editFieldErrors.sold_quantity}</p>
+                    <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.sold_quantity}</p>
                   ) : null}
                 </div>
               </div>
@@ -930,13 +930,13 @@ onSave({
               />
             </div>
 
-            <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+            <div className="space-y-4 rounded-2xl border border-bm-border bg-bm-surface-muted p-4">
+              <p className="text-xs font-bold text-bm-text-subtle uppercase tracking-widest">
                 Description
               </p>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-1">
                   Description
                 </label>
                 <textarea
@@ -947,26 +947,26 @@ onSave({
                   }}
                   placeholder="Describe your item"
                   rows={4}
-                  className={`w-full px-4 py-3 bg-white border rounded-xl focus:ring-2 outline-none resize-none ${
+                  className={`w-full px-4 py-3 bg-bm-surface border rounded-xl focus:ring-2 outline-none resize-none ${
                     editFieldErrors.description
-                      ? "border-red-400 ring-2 ring-red-200"
-                      : "border-zinc-200 focus:ring-primary/20"
+                      ? "border-bm-danger ring-2 ring-bm-danger/20"
+                      : "border-bm-border focus:ring-primary/20"
                   }`}
                 />
                 {editFieldErrors.description ? (
-                  <p className="mt-1 text-xs text-red-600">{editFieldErrors.description}</p>
+                  <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.description}</p>
                 ) : null}
               </div>
             </div>
 
-<div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-  <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+<div className="space-y-4 rounded-2xl border border-bm-border bg-bm-surface-muted p-4">
+  <p className="text-xs font-bold text-bm-text-subtle uppercase tracking-widest">
     Deal pricing & wholesale
   </p>
 
   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div>
-      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+      <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-1">
         Original Price (optional)
       </label>
       <input
@@ -977,19 +977,19 @@ onSave({
           clearEditFieldError("original_price");
           setForm({ ...form, original_price: e.target.value });
         }}
-        className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+        className={`w-full px-4 py-3 bg-bm-surface border rounded-xl outline-none ${
           editFieldErrors.original_price
-            ? "border-red-500 focus:ring-2 focus:ring-red-200"
-            : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+            ? "border-bm-danger focus:ring-2 focus:ring-bm-danger/20"
+            : "border-bm-border focus:ring-2 focus:ring-primary/20"
         }`}
       />
       {editFieldErrors.original_price ? (
-        <p className="mt-1 text-xs text-red-600">{editFieldErrors.original_price}</p>
+        <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.original_price}</p>
       ) : null}
     </div>
 
     <div>
-      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+      <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-1">
         Discount Percent (optional)
       </label>
       <input
@@ -1001,19 +1001,19 @@ onSave({
           clearEditFieldError("discount_percent");
           setForm({ ...form, discount_percent: e.target.value });
         }}
-        className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+        className={`w-full px-4 py-3 bg-bm-surface border rounded-xl outline-none ${
           editFieldErrors.discount_percent
-            ? "border-red-500 focus:ring-2 focus:ring-red-200"
-            : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+            ? "border-bm-danger focus:ring-2 focus:ring-bm-danger/20"
+            : "border-bm-border focus:ring-2 focus:ring-primary/20"
         }`}
       />
       {editFieldErrors.discount_percent ? (
-        <p className="mt-1 text-xs text-red-600">{editFieldErrors.discount_percent}</p>
+        <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.discount_percent}</p>
       ) : null}
     </div>
 
     <div>
-      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+      <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-1">
         Deal Label (optional)
       </label>
       <input
@@ -1021,12 +1021,12 @@ onSave({
         value={form.deal_label}
         onChange={(e) => setForm({ ...form, deal_label: e.target.value })}
         placeholder="e.g. Special deal"
-        className="w-full px-4 py-3 bg-white border rounded-xl outline-none border-zinc-200 focus:ring-2 focus:ring-primary/20"
+        className="w-full px-4 py-3 bg-bm-surface border rounded-xl outline-none border-bm-border focus:ring-2 focus:ring-primary/20"
       />
     </div>
 
-    <label className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3">
-      <span className="text-sm font-bold text-zinc-700">Wholesale listing</span>
+    <label className="flex items-center justify-between gap-3 rounded-xl border border-bm-border bg-bm-surface px-4 py-3">
+      <span className="text-sm font-bold text-bm-text-muted">Wholesale listing</span>
       <input
         type="checkbox"
         checked={form.is_wholesale}
@@ -1038,8 +1038,8 @@ onSave({
 </div>
 
             {isSchemaDrivenCategory && (
-              <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+              <div className="space-y-4 rounded-2xl border border-bm-border bg-bm-surface-muted p-4">
+                <p className="text-xs font-bold text-bm-text-subtle uppercase tracking-widest">
                   Item Details
                 </p>
 
@@ -1047,7 +1047,7 @@ onSave({
                   <div>
                     <div
                       className={
-                        editFieldErrors.subcategory ? "rounded-xl ring-2 ring-red-200" : ""
+                        editFieldErrors.subcategory ? "rounded-xl ring-2 ring-bm-danger/20" : ""
                       }
                     >
                       <FormDropdown
@@ -1058,14 +1058,14 @@ onSave({
                       />
                     </div>
                     {editFieldErrors.subcategory ? (
-                      <p className="mt-1 text-xs text-red-600">{editFieldErrors.subcategory}</p>
+                      <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.subcategory}</p>
                     ) : null}
                   </div>
 
                   <div>
                     <div
                       className={
-                        editFieldErrors.item_type ? "rounded-xl ring-2 ring-red-200" : ""
+                        editFieldErrors.item_type ? "rounded-xl ring-2 ring-bm-danger/20" : ""
                       }
                     >
                       <FormDropdown
@@ -1076,18 +1076,18 @@ onSave({
                       />
                     </div>
                     {editFieldErrors.item_type ? (
-                      <p className="mt-1 text-xs text-red-600">{editFieldErrors.item_type}</p>
+                      <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.item_type}</p>
                     ) : null}
                   </div>
                 </div>
 
                 {form.subcategory && form.item_type && selectedItemConfig && (
-                  <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-4">
+                  <div className="space-y-4 rounded-2xl border border-bm-border bg-bm-surface p-4">
                     <div>
-                      <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                      <p className="text-xs font-bold text-bm-text-subtle uppercase tracking-widest">
                         Item details
                       </p>
-                      <p className="text-xs text-zinc-400 mt-1">
+                      <p className="text-xs text-bm-text-subtle mt-1">
                         {requiredSpecCount > 0
                           ? `${completedRequiredSpecCount}/${requiredSpecCount} required fields completed. Fill required fields marked with *.`
                           : "Fill required fields marked with *."}
@@ -1113,7 +1113,7 @@ onSave({
                     )}
 
                     {showAdvancedSpecs && advancedSpecFields.length > 0 && (
-                      <div className="grid grid-cols-1 gap-4 border-t border-zinc-200 pt-4">
+                      <div className="grid grid-cols-1 gap-4 border-t border-bm-border pt-4">
                         {advancedSpecFields.map(renderListingSpecField)}
                       </div>
                     )}
@@ -1122,13 +1122,13 @@ onSave({
               </div>
             )}
 
-            <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+            <div className="space-y-4 rounded-2xl border border-bm-border bg-bm-surface-muted p-4">
+              <p className="text-xs font-bold text-bm-text-subtle uppercase tracking-widest">
                 Media
               </p>
 
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-1">
                   Photos (max 5)
                 </label>
 
@@ -1137,7 +1137,7 @@ onSave({
                     {form.photos.map((url, idx) => (
                       <div
                         key={`${url}-${idx}`}
-                        className="relative aspect-square rounded-xl overflow-hidden border bg-zinc-100"
+                        className="relative aspect-square rounded-xl overflow-hidden border bg-bm-surface-muted"
                       >
                         <img
                           src={url}
@@ -1147,7 +1147,7 @@ onSave({
                         <button
                           type="button"
                           onClick={() => handleRemoveImage(idx)}
-                          className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                          className="absolute top-2 right-2 p-1 bg-black/50 text-bm-on-brand rounded-full hover:bg-black/70"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -1164,27 +1164,27 @@ onSave({
                   disabled={uploadingMedia || form.photos.length >= 5}
                   className={`w-full rounded-xl border p-2 ${
                     editFieldErrors.photos
-                      ? "border-red-500 ring-2 ring-red-200"
-                      : "border-zinc-200"
+                      ? "border-bm-danger ring-2 ring-bm-danger/20"
+                      : "border-bm-border"
                   }`}
                 />
                 {editFieldErrors.photos ? (
-                  <p className="mt-1 text-xs text-red-600">{editFieldErrors.photos}</p>
+                  <p className="mt-1 text-xs text-bm-danger">{editFieldErrors.photos}</p>
                 ) : null}
               </div>
 
               <div className="mt-4">
-                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                <label className="block text-xs font-bold text-bm-text-subtle uppercase mb-1">
                   Video (optional, 1)
                 </label>
 
                 {form.video_url ? (
-                  <div className="relative rounded-xl overflow-hidden border bg-zinc-100 mb-3">
+                  <div className="relative rounded-xl overflow-hidden border bg-bm-surface-muted mb-3">
                     <video src={form.video_url} controls className="w-full" />
                     <button
                       type="button"
                       onClick={handleRemoveVideo}
-                      className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                      className="absolute top-2 right-2 p-1 bg-black/50 text-bm-on-brand rounded-full hover:bg-black/70"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -1202,28 +1202,28 @@ onSave({
             </div>
           </div>
 
-          <div className="hidden sm:block rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-            <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">
+          <div className="hidden sm:block rounded-2xl border border-bm-border bg-bm-surface-muted px-4 py-3">
+            <p className="text-xs font-bold text-bm-text-subtle uppercase tracking-wider mb-1">
               Note
             </p>
-            <p className="text-sm text-zinc-600">
+            <p className="text-sm text-bm-text-muted">
               You can upload up to 5 photos and 1 video. Changes are saved when
               you click Save Changes.
             </p>
           </div>
         </div>
 
-        <div className="p-6 border-t border-zinc-100 bg-white flex gap-3 flex-shrink-0">
+        <div className="p-6 border-t border-bm-border-subtle bg-bm-surface flex gap-3 flex-shrink-0">
           <button
             onClick={onClose}
-            className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors"
+            className="flex-1 bg-bm-surface-muted hover:bg-bm-surface-raised text-bm-text py-3 rounded-xl font-bold transition-colors"
           >
             Cancel
           </button>
 
           <button
             onClick={handleSave}
-            className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-white py-3 rounded-xl font-bold transition-colors"
+            className="flex-1 bg-bm-brand hover:bg-bm-brand-hover text-bm-on-brand py-3 rounded-xl font-bold transition-colors"
           >
             Save Changes
           </button>

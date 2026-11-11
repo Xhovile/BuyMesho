@@ -48,7 +48,7 @@ type HeaderProps = {
 
 const DESKTOP_BREAKPOINT = 768;
 const headerCardButtonClass =
-  "rounded-2xl border border-zinc-200 bg-white text-zinc-900 shadow-md transition-all hover:border-zinc-300 hover:shadow-lg active:scale-95";
+  "rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text shadow-md transition-all hover:border-bm-border hover:shadow-lg active:scale-95";
 
 export default function Header({
   searchValue,
@@ -282,7 +282,7 @@ export default function Header({
   return (
     <>
       <nav className="sticky top-0 z-50">
-        <div className="bg-zinc-100 border-b border-zinc-200 shadow-sm">
+        <div className="bg-bm-surface-muted dark:bg-bm-surface-muted border-b border-bm-border dark:border-bm-border shadow-sm">
           <div className="mx-auto max-w-7xl overflow-visible">
             <div
               className={`overflow-hidden md:overflow-visible px-3 transition-[max-height,opacity,transform] duration-200 will-change-transform ${
@@ -308,7 +308,7 @@ export default function Header({
                     onClick={() => handleSellClick()}
                     className={`hidden sm:flex items-center gap-2 ${headerCardButtonClass} px-4 sm:px-5 py-2.5 text-sm font-bold`}
                   >
-                    <Plus className="w-4 h-4 text-red-500" />
+                    <Plus className="w-4 h-4 text-bm-brand" />
                     <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
                   </button>
 
@@ -326,12 +326,12 @@ export default function Header({
                       avatarUrl ? (
                         <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
+                        <div className="w-full h-full bg-bm-brand/5 flex items-center justify-center text-bm-brand font-bold">
                           {fallbackLetter}
                         </div>
                       )
                     ) : (
-                      <User className="w-5 h-5 text-zinc-600" />
+                      <User className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" />
                     )}
                   </button>
 
@@ -344,7 +344,7 @@ export default function Header({
                       aria-expanded={desktopMenuOpen}
                       aria-haspopup="menu"
                     >
-                      {desktopMenuOpen ? <X className="w-5 h-5 text-zinc-700" /> : <Menu className="w-5 h-5 text-zinc-700" />}
+                      {desktopMenuOpen ? <X className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" /> : <Menu className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" />}
                     </button>
 
                     <HeaderDesktopMenu
@@ -379,7 +379,7 @@ export default function Header({
                     aria-expanded={mobileMenuOpen}
                     aria-controls="mobile-header-menu"
                   >
-                    {mobileMenuOpen ? <X className="w-5 h-5 text-zinc-700" /> : <Menu className="w-5 h-5 text-zinc-700" />}
+                    {mobileMenuOpen ? <X className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" /> : <Menu className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" />}
                   </button>
                 </div>
               </div>
@@ -394,15 +394,15 @@ export default function Header({
                 className="w-full"
               >
                 <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:max-w-4xl">
-                  <div className={`flex min-w-0 w-full items-center gap-2 rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all ${topRowHidden ? "px-3 py-1.5" : "px-3 py-2"}`}>
+                  <div className={`flex min-w-0 w-full items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm transition-all ${topRowHidden ? "px-3 py-1.5" : "px-3 py-2"}`}>
                     <input
                       type="text"
                       value={searchValue}
                       onChange={(e) => onSearch(e.target.value)}
                       placeholder="Search listings, products, or services..."
-                      className="w-full min-w-0 bg-transparent pl-1 text-sm text-zinc-800 placeholder:text-zinc-500 outline-none"
+                      className="w-full min-w-0 bg-transparent pl-1 text-sm text-bm-text dark:text-bm-text-muted placeholder:text-bm-text-subtle dark:placeholder:text-bm-text-subtle outline-none"
                     />
-                    <button type="submit" aria-label="Search listings" className="inline-flex shrink-0 items-center justify-center rounded-xl bg-red-900 px-3 py-1.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4">
+                    <button type="submit" aria-label="Search listings" className="inline-flex shrink-0 items-center justify-center rounded-xl bg-bm-brand px-3 py-1.5 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover sm:px-4">
                       Search
                     </button>
                   </div>
@@ -416,7 +416,7 @@ export default function Header({
                       aria-expanded={mobileMenuOpen}
                       aria-controls="mobile-header-menu"
                     >
-                      {mobileMenuOpen ? <X className="w-4 h-4 text-zinc-700" /> : <Menu className="w-4 h-4 text-zinc-700" />}
+                      {mobileMenuOpen ? <X className="w-4 h-4 text-bm-text-muted dark:text-bm-text-muted" /> : <Menu className="w-4 h-4 text-bm-text-muted dark:text-bm-text-muted" />}
                     </button>
                   ) : null}
                 </div>

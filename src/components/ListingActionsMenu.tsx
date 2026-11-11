@@ -310,7 +310,7 @@ export default function ListingActionsMenu({
             event.stopPropagation();
             setOpen((prev) => !prev);
           }}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/95 text-zinc-700 shadow-sm backdrop-blur-md transition-all hover:bg-white"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-bm-border dark:border-bm-border bg-bm-surface/95 dark:bg-bm-surface/95 text-bm-text-muted dark:text-bm-text-muted shadow-sm backdrop-blur-md transition-all hover:bg-bm-surface"
           aria-label={menuLabel}
           aria-expanded={open}
         >
@@ -319,26 +319,26 @@ export default function ListingActionsMenu({
 
         {open ? (
           <div
-            className={`absolute ${dropdownPosition} overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl`}
+            className={`absolute ${dropdownPosition} overflow-hidden rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-2xl`}
             onClick={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
           >
-            <div className="border-b border-zinc-100 px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
+            <div className="border-b border-bm-border-subtle dark:border-bm-border-subtle px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle dark:text-bm-text-subtle">
               {isOwner ? "Owner tools" : "Actions"}
             </div>
 
             {isOwner ? (
               <>
-                <button type="button" onClick={handleEdit} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                <button type="button" onClick={handleEdit} className="block w-full px-4 py-3 text-left text-sm font-semibold text-bm-text dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted">
                   Edit listing
                 </button>
-                <button type="button" onClick={handleRecordSale} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                <button type="button" onClick={handleRecordSale} className="block w-full px-4 py-3 text-left text-sm font-semibold text-bm-text dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted">
                   <span className="inline-flex items-center gap-2"><HandCoins className="w-4 h-4" />Record sale</span>
                 </button>
-                <button type="button" onClick={handleRestock} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                <button type="button" onClick={handleRestock} className="block w-full px-4 py-3 text-left text-sm font-semibold text-bm-text dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted">
                   <span className="inline-flex items-center gap-2"><CirclePlus className="w-4 h-4" />Restock</span>
                 </button>
-                <button type="button" onClick={handleDelete} className="block w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50">
+                <button type="button" onClick={handleDelete} className="block w-full px-4 py-3 text-left text-sm font-semibold text-bm-danger hover:bg-bm-danger-bg">
                   Delete listing
                 </button>
               </>
@@ -350,36 +350,36 @@ export default function ListingActionsMenu({
                     setOpen(false);
                     onReport(listing.id);
                   }}
-                  className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
+                  className="block w-full px-4 py-3 text-left text-sm font-semibold text-bm-text dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
                 >
                   Report listing
                 </button>
-                <button type="button" onClick={handleShare} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                <button type="button" onClick={handleShare} className="block w-full px-4 py-3 text-left text-sm font-semibold text-bm-text dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted">
                   <span className="inline-flex items-center gap-2">
                     <Share2 className="w-4 h-4" />
                     Share listing
                   </span>
                 </button>
                 {variant === "detail" ? (
-                  <button type="button" onClick={handleToggleSaved} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                  <button type="button" onClick={handleToggleSaved} className="block w-full px-4 py-3 text-left text-sm font-semibold text-bm-text dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted">
                     <span className="inline-flex items-center gap-2">
                       <Bookmark className={`w-4 h-4 ${savedState ? "fill-current" : ""}`} />
                       {savedState ? "Remove from saved" : "Save listing"}
                     </span>
                   </button>
                 ) : null}
-                <button type="button" onClick={handleHideListing} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                <button type="button" onClick={handleHideListing} className="block w-full px-4 py-3 text-left text-sm font-semibold text-bm-text dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted">
                   Hide this listing
                 </button>
-                <div className="h-px bg-zinc-100" />
-                <button type="button" onClick={handleHideSeller} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50" disabled={!sellerUid}>
+                <div className="h-px bg-bm-surface-muted dark:bg-bm-surface-muted" />
+                <button type="button" onClick={handleHideSeller} className="block w-full px-4 py-3 text-left text-sm font-semibold text-bm-text dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted" disabled={!sellerUid}>
                   Hide this seller
                 </button>
               </>
             )}
 
             {variant === "detail" && !isOwner ? (
-              <div className="border-t border-zinc-100 px-4 py-3 text-xs text-zinc-500">
+              <div className="border-t border-bm-border-subtle dark:border-bm-border-subtle px-4 py-3 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
                 Use this menu for quick account actions.
               </div>
             ) : null}

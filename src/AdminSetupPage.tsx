@@ -15,8 +15,8 @@ export default function AdminSetupPage() {
       title="Admin Setup Checklist"
       description="Use this checklist for first-time admin onboarding and environment verification."
     >
-      <section className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <ol className="list-decimal space-y-3 pl-5 text-sm text-zinc-700">
+      <section className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
+        <ol className="list-decimal space-y-3 pl-5 text-sm text-bm-text-muted dark:text-bm-text-muted">
           {SETUP_ITEMS.map((item) => (
             <li key={item}>{item}</li>
           ))}

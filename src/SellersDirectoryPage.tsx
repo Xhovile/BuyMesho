@@ -102,7 +102,7 @@ function RatingStars({ rating }: { rating: number }) {
           );
         }
 
-        return <Star key={starIndex} className="h-3.5 w-3.5 text-zinc-300" />;
+        return <Star key={starIndex} className="h-3.5 w-3.5 text-bm-text-subtle" />;
       })}
     </span>
   );
@@ -110,9 +110,9 @@ function RatingStars({ rating }: { rating: number }) {
 
 function StatPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white/80 px-3 py-2 shadow-sm backdrop-blur-sm">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-      <p className="mt-1 text-sm font-black tracking-tight text-zinc-900">{value}</p>
+    <div className="rounded-2xl border border-bm-border bg-bm-surface/80 px-3 py-2 shadow-sm backdrop-blur-sm">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-bm-text-subtle">{label}</p>
+      <p className="mt-1 text-sm font-black tracking-tight text-bm-text">{value}</p>
     </div>
   );
 }
@@ -198,7 +198,7 @@ export default function SellersDirectoryPage() {
   }, [cards, search]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-100 text-zinc-900 pb-20">
+    <div className="flex min-h-screen flex-col bg-bm-surface-muted text-bm-text pb-20">
       <Header
         searchValue={search}
         onSearch={setSearch}
@@ -212,14 +212,14 @@ export default function SellersDirectoryPage() {
 
       <main className="flex-1">
         <section className="mx-auto max-w-7xl px-4 pb-6 pt-6 sm:pt-8">
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+          <div className="rounded-[2rem] border border-bm-border bg-bm-surface p-6 shadow-sm sm:p-8">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-400">Explore</p>
-                <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-bm-text-subtle">Explore</p>
+                <h1 className="mt-2 text-3xl font-black tracking-tight text-bm-text sm:text-4xl">
                   Seller Directory.
                 </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-bm-text-muted sm:text-base">
                   Browse approved sellers, compare their listings, and open any profile directly from the directory.
                 </p>
               </div>
@@ -234,7 +234,7 @@ export default function SellersDirectoryPage() {
 
         {error ? (
           <div className="mx-auto mt-0 max-w-7xl px-4">
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+            <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm font-medium text-bm-danger">
               {error}
             </div>
           </div>
@@ -242,8 +242,8 @@ export default function SellersDirectoryPage() {
 
         {loading ? (
           <div className="mx-auto mt-0 max-w-7xl px-4 pb-8">
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm">
-              <div className="flex items-center justify-center gap-3 text-zinc-500">
+            <div className="rounded-[2rem] border border-bm-border bg-bm-surface p-10 shadow-sm">
+              <div className="flex items-center justify-center gap-3 text-bm-text-subtle">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 Loading approved sellers…
               </div>
@@ -251,9 +251,9 @@ export default function SellersDirectoryPage() {
           </div>
         ) : filteredCards.length === 0 ? (
           <div className="mx-auto mt-0 max-w-7xl px-4 pb-8">
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
-              <h2 className="text-xl font-black tracking-tight text-zinc-900">No sellers found</h2>
-              <p className="mt-3 text-sm text-zinc-500">
+            <div className="rounded-[2rem] border border-bm-border bg-bm-surface p-10 text-center shadow-sm">
+              <h2 className="text-xl font-black tracking-tight text-bm-text">No sellers found</h2>
+              <p className="mt-3 text-sm text-bm-text-subtle">
                 Approved sellers will show up here when they are available in the public directory.
               </p>
             </div>
@@ -268,7 +268,7 @@ export default function SellersDirectoryPage() {
                   event.preventDefault();
                   navigateToSellerProfile(card.uid);
                 }}
-                className="group relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-5 text-left shadow-[0_18px_50px_-28px_rgba(0,0,0,0.28)] transition-all duration-200 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-[0_26px_70px_-30px_rgba(0,0,0,0.38)]"
+                className="group relative overflow-hidden rounded-[2rem] border border-bm-border bg-bm-surface p-5 text-left shadow-[0_18px_50px_-28px_rgba(0,0,0,0.28)] transition-all duration-200 hover:-translate-y-1 hover:border-bm-border hover:shadow-[0_26px_70px_-30px_rgba(0,0,0,0.38)]"
               >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(127,29,29,0.10),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(24,24,27,0.05),transparent_26%)]" />
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-red-900 via-amber-500 to-zinc-200" />
@@ -276,11 +276,11 @@ export default function SellersDirectoryPage() {
                 <div className="relative flex items-start gap-4">
                   <div className="relative shrink-0">
                     <div className="absolute inset-0 rounded-[1.75rem] bg-red-900/10 blur-xl" />
-                    <div className="relative flex h-18 w-18 items-center justify-center overflow-hidden rounded-[1.75rem] border border-white/70 bg-zinc-100 ring-1 ring-zinc-200">
+                    <div className="relative flex h-18 w-18 items-center justify-center overflow-hidden rounded-[1.75rem] border border-white/70 bg-bm-surface-muted ring-1 ring-bm-border">
                       {card.logoUrl ? (
                         <img src={card.logoUrl} alt="Seller logo" className="h-full w-full object-cover" />
                       ) : (
-                        <div className="text-lg font-black tracking-tight text-zinc-500">
+                        <div className="text-lg font-black tracking-tight text-bm-text-subtle">
                           {fallbackInitials(card.uid, card.description)}
                         </div>
                       )}
@@ -290,13 +290,13 @@ export default function SellersDirectoryPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-lg font-black tracking-tight text-zinc-950 sm:text-xl">
+                        <p className="truncate text-lg font-black tracking-tight text-bm-text sm:text-xl">
                           {card.sellerName}
                         </p>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-zinc-500">
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-bm-text-subtle">
                           <span>Joined {formatDate(card.joinedAt)}</span>
                           {card.isVerified ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 font-black text-blue-700">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-bm-success-bg px-2 py-1 font-black text-bm-success">
                               <ShieldCheck className="h-3 w-3" />
                               Verified
                             </span>
@@ -305,16 +305,16 @@ export default function SellersDirectoryPage() {
                       </div>
                     </div>
 
-                    <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-zinc-600">
+                    <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-bm-text-muted">
                       {card.description || "This seller has not added a bio yet."}
                     </p>
                   </div>
                 </div>
 
-                <div className="relative mt-5 grid grid-cols-2 gap-3 border-t border-zinc-100 pt-4">
+                <div className="relative mt-5 grid grid-cols-2 gap-3 border-t border-bm-border-subtle pt-4">
                   <StatPill label="Listings" value={`${card.listingCount}`} />
-                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50/80 px-3 py-2 shadow-sm">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">Rating</p>
+                  <div className="rounded-2xl border border-bm-border bg-bm-surface-muted/80 px-3 py-2 shadow-sm">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-bm-text-subtle">Rating</p>
                     <div className="mt-1 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-1.5">
                         <RatingStars rating={card.rating} />
@@ -323,7 +323,7 @@ export default function SellersDirectoryPage() {
                         {card.rating.toFixed(1)}
                       </span>
                     </div>
-                    <p className="mt-1 text-[11px] font-semibold text-zinc-500">
+                    <p className="mt-1 text-[11px] font-semibold text-bm-text-subtle">
                       {card.ratingCount} review{card.ratingCount === 1 ? "" : "s"}
                     </p>
                   </div>

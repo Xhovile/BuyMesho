@@ -70,33 +70,33 @@ export default function OrderDetailsCard({
   const totalLabel = eventItems.length ? "Listing total" : "Total";
 
   return (
-    <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
-      <h2 className="text-lg font-black text-zinc-950">Order details</h2>
+    <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-5 sm:p-6">
+      <h2 className="text-lg font-black text-bm-text dark:text-bm-text">Order details</h2>
 
       <div className="mt-4 space-y-3 text-sm">
-        <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-          <span className="text-zinc-500">BuyMesho reference</span>
-          <p className="mt-1 break-all font-semibold text-zinc-900">{reference || "—"}</p>
+        <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3">
+          <span className="text-bm-text-subtle dark:text-bm-text-subtle">BuyMesho reference</span>
+          <p className="mt-1 break-all font-semibold text-bm-text dark:text-bm-text">{reference || "—"}</p>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-          <span className="text-zinc-500">Item</span>
-          <p className="mt-1 font-semibold text-zinc-900">{firstItemTitle}</p>
+        <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3">
+          <span className="text-bm-text-subtle dark:text-bm-text-subtle">Item</span>
+          <p className="mt-1 font-semibold text-bm-text dark:text-bm-text">{firstItemTitle}</p>
         </div>
 
         {listingItems.length ? (
-          <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-            <span className="text-zinc-500">Item references</span>
+          <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3">
+            <span className="text-bm-text-subtle dark:text-bm-text-subtle">Item references</span>
             <div className="mt-2 space-y-2">
               {listingItems.map((item, index) => {
                 const itemReference = item.reference || item.listingId || "Reference pending";
                 return (
-                  <div key={`${item.reference ?? item.listingId ?? index}`} className="rounded-xl bg-zinc-50 px-3 py-2">
-                    <p className="font-semibold text-zinc-900">
+                  <div key={`${item.reference ?? item.listingId ?? index}`} className="rounded-xl bg-bm-surface-muted dark:bg-bm-surface-subtle px-3 py-2">
+                    <p className="font-semibold text-bm-text dark:text-bm-text">
                       Listing: {item.title || `Item ${index + 1}`}
                       {item.quantity ? ` × ${item.quantity}` : ""}
                     </p>
-                    <p className="mt-1 break-all font-mono text-xs text-zinc-500">{itemReference}</p>
+                    <p className="mt-1 break-all font-mono text-xs text-bm-text-subtle dark:text-bm-text-subtle">{itemReference}</p>
                   </div>
                 );
               })}
@@ -105,67 +105,67 @@ export default function OrderDetailsCard({
         ) : null}
 
         {eventItems.length ? (
-          <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          <div className="rounded-2xl border border-bm-border bg-bm-surface-muted px-4 py-3 text-sm text-bm-text">
             <p className="font-semibold">This order includes an event ticket.</p>
             <p className="mt-1">Open Tickets for ticket details.</p>
           </div>
         ) : null}
 
-        <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-          <span className="text-zinc-500">Payment status</span>
-          <p className="mt-1 font-semibold capitalize text-zinc-900">{formatLabel(paymentStatus)}</p>
+        <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3">
+          <span className="text-bm-text-subtle dark:text-bm-text-subtle">Payment status</span>
+          <p className="mt-1 font-semibold capitalize text-bm-text dark:text-bm-text">{formatLabel(paymentStatus)}</p>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-          <span className="text-zinc-500">Order status</span>
-          <p className="mt-1 font-semibold capitalize text-zinc-900">{formatLabel(orderStatus)}</p>
+        <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3">
+          <span className="text-bm-text-subtle dark:text-bm-text-subtle">Order status</span>
+          <p className="mt-1 font-semibold capitalize text-bm-text dark:text-bm-text">{formatLabel(orderStatus)}</p>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-          <span className="text-zinc-500">Escrow state</span>
-          <p className="mt-1 font-semibold capitalize text-zinc-900">{formatLabel(escrowState)}</p>
+        <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3">
+          <span className="text-bm-text-subtle dark:text-bm-text-subtle">Escrow state</span>
+          <p className="mt-1 font-semibold capitalize text-bm-text dark:text-bm-text">{formatLabel(escrowState)}</p>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-          <span className="text-zinc-500">Order ID</span>
-          <p className="mt-1 break-all font-semibold text-zinc-900">{orderId}</p>
+        <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3">
+          <span className="text-bm-text-subtle dark:text-bm-text-subtle">Order ID</span>
+          <p className="mt-1 break-all font-semibold text-bm-text dark:text-bm-text">{orderId}</p>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-          <span className="text-zinc-500">{totalLabel}</span>
-          <p className="mt-1 font-semibold text-zinc-900">
+        <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3">
+          <span className="text-bm-text-subtle dark:text-bm-text-subtle">{totalLabel}</span>
+          <p className="mt-1 font-semibold text-bm-text dark:text-bm-text">
             {totalCurrency} {displayTotalAmount.toLocaleString()}
           </p>
           {eventItems.length ? (
-            <p className="mt-1 text-xs text-zinc-500">Event ticket charges are shown separately in Tickets.</p>
+            <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Event ticket charges are shown separately in Tickets.</p>
           ) : null}
         </div>
 
         {sellerPayout ? (
           <>
-            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-              <span className="text-zinc-500">Payment captured</span>
-              <p className="mt-1 font-semibold text-zinc-900">{sellerPayout.paymentCaptured ? "Yes" : "No"}</p>
+            <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3">
+              <span className="text-bm-text-subtle dark:text-bm-text-subtle">Payment captured</span>
+              <p className="mt-1 font-semibold text-bm-text dark:text-bm-text">{sellerPayout.paymentCaptured ? "Yes" : "No"}</p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-              <span className="text-zinc-500">Release eligibility</span>
-              <p className="mt-1 font-semibold capitalize text-zinc-900">{formatLabel(sellerPayout.releaseEligibility)}</p>
+            <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3">
+              <span className="text-bm-text-subtle dark:text-bm-text-subtle">Release eligibility</span>
+              <p className="mt-1 font-semibold capitalize text-bm-text dark:text-bm-text">{formatLabel(sellerPayout.releaseEligibility)}</p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-              <span className="text-zinc-500">Payout status</span>
-              <p className="mt-1 font-semibold capitalize text-zinc-900">{formatLabel(sellerPayout.payoutStatus)}</p>
+            <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3">
+              <span className="text-bm-text-subtle dark:text-bm-text-subtle">Payout status</span>
+              <p className="mt-1 font-semibold capitalize text-bm-text dark:text-bm-text">{formatLabel(sellerPayout.payoutStatus)}</p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-              <span className="text-zinc-500">Estimated payout date</span>
-              <p className="mt-1 font-semibold text-zinc-900">{sellerPayout.estimatedPayoutDate || "—"}</p>
+            <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3">
+              <span className="text-bm-text-subtle dark:text-bm-text-subtle">Estimated payout date</span>
+              <p className="mt-1 font-semibold text-bm-text dark:text-bm-text">{sellerPayout.estimatedPayoutDate || "—"}</p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-              <span className="text-zinc-500">Payout destination</span>
-              <p className="mt-1 font-semibold text-zinc-900">{sellerPayout.payoutDestinationMask || "Not configured"}</p>
+            <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3">
+              <span className="text-bm-text-subtle dark:text-bm-text-subtle">Payout destination</span>
+              <p className="mt-1 font-semibold text-bm-text dark:text-bm-text">{sellerPayout.payoutDestinationMask || "Not configured"}</p>
             </div>
           </>
         ) : null}

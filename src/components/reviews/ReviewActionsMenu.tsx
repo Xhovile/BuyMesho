@@ -40,7 +40,7 @@ export default function ReviewActionsMenu({ canReport = false, onReport }: Revie
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm transition hover:bg-zinc-50"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted shadow-sm transition hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
         aria-label="Review actions"
         aria-expanded={open}
       >
@@ -48,7 +48,7 @@ export default function ReviewActionsMenu({ canReport = false, onReport }: Revie
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-11 z-20 w-48 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl">
+        <div className="absolute right-0 top-11 z-20 w-48 overflow-hidden rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-xl">
           <button
             type="button"
             onClick={() => {
@@ -56,7 +56,7 @@ export default function ReviewActionsMenu({ canReport = false, onReport }: Revie
               onReport?.();
             }}
             disabled={!canReport}
-            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-bm-text dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Flag className="h-4 w-4" />
             Report review

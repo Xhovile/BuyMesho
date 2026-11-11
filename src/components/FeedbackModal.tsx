@@ -22,21 +22,21 @@ export default function FeedbackModal({ open, type, title, message, onClose, act
   const config = {
     success: {
       icon: CheckCircle2,
-      iconWrap: "bg-emerald-50 border border-emerald-100",
-      iconColor: "text-emerald-600",
-      accent: "bg-emerald-600 hover:bg-emerald-700",
+      iconWrap: "bg-bm-success-bg border border-bm-border",
+      iconColor: "text-bm-success",
+      accent: "bg-bm-success hover:bg-bm-success/90",
     },
     error: {
       icon: AlertTriangle,
-      iconWrap: "bg-red-50 border border-red-100",
-      iconColor: "text-red-600",
-      accent: "bg-red-600 hover:bg-red-700",
+      iconWrap: "bg-bm-danger-bg border border-bm-border",
+      iconColor: "text-bm-danger",
+      accent: "bg-bm-danger hover:bg-bm-danger/90",
     },
     info: {
       icon: Info,
-      iconWrap: "bg-zinc-100 border border-zinc-200",
-      iconColor: "text-zinc-700",
-      accent: "bg-zinc-900 hover:bg-zinc-800",
+      iconWrap: "bg-bm-surface-muted dark:bg-bm-surface-muted border border-bm-border dark:border-bm-border",
+      iconColor: "text-bm-text-muted dark:text-bm-text-muted",
+      accent: "bg-bm-brand hover:bg-bm-brand-hover",
     },
   }[type];
 
@@ -53,7 +53,7 @@ export default function FeedbackModal({ open, type, title, message, onClose, act
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 cursor-default bg-zinc-950/45 backdrop-blur-[3px]"
+            className="absolute inset-0 cursor-default bg-bm-overlay backdrop-blur-[3px]"
           />
 
           <motion.div
@@ -63,7 +63,7 @@ export default function FeedbackModal({ open, type, title, message, onClose, act
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 14 }}
             transition={{ duration: 0.18 }}
-            className="relative w-full max-w-sm overflow-hidden rounded-[28px] border border-zinc-200 bg-white shadow-[0_24px_80px_rgba(0,0,0,0.18)]"
+            className="relative w-full max-w-sm overflow-hidden rounded-[28px] border border-bm-border dark:border-bm-border bg-bm-surface shadow-[0_24px_80px_rgba(0,0,0,0.18)]"
           >
             <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-6">
               <div className="flex items-start gap-3">
@@ -71,8 +71,8 @@ export default function FeedbackModal({ open, type, title, message, onClose, act
                   <Icon className={`h-5 w-5 ${config.iconColor}`} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-zinc-400">BuyMesho</p>
-                  <h3 className="mt-1 text-xl font-black tracking-tight text-zinc-950">{title}</h3>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">BuyMesho</p>
+                  <h3 className="mt-1 text-xl font-black tracking-tight text-bm-text dark:text-bm-text">{title}</h3>
                 </div>
               </div>
 
@@ -80,17 +80,17 @@ export default function FeedbackModal({ open, type, title, message, onClose, act
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="rounded-full p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+                className="rounded-full p-2 text-bm-text-subtle dark:text-bm-text-subtle transition-colors hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted hover:text-bm-text-muted"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <div className="px-6 pb-5 pt-3">
-              <p className="text-[15px] leading-6 text-zinc-600">{message}</p>
+              <p className="text-[15px] leading-6 text-bm-text-muted dark:text-bm-text-muted">{message}</p>
             </div>
 
-            <div className="border-t border-zinc-100 bg-zinc-50/70 px-6 py-5">
+            <div className="border-t border-bm-border-subtle dark:border-bm-border-subtle bg-bm-surface-muted/70 px-6 py-5">
               {actions && actions.length > 0 ? (
                 <div className="flex flex-row gap-2.5">
                   {actions.map((action) => (
@@ -100,8 +100,8 @@ export default function FeedbackModal({ open, type, title, message, onClose, act
                       onClick={action.onClick}
                       className={`flex-1 rounded-2xl px-4 py-3 text-sm font-extrabold transition-colors ${
                         action.variant === "secondary"
-                          ? "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100"
-                          : `${config.accent} text-white`
+                          ? "border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
+                          : `${config.accent} text-bm-on-brand`
                       }`}
                     >
                       {action.label}
@@ -112,7 +112,7 @@ export default function FeedbackModal({ open, type, title, message, onClose, act
                 <button
                   type="button"
                   onClick={onClose}
-                  className={`w-full rounded-2xl px-4 py-3 text-sm font-extrabold text-white transition-colors ${config.accent}`}
+                  className={`w-full rounded-2xl px-4 py-3 text-sm font-extrabold text-bm-on-brand transition-colors ${config.accent}`}
                 >
                   Okay
                 </button>

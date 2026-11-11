@@ -60,29 +60,29 @@ export default function ReportProblemPage({
   return (
     <LegalPageShell title="Report a Problem" onBack={onBack} flushContent>
       <div className="w-full space-y-6">
-        <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
-          <p className="text-sm font-semibold text-zinc-900">
+        <div className="space-y-3 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-5">
+          <p className="text-sm font-semibold text-bm-text dark:text-bm-text">
             Help keep BuyMesho safer, more trustworthy, and more useful.
           </p>
-          <p className="text-sm leading-7 text-zinc-700">
+          <p className="text-sm leading-7 text-bm-text-muted dark:text-bm-text-muted">
             This page is for reporting problems connected to BuyMesho, including
             suspicious activity, misleading listings, abusive behavior, scam
             attempts, account misuse, and other platform concerns.
           </p>
-          <p className="text-sm leading-7 text-zinc-700">
+          <p className="text-sm leading-7 text-bm-text-muted dark:text-bm-text-muted">
             Clear reports help BuyMesho review issues more effectively and take
             moderation, safety, or account action where necessary.
           </p>
         </div>
 
         {!isLoggedIn && (
-          <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" />
+          <div className="flex items-start gap-3 rounded-2xl border border-bm-warning/35 bg-bm-warning-bg p-4">
+            <AlertTriangle className="mt-0.5 h-5 w-5 text-bm-warning" />
             <div>
-              <p className="text-sm font-bold text-amber-800">
+              <p className="text-sm font-bold text-bm-warning">
                 Login required to submit
               </p>
-              <p className="text-sm leading-7 text-amber-700">
+              <p className="text-sm leading-7 text-bm-warning">
                 You can read the reporting form now, but you need to log in
                 before sending a report through the platform.
               </p>
@@ -91,14 +91,14 @@ export default function ReportProblemPage({
         )}
 
         {successMessage ? (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <div className="rounded-2xl border border-bm-success/35 bg-bm-success-bg p-4">
             <div className="flex items-start gap-3">
-              <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
+              <CheckCircle2 className="mt-0.5 h-5 w-5 text-bm-success" />
               <div className="flex-1">
-                <p className="text-sm font-bold text-emerald-800">
+                <p className="text-sm font-bold text-bm-success">
                   Report submitted
                 </p>
-                <p className="text-sm leading-7 text-emerald-700">
+                <p className="text-sm leading-7 text-bm-success">
                   {successMessage}
                 </p>
               </div>
@@ -108,7 +108,7 @@ export default function ReportProblemPage({
               <button
                 type="button"
                 onClick={onBack}
-                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-emerald-700"
+                className="rounded-xl bg-bm-brand px-4 py-2 text-sm font-bold text-bm-on-brand transition-colors hover:bg-bm-brand-hover"
               >
                 Back
               </button>
@@ -117,17 +117,17 @@ export default function ReportProblemPage({
         ) : (
           <form
             onSubmit={handleSubmit}
-            className="w-full space-y-5 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6"
+            className="w-full space-y-5 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm sm:p-6"
           >
             <div>
-              <label className="mb-1 block text-xs font-bold uppercase text-zinc-400">
+              <label className="mb-1 block text-xs font-bold uppercase text-bm-text-subtle dark:text-bm-text-subtle">
                 Subject
               </label>
               <input
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-zinc-100 disabled:text-zinc-400"
+                className="w-full rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-bm-surface-muted dark:disabled:bg-bm-surface-muted disabled:text-bm-text-subtle"
                 placeholder="Example: Suspicious seller behavior"
                 required
                 disabled={!isLoggedIn || sending}
@@ -135,23 +135,23 @@ export default function ReportProblemPage({
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-bold uppercase text-zinc-400">
+              <label className="mb-1 block text-xs font-bold uppercase text-bm-text-subtle dark:text-bm-text-subtle">
                 Details
               </label>
               <textarea
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}
-                className="h-40 w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-zinc-100 disabled:text-zinc-400"
+                className="h-40 w-full resize-none rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-bm-surface-muted dark:disabled:bg-bm-surface-muted disabled:text-bm-text-subtle"
                 placeholder="Describe clearly what happened, which listing or user was involved, and why you are reporting it."
                 required
                 disabled={!isLoggedIn || sending}
               />
-              <p className="mt-2 text-xs leading-6 text-zinc-500">
+              <p className="mt-2 text-xs leading-6 text-bm-text-subtle dark:text-bm-text-subtle">
                 Be clear, factual, and specific. Avoid insults or vague claims.
               </p>
             </div>
 
-            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm leading-6 text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-100">
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-4 text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted transition-colors hover:border-bm-border hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted">
               <input
                 type="checkbox"
                 checked={confirmed}
@@ -169,7 +169,7 @@ export default function ReportProblemPage({
             <button
               type="submit"
               disabled={!isLoggedIn || !confirmed || sending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 py-3 font-bold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:hover:bg-zinc-300"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-bm-brand py-3 font-bold text-bm-on-brand transition-colors hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:bg-bm-surface-raised disabled:hover:bg-bm-surface-raised"
             >
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit Report"}
             </button>

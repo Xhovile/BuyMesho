@@ -103,7 +103,7 @@ export default function MessageAttachmentViewer({ message, mine = false }: Props
         </button>
         {imageOpen ? (
           <div
-            className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 p-4"
+            className="fixed inset-0 z-[90] flex items-center justify-center bg-bm-overlay p-4"
             role="dialog"
             aria-modal="true"
             aria-label={message.attachment_name || "Image preview"}
@@ -112,7 +112,7 @@ export default function MessageAttachmentViewer({ message, mine = false }: Props
             <button
               type="button"
               onClick={() => setImageOpen(false)}
-              className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white backdrop-blur hover:bg-white/20"
+              className="absolute right-4 top-4 rounded-full bg-bm-on-brand/10 p-2 text-bm-on-brand backdrop-blur hover:bg-bm-on-brand/20"
               aria-label="Close image preview"
             >
               <X className="h-5 w-5" />
@@ -152,22 +152,22 @@ export default function MessageAttachmentViewer({ message, mine = false }: Props
         aria-busy={downloading}
         aria-label={`Download ${message.attachment_name || "file attachment"}`}
         className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-colors disabled:cursor-wait disabled:opacity-80 ${
-          mine ? "border-white/10 bg-white/10 hover:bg-white/15" : "border-zinc-300 bg-white hover:bg-zinc-50"
+          mine ? "border-bm-on-brand/10 bg-bm-on-brand/10 hover:bg-bm-on-brand/15" : "border-bm-border bg-bm-surface hover:bg-bm-surface-muted"
         }`}
       >
         <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-          mine ? "bg-white/10 text-white" : "bg-zinc-100 text-zinc-700"
+          mine ? "bg-bm-on-brand/10 text-bm-on-brand" : "bg-bm-surface-muted text-bm-text-muted"
         }`}>
           <FileText className="h-5 w-5" />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-black">{message.attachment_name || "File attachment"}</span>
           <span className={`mt-0.5 block text-[11px] font-semibold ${
-            mine ? "text-zinc-300" : "text-zinc-500"
+            mine ? "text-bm-on-brand/80" : "text-bm-text-subtle dark:text-bm-text-subtle"
           }`}>{message.attachment_size ? formatFileSize(Number(message.attachment_size)) : "File"}</span>
         </span>
         <span className={`inline-flex min-w-[5.5rem] shrink-0 items-center justify-center gap-1 rounded-xl px-2.5 py-2 text-xs font-black ${
-          mine ? "bg-white text-zinc-900" : "bg-zinc-900 text-white"
+          mine ? "bg-bm-surface text-bm-text dark:text-bm-text" : "bg-bm-brand text-bm-on-brand"
         }`}>
           {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-label="Downloading" /> : <Download className="h-3.5 w-3.5" />}
           <span>{downloading ? "Downloading" : "Download"}</span>
@@ -175,7 +175,7 @@ export default function MessageAttachmentViewer({ message, mine = false }: Props
       </button>
       {downloadError ? (
         <p className={`mt-1 px-1 text-[11px] font-semibold ${
-          mine ? "text-red-200" : "text-red-600"
+          mine ? "text-bm-on-brand/80" : "text-bm-danger"
         }`}>{downloadError}</p>
       ) : null}
     </div>

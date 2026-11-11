@@ -42,10 +42,10 @@ export default function ListingExploreBlock({
     const visibleItems = items.slice(0, RELATED_LIMIT);
 
     return (
-      <div className="space-y-3 border-t border-zinc-200 pt-5 first:border-t-0 first:pt-0">
+      <div className="space-y-3 border-t border-bm-border pt-5 first:border-t-0 first:pt-0">
         <div className="flex items-center justify-between gap-4">
-          <h3 className="text-lg font-black tracking-tight text-zinc-900">{title}</h3>
-          <p className="text-sm text-zinc-500">{visibleItems.length} listings</p>
+          <h3 className="text-lg font-black tracking-tight text-bm-text">{title}</h3>
+          <p className="text-sm text-bm-text-subtle">{visibleItems.length} listings</p>
         </div>
 
         {visibleItems.length ? (
@@ -68,7 +68,7 @@ export default function ListingExploreBlock({
             </div>
           </div>
         ) : (
-          <div className="border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500">
+          <div className="border border-dashed border-bm-border bg-bm-surface-subtle px-4 py-5 text-sm text-bm-text-subtle">
             {empty}
           </div>
         )}
@@ -80,10 +80,10 @@ export default function ListingExploreBlock({
     const visibleItems = items.slice(0, SELLER_LIMIT);
 
     return (
-      <div className="space-y-3 border-t border-zinc-200 pt-5">
+      <div className="space-y-3 border-t border-bm-border pt-5">
         <div className="flex items-center justify-between gap-4">
-          <h3 className="text-lg font-black tracking-tight text-zinc-900">{title}</h3>
-          <p className="text-sm text-zinc-500">{visibleItems.length} listings</p>
+          <h3 className="text-lg font-black tracking-tight text-bm-text">{title}</h3>
+          <p className="text-sm text-bm-text-subtle">{visibleItems.length} listings</p>
         </div>
 
         {visibleItems.length ? (
@@ -100,7 +100,7 @@ export default function ListingExploreBlock({
             ))}
           </div>
         ) : (
-          <div className="border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500">
+          <div className="border border-dashed border-bm-border bg-bm-surface-subtle px-4 py-5 text-sm text-bm-text-subtle">
             {empty}
           </div>
         )}

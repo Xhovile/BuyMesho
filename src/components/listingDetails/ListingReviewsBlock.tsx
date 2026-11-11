@@ -148,30 +148,30 @@ export default function ListingReviewsBlock({
   };
 
   return (
-    <div className="space-y-5 border-t border-blue-100 pt-6">
+    <div className="space-y-5 border-t border-bm-border-subtle pt-6">
       <SectionHeading eyebrow="Reviews" title="Ratings & reviews" />
 
       {loading ? (
-        <div className="flex items-center gap-3 rounded-[2rem] border border-blue-200 bg-white px-5 py-4 text-sm text-zinc-500 shadow-sm">
+        <div className="flex items-center gap-3 rounded-[2rem] border border-bm-border bg-bm-surface px-5 py-4 text-sm text-bm-text-subtle shadow-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading reviews...
         </div>
       ) : error ? (
-        <div className="rounded-[2rem] border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700">{error}</div>
+        <div className="rounded-[2rem] border border-bm-danger/35 bg-bm-danger-bg px-5 py-4 text-sm font-medium text-bm-danger">{error}</div>
       ) : (
         <div className="space-y-5">
           <ListingReviewSummaryView summary={summary} />
 
           {!viewerReview && !(firebaseUser && firebaseUser.uid === listing.seller_uid) ? (
-            <div className="flex items-center justify-between gap-3 rounded-[2rem] border border-blue-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-3 rounded-[2rem] border border-bm-border bg-bm-surface p-5 shadow-sm">
               <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Your review</p>
-                <p className="mt-2 text-sm text-zinc-500">Share a rating and a short review for this listing.</p>
+                <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle">Your review</p>
+                <p className="mt-2 text-sm text-bm-text-subtle">Share a rating and a short review for this listing.</p>
               </div>
               <button
                 type="button"
                 onClick={handleOpenCreateReview}
-                className="shrink-0 rounded-full bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800"
+                className="shrink-0 rounded-full bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand transition hover:bg-bm-brand-hover"
               >
                 Leave a review
               </button>

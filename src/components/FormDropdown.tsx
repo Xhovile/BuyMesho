@@ -115,15 +115,15 @@ export default function FormDropdown({
   const isDark = tone === "dark";
   const triggerBase = isDark
     ? "w-full min-w-0 flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white/95 backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/15"
-    : "w-full min-w-0 flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-700 transition-all hover:border-zinc-300 hover:bg-white";
-  const menuWrapper = "rounded-2xl border border-zinc-200 bg-white shadow-2xl overflow-hidden";
-  const searchWrap = "p-2 border-b border-zinc-100 bg-white sticky top-0 z-10";
+    : "w-full min-w-0 flex items-center justify-between gap-3 rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface-subtle dark:bg-bm-surface-subtle px-4 py-3 text-sm font-semibold text-bm-text-muted dark:text-bm-text-muted transition-all hover:border-bm-border hover:bg-bm-surface";
+  const menuWrapper = "rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-2xl overflow-hidden";
+  const searchWrap = "p-2 border-b border-bm-border-subtle dark:border-bm-border-subtle bg-bm-surface sticky top-0 z-10";
   const searchInput =
-    "w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-zinc-300";
+    "w-full pl-10 pr-4 py-2.5 bg-bm-surface-subtle dark:bg-bm-surface-subtle border border-bm-border dark:border-bm-border rounded-xl text-sm text-bm-text-muted dark:text-bm-text-muted placeholder:text-bm-text-subtle dark:placeholder:text-bm-text-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-bm-border";
   const listWrap = "max-h-64 overflow-y-auto p-2";
   const itemBase = "w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors";
-  const activeItem = "bg-zinc-900 text-white";
-  const inactiveItem = "text-zinc-700 hover:bg-zinc-100";
+  const activeItem = "bg-bm-brand text-bm-on-brand";
+  const inactiveItem = "text-bm-text-muted dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted";
 
   const menu = open && typeof document !== "undefined" ? (
     createPortal(
@@ -131,7 +131,7 @@ export default function FormDropdown({
         {searchable ? (
           <div className={searchWrap}>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bm-text-subtle dark:text-bm-text-subtle" />
               <input
                 type="text"
                 value={query}
@@ -160,7 +160,7 @@ export default function FormDropdown({
               </button>
             ))
           ) : (
-            <div className="px-3 py-3 text-sm text-zinc-500">No results found.</div>
+            <div className="px-3 py-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No results found.</div>
           )}
         </div>
       </div>,
@@ -170,7 +170,7 @@ export default function FormDropdown({
 
   return (
     <div className="relative min-w-0 w-full space-y-2" data-form-dropdown ref={wrapperRef}>
-      <label className={`mb-1 block text-xs font-bold uppercase ${isDark ? "text-white/70" : "text-zinc-400"}`}>
+      <label className={`mb-1 block text-xs font-bold uppercase ${isDark ? "text-white/70" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
         {label}
       </label>
 
@@ -182,11 +182,11 @@ export default function FormDropdown({
           }
         }}
         disabled={disabled}
-        className={`${triggerBase} ${disabled ? (isDark ? "cursor-not-allowed bg-white/5 text-white/45 hover:bg-white/5 hover:border-white/10" : "cursor-not-allowed bg-zinc-100 text-zinc-500 hover:border-zinc-200 hover:bg-zinc-100") : ""}`}
+        className={`${triggerBase} ${disabled ? (isDark ? "cursor-not-allowed bg-white/5 text-white/45 hover:bg-white/5 hover:border-white/10" : "cursor-not-allowed bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-subtle dark:text-bm-text-subtle hover:border-bm-border hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted") : ""}`}
       >
         <span className="min-w-0 truncate text-left">{selectedLabel || placeholder}</span>
         <ChevronRight
-          className={`h-4 w-4 flex-shrink-0 transition-transform ${isDark ? "text-white/65" : "text-zinc-400"} ${open ? "rotate-90" : "rotate-0"}`}
+          className={`h-4 w-4 flex-shrink-0 transition-transform ${isDark ? "text-white/65" : "text-bm-text-subtle dark:text-bm-text-subtle"} ${open ? "rotate-90" : "rotate-0"}`}
         />
       </button>
 

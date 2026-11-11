@@ -12,7 +12,7 @@ export default function ListingStatusPanel({
 }) {
   if (loading) {
     return (
-      <div className="flex items-center justify-center gap-3 rounded-[2rem] border border-zinc-200 bg-white p-10 text-zinc-500 shadow-sm">
+      <div className="flex items-center justify-center gap-3 rounded-[2rem] border border-bm-border bg-bm-surface p-10 text-bm-text-subtle shadow-sm">
         <Loader2 className="h-5 w-5 animate-spin" />
         Loading listing details...
       </div>
@@ -21,13 +21,13 @@ export default function ListingStatusPanel({
 
   if (!hasListing) {
     return (
-      <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
-        <h1 className="text-2xl font-black tracking-tight text-zinc-900">Listing not found</h1>
-        <p className="mt-3 text-sm text-zinc-500">This listing could not be loaded or may no longer be available.</p>
+      <div className="rounded-[2rem] border border-bm-border bg-bm-surface p-10 text-center shadow-sm">
+        <h1 className="text-2xl font-black tracking-tight text-bm-text">Listing not found</h1>
+        <p className="mt-3 text-sm text-bm-text-subtle">This listing could not be loaded or may no longer be available.</p>
         <button
           type="button"
           onClick={onRetry || (() => navigateBackOrPath(EXPLORE_PATH))}
-          className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-black hover:bg-zinc-50"
+          className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-surface px-5 py-3 text-sm font-extrabold text-bm-text hover:bg-bm-surface-subtle"
         >
           <ChevronLeft className="h-4 w-4" />
           Back

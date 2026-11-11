@@ -24,9 +24,9 @@ function ImageShimmer({ className = "" }: { className?: string }) {
   return (
     <div
       aria-hidden="true"
-      className={`absolute inset-0 overflow-hidden bg-white ${className}`}
+      className={`absolute inset-0 overflow-hidden bg-bm-surface ${className}`}
     >
-      <div className="absolute inset-y-0 -left-1/2 w-1/2 animate-[listing-gallery-shimmer_1.25s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-zinc-100 to-transparent" />
+      <div className="absolute inset-y-0 -left-1/2 w-1/2 animate-[listing-gallery-shimmer_1.25s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-bm-surface-muted to-transparent" />
     </div>
   );
 }
@@ -139,7 +139,7 @@ export default function ListingGallery({
       type="button"
       onClick={() => onSelectImage(idx)}
       className={`relative overflow-hidden border transition-all ${
-        idx === currentGalleryIndex ? "border-zinc-900" : "border-zinc-200 hover:border-zinc-400"
+        idx === currentGalleryIndex ? "border-bm-brand" : "border-bm-border hover:border-bm-border"
       } ${className}`}
       aria-label={`View image ${idx + 1}`}
     >
@@ -165,7 +165,7 @@ export default function ListingGallery({
       </button>
 
       <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-black">
-        {fullscreenImageLoading ? <ImageShimmer className="bg-zinc-950" /> : null}
+        {fullscreenImageLoading ? <ImageShimmer className="bg-bm-surface-muted" /> : null}
 
         <img
           src={getListingImageUrl(currentImage, "fullscreen")}
@@ -184,7 +184,7 @@ export default function ListingGallery({
             <button
               type="button"
               onClick={onPrevImage}
-              className="absolute left-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-900 hover:bg-white"
+              className="absolute left-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-bm-surface/90 text-bm-text hover:bg-bm-surface"
               aria-label="Previous image"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -192,7 +192,7 @@ export default function ListingGallery({
             <button
               type="button"
               onClick={onNextImage}
-              className="absolute right-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-900 hover:bg-white"
+              className="absolute right-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-bm-surface/90 text-bm-text hover:bg-bm-surface"
               aria-label="Next image"
             >
               <ChevronRight className="h-5 w-5" />
@@ -213,7 +213,7 @@ export default function ListingGallery({
           <button
             type="button"
             onClick={onShare}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-all hover:bg-zinc-50"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-bm-border bg-bm-surface text-bm-text-muted shadow-sm transition-all hover:bg-bm-surface-muted"
             aria-label="Share listing"
             title="Share listing"
           >
@@ -234,7 +234,7 @@ export default function ListingGallery({
             ) : null}
 
             <div
-              className={`relative min-w-0 w-full max-w-full overflow-hidden rounded-xl bg-zinc-50 aspect-[4/5] max-h-[330px] lg:max-h-[350px] ${
+              className={`relative min-w-0 w-full max-w-full overflow-hidden rounded-xl bg-bm-surface-muted aspect-[4/5] max-h-[330px] lg:max-h-[350px] ${
                 showThumbRail ? "" : "md:max-h-[420px] lg:max-h-[460px]"
               }`}
             >
@@ -255,7 +255,7 @@ export default function ListingGallery({
               <button
                 type="button"
                 onClick={onOpenFullscreen}
-                className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow transition-transform duration-200 hover:scale-105 hover:bg-white active:scale-95"
+                className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border border-bm-border bg-bm-surface/90 shadow transition-transform duration-200 hover:scale-105 hover:bg-bm-surface active:scale-95"
                 aria-label="Open fullscreen"
               >
                 <FullscreenToggleIcon isFullscreen={false} />
@@ -266,7 +266,7 @@ export default function ListingGallery({
                   <button
                     type="button"
                     onClick={onPrevImage}
-                    className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow hover:bg-white md:hidden"
+                    className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-bm-border bg-bm-surface/90 shadow hover:bg-bm-surface md:hidden"
                     aria-label="Previous image"
                   >
                     <ChevronLeft className="h-5 w-5" />
@@ -274,7 +274,7 @@ export default function ListingGallery({
                   <button
                     type="button"
                     onClick={onNextImage}
-                    className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow hover:bg-white md:hidden"
+                    className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-bm-border bg-bm-surface/90 shadow hover:bg-bm-surface md:hidden"
                     aria-label="Next image"
                   >
                     <ChevronRight className="h-5 w-5" />
@@ -296,7 +296,7 @@ export default function ListingGallery({
 
         {videoUrl ? (
           <div className="mt-3">
-            <div className="overflow-hidden rounded-2xl border border-blue-200 bg-black">
+            <div className="overflow-hidden rounded-2xl border border-bm-border bg-black">
               <video src={videoUrl} controls className="w-full" />
             </div>
           </div>

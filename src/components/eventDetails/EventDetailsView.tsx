@@ -429,9 +429,9 @@ export default function EventDetailsView() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-100 px-4">
-        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-sm font-medium text-zinc-600 shadow-lg shadow-zinc-200/50">
-          <Loader2 className="h-5 w-5 animate-spin text-zinc-700" />
+      <div className="flex min-h-screen items-center justify-center bg-bm-surface-muted px-4">
+        <div className="flex items-center gap-3 rounded-2xl border border-bm-border bg-bm-surface px-5 py-4 text-sm font-medium text-bm-text-muted shadow-lg shadow-zinc-200/50">
+          <Loader2 className="h-5 w-5 animate-spin text-bm-text-muted" />
           Loading event details...
         </div>
       </div>
@@ -440,12 +440,12 @@ export default function EventDetailsView() {
 
   if (error || !event) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-100 px-4">
-        <div className="w-full max-w-xl rounded-[2rem] border border-zinc-200 bg-white p-6 text-center shadow-xl shadow-zinc-200/60 sm:p-10">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-950 text-white"><Ticket className="h-6 w-6" /></div>
-          <h1 className="mt-5 text-2xl font-black tracking-[-0.05em] text-zinc-950">Event unavailable</h1>
-          <p className="mt-3 text-sm leading-relaxed text-zinc-600">{error || "This event could not be loaded."}</p>
-          <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800">Back to Events</button>
+      <div className="flex min-h-screen items-center justify-center bg-bm-surface-muted px-4">
+        <div className="w-full max-w-xl rounded-[2rem] border border-bm-border bg-bm-surface p-6 text-center shadow-xl shadow-zinc-200/60 sm:p-10">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-bm-brand text-bm-on-brand"><Ticket className="h-6 w-6" /></div>
+          <h1 className="mt-5 text-2xl font-black tracking-[-0.05em] text-bm-text">Event unavailable</h1>
+          <p className="mt-3 text-sm leading-relaxed text-bm-text-muted">{error || "This event could not be loaded."}</p>
+          <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover">Back to Events</button>
         </div>
       </div>
     );
@@ -462,7 +462,7 @@ export default function EventDetailsView() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <div className="min-h-screen bg-bm-surface-muted text-bm-text">
       <EventDetailsHeader isLoggedIn={!!firebaseUser} />
       <main className="mx-auto w-full max-w-7xl px-4 pb-10 pt-24 sm:pb-12">
         <div className="grid gap-8">
@@ -475,9 +475,9 @@ export default function EventDetailsView() {
 
       {ticketHolderOpen ? (
         <div className="fixed inset-0 z-[98] flex items-center justify-center p-4">
-          <button type="button" aria-label="Close ticket holder form" onClick={() => setTicketHolderOpen(false)} className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
-          <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
-            <button type="button" onClick={() => setTicketHolderOpen(false)} disabled={checkoutLoading} className="absolute right-4 top-4 rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700" aria-label="Close"><X className="h-5 w-5" /></button>
+          <button type="button" aria-label="Close ticket holder form" onClick={() => setTicketHolderOpen(false)} className="absolute inset-0 bg-bm-brand/60 backdrop-blur-sm" />
+          <div className="relative w-full max-w-md rounded-3xl bg-bm-surface p-6 shadow-2xl">
+            <button type="button" onClick={() => setTicketHolderOpen(false)} disabled={checkoutLoading} className="absolute right-4 top-4 rounded-full p-2 text-bm-text-subtle hover:bg-bm-surface-muted hover:text-bm-text-muted" aria-label="Close"><X className="h-5 w-5" /></button>
             <TicketHolderForm initialValue={holderInitialValue} onSubmit={submitTicketHolder} onCancel={() => setTicketHolderOpen(false)} submitting={checkoutLoading} />
           </div>
         </div>

@@ -16,9 +16,9 @@ function Item({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-      <p className="text-xs font-bold uppercase tracking-wide text-zinc-500">{label}</p>
-      <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-zinc-900">
+    <div className="rounded-2xl border border-bm-border bg-bm-surface-muted px-4 py-3">
+      <p className="text-xs font-bold uppercase tracking-wide text-bm-text-subtle">{label}</p>
+      <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-bm-text">
         {icon}
         {value}
       </p>
@@ -28,18 +28,18 @@ function Item({
 
 export default function SellerOrderPayoutPanel({ model }: SellerOrderPayoutPanelProps) {
   return (
-    <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+    <div className="rounded-[2rem] border border-bm-border bg-bm-surface p-5 shadow-sm sm:p-6">
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-zinc-900 text-white">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-bm-brand text-bm-on-brand">
           <Wallet className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Seller payout</p>
-          <h3 className="mt-1 text-lg font-black text-zinc-950">{model.payoutStatusLabel}</h3>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-bm-text-subtle">Seller payout</p>
+          <h3 className="mt-1 text-lg font-black text-bm-text">{model.payoutStatusLabel}</h3>
         </div>
       </div>
 
-      <p className="mt-4 text-sm leading-6 text-zinc-600">{model.payoutStatusDetail}</p>
+      <p className="mt-4 text-sm leading-6 text-bm-text-muted">{model.payoutStatusDetail}</p>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <Item icon={<BadgeCheck className="h-4 w-4" />} label="Payment captured" value={model.paymentCapturedLabel} />
@@ -48,7 +48,7 @@ export default function SellerOrderPayoutPanel({ model }: SellerOrderPayoutPanel
         <Item icon={<Wallet className="h-4 w-4" />} label="Destination" value={model.payoutDestinationMask} />
       </div>
 
-      <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <div className="mt-4 rounded-2xl border border-bm-border bg-bm-warning-bg px-4 py-3 text-sm text-bm-text-muted">
         <div className="flex items-center gap-2 font-black">
           <ShieldAlert className="h-4 w-4" />
           Next step

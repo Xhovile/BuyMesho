@@ -247,26 +247,26 @@ export default function LoginPage() {
 
   if (authTransition) {
     return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(30,41,59,0.08),_transparent_35%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_48%,_#f8fafc_100%)] text-zinc-900">
+      <div className="min-h-screen bg-bm-bg text-bm-text dark:text-bm-text">
         <main className="mx-auto flex min-h-screen max-w-xl items-center justify-center px-4 py-10">
-          <section className="w-full rounded-[2rem] border border-white/80 bg-white/90 p-8 text-center shadow-[0_24px_70px_rgba(15,23,42,0.12)] backdrop-blur sm:p-10">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+          <section className="w-full rounded-[2rem] border border-bm-border bg-bm-surface/90 dark:bg-bm-surface/90 p-8 text-center shadow-[0_24px_70px_rgba(15,23,42,0.12)] backdrop-blur sm:p-10">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-bm-success-bg text-bm-success">
               <span className="text-2xl font-black">✓</span>
             </div>
-            <p className="mt-6 text-xs font-extrabold uppercase tracking-[0.2em] text-emerald-600">Account</p>
+            <p className="mt-6 text-xs font-extrabold uppercase tracking-[0.2em] text-bm-success">Account</p>
             <h1 className="mt-2 text-3xl font-black tracking-tight">You’re signed in</h1>
-            <p className="mt-3 text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">
+            <p className="mt-3 text-sm font-medium leading-relaxed text-bm-text-muted dark:text-bm-text-muted sm:text-base">
               {authTransition.redirecting
                 ? `Your session is ready. Redirecting you to ${authTransition.destinationLabel ?? "your destination"}.`
                 : "Your BuyMesho session is ready."}
             </p>
             {authTransition.redirecting ? (
-              <div className="mt-8 flex items-center justify-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-sm font-bold text-zinc-700">
+              <div className="mt-8 flex items-center justify-center gap-3 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-4 text-sm font-bold text-bm-text-muted dark:text-bm-text-muted">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 Redirecting…
               </div>
             ) : (
-              <button type="button" onClick={() => setAuthTransition(null)} className="mt-8 inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3 font-bold text-white hover:bg-zinc-800">
+              <button type="button" onClick={() => setAuthTransition(null)} className="mt-8 inline-flex items-center justify-center rounded-2xl bg-bm-brand px-5 py-3 font-bold text-bm-on-brand hover:bg-bm-brand-hover">
                 Continue
               </button>
             )}
@@ -291,33 +291,33 @@ export default function LoginPage() {
       >
         <form onSubmit={handleLogin} className="w-full space-y-6">
           <div>
-            <label className="mb-2 block text-sm font-medium text-zinc-600">Email Address</label>
-            <input required type="email" value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 text-base outline-none transition focus:border-zinc-900" />
+            <label className="mb-2 block text-sm font-medium text-bm-text-muted dark:text-bm-text-muted">Email Address</label>
+            <input required type="email" value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} className="w-full border-0 border-b border-bm-border dark:border-bm-border bg-transparent px-0 py-3 text-base outline-none transition focus:border-bm-brand" />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium text-zinc-600">Password</label>
-            <div className="relative"><input required type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 pr-10 text-base outline-none transition focus:border-zinc-900" /><button type="button" onClick={() => setShowPassword((prev) => !prev)} className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 transition-colors hover:text-zinc-800" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button></div>
+            <label className="mb-2 block text-sm font-medium text-bm-text-muted dark:text-bm-text-muted">Password</label>
+            <div className="relative"><input required type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))} className="w-full border-0 border-b border-bm-border dark:border-bm-border bg-transparent px-0 py-3 pr-10 text-base outline-none transition focus:border-bm-brand" /><button type="button" onClick={() => setShowPassword((prev) => !prev)} className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-bm-text-subtle dark:text-bm-text-subtle transition-colors hover:text-bm-text" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button></div>
           </div>
-          {!isValidatorEntry && <div className="flex items-center justify-between gap-4 text-sm font-bold"><button type="button" onClick={() => navigateToPath("/forgot-password")} className="text-primary hover:underline">Forgot Password?</button><button type="button" onClick={() => navigateToSignup()} className="text-zinc-500 hover:text-zinc-900 hover:underline">Create account</button></div>}
-          <button type="submit" disabled={loading} className="flex min-w-[180px] items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 font-bold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Log In"}</button>
+          {!isValidatorEntry && <div className="flex items-center justify-between gap-4 text-sm font-bold"><button type="button" onClick={() => navigateToPath("/forgot-password")} className="text-bm-brand hover:underline">Forgot Password?</button><button type="button" onClick={() => navigateToSignup()} className="text-bm-text-subtle dark:text-bm-text-subtle hover:text-bm-text hover:underline">Create account</button></div>}
+          <button type="submit" disabled={loading} className="flex min-w-[180px] items-center justify-center gap-2 rounded-2xl bg-bm-brand px-6 py-3 font-bold text-bm-on-brand transition-colors hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Log In"}</button>
         </form>
 
         {passkeysAvailable && (
           <div className="mt-8 w-full">
             <div className="relative flex items-center justify-center">
-              <div className="absolute inset-x-0 h-px bg-zinc-200" />
-              <span className="relative bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">or</span>
+              <div className="absolute inset-x-0 h-px bg-bm-skeleton dark:bg-bm-skeleton" />
+              <span className="relative bg-bm-surface px-4 text-xs font-bold uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">or</span>
             </div>
             <button
               type="button"
               onClick={handlePasskeyLogin}
               disabled={loading || Boolean(authTransition)}
-              className="mt-6 flex w-full items-center justify-center gap-3 rounded-2xl border border-zinc-300 bg-white px-6 py-3.5 font-bold text-zinc-900 transition hover:border-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 flex w-full items-center justify-center gap-3 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-6 py-3.5 font-bold text-bm-text dark:text-bm-text transition hover:border-bm-brand hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Fingerprint className="h-5 w-5" />
               Sign in with passkey
             </button>
-            <p className="mt-2 text-center text-xs font-medium text-zinc-500">Use your fingerprint, Face ID, device PIN, or security key.</p>
+            <p className="mt-2 text-center text-xs font-medium text-bm-text-subtle dark:text-bm-text-subtle">Use your fingerprint, Face ID, device PIN, or security key.</p>
           </div>
         )}
 

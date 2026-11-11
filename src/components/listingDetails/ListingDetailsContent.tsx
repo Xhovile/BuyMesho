@@ -100,7 +100,7 @@ export default function ListingDetailsContent({
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <div className="min-h-screen bg-bm-surface-muted text-bm-text">
       <FloatingCartButton isLoggedIn={isLoggedIn} />
       <ListingHeaderBar
         onBack={() => {
@@ -177,12 +177,12 @@ export default function ListingDetailsContent({
 
             <section className="scroll-mt-32 pt-12">
               <div className="space-y-4">
-                <div className="space-y-2 border-b border-zinc-200 pb-4">
-                  <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-600">Seller Info</p>
-                  <h2 className="font-serif text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">
+                <div className="space-y-2 border-b border-bm-border pb-4">
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-bm-text-muted">Seller Info</p>
+                  <h2 className="font-serif text-3xl font-bold tracking-tight text-bm-text sm:text-4xl">
                     Seller profile
                   </h2>
-                  <p className="max-w-3xl text-sm leading-6 text-zinc-500">
+                  <p className="max-w-3xl text-sm leading-6 text-bm-text-subtle">
                     View the seller&apos;s profile and trust signals before reading reviews.
                   </p>
                 </div>

@@ -62,12 +62,12 @@ export default function ConnectCallbackPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="flex flex-col items-center gap-4 text-center">
-        <p className="text-sm font-medium text-zinc-700">{message}</p>
+        <p className="text-sm font-medium text-bm-text-muted">{message}</p>
         {message !== "Connected. Redirecting..." ? (
           <button
             type="button"
             onClick={() => navigateToPath(SELLER_PAYOUTS_PATH, { replace: true })}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50"
+            className="rounded-2xl border border-bm-border bg-bm-surface px-4 py-2 text-sm font-semibold text-bm-text-muted shadow-sm hover:bg-bm-surface-subtle"
           >
             Back to payouts
           </button>

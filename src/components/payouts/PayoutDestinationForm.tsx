@@ -80,18 +80,18 @@ export default function PayoutDestinationForm({
   return (
     <div>
       {error ? (
-        <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+        <div className="mb-5 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm font-semibold text-bm-danger">
           {error}
         </div>
       ) : null}
 
       <div className="grid gap-4">
         <label className="space-y-2">
-          <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-zinc-400">Destination type</span>
+          <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-bm-text-subtle">Destination type</span>
           <select
             value={value.destinationType}
             onChange={(event) => onChange({ ...value, destinationType: event.target.value as PayoutDestinationType, providerName: "", providerRefId: "" })}
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3.5 text-sm font-semibold outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+            className="w-full rounded-2xl border border-bm-border bg-bm-surface px-4 py-3.5 text-sm font-semibold outline-none transition focus:border-bm-brand disabled:bg-bm-surface-muted disabled:text-bm-text-subtle"
             disabled={loading || disabled}
             required
           >
@@ -116,11 +116,11 @@ export default function PayoutDestinationForm({
         />
 
         <label className="space-y-2">
-          <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-zinc-400">Account holder name</span>
+          <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-bm-text-subtle">Account holder name</span>
           <input
             value={value.accountName}
             onChange={(event) => updateValue("accountName", event.target.value)}
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3.5 text-sm font-semibold outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+            className="w-full rounded-2xl border border-bm-border bg-bm-surface px-4 py-3.5 text-sm font-semibold outline-none transition focus:border-bm-brand disabled:bg-bm-surface-muted disabled:text-bm-text-subtle"
             placeholder="Name on the receiving account"
             disabled={loading || disabled}
             required
@@ -130,11 +130,11 @@ export default function PayoutDestinationForm({
 
         {value.destinationType === "bank" ? (
           <label className="space-y-2">
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-zinc-400">Bank account number</span>
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-bm-text-subtle">Bank account number</span>
             <input
               value={value.accountNumber}
               onChange={(event) => updateValue("accountNumber", event.target.value)}
-              className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3.5 text-sm font-semibold outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+              className="w-full rounded-2xl border border-bm-border bg-bm-surface px-4 py-3.5 text-sm font-semibold outline-none transition focus:border-bm-brand disabled:bg-bm-surface-muted disabled:text-bm-text-subtle"
               placeholder="Bank account number"
               inputMode="numeric"
               autoComplete="off"
@@ -144,11 +144,11 @@ export default function PayoutDestinationForm({
           </label>
         ) : (
           <label className="space-y-2">
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-zinc-400">Mobile number</span>
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-bm-text-subtle">Mobile number</span>
             <input
               value={value.mobile}
               onChange={(event) => updateValue("mobile", event.target.value)}
-              className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3.5 text-sm font-semibold outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+              className="w-full rounded-2xl border border-bm-border bg-bm-surface px-4 py-3.5 text-sm font-semibold outline-none transition focus:border-bm-brand disabled:bg-bm-surface-muted disabled:text-bm-text-subtle"
               placeholder={mobilePlaceholder}
               inputMode="tel"
               autoComplete="tel"
@@ -166,8 +166,8 @@ export default function PayoutDestinationForm({
           disabled={loading || disabled}
           className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold transition disabled:opacity-60 ${
             value.isDefault
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-              : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+              ? "border-bm-success/25 bg-bm-success-bg text-bm-success"
+              : "border-bm-border bg-bm-surface text-bm-text-muted hover:bg-bm-surface-muted"
           }`}
         >
           <ShieldCheck className="h-4 w-4" />
@@ -180,7 +180,7 @@ export default function PayoutDestinationForm({
               type="button"
               onClick={onCancel}
               disabled={loading}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-60 sm:flex-none"
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-bm-border bg-bm-surface px-4 py-3 text-sm font-bold text-bm-text-muted hover:bg-bm-surface-muted disabled:opacity-60 sm:flex-none"
             >
               <X className="h-4 w-4" />
               Cancel
@@ -190,7 +190,7 @@ export default function PayoutDestinationForm({
             type="button"
             onClick={() => void onSave()}
             disabled={loading || disabled}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-60 sm:flex-none"
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover disabled:opacity-60 sm:flex-none"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             {isEditing ? "Replace account" : "Save account"}

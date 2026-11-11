@@ -8,7 +8,7 @@ type MarketHeaderBarProps = {
 
 export default function MarketHeaderBar({ subtitle }: MarketHeaderBarProps) {
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 border-b border-bm-border/80 bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
         <BrandMark subtitle={subtitle} />
 
@@ -16,14 +16,14 @@ export default function MarketHeaderBar({ subtitle }: MarketHeaderBarProps) {
           <button
             type="button"
             onClick={() => navigateToPath(EXPLORE_PATH)}
-            className="hidden rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 sm:inline-flex"
+            className="hidden rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted sm:inline-flex"
           >
             Market
           </button>
           <button
             type="button"
             onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-            className="rounded-2xl border border-zinc-900 bg-black px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+            className="rounded-2xl border border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-text hover:bg-bm-surface-muted"
           >
             <span className="inline-flex items-center gap-2">
               <ChevronLeft className="h-4 w-4" />

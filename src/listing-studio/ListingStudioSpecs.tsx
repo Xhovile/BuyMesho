@@ -41,8 +41,8 @@ export default function ListingStudioSpecs({
     };
 
     const fieldShellClass = error ? "rounded-xl ring-2 ring-red-200" : "";
-    const inputClass = `w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${
-      error ? "border-red-500" : "border-zinc-200"
+    const inputClass = `w-full rounded-2xl border bg-bm-surface px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${
+      error ? "border-red-500" : "border-bm-border"
     }`;
 
     if (field.type === "select") {
@@ -63,7 +63,7 @@ export default function ListingStudioSpecs({
     if (field.type === "textarea") {
       return (
         <div key={field.key} id={`listing-spec-${field.key}`} className={fieldShellClass}>
-          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-bm-text-subtle">{label}</label>
           <textarea
             value={String(value)}
             onChange={(event) => update(event.target.value)}
@@ -78,7 +78,7 @@ export default function ListingStudioSpecs({
       const boolValue = typeof rawValue === "boolean" ? rawValue : null;
       return (
         <div key={field.key} id={`listing-spec-${field.key}`} className={fieldShellClass}>
-          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-bm-text-subtle">{label}</label>
           <div className="grid grid-cols-3 gap-2">
             {[
               { label: "Not set", value: null },
@@ -91,8 +91,8 @@ export default function ListingStudioSpecs({
                 onClick={() => update(item.value)}
                 className={`rounded-2xl border px-3 py-2 text-sm font-bold ${
                   boolValue === item.value
-                    ? "border-zinc-900 bg-zinc-900 text-white"
-                    : "border-zinc-200 bg-white text-zinc-600"
+                    ? "border-bm-brand bg-bm-brand text-bm-on-brand"
+                    : "border-bm-border bg-bm-surface text-bm-text-muted"
                 }`}
               >
                 {item.label}
@@ -108,12 +108,12 @@ export default function ListingStudioSpecs({
       const selectedValues = Array.isArray(rawValue) ? rawValue : [];
       return (
         <div key={field.key} id={`listing-spec-${field.key}`} className={fieldShellClass}>
-          <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
-          <div className={`grid grid-cols-2 gap-2 rounded-2xl border bg-white p-3 ${error ? "border-red-500" : "border-zinc-200"}`}>
+          <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-bm-text-subtle">{label}</label>
+          <div className={`grid grid-cols-2 gap-2 rounded-2xl border bg-bm-surface p-3 ${error ? "border-red-500" : "border-bm-border"}`}>
             {(field.options || []).map((option) => {
               const checked = selectedValues.includes(option);
               return (
-                <label key={option} className="flex items-center gap-2 text-sm text-zinc-700">
+                <label key={option} className="flex items-center gap-2 text-sm text-bm-text-muted">
                   <input
                     type="checkbox"
                     checked={checked}
@@ -138,7 +138,7 @@ export default function ListingStudioSpecs({
     if (field.type === "number") {
       return (
         <div key={field.key} id={`listing-spec-${field.key}`} className={fieldShellClass}>
-          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-bm-text-subtle">{label}</label>
           <input
             type="number"
             value={value === "" ? "" : String(value)}
@@ -152,7 +152,7 @@ export default function ListingStudioSpecs({
 
     return (
       <div key={field.key} id={`listing-spec-${field.key}`} className={fieldShellClass}>
-        <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
+        <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-bm-text-subtle">{label}</label>
         <input
           type="text"
           value={String(value)}
@@ -167,20 +167,20 @@ export default function ListingStudioSpecs({
   if (!basicFields.length && !advancedFields.length) return null;
 
   return (
-    <section className="space-y-5 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+    <section className="space-y-5 rounded-3xl border border-bm-border bg-bm-surface p-5 shadow-sm sm:p-6">
       <div>
-        <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">Specifications</p>
+        <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle">Specifications</p>
         <h2 className="mt-1 text-lg font-black text-zinc-900">Describe the actual item</h2>
       </div>
 
       {basicFields.length ? <div className="grid gap-4 md:grid-cols-2">{basicFields.map(renderField)}</div> : null}
 
       {advancedFields.length ? (
-        <div className="border-t border-zinc-100 pt-5">
+        <div className="border-t border-bm-border-subtle pt-5">
           <button
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="text-left text-sm font-extrabold text-zinc-800"
+            className="text-left text-sm font-extrabold text-bm-text"
           >
             {showAdvanced ? "Hide advanced specifications" : "Show advanced specifications"}
           </button>

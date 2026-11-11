@@ -207,10 +207,10 @@ function toDate(value: string | null | undefined) {
 
 function statusTone(status: string) {
   const normalized = String(status || "").toLowerCase();
-  if (normalized === "paid") return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  if (["failed", "cancelled"].includes(normalized)) return "border-rose-200 bg-rose-50 text-rose-700";
-  if (PENDING_STATES.includes(normalized)) return "border-amber-200 bg-amber-50 text-amber-700";
-  return "border-zinc-200 bg-zinc-100 text-zinc-700";
+  if (normalized === "paid") return "border-bm-success/35 bg-bm-success-bg text-bm-success";
+  if (["failed", "cancelled"].includes(normalized)) return "border-bm-danger/35 bg-bm-danger-bg text-bm-danger";
+  if (PENDING_STATES.includes(normalized)) return "border-bm-warning/35 bg-bm-warning-bg text-bm-warning";
+  return "border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted";
 }
 
 function formatStatus(value: string | null | undefined) {
@@ -277,9 +277,9 @@ function canAction(row: PayoutRow, action: RowAction) {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-      <p className="mt-1 text-2xl font-black tracking-tight text-zinc-900">{value}</p>
+    <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm">
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">{label}</p>
+      <p className="mt-1 text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">{value}</p>
     </div>
   );
 }
@@ -810,8 +810,8 @@ export default function AdminPayoutsManager() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
-        <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
+      <div className="flex min-h-screen items-center justify-center bg-bm-surface-muted dark:bg-bm-surface-subtle">
+        <Loader2 className="h-5 w-5 animate-spin text-bm-text-subtle dark:text-bm-text-subtle" />
       </div>
     );
   }
@@ -819,12 +819,12 @@ export default function AdminPayoutsManager() {
   return (
     <AdminWorkspaceLayout title="Payout queue" description="Manage payout lifecycle, review exact failure reasons, and reconcile provider state.">
       <div className="space-y-6">
-        <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+        <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Admin payouts</p>
-              <h1 className="mt-1 text-2xl font-black tracking-tight text-zinc-950">Payout queue</h1>
-              <p className="mt-1 text-sm text-zinc-500">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Admin payouts</p>
+              <h1 className="mt-1 text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">Payout queue</h1>
+              <p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                 Manage payout lifecycle, review exact failure reasons, and reconcile provider state.
               </p>
             </div>
@@ -832,7 +832,7 @@ export default function AdminPayoutsManager() {
               <button
                 type="button"
                 onClick={handleRefresh}
-                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+                className="inline-flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-text-muted dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
               >
                 <RefreshCw className="h-4 w-4" />
                 Refresh
@@ -841,7 +841,7 @@ export default function AdminPayoutsManager() {
                 type="button"
                 onClick={handleBulkReconcile}
                 disabled={batchReconciling}
-                className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover disabled:opacity-50"
               >
                 {batchReconciling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock3 className="h-4 w-4" />}
                 Reconcile batch
@@ -849,7 +849,7 @@ export default function AdminPayoutsManager() {
               <button
                 type="button"
                 onClick={handleExportCsv}
-                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+                className="inline-flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-text-muted dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
               >
                 {"Export CSV"}
               </button>
@@ -861,8 +861,8 @@ export default function AdminPayoutsManager() {
           <div
             className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${
               notice.type === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border-rose-200 bg-rose-50 text-rose-800"
+                ? "border-bm-success/35 bg-bm-success-bg text-bm-success"
+                : "border-bm-danger/35 bg-bm-danger-bg text-bm-danger"
             }`}
           >
             {notice.message}
@@ -870,7 +870,7 @@ export default function AdminPayoutsManager() {
         ) : null}
 
         {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">
+          <div className="rounded-2xl border border-bm-danger/35 bg-bm-danger-bg px-4 py-3 text-sm font-semibold text-bm-danger">
             {error}
           </div>
         ) : null}
@@ -882,7 +882,7 @@ export default function AdminPayoutsManager() {
           <Stat label="Failed" value={summary.summary?.failedPayouts ?? 0} />
         </div>
 
-        <div className="flex flex-wrap gap-3 rounded-[2rem] border border-zinc-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap gap-3 rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm">
           <FormDropdown
             label="Status filter"
             value={statusFilter}
@@ -894,23 +894,23 @@ export default function AdminPayoutsManager() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search payout, seller, order, provider..."
-            className="min-w-[260px] flex-1 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm outline-none transition focus:border-zinc-400"
+            className="min-w-[260px] flex-1 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-sm outline-none transition focus:border-bm-focus"
           />
-          <label className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-600">
+          <label className="inline-flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-sm font-semibold text-bm-text-muted dark:text-bm-text-muted">
             <input
               type="checkbox"
               checked={retryEligibleOnly}
               onChange={(event) => setRetryEligibleOnly(event.target.checked)}
-              className="h-4 w-4 rounded border-zinc-300"
+              className="h-4 w-4 rounded border-bm-border dark:border-bm-border"
             />
             Retry eligible only
           </label>
         </div>
 
-        <div className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
+        <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-zinc-200 text-sm">
-              <thead className="bg-zinc-50 text-left text-zinc-500">
+            <table className="min-w-full divide-y divide-bm-border dark:divide-bm-border text-sm">
+              <thead className="bg-bm-surface-muted dark:bg-bm-surface-subtle text-left text-bm-text-subtle dark:text-bm-text-subtle">
                 <tr>
                   <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Status</th>
                   <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Seller</th>
@@ -919,17 +919,17 @@ export default function AdminPayoutsManager() {
                   <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Updated</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100">
+              <tbody className="divide-y divide-bm-border-subtle dark:divide-bm-border-subtle">
                 {filteredRows.map((row) => (
-                  <tr key={row.id} className="cursor-pointer hover:bg-zinc-50" onClick={() => handleOpenDrawer(row.id)}>
+                  <tr key={row.id} className="cursor-pointer hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted" onClick={() => handleOpenDrawer(row.id)}>
                     <td className="px-4 py-4">
                       <div className="space-y-2">
                         <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${statusTone(row.status)}`}>
                           {formatStatus(row.status)}
                         </span>
                         {row.status === "held" || row.status === "failed" ? (
-                          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                            <div className="font-black text-amber-950">Exact error</div>
+                          <div className="rounded-2xl border border-bm-warning/35 bg-bm-warning-bg px-3 py-2 text-xs text-bm-warning">
+                            <div className="font-black text-bm-warning">Exact error</div>
                             <div className="mt-1 leading-5">
                               {row.lastError ?? row.holdReason ?? row.manualReviewReason ?? row.latestAttemptFailureReason ?? row.failureReason ?? "Awaiting detail"}
                             </div>
@@ -937,17 +937,17 @@ export default function AdminPayoutsManager() {
                         ) : null}
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-zinc-600">{row.sellerId}</td>
-                    <td className="px-4 py-4 text-zinc-600">
+                    <td className="px-4 py-4 text-bm-text-muted dark:text-bm-text-muted">{row.sellerId}</td>
+                    <td className="px-4 py-4 text-bm-text-muted dark:text-bm-text-muted">
                       {Number(row.amount).toLocaleString()} {row.currency}
                     </td>
-                    <td className="px-4 py-4 text-zinc-600">
+                    <td className="px-4 py-4 text-bm-text-muted dark:text-bm-text-muted">
                       <div className="space-y-1">
-                        <div className="font-semibold text-zinc-900">{row.provider ?? "paychangu"}</div>
-                        <div className="text-xs text-zinc-500">{row.providerReference ?? row.providerChargeId ?? "—"}</div>
+                        <div className="font-semibold text-bm-text dark:text-bm-text">{row.provider ?? "paychangu"}</div>
+                        <div className="text-xs text-bm-text-subtle dark:text-bm-text-subtle">{row.providerReference ?? row.providerChargeId ?? "—"}</div>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-zinc-600">{toDate(row.updatedAt)}</td>
+                    <td className="px-4 py-4 text-bm-text-muted dark:text-bm-text-muted">{toDate(row.updatedAt)}</td>
                   </tr>
                 ))}
               </tbody>

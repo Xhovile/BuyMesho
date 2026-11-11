@@ -38,10 +38,10 @@ function getReferenceFromUrl() {
 
 function LoadingState() {
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+    <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text dark:text-bm-text">
       <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-10">
-        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-600 shadow-sm">
-          <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
+        <div className="flex items-center gap-3 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm font-semibold text-bm-text-muted dark:text-bm-text-muted shadow-sm">
+          <Loader2 className="h-4 w-4 animate-spin text-bm-text-subtle dark:text-bm-text-subtle" />
           Loading order details…
         </div>
       </div>
@@ -51,9 +51,9 @@ function LoadingState() {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+    <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text dark:text-bm-text">
       <div className="mx-auto flex min-h-screen max-w-4xl items-center justify-center px-4 py-10">
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">
           {message}
         </div>
       </div>
@@ -302,26 +302,26 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+    <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text dark:text-bm-text">
       <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
-        <div className="mt-8 border-b border-zinc-200 pb-6">
+        <div className="mt-8 border-b border-bm-border dark:border-bm-border pb-6">
           <div className="flex flex-wrap items-start gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-900">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text">
               <Truck className="h-5 w-5" />
             </div>
 
             <div className="max-w-3xl space-y-2">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">BUYER ORDER TRACKING</p>
-              <h1 className="text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">ORDER STATUS OVERVIEW</h1>
-              <p className="text-sm leading-7 text-zinc-600 sm:text-base">Monitor payment, escrow, and delivery progress in one place.</p>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">BUYER ORDER TRACKING</p>
+              <h1 className="text-3xl font-black tracking-tight text-bm-text dark:text-bm-text sm:text-4xl">ORDER STATUS OVERVIEW</h1>
+              <p className="text-sm leading-7 text-bm-text-muted dark:text-bm-text-muted sm:text-base">Monitor payment, escrow, and delivery progress in one place.</p>
             </div>
           </div>
         </div>
 
         {loading ? (
-          <div className="mt-6 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm leading-6 text-zinc-600">Loading order details…</div>
+          <div className="mt-6 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted">Loading order details…</div>
         ) : error ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">{error}</div>
+          <div className="mt-6 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm leading-6 text-bm-danger">{error}</div>
         ) : order ? (
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="space-y-6">
@@ -333,14 +333,14 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
               />
 
               {mixedHasEvent ? (
-                <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Linked ticket</p>
+                <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 sm:p-6">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Linked ticket</p>
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h2 className="text-xl font-black tracking-tight text-zinc-950">This order includes an event ticket</h2>
-                      <p className="mt-1 text-sm text-zinc-600">Open Tickets for ticket details.</p>
+                      <h2 className="text-xl font-black tracking-tight text-bm-text dark:text-bm-text">This order includes an event ticket</h2>
+                      <p className="mt-1 text-sm text-bm-text-muted dark:text-bm-text-muted">Open Tickets for ticket details.</p>
                     </div>
-                    <button type="button" onClick={() => navigateToPath(`/tickets?reference=${encodeURIComponent(effectiveReference ?? "")}`)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800">
+                    <button type="button" onClick={() => navigateToPath(`/tickets?reference=${encodeURIComponent(effectiveReference ?? "")}`)} className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover">
                       <ExternalLink className="h-4 w-4" />
                       Open tickets
                     </button>
@@ -354,8 +354,8 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
             <div className="space-y-6">
               <OrderDetailsCard reference={effectiveReference} firstItemTitle={firstItemTitle} items={order.items} paymentStatus={paymentStatus} orderStatus={order.status} escrowState={escrowState} orderId={order.id} totalCurrency={totalCurrency} totalAmount={totalAmount} sellerPayout={null} />
 
-              <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
-                <h2 className="text-lg font-black text-zinc-950">Delivery and dispute</h2>
+              <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 sm:p-6">
+                <h2 className="text-lg font-black text-bm-text dark:text-bm-text">Delivery and dispute</h2>
                 <div className="mt-4">
                   <DisputeActionsCard
                     submitting={submitting}

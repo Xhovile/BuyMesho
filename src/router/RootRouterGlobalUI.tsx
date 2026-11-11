@@ -33,7 +33,7 @@ export function RouteLoader() {
           <h1 className="mt-5 text-2xl font-black uppercase tracking-[0.16em] text-[#8f1528] sm:text-3xl">
             Xhovilé Studio
           </h1>
-          <p className="mt-2 text-sm font-medium text-zinc-500">
+          <p className="mt-2 text-sm font-medium text-zinc-500 dark:text-bm-text-subtle">
             Preparing your secure service payment…
           </p>
           <div className="mt-5 h-1 w-24 overflow-hidden rounded-full bg-[#8f1528]/10">
@@ -84,7 +84,7 @@ export function RouteLoader() {
         <h1 className="mt-7 text-2xl font-black tracking-tight sm:text-3xl" aria-label="BuyMesho">
           <span className="text-[#991b1b]">Buy</span><span className="text-[#3f3f46]">Mesho</span>
         </h1>
-        <p className="mt-2 max-w-xs text-sm font-medium leading-6 text-zinc-500 sm:max-w-sm sm:text-base">
+        <p className="mt-2 max-w-xs text-sm font-medium leading-6 text-zinc-500 dark:text-bm-text-subtle sm:max-w-sm sm:text-base">
           Malawi&apos;s Secure E-commerce Platform
         </p>
       </div>
@@ -109,11 +109,11 @@ export class DebugErrorBoundary extends Component<{ children: ReactNode }, { has
   override render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-white p-6 text-zinc-900">
+        <div className="min-h-screen bg-white p-6 text-zinc-900 dark:text-bm-text">
           <div className="mx-auto max-w-3xl rounded-2xl border border-rose-200 bg-rose-50 p-5">
             <h2 className="text-lg font-black text-rose-900">Admin Payouts crashed</h2>
             <p className="mt-2 text-sm text-rose-900/90">{this.state.error?.message}</p>
-            <pre className="mt-4 overflow-auto rounded-xl bg-white p-4 text-xs leading-6 text-zinc-800">{this.state.error?.stack}</pre>
+            <pre className="mt-4 overflow-auto rounded-xl bg-white p-4 text-xs leading-6 text-zinc-800 dark:text-bm-text-muted">{this.state.error?.stack}</pre>
           </div>
         </div>
       );

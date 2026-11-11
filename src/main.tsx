@@ -1,6 +1,7 @@
 import { Component, StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import RootRouter from './RootRouter.tsx';
+import { ThemeProvider } from './theme/ThemeProvider';
 import MarketplaceShell from './components/MarketplaceShell';
 import { ToastProvider } from './components/Toast.tsx';
 import './index.css';
@@ -140,7 +141,8 @@ function upsertLink(rel: string, href: string, type?: string) {
 
 function setBrandMetadata() {
   upsertMeta('application-name', 'BuyMesho');
-  upsertMeta('theme-color', '#111827');
+  const activeTheme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+  upsertMeta('theme-color', activeTheme === 'dark' ? '#0B0F16' : '#FAFAFA');
   upsertMeta('description', "BuyMesho is Malawi's secure e-commerce platform for discovering and buying products, services, and tickets from sellers across the country.");
 
   // Keep the canonical BuyMesho SVG on browser-facing favicon surfaces.
@@ -294,14 +296,16 @@ const isStandaloneServicePage = isXhovileStudioPath(window.location.pathname);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AppErrorBoundary>
-      <ToastProvider>
-        {isStandaloneServicePage ? <RootRouter /> : (
-          <MarketplaceShell>
-            <RootRouter />
-          </MarketplaceShell>
-        )}
-      </ToastProvider>
-    </AppErrorBoundary>
+    <ThemeProvider>
+      <AppErrorBoundary>
+        <ToastProvider>
+          {isStandaloneServicePage ? <RootRouter /> : (
+            <MarketplaceShell>
+              <RootRouter />
+            </MarketplaceShell>
+          )}
+        </ToastProvider>
+      </AppErrorBoundary>
+    </ThemeProvider>
   </StrictMode>,
 );

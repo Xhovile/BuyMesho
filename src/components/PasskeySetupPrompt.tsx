@@ -93,12 +93,12 @@ export default function PasskeySetupPrompt() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-zinc-950/45 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.28)]">
-        <div className="flex items-start justify-between gap-4 border-b border-zinc-100 px-6 py-5">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-bm-overlay p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-[2rem] border border-bm-border bg-bm-surface shadow-[0_30px_90px_rgba(15,23,42,0.28)]">
+        <div className="flex items-start justify-between gap-4 border-b border-bm-border-subtle px-6 py-5">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">Security</p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight text-zinc-950">Set up a passkey?</h2>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">Security</p>
+            <h2 className="mt-1 text-2xl font-black tracking-tight text-bm-text">Set up a passkey?</h2>
           </div>
           <button
             type="button"
@@ -107,7 +107,7 @@ export default function PasskeySetupPrompt() {
               close();
             }}
             disabled={state === "busy"}
-            className="rounded-full p-2 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full p-2 text-bm-text-subtle transition hover:bg-bm-surface-muted hover:text-bm-text disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close passkey setup"
           >
             <X className="h-5 w-5" />
@@ -117,24 +117,24 @@ export default function PasskeySetupPrompt() {
         <div className="px-6 py-6">
           {state === "success" ? (
             <div className="py-4 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-bm-success-bg text-bm-success">
                 <ShieldCheck className="h-8 w-8" />
               </div>
-              <h3 className="mt-5 text-xl font-black text-zinc-950">Passkey added</h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-600">
+              <h3 className="mt-5 text-xl font-black text-bm-text">Passkey added</h3>
+              <p className="mt-2 text-sm leading-relaxed text-bm-text-muted">
                 This device can now sign you in securely with your device authentication.
               </p>
             </div>
           ) : (
             <>
-              <div className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50 p-5">
+              <div className="rounded-[1.5rem] border border-bm-border bg-bm-surface-muted p-5">
                 <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-zinc-900 shadow-sm">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-bm-surface text-bm-text shadow-sm">
                     <Fingerprint className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="font-extrabold text-zinc-950">Faster, safer sign-in</p>
-                    <p className="mt-1 text-sm leading-relaxed text-zinc-600">
+                    <p className="font-extrabold text-bm-text">Faster, safer sign-in</p>
+                    <p className="mt-1 text-sm leading-relaxed text-bm-text-muted">
                       Use your fingerprint, Face ID, device PIN, or security key instead of entering your password every time.
                     </p>
                   </div>
@@ -142,7 +142,7 @@ export default function PasskeySetupPrompt() {
               </div>
 
               {state === "error" ? (
-                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-relaxed text-red-800">
+                <div className="mt-4 rounded-2xl border border-bm-danger/35 bg-bm-danger-bg px-4 py-3 text-sm font-medium leading-relaxed text-bm-danger">
                   {errorMessage}
                 </div>
               ) : null}
@@ -155,7 +155,7 @@ export default function PasskeySetupPrompt() {
                     close();
                   }}
                   disabled={state === "busy"}
-                  className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-2xl border border-bm-border bg-bm-surface px-5 py-3 text-sm font-bold text-bm-text-muted transition hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Not now
                 </button>
@@ -163,7 +163,7 @@ export default function PasskeySetupPrompt() {
                   type="button"
                   onClick={() => void handleSetup()}
                   disabled={state === "busy" || state === "checking"}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand transition hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Fingerprint className="h-4 w-4" />
                   {state === "busy" ? "Setting up…" : state === "error" ? "Try again" : "Set up passkey"}

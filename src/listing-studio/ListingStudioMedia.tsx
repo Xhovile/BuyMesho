@@ -23,22 +23,22 @@ export default function ListingStudioMedia({
   onRemoveVideo,
 }: ListingStudioMediaProps) {
   return (
-    <section className="space-y-5 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+    <section className="space-y-5 rounded-3xl border border-bm-border bg-bm-surface p-5 shadow-sm sm:p-6">
       <div>
-        <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">Media</p>
-        <h2 className="mt-1 text-lg font-black text-zinc-900">Make the listing easy to trust</h2>
-        <p className="mt-1 text-sm text-zinc-500">Use clear photos and one optional product video.</p>
+        <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle">Media</p>
+        <h2 className="mt-1 text-lg font-black text-bm-text">Make the listing easy to trust</h2>
+        <p className="mt-1 text-sm text-bm-text-subtle">Use clear photos and one optional product video.</p>
       </div>
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <label className="text-sm font-extrabold text-zinc-800">Photos</label>
-          <span className="text-xs font-bold text-zinc-400">{photos.length}/5</span>
+          <label className="text-sm font-extrabold text-bm-text">Photos</label>
+          <span className="text-xs font-bold text-bm-text-subtle">{photos.length}/5</span>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {photos.map((photo, index) => (
-            <div key={`${photo}-${index}`} className="group relative aspect-square overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100">
+            <div key={`${photo}-${index}`} className="group relative aspect-square overflow-hidden rounded-2xl border border-bm-border bg-bm-surface-muted">
               <img src={photo} alt={`Listing photo ${index + 1}`} className="h-full w-full object-cover" />
               <button
                 type="button"
@@ -53,7 +53,7 @@ export default function ListingStudioMedia({
           ))}
 
           {photos.length < 5 ? (
-            <label className="flex aspect-square cursor-pointer items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 text-center text-xs font-bold text-zinc-500 hover:bg-zinc-100">
+            <label className="flex aspect-square cursor-pointer items-center justify-center rounded-2xl border border-dashed border-bm-border bg-bm-surface-subtle text-center text-xs font-bold text-bm-text-subtle hover:bg-bm-surface-muted">
               <input type="file" accept="image/*" multiple className="sr-only" onChange={onAddImages} disabled={uploading} />
               <span>{uploading ? "Uploading…" : "+ Add photos"}</span>
             </label>
@@ -62,25 +62,25 @@ export default function ListingStudioMedia({
         {error ? <p className="text-xs font-semibold text-red-600">{error}</p> : null}
       </div>
 
-      <div className="space-y-3 border-t border-zinc-100 pt-5">
+      <div className="space-y-3 border-t border-bm-border-subtle pt-5">
         <div>
-          <label className="text-sm font-extrabold text-zinc-800">Product video</label>
-          <p className="mt-1 text-xs text-zinc-500">Optional. A short demonstration can improve buyer confidence.</p>
+          <label className="text-sm font-extrabold text-bm-text">Product video</label>
+          <p className="mt-1 text-xs text-bm-text-subtle">Optional. A short demonstration can improve buyer confidence.</p>
         </div>
 
         {videoUrl ? (
-          <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-black">
+          <div className="overflow-hidden rounded-2xl border border-bm-border bg-black">
             <video src={videoUrl} controls className="max-h-72 w-full object-contain" />
           </div>
         ) : null}
 
         <div className="flex flex-wrap gap-2">
-          <label className="inline-flex cursor-pointer items-center rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-zinc-800">
+          <label className="inline-flex cursor-pointer items-center rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-extrabold text-white hover:bg-bm-brand-hover">
             <input type="file" accept="video/*" className="sr-only" onChange={onReplaceVideo} disabled={uploading} />
             {uploading ? "Uploading…" : videoUrl ? "Replace video" : "Add video"}
           </label>
           {videoUrl && onRemoveVideo ? (
-            <button type="button" onClick={onRemoveVideo} className="rounded-2xl border border-zinc-200 px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50">
+            <button type="button" onClick={onRemoveVideo} className="rounded-2xl border border-bm-border px-4 py-2.5 text-sm font-bold text-bm-text-muted hover:bg-bm-surface-subtle">
               Remove video
             </button>
           ) : null}

@@ -83,17 +83,17 @@ export default function DirectEventCheckout({
 
   return (
     <>
-      <div className="mt-3 overflow-hidden rounded-2xl border border-orange-200 bg-white">
+      <div className="mt-3 overflow-hidden rounded-2xl border border-bm-border bg-bm-surface">
         <div className="flex items-stretch">
           <button
             type="button"
             onClick={handleBuy}
-            className="relative z-20 flex flex-1 items-center justify-center bg-orange-700 px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-orange-800"
+            className="relative z-20 flex flex-1 items-center justify-center bg-bm-brand px-4 py-3 text-sm font-extrabold text-bm-on-brand transition-colors hover:bg-bm-brand-hover"
             aria-label={"Buy ticket for " + eventTitle}
           >
             Buy Ticket
           </button>
-          <div className="flex min-w-[6.5rem] items-center justify-center border-l border-orange-200 bg-white px-4 py-3 text-sm font-black tracking-tight text-zinc-950">
+          <div className="flex min-w-[6.5rem] items-center justify-center border-l border-bm-border bg-bm-surface px-4 py-3 text-sm font-black tracking-tight text-bm-text">
             {price}
           </div>
         </div>
@@ -105,14 +105,14 @@ export default function DirectEventCheckout({
             type="button"
             aria-label="Close ticket holder form"
             onClick={() => setTicketHolderOpen(false)}
-            className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-bm-overlay backdrop-blur-sm"
           />
-          <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+          <div className="relative w-full max-w-md rounded-3xl bg-bm-surface p-6 shadow-2xl">
             <button
               type="button"
               onClick={() => setTicketHolderOpen(false)}
               disabled={checkoutLoading}
-              className="absolute right-4 top-4 rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+              className="absolute right-4 top-4 rounded-full p-2 text-bm-text-subtle hover:bg-bm-surface-muted hover:text-bm-text-muted"
               aria-label="Close"
             >
               <X className="h-5 w-5" />

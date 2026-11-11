@@ -15,7 +15,7 @@ import {
 } from "../../lib/appNavigation";
 
 const cardButtonClass =
-  "rounded-2xl border border-zinc-200 bg-white text-zinc-900 shadow-md transition-all hover:border-zinc-300 hover:shadow-lg active:scale-95";
+  "rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text shadow-md transition-all hover:border-bm-border hover:shadow-lg active:scale-95";
 const desktopProfileButtonClass =
   `w-11 h-11 ${cardButtonClass} flex items-center justify-center overflow-hidden`;
 const desktopMenuButtonClass =
@@ -72,7 +72,7 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 px-4 py-3 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 border-b border-bm-border/80 bg-bm-surface/90 dark:bg-bm-surface/90 px-4 py-3 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl flex-col gap-3">
           <div className="flex items-center justify-between gap-4">
             <BrandMark />
@@ -111,11 +111,11 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
                   ) : isLoggedIn ? (
-                    <div className="flex h-full w-full items-center justify-center bg-red-900/5 font-bold text-red-900">
+                    <div className="flex h-full w-full items-center justify-center bg-bm-brand/5 font-bold text-bm-brand">
                       {fallbackLetter}
                     </div>
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-zinc-50 text-zinc-500">
+                    <div className="flex h-full w-full items-center justify-center bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-subtle dark:text-bm-text-subtle">
                       <UserRound className="h-5 w-5" />
                     </div>
                   )}
@@ -131,9 +131,9 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
                     aria-haspopup="menu"
                   >
                     {desktopMenuOpen ? (
-                      <X className="h-5 w-5 text-zinc-700" />
+                      <X className="h-5 w-5 text-bm-text-muted dark:text-bm-text-muted" />
                     ) : (
-                      <Menu className="h-5 w-5 text-zinc-700" />
+                      <Menu className="h-5 w-5 text-bm-text-muted dark:text-bm-text-muted" />
                     )}
                   </button>
 
@@ -181,9 +181,9 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
                 aria-controls="mobile-home-menu"
               >
                 {controller.mobileMenuOpen ? (
-                  <X className="h-5 w-5 text-zinc-700" />
+                  <X className="h-5 w-5 text-bm-text-muted dark:text-bm-text-muted" />
                 ) : (
-                  <Menu className="h-5 w-5 text-zinc-700" />
+                  <Menu className="h-5 w-5 text-bm-text-muted dark:text-bm-text-muted" />
                 )}
               </button>
             </div>

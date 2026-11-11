@@ -46,13 +46,13 @@ export default function SeoInternalLinks({
 
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-9 sm:px-6 sm:py-10 lg:px-8" aria-labelledby="buymesho-internal-links">
-      <div className="w-full border border-zinc-200 bg-white/45 p-5 sm:p-7">
+      <div className="w-full border border-bm-border bg-bm-surface/45 p-5 sm:p-7">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
           <div>
             <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-[#74152f]">
               BuyMesho marketplace
             </p>
-            <h2 id="buymesho-internal-links" className="mt-2 text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">
+            <h2 id="buymesho-internal-links" className="mt-2 text-2xl font-black tracking-tight text-bm-text sm:text-3xl">
               {title || CONTEXTUAL_TITLES[context]}
             </h2>
           </div>
@@ -65,10 +65,10 @@ export default function SeoInternalLinks({
               <a
                 key={href}
                 href={href}
-                className="group inline-flex min-w-0 items-center gap-1.5 border-b border-zinc-200 py-2 text-sm font-bold text-zinc-700 transition-colors hover:border-blue-600/30 hover:text-blue-700"
+                className="group inline-flex min-w-0 items-center gap-1.5 border-b border-bm-border py-2 text-sm font-bold text-bm-text-muted transition-colors hover:border-bm-brand/30 hover:text-bm-brand"
               >
                 <span className="truncate">{label}</span>
-                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-bm-brand transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
               </a>
             ))}
           </nav>

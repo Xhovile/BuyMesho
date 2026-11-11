@@ -29,17 +29,17 @@ function GuideSection({
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-28 border-t border-zinc-200 py-12 sm:py-16 lg:py-20">
+    <section id={id} className="scroll-mt-28 border-t border-bm-border py-12 sm:py-16 lg:py-20">
       <div className="grid gap-5 sm:grid-cols-[96px_minmax(0,1fr)] sm:gap-8 lg:grid-cols-[132px_minmax(0,1fr)] lg:gap-10">
         <div className="pt-1">
           <p className="guide-chapter-number text-6xl leading-none sm:text-7xl lg:text-8xl">{number}</p>
         </div>
         <div className="max-w-5xl">
           <p className="mt-1 text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f] sm:text-base">{eyebrow}</p>
-          <h2 className="guide-display mt-2 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-zinc-950 sm:text-5xl lg:text-6xl">
+          <h2 className="guide-display mt-2 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-bm-text sm:text-5xl lg:text-6xl">
             {title}
           </h2>
-          <div className="mt-7 space-y-6 text-base leading-7 text-zinc-700 sm:mt-9 sm:text-[17px] sm:leading-8">{children}</div>
+          <div className="mt-7 space-y-6 text-base leading-7 text-bm-text-muted sm:mt-9 sm:text-[17px] sm:leading-8">{children}</div>
         </div>
       </div>
     </section>
@@ -54,24 +54,24 @@ function InfoRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5">
-      <p className="text-sm font-extrabold text-zinc-950">{title}</p>
-      <div className="mt-1.5 text-sm leading-6 text-zinc-600">{children}</div>
+    <div className="rounded-2xl border border-bm-border bg-bm-surface p-4 sm:p-5">
+      <p className="text-sm font-extrabold text-bm-text">{title}</p>
+      <div className="mt-1.5 text-sm leading-6 text-bm-text-muted">{children}</div>
     </div>
   );
 }
 
 export default function SellOnlineMalawiPage() {
   return (
-    <div className="guide-page min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur">
+    <div className="guide-page min-h-screen bg-bm-surface-muted text-bm-text">
+      <header className="sticky top-0 z-50 border-b border-bm-border bg-bm-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <a href={EXPLORE_PATH} aria-label="Open BuyMesho marketplace">
             <BrandMark subtitle="Selling guide" />
           </a>
           <a
             href={EXPLORE_PATH}
-            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+            className="inline-flex items-center gap-2 rounded-xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"
           >
             Browse Market
             <ArrowRight className="h-4 w-4" />
@@ -86,26 +86,26 @@ export default function SellOnlineMalawiPage() {
             <div className="mt-4 text-sm font-black uppercase tracking-[0.18em] text-[#74152f] sm:text-base">
               BuyMesho Seller Guide
             </div>
-            <h1 className="guide-display mx-auto mt-4 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-zinc-950 sm:text-6xl lg:text-7xl">
+            <h1 className="guide-display mx-auto mt-4 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-bm-text sm:text-6xl lg:text-7xl">
               Selling on BuyMesho, step by step.
             </h1>
-            <p className="mx-auto mt-6 max-w-3xl text-base leading-7 text-zinc-700 sm:text-lg">
+            <p className="mx-auto mt-6 max-w-3xl text-base leading-7 text-bm-text-muted sm:text-lg">
               Understand what it means to sell on BuyMesho, how seller access works, what your workspace provides,
               how orders and disputes are handled, and how seller earnings are settled.
             </p>
           </div>
 
-          <nav aria-label="Seller guide sections" className="mt-9 border-y border-zinc-200">
+          <nav aria-label="Seller guide sections" className="mt-9 border-y border-bm-border">
             <div className="grid sm:grid-cols-2 lg:grid-cols-4">
               {guideSections.map((section) => (
                 <a
                   key={section.id}
                   href={`#${section.id}`}
-                  className="group flex min-h-16 items-center gap-4 border-b border-zinc-200 px-1 py-4 text-base font-bold text-zinc-800 transition-colors hover:text-blue-700 sm:min-h-20 sm:border-r sm:px-4 sm:text-lg sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(4n)]:border-r-0"
+                  className="group flex min-h-16 items-center gap-4 border-b border-bm-border px-1 py-4 text-base font-bold text-bm-text transition-colors hover:text-bm-brand sm:min-h-20 sm:border-r sm:px-4 sm:text-lg sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(4n)]:border-r-0"
                 >
                   <span className="guide-chapter-number text-2xl sm:text-3xl">{section.number}</span>
                   <span>{section.label}</span>
-                  <ArrowRight className="ml-auto h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="ml-auto h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5" />
                 </a>
               ))}
             </div>
@@ -113,12 +113,12 @@ export default function SellOnlineMalawiPage() {
         </section>
 
         <section className="py-8 sm:py-10">
-          <div className="border-y border-zinc-200 bg-white/45 p-5 sm:p-7">
+          <div className="border-y border-bm-border bg-bm-surface/45 p-5 sm:p-7">
             <div className="flex items-start gap-3">
-              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-zinc-950" />
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-bm-text" />
               <div>
-                <h2 className="guide-display text-xl font-semibold text-zinc-950 sm:text-2xl">The seller journey</h2>
-                <p className="mt-2 text-sm leading-6 text-zinc-600">
+                <h2 className="guide-display text-xl font-semibold text-bm-text sm:text-2xl">The seller journey</h2>
+                <p className="mt-2 text-sm leading-6 text-bm-text-muted">
                   Apply → verify seller access → enter the seller workspace → publish listings → communicate with buyers →
                   manage orders and delivery → handle disputes when needed → receive seller earnings through the payout flow.
                 </p>
@@ -210,14 +210,14 @@ export default function SellOnlineMalawiPage() {
             </InfoRow>
           </div>
 
-          <div className="flex flex-wrap gap-x-6 gap-y-2 border-t border-zinc-200 pt-4">
+          <div className="flex flex-wrap gap-x-6 gap-y-2 border-t border-bm-border pt-4">
             <a href={SELLER_HUB_PATH} className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
               Open Seller Workspace
-              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5" />
             </a>
             <a href={SELLER_MESSAGES_PATH} className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
               Open Messages
-              <MessageSquareText className="h-4 w-4 text-blue-600" />
+              <MessageSquareText className="h-4 w-4 text-bm-brand" />
             </a>
           </div>
         </GuideSection>
@@ -245,7 +245,7 @@ export default function SellOnlineMalawiPage() {
 
           <a href="/create" className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
             Create a listing
-            <ArrowRight className="h-4 w-4 text-blue-600" />
+            <ArrowRight className="h-4 w-4 text-bm-brand" />
           </a>
         </GuideSection>
 
@@ -273,7 +273,7 @@ export default function SellOnlineMalawiPage() {
 
           <a href={SELLER_MESSAGES_PATH} className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
             Open Seller Messages
-            <ArrowRight className="h-4 w-4 text-blue-600" />
+            <ArrowRight className="h-4 w-4 text-bm-brand" />
           </a>
         </GuideSection>
 
@@ -312,7 +312,7 @@ export default function SellOnlineMalawiPage() {
 
           <a href={SELLER_ORDERS_PATH} className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
             Open Seller Orders
-            <ArrowRight className="h-4 w-4 text-blue-600" />
+            <ArrowRight className="h-4 w-4 text-bm-brand" />
           </a>
         </GuideSection>
 
@@ -349,7 +349,7 @@ export default function SellOnlineMalawiPage() {
 
           <a href={SELLER_PAYOUTS_MANAGE_PATH} className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
             Open Earnings
-            <WalletCards className="h-4 w-4 text-blue-600" />
+            <WalletCards className="h-4 w-4 text-bm-brand" />
           </a>
         </GuideSection>
 
@@ -375,75 +375,75 @@ export default function SellOnlineMalawiPage() {
             </InfoRow>
           </div>
 
-          <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
-            <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-            <p className="text-sm leading-6 text-zinc-600">
+          <div className="flex items-start gap-3 border-t border-bm-border pt-5">
+            <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-bm-warning" />
+            <p className="text-sm leading-6 text-bm-text-muted">
               Seller approval and a Verified badge are platform signals, not guarantees that every listing, delivery, payment,
               or transaction outcome will be successful. Buyers and sellers should still communicate clearly and keep relevant records.
             </p>
           </div>
         </GuideSection>
 
-        <section className="border-t border-zinc-200 py-10 sm:py-12">
+        <section className="border-t border-bm-border py-10 sm:py-12">
           <div className="max-w-4xl">
-            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Additional seller information</p>
-            <h2 className="guide-display mt-2 text-3xl font-semibold text-zinc-950 sm:text-4xl">More about selling safely.</h2>
-            <p className="mt-3 max-w-3xl text-base leading-7 text-zinc-600">
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle">Additional seller information</p>
+            <h2 className="guide-display mt-2 text-3xl font-semibold text-bm-text sm:text-4xl">More about selling safely.</h2>
+            <p className="mt-3 max-w-3xl text-base leading-7 text-bm-text-muted">
               The sections above explain the selling workflow. The information below covers security, settlement protection,
               marketplace terms, and practical next steps.
             </p>
           </div>
 
-          <div className="mt-7 border border-zinc-200 bg-white">
-            <div className="grid gap-4 border-b border-zinc-200 p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
+          <div className="mt-7 border border-bm-border bg-bm-surface">
+            <div className="grid gap-4 border-b border-bm-border p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
               <div className="flex items-start gap-2">
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-                <p className="text-sm font-extrabold text-zinc-950">Account security</p>
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-bm-brand" />
+                <p className="text-sm font-extrabold text-bm-text">Account security</p>
               </div>
-              <p className="text-sm leading-6 text-zinc-600">
+              <p className="text-sm leading-6 text-bm-text-muted">
                 BuyMesho provides password-based sign-in plus available email verification, passkeys, authenticator-app
                 two-factor authentication, and session controls in account security settings.
               </p>
             </div>
-            <div className="grid gap-4 border-b border-zinc-200 p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
+            <div className="grid gap-4 border-b border-bm-border p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
               <div className="flex items-start gap-2">
-                <WalletCards className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-                <p className="text-sm font-extrabold text-zinc-950">Settlement protection</p>
+                <WalletCards className="mt-0.5 h-4 w-4 shrink-0 text-bm-brand" />
+                <p className="text-sm font-extrabold text-bm-text">Settlement protection</p>
               </div>
-              <p className="text-sm leading-6 text-zinc-600">
+              <p className="text-sm leading-6 text-bm-text-muted">
                 Seller payout is not simply a button that turns a paid order into cash. Escrow release, payout eligibility,
                 a verified destination, payout calculation, provider processing, and payout status all form part of the settlement flow.
               </p>
             </div>
             <div className="grid gap-4 p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
               <div className="flex items-start gap-2">
-                <Package className="mt-0.5 h-4 w-4 shrink-0 text-zinc-700" />
-                <p className="text-sm font-extrabold text-zinc-950">Continue</p>
+                <Package className="mt-0.5 h-4 w-4 shrink-0 text-bm-text-muted" />
+                <p className="text-sm font-extrabold text-bm-text">Continue</p>
               </div>
               <div className="flex flex-wrap gap-x-6 gap-y-2">
                 <a href="/become-seller" className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
                   Apply to become a seller
-                  <ArrowRight className="h-4 w-4 text-blue-600" />
+                  <ArrowRight className="h-4 w-4 text-bm-brand" />
                 </a>
                 <a href="/explore/sellers" className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
                   View Sellers on BuyMesho
-                  <ArrowRight className="h-4 w-4 text-blue-600" />
+                  <ArrowRight className="h-4 w-4 text-bm-brand" />
                 </a>
                 <a href="/buy-online-malawi" className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
                   Looking to buy instead?
-                  <ArrowRight className="h-4 w-4 text-blue-600" />
+                  <ArrowRight className="h-4 w-4 text-bm-brand" />
                 </a>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="border-t border-zinc-200 py-10 sm:py-12">
+        <section className="border-t border-bm-border py-10 sm:py-12">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Need the marketplace?</p>
-              <h2 className="guide-display mt-2 text-2xl font-semibold text-zinc-950 sm:text-3xl">Go back to BuyMesho listings.</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle">Need the marketplace?</p>
+              <h2 className="guide-display mt-2 text-2xl font-semibold text-bm-text sm:text-3xl">Go back to BuyMesho listings.</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-bm-text-muted">
                 Use the marketplace to search, compare, inspect sellers, and see what other sellers are offering.
               </p>
             </div>
@@ -452,7 +452,7 @@ export default function SellOnlineMalawiPage() {
               className="group inline-flex shrink-0 items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg"
             >
               Open Market
-              <ArrowRight className="h-4 w-4 text-blue-600" />
+              <ArrowRight className="h-4 w-4 text-bm-brand" />
             </a>
           </div>
         </section>

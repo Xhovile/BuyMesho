@@ -54,28 +54,28 @@ const CARDS: SummaryCard[] = [
     key: "availableForPayout",
     label: "Available for payout",
     helper: "Released funds after BuyMesho commission; PayChangu payout fees may still apply",
-    tone: "bg-emerald-50 text-emerald-700 border-emerald-100",
+    tone: "bg-bm-success-bg text-bm-success border-bm-success/25",
     icon: Banknote,
   },
   {
     key: "pendingPayout",
     label: "Pending payout",
     helper: "Net amount sent to PayChangu; transfer fees may be deducted by payout method",
-    tone: "bg-amber-50 text-amber-700 border-amber-100",
+    tone: "bg-bm-warning-bg text-bm-warning border-bm-warning/25",
     icon: Clock3,
   },
   {
     key: "paidOut",
     label: "Paid out",
     helper: "Completed provider payouts",
-    tone: "bg-green-50 text-green-700 border-green-100",
+    tone: "bg-bm-success-bg text-bm-success border-bm-success/25",
     icon: BadgeCheck,
   },
   {
     key: "failedActionRequired",
     label: "Failed payout - action required",
     helper: "Failed payouts needing review or retry",
-    tone: "bg-red-50 text-red-700 border-red-100",
+    tone: "bg-bm-danger-bg text-bm-danger border-bm-danger/25",
     icon: AlertTriangle,
   },
 ];
@@ -141,11 +141,11 @@ export default function SellerEarningsSummary({
         <div
           className={`mt-4 flex items-start gap-3 rounded-[1.5rem] border p-4 ${
             notice.tone === "amber"
-              ? "border-amber-200 bg-amber-50 text-amber-900"
-              : "border-emerald-200 bg-emerald-50 text-emerald-900"
+              ? "border-bm-warning/25 bg-bm-warning-bg text-bm-warning"
+              : "border-bm-success/25 bg-bm-success-bg text-bm-success"
           }`}
         >
-          <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/80">
+          <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-bm-surface/80">
             <notice.icon className="h-5 w-5" />
           </span>
           <div>
@@ -175,15 +175,15 @@ function SellerEarningsSummaryCard({
 
   return (
     <div
-      className={`rounded-2xl border border-zinc-200 bg-white ${compact ? "p-3" : "p-4"} shadow-sm`}
+      className={`rounded-2xl border border-bm-border bg-bm-surface ${compact ? "p-3" : "p-4"} shadow-sm`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-400">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-bm-text-subtle">
             {card.label}
           </p>
           <p
-            className={`${compact ? "text-base" : "text-xl"} mt-1 whitespace-nowrap font-black tabular-nums tracking-tight text-zinc-900`}
+            className={`${compact ? "text-base" : "text-xl"} mt-1 whitespace-nowrap font-black tabular-nums tracking-tight text-bm-text`}
             aria-label={`${card.label}: ${formatSellerEarningsAmount(value, currency)}`}
           >
             {formatSellerEarningsAmount(value, currency)}
@@ -195,7 +195,7 @@ function SellerEarningsSummaryCard({
           <Icon className="h-4 w-4" />
         </span>
       </div>
-      <p className="mt-3 text-[11px] font-semibold leading-4 text-zinc-500">
+      <p className="mt-3 text-[11px] font-semibold leading-4 text-bm-text-subtle">
         {card.helper}
       </p>
     </div>

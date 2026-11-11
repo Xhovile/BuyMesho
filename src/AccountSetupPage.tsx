@@ -259,65 +259,65 @@ export default function AccountSetupPage() {
       hideBackButton
     >
       {loading ? (
-        <div className="flex items-center justify-center py-16 text-zinc-500"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading your account…</div>
+        <div className="flex items-center justify-center py-16 text-bm-text-subtle dark:text-bm-text-subtle"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading your account…</div>
       ) : (
         <form onSubmit={handleSubmit} className="w-full space-y-7 pb-28">
-          <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <section className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
             <div className="flex items-center gap-3">
               <input id="account-setup-profile-image" type="file" accept="image/*" className="sr-only" onChange={handleProfileImageChange} />
               <label htmlFor="account-setup-profile-image" className="flex cursor-pointer items-center gap-3">
-                <span className="relative inline-flex h-14 w-14 shrink-0 overflow-hidden rounded-full border border-zinc-200 bg-zinc-50">
-                  {form.profilePicture ? <img src={form.profilePicture} alt="Profile" className="h-full w-full object-cover" /> : <UserRound className="m-auto h-6 w-6 text-zinc-400" />}
-                  <span className="absolute bottom-0 right-0 inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-zinc-900 text-white shadow-sm"><Camera className="h-3 w-3" /></span>
+                <span className="relative inline-flex h-14 w-14 shrink-0 overflow-hidden rounded-full border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle">
+                  {form.profilePicture ? <img src={form.profilePicture} alt="Profile" className="h-full w-full object-cover" /> : <UserRound className="m-auto h-6 w-6 text-bm-text-subtle dark:text-bm-text-subtle" />}
+                  <span className="absolute bottom-0 right-0 inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-bm-surface bg-bm-brand text-bm-on-brand shadow-sm"><Camera className="h-3 w-3" /></span>
                 </span>
-                <span><span className="block text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Profile image</span><span className="block text-xs text-zinc-500">Tap the avatar or camera to upload or replace</span></span>
+                <span><span className="block text-xs font-extrabold uppercase tracking-[0.16em] text-bm-text-subtle dark:text-bm-text-subtle">Profile image</span><span className="block text-xs text-bm-text-subtle dark:text-bm-text-subtle">Tap the avatar or camera to upload or replace</span></span>
               </label>
             </div>
           </section>
 
-          <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
-            <div className="mb-5 flex items-center gap-3"><UserRound className="h-5 w-5 text-zinc-700" /><div><h2 className="font-extrabold text-zinc-900">About you</h2><p className="text-xs text-zinc-500">Your general BuyMesho identity.</p></div></div>
+          <section className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
+            <div className="mb-5 flex items-center gap-3"><UserRound className="h-5 w-5 text-bm-text-muted dark:text-bm-text-muted" /><div><h2 className="font-extrabold text-bm-text dark:text-bm-text">About you</h2><p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle">Your general BuyMesho identity.</p></div></div>
             <div className="grid gap-5 sm:grid-cols-2">
-              <label><span className="mb-2 block text-sm font-medium text-zinc-600">First name</span><input required autoComplete="given-name" value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
-              <label><span className="mb-2 block text-sm font-medium text-zinc-600">Surname</span><input required autoComplete="family-name" value={form.surname} onChange={(e) => setField("surname", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
-              <label className="sm:col-span-2"><span className="mb-2 block text-sm font-medium text-zinc-600">Other names <span className="text-zinc-400">(optional)</span></span><input autoComplete="additional-name" value={form.otherNames} onChange={(e) => setField("otherNames", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
-              <label><span className="mb-2 block text-sm font-medium text-zinc-600">Phone number</span><input required autoComplete="tel" value={form.phone} onChange={(e) => setField("phone", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
+              <label><span className="mb-2 block text-sm font-medium text-bm-text-muted dark:text-bm-text-muted">First name</span><input required autoComplete="given-name" value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} className="w-full border-0 border-b border-bm-border dark:border-bm-border bg-transparent px-0 py-3 outline-none focus:border-bm-brand" /></label>
+              <label><span className="mb-2 block text-sm font-medium text-bm-text-muted dark:text-bm-text-muted">Surname</span><input required autoComplete="family-name" value={form.surname} onChange={(e) => setField("surname", e.target.value)} className="w-full border-0 border-b border-bm-border dark:border-bm-border bg-transparent px-0 py-3 outline-none focus:border-bm-brand" /></label>
+              <label className="sm:col-span-2"><span className="mb-2 block text-sm font-medium text-bm-text-muted dark:text-bm-text-muted">Other names <span className="text-bm-text-subtle dark:text-bm-text-subtle">(optional)</span></span><input autoComplete="additional-name" value={form.otherNames} onChange={(e) => setField("otherNames", e.target.value)} className="w-full border-0 border-b border-bm-border dark:border-bm-border bg-transparent px-0 py-3 outline-none focus:border-bm-brand" /></label>
+              <label><span className="mb-2 block text-sm font-medium text-bm-text-muted dark:text-bm-text-muted">Phone number</span><input required autoComplete="tel" value={form.phone} onChange={(e) => setField("phone", e.target.value)} className="w-full border-0 border-b border-bm-border dark:border-bm-border bg-transparent px-0 py-3 outline-none focus:border-bm-brand" /></label>
             </div>
           </section>
 
-          <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
-            <div className="mb-5"><h2 className="font-extrabold text-zinc-900">What best describes you?</h2><p className="mt-1 text-xs text-zinc-500">This only determines which relevant BuyMesho information we ask for.</p></div>
+          <section className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
+            <div className="mb-5"><h2 className="font-extrabold text-bm-text dark:text-bm-text">What best describes you?</h2><p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">This only determines which relevant BuyMesho information we ask for.</p></div>
             <div className="grid gap-3 sm:grid-cols-2">
               {[{ value: "student", title: "Student", description: "I am currently studying at an institution." }, { value: "public", title: "Public / Non-Student", description: "I am joining BuyMesho as a general user." }].map((option) => (
-                <button key={option.value} type="button" onClick={() => setField("userType", option.value)} className={`rounded-2xl border p-4 text-left transition ${form.userType === option.value ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white text-zinc-900 hover:border-zinc-400"}`}>
-                  <p className="font-extrabold">{option.title}</p><p className={`mt-1 text-xs ${form.userType === option.value ? "text-zinc-300" : "text-zinc-500"}`}>{option.description}</p>
+                <button key={option.value} type="button" onClick={() => setField("userType", option.value)} className={`rounded-2xl border p-4 text-left transition ${form.userType === option.value ? "border-bm-border bg-bm-brand text-bm-on-brand" : "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text hover:border-bm-border"}`}>
+                  <p className="font-extrabold">{option.title}</p><p className={`mt-1 text-xs ${form.userType === option.value ? "text-bm-text-subtle" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>{option.description}</p>
                 </button>
               ))}
             </div>
           </section>
 
           {isStudent && (
-            <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <div className="mb-5"><h2 className="font-extrabold text-zinc-900">Student information</h2><p className="mt-1 text-xs text-zinc-500">These fields only apply to student accounts.</p></div>
+            <section className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
+              <div className="mb-5"><h2 className="font-extrabold text-bm-text dark:text-bm-text">Student information</h2><p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">These fields only apply to student accounts.</p></div>
               <div className="space-y-5">
                 <FormDropdown label="Institution / University" value={form.university} options={UNIVERSITIES} onChange={(value) => setField("university", value)} />
-                <label className="block"><span className="mb-2 block text-sm font-medium text-zinc-600">Campus <span className="text-zinc-400">(optional)</span></span><input value={form.campus} onChange={(e) => setField("campus", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
-                <label className="block"><span className="mb-2 block text-sm font-medium text-zinc-600">Student ID</span><input required={isStudent} value={form.studentId} onChange={(e) => setField("studentId", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
-                <label className="block"><span className="mb-2 block text-sm font-medium text-zinc-600">Student email</span><input required={isStudent} type="email" value={form.studentEmail} onChange={(e) => setField("studentEmail", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
+                <label className="block"><span className="mb-2 block text-sm font-medium text-bm-text-muted dark:text-bm-text-muted">Campus <span className="text-bm-text-subtle dark:text-bm-text-subtle">(optional)</span></span><input value={form.campus} onChange={(e) => setField("campus", e.target.value)} className="w-full border-0 border-b border-bm-border dark:border-bm-border bg-transparent px-0 py-3 outline-none focus:border-bm-brand" /></label>
+                <label className="block"><span className="mb-2 block text-sm font-medium text-bm-text-muted dark:text-bm-text-muted">Student ID</span><input required={isStudent} value={form.studentId} onChange={(e) => setField("studentId", e.target.value)} className="w-full border-0 border-b border-bm-border dark:border-bm-border bg-transparent px-0 py-3 outline-none focus:border-bm-brand" /></label>
+                <label className="block"><span className="mb-2 block text-sm font-medium text-bm-text-muted dark:text-bm-text-muted">Student email</span><input required={isStudent} type="email" value={form.studentEmail} onChange={(e) => setField("studentEmail", e.target.value)} className="w-full border-0 border-b border-bm-border dark:border-bm-border bg-transparent px-0 py-3 outline-none focus:border-bm-brand" /></label>
               </div>
             </section>
           )}
 
-          <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
-            <div className="mb-5 flex items-center gap-3"><MapPin className="h-5 w-5 text-zinc-700" /><div><h2 className="font-extrabold text-zinc-900">Delivery information</h2><p className="text-xs text-zinc-500">Used to make checkout faster. You can change these details later.</p></div></div>
+          <section className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
+            <div className="mb-5 flex items-center gap-3"><MapPin className="h-5 w-5 text-bm-text-muted dark:text-bm-text-muted" /><div><h2 className="font-extrabold text-bm-text dark:text-bm-text">Delivery information</h2><p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle">Used to make checkout faster. You can change these details later.</p></div></div>
             <div className="space-y-5">
-              <label className="block"><span className="mb-2 block text-sm font-medium text-zinc-600">Delivery address</span><textarea rows={3} value={form.addressLine} onChange={(e) => setField("addressLine", e.target.value)} placeholder="House, hostel, building, room, or other delivery address" className="w-full resize-none rounded-2xl border border-zinc-200 px-3 py-3 text-sm outline-none focus:border-zinc-400" /></label>
-              <div className="grid gap-5 sm:grid-cols-2"><label><span className="mb-2 block text-sm font-medium text-zinc-600">Area / Location <span className="text-zinc-400">(optional)</span></span><input value={form.area} onChange={(e) => setField("area", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label><label><span className="mb-2 block text-sm font-medium text-zinc-600">Town / District</span><input required value={form.townOrDistrict} onChange={(e) => setField("townOrDistrict", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label></div>
-              <label className="block"><span className="mb-2 block text-sm font-medium text-zinc-600">Nearest landmark <span className="text-zinc-400">(optional)</span></span><input value={form.landmark} onChange={(e) => setField("landmark", e.target.value)} className="w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 outline-none focus:border-zinc-900" /></label>
+              <label className="block"><span className="mb-2 block text-sm font-medium text-bm-text-muted dark:text-bm-text-muted">Delivery address</span><textarea rows={3} value={form.addressLine} onChange={(e) => setField("addressLine", e.target.value)} placeholder="House, hostel, building, room, or other delivery address" className="w-full resize-none rounded-2xl border border-bm-border dark:border-bm-border px-3 py-3 text-sm outline-none focus:border-bm-focus" /></label>
+              <div className="grid gap-5 sm:grid-cols-2"><label><span className="mb-2 block text-sm font-medium text-bm-text-muted dark:text-bm-text-muted">Area / Location <span className="text-bm-text-subtle dark:text-bm-text-subtle">(optional)</span></span><input value={form.area} onChange={(e) => setField("area", e.target.value)} className="w-full border-0 border-b border-bm-border dark:border-bm-border bg-transparent px-0 py-3 outline-none focus:border-bm-brand" /></label><label><span className="mb-2 block text-sm font-medium text-bm-text-muted dark:text-bm-text-muted">Town / District</span><input required value={form.townOrDistrict} onChange={(e) => setField("townOrDistrict", e.target.value)} className="w-full border-0 border-b border-bm-border dark:border-bm-border bg-transparent px-0 py-3 outline-none focus:border-bm-brand" /></label></div>
+              <label className="block"><span className="mb-2 block text-sm font-medium text-bm-text-muted dark:text-bm-text-muted">Nearest landmark <span className="text-bm-text-subtle dark:text-bm-text-subtle">(optional)</span></span><input value={form.landmark} onChange={(e) => setField("landmark", e.target.value)} className="w-full border-0 border-b border-bm-border dark:border-bm-border bg-transparent px-0 py-3 outline-none focus:border-bm-brand" /></label>
             </div>
           </section>
 
-          <div className="sticky bottom-4 z-20 pt-2"><div className="rounded-[1.5rem] border border-white/80 bg-white/95 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.14)] backdrop-blur"><button type="submit" disabled={saving || !form.userType} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50">{saving ? "Saving..." : "Finish setup"}</button></div></div>
+          <div className="sticky bottom-4 z-20 pt-2"><div className="rounded-[1.5rem] border border-bm-border bg-bm-surface/95 dark:bg-bm-surface/95 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.14)] backdrop-blur"><button type="submit" disabled={saving || !form.userType} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-bm-brand px-6 py-3 font-bold text-bm-on-brand hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-50">{saving ? "Saving..." : "Finish setup"}</button></div></div>
         </form>
       )}
 

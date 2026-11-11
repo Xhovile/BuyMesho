@@ -10,6 +10,7 @@ import PasswordPromptModal from "./components/PasswordPromptModal";
 import TotpSetupModal from "./components/TotpSetupModal";
 import AccountDeletionModal, { type AccountDeletionResult } from "./components/AccountDeletionModal";
 import SettingsAccountSection from "./components/settings/SettingsAccountSection";
+import SettingsAppearanceSection from "./components/settings/SettingsAppearanceSection";
 import SettingsSecuritySection from "./components/settings/SettingsSecuritySection";
 import SettingsPrivacySection from "./components/settings/SettingsPrivacySection";
 import SettingsHelpLegalSection from "./components/settings/SettingsHelpLegalSection";
@@ -460,33 +461,34 @@ export default function SettingsPage() {
   if (view === "report") return <ReportProblemPage onBack={() => openView("menu")} isLoggedIn={!!firebaseUser} />;
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
+    <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text">
+      <header className="sticky top-0 z-40 border-b border-bm-border/80 bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <BrandMark />
           <div className="flex items-center gap-3">
-            <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2"><House className="w-4 h-4" />Home</button>
-            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"><ShoppingBag className="w-4 h-4" />Market</button>
+            <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface text-sm font-bold hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted items-center gap-2"><House className="w-4 h-4" />Home</button>
+            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"><ShoppingBag className="w-4 h-4" />Market</button>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm mb-6">
+        <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 sm:p-8 shadow-sm mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Settings</p>
-              <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">Your account control center.</h1>
-              <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">Manage your account details, security posture, visibility controls, and legal/help resources from one page.</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Settings</p>
+              <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-bm-text dark:text-bm-text">Your account control center.</h1>
+              <p className="mt-3 max-w-2xl text-sm sm:text-base text-bm-text-muted dark:text-bm-text-muted leading-relaxed font-medium">Manage your account details, security posture, visibility controls, and legal/help resources from one page.</p>
             </div>
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-4 min-w-[220px]">
-              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">Current section</p>
-              <p className="mt-2 text-2xl font-black tracking-tight text-zinc-900 capitalize">{view === "menu" ? "Settings" : view}</p>
+            <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-5 py-4 min-w-[220px]">
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">Current section</p>
+              <p className="mt-2 text-2xl font-black tracking-tight text-bm-text dark:text-bm-text capitalize">{view === "menu" ? "Settings" : view}</p>
             </div>
           </div>
         </section>
 
         <section className="space-y-4">
+          <SettingsAppearanceSection />
           <SettingsAccountSection
             expanded={expandedSections.account}
             onToggle={() => toggleSection("account")}
@@ -589,12 +591,12 @@ export default function SettingsPage() {
       />
 
       {deleteRecoveryBusy && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-4 rounded-3xl bg-white px-8 py-7 shadow-2xl">
-            <Loader2 className="h-10 w-10 animate-spin text-red-600" />
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-bm-overlay backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4 rounded-3xl bg-bm-surface px-8 py-7 shadow-2xl">
+            <Loader2 className="h-10 w-10 animate-spin text-bm-brand" />
             <div className="text-center">
-              <p className="text-base font-extrabold text-zinc-900">Deleting your account</p>
-              <p className="mt-1 text-sm font-medium text-zinc-500">Removing your data securely.</p>
+              <p className="text-base font-extrabold text-bm-text dark:text-bm-text">Deleting your account</p>
+              <p className="mt-1 text-sm font-medium text-bm-text-subtle dark:text-bm-text-subtle">Removing your data securely.</p>
             </div>
           </div>
         </div>

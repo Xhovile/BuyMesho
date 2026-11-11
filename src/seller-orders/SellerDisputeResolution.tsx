@@ -78,8 +78,8 @@ export default function SellerDisputeResolution({
                 onClick={() => chooseSellerResolution(resolution)}
                 className={`rounded-xl border px-4 py-3 text-sm font-extrabold ${
                   sellerResolution === resolution
-                    ? "border-zinc-950 bg-zinc-950 text-white"
-                    : "border-zinc-200 bg-white text-zinc-900"
+                    ? "border-bm-brand bg-bm-brand text-bm-on-brand"
+                    : "border-bm-border bg-bm-surface text-bm-text"
                 }`}
               >
                 {label}
@@ -88,9 +88,9 @@ export default function SellerDisputeResolution({
           </div>
 
           {sellerResolution === "refund" ? (
-            <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4">
+            <div className="mt-4 rounded-2xl border border-bm-border bg-bm-surface p-4">
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-sm font-semibold text-zinc-700">
+                <label className="text-sm font-semibold text-bm-text-muted">
                   Refund amount
                   <input
                     value={refundAmount}
@@ -98,15 +98,15 @@ export default function SellerDisputeResolution({
                     type="number"
                     min="0"
                     step="0.01"
-                    className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2.5"
+                    className="mt-1 w-full rounded-xl border border-bm-border px-3 py-2.5"
                   />
                 </label>
-                <label className="text-sm font-semibold text-zinc-700">
+                <label className="text-sm font-semibold text-bm-text-muted">
                   Refund method
                   <select
                     value={refundMethod}
                     onChange={(e) => setRefundMethod(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2.5"
+                    className="mt-1 w-full rounded-xl border border-bm-border px-3 py-2.5"
                   >
                     <option value="mobile_money">Mobile money</option>
                     <option value="bank_transfer">Bank transfer</option>
@@ -114,38 +114,38 @@ export default function SellerDisputeResolution({
                     <option value="other">Other</option>
                   </select>
                 </label>
-                <label className="text-sm font-semibold text-zinc-700">
+                <label className="text-sm font-semibold text-bm-text-muted">
                   Transaction ID
                   <input
                     value={refundTransactionId}
                     onChange={(e) => setRefundTransactionId(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2.5"
+                    className="mt-1 w-full rounded-xl border border-bm-border px-3 py-2.5"
                   />
                 </label>
-                <label className="text-sm font-semibold text-zinc-700">
+                <label className="text-sm font-semibold text-bm-text-muted">
                   Refund date
                   <input
                     value={refundDate}
                     onChange={(e) => setRefundDate(e.target.value)}
                     type="date"
-                    className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2.5"
+                    className="mt-1 w-full rounded-xl border border-bm-border px-3 py-2.5"
                   />
                 </label>
-                <label className="text-sm font-semibold text-zinc-700 sm:col-span-2">
+                <label className="text-sm font-semibold text-bm-text-muted sm:col-span-2">
                   Refund destination
                   <input
                     value={refundDestination}
                     onChange={(e) => setRefundDestination(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2.5"
+                    className="mt-1 w-full rounded-xl border border-bm-border px-3 py-2.5"
                   />
                 </label>
-                <label className="text-sm font-semibold text-zinc-700 sm:col-span-2">
+                <label className="text-sm font-semibold text-bm-text-muted sm:col-span-2">
                   Note
                   <textarea
                     value={refundNote}
                     onChange={(e) => setRefundNote(e.target.value)}
                     rows={3}
-                    className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2.5"
+                    className="mt-1 w-full rounded-xl border border-bm-border px-3 py-2.5"
                   />
                 </label>
               </div>
@@ -160,13 +160,13 @@ export default function SellerDisputeResolution({
                       addEvidence();
                     }
                   }}
-                  className="min-w-0 flex-1 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"
+                  className="min-w-0 flex-1 rounded-xl border border-bm-border px-3 py-2.5 text-sm"
                   placeholder="Evidence reference (optional)"
                 />
                 <button
                   type="button"
                   onClick={addEvidence}
-                  className="rounded-xl border border-zinc-200 px-3 py-2 text-xs font-bold"
+                  className="rounded-xl border border-bm-border px-3 py-2 text-xs font-bold"
                 >
                   Add
                 </button>
@@ -177,7 +177,7 @@ export default function SellerDisputeResolution({
                   {refundEvidence.map((evidence) => (
                     <span
                       key={evidence}
-                      className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-700"
+                      className="rounded-full bg-bm-surface-muted px-2.5 py-1 text-xs font-semibold text-bm-text-muted"
                     >
                       {evidence}
                     </span>
@@ -189,7 +189,7 @@ export default function SellerDisputeResolution({
                 type="button"
                 disabled={resolutionLoading || !payoutPaid}
                 onClick={() => void submitSellerRefund()}
-                className="mt-4 rounded-xl bg-zinc-950 px-4 py-3 text-sm font-extrabold text-white disabled:opacity-50"
+                className="mt-4 rounded-xl bg-bm-brand px-4 py-3 text-sm font-extrabold text-bm-on-brand disabled:opacity-50"
               >
                 {resolutionLoading ? "Submitting…" : "Submit Refund"}
               </button>
@@ -197,11 +197,11 @@ export default function SellerDisputeResolution({
           ) : null}
 
           {sellerResolution === "replacement" || sellerResolution === "rejected" ? (
-            <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4">
-              <p className="text-sm font-black text-zinc-900">
+            <div className="mt-4 rounded-2xl border border-bm-border bg-bm-surface p-4">
+              <p className="text-sm font-black text-bm-text">
                 {sellerResolution === "replacement" ? "Send another item" : "Reject dispute"}
               </p>
-              <p className="mt-1 text-sm text-zinc-500">
+              <p className="mt-1 text-sm text-bm-text-subtle">
                 {sellerResolution === "replacement"
                   ? "Explain the replacement you will send. Use Contact Buyer to agree the physical delivery details."
                   : "Give the buyer a clear explanation for the rejection."}
@@ -210,7 +210,7 @@ export default function SellerDisputeResolution({
                 value={resolutionReason}
                 onChange={(e) => setResolutionReason(e.target.value)}
                 rows={5}
-                className="mt-4 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"
+                className="mt-4 w-full rounded-xl border border-bm-border px-3 py-2.5 text-sm"
                 placeholder={
                   sellerResolution === "replacement"
                     ? "Explain the replacement…"
@@ -221,7 +221,7 @@ export default function SellerDisputeResolution({
                 type="button"
                 disabled={resolutionLoading || resolutionReason.trim().length < 10}
                 onClick={() => void submitSellerNonRefund()}
-                className="mt-4 rounded-xl bg-zinc-950 px-4 py-3 text-sm font-extrabold text-white disabled:opacity-50"
+                className="mt-4 rounded-xl bg-bm-brand px-4 py-3 text-sm font-extrabold text-bm-on-brand disabled:opacity-50"
               >
                 {resolutionLoading ? "Submitting…" : "Submit Resolution"}
               </button>
@@ -235,7 +235,7 @@ export default function SellerDisputeResolution({
           type="button"
           disabled={resolutionLoading}
           onClick={() => void contactBuyer()}
-          className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-extrabold text-zinc-900 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-xl border border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-extrabold text-bm-text disabled:opacity-50"
         >
           <Send className="h-4 w-4" /> Contact Buyer
         </button>

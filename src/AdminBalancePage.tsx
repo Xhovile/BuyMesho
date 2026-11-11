@@ -120,63 +120,63 @@ export default function AdminBalancePage() {
     >
       <main className="space-y-6">
         {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">
             {error}
           </div>
         ) : null}
 
         <section className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+          <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle">
               Main balance
             </p>
             <div className="mt-3 flex items-end justify-between gap-3">
-              <p className="text-2xl font-black text-zinc-950">
+              <p className="text-2xl font-black text-bm-text">
                 {formatMoney(mainBalance, currency)}
               </p>
-              <Wallet className="h-5 w-5 text-zinc-400" />
+              <Wallet className="h-5 w-5 text-bm-text-subtle" />
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+          <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle">
               Collection balance
             </p>
             <div className="mt-3 flex items-end justify-between gap-3">
-              <p className="text-2xl font-black text-zinc-950">
+              <p className="text-2xl font-black text-bm-text">
                 {formatMoney(collectionBalance, currency)}
               </p>
-              <Wallet className="h-5 w-5 text-zinc-400" />
+              <Wallet className="h-5 w-5 text-bm-text-subtle" />
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+          <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle">
               Available / checked
             </p>
-            <p className="mt-3 text-2xl font-black text-zinc-950">
+            <p className="mt-3 text-2xl font-black text-bm-text">
               {formatMoney(availableBalance, currency)}
             </p>
-            <p className="mt-2 text-xs text-zinc-500">
+            <p className="mt-2 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
               Checked at: {formatDate(balance?.checkedAt)}
             </p>
           </div>
         </section>
 
-        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+        <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
           <div className="flex items-center gap-2">
             {refreshing ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />}
             <h2 className="text-lg font-black">Raw wallet response</h2>
           </div>
 
           {loading ? (
-            <div className="flex items-center gap-2 py-6 text-sm text-zinc-500">
+            <div className="flex items-center gap-2 py-6 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading balance...
             </div>
           ) : (
-            <details className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-              <summary className="cursor-pointer text-sm font-bold text-zinc-700">
+            <details className="mt-4 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-4">
+              <summary className="cursor-pointer text-sm font-bold text-bm-text-muted dark:text-bm-text-muted">
                 Show provider payload
               </summary>
               <pre className="mt-4 overflow-auto rounded-2xl bg-zinc-950 p-4 text-xs leading-relaxed text-zinc-100">
@@ -186,7 +186,7 @@ export default function AdminBalancePage() {
           )}
         </section>
 
-        <section className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">
+        <section className="rounded-[2rem] border border-bm-warning/25 bg-bm-warning-bg p-5 text-sm text-bm-warning">
           <div className="flex items-center gap-2 font-black">
             <CircleAlert className="h-4 w-4" />
             Read this correctly

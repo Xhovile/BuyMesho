@@ -17,80 +17,80 @@ import { useHomePageController } from "./hooks/useHomePageController";
 function DeferredHomeSkeleton() {
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-        <div className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
+      <section className="overflow-hidden rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm sm:p-8">
+        <div className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-5 sm:p-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-3">
-              <div className="h-3 w-28 rounded-full bg-zinc-200 animate-pulse" />
-              <div className="h-6 w-56 max-w-full rounded-full bg-zinc-200 animate-pulse" />
-              <div className="h-4 w-[min(100%,26rem)] rounded-full bg-zinc-200 animate-pulse" />
+              <div className="h-3 w-28 rounded-full bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
+              <div className="h-6 w-56 max-w-full rounded-full bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
+              <div className="h-4 w-[min(100%,26rem)] rounded-full bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
             </div>
-            <div className="h-10 w-28 rounded-2xl bg-zinc-200 animate-pulse" />
+            <div className="h-10 w-28 rounded-2xl bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
           </div>
         </div>
 
         <div className="mt-6 flex gap-3 overflow-x-auto pb-2">
-          <div className="w-[220px] shrink-0 rounded-3xl border border-zinc-200 bg-white shadow-sm sm:w-[260px]">
-            <div className="aspect-[4/3] bg-zinc-100 animate-pulse" />
+          <div className="w-[220px] shrink-0 rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm sm:w-[260px]">
+            <div className="aspect-[4/3] bg-bm-surface-muted dark:bg-bm-surface-muted animate-pulse" />
             <div className="space-y-3 p-4">
-              <div className="h-4 w-3/4 rounded-full bg-zinc-100 animate-pulse" />
-              <div className="h-3 w-full rounded-full bg-zinc-100 animate-pulse" />
-              <div className="h-3 w-5/6 rounded-full bg-zinc-100 animate-pulse" />
-              <div className="h-10 w-full rounded-2xl bg-zinc-100 animate-pulse" />
+              <div className="h-4 w-3/4 rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted animate-pulse" />
+              <div className="h-3 w-full rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted animate-pulse" />
+              <div className="h-3 w-5/6 rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted animate-pulse" />
+              <div className="h-10 w-full rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted animate-pulse" />
             </div>
           </div>
-          <div className="w-[220px] shrink-0 rounded-3xl border border-zinc-200 bg-white shadow-sm sm:w-[260px]">
-            <div className="aspect-[4/3] bg-zinc-100 animate-pulse" />
+          <div className="w-[220px] shrink-0 rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm sm:w-[260px]">
+            <div className="aspect-[4/3] bg-bm-surface-muted dark:bg-bm-surface-muted animate-pulse" />
             <div className="space-y-3 p-4">
-              <div className="h-4 w-3/4 rounded-full bg-zinc-100 animate-pulse" />
-              <div className="h-3 w-full rounded-full bg-zinc-100 animate-pulse" />
-              <div className="h-3 w-5/6 rounded-full bg-zinc-100 animate-pulse" />
-              <div className="h-10 w-full rounded-2xl bg-zinc-100 animate-pulse" />
+              <div className="h-4 w-3/4 rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted animate-pulse" />
+              <div className="h-3 w-full rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted animate-pulse" />
+              <div className="h-3 w-5/6 rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted animate-pulse" />
+              <div className="h-10 w-full rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted animate-pulse" />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+      <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm sm:p-8">
         <div className="grid gap-4">
-          <div className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
+          <div className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-5 sm:p-6">
             <div className="space-y-3">
-              <div className="h-3 w-24 rounded-full bg-zinc-200 animate-pulse" />
-              <div className="h-5 w-52 max-w-full rounded-full bg-zinc-200 animate-pulse" />
-              <div className="h-4 w-[min(100%,28rem)] rounded-full bg-zinc-200 animate-pulse" />
+              <div className="h-3 w-24 rounded-full bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
+              <div className="h-5 w-52 max-w-full rounded-full bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
+              <div className="h-4 w-[min(100%,28rem)] rounded-full bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="min-h-[112px] space-y-3 rounded-[1.5rem] border border-zinc-200 bg-zinc-50 p-4 sm:p-5">
-              <div className="h-3 w-20 rounded-full bg-zinc-200 animate-pulse" />
-              <div className="h-4 w-full rounded-full bg-zinc-200 animate-pulse" />
-              <div className="h-4 w-5/6 rounded-full bg-zinc-200 animate-pulse" />
+            <div className="min-h-[112px] space-y-3 rounded-[1.5rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-4 sm:p-5">
+              <div className="h-3 w-20 rounded-full bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
+              <div className="h-4 w-full rounded-full bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
+              <div className="h-4 w-5/6 rounded-full bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
             </div>
-            <div className="min-h-[112px] space-y-3 rounded-[1.5rem] border border-zinc-200 bg-zinc-50 p-4 sm:p-5">
-              <div className="h-3 w-20 rounded-full bg-zinc-200 animate-pulse" />
-              <div className="h-4 w-full rounded-full bg-zinc-200 animate-pulse" />
-              <div className="h-4 w-5/6 rounded-full bg-zinc-200 animate-pulse" />
+            <div className="min-h-[112px] space-y-3 rounded-[1.5rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-4 sm:p-5">
+              <div className="h-3 w-20 rounded-full bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
+              <div className="h-4 w-full rounded-full bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
+              <div className="h-4 w-5/6 rounded-full bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
             </div>
           </div>
 
-          <div className="min-h-[84px] space-y-3 rounded-[1.5rem] border border-zinc-200 bg-zinc-50 p-4 sm:p-5">
-            <div className="h-3 w-28 rounded-full bg-zinc-200 animate-pulse" />
-            <div className="h-4 w-[min(100%,32rem)] rounded-full bg-zinc-200 animate-pulse" />
+          <div className="min-h-[84px] space-y-3 rounded-[1.5rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-4 sm:p-5">
+            <div className="h-3 w-28 rounded-full bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
+            <div className="h-4 w-[min(100%,32rem)] rounded-full bg-bm-surface-raised dark:bg-bm-skeleton animate-pulse" />
           </div>
         </div>
       </section>
 
-      <section className="rounded-[2rem] bg-zinc-900 p-6 shadow-xl shadow-zinc-400/20 sm:p-8 lg:p-10">
+      <section className="rounded-[2rem] bg-bm-brand p-6 shadow-xl shadow-bm-brand/20 sm:p-8 lg:p-10">
         <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
           <div className="space-y-3">
-            <div className="h-3 w-24 rounded-full bg-white/15 animate-pulse" />
-            <div className="h-7 w-56 max-w-full rounded-full bg-white/15 animate-pulse" />
+            <div className="h-3 w-24 rounded-full bg-bm-on-brand/15 animate-pulse" />
+            <div className="h-7 w-56 max-w-full rounded-full bg-bm-on-brand/15 animate-pulse" />
           </div>
           <div className="flex flex-wrap gap-3 lg:justify-end">
-            <div className="h-12 w-32 rounded-2xl bg-white/15 animate-pulse" />
-            <div className="h-12 w-28 rounded-2xl bg-white/15 animate-pulse" />
-            <div className="h-12 w-32 rounded-2xl bg-white/15 animate-pulse" />
+            <div className="h-12 w-32 rounded-2xl bg-bm-on-brand/15 animate-pulse" />
+            <div className="h-12 w-28 rounded-2xl bg-bm-on-brand/15 animate-pulse" />
+            <div className="h-12 w-32 rounded-2xl bg-bm-on-brand/15 animate-pulse" />
           </div>
         </div>
       </section>
@@ -203,7 +203,7 @@ export default function HomePage() {
     : featuredSections;
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text">
       <FloatingCartButton isLoggedIn={controller.isLoggedIn} />
       <HomeHeader controller={controller} />
       <HomeMobileDrawer controller={controller} />
@@ -247,15 +247,15 @@ export default function HomePage() {
 
         {controller.error ? (
           <section className="mx-auto max-w-7xl px-4 pb-2">
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">
               {controller.error}
             </div>
           </section>
         ) : null}
 
-        <section className="relative left-1/2 w-screen -translate-x-1/2 border-y border-zinc-200 bg-white py-6 sm:py-8">
+        <section className="relative left-1/2 w-screen -translate-x-1/2 border-y border-bm-border dark:border-bm-border bg-bm-surface py-6 sm:py-8">
           <div className="mx-auto max-w-7xl px-4">
-            <h2 className="mb-5 text-2xl font-black tracking-[-0.04em] text-zinc-950 sm:text-4xl">
+            <h2 className="mb-5 text-2xl font-black tracking-[-0.04em] text-bm-text sm:text-4xl">
               FEATURED CATEGORIES
             </h2>
           </div>

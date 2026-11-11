@@ -52,7 +52,7 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
 
   return (
     <>
-      <section className="relative left-1/2 w-screen -translate-x-1/2 overflow-hidden border-b border-zinc-200 bg-gradient-to-br from-zinc-900/10 to-zinc-100 px-4 pt-6 pb-5 sm:pt-8 sm:pb-7">
+      <section className="relative left-1/2 w-screen -translate-x-1/2 overflow-hidden border-b border-bm-border bg-gradient-to-br from-zinc-900/10 to-zinc-100 px-4 pt-6 pb-5 sm:pt-8 sm:pb-7">
         <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
           <div className="absolute left-1/4 top-0 h-40 w-40 rounded-full bg-zinc-900/8 blur-3xl" />
           <div className="absolute bottom-0 right-1/4 h-44 w-44 rounded-full bg-zinc-300/20 blur-3xl" />
@@ -65,7 +65,7 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
               <motion.p
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-500"
+                className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle"
               >
                 Market
               </motion.p>
@@ -78,14 +78,14 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
               >
                 Everyone Can Buy On {" "}
                 <span className="text-red-900">Buy</span>
-                <span className="text-zinc-700">Mesho</span>.
+                <span className="text-bm-text-muted">Mesho</span>.
               </motion.h1>
 
               <motion.p
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.09 }}
-                className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-zinc-600 sm:text-base"
+                className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-bm-text-muted sm:text-base"
               >
                 Explore products, services, deals, sellers, and events on BuyMesho, a public online marketplace in Malawi.
               </motion.p>

@@ -23,25 +23,25 @@ const highlights: Highlight[] = [
     title: "What we collect",
     body:
       "BuyMesho collects account information, profile details, listing content, seller application data, reports, and limited technical usage information needed to operate the marketplace.",
-    icon: <Database className="w-5 h-5 text-zinc-700" />,
+    icon: <Database className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" />,
   },
   {
     title: "How we use it",
     body:
       "We use information to run the platform, support users, review seller applications, moderate marketplace activity, improve safety, and maintain platform performance.",
-    icon: <ShieldCheck className="w-5 h-5 text-zinc-700" />,
+    icon: <ShieldCheck className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" />,
   },
   {
     title: "What becomes public",
     body:
       "Listings, seller profile details, and contact information that you choose to publish may be visible to other users of the marketplace.",
-    icon: <Eye className="w-5 h-5 text-zinc-700" />,
+    icon: <Eye className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" />,
   },
   {
     title: "How we protect it",
     body:
       "We use reasonable technical, administrative, and operational safeguards, but no online system can guarantee absolute security.",
-    icon: <Lock className="w-5 h-5 text-zinc-700" />,
+    icon: <Lock className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" />,
   },
 ];
 
@@ -176,11 +176,11 @@ export default function PrivacyPolicyPage({
       <div className="p-6 overflow-y-auto flex-1">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="space-y-4">
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 space-y-3">
-              <p className="text-sm font-semibold text-zinc-800">
+            <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-5 space-y-3">
+              <p className="text-sm font-semibold text-bm-text dark:text-bm-text-muted">
                 Effective Date: 25 March 2026
               </p>
-              <p className="text-sm text-zinc-700 leading-7">
+              <p className="text-sm text-bm-text-muted dark:text-bm-text-muted leading-7">
                 This Privacy Policy explains how BuyMesho collects, uses, stores, protects, and handles information connected to account access, marketplace participation, seller activity, listings, support, moderation, and related platform operations.
               </p>
             </div>
@@ -188,20 +188,20 @@ export default function PrivacyPolicyPage({
 
           <section className="space-y-4">
             <div className="flex items-center gap-3">
-              <ShieldCheck className="w-5 h-5 text-zinc-700" />
-              <h3 className="text-lg font-bold text-zinc-900">Privacy Highlights</h3>
+              <ShieldCheck className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" />
+              <h3 className="text-lg font-bold text-bm-text dark:text-bm-text">Privacy Highlights</h3>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {highlights.map((item) => (
-                <div key={item.title} className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+                <div key={item.title} className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="h-10 w-10 rounded-xl bg-zinc-100 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-xl bg-bm-surface-muted dark:bg-bm-surface-muted flex items-center justify-center">
                       {item.icon}
                     </div>
-                    <h4 className="text-sm font-extrabold text-zinc-900">{item.title}</h4>
+                    <h4 className="text-sm font-extrabold text-bm-text dark:text-bm-text">{item.title}</h4>
                   </div>
-                  <p className="text-sm text-zinc-700 leading-7">{item.body}</p>
+                  <p className="text-sm text-bm-text-muted dark:text-bm-text-muted leading-7">{item.body}</p>
                 </div>
               ))}
             </div>
@@ -209,17 +209,17 @@ export default function PrivacyPolicyPage({
 
           <div className="space-y-6">
             {sections.map((section) => (
-              <section key={section.title} className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm space-y-4">
-                <h3 className="text-lg font-extrabold text-zinc-900">{section.title}</h3>
+              <section key={section.title} className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm space-y-4">
+                <h3 className="text-lg font-extrabold text-bm-text dark:text-bm-text">{section.title}</h3>
 
-                <div className="space-y-4 text-sm text-zinc-700 leading-7">
+                <div className="space-y-4 text-sm text-bm-text-muted dark:text-bm-text-muted leading-7">
                   {section.paragraphs.map((paragraph, index) => (
                     <p key={index}>{paragraph}</p>
                   ))}
                 </div>
 
                 {section.bullets && section.bullets.length > 0 ? (
-                  <ul className="space-y-3 list-disc pl-5 text-sm text-zinc-700 leading-7">
+                  <ul className="space-y-3 list-disc pl-5 text-sm text-bm-text-muted dark:text-bm-text-muted leading-7">
                     {section.bullets.map((bullet, index) => (
                       <li key={index}>{bullet}</li>
                     ))}

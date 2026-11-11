@@ -31,10 +31,10 @@ function getLatestPayout(payouts: PayoutRecord[]) {
 }
 
 function stepIcon(state: StepState) {
-  if (state === "done") return <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
-  if (state === "warning") return <TriangleAlert className="h-4 w-4 text-amber-600" />;
+  if (state === "done") return <CheckCircle2 className="h-4 w-4 text-bm-success" />;
+  if (state === "warning") return <TriangleAlert className="h-4 w-4 text-bm-warning" />;
   if (state === "active") return <Clock3 className="h-4 w-4 text-indigo-600" />;
-  return <Circle className="h-4 w-4 text-zinc-400" />;
+  return <Circle className="h-4 w-4 text-bm-text-subtle" />;
 }
 
 export default function PayoutTimeline({ payouts }: PayoutTimelineProps) {
@@ -99,17 +99,17 @@ export default function PayoutTimeline({ payouts }: PayoutTimelineProps) {
   ];
 
   return (
-    <section className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-4">
+    <section className="rounded-[1.75rem] border border-bm-border bg-bm-surface-muted p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-zinc-400">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-bm-text-subtle">
             Payout timeline
           </p>
-          <h3 className="mt-2 text-lg font-black tracking-tight text-zinc-900">
+          <h3 className="mt-2 text-lg font-black tracking-tight text-bm-text">
             {paid ? "Payout complete" : blocked ? "Payout stopped here" : "Payout in progress"}
           </h3>
         </div>
-        <div className="rounded-full bg-zinc-100 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] text-zinc-600">
+        <div className="rounded-full bg-bm-surface-muted px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] text-bm-text-muted">
           {status || "unknown"}
         </div>
       </div>
@@ -118,10 +118,10 @@ export default function PayoutTimeline({ payouts }: PayoutTimelineProps) {
         <div
           className={`mt-4 rounded-2xl border p-4 ${
             paid
-              ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+              ? "border-bm-border bg-bm-success-bg text-bm-text"
               : blocked
-                ? "border-amber-200 bg-amber-50 text-amber-950"
-                : "border-sky-200 bg-sky-50 text-sky-950"
+                ? "border-bm-border bg-bm-warning-bg text-bm-text"
+                : "border-bm-border bg-bm-surface-muted text-bm-text"
           }`}
         >
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-current/60">
@@ -133,33 +133,33 @@ export default function PayoutTimeline({ payouts }: PayoutTimelineProps) {
           <p className="mt-1 text-sm leading-6 text-current/80">{detail}</p>
 
           <div className="mt-3 grid gap-2 text-sm text-current/80 sm:grid-cols-2">
-            <div className="rounded-xl bg-white/70 px-3 py-2 ring-1 ring-black/5">
+            <div className="rounded-xl bg-bm-surface/70 px-3 py-2 ring-1 ring-black/5">
               <span className="font-bold text-current">Payout provider:</span>{" "}
               {latest.provider ?? "PayChangu"}
             </div>
-            <div className="rounded-xl bg-white/70 px-3 py-2 ring-1 ring-black/5">
+            <div className="rounded-xl bg-bm-surface/70 px-3 py-2 ring-1 ring-black/5">
               <span className="font-bold text-current">Last updated:</span>{" "}
               {new Date(latest.updatedAt ?? latest.createdAt).toLocaleString()}
             </div>
             {manualReview ? (
-              <div className="rounded-xl bg-white/70 px-3 py-2 ring-1 ring-black/5 sm:col-span-2">
+              <div className="rounded-xl bg-bm-surface/70 px-3 py-2 ring-1 ring-black/5 sm:col-span-2">
                 <span className="font-bold text-current">Next step:</span> Waiting for admin review
               </div>
             ) : null}
             {failureMeta ? (
-              <div className="rounded-xl bg-white/70 px-3 py-2 ring-1 ring-black/5 sm:col-span-2">
+              <div className="rounded-xl bg-bm-surface/70 px-3 py-2 ring-1 ring-black/5 sm:col-span-2">
                 <span className="font-bold text-current">Exact issue:</span> {failureMeta.label}
                 <div className="mt-1 text-xs leading-5 text-current/70">{failureMeta.detail}</div>
               </div>
             ) : blocked ? (
-              <div className="rounded-xl bg-white/70 px-3 py-2 ring-1 ring-black/5 sm:col-span-2">
+              <div className="rounded-xl bg-bm-surface/70 px-3 py-2 ring-1 ring-black/5 sm:col-span-2">
                 <span className="font-bold text-current">Exact issue:</span> {detail}
               </div>
             ) : null}
           </div>
 
           {failureReasonSource ? (
-            <div className="mt-3 rounded-2xl border border-current/10 bg-white/60 px-3 py-2 text-xs font-semibold text-current/70">
+            <div className="mt-3 rounded-2xl border border-current/10 bg-bm-surface/60 px-3 py-2 text-xs font-semibold text-current/70">
               <span className="font-bold text-current/85">Reason code / source:</span>{" "}
               {failureReasonSource}
             </div>
@@ -170,7 +170,7 @@ export default function PayoutTimeline({ payouts }: PayoutTimelineProps) {
               {signals.slice(0, 4).map((signal) => (
                 <span
                   key={signal}
-                  className="inline-flex items-center rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold text-current/80 ring-1 ring-black/5"
+                  className="inline-flex items-center rounded-full bg-bm-surface/70 px-3 py-1 text-[11px] font-semibold text-current/80 ring-1 ring-black/5"
                 >
                   {signal}
                 </span>
@@ -184,23 +184,23 @@ export default function PayoutTimeline({ payouts }: PayoutTimelineProps) {
         {steps.map((step, index) => (
           <div key={step.key} className="flex gap-3">
             <div className="flex flex-col items-center">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-50 ring-1 ring-zinc-200">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-bm-surface-muted ring-1 ring-bm-border">
                 {stepIcon(step.state)}
               </div>
               {index < steps.length - 1 ? (
-                <div className="mt-1 h-full min-h-8 w-px bg-zinc-200" />
+                <div className="mt-1 h-full min-h-8 w-px bg-bm-surface-raised" />
               ) : null}
             </div>
 
             <div className="min-w-0 pb-1">
-              <p className="text-sm font-bold text-zinc-900">{step.label}</p>
-              <p className="mt-1 text-sm text-zinc-500">{step.detail}</p>
+              <p className="text-sm font-bold text-bm-text">{step.label}</p>
+              <p className="mt-1 text-sm text-bm-text-subtle">{step.detail}</p>
             </div>
           </div>
         ))}
       </div>
 
-      <p className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-zinc-500">
+      <p className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-bm-text-subtle">
         <ShieldCheck className="h-4 w-4" />
         During launch, payouts are automatically queued after escrow release.
       </p>

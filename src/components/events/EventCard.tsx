@@ -89,7 +89,7 @@ export function EventCard({ item }: { item: EventCardItem }) {
   const posterAlt = getPosterAlt(item);
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-200/90 shadow-sm text-left transition-shadow hover:shadow-md">
+    <div className="overflow-hidden rounded-2xl bg-bm-surface ring-1 ring-bm-border/90 shadow-sm text-left transition-shadow hover:shadow-md">
       <a
         href={EVENTS_PATH + "?event=" + encodeURIComponent(String(item.id))}
         onClick={(event) => {
@@ -104,19 +104,19 @@ export function EventCard({ item }: { item: EventCardItem }) {
         </div>
 
         <div className="px-3 pt-3">
-          <h3 className="line-clamp-2 text-base font-black tracking-[-0.05em] leading-tight text-zinc-950">{item.event_title}</h3>
+          <h3 className="line-clamp-2 text-base font-black tracking-[-0.05em] leading-tight text-bm-text">{item.event_title}</h3>
 
-          <div className="mt-3 grid gap-2 text-xs text-zinc-600">
+          <div className="mt-3 grid gap-2 text-xs text-bm-text-muted">
             <div className="flex items-center gap-2">
-              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-red-900" />
-              <span className="font-semibold text-zinc-700">{date}</span>
-              <span className="text-zinc-300">•</span>
+              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-bm-brand" />
+              <span className="font-semibold text-bm-text-muted">{date}</span>
+              <span className="text-bm-text-subtle">•</span>
               <span>{time}</span>
             </div>
 
             <div className="flex items-start gap-2">
-              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-900" />
-              <span className="leading-relaxed text-zinc-700 line-clamp-2">
+              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-bm-brand" />
+              <span className="leading-relaxed text-bm-text-muted line-clamp-2">
                 {item.venue}
                 {item.location ? " • " + item.location : ""}
               </span>

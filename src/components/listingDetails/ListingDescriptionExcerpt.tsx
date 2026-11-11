@@ -14,13 +14,13 @@ export default function ListingDescriptionExcerpt({
   const shouldClamp = content.length > 240;
 
   if (!content) {
-    return <p className="text-sm leading-7 text-zinc-500">{fallback}</p>;
+    return <p className="text-sm leading-7 text-bm-text-subtle">{fallback}</p>;
   }
 
   return (
     <div className="space-y-2">
       <p
-        className={`whitespace-pre-wrap text-sm leading-7 text-zinc-600 ${!expanded && shouldClamp ? "max-h-28 overflow-hidden" : ""}`}
+        className={`whitespace-pre-wrap text-sm leading-7 text-bm-text-muted ${!expanded && shouldClamp ? "max-h-28 overflow-hidden" : ""}`}
       >
         {content}
       </p>
@@ -28,7 +28,7 @@ export default function ListingDescriptionExcerpt({
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500 transition hover:text-zinc-900"
+          className="text-xs font-bold uppercase tracking-[0.16em] text-bm-text-subtle transition hover:text-bm-text"
         >
           {expanded ? "Less" : "More..."}
         </button>

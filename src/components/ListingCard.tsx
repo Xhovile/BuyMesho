@@ -137,7 +137,7 @@ export default function ListingCard({
 
   return (
     <div
-      className={`group relative w-full ${cardSize} ${clickable ? "cursor-pointer" : ""} focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40`}
+      className={`group relative w-full ${cardSize} ${clickable ? "cursor-pointer" : ""} focus:outline-none focus-visible:ring-2 focus-visible:ring-bm-focus/40`}
       onClick={openDetails}
       onKeyDown={handleKeyDown}
       tabIndex={clickable ? 0 : -1}
@@ -145,7 +145,7 @@ export default function ListingCard({
       aria-label={`Open listing details for ${titleLabel}`}
     >
       <div className="relative overflow-hidden">
-        <div className={`relative overflow-hidden rounded-2xl bg-zinc-100 ${imageAspect}`}>
+        <div className={`relative overflow-hidden rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted ${imageAspect}`}>
           <a
             href={`/listing?listing=${encodeURIComponent(String(listing.id))}`}
             aria-label={`Open listing details for ${titleLabel}`}
@@ -170,7 +170,7 @@ export default function ListingCard({
             <>
               <div className="pointer-events-none absolute inset-0 bg-black/30" />
               <div className="absolute right-3 top-3">
-                <span className="rounded-xl bg-red-900 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-sm">
+                <span className="rounded-xl bg-bm-brand px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-bm-on-brand shadow-sm">
                   Sold
                 </span>
               </div>
@@ -225,7 +225,7 @@ export default function ListingCard({
                   {offerLabel}
                 </span>
                 <span
-                  className={`font-extrabold leading-none text-red-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] ${
+                  className={`font-extrabold leading-none text-bm-brand drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] ${
                     fillGrid
                       ? "text-[9px] md:text-[10px]"
                       : ultraCompact
@@ -240,7 +240,7 @@ export default function ListingCard({
               </div>
             ) : (
               <div
-                className={`rounded-xl border border-white/25 bg-white/90 font-extrabold shadow-md ${
+                className={`rounded-xl border border-white/25 bg-bm-surface/90 dark:bg-bm-surface/90 font-extrabold shadow-md ${
                   performanceMode ? "" : "backdrop-blur-md"
                 } ${
                   fillGrid
@@ -250,7 +250,7 @@ export default function ListingCard({
                       : compact
                         ? "px-2.5 py-1 text-xs"
                         : "px-3 py-1.5 text-sm"
-                } text-zinc-950`}
+                } text-bm-text dark:text-bm-text`}
               >
                 <span>{formatMoney(Number(listing.price) || 0)}</span>
               </div>
@@ -282,12 +282,12 @@ export default function ListingCard({
             <h3
               className={
                 fillGrid
-                  ? "line-clamp-1 text-[13px] font-extrabold tracking-tight text-zinc-900 md:text-[15px] md:group-hover:text-primary"
+                  ? "line-clamp-1 text-[13px] font-extrabold tracking-tight text-bm-text dark:text-bm-text md:text-[15px] md:group-hover:text-primary"
                   : ultraCompact
-                    ? "line-clamp-1 text-[13px] font-extrabold tracking-tight text-zinc-900"
+                    ? "line-clamp-1 text-[13px] font-extrabold tracking-tight text-bm-text dark:text-bm-text"
                     : compact
-                      ? "line-clamp-1 text-[15px] font-extrabold tracking-tight text-zinc-900 group-hover:text-primary"
-                      : "line-clamp-1 text-[18px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
+                      ? "line-clamp-1 text-[15px] font-extrabold tracking-tight text-bm-text dark:text-bm-text group-hover:text-primary"
+                      : "line-clamp-1 text-[18px] font-bold tracking-tight text-bm-text dark:text-bm-text group-hover:text-primary"
               }
             >
               {titleLabel}
@@ -300,13 +300,13 @@ export default function ListingCard({
             }`}
           >
             {cardSpecs.map((spec) => (
-              <span key={spec.key} className="rounded-full bg-zinc-100 px-1.5 py-px font-semibold leading-tight text-zinc-700">
+              <span key={spec.key} className="rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted px-1.5 py-px font-semibold leading-tight text-bm-text-muted dark:text-bm-text-muted">
                 {spec.label}: {spec.value}
               </span>
             ))}
           </div>
 
-          <div className="min-h-[1.1rem] text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
+          <div className="min-h-[1.1rem] text-[10px] font-extrabold uppercase tracking-wider text-bm-text-muted dark:text-bm-text-muted">
             {[conditionLabel, availabilityLabel].filter(Boolean).join(" | ")}
           </div>
 
@@ -315,12 +315,12 @@ export default function ListingCard({
               <button
                 type="button"
                 onClick={handleBuyClick}
-                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-lime-400 px-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-950 shadow-sm transition-colors hover:bg-lime-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60"
+                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-lime-400 px-3 text-xs font-black uppercase tracking-[0.14em] text-bm-text dark:text-bm-text shadow-sm transition-colors hover:bg-lime-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60"
               >
                 <BuyBasketIcon className="h-6 w-6 shrink-0 text-[#8F171D]" />
                 <span>Buy</span>
               </button>
-              {buyNotice ? <p className="text-[10px] font-bold text-red-700">{buyNotice}</p> : null}
+              {buyNotice ? <p className="text-[10px] font-bold text-bm-danger">{buyNotice}</p> : null}
             </div>
           ) : null}
         </div>

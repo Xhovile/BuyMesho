@@ -16,5 +16,5 @@ export default function OrderDisputePage() {
     navigateToPath(`/disputes?${query.toString()}`);
   }, []);
 
-  return <div className="flex min-h-screen items-center justify-center bg-zinc-100 text-sm text-zinc-500">Opening Disputes…</div>;
+  return <div className="flex min-h-screen items-center justify-center bg-bm-surface-muted text-sm text-bm-text-subtle">Opening Disputes…</div>;
 }

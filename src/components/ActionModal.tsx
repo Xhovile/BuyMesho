@@ -52,28 +52,28 @@ export default function ActionModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleCancel}
-            className="absolute inset-0 bg-zinc-950/65 backdrop-blur-sm"
+            className="absolute inset-0 bg-bm-overlay backdrop-blur-sm"
           />
 
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 18 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 18 }}
-            className="relative w-full max-w-md overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl"
+            className="relative w-full max-w-md overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-zinc-100 px-6 py-5">
+            <div className="flex items-start justify-between gap-4 border-b border-bm-border-subtle dark:border-bm-border-subtle px-6 py-5">
               <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle dark:text-bm-text-subtle">
                   BuyMesho
                 </p>
-                <h3 className="mt-1 text-lg font-black tracking-tight text-zinc-900">{title}</h3>
+                <h3 className="mt-1 text-lg font-black tracking-tight text-bm-text dark:text-bm-text">{title}</h3>
               </div>
 
               <button
                 type="button"
                 onClick={handleCancel}
-                className="rounded-full p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800"
+                className="rounded-full p-2 text-bm-text-subtle dark:text-bm-text-subtle transition-colors hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted hover:text-bm-text"
                 aria-label="Close dialog"
               >
                 <X className="h-5 w-5" />
@@ -81,11 +81,11 @@ export default function ActionModal({
             </div>
 
             <div className="space-y-4 px-6 py-5">
-              {message ? <p className="text-sm leading-6 text-zinc-600">{message}</p> : null}
+              {message ? <p className="text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted">{message}</p> : null}
 
               {inputLabel ? (
                 <label className="block">
-                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-bm-text-subtle dark:text-bm-text-subtle">
                     {inputLabel}
                   </span>
                   {inputType === "textarea" ? (
@@ -94,7 +94,7 @@ export default function ActionModal({
                       onChange={(e) => onInputChange?.(e.target.value)}
                       placeholder={inputPlaceholder}
                       rows={4}
-                      className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-900 outline-none transition focus:border-zinc-900 focus:bg-white"
+                      className="w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-sm font-semibold text-bm-text dark:text-bm-text outline-none transition focus:border-bm-brand focus:bg-bm-surface"
                     />
                   ) : (
                     <input
@@ -104,18 +104,18 @@ export default function ActionModal({
                       value={inputValue ?? ""}
                       onChange={(e) => onInputChange?.(e.target.value)}
                       placeholder={inputPlaceholder}
-                      className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-900 outline-none transition focus:border-zinc-900 focus:bg-white"
+                      className="w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-sm font-semibold text-bm-text dark:text-bm-text outline-none transition focus:border-bm-brand focus:bg-bm-surface"
                     />
                   )}
                 </label>
               ) : null}
             </div>
 
-            <div className="flex gap-3 border-t border-zinc-100 px-6 py-5">
+            <div className="flex gap-3 border-t border-bm-border-subtle dark:border-bm-border-subtle px-6 py-5">
               <button
                 type="button"
                 onClick={handleCancel}
-                className="flex-1 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-extrabold text-zinc-700 transition-colors hover:bg-zinc-50"
+                className="flex-1 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm font-extrabold text-bm-text-muted dark:text-bm-text-muted transition-colors hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
               >
                 {cancelLabel}
               </button>
@@ -125,8 +125,8 @@ export default function ActionModal({
                 disabled={isLoading}
                 className={`flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-extrabold transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
                   danger
-                    ? "bg-red-600 text-white hover:bg-red-700"
-                    : "bg-zinc-900 text-white hover:bg-zinc-800"
+                    ? "bg-bm-danger text-bm-on-brand hover:bg-bm-danger/90"
+                    : "bg-bm-brand text-bm-on-brand hover:bg-bm-brand-hover"
                 }`}
               >
                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

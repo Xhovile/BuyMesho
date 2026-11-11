@@ -63,26 +63,26 @@ function formatDateTime(value: string | null | undefined) {
 function statusClass(status: string) {
   switch (status.toLowerCase()) {
     case "published":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+      return "border-bm-success/25 bg-bm-success-bg text-bm-success";
     case "inactive":
-      return "border-amber-200 bg-amber-50 text-amber-700";
+      return "border-bm-warning/25 bg-bm-warning-bg text-bm-warning";
     case "cancelled":
-      return "border-rose-200 bg-rose-50 text-rose-700";
+      return "border-bm-danger/25 bg-bm-danger-bg text-bm-danger";
     case "draft":
-      return "border-sky-200 bg-sky-50 text-sky-700";
+      return "border-bm-border bg-bm-surface-muted text-bm-text-muted";
     default:
-      return "border-zinc-200 bg-zinc-50 text-zinc-700";
+      return "border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-muted dark:text-bm-text-muted";
   }
 }
 
 function transactionStatusClass(hasRevenue: boolean, pendingIssues: boolean) {
   if (hasRevenue) {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    return "border-bm-success/25 bg-bm-success-bg text-bm-success";
   }
   if (pendingIssues) {
-    return "border-amber-200 bg-amber-50 text-amber-700";
+    return "border-bm-warning/25 bg-bm-warning-bg text-bm-warning";
   }
-  return "border-zinc-200 bg-zinc-50 text-zinc-700";
+  return "border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-muted dark:text-bm-text-muted";
 }
 
 function transactionStatusLabel(event: DashboardEvent) {
@@ -109,14 +109,14 @@ function settlementFeeAmount(event: DashboardEvent) {
 
 function MetricCard({ label, value, helper, icon: Icon }: { label: string; value: string; helper?: string; icon: ComponentType<{ className?: string }> }) {
   return (
-    <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm shadow-zinc-200/30">
+    <div className="rounded-[1.5rem] border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm shadow-zinc-200/30">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">{label}</p>
-          <p className="mt-2 text-2xl font-black tracking-tight text-zinc-950">{value}</p>
-          {helper ? <p className="mt-1 text-xs font-medium text-zinc-500">{helper}</p> : null}
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">{label}</p>
+          <p className="mt-2 text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">{value}</p>
+          {helper ? <p className="mt-1 text-xs font-medium text-bm-text-subtle dark:text-bm-text-subtle">{helper}</p> : null}
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-50 text-zinc-700">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-muted dark:text-bm-text-muted">
           <Icon className="h-5 w-5" />
         </div>
       </div>
@@ -136,7 +136,7 @@ function SectionTitle({
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
-        <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">{eyebrow}</p>
+        <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-bm-text-subtle dark:text-bm-text-subtle">{eyebrow}</p>
         <h2 className="mt-2 text-2xl font-black tracking-tight">{title}</h2>
       </div>
       {action ? action : null}
@@ -270,27 +270,27 @@ function buildPrintableDashboardHtml(params: {
 function SettlementBanner({ summary }: { summary: DashboardResponse["summary"] }) {
   const hasRevenue = summary.grossRevenueAmount > 0;
   return (
-    <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+    <div className="rounded-[1.5rem] border border-bm-success/25 bg-bm-success-bg p-4 shadow-sm">
       <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-700">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-bm-surface text-bm-success">
           <Clock3 className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-emerald-600">Settlement status</p>
-          <h3 className="mt-1 text-xl font-black tracking-tight text-emerald-950">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-bm-success">Settlement status</p>
+          <h3 className="mt-1 text-xl font-black tracking-tight text-bm-success">
             {hasRevenue ? "Successful transactions are waiting for midnight settlement" : "No captured transactions yet"}
           </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-emerald-900/90">
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-bm-success/90">
             Payments made today will be available the next day after midnight. The exact time may vary slightly, but it follows the T+1 cycle.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.16em] text-emerald-900">
-            <span className="rounded-full border border-emerald-200 bg-white px-3 py-1">
+          <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.16em] text-bm-success">
+            <span className="rounded-full border border-bm-success/25 bg-bm-surface px-3 py-1">
               Captured: {formatMoney(summary.grossRevenueAmount, summary.revenueCurrency)}
             </span>
-            <span className="rounded-full border border-emerald-200 bg-white px-3 py-1">
+            <span className="rounded-full border border-bm-success/25 bg-bm-surface px-3 py-1">
               Est. net: {formatMoney(summary.netRevenueAmount, summary.revenueCurrency)}
             </span>
-            <span className="rounded-full border border-emerald-200 bg-white px-3 py-1">
+            <span className="rounded-full border border-bm-success/25 bg-bm-surface px-3 py-1">
               T+1 settlement
             </span>
           </div>
@@ -302,21 +302,21 @@ function SettlementBanner({ summary }: { summary: DashboardResponse["summary"] }
 
 function TransactionHistorySection({ events }: { events: DashboardEvent[] }) {
   return (
-    <section className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
+    <section className="rounded-[1.5rem] border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm">
       <SectionTitle
         eyebrow="Transaction ledger"
         title="Captured payments and settlement maths"
-        action={<Wallet className="h-5 w-5 text-zinc-400" />}
+        action={<Wallet className="h-5 w-5 text-bm-text-subtle dark:text-bm-text-subtle" />}
       />
 
-      <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600">
+      <p className="mt-2 max-w-3xl text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted">
         Successful event payments stay visible here with gross, fees, net, and settlement state. The ledger stays intact; only the wording changes.
       </p>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-bm-border dark:border-bm-border">
         <div className="max-h-[540px] min-w-[940px] overflow-auto">
-          <table className="w-full divide-y divide-zinc-200 text-left text-sm">
-            <thead className="sticky top-0 bg-zinc-50 text-zinc-500">
+          <table className="w-full divide-y divide-bm-border dark:divide-bm-border text-left text-sm">
+            <thead className="sticky top-0 bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-subtle dark:text-bm-text-subtle">
               <tr>
                 <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Settlement</th>
                 <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Amount</th>
@@ -325,10 +325,10 @@ function TransactionHistorySection({ events }: { events: DashboardEvent[] }) {
                 <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Updated</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100 bg-white">
+            <tbody className="divide-y divide-bm-border-subtle dark:divide-bm-border-subtle bg-bm-surface">
               {events.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-zinc-500">
+                  <td colSpan={5} className="px-4 py-6 text-bm-text-subtle dark:text-bm-text-subtle">
                     No transaction records yet.
                   </td>
                 </tr>
@@ -344,17 +344,17 @@ function TransactionHistorySection({ events }: { events: DashboardEvent[] }) {
                           <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${transactionStatusClass(hasRevenue, event.pending_issues)}`}>
                             {transactionStatusLabel(event)}
                           </span>
-                          <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-semibold text-zinc-600">
+                          <div className="rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-3 py-2 text-xs font-semibold text-bm-text-muted dark:text-bm-text-muted">
                             {transactionSettlementNote(event)}
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-4 py-4 text-zinc-700">
-                        <div className="font-bold text-zinc-900">
+                      <td className="px-4 py-4 text-bm-text-muted dark:text-bm-text-muted">
+                        <div className="font-bold text-bm-text dark:text-bm-text">
                           {formatMoney(event.gross_revenue_amount, event.revenue_currency)}
                         </div>
-                        <div className="mt-2 space-y-1 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-[11px] font-semibold text-zinc-500">
+                        <div className="mt-2 space-y-1 rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-2.5 py-2 text-[11px] font-semibold text-bm-text-subtle dark:text-bm-text-subtle">
                           <div className="flex justify-between gap-3">
                             <span>Gross</span>
                             <span>{formatMoney(event.gross_revenue_amount, event.revenue_currency)}</span>
@@ -363,28 +363,28 @@ function TransactionHistorySection({ events }: { events: DashboardEvent[] }) {
                             <span>Fee / reserve</span>
                             <span>-{formatMoney(feeAmount, event.revenue_currency)}</span>
                           </div>
-                          <div className="flex justify-between gap-3 border-t border-zinc-200 pt-1 font-bold text-zinc-700">
+                          <div className="flex justify-between gap-3 border-t border-bm-border dark:border-bm-border pt-1 font-bold text-bm-text-muted dark:text-bm-text-muted">
                             <span>Net</span>
                             <span>{formatMoney(event.net_revenue_amount, event.revenue_currency)}</span>
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-4 py-4 text-zinc-700">
-                        <p className="font-bold text-zinc-950">{event.event_title}</p>
-                        <p className="mt-1 text-xs text-zinc-500">
+                      <td className="px-4 py-4 text-bm-text-muted dark:text-bm-text-muted">
+                        <p className="font-bold text-bm-text dark:text-bm-text">{event.event_title}</p>
+                        <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
                           {event.event_type} • {event.organizer_name}
                         </p>
-                        <p className="mt-1 text-xs text-zinc-500">
+                        <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
                           {event.venue} • {event.location}
                         </p>
-                        <p className="mt-2 text-xs text-zinc-500">
+                        <p className="mt-2 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
                           {formatDate(event.event_date)} • {event.start_time}
                         </p>
                       </td>
 
-                      <td className="px-4 py-4 text-zinc-700">
-                        <div className="space-y-1 text-xs text-zinc-500">
+                      <td className="px-4 py-4 text-bm-text-muted dark:text-bm-text-muted">
+                        <div className="space-y-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
                           <p>{event.tickets_sold} tickets sold</p>
                           <p>{event.cart_adds} cart adds</p>
                           <p>{event.message_threads} message threads</p>
@@ -392,7 +392,7 @@ function TransactionHistorySection({ events }: { events: DashboardEvent[] }) {
                         </div>
                       </td>
 
-                      <td className="px-4 py-4 text-zinc-700">
+                      <td className="px-4 py-4 text-bm-text-muted dark:text-bm-text-muted">
                         {formatDateTime(event.last_activity_at || event.updated_at)}
                       </td>
                     </tr>
@@ -528,16 +528,16 @@ export default function EventCreatorOverviewPage() {
       childrenSectionClassName="w-full"
     >
       <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-zinc-500">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-bm-text-subtle dark:text-bm-text-subtle">
             <LayoutDashboard className="h-4 w-4" />
             <p className="text-xs font-black uppercase tracking-[0.2em]">Overview</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => navigateToPath(EVENTS_MANAGE_PATH)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50">
+            <button type="button" onClick={() => navigateToPath(EVENTS_MANAGE_PATH)} className="inline-flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-text dark:text-bm-text hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted">
               <ArrowRight className="h-4 w-4" /> Manage Events
             </button>
-            <button type="button" onClick={handleExportPdf} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50">
+            <button type="button" onClick={handleExportPdf} className="inline-flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-text dark:text-bm-text hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted">
               <Download className="h-4 w-4" />
               Export PDF
             </button>
@@ -556,16 +556,16 @@ export default function EventCreatorOverviewPage() {
 
         <TransactionHistorySection events={filteredEvents} />
 
-        <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
+        <div className="rounded-[1.5rem] border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm">
           <div className="grid gap-3 lg:grid-cols-[1.7fr_0.8fr_0.8fr_0.8fr_0.8fr]">
-            <label className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-500 lg:col-span-1">
+            <label className="flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle lg:col-span-1">
               <Search className="h-4 w-4 shrink-0" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent text-sm text-zinc-900 outline-none" placeholder="Search events" />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent text-sm text-bm-text dark:text-bm-text outline-none" placeholder="Search events" />
             </label>
 
-            <label className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-500">
+            <label className="flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
               <Filter className="h-4 w-4 shrink-0" />
-              <select value={status} onChange={(event) => setStatus(event.target.value as StatusFilter)} className="w-full bg-transparent text-sm text-zinc-900 outline-none">
+              <select value={status} onChange={(event) => setStatus(event.target.value as StatusFilter)} className="w-full bg-transparent text-sm text-bm-text dark:text-bm-text outline-none">
                 <option value="all">All statuses</option>
                 <option value="published">Published</option>
                 <option value="inactive">Inactive</option>
@@ -574,19 +574,19 @@ export default function EventCreatorOverviewPage() {
               </select>
             </label>
 
-            <label className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-500">
+            <label className="flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
               <CalendarDays className="h-4 w-4 shrink-0" />
-              <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="w-full bg-transparent text-sm text-zinc-900 outline-none" />
+              <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="w-full bg-transparent text-sm text-bm-text dark:text-bm-text outline-none" />
             </label>
 
-            <label className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-500">
+            <label className="flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
               <CalendarDays className="h-4 w-4 shrink-0" />
-              <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="w-full bg-transparent text-sm text-zinc-900 outline-none" />
+              <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="w-full bg-transparent text-sm text-bm-text dark:text-bm-text outline-none" />
             </label>
 
-            <label className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-500">
+            <label className="flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
               <Filter className="h-4 w-4 shrink-0" />
-              <select value={eventType} onChange={(event) => setEventType(event.target.value)} className="w-full bg-transparent text-sm text-zinc-900 outline-none">
+              <select value={eventType} onChange={(event) => setEventType(event.target.value)} className="w-full bg-transparent text-sm text-bm-text dark:text-bm-text outline-none">
                 <option value="all">All types</option>
                 {eventTypes.map((type) => <option key={type} value={type}>{type}</option>)}
               </select>
@@ -594,33 +594,33 @@ export default function EventCreatorOverviewPage() {
           </div>
         </div>
 
-        {error ? <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
+        {error ? <div className="rounded-[1.5rem] border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">{error}</div> : null}
 
-        <div className="overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-4">
+        <div className="overflow-hidden rounded-[1.5rem] border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
+          <div className="flex items-center justify-between gap-3 border-b border-bm-border dark:border-bm-border px-4 py-4">
             <div>
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">Event performance</p>
-              <h2 className="mt-1 text-lg font-black tracking-tight text-zinc-950">Filtered events</h2>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Event performance</p>
+              <h2 className="mt-1 text-lg font-black tracking-tight text-bm-text dark:text-bm-text">Filtered events</h2>
             </div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">{filteredEvents.length} shown</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">{filteredEvents.length} shown</p>
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center gap-3 px-5 py-12 text-sm text-zinc-600">
+            <div className="flex items-center justify-center gap-3 px-5 py-12 text-sm text-bm-text-muted dark:text-bm-text-muted">
               <Loader2 className="h-5 w-5 animate-spin" />
               Loading dashboard…
             </div>
           ) : filteredEvents.length === 0 ? (
             <div className="px-5 py-12 text-center">
-              <p className="text-sm text-zinc-600">No events match your filters.</p>
-              <button type="button" onClick={() => setQuery("")} className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800">
+              <p className="text-sm text-bm-text-muted dark:text-bm-text-muted">No events match your filters.</p>
+              <button type="button" onClick={() => setQuery("")} className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover">
                 Clear search
               </button>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-zinc-200 text-left">
-                <thead className="bg-zinc-50 text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
+              <table className="min-w-full divide-y divide-bm-border dark:divide-bm-border text-left">
+                <thead className="bg-bm-surface-muted dark:bg-bm-surface-subtle text-[11px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">
                   <tr>
                     <th className="px-4 py-3">Event</th>
                     <th className="px-4 py-3">Status</th>
@@ -632,27 +632,27 @@ export default function EventCreatorOverviewPage() {
                     <th className="px-4 py-3">Last updated</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100 bg-white text-sm">
+                <tbody className="divide-y divide-bm-border-subtle dark:divide-bm-border-subtle bg-bm-surface text-sm">
                   {filteredEvents.map((event) => (
-                    <tr key={event.id} className="align-top hover:bg-zinc-50/50">
+                    <tr key={event.id} className="align-top hover:bg-bm-surface-muted/50">
                       <td className="px-4 py-4">
-                        <p className="font-black tracking-tight text-zinc-950">{event.event_title}</p>
-                        <p className="mt-1 text-xs text-zinc-500">{event.event_type} • {event.organizer_name}</p>
-                        <p className="mt-1 text-xs text-zinc-500">{event.venue} • {event.location}</p>
+                        <p className="font-black tracking-tight text-bm-text dark:text-bm-text">{event.event_title}</p>
+                        <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">{event.event_type} • {event.organizer_name}</p>
+                        <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">{event.venue} • {event.location}</p>
                       </td>
                       <td className="px-4 py-4">
                         <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${statusClass(event.status)}`}>{event.status}</span>
-                        {event.pending_issues ? <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.16em] text-rose-600">Needs attention</p> : null}
+                        {event.pending_issues ? <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.16em] text-bm-danger">Needs attention</p> : null}
                       </td>
-                      <td className="px-4 py-4 text-zinc-700">
+                      <td className="px-4 py-4 text-bm-text-muted dark:text-bm-text-muted">
                         {formatDate(event.event_date)}
-                        <div className="mt-1 text-xs text-zinc-500">{event.start_time}</div>
+                        <div className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">{event.start_time}</div>
                       </td>
-                      <td className="px-4 py-4 font-bold text-zinc-950">{event.tickets_sold}</td>
-                      <td className="px-4 py-4 font-bold text-zinc-950">{formatMoney(event.gross_revenue_amount, event.revenue_currency)}</td>
-                      <td className="px-4 py-4 font-bold text-zinc-950">{formatMoney(event.net_revenue_amount, event.revenue_currency)}</td>
-                      <td className="px-4 py-4 text-zinc-700"><div className="space-y-1 text-xs text-zinc-500"><p>{event.ticket_clicks} clicks</p><p>{event.cart_adds} cart adds</p><p>{event.message_threads} threads</p></div></td>
-                      <td className="px-4 py-4 text-zinc-700">{formatDateTime(event.last_activity_at || event.updated_at)}</td>
+                      <td className="px-4 py-4 font-bold text-bm-text dark:text-bm-text">{event.tickets_sold}</td>
+                      <td className="px-4 py-4 font-bold text-bm-text dark:text-bm-text">{formatMoney(event.gross_revenue_amount, event.revenue_currency)}</td>
+                      <td className="px-4 py-4 font-bold text-bm-text dark:text-bm-text">{formatMoney(event.net_revenue_amount, event.revenue_currency)}</td>
+                      <td className="px-4 py-4 text-bm-text-muted dark:text-bm-text-muted"><div className="space-y-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle"><p>{event.ticket_clicks} clicks</p><p>{event.cart_adds} cart adds</p><p>{event.message_threads} threads</p></div></td>
+                      <td className="px-4 py-4 text-bm-text-muted dark:text-bm-text-muted">{formatDateTime(event.last_activity_at || event.updated_at)}</td>
                     </tr>
                   ))}
                 </tbody>

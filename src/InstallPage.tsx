@@ -50,7 +50,7 @@ export default function InstallPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f5f5f4] px-5 py-10 text-zinc-900 sm:flex sm:items-center sm:justify-center sm:py-16">
+    <main className="min-h-screen bg-[#f5f5f4] px-5 py-10 text-bm-text sm:flex sm:items-center sm:justify-center sm:py-16">
       <section className="mx-auto w-full max-w-md rounded-[32px] border border-black/10 bg-[#070a12] px-7 py-10 text-center text-white shadow-[0_30px_90px_rgba(0,0,0,0.18)] sm:px-10 sm:py-12">
         <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[26px] bg-[#070a12] sm:h-28 sm:w-28">
           <img src={logoImage} alt="BuyMesho" width={96} height={96} className="h-24 w-24 object-contain sm:h-28 sm:w-28" />

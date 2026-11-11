@@ -57,10 +57,10 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
     <button
       type="button"
       onClick={() => navigateToListingDetails(item.id)}
-      className="group w-full max-w-[235px] max-h-[340px] overflow-hidden bg-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
+      className="group w-full max-w-[235px] max-h-[340px] overflow-hidden bg-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-bm-focus/40"
       aria-label={`Open listing details for ${item.name}`}
     >
-      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted">
         <ListingImage
           src={getListingImageUrl(item.photos?.[0], "card")}
           placeholderSrc={item.photos?.[0]}
@@ -69,7 +69,7 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
           subcategory={item.subcategory}
         />
 
-        <div className="absolute left-3 top-3 rounded-full bg-white/80 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-zinc-700 shadow-sm backdrop-blur-sm">
+        <div className="absolute left-3 top-3 rounded-full bg-bm-surface/80 dark:bg-bm-surface/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-bm-text-muted dark:text-bm-text-muted shadow-sm backdrop-blur-sm">
           {categoryLabel}
         </div>
 
@@ -77,10 +77,10 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
           {offerLabel ? (
             <div className="inline-flex flex-col gap-0.5 rounded-xl border border-white/30 bg-black/45 px-2.5 py-1.5 text-left shadow-lg backdrop-blur-[2px]">
               <span className="text-[8px] font-black uppercase tracking-[0.18em] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">{offerLabel}</span>
-              <span className="text-[10px] font-extrabold leading-none text-red-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">{offerValue}</span>
+              <span className="text-[10px] font-extrabold leading-none text-bm-brand drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">{offerValue}</span>
             </div>
           ) : (
-            <div className="rounded-xl border border-white/25 bg-white/90 px-2.5 py-1 text-xs font-extrabold text-zinc-950 shadow-md backdrop-blur-md">
+            <div className="rounded-xl border border-white/25 bg-bm-surface/90 dark:bg-bm-surface/90 px-2.5 py-1 text-xs font-extrabold text-bm-text dark:text-bm-text shadow-md backdrop-blur-md">
               {formatMoney(Number(item.price) || 0)}
             </div>
           )}
@@ -89,18 +89,18 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
 
       <div className="space-y-2 py-3">
         <div>
-          <p className="line-clamp-1 text-sm font-extrabold text-zinc-900">{item.name}</p>
+          <p className="line-clamp-1 text-sm font-extrabold text-bm-text dark:text-bm-text">{item.name}</p>
         </div>
 
         <div className="flex min-h-[1.6rem] flex-wrap gap-0.5 text-[9px]">
           {cardSpecs.map((spec) => (
-            <span key={spec.key} className="rounded-full bg-zinc-100 px-1.5 py-px font-semibold leading-tight text-zinc-700">
+            <span key={spec.key} className="rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted px-1.5 py-px font-semibold leading-tight text-bm-text-muted dark:text-bm-text-muted">
               {spec.label}: {spec.value}
             </span>
           ))}
         </div>
 
-        <div className="min-h-[1.1rem] text-[9px] font-extrabold uppercase tracking-wider text-zinc-600">
+        <div className="min-h-[1.1rem] text-[9px] font-extrabold uppercase tracking-wider text-bm-text-muted dark:text-bm-text-muted">
           {[conditionLabel, availabilityLabel].filter(Boolean).join(" | ")}
         </div>
       </div>

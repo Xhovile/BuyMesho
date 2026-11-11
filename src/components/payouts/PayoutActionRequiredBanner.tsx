@@ -148,17 +148,17 @@ export default function PayoutActionRequiredBanner({
   const Icon = content.icon;
   const toneClass =
     content.tone === "red"
-      ? "border-red-200 bg-red-50 text-red-900"
+      ? "border-bm-border bg-bm-danger-bg text-bm-danger"
       : content.tone === "amber"
-        ? "border-amber-200 bg-amber-50 text-amber-900"
-        : "border-emerald-200 bg-emerald-50 text-emerald-900";
+        ? "border-bm-border bg-bm-warning-bg text-bm-warning"
+        : "border-bm-border bg-bm-success-bg text-bm-success";
 
   return (
     <div
       className={`rounded-[1.5rem] border p-4 sm:flex sm:items-center sm:justify-between sm:gap-4 ${toneClass} ${className}`}
     >
       <div className="flex gap-3">
-        <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/75">
+        <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-bm-surface/75">
           <Icon className="h-5 w-5" />
         </span>
         <div>
@@ -173,7 +173,7 @@ export default function PayoutActionRequiredBanner({
         <button
           type="button"
           onClick={onAction}
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-zinc-800 sm:mt-0 sm:w-auto"
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover sm:mt-0 sm:w-auto"
         >
           {actionLabel || content.actionLabel}
           <Wallet className="h-4 w-4" />

@@ -94,9 +94,9 @@ function AdminConsole() {
 
   if (loading && !snapshot) {
     return (
-      <div className="min-h-screen bg-[#f6f1ea] text-zinc-900">
+      <div className="min-h-screen bg-bm-bg text-bm-text">
         <div className="flex min-h-screen items-center justify-center p-6">
-          <div className="inline-flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-sm font-bold text-zinc-700 shadow-sm">
+          <div className="inline-flex items-center gap-3 rounded-2xl border border-bm-border bg-bm-surface px-5 py-4 text-sm font-bold text-bm-text-muted shadow-sm">
             <Loader2 className="h-5 w-5 animate-spin" />
             Loading Xhovilé Studio Admin…
           </div>
@@ -107,17 +107,17 @@ function AdminConsole() {
 
   if (error && !snapshot) {
     return (
-      <div className="min-h-screen bg-[#f6f1ea] p-5 text-zinc-900 sm:p-8">
+      <div className="min-h-screen bg-bm-bg p-5 text-bm-text sm:p-8">
         <div className="mx-auto flex min-h-[80vh] max-w-xl items-center justify-center">
-          <div className="w-full rounded-[2rem] border border-red-200 bg-white p-7 text-center shadow-sm">
-            <XCircle className="mx-auto h-12 w-12 text-red-500" />
-            <p className="mt-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Xhovilé Studio</p>
+          <div className="w-full rounded-[2rem] border border-bm-danger/25 bg-bm-surface p-7 text-center shadow-sm">
+            <XCircle className="mx-auto h-12 w-12 text-bm-danger" />
+            <p className="mt-4 text-xs font-black uppercase tracking-[0.2em] text-bm-text-subtle">Xhovilé Studio</p>
             <h1 className="mt-2 text-2xl font-black tracking-tight">Admin data unavailable</h1>
-            <p className="mt-3 text-sm leading-6 text-zinc-600">{error}</p>
+            <p className="mt-3 text-sm leading-6 text-bm-text-muted">{error}</p>
             <button
               type="button"
               onClick={() => void load(false)}
-              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-black text-white hover:bg-zinc-800"
+              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-black text-bm-on-brand hover:bg-bm-brand-hover"
             >
               <RefreshCw className="h-4 w-4" />
               Try Again
@@ -138,13 +138,13 @@ function AdminConsole() {
     (summary?.webhookFailed ?? 0);
 
   return (
-    <div className="min-h-screen bg-[#f6f1ea] text-zinc-900">
-      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-md">
+    <div className="min-h-screen bg-bm-bg text-bm-text">
+      <header className="sticky top-0 z-40 border-b border-bm-border/80 bg-bm-surface/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <button
             type="button"
             onClick={() => window.location.assign("/Services/XhovileStudio")}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
+            className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold hover:bg-bm-surface-subtle"
           >
             <ArrowLeft className="h-4 w-4" />
             Studio
@@ -154,7 +154,7 @@ function AdminConsole() {
               type="button"
               onClick={() => void load(true)}
               disabled={refreshing}
-              className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-black text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-black text-bm-on-brand hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshCw className={(refreshing ? "animate-spin " : "") + "h-4 w-4"} />
               Refresh
@@ -162,7 +162,7 @@ function AdminConsole() {
             <button
               type="button"
               onClick={() => navigateToPath("/")}
-              className="hidden rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 sm:inline-flex"
+              className="hidden rounded-2xl border border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold hover:bg-bm-surface-subtle sm:inline-flex"
             >
               BuyMesho
             </button>
@@ -171,25 +171,25 @@ function AdminConsole() {
       </header>
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
-        <section className="overflow-hidden rounded-[2rem] border border-zinc-900 bg-[#10151a] p-5 text-white shadow-xl sm:p-7">
+        <section className="overflow-hidden rounded-[2rem] border border-bm-border bg-bm-surface-raised p-5 text-bm-text shadow-xl sm:p-7">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="inline-flex items-center rounded-2xl bg-[#8f1528] px-3 py-2">
+              <div className="inline-flex items-center rounded-2xl bg-bm-brand px-3 py-2">
                 <img src={xsLogo} alt="Xhovilé Studio" className="h-9 w-auto" />
               </div>
-              <p className="mt-5 text-[10px] font-black uppercase tracking-[0.24em] text-zinc-500">Studio Administration</p>
+              <p className="mt-5 text-[10px] font-black uppercase tracking-[0.24em] text-bm-text-subtle">Studio Administration</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Admin Control Room</h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-bm-text-subtle sm:text-base">
                 Monitor payments, customers, project references, email notifications, and PayChangu webhook activity from one workspace.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
+            <div className="rounded-2xl border border-bm-border bg-bm-surface-muted px-4 py-3 text-sm">
               <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                <span className="font-bold text-white">Admin monitoring active</span>
+                <span className="h-2.5 w-2.5 rounded-full bg-bm-success" />
+                <span className="font-bold text-bm-text">Admin monitoring active</span>
               </div>
-              <p className="mt-1 text-xs text-zinc-500">
+              <p className="mt-1 text-xs text-bm-text-subtle">
                 {lastRefresh ? "Updated " + formatDate(lastRefresh) : "Waiting for update"}
               </p>
             </div>
@@ -197,33 +197,33 @@ function AdminConsole() {
         </section>
 
         <section className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-bm-border bg-bm-surface p-4 shadow-sm">
             <div className="flex items-center gap-2">
-              <Database className="h-4 w-4 text-zinc-500" />
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">Studio database</span>
+              <Database className="h-4 w-4 text-bm-text-subtle" />
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-bm-text-subtle">Studio database</span>
             </div>
-            <p className="mt-2 text-sm font-black text-zinc-900">{system?.databaseConnected ? "Connected" : "Unavailable"}</p>
+            <p className="mt-2 text-sm font-black text-bm-text">{system?.databaseConnected ? "Connected" : "Unavailable"}</p>
           </div>
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-bm-border bg-bm-surface p-4 shadow-sm">
             <div className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-zinc-500" />
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">PayChangu</span>
+              <CreditCard className="h-4 w-4 text-bm-text-subtle" />
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-bm-text-subtle">PayChangu</span>
             </div>
-            <p className="mt-2 text-sm font-black text-zinc-900">{system?.paychanguConfigured ? "Configured" : "Not configured"}</p>
+            <p className="mt-2 text-sm font-black text-bm-text">{system?.paychanguConfigured ? "Configured" : "Not configured"}</p>
           </div>
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-bm-border bg-bm-surface p-4 shadow-sm">
             <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-zinc-500" />
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">Email transport</span>
+              <Mail className="h-4 w-4 text-bm-text-subtle" />
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-bm-text-subtle">Email transport</span>
             </div>
-            <p className="mt-2 text-sm font-black text-zinc-900">{system?.brevoConfigured ? "Brevo configured" : "Not configured"}</p>
+            <p className="mt-2 text-sm font-black text-bm-text">{system?.brevoConfigured ? "Brevo configured" : "Not configured"}</p>
           </div>
         </section>
 
-        <nav className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm">
-          <div className="border-b border-zinc-200 px-5 py-4">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Studio Workspace</p>
-            <p className="mt-1 text-sm text-zinc-500">Choose what you want to monitor.</p>
+        <nav className="overflow-hidden rounded-[1.75rem] border border-bm-border bg-bm-surface shadow-sm">
+          <div className="border-b border-bm-border px-5 py-4">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-bm-text-subtle">Studio Workspace</p>
+            <p className="mt-1 text-sm text-bm-text-subtle">Choose what you want to monitor.</p>
           </div>
           <div className="grid md:grid-cols-2 xl:grid-cols-3">
             {NAV_ITEMS.map((item, index) => {
@@ -236,29 +236,29 @@ function AdminConsole() {
                   onClick={() => selectView(item.key)}
                   className={
                     "group flex min-h-[112px] items-center gap-4 px-5 py-5 text-left transition-colors " +
-                    (index > 0 ? "border-t border-zinc-200 " : "") +
+                    (index > 0 ? "border-t border-bm-border " : "") +
                     (index > 1 ? "md:border-t " : "") +
-                    (active ? "bg-zinc-50 " : "hover:bg-zinc-50")
+                    (active ? "bg-bm-surface-subtle " : "hover:bg-bm-surface-subtle")
                   }
                 >
                   <span
                     className={
                       "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-colors " +
-                      (active ? "bg-[#8f1528] text-white" : "bg-zinc-100 text-zinc-800 group-hover:bg-zinc-900 group-hover:text-white")
+                      (active ? "bg-bm-brand text-bm-on-brand" : "bg-bm-surface-muted text-bm-text group-hover:bg-bm-brand-hover group-hover:text-bm-on-brand")
                     }
                   >
                     <Icon className="h-5 w-5" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
-                      <span className="text-sm font-black text-zinc-900">{item.label}</span>
+                      <span className="text-sm font-black text-bm-text">{item.label}</span>
                       {item.key === "overview" && attentionCount > 0 ? (
-                        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-black text-red-700 ring-1 ring-red-100">
+                        <span className="rounded-full bg-bm-danger-bg px-2 py-0.5 text-[10px] font-black text-bm-danger ring-1 ring-bm-danger/20">
                           {attentionCount > 99 ? "99+" : attentionCount}
                         </span>
                       ) : null}
                     </span>
-                    <span className="mt-1 block text-sm leading-5 text-zinc-500">{item.description}</span>
+                    <span className="mt-1 block text-sm leading-5 text-bm-text-subtle">{item.description}</span>
                   </span>
                 </button>
               );
@@ -267,7 +267,7 @@ function AdminConsole() {
         </nav>
 
         {error ? (
-          <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="flex items-start gap-3 rounded-2xl border border-bm-warning/25 bg-bm-warning-bg px-4 py-3 text-sm text-bm-warning">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <p>{error} Showing the last successfully loaded snapshot.</p>
           </div>
@@ -288,7 +288,7 @@ function AdminConsole() {
           selectView={selectView}
         />
 
-        <footer className="pb-4 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-400">
+        <footer className="pb-4 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-bm-text-subtle">
           Xhovilé Studio Admin · {VIEW_LABELS[view]}
         </footer>
       </main>

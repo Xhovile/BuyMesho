@@ -165,14 +165,14 @@ export default function EditListingPage() {
   const canEdit = !!firebaseUser && !!profile?.is_seller && !!listing && listing.seller_uid === firebaseUser.uid;
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
+    <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text">
+      <header className="sticky top-0 z-40 border-b border-bm-border bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <BrandMark subtitle="Edit listing" />
           <button
             type="button"
             onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
+            className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
           >
             Back
           </button>
@@ -181,38 +181,38 @@ export default function EditListingPage() {
 
       <main className="mx-auto max-w-6xl px-2 py-8 sm:px-4">
         {authLoading || profileLoading || loadingListing ? (
-          <div className="flex items-center justify-center gap-3 border-b border-zinc-200 bg-transparent px-0 py-20 font-medium text-zinc-500">
+          <div className="flex items-center justify-center gap-3 border-b border-bm-border dark:border-bm-border bg-transparent px-0 py-20 font-medium text-bm-text-subtle dark:text-bm-text-subtle">
             <Loader2 className="h-5 w-5 animate-spin" /> Loading listing editor...
           </div>
         ) : !firebaseUser ? (
-          <div className="border-b border-zinc-200 pb-12 pt-6 text-center">
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Login required</h1>
-            <p className="mt-3 text-sm text-zinc-500">You need to log in before editing a listing.</p>
-            <button type="button" onClick={() => navigateToPath("/login")} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800">Go to Login</button>
+          <div className="border-b border-bm-border dark:border-bm-border pb-12 pt-6 text-center">
+            <h1 className="text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">Login required</h1>
+            <p className="mt-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">You need to log in before editing a listing.</p>
+            <button type="button" onClick={() => navigateToPath("/login")} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover">Go to Login</button>
           </div>
         ) : !profile?.is_seller ? (
-          <div className="border-b border-zinc-200 pb-12 pt-6 text-center">
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Seller account required</h1>
-            <p className="mt-3 text-sm text-zinc-500">Only seller accounts can edit listings.</p>
-            <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Return to Explore</button>
+          <div className="border-b border-bm-border dark:border-bm-border pb-12 pt-6 text-center">
+            <h1 className="text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">Seller account required</h1>
+            <p className="mt-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Only seller accounts can edit listings.</p>
+            <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover"><ChevronLeft className="h-4 w-4" /> Return to Explore</button>
           </div>
         ) : !listing ? (
-          <div className="border-b border-zinc-200 pb-12 pt-6 text-center">
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Listing not found</h1>
-            <p className="mt-3 text-sm text-zinc-500">The listing could not be loaded or may no longer exist.</p>
-            <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Back</button>
+          <div className="border-b border-bm-border dark:border-bm-border pb-12 pt-6 text-center">
+            <h1 className="text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">Listing not found</h1>
+            <p className="mt-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">The listing could not be loaded or may no longer exist.</p>
+            <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover"><ChevronLeft className="h-4 w-4" /> Back</button>
           </div>
         ) : listing.seller_uid !== firebaseUser.uid ? (
-          <div className="border-b border-zinc-200 pb-12 pt-6 text-center">
-            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Access denied</h1>
-            <p className="mt-3 text-sm text-zinc-500">This listing does not belong to your account.</p>
-            <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Back</button>
+          <div className="border-b border-bm-border dark:border-bm-border pb-12 pt-6 text-center">
+            <h1 className="text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">Access denied</h1>
+            <p className="mt-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">This listing does not belong to your account.</p>
+            <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover"><ChevronLeft className="h-4 w-4" /> Back</button>
           </div>
         ) : canEdit ? (
           <div className="pb-20">
-            <div className="mb-6 border-b border-zinc-200 pb-4">
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing studio</p>
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Edit your listing.</h1>
+            <div className="mb-6 border-b border-bm-border dark:border-bm-border pb-4">
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Listing studio</p>
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-bm-text dark:text-bm-text">Edit your listing.</h1>
             </div>
 
             {initialDraft ? (

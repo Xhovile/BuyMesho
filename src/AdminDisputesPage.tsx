@@ -228,8 +228,8 @@ export default function AdminDisputesPage() {
       description="One workspace for returns, refunds, seller-reported refunds, buyer claims, review, and final decisions."
       onRefresh={() => void load()}
     >
-      <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 p-4">
+      <section className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
+        <div className="border-b border-bm-border dark:border-bm-border p-4">
           <div className="flex flex-wrap gap-2">
             {["active", "open", "under_review", "resolved", "rejected"].map((value) => (
               <button
@@ -237,7 +237,7 @@ export default function AdminDisputesPage() {
                 type="button"
                 onClick={() => setStatus(value)}
                 className={`rounded-full px-3 py-2 text-xs font-black capitalize ${
-                  status === value ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600"
+                  status === value ? "bg-bm-brand text-bm-on-brand" : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted"
                 }`}
               >
                 {value === "active" ? "Active" : label(value)}
@@ -247,11 +247,11 @@ export default function AdminDisputesPage() {
         </div>
 
         {loading ? (
-          <div className="p-8 text-sm text-zinc-500">Loading disputes…</div>
+          <div className="p-8 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Loading disputes…</div>
         ) : cases.length === 0 ? (
-          <div className="p-8 text-sm text-zinc-500">No dispute cases in this view.</div>
+          <div className="p-8 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No dispute cases in this view.</div>
         ) : (
-          <div className="divide-y divide-zinc-100">
+          <div className="divide-y divide-bm-border-subtle">
             {cases.map((item) => {
               const activeItem = item.status === "open" || item.status === "under_review";
               const selectedItem = selectedId === item.id;
@@ -262,37 +262,37 @@ export default function AdminDisputesPage() {
                   onClick={() => openDetail(item.id)}
                   className={`block w-full border-l-4 p-4 text-left transition ${
                     selectedItem
-                      ? "border-zinc-950 bg-zinc-950 text-white"
-                      : "border-transparent text-zinc-900 hover:bg-zinc-50"
+                      ? "border-bm-brand bg-bm-brand text-bm-on-brand"
+                      : "border-transparent text-bm-text dark:text-bm-text hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className={`text-sm font-black ${selectedItem ? "text-white" : "text-zinc-900"}`}>
+                      <p className={`text-sm font-black ${selectedItem ? "text-bm-on-brand" : "text-bm-text dark:text-bm-text"}`}>
                         {money(item.refund_requested_amount ?? item.latest_amount_requested ?? item.total_amount, item.total_currency)}
                       </p>
-                      <p className={`mt-1 text-xs font-semibold ${selectedItem ? "text-zinc-300" : "text-zinc-500"}`}>
+                      <p className={`mt-1 text-xs font-semibold ${selectedItem ? "text-bm-on-brand/80" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
                         Order {item.order_id}
                       </p>
                     </div>
                     <span
                       className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${
                         activeItem
-                          ? "bg-amber-100 text-amber-800"
+                          ? "bg-bm-warning-bg text-bm-warning"
                           : selectedItem
-                            ? "bg-white/15 text-white"
-                            : "bg-zinc-100 text-zinc-600"
+                            ? "bg-bm-surface/15 text-bm-on-brand"
+                            : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted"
                       }`}
                     >
                       {label(item.status)}
                     </span>
                   </div>
-                  <p className={`mt-3 line-clamp-2 text-sm ${selectedItem ? "text-zinc-200" : "text-zinc-700"}`}>
+                  <p className={`mt-3 line-clamp-2 text-sm ${selectedItem ? "text-bm-on-brand/90" : "text-bm-text-muted dark:text-bm-text-muted"}`}>
                     {item.latest_reason || "No reason recorded"}
                   </p>
                   <div
                     className={`mt-3 flex items-center justify-between gap-2 text-[11px] font-bold ${
-                      selectedItem ? "text-zinc-300" : "text-zinc-400"
+                      selectedItem ? "text-bm-on-brand/80" : "text-bm-text-subtle dark:text-bm-text-subtle"
                     }`}
                   >
                     <span>
@@ -312,24 +312,24 @@ export default function AdminDisputesPage() {
 
       {detailOpen && selected ? (
         <div
-          className="fixed inset-0 z-[80] bg-zinc-950/55 backdrop-blur-sm"
+          className="fixed inset-0 z-[80] bg-bm-overlay backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-labelledby="admin-dispute-detail-title"
         >
           <div className="flex min-h-full items-start justify-center p-3 sm:p-6">
-            <div className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-zinc-200 bg-zinc-50 shadow-2xl">
-              <div className="sticky top-0 z-20 flex items-center justify-between border-b border-zinc-200 bg-white/95 px-5 py-4 backdrop-blur sm:px-6">
+            <div className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle shadow-2xl">
+              <div className="sticky top-0 z-20 flex items-center justify-between border-b border-bm-border dark:border-bm-border bg-bm-surface/95 dark:bg-bm-surface/95 px-5 py-4 backdrop-blur sm:px-6">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Dispute details</p>
-                  <h2 id="admin-dispute-detail-title" className="mt-1 text-lg font-black text-zinc-950">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">Dispute details</p>
+                  <h2 id="admin-dispute-detail-title" className="mt-1 text-lg font-black text-bm-text">
                     Case {selected.id}
                   </h2>
                 </div>
                 <button
                   type="button"
                   onClick={closeDetail}
-                  className="rounded-full border border-zinc-200 bg-white p-2.5 text-zinc-600 shadow-sm hover:bg-zinc-50"
+                  className="rounded-full border border-bm-border dark:border-bm-border bg-bm-surface p-2.5 text-bm-text-muted dark:text-bm-text-muted shadow-sm hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
                   aria-label="Close dispute details"
                 >
                   <X className="h-5 w-5" />
@@ -338,22 +338,22 @@ export default function AdminDisputesPage() {
 
               <div className="space-y-5 p-4 sm:p-6">
                 {error ? (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
+                  <div className="rounded-2xl border border-bm-danger/35 bg-bm-danger-bg p-4 text-sm font-semibold text-bm-danger">
                     {error}
                   </div>
                 ) : null}
 
-                <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                <div className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Case</p>
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">Case</p>
                       <h3 className="mt-1 text-xl font-black">{selected.id}</h3>
-                      <p className="mt-1 text-sm text-zinc-500">
+                      <p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                         Order {selected.order_id} · Buyer {selected.buyer_id} · Seller {selected.seller_id}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <div className="rounded-2xl bg-zinc-100 px-3 py-2 text-xs font-black capitalize">
+                      <div className="rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted px-3 py-2 text-xs font-black capitalize">
                         {effectiveStatus.replaceAll("_", " ")}
                       </div>
                       {prePayoutAdmin ? (
@@ -385,7 +385,7 @@ export default function AdminDisputesPage() {
                 </div>
 
                 <div className="grid gap-5 xl:grid-cols-2">
-                  <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                  <div className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
                     <h3 className="font-black">Financial context</h3>
                     <div className="mt-4 space-y-3 text-sm">
                       <Row title="Order state" value={label(selected.order_status)} />
@@ -407,39 +407,39 @@ export default function AdminDisputesPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                  <div className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
                     <h3 className="font-black">Case history</h3>
                     <div className="mt-4 max-h-56 space-y-2 overflow-auto">
                       {detail?.audit?.length ? (
                         detail.audit.map((entry) => (
-                          <div key={String(entry.id)} className="rounded-2xl bg-zinc-50 p-3">
-                            <p className="text-xs font-black uppercase tracking-wider text-zinc-500">
+                          <div key={String(entry.id)} className="rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-subtle p-3">
+                            <p className="text-xs font-black uppercase tracking-wider text-bm-text-subtle dark:text-bm-text-subtle">
                               {label(entry.event_type)}
                             </p>
-                            <p className="mt-1 text-xs text-zinc-500">
+                            <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
                               {date(entry.timestamp)} · {entry.performed_by || "system"}
                             </p>
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-zinc-500">No audit history loaded.</p>
+                        <p className="text-sm text-bm-text-subtle dark:text-bm-text-subtle">No audit history loaded.</p>
                       )}
                     </div>
                   </div>
                 </div>
 
                 {active ? (
-                  <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                  <div className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
                     <h3 className="font-black">
                       {prePayoutAdmin ? "BuyMesho refund review" : "Admin decision & execution"}
                     </h3>
-                    <p className="mt-1 text-sm text-zinc-500">
+                    <p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                       {prePayoutAdmin
                         ? "The seller had not received the payout when this dispute was submitted. This case follows the BuyMesho-controlled refund workflow. Approval and financial execution remain separate steps."
                         : "Approval authorizes the refund. Execution is a separate financial step and only operates on the current held escrow balance."}
                     </p>
                     {refundOwed ? (
-                      <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                      <div className="mt-4 rounded-2xl border border-bm-warning/35 bg-bm-warning-bg p-4 text-sm text-bm-warning">
                         <p className="font-black">Refund approved — awaiting event refund recovery</p>
                         <p className="mt-1 leading-6">
                           This event refund has no available held-escrow execution path. The outstanding liability must be recovered from the event creator through the Event Financials workspace.
@@ -451,7 +451,7 @@ export default function AdminDisputesPage() {
                       onChange={(event) => setNote(event.target.value)}
                       rows={3}
                       placeholder="Decision or execution note…"
-                      className="mt-4 w-full rounded-2xl border border-zinc-200 bg-white p-3 text-sm outline-none focus:border-zinc-400"
+                      className="mt-4 w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-3 text-sm outline-none focus:border-bm-focus"
                     />
                     <div className="mt-4 flex flex-wrap gap-2">
                       {effectiveStatus === "open" ? (
@@ -459,7 +459,7 @@ export default function AdminDisputesPage() {
                           type="button"
                           disabled={busy || !note.trim()}
                           onClick={() => void act("review")}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand disabled:opacity-50"
                         >
                           <RefreshCw className="h-4 w-4" />
                           Start review
@@ -470,7 +470,7 @@ export default function AdminDisputesPage() {
                           type="button"
                           disabled={busy || !note.trim()}
                           onClick={() => void act("approve_refund")}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-2xl bg-bm-success-bg px-4 py-2.5 text-sm font-bold text-bm-success disabled:opacity-50"
                         >
                           <CheckCircle2 className="h-4 w-4" />
                           Approve refund
@@ -481,7 +481,7 @@ export default function AdminDisputesPage() {
                           type="button"
                           disabled={busy || !note.trim()}
                           onClick={() => void act("execute_refund")}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-emerald-800 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-2xl bg-bm-success-bg px-4 py-2.5 text-sm font-bold text-bm-success disabled:opacity-50"
                         >
                           <CheckCircle2 className="h-4 w-4" />
                           Execute refund
@@ -492,7 +492,7 @@ export default function AdminDisputesPage() {
                           type="button"
                           disabled={busy || !note.trim()}
                           onClick={() => void act("accept_seller_refund")}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-2xl bg-bm-surface-muted px-4 py-2.5 text-sm font-bold text-bm-success disabled:opacity-50"
                         >
                           <CheckCircle2 className="h-4 w-4" />
                           Accept seller refund
@@ -508,7 +508,7 @@ export default function AdminDisputesPage() {
                           type="button"
                           disabled={busy || !note.trim()}
                           onClick={() => void act("reject")}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-2xl border border-bm-danger/35 bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-danger disabled:opacity-50"
                         >
                           <XCircle className="h-4 w-4" />
                           Reject dispute
@@ -518,14 +518,14 @@ export default function AdminDisputesPage() {
                   </div>
                 ) : null}
 
-                <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                <div className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
                   <h3 className="font-black">Evidence & records</h3>
                   {detail?.case?.latest_evidence?.length ? (
                     <EvidenceMedia evidence={detail.case.latest_evidence as string[]} title="Submitted evidence" />
                   ) : (
-                    <p className="mt-3 text-sm text-zinc-500">No evidence recorded.</p>
+                    <p className="mt-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No evidence recorded.</p>
                   )}
-                  <p className="mt-4 text-xs text-zinc-400">
+                  <p className="mt-4 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
                     Attempts: {detail?.attempts?.length ?? 0} · Refund transactions: {detail?.refunds?.length ?? 0}
                   </p>
                 </div>
@@ -540,21 +540,21 @@ export default function AdminDisputesPage() {
 
 function Info({ icon, title, value }: { icon: ReactNode; title: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-3">
-      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-zinc-400">
+    <div className="rounded-2xl border border-bm-border-subtle bg-bm-surface-muted dark:bg-bm-surface-subtle p-3">
+      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-bm-text-subtle dark:text-bm-text-subtle">
         {icon}
         {title}
       </div>
-      <p className="mt-2 text-sm font-semibold text-zinc-800">{value}</p>
+      <p className="mt-2 text-sm font-semibold text-bm-text dark:text-bm-text-muted">{value}</p>
     </div>
   );
 }
 
 function Row({ title, value }: { title: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-zinc-100 pb-3">
-      <span className="text-zinc-500">{title}</span>
-      <span className="max-w-[65%] text-right font-bold text-zinc-900">{value}</span>
+    <div className="flex items-start justify-between gap-4 border-b border-bm-border-subtle pb-3">
+      <span className="text-bm-text-subtle dark:text-bm-text-subtle">{title}</span>
+      <span className="max-w-[65%] text-right font-bold text-bm-text dark:text-bm-text">{value}</span>
     </div>
   );
 }

@@ -38,17 +38,17 @@ function GuideSection({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-28 border-t border-zinc-200 py-12 sm:py-16 lg:py-20">
+    <section id={id} className="scroll-mt-28 border-t border-bm-border py-12 sm:py-16 lg:py-20">
       <div className="grid gap-5 sm:grid-cols-[96px_minmax(0,1fr)] sm:gap-8 lg:grid-cols-[132px_minmax(0,1fr)] lg:gap-10">
         <div className="pt-1">
           <p className="guide-chapter-number text-6xl leading-none sm:text-7xl lg:text-8xl">{number}</p>
         </div>
         <div className="max-w-5xl">
           <p className="mt-1 text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f] sm:text-base">{eyebrow}</p>
-          <h2 className="guide-display mt-2 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-zinc-950 sm:text-5xl lg:text-6xl">
+          <h2 className="guide-display mt-2 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-bm-text sm:text-5xl lg:text-6xl">
             {title}
           </h2>
-          <div className="mt-7 space-y-6 text-base leading-7 text-zinc-700 sm:mt-9 sm:text-[17px] sm:leading-8">{children}</div>
+          <div className="mt-7 space-y-6 text-base leading-7 text-bm-text-muted sm:mt-9 sm:text-[17px] sm:leading-8">{children}</div>
         </div>
       </div>
     </section>
@@ -66,15 +66,15 @@ function FlowRow({
 }) {
   const toneClasses =
     tone === "blue"
-      ? "border-blue-200 bg-blue-50/60"
+      ? "border-bm-border bg-bm-surface-muted"
       : tone === "red"
-        ? "border-red-200 bg-red-50/60"
-        : "border-zinc-200 bg-white";
+        ? "border-bm-danger/25 bg-bm-danger-bg"
+        : "border-bm-border bg-bm-surface";
 
   return (
     <div className={`rounded-2xl border ${toneClasses} p-4 sm:p-5`}>
-      <p className="text-sm font-extrabold text-zinc-950">{title}</p>
-      <div className="mt-1.5 text-sm leading-6 text-zinc-600">{children}</div>
+      <p className="text-sm font-extrabold text-bm-text">{title}</p>
+      <div className="mt-1.5 text-sm leading-6 text-bm-text-muted">{children}</div>
     </div>
   );
 }
@@ -88,7 +88,7 @@ function GuideLink({
   children: ReactNode;
   tone?: "burgundy" | "dark";
 }) {
-  const toneClasses = tone === "dark" ? "text-zinc-950 hover:text-zinc-700" : "text-[#74152f] hover:text-[#560d22]";
+  const toneClasses = tone === "dark" ? "text-bm-text hover:text-bm-text-muted" : "text-[#74152f] hover:text-[#560d22]";
 
   return (
     <a
@@ -96,22 +96,22 @@ function GuideLink({
       className={`group inline-flex items-center gap-2 py-2 text-base font-extrabold ${toneClasses} sm:text-lg`}
     >
       {children}
-      <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
+      <ArrowRight className="h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5" />
     </a>
   );
 }
 
 export default function EventCreatorGuidePage() {
   return (
-    <div className="guide-page min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur">
+    <div className="guide-page min-h-screen bg-bm-surface-muted text-bm-text">
+      <header className="sticky top-0 z-50 border-b border-bm-border bg-bm-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <a href={EXPLORE_PATH} aria-label="Open BuyMesho marketplace">
             <BrandMark subtitle="Event creator guide" />
           </a>
           <a
             href={EVENTS_PATH}
-            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+            className="inline-flex items-center gap-2 rounded-xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"
           >
             Browse Events
             <ArrowRight className="h-4 w-4" />
@@ -126,25 +126,25 @@ export default function EventCreatorGuidePage() {
             <div className="mt-4 text-sm font-black uppercase tracking-[0.18em] text-[#74152f] sm:text-base">
               BuyMesho Event Creator Guide
             </div>
-            <h1 className="guide-display mx-auto mt-4 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-zinc-950 sm:text-6xl lg:text-7xl">
+            <h1 className="guide-display mx-auto mt-4 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-bm-text sm:text-6xl lg:text-7xl">
               Creating events on BuyMesho, step by step.
             </h1>
-            <p className="mx-auto mt-6 max-w-3xl text-base leading-7 text-zinc-700 sm:text-lg">
+            <p className="mx-auto mt-6 max-w-3xl text-base leading-7 text-bm-text-muted sm:text-lg">
               Everything you need to go from creator access and event setup to ticket sales, payouts, and entry.
             </p>
           </div>
 
-          <nav aria-label="Event creator guide sections" className="mt-9 border-y border-zinc-200">
+          <nav aria-label="Event creator guide sections" className="mt-9 border-y border-bm-border">
             <div className="grid sm:grid-cols-2 lg:grid-cols-3">
               {guideSections.map((section) => (
                 <a
                   key={section.id}
                   href={`#${section.id}`}
-                  className="group flex min-h-16 items-center gap-4 border-b border-zinc-200 px-1 py-4 text-base font-bold text-zinc-800 transition-colors hover:text-blue-700 sm:min-h-20 sm:border-r sm:px-4 sm:text-lg sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(3n)]:border-r-0"
+                  className="group flex min-h-16 items-center gap-4 border-b border-bm-border px-1 py-4 text-base font-bold text-bm-text transition-colors hover:text-bm-brand sm:min-h-20 sm:border-r sm:px-4 sm:text-lg sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(3n)]:border-r-0"
                 >
                   <span className="guide-chapter-number text-2xl sm:text-3xl">{section.number}</span>
                   <span>{section.label}</span>
-                  <ArrowRight className="ml-auto h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="ml-auto h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5" />
                 </a>
               ))}
             </div>
@@ -186,9 +186,9 @@ export default function EventCreatorGuidePage() {
             <FlowRow title="Publication">Choose to publish immediately or schedule publication for later.</FlowRow>
           </div>
 
-          <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
-            <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
-            <p className="text-sm leading-6 text-zinc-600">
+          <div className="flex items-start gap-3 border-t border-bm-border pt-5">
+            <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-bm-brand" />
+            <p className="text-sm leading-6 text-bm-text-muted">
               Before publishing, review the event information the way a buyer would see it.
             </p>
           </div>
@@ -214,9 +214,9 @@ export default function EventCreatorGuidePage() {
             </FlowRow>
           </div>
 
-          <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
-            <WalletCards className="mt-0.5 h-5 w-5 shrink-0 text-zinc-700" />
-            <p className="text-sm leading-6 text-zinc-600">
+          <div className="flex items-start gap-3 border-t border-bm-border pt-5">
+            <WalletCards className="mt-0.5 h-5 w-5 shrink-0 text-bm-text-muted" />
+            <p className="text-sm leading-6 text-bm-text-muted">
               Keep your payout destination details up to date before you start selling tickets.
             </p>
           </div>
@@ -264,7 +264,7 @@ export default function EventCreatorGuidePage() {
             </FlowRow>
           </div>
 
-          <div className="border-l-2 border-blue-600 pl-4 text-sm text-zinc-600">
+          <div className="border-l-2 border-bm-brand pl-4 text-sm text-bm-text-muted">
             Event ticket money follows the event payout process; it is not released as a marketplace Listings escrow payment.
           </div>
         </GuideSection>
@@ -289,16 +289,16 @@ export default function EventCreatorGuidePage() {
             </FlowRow>
           </div>
 
-          <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
-            <QrCode className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
-            <p className="text-sm leading-6 text-zinc-600">
+          <div className="flex items-start gap-3 border-t border-bm-border pt-5">
+            <QrCode className="mt-0.5 h-5 w-5 shrink-0 text-bm-brand" />
+            <p className="text-sm leading-6 text-bm-text-muted">
               Use the event's ticket validation tools to check tickets as people arrive.
             </p>
           </div>
         </GuideSection>
 
         <section className="py-10 sm:py-12">
-          <div className="border border-zinc-200 bg-white/45 p-5 sm:p-7">
+          <div className="border border-bm-border bg-bm-surface/45 p-5 sm:p-7">
             <div className="grid gap-8 sm:grid-cols-2 sm:gap-10">
               <div>
                 <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f]">Continue with events</p>
@@ -321,22 +321,22 @@ export default function EventCreatorGuidePage() {
         </section>
 
         <section className="pb-10 sm:pb-12">
-          <div className="flex flex-col gap-5 rounded-[2rem] border border-green-200 bg-green-50/70 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-7">
+          <div className="flex flex-col gap-5 rounded-[2rem] border border-bm-success/25 bg-bm-success-bg p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-7">
             <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-green-600 text-white shadow-sm">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-bm-success text-bm-on-brand shadow-sm">
                 <QrCode className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-green-700">Ticket entry</p>
-                <h2 className="mt-1 text-2xl font-black tracking-tight text-zinc-950">Need to validate tickets?</h2>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-700">Use Ticket Validator to check event tickets at entry.</p>
+                <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-bm-success">Ticket entry</p>
+                <h2 className="mt-1 text-2xl font-black tracking-tight text-bm-text">Need to validate tickets?</h2>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-bm-text-muted">Use Ticket Validator to check event tickets at entry.</p>
               </div>
             </div>
             <a
               href={TICKET_VALIDATOR_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-green-700"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-bm-success px-5 py-3 text-sm font-black text-bm-on-brand shadow-sm transition hover:bg-bm-success"
             >
               Open Ticket Validator
               <ArrowRight className="h-4 w-4" />
