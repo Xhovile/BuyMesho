@@ -59,7 +59,7 @@ export default function ActionConfirmDialog({
             onClick={() => void onConfirm()}
             disabled={busy}
             className={`rounded-2xl px-4 py-3 text-sm font-bold text-bm-on-brand disabled:opacity-60 ${
-              tone === "danger" ? "bg-red-600 hover:bg-red-700" : "bg-bm-brand hover:bg-bm-brand-hover"
+              tone === "danger" ? "bg-bm-danger text-bm-bg hover:brightness-95" : "bg-bm-brand hover:bg-bm-brand-hover"
             }`}
           >
             {busy ? "Working..." : confirmLabel}
