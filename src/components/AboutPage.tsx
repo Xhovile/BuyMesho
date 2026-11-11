@@ -32,7 +32,7 @@ export default function AboutPage() {
             className="text-left"
           >
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 overflow-hidden rounded-xl bg-bm-surface ring-1 ring-zinc-200 shadow-sm">
+              <div className="flex h-9 w-9 overflow-hidden rounded-xl bg-bm-surface ring-1 ring-bm-border shadow-sm">
                 <img src={logoImage} alt="BuyMesho logo" className="h-full w-full object-contain" />
               </div>
               <div>
