@@ -64,7 +64,7 @@ export default function ReportListingModal({ listingId, onClose }: Props) {
       >
         <div className="p-6 border-b border-bm-border-subtle dark:border-bm-border-subtle flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600" />
+            <AlertTriangle className="w-5 h-5 text-bm-warning" />
             <div>
               <h2 className="text-xl font-extrabold text-bm-text dark:text-bm-text">Report Listing</h2>
               <p className="text-xs font-bold text-bm-text-subtle dark:text-bm-text-subtle uppercase tracking-widest mt-1">
@@ -83,12 +83,12 @@ export default function ReportListingModal({ listingId, onClose }: Props) {
 
         <div className="p-6 space-y-4">
           {successMessage && (
-  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+  <div className="bg-bm-success-bg border border-bm-border rounded-2xl p-4">
     <div className="flex items-start gap-3">
-      <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+      <CheckCircle2 className="w-5 h-5 text-bm-success mt-0.5" />
       <div className="flex-1">
-        <p className="text-sm font-bold text-emerald-800">Submitted</p>
-        <p className="text-sm text-emerald-700">{successMessage}</p>
+        <p className="text-sm font-bold text-bm-success">Submitted</p>
+        <p className="text-sm text-bm-success">{successMessage}</p>
       </div>
     </div>
 
@@ -96,7 +96,7 @@ export default function ReportListingModal({ listingId, onClose }: Props) {
       <button
         type="button"
         onClick={onClose}
-        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-bm-on-brand text-sm font-bold transition-colors"
+        className="px-4 py-2 rounded-xl bg-bm-success hover:bg-bm-success/90 text-bm-on-brand text-sm font-bold transition-colors"
       >
         Close
       </button>
