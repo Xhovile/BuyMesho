@@ -228,8 +228,8 @@ export default function AdminDisputesPage() {
       description="One workspace for returns, refunds, seller-reported refunds, buyer claims, review, and final decisions."
       onRefresh={() => void load()}
     >
-      <section className="overflow-hidden rounded-3xl border border-zinc-200 dark:border-bm-border bg-white shadow-sm">
-        <div className="border-b border-zinc-200 dark:border-bm-border p-4">
+      <section className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
+        <div className="border-b border-bm-border dark:border-bm-border p-4">
           <div className="flex flex-wrap gap-2">
             {["active", "open", "under_review", "resolved", "rejected"].map((value) => (
               <button
@@ -237,7 +237,7 @@ export default function AdminDisputesPage() {
                 type="button"
                 onClick={() => setStatus(value)}
                 className={`rounded-full px-3 py-2 text-xs font-black capitalize ${
-                  status === value ? "bg-zinc-900 text-white" : "bg-zinc-100 dark:bg-bm-surface-muted text-zinc-600 dark:text-bm-text-muted"
+                  status === value ? "bg-zinc-900 text-white" : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted"
                 }`}
               >
                 {value === "active" ? "Active" : label(value)}
@@ -247,9 +247,9 @@ export default function AdminDisputesPage() {
         </div>
 
         {loading ? (
-          <div className="p-8 text-sm text-zinc-500 dark:text-bm-text-subtle">Loading disputes…</div>
+          <div className="p-8 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Loading disputes…</div>
         ) : cases.length === 0 ? (
-          <div className="p-8 text-sm text-zinc-500 dark:text-bm-text-subtle">No dispute cases in this view.</div>
+          <div className="p-8 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No dispute cases in this view.</div>
         ) : (
           <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
             {cases.map((item) => {
@@ -263,15 +263,15 @@ export default function AdminDisputesPage() {
                   className={`block w-full border-l-4 p-4 text-left transition ${
                     selectedItem
                       ? "border-zinc-950 bg-zinc-950 text-white"
-                      : "border-transparent text-zinc-900 dark:text-bm-text hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
+                      : "border-transparent text-bm-text dark:text-bm-text hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className={`text-sm font-black ${selectedItem ? "text-white" : "text-zinc-900 dark:text-bm-text"}`}>
+                      <p className={`text-sm font-black ${selectedItem ? "text-white" : "text-bm-text dark:text-bm-text"}`}>
                         {money(item.refund_requested_amount ?? item.latest_amount_requested ?? item.total_amount, item.total_currency)}
                       </p>
-                      <p className={`mt-1 text-xs font-semibold ${selectedItem ? "text-zinc-300" : "text-zinc-500 dark:text-bm-text-subtle"}`}>
+                      <p className={`mt-1 text-xs font-semibold ${selectedItem ? "text-zinc-300" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
                         Order {item.order_id}
                       </p>
                     </div>
@@ -280,14 +280,14 @@ export default function AdminDisputesPage() {
                         activeItem
                           ? "bg-amber-100 text-amber-800"
                           : selectedItem
-                            ? "bg-white/15 text-white"
-                            : "bg-zinc-100 dark:bg-bm-surface-muted text-zinc-600 dark:text-bm-text-muted"
+                            ? "bg-bm-surface/15 text-white"
+                            : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted"
                       }`}
                     >
                       {label(item.status)}
                     </span>
                   </div>
-                  <p className={`mt-3 line-clamp-2 text-sm ${selectedItem ? "text-zinc-200" : "text-zinc-700 dark:text-bm-text-muted"}`}>
+                  <p className={`mt-3 line-clamp-2 text-sm ${selectedItem ? "text-zinc-200" : "text-bm-text-muted dark:text-bm-text-muted"}`}>
                     {item.latest_reason || "No reason recorded"}
                   </p>
                   <div
@@ -318,8 +318,8 @@ export default function AdminDisputesPage() {
           aria-labelledby="admin-dispute-detail-title"
         >
           <div className="flex min-h-full items-start justify-center p-3 sm:p-6">
-            <div className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle shadow-2xl">
-              <div className="sticky top-0 z-20 flex items-center justify-between border-b border-zinc-200 dark:border-bm-border bg-white/95 dark:bg-bm-surface/95 px-5 py-4 backdrop-blur sm:px-6">
+            <div className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle shadow-2xl">
+              <div className="sticky top-0 z-20 flex items-center justify-between border-b border-bm-border dark:border-bm-border bg-bm-surface/95 dark:bg-bm-surface/95 px-5 py-4 backdrop-blur sm:px-6">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Dispute details</p>
                   <h2 id="admin-dispute-detail-title" className="mt-1 text-lg font-black text-zinc-950 dark:text-bm-text">
@@ -329,7 +329,7 @@ export default function AdminDisputesPage() {
                 <button
                   type="button"
                   onClick={closeDetail}
-                  className="rounded-full border border-zinc-200 dark:border-bm-border bg-white p-2.5 text-zinc-600 dark:text-bm-text-muted shadow-sm hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
+                  className="rounded-full border border-bm-border dark:border-bm-border bg-bm-surface p-2.5 text-bm-text-muted dark:text-bm-text-muted shadow-sm hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
                   aria-label="Close dispute details"
                 >
                   <X className="h-5 w-5" />
@@ -343,17 +343,17 @@ export default function AdminDisputesPage() {
                   </div>
                 ) : null}
 
-                <div className="rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm">
+                <div className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                       <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Case</p>
                       <h3 className="mt-1 text-xl font-black">{selected.id}</h3>
-                      <p className="mt-1 text-sm text-zinc-500 dark:text-bm-text-subtle">
+                      <p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                         Order {selected.order_id} · Buyer {selected.buyer_id} · Seller {selected.seller_id}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <div className="rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted px-3 py-2 text-xs font-black capitalize">
+                      <div className="rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted px-3 py-2 text-xs font-black capitalize">
                         {effectiveStatus.replaceAll("_", " ")}
                       </div>
                       {prePayoutAdmin ? (
@@ -385,7 +385,7 @@ export default function AdminDisputesPage() {
                 </div>
 
                 <div className="grid gap-5 xl:grid-cols-2">
-                  <div className="rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm">
+                  <div className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
                     <h3 className="font-black">Financial context</h3>
                     <div className="mt-4 space-y-3 text-sm">
                       <Row title="Order state" value={label(selected.order_status)} />
@@ -407,33 +407,33 @@ export default function AdminDisputesPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm">
+                  <div className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
                     <h3 className="font-black">Case history</h3>
                     <div className="mt-4 max-h-56 space-y-2 overflow-auto">
                       {detail?.audit?.length ? (
                         detail.audit.map((entry) => (
-                          <div key={String(entry.id)} className="rounded-2xl bg-zinc-50 dark:bg-bm-surface-subtle p-3">
-                            <p className="text-xs font-black uppercase tracking-wider text-zinc-500 dark:text-bm-text-subtle">
+                          <div key={String(entry.id)} className="rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-subtle p-3">
+                            <p className="text-xs font-black uppercase tracking-wider text-bm-text-subtle dark:text-bm-text-subtle">
                               {label(entry.event_type)}
                             </p>
-                            <p className="mt-1 text-xs text-zinc-500 dark:text-bm-text-subtle">
+                            <p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
                               {date(entry.timestamp)} · {entry.performed_by || "system"}
                             </p>
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-zinc-500 dark:text-bm-text-subtle">No audit history loaded.</p>
+                        <p className="text-sm text-bm-text-subtle dark:text-bm-text-subtle">No audit history loaded.</p>
                       )}
                     </div>
                   </div>
                 </div>
 
                 {active ? (
-                  <div className="rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm">
+                  <div className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
                     <h3 className="font-black">
                       {prePayoutAdmin ? "BuyMesho refund review" : "Admin decision & execution"}
                     </h3>
-                    <p className="mt-1 text-sm text-zinc-500 dark:text-bm-text-subtle">
+                    <p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                       {prePayoutAdmin
                         ? "The seller had not received the payout when this dispute was submitted. This case follows the BuyMesho-controlled refund workflow. Approval and financial execution remain separate steps."
                         : "Approval authorizes the refund. Execution is a separate financial step and only operates on the current held escrow balance."}
@@ -451,7 +451,7 @@ export default function AdminDisputesPage() {
                       onChange={(event) => setNote(event.target.value)}
                       rows={3}
                       placeholder="Decision or execution note…"
-                      className="mt-4 w-full rounded-2xl border border-zinc-200 dark:border-bm-border bg-white p-3 text-sm outline-none focus:border-zinc-400"
+                      className="mt-4 w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-3 text-sm outline-none focus:border-zinc-400"
                     />
                     <div className="mt-4 flex flex-wrap gap-2">
                       {effectiveStatus === "open" ? (
@@ -508,7 +508,7 @@ export default function AdminDisputesPage() {
                           type="button"
                           disabled={busy || !note.trim()}
                           onClick={() => void act("reject")}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-bm-surface px-4 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50"
                         >
                           <XCircle className="h-4 w-4" />
                           Reject dispute
@@ -518,12 +518,12 @@ export default function AdminDisputesPage() {
                   </div>
                 ) : null}
 
-                <div className="rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm">
+                <div className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
                   <h3 className="font-black">Evidence & records</h3>
                   {detail?.case?.latest_evidence?.length ? (
                     <EvidenceMedia evidence={detail.case.latest_evidence as string[]} title="Submitted evidence" />
                   ) : (
-                    <p className="mt-3 text-sm text-zinc-500 dark:text-bm-text-subtle">No evidence recorded.</p>
+                    <p className="mt-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No evidence recorded.</p>
                   )}
                   <p className="mt-4 text-xs text-zinc-400 dark:text-bm-text-subtle">
                     Attempts: {detail?.attempts?.length ?? 0} · Refund transactions: {detail?.refunds?.length ?? 0}
@@ -540,12 +540,12 @@ export default function AdminDisputesPage() {
 
 function Info({ icon, title, value }: { icon: ReactNode; title: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-zinc-100 dark:border-bm-border-subtle bg-zinc-50 dark:bg-bm-surface-subtle p-3">
+    <div className="rounded-2xl border border-zinc-100 dark:border-bm-border-subtle bg-bm-surface-muted dark:bg-bm-surface-subtle p-3">
       <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-zinc-400 dark:text-bm-text-subtle">
         {icon}
         {title}
       </div>
-      <p className="mt-2 text-sm font-semibold text-zinc-800 dark:text-bm-text-muted">{value}</p>
+      <p className="mt-2 text-sm font-semibold text-bm-text dark:text-bm-text-muted">{value}</p>
     </div>
   );
 }
@@ -553,8 +553,8 @@ function Info({ icon, title, value }: { icon: ReactNode; title: string; value: s
 function Row({ title, value }: { title: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-zinc-100 dark:border-bm-border-subtle pb-3">
-      <span className="text-zinc-500 dark:text-bm-text-subtle">{title}</span>
-      <span className="max-w-[65%] text-right font-bold text-zinc-900 dark:text-bm-text">{value}</span>
+      <span className="text-bm-text-subtle dark:text-bm-text-subtle">{title}</span>
+      <span className="max-w-[65%] text-right font-bold text-bm-text dark:text-bm-text">{value}</span>
     </div>
   );
 }

@@ -63,7 +63,7 @@ function TabButton({
         "px-4 py-2 rounded-xl text-sm font-bold transition",
         active
           ? "bg-zinc-700 text-white shadow-sm shadow-zinc-700/30"
-          : "bg-zinc-200 dark:bg-bm-skeleton text-zinc-600 dark:text-bm-text-muted hover:text-zinc-800 hover:bg-zinc-300",
+          : "bg-bm-surface-raised dark:bg-bm-skeleton text-bm-text-muted dark:text-bm-text-muted hover:text-bm-text hover:bg-zinc-300",
         className,
       ].join(" ")}
     >
@@ -82,7 +82,7 @@ function StatCard({
   accent?: "zinc" | "amber" | "blue" | "emerald" | "red";
 }) {
   const accentStyles: Record<"zinc" | "amber" | "blue" | "emerald" | "red", string> = {
-    zinc: "text-zinc-900 dark:text-bm-text",
+    zinc: "text-bm-text dark:text-bm-text",
     amber: "text-amber-700",
     blue: "text-blue-700",
     emerald: "text-emerald-700",
@@ -90,7 +90,7 @@ function StatCard({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-zinc-200 dark:border-bm-border p-4 shadow-sm">
+    <div className="bg-bm-surface rounded-2xl border border-bm-border dark:border-bm-border p-4 shadow-sm">
       <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase">{label}</p>
       <p className={`text-2xl font-extrabold mt-1 ${accentStyles[accent]}`}>{value}</p>
     </div>
@@ -107,16 +107,16 @@ function EmptyState({
   icon?: "shield" | "chat";
 }) {
   return (
-    <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-10 shadow-sm text-center">
-      <div className="w-20 h-20 bg-zinc-100 dark:bg-bm-surface-muted rounded-full flex items-center justify-center mx-auto mb-4">
+    <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-10 shadow-sm text-center">
+      <div className="w-20 h-20 bg-bm-surface-muted dark:bg-bm-surface-muted rounded-full flex items-center justify-center mx-auto mb-4">
         {icon === "shield" ? (
           <ShieldCheck className="w-8 h-8 text-zinc-300" />
         ) : (
           <ShieldAlert className="w-8 h-8 text-zinc-300" />
         )}
       </div>
-      <h3 className="text-lg font-bold text-zinc-900 dark:text-bm-text">{title}</h3>
-      <p className="text-zinc-500 dark:text-bm-text-subtle mt-1">{description}</p>
+      <h3 className="text-lg font-bold text-bm-text dark:text-bm-text">{title}</h3>
+      <p className="text-bm-text-subtle dark:text-bm-text-subtle mt-1">{description}</p>
     </div>
   );
 }
@@ -135,7 +135,7 @@ function MessageReportCard({
   const listingLabel = report.listing_name || "Unknown listing";
 
   return (
-    <div className="border border-zinc-200 dark:border-bm-border rounded-3xl p-4 sm:p-5 bg-white shadow-sm">
+    <div className="border border-bm-border dark:border-bm-border rounded-3xl p-4 sm:p-5 bg-bm-surface shadow-sm">
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div className="space-y-3 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -149,8 +149,8 @@ function MessageReportCard({
           </div>
 
           <div>
-            <h3 className="text-lg font-extrabold text-zinc-900 dark:text-bm-text">{report.reason}</h3>
-            <p className="text-sm text-zinc-500 dark:text-bm-text-subtle mt-1">
+            <h3 className="text-lg font-extrabold text-bm-text dark:text-bm-text">{report.reason}</h3>
+            <p className="text-sm text-bm-text-subtle dark:text-bm-text-subtle mt-1">
               {new Date(report.created_at).toLocaleDateString(undefined, {
                 day: "numeric",
                 month: "short",
@@ -160,48 +160,48 @@ function MessageReportCard({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-            <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3">
+            <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
               <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Reporter UID</p>
-              <p className="text-zinc-800 dark:text-bm-text-muted break-all">{report.reporter_uid}</p>
+              <p className="text-bm-text dark:text-bm-text-muted break-all">{report.reporter_uid}</p>
             </div>
-            <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3">
+            <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
               <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Reported UID</p>
-              <p className="text-zinc-800 dark:text-bm-text-muted break-all">{report.reported_uid || "Unknown"}</p>
+              <p className="text-bm-text dark:text-bm-text-muted break-all">{report.reported_uid || "Unknown"}</p>
             </div>
-            <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
+            <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
               <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Conversation</p>
-              <p className="text-zinc-800 dark:text-bm-text-muted">{report.conversation_id ?? "Unknown conversation"}</p>
+              <p className="text-bm-text dark:text-bm-text-muted">{report.conversation_id ?? "Unknown conversation"}</p>
             </div>
-            <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3">
+            <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
               <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Buyer</p>
-              <p className="text-zinc-800 dark:text-bm-text-muted break-all">{buyerLabel}</p>
+              <p className="text-bm-text dark:text-bm-text-muted break-all">{buyerLabel}</p>
             </div>
-            <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3">
+            <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
               <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Seller</p>
-              <p className="text-zinc-800 dark:text-bm-text-muted break-all">{sellerLabel}</p>
+              <p className="text-bm-text dark:text-bm-text-muted break-all">{sellerLabel}</p>
             </div>
-            <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
+            <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
               <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Listing</p>
-              <p className="text-zinc-800 dark:text-bm-text-muted">{listingLabel}</p>
+              <p className="text-bm-text dark:text-bm-text-muted">{listingLabel}</p>
             </div>
             {report.message_id ? (
-              <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
+              <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
                 <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Message</p>
-                <p className="text-zinc-800 dark:text-bm-text-muted">Message #{report.message_id}</p>
+                <p className="text-bm-text dark:text-bm-text-muted">Message #{report.message_id}</p>
               </div>
             ) : null}
             {report.message_body ? (
-              <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
+              <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
                 <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Reported Message</p>
-                <p className="text-zinc-800 dark:text-bm-text-muted whitespace-pre-wrap break-words">{report.message_body}</p>
+                <p className="text-bm-text dark:text-bm-text-muted whitespace-pre-wrap break-words">{report.message_body}</p>
               </div>
             ) : null}
           </div>
 
           {report.details ? (
-            <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-4">
+            <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-4">
               <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Details</p>
-              <p className="text-sm text-zinc-700 dark:text-bm-text-muted whitespace-pre-wrap">{report.details}</p>
+              <p className="text-sm text-bm-text-muted dark:text-bm-text-muted whitespace-pre-wrap">{report.details}</p>
             </div>
           ) : null}
         </div>
@@ -252,7 +252,7 @@ function ContentReportCard({
   const targetName = isListing ? report.listing_name || `Listing #${report.listing_id}` : report.seller_business_name || "Unknown seller";
 
   return (
-    <div className="border border-zinc-200 dark:border-bm-border rounded-3xl p-4 sm:p-5 bg-white shadow-sm">
+    <div className="border border-bm-border dark:border-bm-border rounded-3xl p-4 sm:p-5 bg-bm-surface shadow-sm">
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div className="space-y-3 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -260,7 +260,7 @@ function ContentReportCard({
               className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${
                 isListing
                   ? "bg-red-50 text-red-700 border-red-200"
-                  : "bg-zinc-100 dark:bg-bm-surface-muted text-zinc-700 dark:text-bm-text-muted border-zinc-200 dark:border-bm-border"
+                  : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted border-bm-border dark:border-bm-border"
               }`}
             >
               {isListing ? "listing report" : "seller report"}
@@ -280,8 +280,8 @@ function ContentReportCard({
           </div>
 
           <div>
-            <h3 className="text-lg font-extrabold text-zinc-900 dark:text-bm-text">{report.subject || report.reason}</h3>
-            <p className="text-sm text-zinc-500 dark:text-bm-text-subtle mt-1">
+            <h3 className="text-lg font-extrabold text-bm-text dark:text-bm-text">{report.subject || report.reason}</h3>
+            <p className="text-sm text-bm-text-subtle dark:text-bm-text-subtle mt-1">
               {new Date(report.created_at).toLocaleDateString(undefined, {
                 day: "numeric",
                 month: "short",
@@ -291,54 +291,54 @@ function ContentReportCard({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-            <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3">
+            <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
               <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Reason</p>
-              <p className="text-zinc-800 dark:text-bm-text-muted">{report.reason}</p>
+              <p className="text-bm-text dark:text-bm-text-muted">{report.reason}</p>
             </div>
 
-            <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3">
+            <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
               <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Reporter Email</p>
-              <p className="text-zinc-800 dark:text-bm-text-muted">{report.reporter_email || "Unknown"}</p>
+              <p className="text-bm-text dark:text-bm-text-muted">{report.reporter_email || "Unknown"}</p>
             </div>
 
-            <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
+            <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
               <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Target</p>
-              <p className="text-zinc-800 dark:text-bm-text-muted">{targetName}</p>
+              <p className="text-bm-text dark:text-bm-text-muted">{targetName}</p>
             </div>
 
             {isListing ? (
               <>
-                <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3">
+                <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
                   <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Listing Visibility</p>
-                  <p className="text-zinc-800 dark:text-bm-text-muted">{report.listing_is_hidden === 1 ? "Hidden" : "Visible"}</p>
+                  <p className="text-bm-text dark:text-bm-text-muted">{report.listing_is_hidden === 1 ? "Hidden" : "Visible"}</p>
                 </div>
-                <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3">
+                <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
                   <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Seller Status</p>
-                  <p className="text-zinc-800 dark:text-bm-text-muted">
+                  <p className="text-bm-text dark:text-bm-text-muted">
                     {report.seller_is_suspended === 1 ? "Suspended" : "Active"}
                   </p>
                 </div>
               </>
             ) : (
               <>
-                <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3">
+                <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
                   <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Seller Status</p>
-                  <p className="text-zinc-800 dark:text-bm-text-muted">
+                  <p className="text-bm-text dark:text-bm-text-muted">
                     {report.seller_is_suspended === 1 ? "Suspended" : "Active"}
                   </p>
                 </div>
-                <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-3">
+                <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
                   <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Seller ID</p>
-                  <p className="text-zinc-800 dark:text-bm-text-muted break-all">{report.seller_uid || "Unknown"}</p>
+                  <p className="text-bm-text dark:text-bm-text-muted break-all">{report.seller_uid || "Unknown"}</p>
                 </div>
               </>
             )}
           </div>
 
           {report.details ? (
-            <div className="bg-zinc-50 dark:bg-bm-surface-subtle rounded-2xl p-4">
+            <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-4">
               <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Details</p>
-              <p className="text-sm text-zinc-700 dark:text-bm-text-muted whitespace-pre-wrap">{report.details}</p>
+              <p className="text-sm text-bm-text-muted dark:text-bm-text-muted whitespace-pre-wrap">{report.details}</p>
             </div>
           ) : null}
         </div>
@@ -395,7 +395,7 @@ function ContentReportCard({
           <button
             onClick={onViewUser}
             disabled={busy}
-            className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-bm-surface-muted hover:bg-zinc-200 text-zinc-800 dark:text-bm-text-muted text-sm font-bold disabled:opacity-60"
+            className="px-4 py-2 rounded-xl bg-bm-surface-muted dark:bg-bm-surface-muted hover:bg-bm-surface-raised text-bm-text dark:text-bm-text-muted text-sm font-bold disabled:opacity-60"
           >
             View User
           </button>
@@ -577,7 +577,7 @@ export default function AdminReportsPage() {
       }}
     >
       <div className="space-y-6">
-      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 dark:bg-bm-surface/90 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-bm-border/80 bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <button
             type="button"
@@ -590,7 +590,7 @@ export default function AdminReportsPage() {
             <div className="text-left">
               <p className="text-lg font-extrabold tracking-tight">
                 <span className="text-red-900">Buy</span>
-                <span className="text-zinc-700 dark:text-bm-text-muted">Mesho</span>
+                <span className="text-bm-text-muted dark:text-bm-text-muted">Mesho</span>
               </p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
                 Admin moderation
@@ -601,7 +601,7 @@ export default function AdminReportsPage() {
           <button
             type="button"
             onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-            className="px-4 py-2.5 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white text-sm font-bold hover:bg-zinc-50 dark:hover:bg-bm-surface-muted items-center gap-2 inline-flex"
+            className="px-4 py-2.5 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface text-sm font-bold hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted items-center gap-2 inline-flex"
           >
             <ChevronLeft className="w-4 h-4" />
             Back
@@ -609,10 +609,10 @@ export default function AdminReportsPage() {
         </div>
       </header>
 
-      <div className="sticky top-[73px] z-30 bg-zinc-100/95 backdrop-blur border-b border-zinc-200 dark:border-bm-border">
+      <div className="sticky top-[73px] z-30 bg-bm-surface-muted/95 backdrop-blur border-b border-bm-border dark:border-bm-border">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-start justify-between gap-4">
           <div className="flex flex-col gap-2">
-            <div className="inline-flex rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted p-1 gap-1 shadow-sm">
+            <div className="inline-flex rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted p-1 gap-1 shadow-sm">
               <TabButton active={mainTab === "content"} onClick={() => setMainTab("content")}>
                 Content
               </TabButton>
@@ -622,7 +622,7 @@ export default function AdminReportsPage() {
             </div>
 
             {mainTab === "content" ? (
-              <div className="inline-flex rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted p-1 gap-1 shadow-sm">
+              <div className="inline-flex rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted p-1 gap-1 shadow-sm">
                 <TabButton
                   active={contentTab === "listings"}
                   onClick={() => setContentTab("listings")}
@@ -657,27 +657,27 @@ export default function AdminReportsPage() {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-6 sm:p-8 shadow-sm mb-6">
+        <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 sm:p-8 shadow-sm mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
                 Admin
               </p>
-              <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 dark:text-bm-text">
+              <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-bm-text dark:text-bm-text">
                 {mainTab === "content" ? currentContentTitle : "Chat reports queue"}
               </h1>
-              <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-600 dark:text-bm-text-muted leading-relaxed font-medium">
+              <p className="mt-3 max-w-2xl text-sm sm:text-base text-bm-text-muted dark:text-bm-text-muted leading-relaxed font-medium">
                 {mainTab === "content"
                   ? currentContentDescription
                   : "Review reported conversations, keep evidence, and resolve abuse without deleting the record."}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-5 py-4 min-w-[220px]">
+            <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-5 py-4 min-w-[220px]">
               <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">
                 Current view
               </p>
-              <p className="mt-2 text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text">
+              <p className="mt-2 text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">
                 {mainTab === "content"
                   ? contentTab === "listings"
                     ? "Listings"
@@ -698,7 +698,7 @@ export default function AdminReportsPage() {
             </section>
 
             <section className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="inline-flex bg-zinc-100 dark:bg-bm-surface-muted rounded-2xl p-1 gap-1">
+              <div className="inline-flex bg-bm-surface-muted dark:bg-bm-surface-muted rounded-2xl p-1 gap-1">
                 <TabButton
                   active={contentStatusFilter === "all"}
                   onClick={() => setContentStatusFilter("all")}
@@ -728,9 +728,9 @@ export default function AdminReportsPage() {
 
             <section className="mt-6 space-y-4">
               {loading ? (
-                <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-10 shadow-sm flex flex-col items-center justify-center gap-4">
-                  <Loader2 className="w-8 h-8 text-zinc-700 dark:text-bm-text-muted animate-spin" />
-                  <p className="text-zinc-500 dark:text-bm-text-subtle font-medium">Loading reports...</p>
+                <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-10 shadow-sm flex flex-col items-center justify-center gap-4">
+                  <Loader2 className="w-8 h-8 text-bm-text-muted dark:text-bm-text-muted animate-spin" />
+                  <p className="text-bm-text-subtle dark:text-bm-text-subtle font-medium">Loading reports...</p>
                 </div>
               ) : contentFiltered.filter((r) =>
                   contentTab === "listings" ? r.type === "listing" : r.type === "problem"
@@ -796,7 +796,7 @@ export default function AdminReportsPage() {
             </section>
 
             <section className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="inline-flex bg-zinc-100 dark:bg-bm-surface-muted rounded-2xl p-1 gap-1">
+              <div className="inline-flex bg-bm-surface-muted dark:bg-bm-surface-muted rounded-2xl p-1 gap-1">
                 <TabButton active={chatStatusFilter === "open"} onClick={() => setChatStatusFilter("open")}>
                   Open
                 </TabButton>
@@ -814,9 +814,9 @@ export default function AdminReportsPage() {
 
             <section className="mt-6 space-y-4">
               {messageLoading ? (
-                <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-10 shadow-sm flex flex-col items-center justify-center gap-4">
-                  <Loader2 className="w-8 h-8 text-zinc-700 dark:text-bm-text-muted animate-spin" />
-                  <p className="text-zinc-500 dark:text-bm-text-subtle font-medium">Loading message reports...</p>
+                <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-10 shadow-sm flex flex-col items-center justify-center gap-4">
+                  <Loader2 className="w-8 h-8 text-bm-text-muted dark:text-bm-text-muted animate-spin" />
+                  <p className="text-bm-text-subtle dark:text-bm-text-subtle font-medium">Loading message reports...</p>
                 </div>
               ) : messageReports.length === 0 ? (
                 <EmptyState
@@ -846,7 +846,7 @@ export default function AdminReportsPage() {
           <button
             type="button"
             onClick={() => navigateToPath("/profile")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-zinc-200 dark:border-bm-border bg-white text-sm font-bold hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface text-sm font-bold hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to Profile

@@ -21,14 +21,14 @@ function QueueCard({
     <button
       type="button"
       onClick={onOpen}
-      className="w-full rounded-3xl border border-zinc-200 dark:border-bm-border bg-white p-5 text-left shadow-sm transition hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
+      className="w-full rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 text-left shadow-sm transition hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
     >
-      <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted text-zinc-700 dark:text-bm-text-muted">
+      <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted">
         <Icon className="h-5 w-5" />
       </div>
-      <p className="mt-3 text-sm font-bold text-zinc-500 dark:text-bm-text-subtle">{title}</p>
-      <p className="mt-1 text-3xl font-black text-zinc-900 dark:text-bm-text">{value}</p>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-bm-text-muted">{note}</p>
+      <p className="mt-3 text-sm font-bold text-bm-text-subtle dark:text-bm-text-subtle">{title}</p>
+      <p className="mt-1 text-3xl font-black text-bm-text dark:text-bm-text">{value}</p>
+      <p className="mt-2 text-sm text-bm-text-muted dark:text-bm-text-muted">{note}</p>
     </button>
   );
 }
