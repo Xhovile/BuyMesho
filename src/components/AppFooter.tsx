@@ -22,7 +22,7 @@ export default function AppFooter() {
             <img src={Logo} alt="BuyMesho logo" className="h-full w-full object-cover" />
           </span>
           <span className="text-xl font-extrabold tracking-tight md:text-lg">
-            <span className="text-red-900">Buy</span>
+            <span className="text-bm-brand">Buy</span>
             <span className="text-bm-text-muted dark:text-bm-text-muted">Mesho Ltd</span>
           </span>
         </button>
@@ -47,7 +47,7 @@ export default function AppFooter() {
             href="https://www.facebook.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-14 w-14 items-center justify-center rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted shadow-sm transition-all duration-300 hover:border-red-600 hover:bg-red-600 hover:text-bm-on-brand hover:shadow-md"
+            className="flex h-14 w-14 items-center justify-center rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted shadow-sm transition-all duration-300 hover:border-bm-brand hover:bg-bm-brand hover:text-bm-on-brand hover:shadow-md"
             aria-label="Facebook"
           >
             <Facebook className="h-5.5 w-5.5 stroke-[1.75]" />
@@ -56,7 +56,7 @@ export default function AppFooter() {
             href="https://www.instagram.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-14 w-14 items-center justify-center rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted shadow-sm transition-all duration-300 hover:border-red-600 hover:bg-red-600 hover:text-bm-on-brand hover:shadow-md"
+            className="flex h-14 w-14 items-center justify-center rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted shadow-sm transition-all duration-300 hover:border-bm-brand hover:bg-bm-brand hover:text-bm-on-brand hover:shadow-md"
             aria-label="Instagram"
           >
             <Instagram className="h-5.5 w-5.5 stroke-[1.75]" />
@@ -65,7 +65,7 @@ export default function AppFooter() {
             href="https://x.com/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-14 w-14 items-center justify-center rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted shadow-sm transition-all duration-300 hover:border-red-600 hover:bg-red-600 hover:text-bm-on-brand hover:shadow-md"
+            className="flex h-14 w-14 items-center justify-center rounded-xl border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted shadow-sm transition-all duration-300 hover:border-bm-brand hover:bg-bm-brand hover:text-bm-on-brand hover:shadow-md"
             aria-label="X (Twitter)"
           >
             <Twitter className="h-5.5 w-5.5 stroke-[1.75]" />
