@@ -142,7 +142,7 @@ export default function ReferenceUploader({
 
 
   return (
-    <section className="rounded-xl border border-bm-border bg-[#fffdfa] p-3">
+    <section className="rounded-xl border border-bm-border bg-bm-surface p-3">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-black text-bm-text">References <span className="font-normal text-bm-text-subtle">(optional)</span></p>
@@ -152,7 +152,7 @@ export default function ReferenceUploader({
       </div>
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[#168cff]/20 bg-[#eef8ff] px-3 py-2.5 hover:border-[#168cff]/40">
+        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[#168cff]/20 bg-bm-surface-muted px-3 py-2.5 hover:border-[#168cff]/40">
           <span className="flex min-w-0 items-center gap-2">
             <Images className="h-4 w-4 shrink-0 text-[#168cff]" />
             <span className="min-w-0">
@@ -174,7 +174,7 @@ export default function ReferenceUploader({
           />
         </label>
 
-        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[#ff1d25]/20 bg-[#fff1f1] px-3 py-2.5 hover:border-[#ff1d25]/40">
+        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[#ff1d25]/20 bg-bm-surface-muted px-3 py-2.5 hover:border-[#ff1d25]/40">
           <span className="flex min-w-0 items-center gap-2">
             <Video className="h-4 w-4 shrink-0 text-[#ff5b61]" />
             <span className="min-w-0">
