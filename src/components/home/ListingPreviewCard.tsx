@@ -25,7 +25,7 @@ export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
       onClick={() => navigateToListingDetails(item.id)}
       className="group flex h-full w-full flex-col bg-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
     >
-      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted">
         <ListingImage
           src={imageSrc}
           alt={item.name}
@@ -34,11 +34,11 @@ export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
       </div>
 
       <div className="px-1 py-3">
-        <p className="line-clamp-1 text-sm font-extrabold text-zinc-900 dark:text-bm-text">
+        <p className="line-clamp-1 text-sm font-extrabold text-bm-text dark:text-bm-text">
           {item.name}
         </p>
 
-        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-500 dark:text-bm-text-subtle">
+        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-bm-text-subtle dark:text-bm-text-subtle">
           {item.description || description}
         </p>
 
