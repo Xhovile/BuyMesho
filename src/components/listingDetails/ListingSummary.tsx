@@ -42,7 +42,7 @@ export default function ListingSummary({
   const modeLabel = listingMode === "deal" ? "Deal" : listingMode === "wholesale" ? "Wholesale" : "Normal";
 
   const actionButtonClass =
-    "inline-flex min-w-0 w-full items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-extrabold transition-colors";
+    "inline-flex h-12 min-w-0 w-full items-center justify-center gap-2 rounded-2xl border border-bm-border bg-bm-surface px-3 py-3 text-sm font-extrabold shadow-sm transition-all hover:bg-bm-surface-muted hover:shadow-md active:translate-y-px";
 
   const stockPillClass = isSold
     ? "border-bm-danger/35 bg-bm-danger-bg text-bm-danger"
@@ -100,15 +100,15 @@ export default function ListingSummary({
         ) : (
           <div className="border-t border-bm-border pt-4">
             <div className="grid grid-cols-3 gap-2">
-              <button type="button" onClick={onBuyNow} className={`${actionButtonClass} bg-bm-brand text-bm-on-brand hover:bg-bm-brand-hover`}>
-                <BuyBasketIcon className="hidden h-6 w-6 shrink-0 text-[#8F171D] lg:block" />
+              <button type="button" onClick={onBuyNow} className={`${actionButtonClass} text-bm-brand`}>
+                <BuyBasketIcon className="h-5 w-5 shrink-0 text-[#8F171D]" />
                 <span>Buy</span>
               </button>
 
               <button
                 type="button"
                 onClick={onAddToCart}
-                className={`${actionButtonClass} bg-bm-success text-bm-bg hover:brightness-95`}
+                className={`${actionButtonClass} text-bm-success`}
                 aria-label="Add to cart"
                 title="Add to cart"
               >
