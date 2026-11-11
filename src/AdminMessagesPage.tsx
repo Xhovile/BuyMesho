@@ -148,9 +148,9 @@ export default function AdminMessagesPage() {
                       </div>
                       <div className="flex shrink-0 flex-wrap gap-2">
                         {conversation.is_unread ? <span className="rounded-full bg-bm-brand px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-bm-on-brand">Unread</span> : null}
-                        {conversation.open_report_count > 0 ? <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-amber-800"><AlertTriangle className="h-3.5 w-3.5" />Reported {conversation.open_report_count}</span> : null}
-                        {conversation.is_blocked ? <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-red-800"><Ban className="h-3.5 w-3.5" />Blocked</span> : null}
-                        {conversation.is_restricted ? <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-blue-800"><ShieldAlert className="h-3.5 w-3.5" />Restricted</span> : null}
+                        {conversation.open_report_count > 0 ? <span className="inline-flex items-center gap-1.5 rounded-full bg-bm-warning-bg px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-bm-warning"><AlertTriangle className="h-3.5 w-3.5" />Reported {conversation.open_report_count}</span> : null}
+                        {conversation.is_blocked ? <span className="inline-flex items-center gap-1.5 rounded-full bg-bm-danger-bg px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-bm-danger"><Ban className="h-3.5 w-3.5" />Blocked</span> : null}
+                        {conversation.is_restricted ? <span className="inline-flex items-center gap-1.5 rounded-full bg-bm-surface-muted px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-bm-text-muted"><ShieldAlert className="h-3.5 w-3.5" />Restricted</span> : null}
                         <ChevronRight className="mt-1 h-5 w-5 text-bm-text-subtle" />
                       </div>
                     </div>
