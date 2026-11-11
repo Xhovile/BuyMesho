@@ -47,7 +47,7 @@ export function StudioBackToTop() {
       title="Back to top"
       className="group fixed bottom-5 right-4 z-[120] flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#168cff] via-[#8f1528] to-[#ff1d25] p-[1px] shadow-[0_10px_30px_rgba(15,15,15,0.22)] transition hover:-translate-y-0.5 sm:bottom-6 sm:right-6"
     >
-      <span className="flex h-full w-full items-center justify-center rounded-full bg-white text-[#8f1528] transition group-hover:bg-[#fffaf5]">
+      <span className="flex h-full w-full items-center justify-center rounded-full bg-bm-surface text-[#8f1528] transition group-hover:bg-[#fffaf5]">
         <ArrowUp className="h-5 w-5" />
       </span>
     </button>
@@ -56,7 +56,7 @@ export function StudioBackToTop() {
 
 export function Shell({ children }: { children: ReactNode }) {
   return (
-    <main className="min-h-screen bg-[#f6f1ea] px-3 py-5 text-zinc-900 sm:px-6 sm:py-8">
+    <main className="min-h-screen bg-bm-bg px-3 py-5 text-bm-text sm:px-6 sm:py-8">
       <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] w-full max-w-2xl items-center justify-center sm:min-h-[calc(100vh-4rem)]">
         <div className="w-full">
           <div className="mb-5 flex flex-col items-center text-center sm:mb-6">
@@ -110,7 +110,7 @@ export function ServiceChoice({
       className={`flex min-h-[66px] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-2 text-center transition sm:min-h-[72px] sm:flex-row sm:items-center sm:justify-start sm:gap-3 sm:px-4 sm:text-left ${
         active
           ? activeClass
-          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
+          : "border-bm-border bg-bm-surface text-bm-text-muted hover:border-bm-border hover:bg-bm-surface-subtle"
       }`}
     >
       <span
@@ -121,19 +121,19 @@ export function ServiceChoice({
               : color === "red"
                 ? "bg-[#ff1d25]/10 text-[#ff1d25]"
                 : "bg-[#8f1528]/10 text-[#8f1528]"
-            : "bg-zinc-100 text-zinc-500"
+            : "bg-bm-surface-muted text-bm-text-subtle"
         }`}
       >
         {icon}
       </span>
       <span className="min-w-0 max-w-full">
-        <span className="block truncate text-[11px] font-black leading-4 text-zinc-900 sm:hidden">{mobileTitle}</span>
-        <span className="hidden truncate text-sm font-black leading-5 text-zinc-900 sm:block">{title}</span>
-        <span className="hidden text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:block">
+        <span className="block truncate text-[11px] font-black leading-4 text-bm-text sm:hidden">{mobileTitle}</span>
+        <span className="hidden truncate text-sm font-black leading-5 text-bm-text sm:block">{title}</span>
+        <span className="hidden text-[10px] uppercase tracking-[0.18em] text-bm-text-subtle sm:block">
           {active ? "Selected" : "Choose"}
         </span>
       </span>
-      <span className="hidden h-4 w-4 shrink-0 rounded-full border border-zinc-300 p-0.5 sm:block">
+      <span className="hidden h-4 w-4 shrink-0 rounded-full border border-bm-border p-0.5 sm:block">
         <span className={`block h-full w-full rounded-full ${active ? "bg-[#8f1528]" : "bg-transparent"}`} />
       </span>
     </button>
@@ -167,11 +167,11 @@ export function ChoiceButton({
       className={`rounded-xl border px-3 py-2.5 text-left transition ${
         active
           ? activeClass
-          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
+          : "border-bm-border bg-bm-surface text-bm-text-muted hover:border-bm-border hover:bg-bm-surface-subtle"
       }`}
     >
-      <span className="block text-xs font-black text-zinc-900">{title}</span>
-      {subtitle ? <span className="mt-0.5 block text-[10px] text-zinc-500">{subtitle}</span> : null}
+      <span className="block text-xs font-black text-bm-text">{title}</span>
+      {subtitle ? <span className="mt-0.5 block text-[10px] text-bm-text-subtle">{subtitle}</span> : null}
     </button>
   );
 }
@@ -212,13 +212,13 @@ export function GraphicServicePicker({
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className={`flex w-full items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-left outline-none transition ${borderClass}`}
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border border-bm-border bg-bm-surface px-3 py-2.5 text-left outline-none transition ${borderClass}`}
       >
         <span className="min-w-0">
-          <span className="block truncate text-sm font-medium text-zinc-900">{label}</span>
-          <span className="mt-0.5 block text-[10px] text-zinc-500">{price}</span>
+          <span className="block truncate text-sm font-medium text-bm-text">{label}</span>
+          <span className="mt-0.5 block text-[10px] text-bm-text-subtle">{price}</span>
         </span>
-        <ChevronDown className={`h-4 w-4 shrink-0 text-zinc-400 transition ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-4 w-4 shrink-0 text-bm-text-subtle transition ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open ? (
@@ -231,7 +231,7 @@ export function GraphicServicePicker({
           />
           <div
             role="listbox"
-            className="absolute left-0 right-0 top-[calc(100%+8px)] z-40 max-h-64 overflow-auto rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-[0_18px_45px_rgba(30,25,20,0.18)]"
+            className="absolute left-0 right-0 top-[calc(100%+8px)] z-40 max-h-64 overflow-auto rounded-2xl border border-bm-border bg-bm-surface p-1.5 shadow-[0_18px_45px_rgba(30,25,20,0.18)]"
           >
             {GRAPHIC_SERVICES.map((item) => {
               const active = item.id === value;
@@ -246,11 +246,11 @@ export function GraphicServicePicker({
                     setOpen(false);
                   }}
                   className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition ${
-                    active ? highlightClass : "text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950"
+                    active ? highlightClass : "text-bm-text-muted hover:bg-bm-surface-subtle hover:text-bm-text"
                   }`}
                 >
                   <span className="truncate text-sm">{item.label}</span>
-                  <span className="shrink-0 text-[11px] font-bold text-zinc-500">{formatMoney(item.price)}</span>
+                  <span className="shrink-0 text-[11px] font-bold text-bm-text-subtle">{formatMoney(item.price)}</span>
                 </button>
               );
             })}
@@ -263,11 +263,11 @@ export function GraphicServicePicker({
                 setOpen(false);
               }}
               className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition ${
-                value === "custom" ? highlightClass : "text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950"
+                value === "custom" ? highlightClass : "text-bm-text-muted hover:bg-bm-surface-subtle hover:text-bm-text"
               }`}
             >
               <span className="truncate text-sm">Custom / multiple</span>
-              <span className="shrink-0 text-[11px] font-bold text-zinc-500">Agreed price</span>
+              <span className="shrink-0 text-[11px] font-bold text-bm-text-subtle">Agreed price</span>
             </button>
           </div>
         </>
@@ -326,7 +326,7 @@ export function StudioCheckoutButton({
     <div className="relative h-12">
       {floating ? (
         <div className="pointer-events-none fixed inset-x-3 bottom-3 z-[100] mx-auto w-auto max-w-2xl sm:bottom-5 sm:w-[calc(100%-3rem)]">
-          <div className="pointer-events-auto rounded-[15px] border border-black bg-white/95 p-1.5 shadow-[0_12px_35px_rgba(30,25,20,0.18)] backdrop-blur-md">
+          <div className="pointer-events-auto rounded-[15px] border border-black bg-bm-surface/95 p-1.5 shadow-[0_12px_35px_rgba(30,25,20,0.18)] backdrop-blur-md">
             {button}
           </div>
         </div>
