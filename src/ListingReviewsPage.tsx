@@ -92,7 +92,7 @@ export default function ListingReviewsPage() {
 
   if (!listingId) {
     return (
-      <div className="min-h-screen bg-zinc-100 text-zinc-900">
+      <div className="min-h-screen bg-bm-surface-muted text-bm-text">
         <ListingHeaderBar subtitle="Reviews" backPath={LISTING_PATH} />
         <main className="mx-auto max-w-3xl px-4 py-12">
           <div className="rounded-[2rem] border border-red-200 bg-red-50 p-6 text-sm font-medium text-red-700">
@@ -108,23 +108,23 @@ export default function ListingReviewsPage() {
     !!firebaseUser?.uid && !!sellerUid && firebaseUser.uid === sellerUid;
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <div className="min-h-screen bg-bm-surface-muted text-bm-text">
       <ListingHeaderBar subtitle="Reviews" backPath={backPath} />
 
       <main className="mx-auto max-w-4xl px-4 pb-24 pt-6 sm:pt-8">
-        <section className="space-y-2 border-b border-zinc-200 pb-5">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-600">Listing reviews</p>
+        <section className="space-y-2 border-b border-bm-border pb-5">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-bm-text-muted">Listing reviews</p>
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <h1 className="font-serif text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">
+            <h1 className="font-serif text-3xl font-bold tracking-tight text-bm-text sm:text-4xl">
               Ratings & reviews
             </h1>
             {summary ? (
-              <p className="text-sm font-bold text-zinc-500">
+              <p className="text-sm font-bold text-bm-text-subtle">
                 {summary.ratingCount.toLocaleString()} review{summary.ratingCount === 1 ? "" : "s"}
               </p>
             ) : null}
           </div>
-          <p className="max-w-3xl text-sm leading-6 text-zinc-500">
+          <p className="max-w-3xl text-sm leading-6 text-bm-text-subtle">
             Browse the complete review history for this listing. Reviews load as you move through the page.
           </p>
         </section>
@@ -135,7 +135,7 @@ export default function ListingReviewsPage() {
               <button
                 type="button"
                 onClick={handleOpenReview}
-                className="rounded-full bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800"
+                className="rounded-full bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand transition hover:bg-bm-brand-hover"
               >
                 Leave a review
               </button>
