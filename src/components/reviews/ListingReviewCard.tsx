@@ -169,7 +169,7 @@ export default function ListingReviewCard({
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
-                        className={`h-4 w-4 ${star <= review.rating ? "fill-amber-400 text-amber-500" : "text-zinc-300"}`}
+                        className={`h-4 w-4 ${star <= review.rating ? "fill-amber-400 text-amber-500" : "text-bm-text-subtle"}`}
                       />
                     ))}
                   </div>
