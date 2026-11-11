@@ -187,7 +187,7 @@ function AdminConsole() {
             <div className="rounded-2xl border border-bm-border bg-bm-surface-muted px-4 py-3 text-sm">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-bm-success" />
-                <span className="font-bold text-bm-on-brand">Admin monitoring active</span>
+                <span className="font-bold text-bm-text">Admin monitoring active</span>
               </div>
               <p className="mt-1 text-xs text-bm-text-subtle">
                 {lastRefresh ? "Updated " + formatDate(lastRefresh) : "Waiting for update"}
