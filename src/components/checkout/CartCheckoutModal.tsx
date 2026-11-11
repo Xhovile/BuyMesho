@@ -158,7 +158,7 @@ export function CartCheckoutModal({
               <h3 className="text-sm font-extrabold text-bm-text dark:text-bm-text">Items for checkout</h3>
               <span className="text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">{entries.length} selected</span>
             </div>
-            <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
+            <div className="divide-y divide-bm-border-subtle dark:divide-bm-border-subtle">
               {entries.map(({ item, checkoutQuantity }) => (
                 <div key={item.cartKey} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                   {item.image ? (
