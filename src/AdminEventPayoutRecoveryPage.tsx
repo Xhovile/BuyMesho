@@ -342,7 +342,7 @@ export default function AdminEventPayoutRecoveryPage() {
         </>
       )}
 
-      {selectedPayout ? <div className="fixed inset-0 z-[90] flex items-center justify-center bg-bm-brand/55 p-3 backdrop-blur-sm">
+      {selectedPayout ? <div className="fixed inset-0 z-[90] flex items-center justify-center bg-bm-overlay p-3 backdrop-blur-sm">
         <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-bm-surface-muted dark:bg-bm-surface-subtle shadow-2xl">
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-bm-border dark:border-bm-border bg-bm-surface/95 dark:bg-bm-surface/95 px-5 py-4">
             <div><p className="text-xs font-black uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">Event payout</p><h2 className="mt-1 text-lg font-black">{text(detail?.payout?.event_title) || text(selectedPayout.event_title) || text(selectedPayout.id)}</h2></div>
@@ -382,7 +382,7 @@ export default function AdminEventPayoutRecoveryPage() {
         </div>
       </div> : null}
 
-      {selectedPayment ? <div className="fixed inset-0 z-[95] flex items-center justify-center bg-bm-brand/55 p-3 backdrop-blur-sm">
+      {selectedPayment ? <div className="fixed inset-0 z-[95] flex items-center justify-center bg-bm-overlay p-3 backdrop-blur-sm">
         <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-bm-surface-muted dark:bg-bm-surface-subtle shadow-2xl">
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-bm-border dark:border-bm-border bg-bm-surface/95 dark:bg-bm-surface/95 px-5 py-4">
             <div><p className="text-xs font-black uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">Event payment</p><h2 className="mt-1 text-lg font-black">{text(selectedPayment.event_title) || text(selectedPayment.id)}</h2></div>
@@ -416,7 +416,7 @@ export default function AdminEventPayoutRecoveryPage() {
         </div>
       </div> : null}
 
-      {selectedLiability ? <div className="fixed inset-0 z-[100] flex items-center justify-center bg-bm-brand/55 p-3 backdrop-blur-sm">
+      {selectedLiability ? <div className="fixed inset-0 z-[100] flex items-center justify-center bg-bm-overlay p-3 backdrop-blur-sm">
         <div className="w-full max-w-xl rounded-3xl bg-bm-surface shadow-2xl">
           <div className="flex items-start justify-between border-b border-bm-border dark:border-bm-border p-5"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">Refund recovery</p><h2 className="mt-1 text-lg font-black">{amount(selectedLiability.amount, text(selectedLiability.currency) || "MWK")}</h2><p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Liability {text(selectedLiability.id)} · Order {text(selectedLiability.order_id)}</p></div><button type="button" onClick={() => setSelectedLiability(null)} className="rounded-full p-2 text-bm-text-subtle dark:text-bm-text-subtle" aria-label="Close"><XCircle className="h-5 w-5" /></button></div>
           <div className="space-y-4 p-5">
