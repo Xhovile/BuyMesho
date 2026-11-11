@@ -24,12 +24,12 @@ function ComingSoonBody({ title }: { title: string }) {
   return (
     <main className="flex-1">
       <section className="mx-auto flex min-h-[60vh] max-w-7xl items-center px-4 py-10 sm:py-14">
-        <div className="w-full rounded-[2rem] border border-bm-border bg-bm-surface p-6 text-center shadow-sm shadow-zinc-200/50 sm:p-10">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+        <div className="w-full rounded-[2rem] border border-bm-border bg-bm-surface p-6 text-center card-shadow sm:p-10">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-bm-brand/5 text-bm-brand">
             <Sparkles className="h-8 w-8" />
           </div>
 
-          <p className="mt-6 text-[11px] font-black uppercase tracking-[0.28em] text-emerald-700">BuyMesho</p>
+          <p className="mt-6 text-[11px] font-black uppercase tracking-[0.28em] text-bm-brand">BuyMesho</p>
           <h1 className="mt-3 text-3xl font-black tracking-tight text-bm-text sm:text-4xl">{title}</h1>
           <p className="mt-4 text-base leading-relaxed text-bm-text-muted sm:text-lg">
             {title} is coming soon. We’re working on bringing this experience to BuyMesho.
