@@ -340,7 +340,7 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
                       <h2 className="text-xl font-black tracking-tight text-bm-text dark:text-bm-text">This order includes an event ticket</h2>
                       <p className="mt-1 text-sm text-bm-text-muted dark:text-bm-text-muted">Open Tickets for ticket details.</p>
                     </div>
-                    <button type="button" onClick={() => navigateToPath(`/tickets?reference=${encodeURIComponent(effectiveReference ?? "")}`)} className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-brand px-4 py-2.5 text-sm font-bold text-white hover:bg-bm-brand-hover">
+                    <button type="button" onClick={() => navigateToPath(`/tickets?reference=${encodeURIComponent(effectiveReference ?? "")}`)} className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover">
                       <ExternalLink className="h-4 w-4" />
                       Open tickets
                     </button>
