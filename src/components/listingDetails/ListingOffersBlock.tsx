@@ -19,7 +19,7 @@ function formatExpiryLabel(value: string | null): string | null {
 
 function OfferStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-blue-100 bg-white/80 p-4 shadow-sm">
+    <div className="rounded-2xl border border-bm-border bg-bm-surface p-4 shadow-sm">
       <p className="text-[10px] font-black uppercase tracking-[0.22em] text-bm-text-subtle">{label}</p>
       <p className="mt-2 text-sm font-semibold text-bm-text">{value}</p>
     </div>
@@ -35,10 +35,10 @@ export default function ListingOffersBlock({ listing }: ListingOffersBlockProps)
   const dealExpiry = formatExpiryLabel(pricing.dealExpiresAt);
 
   return (
-    <section className="space-y-5 rounded-3xl border border-blue-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="border-b border-blue-100 pb-4">
+    <section className="space-y-5 rounded-3xl border border-bm-border bg-bm-surface p-5 shadow-sm sm:p-6">
+      <div className="border-b border-bm-border-subtle pb-4">
         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-bm-text-subtle">Offers & pricing</p>
-        <h3 className="text-xl font-black tracking-tight text-zinc-950 sm:text-2xl">Pricing details</h3>
+        <h3 className="text-xl font-black tracking-tight text-bm-text sm:text-2xl">Pricing details</h3>
         <p className="max-w-3xl text-sm leading-6 text-bm-text-subtle">
           Deal and wholesale pricing is shown here only when the listing mode requires it.
         </p>
