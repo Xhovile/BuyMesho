@@ -121,24 +121,24 @@ export function CartCheckoutModal({
         aria-label="Close cart checkout"
         onClick={onClose}
         disabled={checkoutLoading}
-        className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm disabled:cursor-not-allowed"
+        className="absolute inset-0 bg-bm-overlay backdrop-blur-sm disabled:cursor-not-allowed"
       />
 
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="cart-checkout-title"
-        className="relative flex max-h-[94vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-zinc-50 dark:bg-bm-surface-subtle shadow-2xl"
+        className="relative flex max-h-[94vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-bm-surface-muted dark:bg-bm-surface-subtle shadow-2xl"
       >
-        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-zinc-200 dark:border-bm-border bg-white px-5 py-4 sm:px-6">
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-bm-border dark:border-bm-border bg-bm-surface px-5 py-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-zinc-950 text-white">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-bm-brand text-bm-on-brand">
               <ShoppingBag className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Cart checkout</p>
-              <h2 id="cart-checkout-title" className="text-lg font-black text-zinc-950 dark:text-bm-text">Complete your order</h2>
-              <p className="mt-0.5 text-xs text-zinc-500 dark:text-bm-text-subtle">Review your selection and confirm the details before payment.</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Cart checkout</p>
+              <h2 id="cart-checkout-title" className="text-lg font-black text-bm-text dark:text-bm-text">Complete your order</h2>
+              <p className="mt-0.5 text-xs text-bm-text-subtle dark:text-bm-text-subtle">Review your selection and confirm the details before payment.</p>
             </div>
           </div>
           <button
@@ -146,17 +146,17 @@ export function CartCheckoutModal({
             onClick={onClose}
             disabled={checkoutLoading}
             aria-label="Close"
-            className="rounded-full p-2 text-zinc-500 dark:text-bm-text-subtle transition hover:bg-zinc-100 dark:hover:bg-bm-surface-muted disabled:opacity-40"
+            className="rounded-full p-2 text-bm-text-subtle dark:text-bm-text-subtle transition hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted disabled:opacity-40"
           >
             <X className="h-5 w-5" />
           </button>
         </header>
 
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
-          <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white p-4">
+          <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h3 className="text-sm font-extrabold text-zinc-900 dark:text-bm-text">Items for checkout</h3>
-              <span className="text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">{entries.length} selected</span>
+              <h3 className="text-sm font-extrabold text-bm-text dark:text-bm-text">Items for checkout</h3>
+              <span className="text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">{entries.length} selected</span>
             </div>
             <div className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
               {entries.map(({ item, checkoutQuantity }) => (
@@ -164,25 +164,25 @@ export function CartCheckoutModal({
                   {item.image ? (
                     <img src={item.image} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
                   ) : (
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-bm-surface-muted text-zinc-400 dark:text-bm-text-subtle">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-subtle dark:text-bm-text-subtle">
                       <ShoppingBag className="h-5 w-5" />
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-zinc-900 dark:text-bm-text">{item.title}</p>
-                    <p className="mt-0.5 text-xs text-zinc-500 dark:text-bm-text-subtle">
+                    <p className="truncate text-sm font-bold text-bm-text dark:text-bm-text">{item.title}</p>
+                    <p className="mt-0.5 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
                       {item.kind === "event_ticket" ? "Event ticket" : "Marketplace item"} · Qty {checkoutQuantity}
                     </p>
                   </div>
-                  <p className="shrink-0 text-sm font-extrabold text-zinc-900 dark:text-bm-text">
+                  <p className="shrink-0 text-sm font-extrabold text-bm-text dark:text-bm-text">
                     {formatMoney(item.unitPrice * checkoutQuantity)}
                   </p>
                 </div>
               ))}
             </div>
-            <div className="mt-4 flex items-center justify-between border-t border-zinc-200 dark:border-bm-border pt-4">
-              <span className="text-sm font-bold text-zinc-600 dark:text-bm-text-muted">Selected total</span>
-              <span className="text-lg font-black text-zinc-950 dark:text-bm-text">{formatMoney(subtotal)}</span>
+            <div className="mt-4 flex items-center justify-between border-t border-bm-border dark:border-bm-border pt-4">
+              <span className="text-sm font-bold text-bm-text-muted dark:text-bm-text-muted">Selected total</span>
+              <span className="text-lg font-black text-bm-text dark:text-bm-text">{formatMoney(subtotal)}</span>
             </div>
           </div>
 
@@ -193,7 +193,7 @@ export function CartCheckoutModal({
           ) : null}
 
           {isEventCheckout ? (
-            <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-white p-5">
+            <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-5">
               <TicketHolderForm
                 initialValue={{
                   fullName: buyerName ?? "",
@@ -218,7 +218,7 @@ export function CartCheckoutModal({
                 type="button"
                 onClick={handleListingCheckout}
                 disabled={buyerDetailsLoading || checkoutLoading}
-                className="inline-flex w-full items-center justify-between gap-3 rounded-2xl bg-zinc-950 px-5 py-4 text-left text-white shadow-lg shadow-zinc-950/10 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex w-full items-center justify-between gap-3 rounded-2xl bg-bm-brand px-5 py-4 text-left text-bm-on-brand shadow-lg shadow-zinc-950/10 transition hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <span className="inline-flex items-center gap-2 text-sm font-black">
                   {checkoutLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
