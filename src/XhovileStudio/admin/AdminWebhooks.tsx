@@ -13,7 +13,7 @@ function statusClasses(status: string) {
   if (normalized === "paid" || normalized === "processed" || normalized === "sent" || normalized === "valid") return "border-emerald-200 bg-emerald-50 text-emerald-700";
   if (normalized === "pending" || normalized === "received" || normalized === "sending") return "border-amber-200 bg-amber-50 text-amber-700";
   if (normalized === "failed" || normalized === "refunded" || normalized === "invalid") return "border-red-200 bg-red-50 text-red-700";
-  return "border-zinc-200 bg-zinc-100 text-zinc-700";
+  return "border-bm-border bg-bm-surface-muted text-bm-text-muted";
 }
 
 function StatusPill({ value }: { value: string }) {
@@ -22,31 +22,31 @@ function StatusPill({ value }: { value: string }) {
 
 function SectionCard({ title, eyebrow, children }: { title: string; eyebrow?: string; children: ReactNode }) {
   return (
-    <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-      <div>{eyebrow ? <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">{eyebrow}</p> : null}<h2 className="mt-1 text-xl font-black tracking-tight text-zinc-950">{title}</h2></div>
+    <section className="rounded-[2rem] border border-bm-border bg-white p-5 shadow-sm">
+      <div>{eyebrow ? <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle">{eyebrow}</p> : null}<h2 className="mt-1 text-xl font-black tracking-tight text-bm-text">{title}</h2></div>
       <div className="mt-5">{children}</div>
     </section>
   );
 }
 
 function EmptyState({ label }: { label: string }) {
-  return <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-5 py-10 text-center text-sm text-zinc-500">{label}</div>;
+  return <div className="rounded-2xl border border-dashed border-bm-border bg-bm-surface-subtle px-5 py-10 text-center text-sm text-bm-text-subtle">{label}</div>;
 }
 
 export default function AdminWebhooks({ webhooks }: { webhooks: AdminWebhook[] }) {
   return (
     <SectionCard title="Webhooks" eyebrow="PayChangu event audit">
-      <div className="overflow-x-auto rounded-2xl border border-zinc-200">
+      <div className="overflow-x-auto rounded-2xl border border-bm-border">
         <table className="min-w-full text-left">
-          <thead className="bg-zinc-50"><tr className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-400"><th className="px-4 py-3">Event</th><th className="px-4 py-3">Payment reference</th><th className="px-4 py-3">Signature</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Created</th><th className="px-4 py-3">Error</th></tr></thead>
-          <tbody className="divide-y divide-zinc-100">
+          <thead className="bg-bm-surface-subtle"><tr className="text-[10px] font-black uppercase tracking-[0.14em] text-bm-text-subtle"><th className="px-4 py-3">Event</th><th className="px-4 py-3">Payment reference</th><th className="px-4 py-3">Signature</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Created</th><th className="px-4 py-3">Error</th></tr></thead>
+          <tbody className="divide-y divide-bm-border-subtle">
             {webhooks.length ? webhooks.map((webhook) => (
               <tr key={webhook.id} className="text-xs">
-                <td className="px-4 py-3"><p className="font-black text-zinc-900">{webhook.eventType || "Unknown event"}</p><p className="mt-0.5 font-mono text-[10px] text-zinc-400">{webhook.providerEventId || "No provider event id"}</p></td>
-                <td className="px-4 py-3 font-mono text-[10px] text-zinc-700">{webhook.paymentReference || "—"}</td>
+                <td className="px-4 py-3"><p className="font-black text-bm-text">{webhook.eventType || "Unknown event"}</p><p className="mt-0.5 font-mono text-[10px] text-bm-text-subtle">{webhook.providerEventId || "No provider event id"}</p></td>
+                <td className="px-4 py-3 font-mono text-[10px] text-bm-text-muted">{webhook.paymentReference || "—"}</td>
                 <td className="px-4 py-3"><StatusPill value={webhook.signatureValid ? "valid" : "invalid"} /></td>
                 <td className="px-4 py-3"><StatusPill value={webhook.status} /></td>
-                <td className="px-4 py-3 text-zinc-500">{formatDate(webhook.createdAt)}</td>
+                <td className="px-4 py-3 text-bm-text-subtle">{formatDate(webhook.createdAt)}</td>
                 <td className="max-w-xs px-4 py-3 text-red-600">{webhook.error || "—"}</td>
               </tr>
             )) : <tr><td colSpan={6}><EmptyState label="No Studio webhook events have been recorded yet." /></td></tr>}
