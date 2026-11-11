@@ -164,14 +164,14 @@ export default function AdminPaymentsPage() {
         onRefresh={() => void load()}
       />
 
-      {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
+      {error ? <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">{error}</div> : null}
       {investigationError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-bm-danger">{investigationError}</div> : null}
       {investigationLoading ? <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm text-bm-text-muted dark:text-bm-text-muted"><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Investigating transactions…</div> : null}
 
       {submittedSearchQuery && investigation ? (
         <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-            <span className="font-black text-zinc-950 dark:text-bm-text">Investigation: {submittedSearchQuery}</span>
+            <span className="font-black text-bm-text">Investigation: {submittedSearchQuery}</span>
             <span className="text-bm-text-subtle dark:text-bm-text-subtle">{investigationCounts?.payments ?? investigation.payments.length} payment(s)</span>
             <span className="text-bm-text-subtle dark:text-bm-text-subtle">{investigationCounts?.webhooks ?? investigation.webhooks.length} webhook(s)</span>
             {investigationCounts?.tickets ? <span className="text-bm-text-subtle dark:text-bm-text-subtle">{investigationCounts.tickets} ticket(s)</span> : null}
@@ -198,7 +198,7 @@ export default function AdminPaymentsPage() {
             <p className="text-sm font-black text-bm-text dark:text-bm-text">How to read this page</p>
             <p className="text-sm leading-relaxed text-bm-text-muted dark:text-bm-text-muted">Pending means the payment has been created, but the webhook or verification step has not completed yet. Once confirmed, the order should move through paid and into the holding phase, and later to released or refunded.</p>
             <p className="text-sm leading-relaxed text-bm-text-muted dark:text-bm-text-muted">Seller-facing payout progress is separate from this payment lifecycle: queued for admin review → sent to PayChangu → provider pending → paid (or needs destination update).</p>
-            <p className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700"><CircleAlert className="h-3.5 w-3.5" /> Settlement control should stay in the order flow, not the admin page.</p>
+            <p className="inline-flex items-center gap-2 rounded-full border border-bm-warning/25 bg-bm-warning-bg px-3 py-1 text-xs font-bold text-bm-warning"><CircleAlert className="h-3.5 w-3.5" /> Settlement control should stay in the order flow, not the admin page.</p>
           </div>
         </div>
       </section>
