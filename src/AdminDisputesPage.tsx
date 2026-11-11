@@ -237,7 +237,7 @@ export default function AdminDisputesPage() {
                 type="button"
                 onClick={() => setStatus(value)}
                 className={`rounded-full px-3 py-2 text-xs font-black capitalize ${
-                  status === value ? "bg-zinc-900 text-white" : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted"
+                  status === value ? "bg-zinc-900 text-bm-success" : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted"
                 }`}
               >
                 {value === "active" ? "Active" : label(value)}
@@ -262,13 +262,13 @@ export default function AdminDisputesPage() {
                   onClick={() => openDetail(item.id)}
                   className={`block w-full border-l-4 p-4 text-left transition ${
                     selectedItem
-                      ? "border-zinc-950 bg-zinc-950 text-white"
+                      ? "border-zinc-950 bg-zinc-950 text-bm-success"
                       : "border-transparent text-bm-text dark:text-bm-text hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className={`text-sm font-black ${selectedItem ? "text-white" : "text-bm-text dark:text-bm-text"}`}>
+                      <p className={`text-sm font-black ${selectedItem ? "text-bm-success" : "text-bm-text dark:text-bm-text"}`}>
                         {money(item.refund_requested_amount ?? item.latest_amount_requested ?? item.total_amount, item.total_currency)}
                       </p>
                       <p className={`mt-1 text-xs font-semibold ${selectedItem ? "text-zinc-300" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
@@ -278,9 +278,9 @@ export default function AdminDisputesPage() {
                     <span
                       className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${
                         activeItem
-                          ? "bg-amber-100 text-amber-800"
+                          ? "bg-bm-warning-bg text-bm-warning"
                           : selectedItem
-                            ? "bg-bm-surface/15 text-white"
+                            ? "bg-bm-surface/15 text-bm-success"
                             : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted"
                       }`}
                     >
@@ -338,7 +338,7 @@ export default function AdminDisputesPage() {
 
               <div className="space-y-5 p-4 sm:p-6">
                 {error ? (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
+                  <div className="rounded-2xl border border-bm-danger/35 bg-bm-danger-bg p-4 text-sm font-semibold text-bm-danger">
                     {error}
                   </div>
                 ) : null}
@@ -439,7 +439,7 @@ export default function AdminDisputesPage() {
                         : "Approval authorizes the refund. Execution is a separate financial step and only operates on the current held escrow balance."}
                     </p>
                     {refundOwed ? (
-                      <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                      <div className="mt-4 rounded-2xl border border-bm-warning/35 bg-bm-warning-bg p-4 text-sm text-bm-warning">
                         <p className="font-black">Refund approved — awaiting event refund recovery</p>
                         <p className="mt-1 leading-6">
                           This event refund has no available held-escrow execution path. The outstanding liability must be recovered from the event creator through the Event Financials workspace.
@@ -459,7 +459,7 @@ export default function AdminDisputesPage() {
                           type="button"
                           disabled={busy || !note.trim()}
                           onClick={() => void act("review")}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-bm-success disabled:opacity-50"
                         >
                           <RefreshCw className="h-4 w-4" />
                           Start review
@@ -470,7 +470,7 @@ export default function AdminDisputesPage() {
                           type="button"
                           disabled={busy || !note.trim()}
                           onClick={() => void act("approve_refund")}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-2xl bg-bm-success-bg px-4 py-2.5 text-sm font-bold text-bm-success disabled:opacity-50"
                         >
                           <CheckCircle2 className="h-4 w-4" />
                           Approve refund
@@ -481,7 +481,7 @@ export default function AdminDisputesPage() {
                           type="button"
                           disabled={busy || !note.trim()}
                           onClick={() => void act("execute_refund")}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-emerald-800 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-2xl bg-bm-success-bg px-4 py-2.5 text-sm font-bold text-bm-success disabled:opacity-50"
                         >
                           <CheckCircle2 className="h-4 w-4" />
                           Execute refund
@@ -492,7 +492,7 @@ export default function AdminDisputesPage() {
                           type="button"
                           disabled={busy || !note.trim()}
                           onClick={() => void act("accept_seller_refund")}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-blue-700 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-2xl bg-bm-surface-muted px-4 py-2.5 text-sm font-bold text-bm-success disabled:opacity-50"
                         >
                           <CheckCircle2 className="h-4 w-4" />
                           Accept seller refund
@@ -508,7 +508,7 @@ export default function AdminDisputesPage() {
                           type="button"
                           disabled={busy || !note.trim()}
                           onClick={() => void act("reject")}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-bm-surface px-4 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-danger disabled:opacity-50"
                         >
                           <XCircle className="h-4 w-4" />
                           Reject dispute
