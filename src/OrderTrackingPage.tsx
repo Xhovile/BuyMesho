@@ -53,7 +53,7 @@ function ErrorState({ message }: { message: string }) {
   return (
     <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text dark:text-bm-text">
       <div className="mx-auto flex min-h-screen max-w-4xl items-center justify-center px-4 py-10">
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">
           {message}
         </div>
       </div>
@@ -321,7 +321,7 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
         {loading ? (
           <div className="mt-6 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted">Loading order details…</div>
         ) : error ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">{error}</div>
+          <div className="mt-6 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm leading-6 text-bm-danger">{error}</div>
         ) : order ? (
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="space-y-6">
