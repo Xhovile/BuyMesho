@@ -194,7 +194,7 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
           <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">Payout details</p>
           <h2 className="mt-1 text-lg font-black tracking-tight text-bm-text">
             Where should ticket money be sent?
-            {required ? <span className="ml-1 text-red-900">*</span> : null}
+            {required ? <span className="ml-1 text-bm-danger">*</span> : null}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-bm-text-muted">
             Select the payout destination for this event. Your creator default is separate and can be changed at any time for future events.
@@ -203,7 +203,7 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
         <WalletCards className="mt-1 hidden h-5 w-5 text-bm-text-subtle sm:block" />
       </div>
 
-      {error ? <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
+      {error ? <div className="mt-4 rounded-2xl border border-bm-danger/35 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">{error}</div> : null}
 
       {loading ? (
         <div className="mt-4 rounded-2xl border border-bm-border bg-bm-surface px-4 py-4 text-sm text-bm-text-subtle">Loading payout destinations…</div>
@@ -276,7 +276,7 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
             })}
           </div>
           {eventId && eventPayoutLocked ? (
-            <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900">
+            <div className="mt-3 rounded-2xl border border-bm-warning/35 bg-bm-warning-bg px-4 py-3 text-xs leading-relaxed text-bm-warning">
               This event's payout destination is locked after its first successful ticket sale. You can still change your creator default for future events.
             </div>
           ) : protectionLoading ? (
@@ -313,7 +313,7 @@ export default function EventPayoutSetup({ value, onChange, required = false, di
       )}
 
       {!loading && required && !value ? (
-        <p className="mt-4 text-xs font-semibold text-red-900">Select or add a verified payout destination before publishing this paid event.</p>
+        <p className="mt-4 text-xs font-semibold text-bm-danger">Select or add a verified payout destination before publishing this paid event.</p>
       ) : null}
     </section>
   );
