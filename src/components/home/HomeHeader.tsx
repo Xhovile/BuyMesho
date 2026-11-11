@@ -111,7 +111,7 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
                   ) : isLoggedIn ? (
-                    <div className="flex h-full w-full items-center justify-center bg-red-900/5 font-bold text-red-900">
+                    <div className="flex h-full w-full items-center justify-center bg-bm-brand/5 font-bold text-bm-brand">
                       {fallbackLetter}
                     </div>
                   ) : (
