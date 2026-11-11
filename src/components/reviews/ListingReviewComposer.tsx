@@ -479,7 +479,7 @@ export default function ListingReviewComposer({
         </div>
 
         <footer className="sticky bottom-0 z-10 border-t border-bm-border dark:border-bm-border bg-bm-surface px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6">
-          {error ? <p className="mb-3 text-sm font-semibold text-red-600">{error}</p> : null}
+          {error ? <p className="mb-3 text-sm font-semibold text-bm-danger">{error}</p> : null}
 
           <div className="flex gap-3">
             <button
