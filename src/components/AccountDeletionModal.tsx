@@ -99,11 +99,11 @@ export default function AccountDeletionModal({
           >
             <div className="flex items-center justify-between border-b border-bm-border-subtle dark:border-bm-border-subtle p-6">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-bm-danger-bg">
+                  <AlertTriangle className="h-6 w-6 text-bm-danger" />
                 </div>
                 <div>
-                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-red-500">Danger zone</p>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-bm-danger">Danger zone</p>
                   <h3 className="mt-1 text-lg font-extrabold text-bm-text dark:text-bm-text">Delete account</h3>
                 </div>
               </div>
@@ -123,10 +123,10 @@ export default function AccountDeletionModal({
               {finalCountdown !== null ? (
                 <>
                   <p className="text-sm font-semibold text-bm-text dark:text-bm-text">Final confirmation is being prepared.</p>
-                  <div className="mt-5 rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-center">
-                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-red-500">Deleting in</p>
-                    <p className="mt-1 text-4xl font-black tracking-tight text-red-700">{finalCountdown}</p>
-                    <p className="mt-2 text-xs font-medium text-red-700/80">This cannot be undone.</p>
+                  <div className="mt-5 rounded-2xl border border-bm-border bg-bm-danger-bg px-5 py-4 text-center">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-bm-danger">Deleting in</p>
+                    <p className="mt-1 text-4xl font-black tracking-tight text-bm-danger">{finalCountdown}</p>
+                    <p className="mt-2 text-xs font-medium text-bm-danger/80">This cannot be undone.</p>
                   </div>
                 </>
               ) : (
@@ -157,7 +157,7 @@ export default function AccountDeletionModal({
                 type="button"
                 onClick={handleFinalConfirmation}
                 disabled={busy || finalCountdown !== null || initialCountdown > 0}
-                className="flex-1 rounded-2xl bg-red-600 py-3 font-bold text-bm-on-brand transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 rounded-2xl bg-bm-danger py-3 font-bold text-bm-on-brand transition-colors hover:bg-bm-danger/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {finalCountdown !== null
                   ? `Deleting in ${finalCountdown}s`
@@ -173,7 +173,7 @@ export default function AccountDeletionModal({
       {open && busy && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-bm-overlay backdrop-blur-sm">
           <div className="flex flex-col items-center gap-4 rounded-3xl bg-bm-surface px-8 py-7 shadow-2xl">
-            <Loader2 className="h-10 w-10 animate-spin text-red-600" />
+            <Loader2 className="h-10 w-10 animate-spin text-bm-danger" />
             <div className="text-center">
               <p className="text-base font-extrabold text-bm-text dark:text-bm-text">Deleting your account</p>
               <p className="mt-1 text-sm font-medium text-bm-text-subtle dark:text-bm-text-subtle">Removing your data securely. Please do not close the app.</p>
