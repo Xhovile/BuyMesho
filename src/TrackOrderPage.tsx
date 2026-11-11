@@ -40,7 +40,7 @@ function TrackOrderPageContent() {
 
       <div className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-500 text-bm-on-brand">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-bm-brand text-bm-on-brand">
             <Truck className="h-5 w-5" />
           </div>
           <div>
@@ -70,7 +70,7 @@ function TrackOrderPageContent() {
               {loading ? "Resolving…" : "Track order"}
             </button>
           </div>
-          {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
+          {error ? <p className="mt-3 text-sm text-bm-danger">{error}</p> : null}
         </form>
       </div>
     </div>
