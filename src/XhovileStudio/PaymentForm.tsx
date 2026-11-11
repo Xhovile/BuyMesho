@@ -226,7 +226,7 @@ function PaymentForm() {
               <input
                 value={customerName}
                 onChange={(event) => setCustomerName(event.target.value)}
-                className="w-full rounded-xl border border-bm-border bg-[#fffdfa] px-3.5 py-3 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
+                className="w-full rounded-xl border border-bm-border bg-bm-surface px-3.5 py-3 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
                 placeholder="Your name"
                 autoComplete="name"
               />
@@ -236,7 +236,7 @@ function PaymentForm() {
               <input
                 value={customerPhone}
                 onChange={(event) => setCustomerPhone(event.target.value)}
-                className="w-full rounded-xl border border-bm-border bg-[#fffdfa] px-3.5 py-3 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
+                className="w-full rounded-xl border border-bm-border bg-bm-surface px-3.5 py-3 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
                 placeholder="0999 123 456"
                 autoComplete="tel"
               />
@@ -264,7 +264,7 @@ function PaymentForm() {
             onProjectReferenceChange={setProjectReference}
           />
 
-          <div className="rounded-xl border border-bm-border bg-[#fffdfa] p-3">
+          <div className="rounded-xl border border-bm-border bg-bm-surface p-3">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-black text-bm-text">Your brief</p>
@@ -282,7 +282,7 @@ function PaymentForm() {
 
           <ReferenceUploader onChange={setReferenceFiles} />
 
-          <details className="rounded-xl border border-bm-border bg-[#fffdfa]">
+          <details className="rounded-xl border border-bm-border bg-bm-surface">
             <summary className="cursor-pointer list-none px-3 py-2.5 text-xs font-bold text-bm-text-subtle">
               Email address <span className="font-normal text-bm-text-muted">(optional)</span>
             </summary>
@@ -290,7 +290,7 @@ function PaymentForm() {
               <input
                 value={customerEmail}
                 onChange={(event) => setCustomerEmail(event.target.value)}
-                className="w-full rounded-xl border border-bm-border bg-[#fffdfa] px-3.5 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
+                className="w-full rounded-xl border border-bm-border bg-bm-surface px-3.5 py-2.5 text-sm text-bm-text outline-none placeholder:text-bm-text-subtle focus:border-bm-focus"
                 placeholder="you@example.com"
                 type="email"
                 autoComplete="email"
@@ -305,7 +305,7 @@ function PaymentForm() {
             </div>
           ) : null}
 
-          <div className="rounded-2xl border border-bm-border bg-[#f8f5f1] p-3">
+          <div className="rounded-2xl border border-bm-border bg-bm-surface-muted p-3">
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.16em] text-bm-text-muted">Amount to pay now</p>
