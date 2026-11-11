@@ -146,12 +146,12 @@ export default function ListingReviewCard({
                 <div className="flex flex-wrap items-center gap-2">
                   <h4 className="truncate text-sm font-extrabold text-bm-text">{review.reviewer_name}</h4>
                   {badge ? (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-bm-border-subtle bg-bm-surface-muted px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-bm-border-subtle bg-bm-surface-muted px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-bm-text-muted">
                       {badge}
                     </span>
                   ) : null}
                   {isOwnReview ? (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-bm-brand px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-bm-on-brand">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-bm-brand/30 bg-bm-brand px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-bm-on-brand">
                       Your review
                     </span>
                   ) : null}
@@ -184,7 +184,7 @@ export default function ListingReviewCard({
                 <button
                   type="button"
                   onClick={onEdit}
-                  className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-bm-surface px-3 py-1.5 text-sm font-bold text-bm-text-muted transition hover:bg-bm-surface-muted"
+                  className="inline-flex items-center gap-2 rounded-full border border-bm-border bg-bm-surface px-3 py-1.5 text-sm font-bold text-bm-text-muted transition hover:bg-bm-surface-muted"
                 >
                   <Edit3 className="h-4 w-4" />
                   Edit
@@ -303,7 +303,7 @@ export default function ListingReviewCard({
                   This will remove the review and any media attached to it. This action cannot be undone.
                 </p>
 
-                {deleteError ? <p className="mt-3 text-sm font-semibold text-red-600">{deleteError}</p> : null}
+                {deleteError ? <p className="mt-3 text-sm font-semibold text-bm-danger">{deleteError}</p> : null}
 
                 <div className="mt-5 flex gap-3">
                   <button
