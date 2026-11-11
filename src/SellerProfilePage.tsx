@@ -468,7 +468,7 @@ export default function SellerProfilePage() {
             <button
               type="button"
               onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-              className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-5 py-3 text-sm font-extrabold text-black hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
+              className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-5 py-3 text-sm font-extrabold text-bm-text hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
             >
               <ChevronLeft className="w-4 h-4" />
               Back
