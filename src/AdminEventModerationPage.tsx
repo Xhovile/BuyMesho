@@ -237,7 +237,7 @@ function ActionButton({
         ? "border-bm-success/35 bg-bm-success-bg text-bm-success hover:brightness-95"
         : variant === "ghost"
           ? "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
-          : "border-zinc-900 bg-zinc-950 text-white hover:bg-zinc-800";
+          : "border-bm-brand bg-bm-brand text-bm-on-brand hover:bg-bm-brand-hover";
 
   return (
     <button
@@ -492,17 +492,17 @@ export default function AdminEventModerationPage() {
     >
       <div className="space-y-6">
         {loadError ? (
-          <div className="rounded-[1.75rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-bm-danger">
+          <div className="rounded-[1.75rem] border border-bm-danger/35 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">
             {loadError}
           </div>
         ) : null}
         {actionError ? (
-          <div className="rounded-[1.75rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-bm-danger">
+          <div className="rounded-[1.75rem] border border-bm-danger/35 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">
             {actionError}
           </div>
         ) : null}
         {actionSuccess ? (
-          <div className="rounded-[1.75rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-bm-success">
+          <div className="rounded-[1.75rem] border border-bm-success/35 bg-bm-success-bg px-4 py-3 text-sm text-bm-success">
             {actionSuccess}
           </div>
         ) : null}
@@ -811,7 +811,7 @@ export default function AdminEventModerationPage() {
                   Loading event records...
                 </div>
               ) : recordsError ? (
-                <div className="mt-4 rounded-[1.4rem] border border-rose-200 bg-rose-50 p-4 text-sm text-bm-danger">
+                <div className="mt-4 rounded-[1.4rem] border border-bm-danger/35 bg-bm-danger-bg p-4 text-sm text-bm-danger">
                   {recordsError}
                 </div>
               ) : selectedRecordPayload ? (
