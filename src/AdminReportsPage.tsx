@@ -83,10 +83,10 @@ function StatCard({
 }) {
   const accentStyles: Record<"zinc" | "amber" | "blue" | "emerald" | "red", string> = {
     zinc: "text-bm-text dark:text-bm-text",
-    amber: "text-amber-700",
-    blue: "text-blue-700",
-    emerald: "text-emerald-700",
-    red: "text-red-700",
+    amber: "text-bm-warning",
+    blue: "text-bm-text-muted",
+    emerald: "text-bm-success",
+    red: "text-bm-danger",
   };
 
   return (
@@ -139,10 +139,10 @@ function MessageReportCard({
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div className="space-y-3 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-red-50 text-red-700 border border-red-200">
+            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-bm-danger-bg text-bm-danger border border-bm-danger/35">
               chat report
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-amber-50 text-amber-700 border border-amber-200">
+            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-amber-50 text-bm-warning border border-amber-200">
               {report.status}
             </span>
             <span className="text-xs text-zinc-400 dark:text-bm-text-subtle font-bold">#{report.id}</span>
@@ -221,7 +221,7 @@ function MessageReportCard({
             <button
               onClick={onResolve}
               disabled={resolving}
-              className="px-4 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm font-bold disabled:opacity-60"
+              className="px-4 py-2 rounded-xl bg-bm-success-bg hover:brightness-95 text-bm-success text-sm font-bold disabled:opacity-60"
             >
               {resolving ? "Resolving..." : "Resolve"}
             </button>
@@ -259,7 +259,7 @@ function ContentReportCard({
             <span
               className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${
                 isListing
-                  ? "bg-red-50 text-red-700 border-red-200"
+                  ? "bg-red-50 text-bm-danger border-red-200"
                   : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted border-bm-border dark:border-bm-border"
               }`}
             >
@@ -268,10 +268,10 @@ function ContentReportCard({
             <span
               className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${
                 report.status === "resolved"
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  ? "bg-emerald-50 text-bm-success border-emerald-200"
                   : report.status === "reviewed"
-                  ? "bg-blue-50 text-blue-700 border-blue-200"
-                  : "bg-amber-50 text-amber-700 border-amber-200"
+                  ? "bg-blue-50 text-bm-text-muted border-blue-200"
+                  : "bg-amber-50 text-bm-warning border-amber-200"
               }`}
             >
               {report.status}
@@ -347,21 +347,21 @@ function ContentReportCard({
           <button
             onClick={() => onUpdateStatus("open")}
             disabled={busy}
-            className="px-4 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-bold disabled:opacity-60"
+            className="px-4 py-2 rounded-xl bg-bm-warning-bg hover:brightness-95 text-bm-warning text-sm font-bold disabled:opacity-60"
           >
             Open
           </button>
           <button
             onClick={() => onUpdateStatus("reviewed")}
             disabled={busy}
-            className="px-4 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold disabled:opacity-60"
+            className="px-4 py-2 rounded-xl bg-bm-surface-muted hover:brightness-95 text-bm-text-muted text-sm font-bold disabled:opacity-60"
           >
             Reviewed
           </button>
           <button
             onClick={() => onUpdateStatus("resolved")}
             disabled={busy}
-            className="px-4 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm font-bold disabled:opacity-60"
+            className="px-4 py-2 rounded-xl bg-bm-success-bg hover:brightness-95 text-bm-success text-sm font-bold disabled:opacity-60"
           >
             Resolved
           </button>
@@ -372,8 +372,8 @@ function ContentReportCard({
               disabled={busy}
               className={`px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60 ${
                 report.listing_is_hidden === 1
-                  ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-800"
-                  : "bg-red-100 hover:bg-red-200 text-red-800"
+                  ? "bg-bm-success-bg hover:brightness-95 text-bm-success"
+                  : "bg-bm-danger-bg hover:brightness-95 text-bm-danger"
               }`}
             >
               {report.listing_is_hidden === 1 ? "Unhide Listing" : "Hide Listing"}
@@ -384,8 +384,8 @@ function ContentReportCard({
               disabled={busy}
               className={`px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60 ${
                 report.seller_is_suspended === 1
-                  ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-800"
-                  : "bg-red-100 hover:bg-red-200 text-red-800"
+                  ? "bg-bm-success-bg hover:brightness-95 text-bm-success"
+                  : "bg-bm-danger-bg hover:brightness-95 text-bm-danger"
               }`}
             >
               {report.seller_is_suspended === 1 ? "Unsuspend Seller" : "Suspend Seller"}
@@ -584,12 +584,12 @@ export default function AdminReportsPage() {
             onClick={() => navigateToPath(HOME_PATH)}
             className="flex items-center gap-2.5 min-w-0"
           >
-            <div className="w-10 h-10 bg-red-900 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-red-900/20">
+            <div className="w-10 h-10 bg-bm-brand rounded-2xl flex items-center justify-center text-bm-on-brand font-extrabold text-xl shadow-lg shadow-red-900/20">
               B
             </div>
             <div className="text-left">
               <p className="text-lg font-extrabold tracking-tight">
-                <span className="text-red-900">Buy</span>
+                <span className="text-bm-brand">Buy</span>
                 <span className="text-bm-text-muted dark:text-bm-text-muted">Mesho</span>
               </p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
