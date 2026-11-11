@@ -67,7 +67,7 @@ export default function ConnectCallbackPage() {
           <button
             type="button"
             onClick={() => navigateToPath(SELLER_PAYOUTS_PATH, { replace: true })}
-            className="rounded-2xl border border-bm-border bg-white px-4 py-2 text-sm font-semibold text-bm-text-muted shadow-sm hover:bg-bm-surface-subtle"
+            className="rounded-2xl border border-bm-border bg-bm-surface px-4 py-2 text-sm font-semibold text-bm-text-muted shadow-sm hover:bg-bm-surface-subtle"
           >
             Back to payouts
           </button>
