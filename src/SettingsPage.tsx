@@ -591,7 +591,7 @@ export default function SettingsPage() {
       {deleteRecoveryBusy && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-bm-overlay backdrop-blur-sm">
           <div className="flex flex-col items-center gap-4 rounded-3xl bg-bm-surface px-8 py-7 shadow-2xl">
-            <Loader2 className="h-10 w-10 animate-spin text-red-600" />
+            <Loader2 className="h-10 w-10 animate-spin text-bm-brand" />
             <div className="text-center">
               <p className="text-base font-extrabold text-bm-text dark:text-bm-text">Deleting your account</p>
               <p className="mt-1 text-sm font-medium text-bm-text-subtle dark:text-bm-text-subtle">Removing your data securely.</p>
