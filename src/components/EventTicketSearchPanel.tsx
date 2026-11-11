@@ -104,14 +104,14 @@ export default function EventTicketSearchPanel({ mode }: EventTicketSearchPanelP
         </button>
       </div>
 
-      {error ? <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
+      {error ? <div className="mt-3 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">{error}</div> : null}
 
       {result ? (
-        <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+        <div className="mt-4 rounded-2xl border border-bm-success/25 bg-bm-success-bg p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Ticket found</p>
-              <p className="mt-1 break-all font-mono text-sm font-black text-emerald-950">{result.ticketId}</p>
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-bm-success">Ticket found</p>
+              <p className="mt-1 break-all font-mono text-sm font-black text-bm-success">{result.ticketId}</p>
               <p className="mt-2 text-sm font-bold text-bm-text">{eventTitle}</p>
             </div>
             <button type="button" onClick={openEvent} disabled={!eventId} className="rounded-2xl border border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-black text-bm-text hover:bg-bm-surface-subtle disabled:opacity-50">
@@ -122,7 +122,7 @@ export default function EventTicketSearchPanel({ mode }: EventTicketSearchPanelP
                 href={TICKET_VALIDATOR_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-2xl border border-green-600 bg-green-600 px-4 py-2.5 text-sm font-black text-bm-on-brand shadow-sm transition hover:bg-green-700"
+                className="inline-flex items-center gap-2 rounded-2xl border border-bm-brand bg-bm-brand px-4 py-2.5 text-sm font-black text-bm-on-brand shadow-sm transition hover:bg-bm-brand-hover"
               >
                 <ExternalLink className="h-4 w-4" />
                 Open Ticket Validator
