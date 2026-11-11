@@ -272,13 +272,13 @@ export default function ListingReviewComposer({
         if (event.currentTarget === event.target && !submitting) closeModal();
       }}
     >
-      <section className="flex h-[calc(100dvh-0.5rem)] max-h-[calc(100dvh-0.5rem)] w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-white shadow-2xl sm:h-auto sm:max-h-[min(860px,calc(100dvh-2rem))] sm:max-w-xl sm:rounded-[2rem]">
-        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 dark:border-bm-border bg-white px-5 py-4 sm:px-6">
+      <section className="flex h-[calc(100dvh-0.5rem)] max-h-[calc(100dvh-0.5rem)] w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-bm-surface shadow-2xl sm:h-auto sm:max-h-[min(860px,calc(100dvh-2rem))] sm:max-w-xl sm:rounded-[2rem]">
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-bm-border dark:border-bm-border bg-bm-surface px-5 py-4 sm:px-6">
           <div>
-            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">
               {isEditing ? "Your review" : "Listing review"}
             </p>
-            <h2 id="listing-review-composer-title" className="mt-1 text-xl font-bold tracking-tight text-zinc-950 dark:text-bm-text">
+            <h2 id="listing-review-composer-title" className="mt-1 text-xl font-bold tracking-tight text-bm-text dark:text-bm-text">
               {title}
             </h2>
           </div>
@@ -287,7 +287,7 @@ export default function ListingReviewComposer({
             type="button"
             onClick={closeModal}
             disabled={submitting}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 dark:border-bm-border bg-white text-zinc-700 dark:text-bm-text-muted transition hover:bg-zinc-50 dark:hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-muted dark:text-bm-text-muted transition hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close review editor"
           >
             <X className="h-5 w-5" />
@@ -296,8 +296,8 @@ export default function ListingReviewComposer({
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6 sm:py-6">
           <div>
-            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">Leave a rating</p>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-bm-text-subtle">Short and simple. The star rating matters most.</p>
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle dark:text-bm-text-subtle">Leave a rating</p>
+            <p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Short and simple. The star rating matters most.</p>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-1">
@@ -319,7 +319,7 @@ export default function ListingReviewComposer({
             })}
           </div>
 
-          <p className="mt-3 text-sm text-zinc-500 dark:text-bm-text-subtle">
+          <p className="mt-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
             {!isAuthenticated
               ? "Log in to leave a rating."
               : !canReview
@@ -332,7 +332,7 @@ export default function ListingReviewComposer({
           {rating > 0 ? (
             <div className="mt-5 space-y-4">
               <div>
-                <label className="mb-2 block text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">
+                <label className="mb-2 block text-xs font-extrabold uppercase tracking-[0.16em] text-bm-text-subtle dark:text-bm-text-subtle">
                   Add a short review (optional)
                 </label>
 
@@ -343,27 +343,27 @@ export default function ListingReviewComposer({
                   rows={5}
                   disabled={!isAuthenticated || !canReview || submitting}
                   placeholder="What should other buyers know?"
-                  className="min-h-[130px] w-full rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm leading-6 text-zinc-900 dark:text-bm-text outline-none transition focus:border-zinc-900 disabled:bg-zinc-50 disabled:text-zinc-500"
+                  className="min-h-[130px] w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm leading-6 text-bm-text dark:text-bm-text outline-none transition focus:border-bm-brand disabled:bg-bm-surface-muted disabled:text-bm-text-subtle"
                 />
               </div>
 
-              <div className="flex items-center justify-between gap-3 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">
+              <div className="flex items-center justify-between gap-3 text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">
                 <span>{body.length} / {MAX_BODY_LENGTH}</span>
                 <span>Keep it honest and useful.</span>
               </div>
 
-              <div className="rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-3">
+              <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400 dark:text-bm-text-subtle">Media (optional)</p>
-                    <p className="mt-1 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">Up to 3 total files, with only 1 video.</p>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-bm-text-subtle dark:text-bm-text-subtle">Media (optional)</p>
+                    <p className="mt-1 text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">Up to 3 total files, with only 1 video.</p>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => mediaInputRef.current?.click()}
                     disabled={!isAuthenticated || !canReview || submitting || totalSelectedMedia >= MAX_MEDIA_COUNT}
-                    className="inline-flex items-center justify-center gap-2 rounded-none border border-zinc-300 dark:border-bm-border bg-white px-4 py-2 text-xs font-bold text-zinc-800 dark:text-bm-text-muted transition hover:bg-zinc-100 dark:hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-none border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2 text-xs font-bold text-bm-text dark:text-bm-text-muted transition hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Upload className="h-4 w-4" />
                     Add media
@@ -381,13 +381,13 @@ export default function ListingReviewComposer({
 
                 {retainedMedia.length ? (
                   <div className="mt-4">
-                    <p className="mb-2 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">Current media</p>
+                    <p className="mb-2 text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">Current media</p>
 
                     <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
                       {retainedMedia.map((media) => (
                         <div
                           key={media.id}
-                          className="relative w-28 shrink-0 overflow-hidden rounded-xl border border-zinc-200 dark:border-bm-border bg-black"
+                          className="relative w-28 shrink-0 overflow-hidden rounded-xl border border-bm-border dark:border-bm-border bg-black"
                         >
                           {media.media_type === "image" ? (
                             <img
@@ -410,7 +410,7 @@ export default function ListingReviewComposer({
                             type="button"
                             onClick={() => removeExistingMedia(media.id)}
                             disabled={submitting}
-                            className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-white"
+                            className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/75 text-bm-on-brand"
                             aria-label="Remove current review media"
                             title="Remove media"
                           >
@@ -424,7 +424,7 @@ export default function ListingReviewComposer({
 
                 {previewUrls.length ? (
                   <div className="mt-4">
-                    <p className="mb-2 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">New media</p>
+                    <p className="mb-2 text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">New media</p>
 
                     <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:thin]">
                       {previewUrls.map((url, index) => {
@@ -436,7 +436,7 @@ export default function ListingReviewComposer({
                         return (
                           <div
                             key={url}
-                            className="relative w-32 shrink-0 overflow-hidden rounded-xl border border-zinc-200 dark:border-bm-border bg-black"
+                            className="relative w-32 shrink-0 overflow-hidden rounded-xl border border-bm-border dark:border-bm-border bg-black"
                           >
                             {isVideo ? (
                               <video
@@ -458,7 +458,7 @@ export default function ListingReviewComposer({
                               type="button"
                               onClick={() => removeMediaFile(index)}
                               disabled={submitting}
-                              className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white"
+                              className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-bm-on-brand"
                               aria-label={`Remove ${file.name}`}
                             >
                               <X className="h-4 w-4" />
@@ -471,14 +471,14 @@ export default function ListingReviewComposer({
                 ) : null}
 
                 {isEditing && !retainedMedia.length && !previewUrls.length ? (
-                  <p className="mt-3 text-xs font-semibold text-zinc-400 dark:text-bm-text-subtle">No media attached to this review.</p>
+                  <p className="mt-3 text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">No media attached to this review.</p>
                 ) : null}
               </div>
             </div>
           ) : null}
         </div>
 
-        <footer className="sticky bottom-0 z-10 border-t border-zinc-200 dark:border-bm-border bg-white px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6">
+        <footer className="sticky bottom-0 z-10 border-t border-bm-border dark:border-bm-border bg-bm-surface px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6">
           {error ? <p className="mb-3 text-sm font-semibold text-red-600">{error}</p> : null}
 
           <div className="flex gap-3">
@@ -486,7 +486,7 @@ export default function ListingReviewComposer({
               type="button"
               onClick={closeModal}
               disabled={submitting}
-              className="flex-1 inline-flex items-center justify-center rounded-full border border-zinc-300 dark:border-bm-border bg-white px-5 py-3 text-sm font-bold text-zinc-700 dark:text-bm-text-muted transition hover:bg-zinc-50 dark:hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 inline-flex items-center justify-center rounded-full border border-bm-border dark:border-bm-border bg-bm-surface px-5 py-3 text-sm font-bold text-bm-text-muted dark:text-bm-text-muted transition hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
             >
               Cancel
             </button>
@@ -495,14 +495,14 @@ export default function ListingReviewComposer({
               type="button"
               onClick={() => void handleSubmit()}
               disabled={!isAuthenticated || !canReview || rating === 0 || submitting}
-              className="flex-1 inline-flex items-center justify-center rounded-full bg-zinc-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 inline-flex items-center justify-center rounded-full bg-bm-brand px-5 py-3 text-sm font-bold text-bm-on-brand transition hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? "Saving..." : submitLabel}
             </button>
           </div>
 
           {isEditing && hasMediaChanges ? (
-            <p className="mt-2 text-center text-[11px] font-semibold text-zinc-400 dark:text-bm-text-subtle">
+            <p className="mt-2 text-center text-[11px] font-semibold text-bm-text-subtle dark:text-bm-text-subtle">
               Media changes are applied when you update the review.
             </p>
           ) : null}
