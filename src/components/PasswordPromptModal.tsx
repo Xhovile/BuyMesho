@@ -32,40 +32,40 @@ export default function PasswordPromptModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onCancel}
-            className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-bm-overlay backdrop-blur-sm"
           />
 
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 18 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 18 }}
-            className="relative w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden"
+            className="relative w-full max-w-md rounded-3xl bg-bm-surface shadow-2xl overflow-hidden"
           >
-            <div className="p-6 border-b border-zinc-100 dark:border-bm-border-subtle flex items-center justify-between">
+            <div className="p-6 border-b border-bm-border-subtle dark:border-bm-border-subtle flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-bm-surface-muted flex items-center justify-center">
-                  <Lock className="w-6 h-6 text-zinc-700 dark:text-bm-text-muted" />
+                <div className="w-12 h-12 rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted flex items-center justify-center">
+                  <Lock className="w-6 h-6 text-bm-text-muted dark:text-bm-text-muted" />
                 </div>
-                <h3 className="text-lg font-extrabold text-zinc-900 dark:text-bm-text">{title}</h3>
+                <h3 className="text-lg font-extrabold text-bm-text dark:text-bm-text">{title}</h3>
               </div>
 
               <button
                 type="button"
                 onClick={onCancel}
-                className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-bm-surface-muted transition-colors"
+                className="p-2 rounded-full hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted transition-colors"
               >
-                <X className="w-5 h-5 text-zinc-500 dark:text-bm-text-subtle" />
+                <X className="w-5 h-5 text-bm-text-subtle dark:text-bm-text-subtle" />
               </button>
             </div>
 
             <div className="px-6 py-5 space-y-4">
-              <p className="text-sm text-zinc-600 dark:text-bm-text-muted leading-6">{message}</p>
+              <p className="text-sm text-bm-text-muted dark:text-bm-text-muted leading-6">{message}</p>
 
               <input
                 type="password"
                 value={password}
                 onChange={(e) => onPasswordChange(e.target.value)}
-                className="w-full px-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                className="w-full px-4 py-3 bg-bm-surface-muted dark:bg-bm-surface-subtle border border-bm-border dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
                 placeholder="Enter your password"
               />
             </div>
@@ -75,7 +75,7 @@ export default function PasswordPromptModal({
                 type="button"
                 onClick={onCancel}
                 disabled={busy}
-                className="flex-1 py-3 rounded-2xl font-bold bg-zinc-100 dark:bg-bm-surface-muted hover:bg-zinc-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex-1 py-3 rounded-2xl font-bold bg-bm-surface-muted dark:bg-bm-surface-muted hover:bg-bm-surface-raised transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
@@ -84,7 +84,7 @@ export default function PasswordPromptModal({
                 type="button"
                 onClick={onSubmit}
                 disabled={busy}
-                className="flex-1 py-3 rounded-2xl font-bold text-white bg-zinc-900 hover:bg-zinc-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex-1 py-3 rounded-2xl font-bold text-bm-on-brand bg-bm-brand hover:bg-bm-brand-hover transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {busy ? "Verifying..." : "Continue"}
               </button>
