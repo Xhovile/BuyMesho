@@ -71,7 +71,7 @@ export default function SellerPayoutsHistorySection({
                 {getSellerPayoutStatusLabel(payout.status)}
               </div>
               {payout.status === "held" ? (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+                <div className="rounded-xl border border-bm-warning/35 bg-bm-warning-bg px-3 py-2 text-xs font-semibold text-bm-warning">
                   <div>Payout paused for review</div>
                   <div>Seller is waiting on the next action</div>
                 </div>
