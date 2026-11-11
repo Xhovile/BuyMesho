@@ -196,44 +196,44 @@ function ReceiptPage() {
 
   return (
     <Shell>
-      <section className="rounded-[26px] border border-zinc-200 bg-[#10151a] p-5 text-white shadow-2xl sm:p-7">
+      <section className="rounded-[26px] border border-bm-border bg-[#10151a] p-5 text-white shadow-2xl sm:p-7">
         <div className="text-center">
           {loading ? (
-            <Loader2 className="mx-auto h-14 w-14 animate-spin text-zinc-500" />
+            <Loader2 className="mx-auto h-14 w-14 animate-spin text-bm-text-subtle" />
           ) : payment?.status === "paid" ? (
             <CheckCircle2 className="mx-auto h-16 w-16 text-emerald-500" />
           ) : (
             <CircleAlert className="mx-auto h-16 w-16 text-amber-500" />
           )}
 
-          <p className="mt-4 text-[10px] font-black uppercase tracking-[0.24em] text-zinc-500">Service Payment</p>
+          <p className="mt-4 text-[10px] font-black uppercase tracking-[0.24em] text-bm-text-subtle">Service Payment</p>
           <h1 className="mt-1 text-2xl font-black">
             {loading ? "Checking Payment" : payment?.status === "paid" ? "Payment Successful" : "Payment Status"}
           </h1>
-          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-zinc-500">{message}</p>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-bm-text-subtle">{message}</p>
         </div>
 
         {payment ? (
-          <div className="mt-6 divide-y divide-white/10 overflow-hidden rounded-2xl border border-zinc-200">
+          <div className="mt-6 divide-y divide-white/10 overflow-hidden rounded-2xl border border-bm-border">
             <div className="flex justify-between gap-6 p-3.5 text-sm">
-              <span className="text-zinc-500">Service</span>
-              <span className="text-right font-bold text-zinc-100">{SERVICE_LABELS[payment.serviceType]}</span>
+              <span className="text-bm-text-subtle">Service</span>
+              <span className="text-right font-bold text-bm-on-brand">{SERVICE_LABELS[payment.serviceType]}</span>
             </div>
             <div className="flex justify-between gap-6 p-3.5 text-sm">
-              <span className="text-zinc-500">Customer</span>
-              <span className="font-bold text-zinc-100">{payment.customerName}</span>
+              <span className="text-bm-text-subtle">Customer</span>
+              <span className="font-bold text-bm-on-brand">{payment.customerName}</span>
             </div>
             <div className="flex justify-between gap-6 p-3.5 text-sm">
-              <span className="text-zinc-500">Reference</span>
-              <span className="break-all text-right font-mono text-xs font-bold text-zinc-100">{payment.paymentReference}</span>
+              <span className="text-bm-text-subtle">Reference</span>
+              <span className="break-all text-right font-mono text-xs font-bold text-bm-on-brand">{payment.paymentReference}</span>
             </div>
             <div className="flex justify-between gap-6 p-3.5 text-sm">
-              <span className="text-zinc-500">Amount</span>
+              <span className="text-bm-text-subtle">Amount</span>
               <span className="font-black text-white">{formatMoney(payment.amount, payment.currency)}</span>
             </div>
             <div className="p-3.5 text-sm">
-              <span className="text-zinc-400">Description</span>
-              <p className="mt-1 font-medium text-zinc-200">{payment.description}</p>
+              <span className="text-bm-text-subtle">Description</span>
+              <p className="mt-1 font-medium text-bm-on-brand">{payment.description}</p>
             </div>
           </div>
         ) : null}
@@ -264,7 +264,7 @@ function ReceiptPage() {
           <p className="mt-4 text-center text-xs text-red-300">{receiptError}</p>
         ) : null}
 
-        <p className="mt-4 text-center text-[10px] text-zinc-500">
+        <p className="mt-4 text-center text-[10px] text-bm-text-subtle">
           Keep your payment reference for your records.
         </p>
       </section>
