@@ -105,7 +105,7 @@ export default function OrderDetailsCard({
         ) : null}
 
         {eventItems.length ? (
-          <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          <div className="rounded-2xl border border-bm-border bg-bm-surface-muted px-4 py-3 text-sm text-bm-text">
             <p className="font-semibold">This order includes an event ticket.</p>
             <p className="mt-1">Open Tickets for ticket details.</p>
           </div>
