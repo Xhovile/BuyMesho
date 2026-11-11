@@ -92,7 +92,7 @@ export default function SellerRatingCard({
                       type="button"
                       onClick={() => void onRate?.(star)}
                       disabled={ratingSubmitting}
-                      className={`p-1 rounded-md ${active ? "text-amber-500" : "text-zinc-300"} ${
+                      className={`p-1 rounded-md ${active ? "text-amber-500" : "text-bm-text-subtle"} ${
                         ratingSubmitting ? "opacity-60" : "hover:text-amber-500"
                       }`}
                       aria-label={`Rate ${star} star${star === 1 ? "" : "s"}`}
