@@ -30,17 +30,17 @@ function GuideSection({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-28 border-t border-zinc-200 py-12 sm:py-16 lg:py-20">
+    <section id={id} className="scroll-mt-28 border-t border-bm-border py-12 sm:py-16 lg:py-20">
       <div className="grid gap-5 sm:grid-cols-[96px_minmax(0,1fr)] sm:gap-8 lg:grid-cols-[132px_minmax(0,1fr)] lg:gap-10">
         <div className="pt-1">
           <p className="guide-chapter-number text-6xl leading-none sm:text-7xl lg:text-8xl">{number}</p>
         </div>
         <div className="max-w-5xl">
           <p className="mt-1 text-sm font-extrabold uppercase tracking-[0.18em] text-[#74152f] sm:text-base">{eyebrow}</p>
-          <h2 className="guide-display mt-2 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-zinc-950 sm:text-5xl lg:text-6xl">
+          <h2 className="guide-display mt-2 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.035em] text-bm-text sm:text-5xl lg:text-6xl">
             {title}
           </h2>
-          <div className="mt-7 space-y-6 text-base leading-7 text-zinc-700 sm:mt-9 sm:text-[17px] sm:leading-8">{children}</div>
+          <div className="mt-7 space-y-6 text-base leading-7 text-bm-text-muted sm:mt-9 sm:text-[17px] sm:leading-8">{children}</div>
         </div>
       </div>
     </section>
@@ -61,33 +61,33 @@ function FlowRow({
       ? "border-blue-200 bg-blue-50/60"
       : tone === "red"
         ? "border-red-200 bg-red-50/60"
-        : "border-zinc-200 bg-white";
+        : "border-bm-border bg-white";
 
   return (
     <div className={`rounded-2xl border ${toneClasses} p-4 sm:p-5`}>
-      <p className="text-sm font-extrabold text-zinc-950">{title}</p>
-      <div className="mt-1.5 text-sm leading-6 text-zinc-600">{children}</div>
+      <p className="text-sm font-extrabold text-bm-text">{title}</p>
+      <div className="mt-1.5 text-sm leading-6 text-bm-text-muted">{children}</div>
     </div>
   );
 }
 
 function PathCode({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-[0.9em] font-bold text-zinc-800">{children}</code>
+    <code className="rounded bg-bm-surface-muted px-1.5 py-0.5 text-[0.9em] font-bold text-bm-text">{children}</code>
   );
 }
 
 export default function BuyOnlineMalawiPage() {
   return (
-    <div className="guide-page min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur">
+    <div className="guide-page min-h-screen bg-bm-surface-muted text-bm-text">
+      <header className="sticky top-0 z-50 border-b border-bm-border bg-bm-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <a href={EXPLORE_PATH} aria-label="Open BuyMesho marketplace">
             <BrandMark subtitle="Buying guide" />
           </a>
           <a
             href={EXPLORE_PATH}
-            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+            className="inline-flex items-center gap-2 rounded-xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"
           >
             Browse Market
             <ArrowRight className="h-4 w-4" />
@@ -102,22 +102,22 @@ export default function BuyOnlineMalawiPage() {
             <div className="mt-4 text-sm font-black uppercase tracking-[0.18em] text-[#74152f] sm:text-base">
               BuyMesho Buying Guide
             </div>
-            <h1 className="guide-display mx-auto mt-4 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-zinc-950 sm:text-6xl lg:text-7xl">
+            <h1 className="guide-display mx-auto mt-4 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-bm-text sm:text-6xl lg:text-7xl">
               Buying on BuyMesho, step by step.
             </h1>
-            <p className="mx-auto mt-6 max-w-3xl text-base leading-7 text-zinc-700 sm:text-lg">
+            <p className="mx-auto mt-6 max-w-3xl text-base leading-7 text-bm-text-muted sm:text-lg">
               This guide explains what happens from the moment you find a product to the point where
               payment, delivery, escrow, order tracking, and disputes are handled.
             </p>
           </div>
 
-          <nav aria-label="Buying guide sections" className="mt-9 border-y border-zinc-200">
+          <nav aria-label="Buying guide sections" className="mt-9 border-y border-bm-border">
             <div className="grid sm:grid-cols-2 lg:grid-cols-4">
               {guideSections.map((section) => (
                 <a
                   key={section.id}
                   href={`#${section.id}`}
-                  className="group flex min-h-16 items-center gap-4 border-b border-zinc-200 px-1 py-4 text-base font-bold text-zinc-800 transition-colors hover:text-blue-700 sm:min-h-20 sm:border-r sm:px-4 sm:text-lg sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(4n)]:border-r-0"
+                  className="group flex min-h-16 items-center gap-4 border-b border-bm-border px-1 py-4 text-base font-bold text-bm-text transition-colors hover:text-bm-brand sm:min-h-20 sm:border-r sm:px-4 sm:text-lg sm:[&:nth-child(even)]:border-r-0 lg:border-b-0 lg:[&:nth-child(4n)]:border-r-0"
                 >
                   <span className="guide-chapter-number text-2xl sm:text-3xl">{section.number}</span>
                   <span>{section.label}</span>
@@ -129,12 +129,12 @@ export default function BuyOnlineMalawiPage() {
         </section>
 
         <section className="py-8 sm:py-10">
-          <div className="border-y border-zinc-200 bg-white/45 p-5 sm:p-7">
+          <div className="border-y border-bm-border bg-bm-surface/45 p-5 sm:p-7">
             <div className="flex items-start gap-3">
-              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-zinc-950" />
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-bm-text" />
               <div>
-                <h2 className="guide-display text-xl font-semibold text-zinc-950 sm:text-2xl">The complete buying path</h2>
-                <p className="mt-2 text-sm leading-6 text-zinc-600">
+                <h2 className="guide-display text-xl font-semibold text-bm-text sm:text-2xl">The complete buying path</h2>
+                <p className="mt-2 text-sm leading-6 text-bm-text-muted">
                   Find a listing → open its details → sign in or create an account → checkout →
                   payment page → payment verification → order tracking → delivery → confirm delivery.
                 </p>
@@ -166,8 +166,8 @@ export default function BuyOnlineMalawiPage() {
             email verification and account setup before returning you to the saved page you were trying to use.
           </p>
 
-          <div className="border-l-2 border-blue-600 pl-4 text-sm text-zinc-600">
-            <strong className="text-zinc-900">For a new buyer:</strong> create account → verify email → complete
+          <div className="border-l-2 border-blue-600 pl-4 text-sm text-bm-text-muted">
+            <strong className="text-bm-text">For a new buyer:</strong> create account → verify email → complete
             account setup → return to the original listing → start checkout.
           </div>
         </GuideSection>
@@ -229,9 +229,9 @@ export default function BuyOnlineMalawiPage() {
             </FlowRow>
           </div>
 
-          <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
+          <div className="flex items-start gap-3 border-t border-bm-border pt-5">
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
-            <p className="text-sm leading-6 text-zinc-600">
+            <p className="text-sm leading-6 text-bm-text-muted">
               These are signals to help you inspect a seller. The Verified badge does not replace checking the actual
               listing details, delivery arrangements, ratings, and communication.
             </p>
@@ -282,9 +282,9 @@ export default function BuyOnlineMalawiPage() {
             </FlowRow>
           </div>
 
-          <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
-            <WalletCards className="mt-0.5 h-5 w-5 shrink-0 text-zinc-700" />
-            <p className="text-sm leading-6 text-zinc-600">
+          <div className="flex items-start gap-3 border-t border-bm-border pt-5">
+            <WalletCards className="mt-0.5 h-5 w-5 shrink-0 text-bm-text-muted" />
+            <p className="text-sm leading-6 text-bm-text-muted">
               When checkout is confirmed, BuyMesho creates the payment/order attempt and redirects you to the payment
               gateway. Keep the payment session open until it returns you to BuyMesho.
             </p>
@@ -313,12 +313,12 @@ export default function BuyOnlineMalawiPage() {
             order details, and delivery progress.
           </p>
 
-          <div className="border border-zinc-200 bg-white p-5">
+          <div className="border border-bm-border bg-white p-5">
             <div className="flex items-start gap-3">
               <FileSearch className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
               <div>
-                <p className="font-extrabold text-zinc-950">What the order can show</p>
-                <p className="mt-1 text-sm leading-6 text-zinc-600">
+                <p className="font-extrabold text-bm-text">What the order can show</p>
+                <p className="mt-1 text-sm leading-6 text-bm-text-muted">
                   Order placed → Payment pending → Payment confirmed → Funds in escrow → Delivered → Funds released.
                 </p>
               </div>
@@ -382,24 +382,24 @@ export default function BuyOnlineMalawiPage() {
             </FlowRow>
           </div>
 
-          <div className="border border-zinc-200 bg-white p-5">
-            <p className="font-extrabold text-zinc-950">Available issue types include</p>
-            <p className="mt-2 text-sm leading-6 text-zinc-600">
+          <div className="border border-bm-border bg-white p-5">
+            <p className="font-extrabold text-bm-text">Available issue types include</p>
+            <p className="mt-2 text-sm leading-6 text-bm-text-muted">
               Order cancellation, seller non-fulfilment, product/item problems, delivery problems, payment/platform
               problems, and exceptional issues.
             </p>
           </div>
 
-          <div className="border border-zinc-200 bg-white p-5">
-            <p className="font-extrabold text-zinc-950">Available requested resolutions include</p>
-            <p className="mt-2 text-sm leading-6 text-zinc-600">
+          <div className="border border-bm-border bg-white p-5">
+            <p className="font-extrabold text-bm-text">Available requested resolutions include</p>
+            <p className="mt-2 text-sm leading-6 text-bm-text-muted">
               Refund, return, return plus refund, or asking BuyMesho to review the issue.
             </p>
           </div>
 
-          <div className="flex items-start gap-3 border-t border-zinc-200 pt-5">
+          <div className="flex items-start gap-3 border-t border-bm-border pt-5">
             <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-            <p className="text-sm leading-6 text-zinc-600">
+            <p className="text-sm leading-6 text-bm-text-muted">
               A submitted dispute is reviewed based on the circumstances and evidence provided; submitting one does not
               guarantee a particular outcome. An active dispute blocks a second dispute, and a settled dispute cannot
               be submitted again through the normal dispute form.
@@ -419,32 +419,32 @@ export default function BuyOnlineMalawiPage() {
 
           <a
             href="/payments/disputes"
-            className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-zinc-900 hover:text-blue-700"
+            className="group inline-flex items-center gap-1.5 py-2 text-sm font-extrabold text-bm-text hover:text-bm-brand"
           >
             Open Disputes
-            <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+            <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
           </a>
         </GuideSection>
 
-        <section id="buyer-information" className="border-t border-zinc-200 py-10 sm:py-12">
+        <section id="buyer-information" className="border-t border-bm-border py-10 sm:py-12">
           <div className="max-w-4xl">
-            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Additional buyer information</p>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle">Additional buyer information</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-bm-text sm:text-3xl">
               More about buying safely.
             </h2>
-            <p className="mt-3 text-sm leading-6 text-zinc-600 sm:text-base">
+            <p className="mt-3 text-sm leading-6 text-bm-text-muted sm:text-base">
               The sections above explain how to buy. The information below covers account security, transaction
               protection, fees, and the important responsibilities to understand before you purchase.
             </p>
           </div>
 
-          <div className="mt-7 border border-zinc-200 bg-white">
-            <div className="grid gap-4 border-b border-zinc-200 p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
+          <div className="mt-7 border border-bm-border bg-white">
+            <div className="grid gap-4 border-b border-bm-border p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
               <div className="flex items-start gap-2">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-                <p className="text-sm font-extrabold text-zinc-950">Account security</p>
+                <p className="text-sm font-extrabold text-bm-text">Account security</p>
               </div>
-              <p className="text-sm leading-6 text-zinc-600">
+              <p className="text-sm leading-6 text-bm-text-muted">
                 BuyMesho supports email verification, passwords of at least <strong>8 characters</strong> with
                 lowercase and uppercase letters plus a symbol, passkeys, and authenticator-app
                 <strong> two-factor authentication (2FA)</strong>. Passkeys can use your device security such as
@@ -453,24 +453,24 @@ export default function BuyOnlineMalawiPage() {
               </p>
             </div>
 
-            <div className="grid gap-4 border-b border-zinc-200 p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
+            <div className="grid gap-4 border-b border-bm-border p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
               <div className="flex items-start gap-2">
                 <WalletCards className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-                <p className="text-sm font-extrabold text-zinc-950">Transaction protection</p>
+                <p className="text-sm font-extrabold text-bm-text">Transaction protection</p>
               </div>
-              <p className="text-sm leading-6 text-zinc-600">
+              <p className="text-sm leading-6 text-bm-text-muted">
                 BuyMesho checks payment status after the payment provider returns the transaction to the platform.
                 With the current <strong>Pay and confirm later</strong> option, funds are held in escrow until delivery
                 is confirmed. An active dispute can prevent escrow release while the dispute is being handled.
               </p>
             </div>
 
-            <div className="grid gap-4 border-b border-zinc-200 p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
+            <div className="grid gap-4 border-b border-bm-border p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
               <div className="flex items-start gap-2">
-                <WalletCards className="mt-0.5 h-4 w-4 shrink-0 text-zinc-700" />
-                <p className="text-sm font-extrabold text-zinc-950">Fees & charges</p>
+                <WalletCards className="mt-0.5 h-4 w-4 shrink-0 text-bm-text-muted" />
+                <p className="text-sm font-extrabold text-bm-text">Fees & charges</p>
               </div>
-              <div className="space-y-2 text-sm leading-6 text-zinc-600">
+              <div className="space-y-2 text-sm leading-6 text-bm-text-muted">
                 <p>
                   BuyMesho does <strong>not absorb payment-provider checkout fees</strong>. When a payment-processing
                   fee applies, it is charged to the buyer during the payment checkout.
@@ -490,9 +490,9 @@ export default function BuyOnlineMalawiPage() {
             <div className="grid gap-4 p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
               <div className="flex items-start gap-2">
                 <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                <p className="text-sm font-extrabold text-zinc-950">Important terms</p>
+                <p className="text-sm font-extrabold text-bm-text">Important terms</p>
               </div>
-              <div className="space-y-3 text-sm leading-6 text-zinc-600">
+              <div className="space-y-3 text-sm leading-6 text-bm-text-muted">
                 <p>
                   BuyMesho is a marketplace platform connecting buyers and sellers. Check the listing, seller,
                   condition, ownership, price, availability, and delivery terms before paying. A Verified seller
@@ -503,20 +503,20 @@ export default function BuyOnlineMalawiPage() {
                   that may be needed if a problem is reviewed. A dispute submission does not guarantee a refund or
                   particular resolution.
                 </p>
-                <div className="flex flex-wrap gap-x-6 gap-y-2 border-t border-zinc-200 pt-3">
+                <div className="flex flex-wrap gap-x-6 gap-y-2 border-t border-bm-border pt-3">
                   <a
                     href="/terms"
-                    className="group inline-flex items-center gap-1.5 py-2 font-extrabold text-zinc-900 hover:text-blue-700"
+                    className="group inline-flex items-center gap-1.5 py-2 font-extrabold text-bm-text hover:text-bm-brand"
                   >
                     Read Terms & Conditions
-                    <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+                    <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
                   </a>
                   <a
                     href="/safety"
-                    className="group inline-flex items-center gap-1.5 py-2 font-extrabold text-zinc-900 hover:text-blue-700"
+                    className="group inline-flex items-center gap-1.5 py-2 font-extrabold text-bm-text hover:text-bm-brand"
                   >
                     Read Safety Tips
-                    <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+                    <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
                   </a>
                 </div>
               </div>
@@ -524,12 +524,12 @@ export default function BuyOnlineMalawiPage() {
           </div>
         </section>
 
-        <section className="border-t border-zinc-200 py-10 sm:py-12">
+        <section className="border-t border-bm-border py-10 sm:py-12">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Need the marketplace?</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle">Need the marketplace?</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Go back to BuyMesho listings.</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-bm-text-muted">
                 Use the marketplace to search, filter, compare, inspect sellers, and start a purchase.
               </p>
             </div>
@@ -539,14 +539,14 @@ export default function BuyOnlineMalawiPage() {
                 className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg"
               >
                 Open Market
-                <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+                <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
               </a>
               <a
                 href={SELL_ONLINE_MALAWI_PATH}
                 className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg"
               >
                 Want to sell instead?
-                <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
+                <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5 group-hover:text-bm-brand" />
               </a>
             </div>
           </div>
