@@ -201,9 +201,9 @@ function ReceiptPage() {
           {loading ? (
             <Loader2 className="mx-auto h-14 w-14 animate-spin text-bm-text-subtle" />
           ) : payment?.status === "paid" ? (
-            <CheckCircle2 className="mx-auto h-16 w-16 text-emerald-500" />
+            <CheckCircle2 className="mx-auto h-16 w-16 text-bm-success" />
           ) : (
-            <CircleAlert className="mx-auto h-16 w-16 text-amber-500" />
+            <CircleAlert className="mx-auto h-16 w-16 text-bm-warning" />
           )}
 
           <p className="mt-4 text-[10px] font-black uppercase tracking-[0.24em] text-bm-text-subtle">Service Payment</p>
@@ -244,7 +244,7 @@ function ReceiptPage() {
               type="button"
               disabled={downloadingReceipt}
               onClick={() => void downloadReceipt(payment, receiptToken, setDownloadingReceipt, setReceiptError)}
-              className="flex items-center justify-center gap-2 rounded-xl bg-[#8f1528] px-5 py-3 text-sm font-black text-white hover:bg-[#7b1223] disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex items-center justify-center gap-2 rounded-xl bg-bm-brand px-5 py-3 text-sm font-black text-bm-on-brand hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
             >
               {downloadingReceipt ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               {downloadingReceipt ? "Preparing PDF…" : "Download Receipt"}
@@ -261,7 +261,7 @@ function ReceiptPage() {
         </div>
 
         {receiptError ? (
-          <p className="mt-4 text-center text-xs text-red-300">{receiptError}</p>
+          <p className="mt-4 text-center text-xs text-bm-danger">{receiptError}</p>
         ) : null}
 
         <p className="mt-4 text-center text-[10px] text-bm-text-subtle">
