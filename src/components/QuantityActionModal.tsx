@@ -46,32 +46,32 @@ export default function QuantityActionModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-bm-overlay backdrop-blur-sm"
           />
 
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 18 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 18 }}
-            className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+            className="relative w-full max-w-md overflow-hidden rounded-3xl bg-bm-surface shadow-2xl"
           >
-            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-bm-border-subtle p-6">
+            <div className="flex items-center justify-between border-b border-bm-border-subtle dark:border-bm-border-subtle p-6">
               <div>
-                <h3 className="text-lg font-extrabold text-zinc-900 dark:text-bm-text">{title}</h3>
-                <p className="mt-1 text-sm text-zinc-500 dark:text-bm-text-subtle">{message}</p>
+                <h3 className="text-lg font-extrabold text-bm-text dark:text-bm-text">{title}</h3>
+                <p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">{message}</p>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full p-2 transition-colors hover:bg-zinc-100 dark:hover:bg-bm-surface-muted"
+                className="rounded-full p-2 transition-colors hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
                 aria-label="Close modal"
               >
-                <X className="h-5 w-5 text-zinc-500 dark:text-bm-text-subtle" />
+                <X className="h-5 w-5 text-bm-text-subtle dark:text-bm-text-subtle" />
               </button>
             </div>
 
             <div className="space-y-3 px-6 py-5">
-              <label className="block text-sm font-semibold text-zinc-700 dark:text-bm-text-muted">
+              <label className="block text-sm font-semibold text-bm-text-muted dark:text-bm-text-muted">
                 {quantityLabel}
               </label>
               <input
@@ -80,23 +80,23 @@ export default function QuantityActionModal({
                 inputMode="numeric"
                 value={quantity}
                 onChange={(event) => onQuantityChange(event.target.value)}
-                className="w-full rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-3 text-base font-medium text-zinc-900 dark:text-bm-text outline-none transition focus:border-zinc-900 focus:bg-white"
+                className="w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-base font-medium text-bm-text dark:text-bm-text outline-none transition focus:border-bm-brand focus:bg-bm-surface"
                 placeholder="1"
               />
             </div>
 
-            <div className="flex gap-3 border-t border-zinc-100 dark:border-bm-border-subtle px-6 py-5">
+            <div className="flex gap-3 border-t border-bm-border-subtle dark:border-bm-border-subtle px-6 py-5">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 font-bold text-zinc-700 dark:text-bm-text-muted transition-colors hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
+                className="flex-1 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 font-bold text-bm-text-muted dark:text-bm-text-muted transition-colors hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={onConfirm}
-                className="flex-1 rounded-2xl bg-zinc-900 px-4 py-3 font-bold text-white transition-colors hover:bg-zinc-800"
+                className="flex-1 rounded-2xl bg-bm-brand px-4 py-3 font-bold text-bm-on-brand transition-colors hover:bg-bm-brand-hover"
               >
                 {confirmLabel}
               </button>
