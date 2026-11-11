@@ -137,7 +137,7 @@ export default function ListingCard({
 
   return (
     <div
-      className={`group relative w-full ${cardSize} ${clickable ? "cursor-pointer" : ""} focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40`}
+      className={`group relative w-full ${cardSize} ${clickable ? "cursor-pointer" : ""} focus:outline-none focus-visible:ring-2 focus-visible:ring-bm-focus/40`}
       onClick={openDetails}
       onKeyDown={handleKeyDown}
       tabIndex={clickable ? 0 : -1}
@@ -250,7 +250,7 @@ export default function ListingCard({
                       : compact
                         ? "px-2.5 py-1 text-xs"
                         : "px-3 py-1.5 text-sm"
-                } text-zinc-950 dark:text-bm-text`}
+                } text-bm-text dark:text-bm-text`}
               >
                 <span>{formatMoney(Number(listing.price) || 0)}</span>
               </div>
@@ -315,7 +315,7 @@ export default function ListingCard({
               <button
                 type="button"
                 onClick={handleBuyClick}
-                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-lime-400 px-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-950 dark:text-bm-text shadow-sm transition-colors hover:bg-lime-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60"
+                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-lime-400 px-3 text-xs font-black uppercase tracking-[0.14em] text-bm-text dark:text-bm-text shadow-sm transition-colors hover:bg-lime-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60"
               >
                 <BuyBasketIcon className="h-6 w-6 shrink-0 text-[#8F171D]" />
                 <span>Buy</span>
