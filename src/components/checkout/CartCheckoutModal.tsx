@@ -187,7 +187,7 @@ export function CartCheckoutModal({
           </div>
 
           {checkoutError || formError ? (
-            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            <div role="alert" className="rounded-xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm font-semibold text-bm-danger">
               {formError ?? checkoutError}
             </div>
           ) : null}
