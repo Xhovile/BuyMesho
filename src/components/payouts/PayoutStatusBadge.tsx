@@ -25,7 +25,7 @@ const DESTINATION_STATUS_META: Record<string, { label: string; className: string
 };
 
 const DESTINATION_STATE_META: Record<string, { label: string; className: string }> = {
-  default: { label: "Default", className: "border-sky-200 bg-sky-50 text-sky-700" },
+  default: { label: "Default", className: "border-bm-border bg-bm-surface-muted text-bm-text-muted" },
   active: { label: "Active", className: "border-bm-success/25 bg-bm-success-bg text-bm-success" },
   inactive: { label: "Inactive", className: "border-bm-border bg-bm-surface-muted text-bm-text-muted" },
 };
