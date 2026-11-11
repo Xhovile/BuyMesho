@@ -38,49 +38,49 @@ export default function SellerRatingCard({
   const normalized = normalizeRatingSummary(ratingSummary);
 
   return (
-    <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-      <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Rating</p>
+    <div className="rounded-[2rem] border border-bm-border bg-bm-surface p-6 shadow-sm">
+      <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">Rating</p>
       <div className="mt-3 flex items-center gap-3 flex-wrap">
-        <div className="text-4xl font-black tracking-tight text-zinc-900">
+        <div className="text-4xl font-black tracking-tight text-bm-text">
           {ratingSummary || normalized.hasRatings ? normalized.averageRating.toFixed(1) : "—"}
         </div>
-        <div className="flex items-center gap-2 text-sm text-zinc-500 min-w-[160px]">
+        <div className="flex items-center gap-2 text-sm text-bm-text-subtle min-w-[160px]">
           <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
           {ratingSummary || normalized.hasRatings
             ? `${normalized.ratingCount} rating${normalized.ratingCount === 1 ? "" : "s"}`
             : "No ratings yet"}
         </div>
         {normalized.hasRatings ? (
-          <span className="px-2.5 py-1 rounded-full bg-zinc-100 text-zinc-700 text-xs font-bold uppercase tracking-[0.1em]">
+          <span className="px-2.5 py-1 rounded-full bg-bm-surface-muted text-bm-text-muted text-xs font-bold uppercase tracking-[0.1em]">
             {ratingTierLabel(normalized.averageRating)}
           </span>
         ) : null}
       </div>
 
       {ratingLoading ? (
-        <p className="mt-4 text-sm text-zinc-500">Loading rating...</p>
+        <p className="mt-4 text-sm text-bm-text-subtle">Loading rating...</p>
       ) : (
         <div className="mt-5 space-y-2">
           {normalized.distribution.map((row) => (
             <div key={row.stars} className="grid grid-cols-[52px_minmax(0,1fr)_46px] items-center gap-2">
-              <span className="text-xs font-bold text-zinc-600">{row.stars} ★</span>
-              <div className="h-2 rounded-full bg-zinc-200 overflow-hidden">
+              <span className="text-xs font-bold text-bm-text-muted">{row.stars} ★</span>
+              <div className="h-2 rounded-full bg-bm-surface-raised overflow-hidden">
                 <div className="h-full bg-amber-400" style={{ width: `${row.percentage}%` }} />
               </div>
-              <span className="text-xs text-zinc-500 text-right">{row.count}</span>
+              <span className="text-xs text-bm-text-subtle text-right">{row.count}</span>
             </div>
           ))}
-          {!normalized.hasRatings ? <p className="pt-1 text-sm text-zinc-500">No ratings yet.</p> : null}
+          {!normalized.hasRatings ? <p className="pt-1 text-sm text-bm-text-subtle">No ratings yet.</p> : null}
         </div>
       )}
 
       {showYourRating ? (
-        <div className="mt-5 border-t border-zinc-200 pt-4">
-          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Your rating</p>
+        <div className="mt-5 border-t border-bm-border pt-4">
+          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-bm-text-subtle">Your rating</p>
           {!isAuthenticated ? (
-            <p className="mt-2 text-sm text-zinc-500">{loginPrompt}</p>
+            <p className="mt-2 text-sm text-bm-text-subtle">{loginPrompt}</p>
           ) : !canRate ? (
-            <p className="mt-2 text-sm text-zinc-500">{selfRatingMessage}</p>
+            <p className="mt-2 text-sm text-bm-text-subtle">{selfRatingMessage}</p>
           ) : (
             <>
               <div className="mt-3 flex items-center gap-1">
@@ -104,18 +104,18 @@ export default function SellerRatingCard({
               </div>
               {normalized.myRating ? (
                 <div className="mt-3 flex items-center justify-between gap-3">
-                  <p className="text-sm text-zinc-600">Your rating: {normalized.myRating}/5</p>
+                  <p className="text-sm text-bm-text-muted">Your rating: {normalized.myRating}/5</p>
                   <button
                     type="button"
                     onClick={() => void onRemoveRating?.()}
                     disabled={ratingSubmitting}
-                    className="text-xs font-bold text-zinc-600 hover:text-zinc-900 underline underline-offset-2 disabled:opacity-50"
+                    className="text-xs font-bold text-bm-text-muted hover:text-bm-text underline underline-offset-2 disabled:opacity-50"
                   >
                     Remove rating
                   </button>
                 </div>
               ) : (
-                <p className="mt-3 text-sm text-zinc-500">Select a star to rate this seller.</p>
+                <p className="mt-3 text-sm text-bm-text-subtle">Select a star to rate this seller.</p>
               )}
             </>
           )}
