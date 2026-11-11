@@ -23,7 +23,7 @@ export function SectionHeading({
   return (
     <div className="space-y-2 border-b border-bm-border pb-4">
       {eyebrow ? <p className="text-xs font-black uppercase tracking-[0.22em] text-bm-text-muted">{eyebrow}</p> : null}
-      <h2 className="font-serif text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">{title}</h2>
+      <h2 className="font-serif text-3xl font-bold tracking-tight text-bm-text sm:text-4xl">{title}</h2>
       {description ? <p className="max-w-3xl text-sm leading-6 text-bm-text-subtle">{description}</p> : null}
     </div>
   );
@@ -108,7 +108,7 @@ export function RelatedRailCard({
 
   return (
     <article
-      className={`group overflow-hidden rounded-3xl border border-blue-200 bg-bm-surface shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
+      className={`group overflow-hidden rounded-3xl border border-bm-border bg-bm-surface shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
         isDesktop ? "h-full" : ""
       }`}
     >
@@ -151,11 +151,11 @@ export function RelatedRailCard({
           <div className="min-w-0">
             {offerLabel ? (
               <div className="inline-flex flex-col gap-0.5">
-                <span className="text-[8px] font-black uppercase tracking-[0.18em] text-red-600">{offerLabel}</span>
-                <span className="text-[9px] font-extrabold leading-none text-red-700">{offerValue}</span>
+                <span className="text-[8px] font-black uppercase tracking-[0.18em] text-bm-brand">{offerLabel}</span>
+                <span className="text-[9px] font-extrabold leading-none text-bm-brand">{offerValue}</span>
               </div>
             ) : (
-              <p className={isDesktop ? "text-base font-bold text-red-900" : "text-xs font-black text-bm-text"}>
+              <p className={isDesktop ? "text-base font-bold text-bm-brand" : "text-xs font-black text-bm-text"}>
                 MK {Number(item.price).toLocaleString()}
               </p>
             )}
@@ -197,11 +197,11 @@ export function RelatedRailCard({
           <button
             type="button"
             onClick={handleBuyClick}
-            className="inline-flex h-9 w-full items-center justify-center rounded-xl bg-lime-400 px-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-950 shadow-sm transition-colors hover:bg-lime-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60"
+            className="inline-flex h-9 w-full items-center justify-center rounded-xl bg-lime-400 px-3 text-xs font-black uppercase tracking-[0.14em] text-bm-text shadow-sm transition-colors hover:bg-lime-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60"
           >
             Buy
           </button>
-          {buyNotice ? <p className="text-[10px] font-bold text-red-700">{buyNotice}</p> : null}
+          {buyNotice ? <p className="text-[10px] font-bold text-bm-brand">{buyNotice}</p> : null}
         </div>
       </div>
 
