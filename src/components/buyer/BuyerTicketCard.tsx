@@ -3,9 +3,9 @@ import { formatMoney } from "../../shared/utils/formatMoney";
 import type { BuyerTicketRecord } from "../../lib/buyerTickets";
 
 function statusClasses(status: BuyerTicketRecord["status"]) {
-  if (status === "paid") return "bg-emerald-100 text-emerald-800";
-  if (status === "rejected") return "bg-amber-100 text-amber-800";
-  if (status === "error") return "bg-rose-100 text-rose-800";
+  if (status === "paid") return "bg-bm-success-bg text-bm-success";
+  if (status === "rejected") return "bg-bm-warning-bg text-bm-warning";
+  if (status === "error") return "bg-bm-danger-bg text-bm-danger";
   return "bg-bm-surface-muted text-bm-text-muted";
 }
 function displayValue(value: string) { return value && value.trim() ? value : "—"; }
@@ -47,9 +47,9 @@ export default function BuyerTicketCard({ ticket, onDownloadPdf, onOpenTicket, o
         <div className="mt-4 flex items-center justify-between gap-4 border-t border-bm-border-subtle pt-3">
           <div><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-bm-text-subtle">Amount</p><p className="mt-1 text-sm font-black text-bm-text">{formatMoney(ticket.amount, ticket.currency)}</p></div>
           <div className="flex flex-wrap justify-end gap-2">
-            <button type="button" onClick={onDownloadPdf} disabled={!ticket.ticketCredential} title={ticket.ticketCredential ? "Download your verified event ticket PDF" : "Ticket credential is not available yet"} className="inline-flex items-center gap-2 rounded-2xl border border-orange-500 bg-orange-500 px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-orange-600 disabled:cursor-not-allowed disabled:border-bm-border disabled:bg-bm-surface-raised disabled:text-bm-text-subtle disabled:hover:bg-bm-surface-raised"><Download className="h-4 w-4" />Download PDF</button>
+            <button type="button" onClick={onDownloadPdf} disabled={!ticket.ticketCredential} title={ticket.ticketCredential ? "Download your verified event ticket PDF" : "Ticket credential is not available yet"} className="inline-flex items-center gap-2 rounded-2xl border border-bm-brand bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:border-bm-border disabled:bg-bm-surface-raised disabled:text-bm-text-subtle disabled:hover:bg-bm-surface-raised"><Download className="h-4 w-4" />Download PDF</button>
             {onOpenTicket ? <button type="button" onClick={onOpenTicket} className="inline-flex items-center gap-2 rounded-2xl border border-bm-brand bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"><Ticket className="h-4 w-4" />View Details</button> : null}
-            {onOpenSupport ? <button type="button" onClick={onOpenSupport} className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-800 hover:bg-sky-100"><ShieldAlert className="h-4 w-4" />Contact Support</button> : null}
+            {onOpenSupport ? <button type="button" onClick={onOpenSupport} className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-surface-muted px-4 py-2.5 text-sm font-bold text-bm-text-muted hover:bg-bm-surface-raised"><ShieldAlert className="h-4 w-4" />Contact Support</button> : null}
           </div>
         </div>
       </div>
