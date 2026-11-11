@@ -24,13 +24,13 @@ export default function FeedbackModal({ open, type, title, message, onClose, act
       icon: CheckCircle2,
       iconWrap: "bg-bm-success-bg border border-bm-border",
       iconColor: "text-bm-success",
-      accent: "bg-emerald-600 hover:bg-emerald-700",
+      accent: "bg-bm-success hover:bg-bm-success/90",
     },
     error: {
       icon: AlertTriangle,
-      iconWrap: "bg-red-50 border border-red-100",
-      iconColor: "text-red-600",
-      accent: "bg-red-600 hover:bg-red-700",
+      iconWrap: "bg-bm-danger-bg border border-bm-border",
+      iconColor: "text-bm-danger",
+      accent: "bg-bm-danger hover:bg-bm-danger/90",
     },
     info: {
       icon: Info,
