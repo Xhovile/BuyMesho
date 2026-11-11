@@ -4,10 +4,10 @@ import HeaderMenuItem from "./HeaderMenuItem";
 import PwaInstallMenuItem from "./PwaInstallMenuItem";
 import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "../../lib/appNavigation";
 
-const navButtonClass = "w-full flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 dark:text-bm-text-muted hover:bg-zinc-50 dark:hover:bg-bm-surface-muted transition-colors";
-const navSeparatorClass = "mx-4 border-t border-zinc-200 dark:border-bm-border";
-const primaryButtonClass = "w-full rounded-xl bg-white px-4 py-3 text-center text-base font-black uppercase tracking-wide text-zinc-900 dark:text-bm-text hover:bg-zinc-50 dark:hover:bg-bm-surface-muted transition-colors";
-const primaryWrapperClass = "rounded-2xl border border-zinc-100 dark:border-bm-border-subtle bg-white p-1 shadow-sm mb-2";
+const navButtonClass = "w-full flex items-center justify-between gap-3 rounded-2xl bg-bm-surface px-4 py-3 text-left text-sm font-bold text-bm-text dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted transition-colors";
+const navSeparatorClass = "mx-4 border-t border-bm-border dark:border-bm-border";
+const primaryButtonClass = "w-full rounded-xl bg-bm-surface px-4 py-3 text-center text-base font-black uppercase tracking-wide text-bm-text dark:text-bm-text hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted transition-colors";
+const primaryWrapperClass = "rounded-2xl border border-zinc-100 dark:border-bm-border-subtle bg-bm-surface p-1 shadow-sm mb-2";
 
 type HeaderMobileDrawerProps = {
   open: boolean; isLoggedIn: boolean; isSeller: boolean; isAdmin: boolean; unreadCount: number; primaryDrawerLabel: string;
@@ -24,8 +24,8 @@ export default function HeaderMobileDrawer({ open, isLoggedIn, isSeller, isAdmin
   const handleSellAction = () => { onClose(); onPrimaryClick(); };
   return <AnimatePresence>{open ? <>
     <motion.div key="drawer-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="md:hidden fixed inset-0 z-[60] bg-zinc-900/50 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-    <motion.div key="drawer-panel" id="mobile-header-menu" role="dialog" aria-modal="true" aria-labelledby="drawer-title" initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", stiffness: 320, damping: 32 }} className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col">
-      <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100 dark:border-bm-border-subtle"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Menu</p><h2 id="drawer-title" className="mt-1 text-base font-black text-zinc-900 dark:text-bm-text">Start here</h2></div><div className="rounded-2xl border border-zinc-100 dark:border-bm-border-subtle bg-white p-1 shadow-sm"><button type="button" onClick={onClose} aria-label="Close menu" className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-bm-surface-muted transition-colors"><span className="text-zinc-600 dark:text-bm-text-muted text-lg leading-none">×</span></button></div></div>
+    <motion.div key="drawer-panel" id="mobile-header-menu" role="dialog" aria-modal="true" aria-labelledby="drawer-title" initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", stiffness: 320, damping: 32 }} className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-bm-surface shadow-2xl flex flex-col">
+      <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100 dark:border-bm-border-subtle"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Menu</p><h2 id="drawer-title" className="mt-1 text-base font-black text-bm-text dark:text-bm-text">Start here</h2></div><div className="rounded-2xl border border-zinc-100 dark:border-bm-border-subtle bg-bm-surface p-1 shadow-sm"><button type="button" onClick={onClose} aria-label="Close menu" className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted transition-colors"><span className="text-bm-text-muted dark:text-bm-text-muted text-lg leading-none">×</span></button></div></div>
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className={primaryWrapperClass}><HeaderMenuItem label={primaryDrawerLabel} icon={null} onClick={handlePrimaryNavigation} className={primaryButtonClass} /></div>
         <HeaderMenuItem label={isSeller ? "List Item" : "Sell"} icon={<span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0"><Plus className="w-4 h-4 text-white" /></span>} onClick={handleSellAction} className={navButtonClass} />
@@ -43,7 +43,7 @@ export default function HeaderMobileDrawer({ open, isLoggedIn, isSeller, isAdmin
           <HeaderMenuItem label="Profile" icon={<span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0"><User className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onProfileClick(); }} className={navButtonClass} />
           <div className={navSeparatorClass} aria-hidden="true" />
           <PwaInstallMenuItem className={navButtonClass} onSelect={onClose} />
-          <HeaderMenuItem label="Log Out" icon={<span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0"><LogOut className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); void onLogoutClick(); }} className="w-full flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors" />
+          <HeaderMenuItem label="Log Out" icon={<span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0"><LogOut className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); void onLogoutClick(); }} className="w-full flex items-center justify-between gap-3 rounded-2xl bg-bm-surface px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors" />
         </> : <>
           <HeaderMenuItem label="Become Seller" icon={<span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0"><ShieldCheck className="w-4 h-4 text-white" /></span>} onClick={() => { onClose(); onBecomeSellerClick(); }} className={navButtonClass} />
           <div className={navSeparatorClass} aria-hidden="true" />
