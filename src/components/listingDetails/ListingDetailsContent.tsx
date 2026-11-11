@@ -179,7 +179,7 @@ export default function ListingDetailsContent({
               <div className="space-y-4">
                 <div className="space-y-2 border-b border-bm-border pb-4">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-bm-text-muted">Seller Info</p>
-                  <h2 className="font-serif text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">
+                  <h2 className="font-serif text-3xl font-bold tracking-tight text-bm-text sm:text-4xl">
                     Seller profile
                   </h2>
                   <p className="max-w-3xl text-sm leading-6 text-bm-text-subtle">
