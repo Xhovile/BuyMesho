@@ -95,7 +95,7 @@ export default function ListingReviewsPage() {
       <div className="min-h-screen bg-bm-surface-muted text-bm-text">
         <ListingHeaderBar subtitle="Reviews" backPath={LISTING_PATH} />
         <main className="mx-auto max-w-3xl px-4 py-12">
-          <div className="rounded-[2rem] border border-red-200 bg-red-50 p-6 text-sm font-medium text-red-700">
+          <div className="rounded-[2rem] border border-bm-danger/25 bg-bm-danger-bg p-6 text-sm font-medium text-bm-danger">
             This review page could not find a valid listing.
           </div>
         </main>
