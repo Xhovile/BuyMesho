@@ -13,7 +13,7 @@ import { useAccountProfile } from "./hooks/useAccountProfile";
 
 const paymentActions = [
   { label: "Purchases", path: BUYER_PAYMENTS_PATH, icon: Receipt, iconBg: "bg-emerald-300" },
-  { label: "Tickets", path: TICKETS_PATH, icon: Ticket, iconBg: "bg-zinc-900" },
+  { label: "Tickets", path: TICKETS_PATH, icon: Ticket, iconBg: "bg-bm-brand" },
   { label: "Track Order", path: TRACK_ORDER_PATH, icon: Truck, iconBg: "bg-blue-500" },
   { label: "Disputes", path: DISPUTES_PATH, icon: ShieldAlert, iconBg: "bg-red-900" },
 ] as const;
@@ -58,7 +58,7 @@ export default function PaymentsHubPage() {
                     <action.icon className="h-4 w-4" />
                   </span>
                   <span>{action.label}</span>
-                  <ChevronRight className="ml-auto h-4 w-4 text-zinc-300" />
+                  <ChevronRight className="ml-auto h-4 w-4 text-bm-on-brand" />
                 </button>
               </li>
             ))}
