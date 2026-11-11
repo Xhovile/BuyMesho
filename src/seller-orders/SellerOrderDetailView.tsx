@@ -103,23 +103,23 @@ export default function SellerOrderDetailView({
           : null;
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-4 py-6 md:px-8">
+    <main className="min-h-screen bg-bm-bg px-4 py-6 md:px-8">
       <div className="mx-auto max-w-4xl">
         <button
           type="button"
           onClick={closeOrder}
-          className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-zinc-600 hover:text-zinc-950"
+          className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-bm-text-muted hover:text-bm-text"
         >
           <ArrowLeft className="h-4 w-4" /> Back to Seller Orders
         </button>
 
-        <section className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-bm-border bg-bm-surface p-6 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-bm-text-subtle">
                 Order
               </p>
-              <h1 className="mt-1 text-2xl font-black text-zinc-950">
+              <h1 className="mt-1 text-2xl font-black text-bm-text">
                 {selected.order.id}
               </h1>
             </div>
@@ -129,7 +129,7 @@ export default function SellerOrderDetailView({
                   ? "bg-emerald-100 text-emerald-900"
                   : pending
                     ? "bg-amber-100 text-amber-900"
-                    : "bg-zinc-100 text-zinc-800"
+                    : "bg-bm-surface-muted text-bm-text"
               }`}
             >
               {orderStatusLabel(selected)}
@@ -178,17 +178,17 @@ export default function SellerOrderDetailView({
                   </p>
 
                   {sellerSubmittedResolution ? (
-                    <div className="mt-4 rounded-xl border border-emerald-200 bg-white p-4">
+                    <div className="mt-4 rounded-xl border border-emerald-200 bg-bm-surface p-4">
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">
                         Seller resolution
                       </p>
-                      <p className="mt-2 text-sm font-black text-zinc-950">
+                      <p className="mt-2 text-sm font-black text-bm-text">
                         {sellerSubmittedResolution}
                       </p>
                       <button
                         type="button"
                         disabled
-                        className="mt-3 rounded-xl bg-zinc-200 px-4 py-2.5 text-sm font-extrabold text-zinc-500"
+                        className="mt-3 rounded-xl bg-bm-surface-raised px-4 py-2.5 text-sm font-extrabold text-bm-text-subtle"
                       >
                         Submitted
                       </button>
@@ -196,11 +196,11 @@ export default function SellerOrderDetailView({
                   ) : null}
 
                   {disputeReason ? (
-                    <div className="mt-3 rounded-xl border border-amber-200 bg-white p-4">
+                    <div className="mt-3 rounded-xl border border-amber-200 bg-bm-surface p-4">
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-700">
                         Issue
                       </p>
-                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-800">
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-bm-text">
                         {disputeReason}
                       </p>
                     </div>
@@ -212,8 +212,8 @@ export default function SellerOrderDetailView({
           ) : null}
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl bg-zinc-50 p-4">
-              <p className="text-xs font-black uppercase tracking-wider text-zinc-400">
+            <div className="rounded-2xl bg-bm-bg p-4">
+              <p className="text-xs font-black uppercase tracking-wider text-bm-text-subtle">
                 Purchase
               </p>
               {selected.order.items.map((item) => (
@@ -221,27 +221,27 @@ export default function SellerOrderDetailView({
                   key={`${item.title}-${item.quantity}`}
                   className="mt-3 flex justify-between gap-4 text-sm"
                 >
-                  <span className="font-semibold text-zinc-700">
+                  <span className="font-semibold text-bm-text-muted">
                     {item.title} × {item.quantity}
                   </span>
-                  <span className="font-extrabold text-zinc-950">
+                  <span className="font-extrabold text-bm-text">
                     {selected.order.currency} {Number(item.unitPrice.amount * item.quantity).toLocaleString()}
                   </span>
                 </div>
               ))}
-              <div className="mt-4 flex justify-between border-t border-zinc-200 pt-3 font-black">
+              <div className="mt-4 flex justify-between border-t border-bm-border pt-3 font-black">
                 <span>Total</span>
                 <span>{money(selected.order)}</span>
               </div>
             </div>
 
-            <div className="rounded-2xl bg-zinc-50 p-4">
-              <p className="text-xs font-black uppercase tracking-wider text-zinc-400">
+            <div className="rounded-2xl bg-bm-bg p-4">
+              <p className="text-xs font-black uppercase tracking-wider text-bm-text-subtle">
                 Buyer & Delivery
               </p>
               {buyer ? (
-                <div className="mt-3 space-y-1 text-sm text-zinc-700">
-                  <p className="font-extrabold text-zinc-950">{buyer.fullName}</p>
+                <div className="mt-3 space-y-1 text-sm text-bm-text-muted">
+                  <p className="font-extrabold text-bm-text">{buyer.fullName}</p>
                   <p>{buyer.phone}</p>
                   <p>{buyer.addressLine}</p>
                   <p>
@@ -250,28 +250,28 @@ export default function SellerOrderDetailView({
                   {buyer.landmark ? <p>Landmark: {buyer.landmark}</p> : null}
                 </div>
               ) : (
-                <p className="mt-3 text-sm text-zinc-500">
+                <p className="mt-3 text-sm text-bm-text-subtle">
                   Buyer delivery details are not available for this order.
                 </p>
               )}
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-zinc-200 p-4">
-            <p className="text-xs font-black uppercase tracking-wider text-zinc-400">
+          <div className="mt-4 rounded-2xl border border-bm-border p-4">
+            <p className="text-xs font-black uppercase tracking-wider text-bm-text-subtle">
               Payment, Escrow & Payout
             </p>
             <div className="mt-3 grid gap-2 text-sm md:grid-cols-3">
               <p>
-                <span className="text-zinc-500">Payment:</span>{" "}
+                <span className="text-bm-text-subtle">Payment:</span>{" "}
                 <strong>{selected.payment?.status ?? "—"}</strong>
               </p>
               <p>
-                <span className="text-zinc-500">Escrow:</span>{" "}
+                <span className="text-bm-text-subtle">Escrow:</span>{" "}
                 <strong>{selected.escrow?.state ?? "—"}</strong>
               </p>
               <p>
-                <span className="text-zinc-500">Seller payout:</span>{" "}
+                <span className="text-bm-text-subtle">Seller payout:</span>{" "}
                 <strong>{selected.payoutStatus ?? "Not available"}</strong>
               </p>
             </div>
@@ -332,7 +332,7 @@ export default function SellerOrderDetailView({
                 type="button"
                 disabled={actionLoading}
                 onClick={() => void markAsPendingDelivery(selected)}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-extrabold text-white disabled:opacity-50"
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-bm-brand px-4 py-2.5 text-sm font-extrabold text-bm-on-brand disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
                 {actionLoading ? "Updating…" : "Mark as sent"}
