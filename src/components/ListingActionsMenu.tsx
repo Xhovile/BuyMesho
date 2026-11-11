@@ -338,7 +338,7 @@ export default function ListingActionsMenu({
                 <button type="button" onClick={handleRestock} className="block w-full px-4 py-3 text-left text-sm font-semibold text-bm-text dark:text-bm-text-muted hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted">
                   <span className="inline-flex items-center gap-2"><CirclePlus className="w-4 h-4" />Restock</span>
                 </button>
-                <button type="button" onClick={handleDelete} className="block w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50">
+                <button type="button" onClick={handleDelete} className="block w-full px-4 py-3 text-left text-sm font-semibold text-bm-danger hover:bg-bm-danger-bg">
                   Delete listing
                 </button>
               </>
