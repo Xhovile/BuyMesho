@@ -37,7 +37,7 @@ export default function AdminSystem({ system, summary }: { system: AdminSystemSt
         <div className="grid gap-3 sm:grid-cols-2">
           {integrations.map(([label, ready, helper, Icon]) => (
             <div key={label} className="rounded-2xl border border-bm-border bg-bm-surface-subtle p-4">
-              <div className="flex items-start justify-between gap-3"><div className="flex items-center gap-2"><Icon className="h-4 w-4 text-bm-text-subtle" /><p className="text-sm font-black text-bm-text">{label}</p></div>{ready ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <AlertTriangle className="h-5 w-5 text-amber-500" />}</div>
+              <div className="flex items-start justify-between gap-3"><div className="flex items-center gap-2"><Icon className="h-4 w-4 text-bm-text-subtle" /><p className="text-sm font-black text-bm-text">{label}</p></div>{ready ? <CheckCircle2 className="h-5 w-5 text-bm-success" /> : <AlertTriangle className="h-5 w-5 text-amber-500" />}</div>
               <p className="mt-2 text-xs leading-5 text-bm-text-subtle">{helper}</p>
             </div>
           ))}
