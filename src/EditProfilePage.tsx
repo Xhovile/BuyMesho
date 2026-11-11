@@ -133,44 +133,44 @@ export default function EditProfilePage() {
       onBack={() => navigateToPath("/profile")}
     >
       {authLoading || profileLoading || !formReady ? (
-        <div className="p-8 text-sm text-zinc-500 dark:text-bm-text-subtle">Loading profile…</div>
+        <div className="p-8 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Loading profile…</div>
       ) : !firebaseUser ? (
-        <div className="p-8 text-sm text-zinc-500 dark:text-bm-text-subtle">Login required.</div>
+        <div className="p-8 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Login required.</div>
       ) : !profile ? (
-        <div className="p-8 space-y-3 text-sm text-zinc-500 dark:text-bm-text-subtle">
+        <div className="p-8 space-y-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
           <p>Your account profile is not ready yet. Complete account setup first.</p>
           <button
             type="button"
             onClick={() => navigateToPath("/edit-account")}
-            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
+            className="inline-flex items-center gap-2 rounded-xl bg-bm-brand px-4 py-2 text-sm font-bold text-white hover:bg-bm-brand-hover"
           >
             Go to Edit Account
           </button>
         </div>
       ) : !profile.is_seller ? (
-        <div className="p-8 text-sm text-zinc-500 dark:text-bm-text-subtle">Seller access required.</div>
+        <div className="p-8 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Seller access required.</div>
       ) : (
         <form onSubmit={handleSave} className="p-8 space-y-5 w-full">
           <div>
-            <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Business Name</label>
-            <input required type="text" value={form.businessName} onChange={(e) => setForm((prev) => ({ ...prev, businessName: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" />
+            <label className="block text-xs font-bold text-bm-text-subtle dark:text-bm-text-subtle uppercase mb-1">Business Name</label>
+            <input required type="text" value={form.businessName} onChange={(e) => setForm((prev) => ({ ...prev, businessName: e.target.value }))} className="w-full px-4 py-3 bg-bm-surface-subtle dark:bg-bm-surface-subtle border border-bm-border dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" />
           </div>
           <FormDropdown label="University" value={form.university} options={UNIVERSITIES} onChange={(value) => setForm((prev) => ({ ...prev, university: value as University }))} />
           <div>
-            <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-2">Business Logo</label>
+            <label className="block text-xs font-bold text-bm-text-subtle dark:text-bm-text-subtle uppercase mb-2">Business Logo</label>
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-zinc-100 dark:bg-bm-surface-muted border border-zinc-200 dark:border-bm-border overflow-hidden flex items-center justify-center flex-shrink-0">
+              <div className="w-20 h-20 rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted border border-bm-border dark:border-bm-border overflow-hidden flex items-center justify-center flex-shrink-0">
                 {form.logoUrl ? (
                   <img src={form.logoUrl} alt="Business logo" className="w-full h-full object-cover" />
                 ) : (
-                  <Camera className="w-8 h-8 text-zinc-400 dark:text-bm-text-subtle" />
+                  <Camera className="w-8 h-8 text-bm-text-subtle dark:text-bm-text-subtle" />
                 )}
               </div>
               <div className="flex flex-col gap-2">
                 <input id="edit-profile-logo" type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
                 <label
                   htmlFor="edit-profile-logo"
-                  className="inline-flex px-4 py-2 rounded-xl bg-zinc-100 dark:bg-bm-surface-muted hover:bg-zinc-200 text-sm font-bold cursor-pointer"
+                  className="inline-flex px-4 py-2 rounded-xl bg-bm-surface-muted dark:bg-bm-surface-muted hover:bg-bm-surface-raised text-sm font-bold cursor-pointer"
                 >
                   {uploading ? "Uploading..." : form.logoUrl ? "Replace Logo" : "Upload Logo"}
                 </label>
@@ -187,10 +187,10 @@ export default function EditProfilePage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Short Bio</label>
-            <textarea value={form.bio} onChange={(e) => setForm((prev) => ({ ...prev, bio: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 dark:bg-bm-surface-subtle border border-zinc-200 dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-24 resize-none" />
+            <label className="block text-xs font-bold text-bm-text-subtle dark:text-bm-text-subtle uppercase mb-1">Short Bio</label>
+            <textarea value={form.bio} onChange={(e) => setForm((prev) => ({ ...prev, bio: e.target.value }))} className="w-full px-4 py-3 bg-bm-surface-subtle dark:bg-bm-surface-subtle border border-bm-border dark:border-bm-border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-24 resize-none" />
           </div>
-          <button type="submit" disabled={saving || uploading} className="bg-zinc-900 text-white py-3 px-6 rounded-xl font-bold hover:bg-zinc-800">
+          <button type="submit" disabled={saving || uploading} className="bg-bm-brand text-white py-3 px-6 rounded-xl font-bold hover:bg-bm-brand-hover">
             {saving ? "Saving..." : "Save Changes"}
           </button>
         </form>
