@@ -154,7 +154,7 @@ function ActionButton({
 }) {
   const className =
     variant === "danger"
-      ? "border-bm-danger/35 bg-bm-danger-bg text-bm-danger hover:bg-rose-100"
+      ? "border-bm-danger/35 bg-bm-danger-bg text-bm-danger hover:brightness-95"
       : variant === "ghost"
         ? "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
         : "border-bm-brand bg-bm-brand text-bm-on-brand hover:bg-bm-brand-hover";
@@ -349,7 +349,7 @@ export default function EventCreatorDashboardPage() {
       <button
         type="button"
         onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?view=dashboard`, { scroll: false })}
-        className="inline-flex items-center gap-2 rounded-2xl border border-emerald-950 bg-emerald-100 px-4 py-2.5 text-sm font-extrabold text-emerald-950 shadow-sm shadow-emerald-950/10 transition hover:bg-emerald-200"
+        className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-surface-muted px-4 py-2.5 text-sm font-extrabold text-bm-text shadow-sm shadow-bm-border/20 transition hover:bg-bm-surface-raised"
       >
         <BarChart3 className="h-4 w-4" />
         Dashboard
@@ -358,7 +358,7 @@ export default function EventCreatorDashboardPage() {
         href={TICKET_VALIDATOR_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 rounded-2xl border border-green-600 bg-green-600 px-4 py-2.5 text-sm font-extrabold text-bm-on-brand shadow-sm transition hover:bg-green-700"
+        className="inline-flex items-center gap-2 rounded-2xl border border-bm-brand bg-bm-brand px-4 py-2.5 text-sm font-extrabold text-bm-on-brand shadow-sm transition hover:bg-bm-brand-hover"
       >
         <ExternalLink className="h-4 w-4" />
         Open Ticket Validator
