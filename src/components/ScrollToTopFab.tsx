@@ -25,7 +25,7 @@ export default function ScrollToTopFab({ show, onClick }: ScrollToTopFabProps) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16, scale: 0.92 }}
           onClick={onClick}
-          className="fixed bottom-[80px] right-5 sm:bottom-[80px] sm:right-6 z-[110] h-12 w-12 rounded-full bg-bm-brand hover:bg-bm-brand-hover text-white shadow-xl shadow-zinc-400/30 flex items-center justify-center"
+          className="fixed bottom-[80px] right-5 sm:bottom-[80px] sm:right-6 z-[110] h-12 w-12 rounded-full bg-bm-brand hover:bg-bm-brand-hover text-bm-on-brand shadow-xl shadow-bm-brand/20 flex items-center justify-center"
           aria-label="Scroll to top"
         >
           <ArrowUp className="w-5 h-5" />
