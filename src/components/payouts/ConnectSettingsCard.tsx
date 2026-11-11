@@ -119,7 +119,7 @@ export default function ConnectSettingsCard({
               type="button"
               onClick={onDisconnect}
               disabled={connectLoading}
-              className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-2.5 text-sm font-bold text-bm-danger hover:bg-bm-danger-bg disabled:cursor-not-allowed disabled:opacity-60"
             >
               Revoke access token
             </button>
@@ -128,7 +128,7 @@ export default function ConnectSettingsCard({
       </div>
 
       {connectError ? (
-        <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+        <div className="mt-4 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm font-semibold text-bm-danger">
           {connectError}
         </div>
       ) : null}
