@@ -58,7 +58,7 @@ export default function PaymentsHubPage() {
                     <action.icon className="h-4 w-4" />
                   </span>
                   <span>{action.label}</span>
-                  <ChevronRight className="ml-auto h-4 w-4 text-bm-on-brand" />
+                  <ChevronRight className="ml-auto h-4 w-4 text-bm-text-subtle" />
                 </button>
               </li>
             ))}
