@@ -110,7 +110,7 @@ function statusClass(status: string) {
     case "draft":
       return "border-sky-200 bg-sky-50 text-sky-700";
     default:
-      return "border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle text-zinc-700 dark:text-bm-text-muted";
+      return "border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-muted dark:text-bm-text-muted";
   }
 }
 
@@ -126,14 +126,14 @@ function MetricCard({
   icon: ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="rounded-[1.5rem] border border-zinc-200 dark:border-bm-border bg-white p-4 shadow-sm shadow-zinc-200/30">
+    <div className="rounded-[1.5rem] border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm shadow-zinc-200/30">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">{label}</p>
-          <p className="mt-2 text-2xl font-black tracking-tight text-zinc-950 dark:text-bm-text">{value}</p>
-          {helper ? <p className="mt-1 text-xs font-medium text-zinc-500 dark:text-bm-text-subtle">{helper}</p> : null}
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">{label}</p>
+          <p className="mt-2 text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">{value}</p>
+          {helper ? <p className="mt-1 text-xs font-medium text-bm-text-subtle dark:text-bm-text-subtle">{helper}</p> : null}
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-50 dark:bg-bm-surface-subtle text-zinc-700 dark:text-bm-text-muted">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-muted dark:text-bm-text-muted">
           <Icon className="h-5 w-5" />
         </div>
       </div>
@@ -156,8 +156,8 @@ function ActionButton({
     variant === "danger"
       ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
       : variant === "ghost"
-        ? "border-zinc-200 dark:border-bm-border bg-white text-zinc-900 dark:text-bm-text hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
-        : "border-zinc-900 bg-zinc-950 text-white hover:bg-zinc-800";
+        ? "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
+        : "border-bm-brand bg-bm-brand text-bm-on-brand hover:bg-bm-brand-hover";
 
   return (
     <button
@@ -358,7 +358,7 @@ export default function EventCreatorDashboardPage() {
         href={TICKET_VALIDATOR_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 rounded-2xl border border-green-600 bg-green-600 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700"
+        className="inline-flex items-center gap-2 rounded-2xl border border-green-600 bg-green-600 px-4 py-2.5 text-sm font-extrabold text-bm-on-brand shadow-sm transition hover:bg-green-700"
       >
         <ExternalLink className="h-4 w-4" />
         Open Ticket Validator
@@ -377,7 +377,7 @@ export default function EventCreatorDashboardPage() {
         headerActions={dashboardButton}
         childrenSectionClassName="w-full"
       >
-        <div className="flex items-center justify-center gap-3 rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-10 text-zinc-600 dark:text-bm-text-muted shadow-sm">
+        <div className="flex items-center justify-center gap-3 rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-10 text-bm-text-muted dark:text-bm-text-muted shadow-sm">
           <Loader2 className="h-5 w-5 animate-spin" /> Loading manage events...
         </div>
       </AccountPageShell>
@@ -395,9 +395,9 @@ export default function EventCreatorDashboardPage() {
         headerActions={dashboardButton}
         childrenSectionClassName="w-full"
       >
-        <div className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-10 text-center shadow-sm">
-          <h2 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-bm-text">Login required</h2>
-          <p className="mt-3 text-sm text-zinc-500 dark:text-bm-text-subtle">Sign in before opening the event manager.</p>
+        <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-10 text-center shadow-sm">
+          <h2 className="text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">Login required</h2>
+          <p className="mt-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">Sign in before opening the event manager.</p>
           <ActionButton onClick={() => navigateToLoginWithReturnPath(EVENTS_MANAGE_PATH)}>Go to Login</ActionButton>
         </div>
       </AccountPageShell>
@@ -432,22 +432,22 @@ export default function EventCreatorDashboardPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
-          <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-4 shadow-sm shadow-zinc-200/30">
-            <div className="flex items-center justify-between gap-2 border-b border-zinc-200 dark:border-bm-border pb-4">
+          <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm shadow-zinc-200/30">
+            <div className="flex items-center justify-between gap-2 border-b border-bm-border dark:border-bm-border pb-4">
               <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">Your events</p>
-                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-950 dark:text-bm-text">Select one event</h2>
-                <p className="mt-1 text-xs font-medium text-zinc-500 dark:text-bm-text-subtle">Click a card to load its action panel.</p>
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle dark:text-bm-text-subtle">Your events</p>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-bm-text dark:text-bm-text">Select one event</h2>
+                <p className="mt-1 text-xs font-medium text-bm-text-subtle dark:text-bm-text-subtle">Click a card to load its action panel.</p>
               </div>
             </div>
 
-            <div className="mt-4 flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-3 py-2.5">
-              <Search className="h-4 w-4 text-zinc-400 dark:text-bm-text-subtle" />
+            <div className="mt-4 flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-3 py-2.5">
+              <Search className="h-4 w-4 text-bm-text-subtle dark:text-bm-text-subtle" />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search title, venue, organizer"
-                className="w-full bg-transparent text-sm font-medium text-zinc-900 dark:text-bm-text outline-none placeholder:text-zinc-400"
+                className="w-full bg-transparent text-sm font-medium text-bm-text dark:text-bm-text outline-none placeholder:text-bm-text-subtle"
               />
             </div>
 
@@ -461,7 +461,7 @@ export default function EventCreatorDashboardPage() {
                     type="button"
                     onClick={() => setStatus(item)}
                     className={`rounded-full border px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] transition ${
-                      active ? "border-zinc-950 bg-zinc-950 text-white" : "border-zinc-200 dark:border-bm-border bg-white text-zinc-500 dark:text-bm-text-subtle hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
+                      active ? "border-zinc-950 bg-bm-brand text-bm-on-brand" : "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text-subtle dark:text-bm-text-subtle hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
                     }`}
                   >
                     {label}
@@ -472,7 +472,7 @@ export default function EventCreatorDashboardPage() {
 
             <div className="mt-4 space-y-3">
               {filteredEvents.length === 0 ? (
-                <div className="rounded-[1.5rem] border border-dashed border-zinc-200 dark:border-bm-border bg-zinc-50/60 dark:bg-bm-surface-subtle/60 p-5 text-sm text-zinc-600 dark:text-bm-text-muted">
+                <div className="rounded-[1.5rem] border border-dashed border-bm-border dark:border-bm-border bg-bm-surface-muted/60 dark:bg-bm-surface-subtle/60 p-5 text-sm text-bm-text-muted dark:text-bm-text-muted">
                   No events matched this filter.
                   <div className="mt-4">
                     <ActionButton onClick={() => navigateToPath(EVENTS_CREATE_PATH)}>
@@ -491,17 +491,17 @@ export default function EventCreatorDashboardPage() {
                       onClick={() => handleSelectEvent(event.id)}
                       className={`w-full rounded-[1.5rem] border p-4 text-left transition ${
                         active
-                          ? "border-zinc-950 bg-zinc-950 text-white shadow-lg shadow-zinc-950/10"
-                          : "border-zinc-200 dark:border-bm-border bg-white hover:bg-zinc-50 dark:hover:bg-bm-surface-muted"
+                          ? "border-zinc-950 bg-bm-brand text-bm-on-brand shadow-lg shadow-zinc-950/10"
+                          : "border-bm-border dark:border-bm-border bg-bm-surface hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className={`text-[10px] font-extrabold uppercase tracking-[0.2em] ${active ? "text-white/60" : "text-zinc-400 dark:text-bm-text-subtle"}`}>
+                          <p className={`text-[10px] font-extrabold uppercase tracking-[0.2em] ${active ? "text-bm-on-brand/60" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
                             {event.event_type}
                           </p>
                           <h3 className="mt-1 truncate text-base font-black tracking-tight">{event.event_title}</h3>
-                          <p className={`mt-1 text-sm ${active ? "text-white/75" : "text-zinc-500 dark:text-bm-text-subtle"}`}>
+                          <p className={`mt-1 text-sm ${active ? "text-bm-on-brand/75" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
                             {formatDate(event.event_date)} • {formatMoney(event.ticket_price)}
                           </p>
                         </div>
@@ -509,10 +509,10 @@ export default function EventCreatorDashboardPage() {
                           {event.status}
                         </span>
                       </div>
-                      <div className={`mt-3 text-sm ${active ? "text-white/75" : "text-zinc-500 dark:text-bm-text-subtle"}`}>
+                      <div className={`mt-3 text-sm ${active ? "text-bm-on-brand/75" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
                         {event.venue || "Venue unavailable"}
                       </div>
-                      <div className={`mt-3 flex flex-wrap gap-2 text-[11px] font-bold ${active ? "text-white/80" : "text-zinc-500 dark:text-bm-text-subtle"}`}>
+                      <div className={`mt-3 flex flex-wrap gap-2 text-[11px] font-bold ${active ? "text-bm-on-brand/80" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
                         <span className="rounded-full border border-current/10 px-3 py-1">{event.tickets_sold} sold</span>
                         <span className="rounded-full border border-current/10 px-3 py-1">{formatMoney(event.gross_revenue_amount)}</span>
                       </div>
@@ -523,9 +523,9 @@ export default function EventCreatorDashboardPage() {
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm shadow-zinc-200/30">
+          <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm shadow-zinc-200/30">
             {!selectedEvent ? (
-              <div className="rounded-[1.75rem] border border-dashed border-zinc-200 dark:border-bm-border bg-zinc-50/70 p-6 text-sm text-zinc-600 dark:text-bm-text-muted">
+              <div className="rounded-[1.75rem] border border-dashed border-bm-border dark:border-bm-border bg-bm-surface-muted/70 p-6 text-sm text-bm-text-muted dark:text-bm-text-muted">
                 {allEvents.length === 0 ? (
                   <>
                     Your event manager is empty. Create one event first, then control everything from here.
@@ -541,21 +541,21 @@ export default function EventCreatorDashboardPage() {
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="flex flex-col gap-4 rounded-[1.75rem] border border-zinc-200 dark:border-bm-border bg-zinc-50/70 p-5 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex flex-col gap-4 rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted/70 p-5 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">Selected event</p>
-                    <h2 className="mt-1 text-3xl font-black tracking-[-0.05em] text-zinc-950 dark:text-bm-text">{selectedEvent.event_title}</h2>
-                    <p className="mt-2 text-sm font-medium text-zinc-600 dark:text-bm-text-muted">
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle dark:text-bm-text-subtle">Selected event</p>
+                    <h2 className="mt-1 text-3xl font-black tracking-[-0.05em] text-bm-text dark:text-bm-text">{selectedEvent.event_title}</h2>
+                    <p className="mt-2 text-sm font-medium text-bm-text-muted dark:text-bm-text-muted">
                       {selectedEvent.organizer_name} • {selectedEvent.venue || "Venue unavailable"} • {selectedEvent.location || "Location unavailable"}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span className={`rounded-full border px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] ${statusClass(selectedEvent.status)}`}>
                         {selectedEvent.status}
                       </span>
-                      <span className="rounded-full border border-zinc-200 dark:border-bm-border bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-500 dark:text-bm-text-subtle">
+                      <span className="rounded-full border border-bm-border dark:border-bm-border bg-bm-surface px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">
                         {formatDate(selectedEvent.event_date)}
                       </span>
-                      <span className="rounded-full border border-zinc-200 dark:border-bm-border bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-500 dark:text-bm-text-subtle">
+                      <span className="rounded-full border border-bm-border dark:border-bm-border bg-bm-surface px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">
                         {selectedEvent.ticket_mode}
                       </span>
                     </div>
@@ -599,54 +599,54 @@ export default function EventCreatorDashboardPage() {
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
-                  <section className="rounded-[1.75rem] border border-zinc-200 dark:border-bm-border bg-white p-5">
-                    <div className="flex items-center justify-between gap-3 border-b border-zinc-200 dark:border-bm-border pb-4">
+                  <section className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5">
+                    <div className="flex items-center justify-between gap-3 border-b border-bm-border dark:border-bm-border pb-4">
                       <div>
-                        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">Event details</p>
-                        <h3 className="mt-1 text-lg font-black tracking-tight text-zinc-950 dark:text-bm-text">Key information</h3>
+                        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle dark:text-bm-text-subtle">Event details</p>
+                        <h3 className="mt-1 text-lg font-black tracking-tight text-bm-text dark:text-bm-text">Key information</h3>
                       </div>
                     </div>
-                    <div className="mt-4 space-y-3 text-sm text-zinc-600 dark:text-bm-text-muted">
+                    <div className="mt-4 space-y-3 text-sm text-bm-text-muted dark:text-bm-text-muted">
                       <p>
-                        <span className="font-bold text-zinc-900 dark:text-bm-text">Date:</span> {formatDate(selectedEvent.event_date)}
+                        <span className="font-bold text-bm-text dark:text-bm-text">Date:</span> {formatDate(selectedEvent.event_date)}
                       </p>
                       <p>
-                        <span className="font-bold text-zinc-900 dark:text-bm-text">Time:</span> {selectedEvent.start_time || "—"}
+                        <span className="font-bold text-bm-text dark:text-bm-text">Time:</span> {selectedEvent.start_time || "—"}
                       </p>
                       <p>
-                        <span className="font-bold text-zinc-900 dark:text-bm-text">Venue:</span> {selectedEvent.venue || "—"}
+                        <span className="font-bold text-bm-text dark:text-bm-text">Venue:</span> {selectedEvent.venue || "—"}
                       </p>
                       <p>
-                        <span className="font-bold text-zinc-900 dark:text-bm-text">Location:</span> {selectedEvent.location || "—"}
+                        <span className="font-bold text-bm-text dark:text-bm-text">Location:</span> {selectedEvent.location || "—"}
                       </p>
                       <p>
-                        <span className="font-bold text-zinc-900 dark:text-bm-text">Ticket mode:</span> {selectedEvent.ticket_mode || "—"}
+                        <span className="font-bold text-bm-text dark:text-bm-text">Ticket mode:</span> {selectedEvent.ticket_mode || "—"}
                       </p>
                       <p>
-                        <span className="font-bold text-zinc-900 dark:text-bm-text">Ticket price:</span> {formatMoney(selectedEvent.ticket_price)}
+                        <span className="font-bold text-bm-text dark:text-bm-text">Ticket price:</span> {formatMoney(selectedEvent.ticket_price)}
                       </p>
                     </div>
                   </section>
 
-                  <section className="rounded-[1.75rem] border border-zinc-200 dark:border-bm-border bg-white p-5">
-                    <div className="flex items-center justify-between gap-3 border-b border-zinc-200 dark:border-bm-border pb-4">
+                  <section className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5">
+                    <div className="flex items-center justify-between gap-3 border-b border-bm-border dark:border-bm-border pb-4">
                       <div>
-                        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400 dark:text-bm-text-subtle">Creator status</p>
-                        <h3 className="mt-1 text-lg font-black tracking-tight text-zinc-950 dark:text-bm-text">Account snapshot</h3>
+                        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-bm-text-subtle dark:text-bm-text-subtle">Creator status</p>
+                        <h3 className="mt-1 text-lg font-black tracking-tight text-bm-text dark:text-bm-text">Account snapshot</h3>
                       </div>
                     </div>
-                    <div className="mt-4 space-y-3 text-sm text-zinc-600 dark:text-bm-text-muted">
+                    <div className="mt-4 space-y-3 text-sm text-bm-text-muted dark:text-bm-text-muted">
                       <p>
-                        <span className="font-bold text-zinc-900 dark:text-bm-text">Creator:</span> {creatorProfile?.display_name || "—"}
+                        <span className="font-bold text-bm-text dark:text-bm-text">Creator:</span> {creatorProfile?.display_name || "—"}
                       </p>
                       <p>
-                        <span className="font-bold text-zinc-900 dark:text-bm-text">Organization:</span> {creatorProfile?.organization_name || "—"}
+                        <span className="font-bold text-bm-text dark:text-bm-text">Organization:</span> {creatorProfile?.organization_name || "—"}
                       </p>
                       <p>
-                        <span className="font-bold text-zinc-900 dark:text-bm-text">Status:</span> {creatorProfile?.status || "—"}
+                        <span className="font-bold text-bm-text dark:text-bm-text">Status:</span> {creatorProfile?.status || "—"}
                       </p>
                       <p>
-                        <span className="font-bold text-zinc-900 dark:text-bm-text">Active until:</span> {activeUntil || "—"}
+                        <span className="font-bold text-bm-text dark:text-bm-text">Active until:</span> {activeUntil || "—"}
                       </p>
                     </div>
                   </section>
