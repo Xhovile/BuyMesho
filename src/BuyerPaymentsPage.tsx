@@ -15,9 +15,9 @@ import type { OrderBundle } from "./lib/orderApi";
 type PaymentFilter = "all" | "pending" | "paid" | "rejected" | "error";
 
 function statusPillClass(status: "pending" | "paid" | "rejected" | "error") {
-  if (status === "paid") return "bg-emerald-100 text-emerald-700";
-  if (status === "rejected") return "bg-amber-100 text-amber-800";
-  if (status === "error") return "bg-red-100 text-red-700";
+  if (status === "paid") return "bg-bm-success-bg text-bm-success";
+  if (status === "rejected") return "bg-bm-warning-bg text-bm-warning";
+  if (status === "error") return "bg-bm-danger-bg text-bm-danger";
   return "bg-bm-surface-raised dark:bg-bm-skeleton text-bm-text-muted dark:text-bm-text-muted";
 }
 
@@ -142,7 +142,7 @@ function BuyerPaymentsPageContent() {
           <button
             type="button"
             onClick={handleClearLogs}
-            className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-brand px-4 py-3 text-sm font-bold text-white hover:bg-bm-brand-hover"
+            className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-brand px-4 py-3 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"
           >
             <Trash2 className="h-4 w-4" />
             Clear logs
@@ -178,7 +178,7 @@ function BuyerPaymentsPageContent() {
                 onClick={() => toggleFilter(key)}
                 className={`group flex min-h-[5.75rem] flex-col justify-between rounded-2xl border px-3.5 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:px-4 ${
                   active
-                    ? "border-bm-border bg-bm-brand text-white shadow-zinc-950/15"
+                    ? "border-bm-brand bg-bm-brand text-bm-on-brand shadow-bm-brand/20"
                     : "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text hover:border-bm-border hover:bg-bm-surface"
                 }`}
                 aria-pressed={active}
@@ -187,7 +187,7 @@ function BuyerPaymentsPageContent() {
                   <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${active ? "text-bm-on-brand" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
                     {label}
                   </p>
-                  <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] ${active ? "bg-bm-surface/15 text-white" : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-subtle dark:text-bm-text-subtle group-hover:bg-bm-surface-raised/70"}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] ${active ? "bg-bm-on-brand/15 text-bm-on-brand" : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-subtle dark:text-bm-text-subtle group-hover:bg-bm-surface-raised/70"}`}>
                     Sort
                   </span>
                 </div>
@@ -217,7 +217,7 @@ function BuyerPaymentsPageContent() {
         </div>
 
         {error ? (
-          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="mt-6 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">
             {error}
           </div>
         ) : null}
@@ -262,7 +262,7 @@ function BuyerPaymentsPageContent() {
                       event.stopPropagation();
                       openTracking(record.reference, record.flowType);
                     }}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-brand px-4 py-2.5 text-sm font-bold text-white hover:bg-bm-brand-hover"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"
                   >
                     Order Details
                     <ArrowUpRight className="h-4 w-4" />
