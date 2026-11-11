@@ -68,7 +68,7 @@ export default function SellerOrdersView() {
 
   if (profileLoading) {
     return (
-      <main className="min-h-screen grid place-items-center bg-zinc-50 text-sm font-semibold text-zinc-500">
+      <main className="min-h-screen grid place-items-center bg-bm-bg text-sm font-semibold text-bm-text-subtle">
         <div className="flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           <span>Loading Seller Orders</span>
@@ -79,13 +79,13 @@ export default function SellerOrdersView() {
 
   if (!profile?.is_seller) {
     return (
-      <main className="min-h-screen grid place-items-center bg-zinc-50 px-6 text-center">
+      <main className="min-h-screen grid place-items-center bg-bm-bg px-6 text-center">
         <div>
-          <p className="font-extrabold text-zinc-900">Seller access required</p>
+          <p className="font-extrabold text-bm-text">Seller access required</p>
           <button
             type="button"
             onClick={navigateToSellerHub}
-            className="mt-3 text-sm font-bold text-zinc-600 hover:text-zinc-950"
+            className="mt-3 text-sm font-bold text-bm-text-muted hover:text-bm-text"
           >
             Back to Workspace
           </button>
@@ -137,16 +137,16 @@ export default function SellerOrdersView() {
   return (
     <>
       <MarketHeaderBar subtitle="Seller Orders" />
-      <main className="min-h-screen bg-zinc-50 px-4 py-6 md:px-8">
+      <main className="min-h-screen bg-bm-bg px-4 py-6 md:px-8">
         <div className="mx-auto max-w-6xl">
           <div className="relative flex flex-col items-center py-1">
-            <h1 className="text-center text-4xl font-black uppercase tracking-tight text-zinc-950 sm:text-5xl">
+            <h1 className="text-center text-4xl font-black uppercase tracking-tight text-bm-text sm:text-5xl">
               Seller Orders
             </h1>
             <button
               type="button"
               onClick={() => void loadOrders(true)}
-              className="mt-4 inline-flex self-start items-center gap-2 rounded-xl border border-zinc-950 bg-zinc-950 px-3 py-2 text-xs font-bold text-white hover:bg-black md:absolute md:right-0 md:top-1/2 md:mt-0 md:-translate-y-1/2"
+              className="mt-4 inline-flex self-start items-center gap-2 rounded-xl border border-bm-brand bg-bm-brand px-3 py-2 text-xs font-bold text-bm-on-brand hover:bg-bm-brand-hover md:absolute md:right-0 md:top-1/2 md:mt-0 md:-translate-y-1/2"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Refresh
             </button>
@@ -173,7 +173,7 @@ export default function SellerOrdersView() {
                     setFilter("disputed");
                     setDisputedFilter("pending");
                   }}
-                  className="rounded-xl border border-amber-300 bg-white px-3 py-2 text-xs font-extrabold text-amber-900 hover:bg-amber-100"
+                  className="rounded-xl border border-amber-300 bg-bm-surface px-3 py-2 text-xs font-extrabold text-amber-900 hover:bg-amber-100"
                 >
                   View pending disputes
                 </button>
@@ -185,14 +185,14 @@ export default function SellerOrdersView() {
                     key={bundle.order.id}
                     type="button"
                     onClick={() => openOrder(bundle)}
-                    className="group hidden first:block w-full rounded-2xl border border-amber-200 bg-white p-4 text-left transition hover:border-amber-300 hover:shadow-sm md:block"
+                    className="group hidden first:block w-full rounded-2xl border border-amber-200 bg-bm-surface p-4 text-left transition hover:border-amber-300 hover:shadow-sm md:block"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-black text-zinc-950">
+                        <p className="truncate text-sm font-black text-bm-text">
                           {bundle.order.items[0]?.title ?? "Order"}
                         </p>
-                        <p className="mt-1 text-xs text-zinc-500">
+                        <p className="mt-1 text-xs text-bm-text-subtle">
                           {bundle.order.id} · {bundle.order.buyerDetails?.fullName ?? "Buyer"}
                         </p>
                       </div>
@@ -205,7 +205,7 @@ export default function SellerOrdersView() {
                                 bundle.refundRequest?.requestedResolution,
                             )}
                           </p>
-                          <p className="mt-1 text-xs font-semibold text-zinc-500">
+                          <p className="mt-1 text-xs font-semibold text-bm-text-subtle">
                             {money(bundle.order)}
                           </p>
                         </div>
@@ -218,7 +218,7 @@ export default function SellerOrdersView() {
             </section>
           ) : null}
 
-          <div className="sticky top-16 z-30 -mx-4 mt-6 bg-zinc-50/95 px-4 py-3 backdrop-blur-sm md:-mx-8 md:px-8">
+          <div className="sticky top-16 z-30 -mx-4 mt-6 bg-bm-bg/95 px-4 py-3 backdrop-blur-sm md:-mx-8 md:px-8">
             <div className="flex gap-2 overflow-x-auto pb-2">
               {FILTERS.map((item) => {
                 const count = getFilterCount(orders, item.key, disputedFilter);
@@ -232,16 +232,16 @@ export default function SellerOrdersView() {
                     }}
                     className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-xs font-extrabold transition ${
                       filter === item.key
-                        ? "bg-zinc-950 text-white"
-                        : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:bg-zinc-100"
+                        ? "bg-bm-brand text-bm-on-brand"
+                        : "bg-bm-surface text-bm-text-muted ring-1 ring-bm-border hover:bg-bm-surface-muted"
                     }`}
                   >
                     {item.label}
                     <span
                       className={`rounded-full px-1.5 py-0.5 text-[10px] ${
                         filter === item.key
-                          ? "bg-white/15 text-white"
-                          : "bg-zinc-100 text-zinc-500"
+                          ? "bg-bm-surface/15 text-bm-on-brand"
+                          : "bg-bm-surface-muted text-bm-text-subtle"
                       }`}
                     >
                       {count}
@@ -254,7 +254,7 @@ export default function SellerOrdersView() {
             {filter === "disputed" ? (
               <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Dispute status">
                 {([
-                  ["all", "All", "bg-zinc-900 text-white"],
+                  ["all", "All", "bg-bm-brand text-bm-on-brand"],
                   ["pending", "Pending", "bg-amber-100 text-amber-900"],
                   ["settled", "Settled", "bg-emerald-100 text-emerald-900"],
                 ] as const).map(([key, label, activeClass]) => (
@@ -267,7 +267,7 @@ export default function SellerOrdersView() {
                     className={`rounded-xl px-4 py-2 text-xs font-black ${
                       disputedFilter === key
                         ? activeClass
-                        : "bg-white text-zinc-600 ring-1 ring-zinc-200"
+                        : "bg-bm-surface text-bm-text-muted ring-1 ring-bm-border"
                     }`}
                   >
                     {label}{" "}
@@ -289,16 +289,16 @@ export default function SellerOrdersView() {
           ) : null}
 
           {loading ? (
-            <div className="mt-8 rounded-3xl border border-zinc-200 bg-white p-10 text-center text-sm font-semibold text-zinc-500">
+            <div className="mt-8 rounded-3xl border border-bm-border bg-bm-surface p-10 text-center text-sm font-semibold text-bm-text-subtle">
               <div className="flex items-center justify-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                 <span>Loading Seller Orders</span>
               </div>
             </div>
           ) : filteredOrders.length === 0 ? (
-            <div className="mt-8 rounded-3xl border border-zinc-200 bg-white p-10 text-center">
-              <Package className="mx-auto h-8 w-8 text-zinc-300" />
-              <p className="mt-3 font-extrabold text-zinc-800">No orders in this view.</p>
+            <div className="mt-8 rounded-3xl border border-bm-border bg-bm-surface p-10 text-center">
+              <Package className="mx-auto h-8 w-8 text-bm-text-subtle" />
+              <p className="mt-3 font-extrabold text-bm-text">No orders in this view.</p>
             </div>
           ) : (
             <div className="mt-5 space-y-3">
@@ -307,28 +307,28 @@ export default function SellerOrdersView() {
                   key={bundle.order.id}
                   type="button"
                   onClick={() => openOrder(bundle)}
-                  className="group w-full rounded-2xl border border-zinc-200 bg-white p-4 text-left shadow-sm transition hover:border-zinc-300 hover:shadow-md"
+                  className="group w-full rounded-2xl border border-bm-border bg-bm-surface p-4 text-left shadow-sm transition hover:border-bm-border hover:shadow-md"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-black text-zinc-950">
+                      <p className="truncate text-sm font-black text-bm-text">
                         {bundle.order.items[0]?.title ?? "Order"}
                       </p>
-                      <p className="mt-1 text-xs text-zinc-500">
+                      <p className="mt-1 text-xs text-bm-text-subtle">
                         {bundle.order.id} · {bundle.order.buyerDetails?.fullName ?? "Buyer"}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <p className="text-sm font-black text-zinc-950">{money(bundle.order)}</p>
-                        <p className="mt-1 text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">
+                        <p className="text-sm font-black text-bm-text">{money(bundle.order)}</p>
+                        <p className="mt-1 text-[10px] font-extrabold uppercase tracking-wider text-bm-text-subtle">
                           {orderStatusLabel(bundle)}
                         </p>
                       </div>
                       {isPendingDispute(bundle) ? (
                         <ShieldAlert className="h-4 w-4 text-amber-600" />
                       ) : null}
-                      <ChevronRight className="h-4 w-4 text-zinc-400" />
+                      <ChevronRight className="h-4 w-4 text-bm-text-subtle" />
                     </div>
                   </div>
                 </button>
@@ -339,7 +339,7 @@ export default function SellerOrdersView() {
           <button
             type="button"
             onClick={navigateToSellerHub}
-            className="mt-8 text-sm font-bold text-zinc-500 hover:text-zinc-950"
+            className="mt-8 text-sm font-bold text-bm-text-subtle hover:text-bm-text"
           >
             Back to Workspace
           </button>
