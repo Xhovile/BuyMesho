@@ -62,8 +62,8 @@ function TabButton({
       className={[
         "px-4 py-2 rounded-xl text-sm font-bold transition",
         active
-          ? "bg-zinc-700 text-white shadow-sm shadow-zinc-700/30"
-          : "bg-bm-surface-raised dark:bg-bm-skeleton text-bm-text-muted dark:text-bm-text-muted hover:text-bm-text hover:bg-zinc-300",
+          ? "bg-bm-brand text-bm-on-brand shadow-sm shadow-bm-brand/20"
+          : "bg-bm-surface-raised dark:bg-bm-skeleton text-bm-text-muted dark:text-bm-text-muted hover:text-bm-text hover:bg-bm-surface-muted",
         className,
       ].join(" ")}
     >
@@ -91,7 +91,7 @@ function StatCard({
 
   return (
     <div className="bg-bm-surface rounded-2xl border border-bm-border dark:border-bm-border p-4 shadow-sm">
-      <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase">{label}</p>
+      <p className="text-xs font-bold text-bm-text-subtle uppercase">{label}</p>
       <p className={`text-2xl font-extrabold mt-1 ${accentStyles[accent]}`}>{value}</p>
     </div>
   );
@@ -110,9 +110,9 @@ function EmptyState({
     <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-10 shadow-sm text-center">
       <div className="w-20 h-20 bg-bm-surface-muted dark:bg-bm-surface-muted rounded-full flex items-center justify-center mx-auto mb-4">
         {icon === "shield" ? (
-          <ShieldCheck className="w-8 h-8 text-zinc-300" />
+          <ShieldCheck className="w-8 h-8 text-bm-text-subtle" />
         ) : (
-          <ShieldAlert className="w-8 h-8 text-zinc-300" />
+          <ShieldAlert className="w-8 h-8 text-bm-text-subtle" />
         )}
       </div>
       <h3 className="text-lg font-bold text-bm-text dark:text-bm-text">{title}</h3>
@@ -145,7 +145,7 @@ function MessageReportCard({
             <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-bm-warning-bg text-bm-warning border border-bm-warning/35">
               {report.status}
             </span>
-            <span className="text-xs text-zinc-400 dark:text-bm-text-subtle font-bold">#{report.id}</span>
+            <span className="text-xs text-bm-text-subtle font-bold">#{report.id}</span>
           </div>
 
           <div>
@@ -161,38 +161,38 @@ function MessageReportCard({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
-              <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Reporter UID</p>
+              <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Reporter UID</p>
               <p className="text-bm-text dark:text-bm-text-muted break-all">{report.reporter_uid}</p>
             </div>
             <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
-              <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Reported UID</p>
+              <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Reported UID</p>
               <p className="text-bm-text dark:text-bm-text-muted break-all">{report.reported_uid || "Unknown"}</p>
             </div>
             <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
-              <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Conversation</p>
+              <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Conversation</p>
               <p className="text-bm-text dark:text-bm-text-muted">{report.conversation_id ?? "Unknown conversation"}</p>
             </div>
             <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
-              <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Buyer</p>
+              <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Buyer</p>
               <p className="text-bm-text dark:text-bm-text-muted break-all">{buyerLabel}</p>
             </div>
             <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
-              <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Seller</p>
+              <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Seller</p>
               <p className="text-bm-text dark:text-bm-text-muted break-all">{sellerLabel}</p>
             </div>
             <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
-              <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Listing</p>
+              <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Listing</p>
               <p className="text-bm-text dark:text-bm-text-muted">{listingLabel}</p>
             </div>
             {report.message_id ? (
               <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
-                <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Message</p>
+                <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Message</p>
                 <p className="text-bm-text dark:text-bm-text-muted">Message #{report.message_id}</p>
               </div>
             ) : null}
             {report.message_body ? (
               <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
-                <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Reported Message</p>
+                <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Reported Message</p>
                 <p className="text-bm-text dark:text-bm-text-muted whitespace-pre-wrap break-words">{report.message_body}</p>
               </div>
             ) : null}
@@ -200,7 +200,7 @@ function MessageReportCard({
 
           {report.details ? (
             <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-4">
-              <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Details</p>
+              <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Details</p>
               <p className="text-sm text-bm-text-muted dark:text-bm-text-muted whitespace-pre-wrap">{report.details}</p>
             </div>
           ) : null}
@@ -211,7 +211,7 @@ function MessageReportCard({
             <button
               type="button"
               onClick={() => navigateToPath(`/admin/messages?conversation=${report.conversation_id}`)}
-              className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-bold"
+              className="px-4 py-2 rounded-xl bg-bm-brand hover:bg-bm-brand-hover text-bm-on-brand text-sm font-bold"
             >
               Open Conversation
             </button>
@@ -276,7 +276,7 @@ function ContentReportCard({
             >
               {report.status}
             </span>
-            <span className="text-xs text-zinc-400 dark:text-bm-text-subtle font-bold">#{report.id}</span>
+            <span className="text-xs text-bm-text-subtle font-bold">#{report.id}</span>
           </div>
 
           <div>
@@ -292,28 +292,28 @@ function ContentReportCard({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
-              <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Reason</p>
+              <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Reason</p>
               <p className="text-bm-text dark:text-bm-text-muted">{report.reason}</p>
             </div>
 
             <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
-              <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Reporter Email</p>
+              <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Reporter Email</p>
               <p className="text-bm-text dark:text-bm-text-muted">{report.reporter_email || "Unknown"}</p>
             </div>
 
             <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3 md:col-span-2">
-              <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Target</p>
+              <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Target</p>
               <p className="text-bm-text dark:text-bm-text-muted">{targetName}</p>
             </div>
 
             {isListing ? (
               <>
                 <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
-                  <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Listing Visibility</p>
+                  <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Listing Visibility</p>
                   <p className="text-bm-text dark:text-bm-text-muted">{report.listing_is_hidden === 1 ? "Hidden" : "Visible"}</p>
                 </div>
                 <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
-                  <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Seller Status</p>
+                  <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Seller Status</p>
                   <p className="text-bm-text dark:text-bm-text-muted">
                     {report.seller_is_suspended === 1 ? "Suspended" : "Active"}
                   </p>
@@ -322,13 +322,13 @@ function ContentReportCard({
             ) : (
               <>
                 <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
-                  <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Seller Status</p>
+                  <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Seller Status</p>
                   <p className="text-bm-text dark:text-bm-text-muted">
                     {report.seller_is_suspended === 1 ? "Suspended" : "Active"}
                   </p>
                 </div>
                 <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-3">
-                  <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Seller ID</p>
+                  <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Seller ID</p>
                   <p className="text-bm-text dark:text-bm-text-muted break-all">{report.seller_uid || "Unknown"}</p>
                 </div>
               </>
@@ -337,7 +337,7 @@ function ContentReportCard({
 
           {report.details ? (
             <div className="bg-bm-surface-muted dark:bg-bm-surface-subtle rounded-2xl p-4">
-              <p className="text-xs font-bold text-zinc-400 dark:text-bm-text-subtle uppercase mb-1">Details</p>
+              <p className="text-xs font-bold text-bm-text-subtle uppercase mb-1">Details</p>
               <p className="text-sm text-bm-text-muted dark:text-bm-text-muted whitespace-pre-wrap">{report.details}</p>
             </div>
           ) : null}
@@ -592,7 +592,7 @@ export default function AdminReportsPage() {
                 <span className="text-bm-brand">Buy</span>
                 <span className="text-bm-text-muted dark:text-bm-text-muted">Mesho</span>
               </p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-bm-text-subtle">
                 Admin moderation
               </p>
             </div>
@@ -648,7 +648,7 @@ export default function AdminReportsPage() {
                 void fetchChatReports();
               }
             }}
-            className="px-4 py-3 bg-zinc-900 text-white rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+            className="px-4 py-3 bg-bm-brand text-bm-on-brand rounded-xl font-bold hover:bg-bm-brand-hover transition-colors flex items-center justify-center gap-2"
           >
             <RefreshCw className="w-4 h-4" />
             Refresh
@@ -660,7 +660,7 @@ export default function AdminReportsPage() {
         <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 sm:p-8 shadow-sm mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">
                 Admin
               </p>
               <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-bm-text dark:text-bm-text">
@@ -674,7 +674,7 @@ export default function AdminReportsPage() {
             </div>
 
             <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-5 py-4 min-w-[220px]">
-              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle">
                 Current view
               </p>
               <p className="mt-2 text-2xl font-black tracking-tight text-bm-text dark:text-bm-text">
