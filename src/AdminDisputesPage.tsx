@@ -312,7 +312,7 @@ export default function AdminDisputesPage() {
 
       {detailOpen && selected ? (
         <div
-          className="fixed inset-0 z-[80] bg-zinc-950/55 backdrop-blur-sm"
+          className="fixed inset-0 z-[80] bg-bm-overlay backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-labelledby="admin-dispute-detail-title"
