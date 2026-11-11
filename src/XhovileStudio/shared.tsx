@@ -47,7 +47,7 @@ export function StudioBackToTop() {
       title="Back to top"
       className="group fixed bottom-5 right-4 z-[120] flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#168cff] via-[#8f1528] to-[#ff1d25] p-[1px] shadow-[0_10px_30px_rgba(15,15,15,0.22)] transition hover:-translate-y-0.5 sm:bottom-6 sm:right-6"
     >
-      <span className="flex h-full w-full items-center justify-center rounded-full bg-bm-surface text-[#8f1528] transition group-hover:bg-bm-surface-muted">
+      <span className="flex h-full w-full items-center justify-center rounded-full border border-[#1f2937]/25 bg-bm-surface text-[#8f1528] transition group-hover:bg-bm-surface-muted dark:border-white/70">
         <ArrowUp className="h-5 w-5" />
       </span>
     </button>

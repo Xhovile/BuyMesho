@@ -262,7 +262,7 @@ export default function MarketSection({
         <button
           type="button"
           onClick={() => setShowMoreFilters((prev) => !prev)}
-          className="inline-flex h-[48px] items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-sm font-extrabold text-bm-text dark:text-bm-text shadow-sm md:hidden"
+          className="inline-flex h-[48px] items-center gap-2 rounded-2xl border border-bm-border bg-bm-surface px-4 text-sm font-extrabold text-bm-text shadow-sm transition-all hover:-translate-y-0.5 hover:bg-bm-surface-muted hover:shadow-md active:translate-y-px dark:border-bm-border dark:bg-bm-surface dark:text-bm-text dark:hover:bg-bm-surface-muted md:hidden"
         >
           <Funnel className="h-4 w-4" />
           Filters

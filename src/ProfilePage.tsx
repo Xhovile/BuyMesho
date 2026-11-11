@@ -5,12 +5,14 @@ import {
   Loader2,
   Lock,
   LogOut,
+  Palette,
   Settings,
   ShieldCheck,
   User,
 } from "lucide-react";
 import { signOut } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
+import SettingsAppearanceSection from "./components/settings/SettingsAppearanceSection";
 import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
 import { apiFetch } from "./lib/api";
@@ -29,6 +31,7 @@ export default function ProfilePage() {
   const { firebaseUser, authLoading, profile, profileLoading, emailVerified } =
     useAccountProfile();
   const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
   const avatarUrl = getAvatarUrl(profile, firebaseUser);
   const profileActionsDisabled = !emailVerified;
   const displayName =
@@ -254,6 +257,25 @@ export default function ProfilePage() {
 
                 <button
                   type="button"
+                  onClick={() => setAppearanceOpen(true)}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted transition-colors"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="w-10 h-10 rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted flex items-center justify-center shrink-0">
+                      <Palette className="w-5 h-5 text-bm-text-muted dark:text-bm-text-muted" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-bm-text dark:text-bm-text">Change Theme</span>
+                      <span className="hidden md:block text-sm text-bm-text-subtle dark:text-bm-text-subtle">
+                        Choose Light, Dark, or System appearance.
+                      </span>
+                    </span>
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-bm-text-subtle dark:text-bm-text-subtle shrink-0" />
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => navigateToPath("/change-password")}
                   disabled={profileActionsDisabled}
                   className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted transition-colors disabled:cursor-not-allowed disabled:bg-bm-surface-muted dark:disabled:bg-bm-surface-muted disabled:opacity-50"
@@ -308,6 +330,10 @@ export default function ProfilePage() {
               onClose={() => setFeedback(null)}
             />
           )}
+          <SettingsAppearanceSection
+            open={appearanceOpen}
+            onClose={() => setAppearanceOpen(false)}
+          />
         </div>
       )}
     </AccountPageShell>

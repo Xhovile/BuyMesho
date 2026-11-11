@@ -46,7 +46,7 @@ export function RouteLoader() {
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center bg-white px-6 py-8"
+      className="flex min-h-screen items-center justify-center bg-bm-bg px-6 py-8 text-bm-text"
       role="status"
       aria-live="polite"
       aria-label="Loading BuyMesho"
@@ -59,7 +59,7 @@ export function RouteLoader() {
             fill="none"
             aria-hidden="true"
           >
-            <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="1.5" className="text-zinc-100" />
+            <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="1.5" className="text-bm-border" />
             <circle
               cx="48"
               cy="48"
@@ -68,7 +68,7 @@ export function RouteLoader() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeDasharray="125 126"
-              className="text-red-600"
+              className="text-bm-brand"
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
@@ -82,9 +82,9 @@ export function RouteLoader() {
           </div>
         </div>
         <h1 className="mt-7 text-2xl font-black tracking-tight sm:text-3xl" aria-label="BuyMesho">
-          <span className="text-[#991b1b]">Buy</span><span className="text-[#3f3f46]">Mesho</span>
+          <span className="text-bm-brand">Buy</span><span className="text-bm-text">Mesho</span>
         </h1>
-        <p className="mt-2 max-w-xs text-sm font-medium leading-6 text-zinc-500 dark:text-bm-text-subtle sm:max-w-sm sm:text-base">
+        <p className="mt-2 max-w-xs text-sm font-medium leading-6 text-bm-text-muted sm:max-w-sm sm:text-base">
           Malawi&apos;s Secure E-commerce Platform
         </p>
       </div>
@@ -109,11 +109,11 @@ export class DebugErrorBoundary extends Component<{ children: ReactNode }, { has
   override render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-white p-6 text-zinc-900 dark:text-bm-text">
-          <div className="mx-auto max-w-3xl rounded-2xl border border-rose-200 bg-rose-50 p-5">
-            <h2 className="text-lg font-black text-rose-900">Admin Payouts crashed</h2>
-            <p className="mt-2 text-sm text-rose-900/90">{this.state.error?.message}</p>
-            <pre className="mt-4 overflow-auto rounded-xl bg-white p-4 text-xs leading-6 text-zinc-800 dark:text-bm-text-muted">{this.state.error?.stack}</pre>
+        <div className="min-h-screen bg-bm-bg p-6 text-bm-text">
+          <div className="mx-auto max-w-3xl rounded-2xl border border-bm-danger/35 bg-bm-surface p-5">
+            <h2 className="text-lg font-black text-bm-danger">Admin Payouts crashed</h2>
+            <p className="mt-2 text-sm text-bm-text-muted">{this.state.error?.message}</p>
+            <pre className="mt-4 overflow-auto rounded-xl bg-bm-surface-muted p-4 text-xs leading-6 text-bm-text-muted">{this.state.error?.stack}</pre>
           </div>
         </div>
       );

@@ -6,6 +6,7 @@ import { apiFetch } from "../lib/api";
 import { ENDPOINTS } from "../shared/api/endpoints";
 import { touchBuyerPaymentFromCheckout } from "../lib/buyerState";
 import BuyerDetailsForm, { type BuyerDeliveryDetails } from "./checkout/BuyerDetailsForm";
+import { PayChanguLogo } from "../XhovileStudio/shared";
 
 type CheckoutStep = "form" | "loading" | "success" | "error";
 type SettlementRoute = "escrow" | "connect";
@@ -84,7 +85,7 @@ const settlementOptions: Array<{
     route: "escrow",
     label: "Pay and confirm later",
     description: "Funds are held until delivery is confirmed.",
-    buttonClassName: "border-bm-brand bg-bm-brand text-bm-on-brand shadow-sm hover:-translate-y-0.5 hover:bg-bm-brand-hover hover:shadow-md",
+    buttonClassName: "border-[#8f1528] bg-[#8f1528] text-white shadow-[0_8px_24px_rgba(143,21,40,0.22)] hover:-translate-y-0.5 hover:bg-[#741121] hover:shadow-lg active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8f1528]/40 focus-visible:ring-offset-2",
   },
   // Direct seller payments are hidden until PayChangu Connect is ready to enable.
   // {
@@ -286,7 +287,8 @@ export default function CheckoutModal({
               {step === "success" && (
                 <div className="flex flex-col items-center gap-4 py-6">
                   <CheckCircle2 className="h-12 w-12 text-bm-success" />
-                  <p className="text-sm font-bold text-bm-text dark:text-bm-text-muted">Redirecting you to the payment page…</p>
+                  <PayChanguLogo />
+                  <p className="text-sm font-bold text-bm-text dark:text-bm-text-muted">Redirecting to PayChangu…</p>
                 </div>
               )}
 

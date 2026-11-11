@@ -262,21 +262,21 @@ class AppErrorBoundary extends Component<
   override render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-zinc-50 px-4 py-10 flex items-center justify-center">
-          <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-6 text-center shadow-lg">
-            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#438c7c]">
+        <div className="flex min-h-screen items-center justify-center bg-bm-bg px-4 py-10 text-bm-text">
+          <div className="w-full max-w-md rounded-3xl border border-bm-border bg-bm-surface p-6 text-center shadow-lg">
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-bm-brand">
               BuyMesho
             </p>
-            <h1 className="mt-3 text-2xl font-black text-zinc-900">
+            <h1 className="mt-3 text-2xl font-black text-bm-text">
               Something went wrong
             </h1>
-            <p className="mt-2 text-sm text-zinc-600">
+            <p className="mt-2 text-sm text-bm-text-muted">
               The app hit an unexpected error. Reload the page to try again.
             </p>
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="mt-5 inline-flex items-center justify-center rounded-2xl bg-[#438c7c] px-4 py-2.5 text-sm font-bold text-white hover:opacity-90"
+              className="mt-5 inline-flex items-center justify-center rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"
             >
               Reload page
             </button>
