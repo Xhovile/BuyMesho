@@ -210,7 +210,7 @@ export default function AdminAuditLogPage() {
       onRefresh={() => void load()}
     >
       {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">
           {error}
         </div>
       ) : null}
@@ -327,7 +327,7 @@ export default function AdminAuditLogPage() {
                 : `Showing ${rows.length} results`}
             </div>
 
-            <table className="min-w-full divide-y divide-zinc-200 dark:divide-bm-border text-sm">
+            <table className="min-w-full divide-y divide-bm-border text-sm">
               <thead className="bg-bm-surface-muted dark:bg-bm-surface-subtle">
                 <tr>
                   <th className="w-12 px-3 py-3 text-left font-black text-bm-text-subtle dark:text-bm-text-subtle">
@@ -348,7 +348,7 @@ export default function AdminAuditLogPage() {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
+              <tbody className="divide-y divide-bm-border-subtle">
                 {rows.map((row) => {
                   const detailEntries = orderedDetailEntries(row.details);
                   const isExpanded = Boolean(expandedRows[row.id]);
@@ -374,7 +374,7 @@ export default function AdminAuditLogPage() {
                               )}
                             </button>
                           ) : (
-                            <span className="text-zinc-300">—</span>
+                            <span className="text-bm-text-subtle">—</span>
                           )}
                         </td>
 
