@@ -108,14 +108,14 @@ export function EventCard({ item }: { item: EventCardItem }) {
 
           <div className="mt-3 grid gap-2 text-xs text-bm-text-muted">
             <div className="flex items-center gap-2">
-              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-red-900" />
+              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-bm-brand" />
               <span className="font-semibold text-bm-text-muted">{date}</span>
               <span className="text-bm-text-subtle">•</span>
               <span>{time}</span>
             </div>
 
             <div className="flex items-start gap-2">
-              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-900" />
+              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-bm-brand" />
               <span className="leading-relaxed text-bm-text-muted line-clamp-2">
                 {item.venue}
                 {item.location ? " • " + item.location : ""}
