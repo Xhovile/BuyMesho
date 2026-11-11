@@ -136,7 +136,7 @@ export default function PhoneMfaSetupModal({
                     value={verificationCode}
                     onChange={(e) => onVerificationCodeChange(e.target.value)}
                     placeholder="Enter 6-digit code"
-                    className="w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-base outline-none placeholder:text-bm-text-subtle focus:ring-2 focus:ring-zinc-900/10"
+                    className="w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-base outline-none placeholder:text-bm-text-subtle focus:ring-2 focus:ring-bm-focus/10"
                   />
                 </div>
               )}
