@@ -42,11 +42,11 @@ export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
           {item.description || description}
         </p>
 
-        <p className="mt-3 text-base font-bold text-red-900">
+        <p className="mt-3 text-base font-bold text-bm-brand">
           MWK {Number(item.price).toLocaleString()}
         </p>
 
-        <div className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-red-900">
+        <div className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-bm-brand">
           Open listing <ArrowRight className="h-3.5 w-3.5" />
         </div>
       </div>
