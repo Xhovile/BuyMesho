@@ -64,13 +64,13 @@ export default function AccountPageShell({
   const childrenWrapperClassName =
     childrenSectionClassName ||
     (isProfilePage
-      ? "overflow-hidden rounded-[2rem] border border-white/70 dark:border-bm-border bg-bm-surface shadow-[0_24px_70px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/40"
+      ? "overflow-hidden rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface shadow-[0_24px_70px_rgba(15,23,42,0.12)] ring-1 ring-bm-border"
       : "w-full");
 
   return (
     <div className="min-h-screen bg-bm-bg text-bm-text dark:text-bm-text">
       {!hideNavigation && (
-        <header className="sticky top-0 z-40 border-b border-white/70 dark:border-bm-border bg-bm-surface/85 dark:bg-bm-surface/85 shadow-sm backdrop-blur-md">
+        <header className="sticky top-0 z-40 border-b border-bm-border dark:border-bm-border bg-bm-surface/85 dark:bg-bm-surface/85 shadow-sm backdrop-blur-md">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
             <BrandMark />
             <div className="flex items-center gap-3">
@@ -95,7 +95,7 @@ export default function AccountPageShell({
               <button
                 type="button"
                 onClick={() => navigateToPath(EXPLORE_PATH)}
-                className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+                className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-slate-800"
               >
                 <ShoppingBag className="h-4 w-4" />
                 Market
@@ -108,14 +108,14 @@ export default function AccountPageShell({
       <main className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8">
         <div className="space-y-6 sm:space-y-8">
           {showBrandHero && (
-            <div className="flex items-center justify-between gap-4 rounded-[2rem] border border-white/80 bg-bm-surface/90 dark:bg-bm-surface/90 px-5 py-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+            <div className="flex items-center justify-between gap-4 rounded-[2rem] border border-bm-border bg-bm-surface/90 dark:bg-bm-surface/90 px-5 py-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-sm">
               <BrandMark subtitle={brandHeroSubtitle} />
               <button
                 type="button"
                 onClick={() => navigateBackOrPath(HOME_PATH)}
                 aria-label="Go back"
                 title="Go back"
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-red-900 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-900 focus-visible:ring-offset-2 active:bg-red-100"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-bm-brand transition-colors hover:bg-bm-danger-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bm-brand focus-visible:ring-offset-2 active:bg-bm-danger-bg"
               >
                 <ArrowLeft className="h-6 w-6" strokeWidth={2.5} />
               </button>
@@ -124,7 +124,7 @@ export default function AccountPageShell({
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-slate-400">{eyebrow}</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle">{eyebrow}</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-bm-text dark:text-bm-text sm:text-4xl">{title}</h1>
               <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-bm-text-muted dark:text-bm-text-muted sm:text-base">{description}</p>
             </div>
@@ -134,7 +134,7 @@ export default function AccountPageShell({
                 <button
                   type="button"
                   onClick={onBack || (() => navigateBackOrPath(EXPLORE_PATH))}
-                  className={backButtonClassName || "inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-black px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"}
+                  className={backButtonClassName || "inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-black px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"}
                 >
                   <ChevronLeft className="h-4 w-4" />
                   {backLabel}
