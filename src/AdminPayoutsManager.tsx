@@ -909,7 +909,7 @@ export default function AdminPayoutsManager() {
 
         <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-zinc-200 dark:divide-bm-border text-sm">
+            <table className="min-w-full divide-y divide-bm-border dark:divide-bm-border text-sm">
               <thead className="bg-bm-surface-muted dark:bg-bm-surface-subtle text-left text-bm-text-subtle dark:text-bm-text-subtle">
                 <tr>
                   <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Status</th>
@@ -919,7 +919,7 @@ export default function AdminPayoutsManager() {
                   <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Updated</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-bm-border-subtle">
+              <tbody className="divide-y divide-bm-border-subtle dark:divide-bm-border-subtle">
                 {filteredRows.map((row) => (
                   <tr key={row.id} className="cursor-pointer hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted" onClick={() => handleOpenDrawer(row.id)}>
                     <td className="px-4 py-4">
