@@ -105,7 +105,7 @@ export default function SellOnlineMalawiPage() {
                 >
                   <span className="guide-chapter-number text-2xl sm:text-3xl">{section.number}</span>
                   <span>{section.label}</span>
-                  <ArrowRight className="ml-auto h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="ml-auto h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5" />
                 </a>
               ))}
             </div>
@@ -213,11 +213,11 @@ export default function SellOnlineMalawiPage() {
           <div className="flex flex-wrap gap-x-6 gap-y-2 border-t border-bm-border pt-4">
             <a href={SELLER_HUB_PATH} className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
               Open Seller Workspace
-              <ArrowRight className="h-4 w-4 text-blue-600 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="h-4 w-4 text-bm-brand transition-transform group-hover:translate-x-0.5" />
             </a>
             <a href={SELLER_MESSAGES_PATH} className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
               Open Messages
-              <MessageSquareText className="h-4 w-4 text-blue-600" />
+              <MessageSquareText className="h-4 w-4 text-bm-brand" />
             </a>
           </div>
         </GuideSection>
@@ -245,7 +245,7 @@ export default function SellOnlineMalawiPage() {
 
           <a href="/create" className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
             Create a listing
-            <ArrowRight className="h-4 w-4 text-blue-600" />
+            <ArrowRight className="h-4 w-4 text-bm-brand" />
           </a>
         </GuideSection>
 
@@ -273,7 +273,7 @@ export default function SellOnlineMalawiPage() {
 
           <a href={SELLER_MESSAGES_PATH} className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
             Open Seller Messages
-            <ArrowRight className="h-4 w-4 text-blue-600" />
+            <ArrowRight className="h-4 w-4 text-bm-brand" />
           </a>
         </GuideSection>
 
@@ -312,7 +312,7 @@ export default function SellOnlineMalawiPage() {
 
           <a href={SELLER_ORDERS_PATH} className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
             Open Seller Orders
-            <ArrowRight className="h-4 w-4 text-blue-600" />
+            <ArrowRight className="h-4 w-4 text-bm-brand" />
           </a>
         </GuideSection>
 
@@ -349,7 +349,7 @@ export default function SellOnlineMalawiPage() {
 
           <a href={SELLER_PAYOUTS_MANAGE_PATH} className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
             Open Earnings
-            <WalletCards className="h-4 w-4 text-blue-600" />
+            <WalletCards className="h-4 w-4 text-bm-brand" />
           </a>
         </GuideSection>
 
@@ -376,7 +376,7 @@ export default function SellOnlineMalawiPage() {
           </div>
 
           <div className="flex items-start gap-3 border-t border-bm-border pt-5">
-            <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-bm-warning" />
             <p className="text-sm leading-6 text-bm-text-muted">
               Seller approval and a Verified badge are platform signals, not guarantees that every listing, delivery, payment,
               or transaction outcome will be successful. Buyers and sellers should still communicate clearly and keep relevant records.
@@ -397,7 +397,7 @@ export default function SellOnlineMalawiPage() {
           <div className="mt-7 border border-bm-border bg-bm-surface">
             <div className="grid gap-4 border-b border-bm-border p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
               <div className="flex items-start gap-2">
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-bm-brand" />
                 <p className="text-sm font-extrabold text-bm-text">Account security</p>
               </div>
               <p className="text-sm leading-6 text-bm-text-muted">
@@ -407,7 +407,7 @@ export default function SellOnlineMalawiPage() {
             </div>
             <div className="grid gap-4 border-b border-bm-border p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:p-6">
               <div className="flex items-start gap-2">
-                <WalletCards className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                <WalletCards className="mt-0.5 h-4 w-4 shrink-0 text-bm-brand" />
                 <p className="text-sm font-extrabold text-bm-text">Settlement protection</p>
               </div>
               <p className="text-sm leading-6 text-bm-text-muted">
@@ -423,15 +423,15 @@ export default function SellOnlineMalawiPage() {
               <div className="flex flex-wrap gap-x-6 gap-y-2">
                 <a href="/become-seller" className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
                   Apply to become a seller
-                  <ArrowRight className="h-4 w-4 text-blue-600" />
+                  <ArrowRight className="h-4 w-4 text-bm-brand" />
                 </a>
                 <a href="/explore/sellers" className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
                   View Sellers on BuyMesho
-                  <ArrowRight className="h-4 w-4 text-blue-600" />
+                  <ArrowRight className="h-4 w-4 text-bm-brand" />
                 </a>
                 <a href="/buy-online-malawi" className="group inline-flex items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg">
                   Looking to buy instead?
-                  <ArrowRight className="h-4 w-4 text-blue-600" />
+                  <ArrowRight className="h-4 w-4 text-bm-brand" />
                 </a>
               </div>
             </div>
@@ -452,7 +452,7 @@ export default function SellOnlineMalawiPage() {
               className="group inline-flex shrink-0 items-center gap-2 py-2 text-base font-extrabold text-[#74152f] hover:text-[#560d22] sm:text-lg"
             >
               Open Market
-              <ArrowRight className="h-4 w-4 text-blue-600" />
+              <ArrowRight className="h-4 w-4 text-bm-brand" />
             </a>
           </div>
         </section>
