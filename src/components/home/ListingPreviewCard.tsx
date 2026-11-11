@@ -23,7 +23,7 @@ export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
     <button
       type="button"
       onClick={() => navigateToListingDetails(item.id)}
-      className="group flex h-full w-full flex-col bg-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
+      className="group flex h-full w-full flex-col bg-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-bm-focus/40"
     >
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-bm-surface-muted dark:bg-bm-surface-muted">
         <ListingImage
