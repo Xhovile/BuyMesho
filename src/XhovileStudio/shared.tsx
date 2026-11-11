@@ -155,10 +155,10 @@ export function ChoiceButton({
 }) {
   const activeClass =
     accent === "blue"
-      ? "border-[#168cff] bg-[#eef8ff] text-zinc-950"
+      ? "border-[#168cff] bg-bm-surface-muted text-bm-text"
       : accent === "red"
-        ? "border-[#ff1d25] bg-[#fff1f1] text-zinc-950"
-        : "border-[#8f1528]/30 bg-[#f8f3ef] text-zinc-950";
+        ? "border-[#ff1d25] bg-bm-surface-muted text-bm-text"
+        : "border-[#8f1528]/30 bg-bm-surface-muted text-bm-text";
 
   return (
     <button
@@ -203,7 +203,7 @@ export function GraphicServicePicker({
   }, [open]);
 
   const borderClass = accent === "blue" ? "focus-within:border-[#168cff]" : "focus-within:border-[#ff1d25]";
-  const highlightClass = accent === "blue" ? "bg-[#eef8ff] text-zinc-950" : "bg-[#fff1f1] text-zinc-950";
+  const highlightClass = accent === "blue" ? "bg-bm-brand/10 text-bm-text" : "bg-bm-danger-bg text-bm-text";
 
   return (
     <div className="relative">
@@ -326,7 +326,7 @@ export function StudioCheckoutButton({
     <div className="relative h-12">
       {floating ? (
         <div className="pointer-events-none fixed inset-x-3 bottom-3 z-[100] mx-auto w-auto max-w-2xl sm:bottom-5 sm:w-[calc(100%-3rem)]">
-          <div className="pointer-events-auto rounded-[15px] border border-black bg-bm-surface/95 p-1.5 shadow-[0_12px_35px_rgba(30,25,20,0.18)] backdrop-blur-md">
+          <div className="pointer-events-auto rounded-[15px] border border-bm-border bg-bm-surface/95 p-1.5 shadow-[0_12px_35px_rgba(30,25,20,0.18)] backdrop-blur-md">
             {button}
           </div>
         </div>
