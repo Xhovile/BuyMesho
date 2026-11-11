@@ -235,7 +235,7 @@ export default function ReferenceUploader({
         </div>
       ) : null}
 
-      {referenceError ? <p className="mt-2 rounded-lg bg-red-50 px-2.5 py-2 text-[10px] font-semibold text-red-700">{referenceError}</p> : null}
+      {referenceError ? <p className="mt-2 rounded-lg bg-bm-danger-bg px-2.5 py-2 text-[10px] font-semibold text-bm-danger">{referenceError}</p> : null}
     </section>
 
   );
