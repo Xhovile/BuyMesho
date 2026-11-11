@@ -27,15 +27,15 @@ export default function ListingStudioFields({
   const conditionConfig = getConditionConfig(form.category);
 
   return (
-    <section className="space-y-5 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+    <section className="space-y-5 rounded-3xl border border-bm-border bg-bm-surface p-5 shadow-sm sm:p-6">
       <div>
-        <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">Listing details</p>
-        <h2 className="mt-1 text-lg font-black text-zinc-900">Give buyers the essentials</h2>
+        <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle">Listing details</p>
+        <h2 className="mt-1 text-lg font-black text-bm-text">Give buyers the essentials</h2>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Product Name *</label>
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-bm-text-subtle">Product Name *</label>
           <input
             type="text"
             value={form.name}
@@ -43,21 +43,21 @@ export default function ListingStudioFields({
               clearError("name");
               setForm((prev) => ({ ...prev, name: event.target.value }));
             }}
-            className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.name ? "border-red-500" : "border-zinc-200"}`}
+            className={`w-full rounded-2xl border bg-bm-surface px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.name ? "border-red-500" : "border-bm-border"}`}
             placeholder="What are you selling?"
           />
           {fieldErrors.name ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.name}</p> : null}
         </div>
 
         <div className="md:col-span-2">
-          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Description *</label>
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-bm-text-subtle">Description *</label>
           <textarea
             value={form.description}
             onChange={(event) => {
               clearError("description");
               setForm((prev) => ({ ...prev, description: event.target.value }));
             }}
-            className={`h-32 w-full resize-none rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.description ? "border-red-500" : "border-zinc-200"}`}
+            className={`h-32 w-full resize-none rounded-2xl border bg-bm-surface px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.description ? "border-red-500" : "border-bm-border"}`}
             placeholder="Explain what the buyer should know about this listing."
           />
           {fieldErrors.description ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.description}</p> : null}
@@ -131,7 +131,7 @@ export default function ListingStudioFields({
         />
 
         <div>
-          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Quantity *</label>
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-bm-text-subtle">Quantity *</label>
           <input
             type="number"
             min="1"
@@ -140,13 +140,13 @@ export default function ListingStudioFields({
               clearError("quantity");
               setForm((prev) => ({ ...prev, quantity: event.target.value }));
             }}
-            className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.quantity ? "border-red-500" : "border-zinc-200"}`}
+            className={`w-full rounded-2xl border bg-bm-surface px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.quantity ? "border-red-500" : "border-bm-border"}`}
           />
           {fieldErrors.quantity ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.quantity}</p> : null}
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Sold quantity</label>
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-bm-text-subtle">Sold quantity</label>
           <input
             type="number"
             min="0"
@@ -155,7 +155,7 @@ export default function ListingStudioFields({
               clearError("sold_quantity");
               setForm((prev) => ({ ...prev, sold_quantity: event.target.value }));
             }}
-            className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.sold_quantity ? "border-red-500" : "border-zinc-200"}`}
+            className={`w-full rounded-2xl border bg-bm-surface px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.sold_quantity ? "border-red-500" : "border-bm-border"}`}
           />
           {fieldErrors.sold_quantity ? <p className="mt-1 text-xs font-semibold text-red-600">{fieldErrors.sold_quantity}</p> : null}
         </div>
