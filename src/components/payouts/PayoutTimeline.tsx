@@ -31,8 +31,8 @@ function getLatestPayout(payouts: PayoutRecord[]) {
 }
 
 function stepIcon(state: StepState) {
-  if (state === "done") return <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
-  if (state === "warning") return <TriangleAlert className="h-4 w-4 text-amber-600" />;
+  if (state === "done") return <CheckCircle2 className="h-4 w-4 text-bm-success" />;
+  if (state === "warning") return <TriangleAlert className="h-4 w-4 text-bm-warning" />;
   if (state === "active") return <Clock3 className="h-4 w-4 text-indigo-600" />;
   return <Circle className="h-4 w-4 text-bm-text-subtle" />;
 }
@@ -118,10 +118,10 @@ export default function PayoutTimeline({ payouts }: PayoutTimelineProps) {
         <div
           className={`mt-4 rounded-2xl border p-4 ${
             paid
-              ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+              ? "border-bm-border bg-bm-success-bg text-bm-text"
               : blocked
-                ? "border-amber-200 bg-amber-50 text-amber-950"
-                : "border-sky-200 bg-sky-50 text-sky-950"
+                ? "border-bm-border bg-bm-warning-bg text-bm-text"
+                : "border-bm-border bg-bm-surface-muted text-bm-text"
           }`}
         >
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-current/60">
