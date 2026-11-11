@@ -84,7 +84,7 @@ const settlementOptions: Array<{
     route: "escrow",
     label: "Pay and confirm later",
     description: "Funds are held until delivery is confirmed.",
-    buttonClassName: "border-orange-800 bg-orange-700 text-bm-on-brand shadow-[0_18px_34px_-18px_rgba(154,52,18,0.75)] ring-1 ring-orange-950/10 hover:-translate-y-0.5 hover:bg-orange-800 hover:shadow-[0_22px_42px_-18px_rgba(154,52,18,0.85)]",
+    buttonClassName: "border-bm-brand bg-bm-brand text-bm-on-brand shadow-sm hover:-translate-y-0.5 hover:bg-bm-brand-hover hover:shadow-md",
   },
   // Direct seller payments are hidden until PayChangu Connect is ready to enable.
   // {
@@ -285,7 +285,7 @@ export default function CheckoutModal({
 
               {step === "success" && (
                 <div className="flex flex-col items-center gap-4 py-6">
-                  <CheckCircle2 className="h-12 w-12 text-emerald-500" />
+                  <CheckCircle2 className="h-12 w-12 text-bm-success" />
                   <p className="text-sm font-bold text-bm-text dark:text-bm-text-muted">Redirecting you to the payment page…</p>
                 </div>
               )}
@@ -355,7 +355,7 @@ export default function CheckoutModal({
                   </div>
 
                   {error && (
-                    <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div>
+                    <div className="rounded-2xl border border-bm-danger/35 bg-bm-danger-bg px-4 py-3 text-sm font-semibold text-bm-danger">{error}</div>
                   )}
 
                   <div className="sticky bottom-0 z-10 space-y-3">
