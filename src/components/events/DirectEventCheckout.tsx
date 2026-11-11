@@ -83,17 +83,17 @@ export default function DirectEventCheckout({
 
   return (
     <>
-      <div className="mt-3 overflow-hidden rounded-2xl border border-orange-200 bg-bm-surface">
+      <div className="mt-3 overflow-hidden rounded-2xl border border-bm-border bg-bm-surface">
         <div className="flex items-stretch">
           <button
             type="button"
             onClick={handleBuy}
-            className="relative z-20 flex flex-1 items-center justify-center bg-orange-700 px-4 py-3 text-sm font-extrabold text-bm-on-brand transition-colors hover:bg-orange-800"
+            className="relative z-20 flex flex-1 items-center justify-center bg-bm-brand px-4 py-3 text-sm font-extrabold text-bm-on-brand transition-colors hover:bg-bm-brand-hover"
             aria-label={"Buy ticket for " + eventTitle}
           >
             Buy Ticket
           </button>
-          <div className="flex min-w-[6.5rem] items-center justify-center border-l border-orange-200 bg-bm-surface px-4 py-3 text-sm font-black tracking-tight text-bm-text">
+          <div className="flex min-w-[6.5rem] items-center justify-center border-l border-bm-border bg-bm-surface px-4 py-3 text-sm font-black tracking-tight text-bm-text">
             {price}
           </div>
         </div>
