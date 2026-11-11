@@ -57,10 +57,10 @@ type PayoutSortMode = "recent" | "paid" | "failed" | "held";
 
 const TONE_CLASSES: Record<Tone, string> = {
   zinc: "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-muted dark:text-bm-text-muted border-bm-border dark:border-bm-border",
-  emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  amber: "bg-amber-50 text-amber-700 border-amber-200",
-  rose: "bg-rose-50 text-rose-700 border-rose-200",
-  blue: "bg-blue-50 text-blue-700 border-blue-200",
+  emerald: "bg-bm-success-bg text-bm-success border-bm-success/25",
+  amber: "bg-bm-warning-bg text-bm-warning border-bm-warning/25",
+  rose: "bg-bm-danger-bg text-bm-danger border-bm-danger/25",
+  blue: "bg-bm-surface-muted text-bm-text-muted border-bm-border",
 };
 
 function toText(value: unknown, fallback = "—"): string {
@@ -147,7 +147,7 @@ function SummaryCard({ label, value, detail, tone = "zinc" }: { label: string; v
 
 function DiagnosticCard({ diagnostic }: { diagnostic: Diagnostic }) {
   return (
-    <div className={`rounded-2xl border p-4 shadow-sm ${diagnostic.tone === "emerald" ? "border-emerald-200 bg-emerald-50/70" : diagnostic.tone === "amber" ? "border-amber-200 bg-amber-50/70" : diagnostic.tone === "rose" ? "border-rose-200 bg-rose-50/70" : diagnostic.tone === "blue" ? "border-blue-200 bg-blue-50/70" : "border-bm-border dark:border-bm-border bg-bm-surface"}`}>
+    <div className={`rounded-2xl border p-4 shadow-sm ${diagnostic.tone === "emerald" ? "border-bm-success/25 bg-bm-success-bg" : diagnostic.tone === "amber" ? "border-bm-warning/25 bg-bm-warning-bg" : diagnostic.tone === "rose" ? "border-bm-danger/25 bg-bm-danger-bg" : diagnostic.tone === "blue" ? "border-bm-border bg-bm-surface-muted" : "border-bm-border dark:border-bm-border bg-bm-surface"}`}>
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-bm-surface/80 dark:bg-bm-surface/90 font-black text-bm-text dark:text-bm-text shadow-sm">
           {diagnostic.tone === "emerald" ? "✓" : diagnostic.tone === "rose" ? "!" : diagnostic.tone === "amber" ? "?" : "i"}
@@ -698,14 +698,14 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
             </form>
           </div>
           {hasSubmittedSearch ? <p className="mt-4 text-sm font-semibold text-bm-text-muted dark:text-bm-text-muted">Search results for <span className="text-bm-text dark:text-bm-text">{submittedQuery}</span>: {matchingPayments.length} linked payment transaction(s){ticketLookup ? " · Event Ticket matched" : ""}{unmatchedPayouts.length ? ` · ${unmatchedPayouts.length} payout-only match(es)` : ""}</p> : null}
-          {ticketLookupError ? <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">{ticketLookupError}</p> : null}
+          {ticketLookupError ? <p className="mt-3 rounded-2xl border border-bm-danger/25 bg-bm-danger-bg px-4 py-3 text-sm font-semibold text-bm-danger">{ticketLookupError}</p> : null}
         </section>
 
         {ticketLookup ? (
-          <section className="rounded-[2rem] border border-blue-200 bg-blue-50/70 p-6 shadow-sm">
+          <section className="rounded-[2rem] border border-bm-border bg-bm-surface-muted p-6 shadow-sm">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">Event Ticket match</p>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-bm-text-muted">Event Ticket match</p>
                 <h2 className="mt-1 break-all text-xl font-black text-bm-text dark:text-bm-text">{String(ticketLookup.ticketId ?? submittedQuery)}</h2>
                 <div className="mt-3 grid gap-x-6 gap-y-2 text-sm text-bm-text-muted dark:text-bm-text-muted sm:grid-cols-2">
                   <span>Event: <strong>{String(ticketLookup.identity?.eventId ?? "—")}</strong></span>
@@ -714,7 +714,7 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
                   <span>Payment: <strong>{String(ticketLookup.transaction?.payment?.reference ?? "—")}</strong></span>
                 </div>
               </div>
-              <span className="inline-flex items-center rounded-full border border-blue-200 bg-bm-surface px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-blue-700">Canonical ticket lookup</span>
+              <span className="inline-flex items-center rounded-full border border-bm-border bg-bm-surface-muted px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-bm-text-muted">Canonical ticket lookup</span>
             </div>
           </section>
         ) : null}
@@ -742,7 +742,7 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
         ) : null}
 
         {hasSubmittedSearch && !latestPayment && !selectedPayout ? (
-          <section className="rounded-[2rem] border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">No transaction records matched that identifier. Try a payment reference, PayChangu reference, order ID, escrow ID, payout ID, buyer email, seller ID, listing/event ID, or webhook reference.</section>
+          <section className="rounded-[2rem] border border-bm-warning/25 bg-bm-warning-bg p-6 text-sm text-bm-warning">No transaction records matched that identifier. Try a payment reference, PayChangu reference, order ID, escrow ID, payout ID, buyer email, seller ID, listing/event ID, or webhook reference.</section>
         ) : null}
 
         {hasSubmittedSearch && (latestPayment || selectedPayout) ? <>
@@ -755,7 +755,7 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
             <p className="mt-2 text-sm text-bm-text-muted dark:text-bm-text-muted">Showing latest order reference: {toText(latestPayment.reference)}</p>
             <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {lifecycleSteps.map((step) => (
-                <div key={step.number} className={`rounded-2xl border p-4 shadow-sm ${step.state === "done" ? "border-emerald-200 bg-emerald-50/70" : step.state === "active" ? "border-blue-200 bg-blue-50/70" : step.state === "issue" ? "border-rose-200 bg-rose-50/70" : "border-bm-border dark:border-bm-border bg-bm-surface"}`}>
+                <div key={step.number} className={`rounded-2xl border p-4 shadow-sm ${step.state === "done" ? "border-bm-success/25 bg-bm-success-bg" : step.state === "active" ? "border-bm-border bg-bm-surface-muted" : step.state === "issue" ? "border-bm-danger/25 bg-bm-danger-bg" : "border-bm-border dark:border-bm-border bg-bm-surface"}`}>
                   <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-bm-surface/80 dark:bg-bm-surface/90 font-black text-bm-text dark:text-bm-text shadow-sm">{step.number}</div>
                     <div className="min-w-0 flex-1">
@@ -768,7 +768,7 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
                         <p>Timestamp: <span className="text-bm-text dark:text-bm-text-muted">{formatDate(step.timestamp)}</span></p>
                         <p>Database record: <span className="break-all text-bm-text dark:text-bm-text-muted">{toText(step.dbRecord)}</span></p>
                         <p>External reference: <span className="break-all text-bm-text dark:text-bm-text-muted">{toText(step.externalRef)}</span></p>
-                        {step.error ? <p className="text-rose-700">Error: {step.error}</p> : null}
+                        {step.error ? <p className="text-bm-danger">Error: {step.error}</p> : null}
                       </div>
                     </div>
                   </div>
@@ -795,8 +795,8 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
             </div>
 
             {integrityHints.length ? (
-              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                <p className="font-black text-amber-950">Mismatch hints</p>
+              <div className="mt-5 rounded-2xl border border-bm-warning/25 bg-bm-warning-bg px-4 py-3 text-sm text-bm-warning">
+                <p className="font-black text-bm-warning">Mismatch hints</p>
                 <ul className="mt-2 space-y-1">
                   {integrityHints.map((hint) => (
                     <li key={hint}>• {hint}</li>
@@ -983,7 +983,7 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
             <div className="space-y-2">
               <p className="text-sm font-black text-bm-text dark:text-bm-text">How to read this page</p>
               <p className="text-sm leading-relaxed text-bm-text-muted dark:text-bm-text-muted">This page is the deep-dive layer. The main admin payments console stays separate; this page focuses on payout state, reconciliation signals, and seller payout history.</p>
-              <p className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700"><CircleAlert className="h-3.5 w-3.5" />Escrow control belongs in the order flow, not here.</p>
+              <p className="inline-flex items-center gap-2 rounded-full border border-bm-warning/25 bg-bm-warning-bg px-3 py-1 text-xs font-bold text-bm-warning"><CircleAlert className="h-3.5 w-3.5" />Escrow control belongs in the order flow, not here.</p>
             </div>
           </div>
         </section>
