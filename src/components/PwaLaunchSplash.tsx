@@ -66,7 +66,7 @@ export default function PwaLaunchSplash() {
         </p>
 
         <div className="relative mx-auto mt-9 h-1 w-28 overflow-hidden rounded-full bg-white/10">
-          <span className="block h-full w-1/2 animate-pwa-launch-progress rounded-full bg-red-500" />
+          <span className="block h-full w-1/2 animate-pwa-launch-progress rounded-full bg-bm-brand" />
         </div>
       </div>
     </div>
