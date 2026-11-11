@@ -315,7 +315,7 @@ export default function ListingCard({
               <button
                 type="button"
                 onClick={handleBuyClick}
-                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-lime-400 px-3 text-xs font-black uppercase tracking-[0.14em] text-bm-text dark:text-bm-text shadow-sm transition-colors hover:bg-lime-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60"
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-bm-border bg-bm-surface px-3 text-xs font-black uppercase tracking-[0.14em] text-bm-brand shadow-sm transition-all hover:-translate-y-0.5 hover:bg-bm-surface-muted hover:shadow-md active:translate-y-px focus:outline-none focus-visible:ring-2 focus-visible:ring-bm-focus/40 dark:border-bm-border dark:bg-bm-surface dark:text-bm-brand dark:hover:bg-bm-surface-muted"
               >
                 <BuyBasketIcon className="h-6 w-6 shrink-0 text-[#8F171D]" />
                 <span>Buy</span>
