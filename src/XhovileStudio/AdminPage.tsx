@@ -109,15 +109,15 @@ function AdminConsole() {
     return (
       <div className="min-h-screen bg-bm-bg p-5 text-bm-text sm:p-8">
         <div className="mx-auto flex min-h-[80vh] max-w-xl items-center justify-center">
-          <div className="w-full rounded-[2rem] border border-red-200 bg-bm-surface p-7 text-center shadow-sm">
-            <XCircle className="mx-auto h-12 w-12 text-red-500" />
+          <div className="w-full rounded-[2rem] border border-bm-danger/25 bg-bm-surface p-7 text-center shadow-sm">
+            <XCircle className="mx-auto h-12 w-12 text-bm-danger" />
             <p className="mt-4 text-xs font-black uppercase tracking-[0.2em] text-bm-text-subtle">Xhovilé Studio</p>
             <h1 className="mt-2 text-2xl font-black tracking-tight">Admin data unavailable</h1>
             <p className="mt-3 text-sm leading-6 text-bm-text-muted">{error}</p>
             <button
               type="button"
               onClick={() => void load(false)}
-              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-black text-white hover:bg-bm-brand-hover"
+              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-black text-bm-on-brand hover:bg-bm-brand-hover"
             >
               <RefreshCw className="h-4 w-4" />
               Try Again
@@ -154,7 +154,7 @@ function AdminConsole() {
               type="button"
               onClick={() => void load(true)}
               disabled={refreshing}
-              className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-black text-white hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-black text-bm-on-brand hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshCw className={(refreshing ? "animate-spin " : "") + "h-4 w-4"} />
               Refresh
@@ -186,8 +186,8 @@ function AdminConsole() {
 
             <div className="rounded-2xl border border-white/10 bg-bm-surface/5 px-4 py-3 text-sm">
               <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                <span className="font-bold text-white">Admin monitoring active</span>
+                <span className="h-2.5 w-2.5 rounded-full bg-bm-success" />
+                <span className="font-bold text-bm-on-brand">Admin monitoring active</span>
               </div>
               <p className="mt-1 text-xs text-bm-text-subtle">
                 {lastRefresh ? "Updated " + formatDate(lastRefresh) : "Waiting for update"}
@@ -244,7 +244,7 @@ function AdminConsole() {
                   <span
                     className={
                       "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-colors " +
-                      (active ? "bg-[#8f1528] text-white" : "bg-bm-surface-muted text-bm-text group-hover:bg-bm-brand-hover group-hover:text-white")
+                      (active ? "bg-bm-brand text-bm-on-brand" : "bg-bm-surface-muted text-bm-text group-hover:bg-bm-brand-hover group-hover:text-bm-on-brand")
                     }
                   >
                     <Icon className="h-5 w-5" />
@@ -253,7 +253,7 @@ function AdminConsole() {
                     <span className="flex items-center gap-2">
                       <span className="text-sm font-black text-bm-text">{item.label}</span>
                       {item.key === "overview" && attentionCount > 0 ? (
-                        <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-black text-red-700 ring-1 ring-red-100">
+                        <span className="rounded-full bg-bm-danger-bg px-2 py-0.5 text-[10px] font-black text-bm-danger ring-1 ring-bm-danger/20">
                           {attentionCount > 99 ? "99+" : attentionCount}
                         </span>
                       ) : null}
@@ -267,7 +267,7 @@ function AdminConsole() {
         </nav>
 
         {error ? (
-          <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="flex items-start gap-3 rounded-2xl border border-bm-warning/25 bg-bm-warning-bg px-4 py-3 text-sm text-bm-warning">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <p>{error} Showing the last successfully loaded snapshot.</p>
           </div>
