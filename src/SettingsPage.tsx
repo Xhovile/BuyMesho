@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { House, ShoppingBag, Loader2 } from "lucide-react";
+import { ChevronRight, House, Palette, ShoppingBag, Loader2 } from "lucide-react";
 import BrandMark from "./components/BrandMark";
 import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
 import TermsPage from "./components/TermsPage";
@@ -113,6 +113,7 @@ export default function SettingsPage() {
   const [savingPrivacyField, setSavingPrivacyField] = useState<
     "profile_visibility" | "seller_visibility" | "saved_visibility" | null
   >(null);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
   const [reauthPassword, setReauthPassword] = useState("");
   const [passwordPromptBusy, setPasswordPromptBusy] = useState(false);
@@ -488,7 +489,6 @@ export default function SettingsPage() {
         </section>
 
         <section className="space-y-4">
-          <SettingsAppearanceSection />
           <SettingsAccountSection
             expanded={expandedSections.account}
             onToggle={() => toggleSection("account")}
@@ -542,8 +542,26 @@ export default function SettingsPage() {
             onToggle={() => toggleSection("helpLegal")}
             onOpenView={(nextView) => openView(nextView)}
           />
+          <button
+            type="button"
+            onClick={() => setAppearanceOpen(true)}
+            className="flex w-full items-center justify-between gap-4 rounded-3xl border border-bm-border bg-bm-surface px-5 py-4 text-left shadow-sm transition-colors hover:bg-bm-surface-muted"
+          >
+            <span className="flex items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-bm-surface-muted">
+                <Palette className="h-5 w-5 text-bm-text-muted" />
+              </span>
+              <span className="font-bold text-bm-text">Change Theme</span>
+            </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-bm-text-subtle" />
+          </button>
         </section>
       </main>
+
+      <SettingsAppearanceSection
+        open={appearanceOpen}
+        onClose={() => setAppearanceOpen(false)}
+      />
 
       <TotpSetupModal
         open={totpSetupOpen}
