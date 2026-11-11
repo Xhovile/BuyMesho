@@ -292,7 +292,7 @@ export default function AdminDisputesPage() {
                   </p>
                   <div
                     className={`mt-3 flex items-center justify-between gap-2 text-[11px] font-bold ${
-                      selectedItem ? "text-bm-on-brand/80" : "text-zinc-400 dark:text-bm-text-subtle"
+                      selectedItem ? "text-bm-on-brand/80" : "text-bm-text-subtle dark:text-bm-text-subtle"
                     }`}
                   >
                     <span>
@@ -321,7 +321,7 @@ export default function AdminDisputesPage() {
             <div className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle shadow-2xl">
               <div className="sticky top-0 z-20 flex items-center justify-between border-b border-bm-border dark:border-bm-border bg-bm-surface/95 dark:bg-bm-surface/95 px-5 py-4 backdrop-blur sm:px-6">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Dispute details</p>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">Dispute details</p>
                   <h2 id="admin-dispute-detail-title" className="mt-1 text-lg font-black text-zinc-950 dark:text-bm-text">
                     Case {selected.id}
                   </h2>
@@ -346,7 +346,7 @@ export default function AdminDisputesPage() {
                 <div className="rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400 dark:text-bm-text-subtle">Case</p>
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">Case</p>
                       <h3 className="mt-1 text-xl font-black">{selected.id}</h3>
                       <p className="mt-1 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                         Order {selected.order_id} · Buyer {selected.buyer_id} · Seller {selected.seller_id}
@@ -525,7 +525,7 @@ export default function AdminDisputesPage() {
                   ) : (
                     <p className="mt-3 text-sm text-bm-text-subtle dark:text-bm-text-subtle">No evidence recorded.</p>
                   )}
-                  <p className="mt-4 text-xs text-zinc-400 dark:text-bm-text-subtle">
+                  <p className="mt-4 text-xs text-bm-text-subtle dark:text-bm-text-subtle">
                     Attempts: {detail?.attempts?.length ?? 0} · Refund transactions: {detail?.refunds?.length ?? 0}
                   </p>
                 </div>
@@ -541,7 +541,7 @@ export default function AdminDisputesPage() {
 function Info({ icon, title, value }: { icon: ReactNode; title: string; value: string }) {
   return (
     <div className="rounded-2xl border border-zinc-100 dark:border-bm-border-subtle bg-bm-surface-muted dark:bg-bm-surface-subtle p-3">
-      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-zinc-400 dark:text-bm-text-subtle">
+      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-bm-text-subtle dark:text-bm-text-subtle">
         {icon}
         {title}
       </div>
