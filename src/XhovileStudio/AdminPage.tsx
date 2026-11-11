@@ -171,10 +171,10 @@ function AdminConsole() {
       </header>
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
-        <section className="overflow-hidden rounded-[2rem] border border-bm-border bg-[#10151a] p-5 text-white shadow-xl sm:p-7">
+        <section className="overflow-hidden rounded-[2rem] border border-bm-border bg-bm-surface-raised p-5 text-bm-text shadow-xl sm:p-7">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="inline-flex items-center rounded-2xl bg-[#8f1528] px-3 py-2">
+              <div className="inline-flex items-center rounded-2xl bg-bm-brand px-3 py-2">
                 <img src={xsLogo} alt="Xhovilé Studio" className="h-9 w-auto" />
               </div>
               <p className="mt-5 text-[10px] font-black uppercase tracking-[0.24em] text-bm-text-subtle">Studio Administration</p>
@@ -184,7 +184,7 @@ function AdminConsole() {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-bm-surface/5 px-4 py-3 text-sm">
+            <div className="rounded-2xl border border-bm-border bg-bm-surface-muted px-4 py-3 text-sm">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-bm-success" />
                 <span className="font-bold text-bm-on-brand">Admin monitoring active</span>
