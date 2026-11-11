@@ -197,7 +197,7 @@ export function RelatedRailCard({
           <button
             type="button"
             onClick={handleBuyClick}
-            className="inline-flex h-9 w-full items-center justify-center rounded-xl bg-lime-400 px-3 text-xs font-black uppercase tracking-[0.14em] text-bm-text shadow-sm transition-colors hover:bg-lime-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60"
+            className="inline-flex h-9 w-full items-center justify-center rounded-xl bg-bm-brand px-3 text-xs font-black uppercase tracking-[0.14em] text-bm-on-brand shadow-sm transition-colors hover:bg-bm-brand-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-bm-focus"
           >
             Buy
           </button>
