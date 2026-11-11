@@ -272,7 +272,7 @@ export default function PaymentReturnPage() {
 
         {status === "success" && (
           <div className="flex flex-col items-center gap-4 text-center">
-            <CheckCircle2 className="h-16 w-16 text-emerald-500" />
+            <CheckCircle2 className="h-16 w-16 text-bm-success" />
             <h1 className="text-2xl font-black text-bm-text dark:text-bm-text">Payment received!</h1>
             <p className="text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted">
               Your payment was received successfully. Opening your tracking page.
@@ -292,7 +292,7 @@ export default function PaymentReturnPage() {
 
         {status === "failed" && (
           <div className="flex flex-col items-center gap-4 text-center">
-            <AlertTriangle className="h-16 w-16 text-amber-500" />
+            <AlertTriangle className="h-16 w-16 text-bm-warning" />
             <h1 className="text-2xl font-black text-bm-text dark:text-bm-text">Payment not completed</h1>
             <p className="max-w-xl text-sm leading-6 text-bm-text-muted dark:text-bm-text-muted">
               {errorMessage || "We could not confirm your payment."}
