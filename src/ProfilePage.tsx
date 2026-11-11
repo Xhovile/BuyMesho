@@ -107,7 +107,7 @@ export default function ProfilePage() {
                 <h2 className="text-2xl font-black tracking-tight text-bm-text dark:text-bm-text truncate">
                   {displayName}
                 </h2>
-                {profile.is_verified && <ShieldCheck className="w-5 h-5 text-blue-500 shrink-0" />}
+                {profile.is_verified && <ShieldCheck className="w-5 h-5 text-bm-success shrink-0" />}
               </div>
               <p className="text-sm text-bm-text-subtle dark:text-bm-text-subtle truncate">{profile.email}</p>
               <p className="text-sm text-bm-text-subtle dark:text-bm-text-subtle">
@@ -120,7 +120,7 @@ export default function ProfilePage() {
 
           <div className="p-6 sm:p-8 space-y-6">
             {!emailVerified && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm">
+              <div className="rounded-2xl border border-bm-warning/25 bg-bm-warning-bg p-4 text-bm-warning text-sm">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 mt-0.5" />
                   <div>
@@ -148,7 +148,7 @@ export default function ProfilePage() {
                             );
                           }
                         }}
-                        className="px-4 py-2 rounded-xl bg-bm-surface border border-amber-200 text-sm font-bold hover:bg-amber-100"
+                        className="px-4 py-2 rounded-xl bg-bm-surface border border-bm-warning/25 text-sm font-bold hover:bg-bm-warning-bg"
                       >
                         Resend verification email
                       </button>
