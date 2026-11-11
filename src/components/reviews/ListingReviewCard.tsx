@@ -146,7 +146,7 @@ export default function ListingReviewCard({
                 <div className="flex flex-wrap items-center gap-2">
                   <h4 className="truncate text-sm font-extrabold text-bm-text">{review.reviewer_name}</h4>
                   {badge ? (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-bm-border-subtle bg-bm-surface-muted px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">
                       {badge}
                     </span>
                   ) : null}
@@ -193,7 +193,7 @@ export default function ListingReviewCard({
                   <button
                     type="button"
                     onClick={openDeleteDialog}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-bm-surface text-red-600 transition hover:bg-red-50"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-bm-danger/35 bg-bm-surface text-bm-danger transition hover:bg-bm-danger-bg"
                     aria-label="Remove your review"
                     title="Remove review"
                   >
@@ -244,7 +244,7 @@ export default function ListingReviewCard({
         </div>
 
         {review.seller_reply ? (
-          <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+          <div className="mt-4 rounded-2xl border border-bm-border-subtle bg-bm-surface-muted p-4">
             <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.16em] text-bm-text-subtle">
               <MessageSquareReply className="h-4 w-4" />
               Seller reply
@@ -257,7 +257,7 @@ export default function ListingReviewCard({
         {showReplyComposer ? <ReviewReplyComposer listingId={listingId} review={review} canReply={showReplyComposer} onSaved={onReviewChanged} /> : null}
 
         {!review.body ? (
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-dashed border-blue-200 px-3 py-1.5 text-xs font-semibold text-bm-text-subtle">
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-dashed border-bm-border px-3 py-1.5 text-xs font-semibold text-bm-text-subtle">
             <ShieldAlert className="h-4 w-4" />
             Rating only
           </div>
@@ -276,7 +276,7 @@ export default function ListingReviewCard({
         >
           <section className="w-full max-w-md rounded-[1.75rem] bg-bm-surface p-5 shadow-2xl sm:p-6">
             <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-bm-danger-bg text-bm-danger">
                 <AlertTriangle className="h-5 w-5" />
               </div>
 
@@ -318,7 +318,7 @@ export default function ListingReviewCard({
                     type="button"
                     onClick={() => void handleDelete()}
                     disabled={deleting}
-                    className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-sm font-bold text-bm-on-brand transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex-1 rounded-full bg-bm-danger px-4 py-2.5 text-sm font-bold text-bm-on-brand transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {deleting ? "Removing..." : "Remove review"}
                   </button>
