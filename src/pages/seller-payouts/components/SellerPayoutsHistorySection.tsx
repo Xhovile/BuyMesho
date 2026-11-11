@@ -153,7 +153,7 @@ export default function SellerPayoutsHistorySection({
 
       <div className="mt-5 overflow-x-auto rounded-2xl border border-bm-border dark:border-bm-border">
         <div className="max-h-[520px] min-w-[760px] overflow-auto">
-          <table className="w-full divide-y divide-zinc-200 dark:divide-bm-border text-left text-sm">
+          <table className="w-full divide-y divide-bm-border dark:divide-bm-border text-left text-sm">
             <thead className="sticky top-0 bg-bm-surface-muted dark:bg-bm-surface-subtle text-bm-text-subtle dark:text-bm-text-subtle">
               <tr>
                 <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Status</th>
@@ -167,7 +167,7 @@ export default function SellerPayoutsHistorySection({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-bm-border-subtle bg-bm-surface">{content}</tbody>
+            <tbody className="divide-y divide-bm-border-subtle dark:divide-bm-border-subtle bg-bm-surface">{content}</tbody>
           </table>
         </div>
       </div>
