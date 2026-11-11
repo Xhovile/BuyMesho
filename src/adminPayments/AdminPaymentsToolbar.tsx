@@ -32,21 +32,21 @@ function StatButton({
       aria-pressed={active}
       className={`group flex min-h-[5.75rem] flex-col justify-between rounded-2xl border px-3.5 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:px-4 ${
         active
-          ? "border-zinc-950 bg-zinc-950 text-white shadow-zinc-950/15"
-          : "border-zinc-200 dark:border-bm-border bg-white text-zinc-900 dark:text-bm-text hover:border-zinc-300 hover:bg-white"
+          ? "border-zinc-950 bg-zinc-950 text-bm-on-brand shadow-zinc-950/15"
+          : "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text hover:border-bm-border hover:bg-bm-surface"
       }`}
     >
       <div className="flex items-center justify-between gap-3">
-        <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${active ? "text-zinc-300" : "text-zinc-500 dark:text-bm-text-subtle"}`}>
+        <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${active ? "text-zinc-300" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>
           {label}
         </p>
-        <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] ${active ? "bg-white/15 text-white" : "bg-zinc-100 dark:bg-bm-surface-muted text-zinc-500 dark:text-bm-text-subtle group-hover:bg-zinc-200/70"}`}>
+        <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] ${active ? "bg-bm-surface/15 text-bm-on-brand" : "bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-subtle dark:text-bm-text-subtle group-hover:bg-zinc-200/70"}`}>
           {badge}
         </span>
       </div>
       <div className="mt-3 flex items-end justify-between gap-3">
         <p className="text-2xl font-black leading-none tracking-tight sm:text-3xl">{value}</p>
-        <span className={`h-1.5 w-8 rounded-full ${active ? "bg-white/60" : "bg-zinc-200 dark:bg-bm-skeleton group-hover:bg-zinc-300"}`} />
+        <span className={`h-1.5 w-8 rounded-full ${active ? "bg-bm-surface/60" : "bg-zinc-200 dark:bg-bm-skeleton group-hover:bg-zinc-300"}`} />
       </div>
     </button>
   );
@@ -87,9 +87,9 @@ export default function AdminPaymentsToolbar({
     <>
       <section className="flex flex-col gap-5 px-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Admin</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 dark:text-bm-text sm:text-4xl">Payments & Webhooks</h1>
-          <p className="mt-3 max-w-3xl text-sm font-medium leading-relaxed text-zinc-600 dark:text-bm-text-muted sm:text-base">
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Admin</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-bm-text dark:text-bm-text sm:text-4xl">Payments & Webhooks</h1>
+          <p className="mt-3 max-w-3xl text-sm font-medium leading-relaxed text-bm-text-muted dark:text-bm-text-muted sm:text-base">
             Admin monitoring only. Buyer order status belongs elsewhere.
           </p>
         </div>
@@ -112,43 +112,43 @@ export default function AdminPaymentsToolbar({
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-zinc-200 dark:border-bm-border bg-white p-5 shadow-sm">
+      <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-bm-text-subtle">Transaction investigation</p>
-            <h2 className="mt-1 text-lg font-black text-zinc-950 dark:text-bm-text">Search payments and webhooks</h2>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-bm-text-muted">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Transaction investigation</p>
+            <h2 className="mt-1 text-lg font-black text-bm-text dark:text-bm-text">Search payments and webhooks</h2>
+            <p className="mt-1 text-sm text-bm-text-muted dark:text-bm-text-muted">
               Search Ticket ID, payment reference, seller UUID, order ID, provider reference, event ID, or webhook payload text.
             </p>
           </div>
           <form onSubmit={(event) => { event.preventDefault(); onSearch(); }} className="flex w-full gap-2 lg:max-w-2xl">
             <label className="sr-only" htmlFor="admin-payment-investigation-search">Transaction investigation search</label>
             <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 dark:text-bm-text-subtle" />
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-bm-text-subtle dark:text-bm-text-subtle" />
               <input
                 id="admin-payment-investigation-search"
                 value={searchQuery}
                 onChange={(event) => onSearchQueryChange(event.target.value)}
                 placeholder="Search payment, seller, order, ticket, webhook, or error…"
-                className="min-h-11 w-full rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle pl-11 pr-4 text-sm font-semibold text-zinc-900 dark:text-bm-text outline-none transition focus:border-zinc-400 focus:bg-white"
+                className="min-h-11 w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle pl-11 pr-4 text-sm font-semibold text-bm-text dark:text-bm-text outline-none transition focus:border-bm-focus focus:bg-bm-surface"
               />
             </div>
-            <button type="submit" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-4 text-sm font-black text-white transition hover:bg-zinc-800">
+            <button type="submit" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-4 text-sm font-black text-bm-on-brand transition hover:bg-bm-brand-hover">
               <Search className="h-4 w-4" /> Search
             </button>
           </form>
         </div>
         {searchQuery.trim() ? (
-          <p className="mt-3 rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle px-4 py-3 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">
-            Investigation query: <span className="font-black text-zinc-900 dark:text-bm-text">{searchQuery.trim()}</span>
+          <p className="mt-3 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-4 py-3 text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">
+            Investigation query: <span className="font-black text-bm-text dark:text-bm-text">{searchQuery.trim()}</span>
           </p>
         ) : null}
       </section>
 
       <section className="space-y-3">
         <div>
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-bm-text-subtle">Click to Sort</p>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-bm-text-muted">Current sort: <span className="font-bold text-zinc-900 dark:text-bm-text">{activeSortLabel}</span></p>
+          <p className="text-sm font-black uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Click to Sort</p>
+          <p className="mt-1 text-sm text-bm-text-muted dark:text-bm-text-muted">Current sort: <span className="font-bold text-bm-text dark:text-bm-text">{activeSortLabel}</span></p>
         </div>
 
         {activeTab === "payments" ? (
