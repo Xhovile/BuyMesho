@@ -59,7 +59,7 @@ function formatMoney(value: unknown) {
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
-  return <p className="mt-1 text-xs font-medium text-rose-600">{message}</p>;
+  return <p className="mt-1 text-xs font-medium text-bm-danger">{message}</p>;
 }
 
 function parseTimeValue(value: unknown): { hour: string; minute: string } {
@@ -696,9 +696,9 @@ export default function EventsCreatePage() {
               <textarea value={creatorForm.reason} onChange={(e) => setCreatorForm((current) => ({ ...current, reason: e.target.value }))} rows={4} className="mt-2 w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm outline-none focus:border-bm-brand focus:ring-2 focus:ring-bm-focus/10" />
             </label>
           </div>
-          {creatorError ? <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{creatorError}</div> : null}
+          {creatorError ? <div className="mt-5 rounded-2xl border border-bm-danger/35 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">{creatorError}</div> : null}
           <div className="mt-6 flex flex-wrap gap-3">
-            <button type="submit" disabled={creatorSubmitting} className="rounded-2xl bg-red-900 px-5 py-3 text-sm font-extrabold text-bm-on-brand disabled:opacity-60">{creatorSubmitting ? "Submitting..." : "Submit and continue"}</button>
+            <button type="submit" disabled={creatorSubmitting} className="rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand disabled:opacity-60">{creatorSubmitting ? "Submitting..." : "Submit and continue"}</button>
             <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-5 py-3 text-sm font-bold text-bm-text dark:text-bm-text">Cancel</button>
           </div>
         </form>
@@ -722,7 +722,7 @@ export default function EventsCreatePage() {
       <header className="sticky top-0 z-40 w-full border-b border-bm-border/80 bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-7xl min-w-0 items-center justify-between gap-4 px-4 py-3">
           <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-900 text-xl font-extrabold text-bm-on-brand shadow-lg shadow-red-900/20">B</div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-bm-brand text-xl font-extrabold text-bm-on-brand shadow-lg shadow-red-900/20">B</div>
             <div className="text-left">
               <p className="text-lg font-extrabold tracking-tight">
                 <span className="text-red-900">Buy</span>
@@ -774,7 +774,7 @@ export default function EventsCreatePage() {
                 </label>
 
                 {!config ? (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">No schema is available for this event type yet.</div>
+                  <div className="rounded-2xl border border-bm-warning/35 bg-bm-warning-bg px-4 py-3 text-sm text-bm-warning">No schema is available for this event type yet.</div>
                 ) : (
                   config.fieldGroups.map((group) => {
                     const fields = group.keys.map((key) => fieldMap.get(key)).filter(Boolean) as EventSpecField[];
@@ -784,7 +784,7 @@ export default function EventsCreatePage() {
                       <section key={group.title} className="rounded-[1.75rem] border border-bm-border dark:border-bm-border bg-bm-surface-muted/70 p-4 sm:p-5">
                         <div className="flex items-center justify-between gap-4">
                           <h2 className="text-sm font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">{group.title}</h2>
-                          <span className="h-2.5 w-2.5 rounded-full bg-red-900" />
+                          <span className="h-2.5 w-2.5 rounded-full bg-bm-brand" />
                         </div>
                         <div className="mt-4 grid gap-4">
                           {fields.map((field) => (
@@ -858,7 +858,7 @@ export default function EventsCreatePage() {
                   disabled={submitting}
                 />
 
-                {formError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{formError}</div> : null}
+                {formError ? <div className="rounded-2xl border border-bm-danger/35 bg-bm-danger-bg px-4 py-3 text-sm text-bm-danger">{formError}</div> : null}
 
                 <div className="flex flex-wrap gap-3">
                   <button type="submit" disabled={submitting} className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-5 py-3 text-sm font-extrabold text-bm-on-brand disabled:opacity-60">
