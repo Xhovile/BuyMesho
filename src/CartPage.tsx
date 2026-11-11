@@ -73,8 +73,8 @@ function CartPageContent() {
         <section className="mt-6 w-full">
           <div className="flex flex-wrap items-end justify-between gap-4 border-b border-bm-border dark:border-bm-border pb-4">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.28em] text-zinc-400 dark:text-bm-text-subtle">Cart</p>
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 dark:text-bm-text sm:text-4xl">
+              <p className="text-xs font-black uppercase tracking-[0.28em] text-bm-text-subtle">Cart</p>
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-bm-text sm:text-4xl">
                 Review your items
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-bm-text-subtle dark:text-bm-text-subtle sm:text-base">
@@ -100,7 +100,7 @@ function CartPageContent() {
                   type="checkbox"
                   checked={allSelected}
                   onChange={(event) => setAllSelected(event.target.checked)}
-                  className="h-4 w-4 rounded border-bm-border dark:border-bm-border text-zinc-950 dark:text-bm-text focus:ring-zinc-900"
+                  className="h-4 w-4 rounded border-bm-border dark:border-bm-border text-bm-text focus:ring-zinc-900"
                 />
                 Select all
               </label>
@@ -154,17 +154,17 @@ function CartPageContent() {
                 </div>
               ) : (
                 <div className="border-y border-bm-border dark:border-bm-border bg-bm-surface/70 py-16 text-center">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted text-zinc-400 dark:text-bm-text-subtle">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text-subtle">
                     <span className="text-xl">🛒</span>
                   </div>
-                  <h2 className="mt-4 text-2xl font-black text-zinc-950 dark:text-bm-text">Cart is empty</h2>
+                  <h2 className="mt-4 text-2xl font-black text-bm-text">Cart is empty</h2>
                   <p className="mt-2 text-sm text-bm-text-subtle dark:text-bm-text-subtle">
                     Add items from a listing page or from the events page, then come back here to review them.
                   </p>
                   <button
                     type="button"
                     onClick={() => navigateToPath(EXPLORE_PATH)}
-                    className="mt-6 inline-flex items-center justify-center rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-bold text-white hover:bg-zinc-800"
+                    className="mt-6 inline-flex items-center justify-center rounded-2xl bg-bm-brand px-5 py-3 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover"
                   >
                     Go to market
                   </button>
