@@ -289,7 +289,7 @@ export default function AccountSetupPage() {
             <div className="mb-5"><h2 className="font-extrabold text-bm-text dark:text-bm-text">What best describes you?</h2><p className="mt-1 text-xs text-bm-text-subtle dark:text-bm-text-subtle">This only determines which relevant BuyMesho information we ask for.</p></div>
             <div className="grid gap-3 sm:grid-cols-2">
               {[{ value: "student", title: "Student", description: "I am currently studying at an institution." }, { value: "public", title: "Public / Non-Student", description: "I am joining BuyMesho as a general user." }].map((option) => (
-                <button key={option.value} type="button" onClick={() => setField("userType", option.value)} className={`rounded-2xl border p-4 text-left transition ${form.userType === option.value ? "border-zinc-900 bg-bm-brand text-bm-on-brand" : "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text hover:border-zinc-400"}`}>
+                <button key={option.value} type="button" onClick={() => setField("userType", option.value)} className={`rounded-2xl border p-4 text-left transition ${form.userType === option.value ? "border-bm-border bg-bm-brand text-bm-on-brand" : "border-bm-border dark:border-bm-border bg-bm-surface text-bm-text dark:text-bm-text hover:border-bm-border"}`}>
                   <p className="font-extrabold">{option.title}</p><p className={`mt-1 text-xs ${form.userType === option.value ? "text-bm-text-subtle" : "text-bm-text-subtle dark:text-bm-text-subtle"}`}>{option.description}</p>
                 </button>
               ))}
