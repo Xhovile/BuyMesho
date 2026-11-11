@@ -205,7 +205,7 @@ export default function ReferenceUploader({
               <button
                 type="button"
                 onClick={() => removeReferenceImage(item.id)}
-                className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-white hover:bg-black/80"
+                className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-bm-overlay/90 text-bm-on-brand hover:bg-bm-overlay"
                 aria-label={`Remove reference image ${index + 1}`}
               >
                 <X className="h-3.5 w-3.5" />
@@ -217,7 +217,7 @@ export default function ReferenceUploader({
 
       {referenceVideo && referenceVideoPreviewUrl ? (
         <div className="mt-2 overflow-hidden rounded-xl border border-bm-border bg-bm-surface">
-          <video src={referenceVideoPreviewUrl} controls preload="metadata" className="max-h-64 w-full bg-black" />
+          <video src={referenceVideoPreviewUrl} controls preload="metadata" className="max-h-64 w-full bg-bm-surface-muted" />
           <div className="flex items-center justify-between gap-3 px-3 py-2">
             <div className="min-w-0">
               <p className="truncate text-[11px] font-bold text-bm-text">{referenceVideo.name}</p>
