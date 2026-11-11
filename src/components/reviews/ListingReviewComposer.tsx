@@ -310,7 +310,7 @@ export default function ListingReviewComposer({
                   type="button"
                   onClick={() => setRating(star)}
                   disabled={!isAuthenticated || !canReview || submitting}
-                  className={`rounded-md p-1 transition-colors ${active ? "text-amber-500" : "text-zinc-300"} ${!isAuthenticated || !canReview || submitting ? "opacity-60" : "hover:text-amber-500"}`}
+                  className={`rounded-md p-1 transition-colors ${active ? "text-amber-500" : "text-bm-text-subtle"} ${!isAuthenticated || !canReview || submitting ? "opacity-60" : "hover:text-amber-500"}`}
                   aria-label={`Rate ${star} star${star === 1 ? "" : "s"}`}
                 >
                   <Star className={`h-7 w-7 ${active ? "fill-amber-400" : ""}`} />
