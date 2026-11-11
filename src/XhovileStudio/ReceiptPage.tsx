@@ -217,15 +217,15 @@ function ReceiptPage() {
           <div className="mt-6 divide-y divide-bm-border-subtle overflow-hidden rounded-2xl border border-bm-border">
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-bm-text-subtle">Service</span>
-              <span className="text-right font-bold text-bm-on-brand">{SERVICE_LABELS[payment.serviceType]}</span>
+              <span className="text-right font-bold text-bm-text">{SERVICE_LABELS[payment.serviceType]}</span>
             </div>
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-bm-text-subtle">Customer</span>
-              <span className="font-bold text-bm-on-brand">{payment.customerName}</span>
+              <span className="font-bold text-bm-text">{payment.customerName}</span>
             </div>
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-bm-text-subtle">Reference</span>
-              <span className="break-all text-right font-mono text-xs font-bold text-bm-on-brand">{payment.paymentReference}</span>
+              <span className="break-all text-right font-mono text-xs font-bold text-bm-text">{payment.paymentReference}</span>
             </div>
             <div className="flex justify-between gap-6 p-3.5 text-sm">
               <span className="text-bm-text-subtle">Amount</span>
@@ -233,7 +233,7 @@ function ReceiptPage() {
             </div>
             <div className="p-3.5 text-sm">
               <span className="text-bm-text-subtle">Description</span>
-              <p className="mt-1 font-medium text-bm-on-brand">{payment.description}</p>
+              <p className="mt-1 font-medium text-bm-text">{payment.description}</p>
             </div>
           </div>
         ) : null}
