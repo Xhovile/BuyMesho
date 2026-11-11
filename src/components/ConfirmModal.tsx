@@ -44,8 +44,8 @@ export default function ConfirmModal({
           >
             <div className="p-6 border-b border-bm-border-subtle dark:border-bm-border-subtle flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center">
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                <div className="w-12 h-12 rounded-2xl bg-bm-danger-bg flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-bm-danger" />
                 </div>
                 <h3 className="text-lg font-extrabold text-bm-text dark:text-bm-text">{title}</h3>
               </div>
@@ -77,7 +77,7 @@ export default function ConfirmModal({
                 onClick={onConfirm}
                 disabled={confirmDisabled}
                 className={`flex-1 py-3 rounded-2xl font-bold text-bm-on-brand transition-colors ${
-                  danger ? "bg-red-600 hover:bg-red-700" : "bg-bm-brand hover:bg-bm-brand-hover"
+                  danger ? "bg-bm-danger hover:bg-bm-danger/90" : "bg-bm-brand hover:bg-bm-brand-hover"
                 } disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {confirmText}
