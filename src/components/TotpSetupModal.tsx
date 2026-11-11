@@ -256,7 +256,7 @@ export default function TotpSetupModal({
                 type="button"
                 onClick={onDisable}
                 disabled={busy}
-                className="hidden rounded-2xl border border-red-200 bg-red-50 px-4 py-3 font-bold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 sm:inline-flex"
+                className="hidden rounded-2xl border border-bm-danger/35 bg-bm-danger-bg px-4 py-3 font-bold text-bm-danger transition-colors hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 sm:inline-flex"
               >
                 Disable 2FA
               </button>
