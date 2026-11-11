@@ -66,7 +66,7 @@ export default function ReviewReplyComposer({ listingId, review, canReply, onSav
             setError(null);
             setOpen(true);
           }}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-200 bg-white text-zinc-600 dark:text-bm-text-muted transition hover:bg-blue-50 hover:text-zinc-950"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-blue-200 bg-bm-surface text-bm-text-muted dark:text-bm-text-muted transition hover:bg-blue-50 hover:text-bm-text"
           aria-label="Edit seller reply"
           title="Edit seller reply"
         >
@@ -77,11 +77,11 @@ export default function ReviewReplyComposer({ listingId, review, canReply, onSav
   }
 
   return (
-    <div className="mt-4 rounded-2xl border border-zinc-200 dark:border-bm-border bg-zinc-50 dark:bg-bm-surface-subtle p-4">
+    <div className="mt-4 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-4">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between gap-3 rounded-xl bg-zinc-100 dark:bg-bm-surface-muted px-3 py-2 text-left text-sm font-bold text-zinc-700 dark:text-bm-text-muted transition hover:bg-zinc-200"
+        className="flex w-full items-center justify-between gap-3 rounded-xl bg-bm-surface-muted dark:bg-bm-surface-muted px-3 py-2 text-left text-sm font-bold text-bm-text-muted dark:text-bm-text-muted transition hover:bg-bm-surface-raised"
         aria-expanded={open}
       >
         <span className="flex items-center gap-2">
@@ -99,10 +99,10 @@ export default function ReviewReplyComposer({ listingId, review, canReply, onSav
             rows={4}
             disabled={submitting}
             placeholder="Write a short reply to this review..."
-            className="mt-3 min-h-[110px] w-full rounded-2xl border border-zinc-200 dark:border-bm-border bg-white px-4 py-3 text-sm leading-6 text-zinc-900 dark:text-bm-text outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 dark:disabled:bg-bm-surface-muted disabled:text-zinc-500"
+            className="mt-3 min-h-[110px] w-full rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-3 text-sm leading-6 text-bm-text dark:text-bm-text outline-none transition focus:border-bm-brand disabled:bg-bm-surface-muted dark:disabled:bg-bm-surface-muted disabled:text-bm-text-subtle"
           />
 
-          <div className="mt-2 flex items-center justify-between gap-3 text-xs font-semibold text-zinc-500 dark:text-bm-text-subtle">
+          <div className="mt-2 flex items-center justify-between gap-3 text-xs font-semibold text-bm-text-subtle dark:text-bm-text-subtle">
             <span>
               {reply.length} / {MAX_REPLY_LENGTH}
             </span>
@@ -116,11 +116,11 @@ export default function ReviewReplyComposer({ listingId, review, canReply, onSav
               type="button"
               onClick={() => void handleSave()}
               disabled={submitting}
-              className="inline-flex items-center justify-center rounded-full bg-zinc-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center justify-center rounded-full bg-bm-brand px-4 py-2 text-sm font-bold text-bm-on-brand transition hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? "Saving..." : review.seller_reply ? "Save changes" : "Save reply"}
             </button>
-            <span className="text-xs font-medium text-zinc-500 dark:text-bm-text-subtle">This response appears under the review.</span>
+            <span className="text-xs font-medium text-bm-text-subtle dark:text-bm-text-subtle">This response appears under the review.</span>
           </div>
         </>
       ) : null}
