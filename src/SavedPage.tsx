@@ -81,7 +81,7 @@ export default function SavedPage() {
             <button
               type="button"
               onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-              className="px-4 py-2.5 rounded-2xl border border-bm-brand bg-black text-bm-on-brand text-sm font-bold hover:bg-bm-brand-hover"
+              className="px-4 py-2.5 rounded-2xl border border-bm-brand bg-bm-brand text-bm-on-brand text-sm font-bold hover:bg-bm-brand-hover"
             >
               Back
             </button>
