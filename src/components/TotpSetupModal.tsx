@@ -99,7 +99,7 @@ export default function TotpSetupModal({
   const confirmDisabled = Boolean(busy) || code.length !== 6;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-0 backdrop-blur-sm sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bm-overlay p-0 backdrop-blur-sm sm:p-4">
       <div
         role="dialog"
         aria-modal="true"
