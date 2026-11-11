@@ -51,7 +51,7 @@ export default function WhyBuyMeshoSection({
 
   return (
     <div ref={flowRef}>
-      <section className="relative left-1/2 -mt-8 w-screen -translate-x-1/2 overflow-hidden bg-bm-bg px-4 py-10 text-white sm:py-12 lg:py-14">
+      <section className="relative left-1/2 -mt-8 w-screen -translate-x-1/2 overflow-hidden bg-bm-bg px-4 py-10 text-bm-text sm:py-12 lg:py-14">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(239,68,68,0.13),transparent_26%),radial-gradient(circle_at_84%_24%,rgba(59,130,246,0.12),transparent_28%),radial-gradient(circle_at_65%_88%,rgba(245,158,11,0.1),transparent_26%),linear-gradient(135deg,rgba(255,255,255,0.025),transparent_40%,rgba(255,255,255,0.015))]" aria-hidden="true" />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-16 -translate-y-1/2 bg-gradient-to-b from-transparent via-bm-bg/55 to-bm-bg blur-md" />
         <div className="pointer-events-none absolute left-[8%] top-[-8rem] h-72 w-72 rounded-full bg-bm-brand/10 blur-3xl" aria-hidden="true" />
@@ -124,7 +124,7 @@ export default function WhyBuyMeshoSection({
                 <ArrowRight className="h-4 w-4" />
               </button>
               {isLoggedIn ? (
-                <button type="button" onClick={onStartSelling} disabled={isSellerProfileLoading} className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-surface px-5 py-3 text-sm font-extrabold text-white transition hover:bg-bm-surface/10 disabled:cursor-not-allowed disabled:opacity-70">
+                <button type="button" onClick={onStartSelling} disabled={isSellerProfileLoading} className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-surface px-5 py-3 text-sm font-extrabold text-bm-text transition hover:bg-bm-surface-muted disabled:cursor-not-allowed disabled:opacity-70">
                   {isSellerProfileLoading ? "Loading..." : isSeller ? "List Item" : "Sell"}
                   <ArrowRight className="h-4 w-4" />
                 </button>
