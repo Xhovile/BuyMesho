@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, Loader2, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { Loader2, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { apiFetch } from "./lib/api";
-import { EXPLORE_PATH, HOME_PATH, navigateBackOrPath, navigateToPath, navigateToSellerProfile } from "./lib/appNavigation";
+import { navigateToSellerProfile } from "./lib/appNavigation";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 
 type SellerApplicationStatus = "pending" | "approved" | "rejected";
@@ -97,13 +97,6 @@ export default function AdminSellerApplicationsPage() {
   return (
     <AdminWorkspaceLayout title="Seller applications" description="Review pending, approved, and rejected seller onboarding requests." onRefresh={() => void fetchApplications()}>
       <div className="space-y-6">
-        <header className="buymesho-brand-header sticky top-0 z-40 border-b border-bm-border bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-            <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="buymesho-header-brand flex items-center gap-2.5 min-w-0"><div className="w-10 h-10 bg-bm-brand rounded-2xl flex items-center justify-center text-bm-on-brand font-extrabold text-xl shadow-lg shadow-bm-brand/20">B</div><div className="text-left"><p className="text-lg font-extrabold tracking-tight"><span className="text-bm-brand">Buy</span><span className="text-bm-text-muted dark:text-bm-text-muted">Mesho</span></p><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Seller applications</p></div></button>
-            <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="px-4 py-2.5 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface text-sm font-bold hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted items-center gap-2 inline-flex"><ChevronLeft className="w-4 h-4" />Back</button>
-          </div>
-        </header>
-
         <main className="max-w-7xl mx-auto px-4 py-8">
           <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 sm:p-8 shadow-sm mb-6"><div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6"><div><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">Admin</p><h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-bm-text dark:text-bm-text">Review seller applications.</h1><p className="mt-3 max-w-2xl text-sm sm:text-base text-bm-text-muted dark:text-bm-text-muted leading-relaxed font-medium">Review the full seller application, verification documents, participation choices, and marketplace commitments before approval.</p></div><div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle px-5 py-4 min-w-[220px]"><p className="text-xs font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">Current filter</p><p className="mt-2 text-2xl font-black tracking-tight text-bm-text dark:text-bm-text capitalize">{statusFilter}</p></div></div></section>
 
