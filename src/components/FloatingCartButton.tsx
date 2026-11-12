@@ -99,7 +99,7 @@ export default function FloatingCartButton({
         type="button"
         onClick={openCart}
         style={{ top: `${topOffset}px` }}
-        className={`fixed right-3 z-40 inline-flex h-10 min-w-[44px] items-center justify-center rounded-full border border-bm-brand bg-bm-brand px-3 text-bm-on-brand shadow-lg shadow-bm-brand/30 transition hover:-translate-y-0.5 hover:bg-bm-brand-hover focus:outline-none focus:ring-2 focus:ring-bm-focus sm:right-5 md:h-11 md:px-3.5 ${className}`}
+        className={`fixed right-3 z-40 inline-flex h-10 min-w-[44px] items-center justify-center rounded-full floating-control-neutral-border bg-bm-brand px-3 text-bm-on-brand shadow-lg shadow-bm-brand/30 transition hover:-translate-y-0.5 hover:bg-bm-brand-hover focus:outline-none focus:ring-2 focus:ring-bm-focus sm:right-5 md:h-11 md:px-3.5 ${className}`}
         aria-label="Open cart"
         title="Open cart"
       >
