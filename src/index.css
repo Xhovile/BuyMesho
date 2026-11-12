@@ -308,37 +308,41 @@ main > div.pb-20 section {
   box-shadow: none !important;
 }
 
-.buymesho-brand-header .text-bm-text,
-.buymesho-brand-header .text-bm-text-muted,
+.buymesho-brand-header .text-bm-text:not(.buymesho-header-status-pill),
+.buymesho-brand-header .text-bm-text-muted:not(.buymesho-header-status-pill),
 .buymesho-brand-header .text-zinc-700:not(.buymesho-header-status-pill),
 .buymesho-brand-header .text-zinc-800:not(.buymesho-header-status-pill),
 .buymesho-brand-header .text-zinc-900:not(.buymesho-header-status-pill) {
   color: rgba(255, 249, 247, 0.97) !important;
 }
 
-.buymesho-brand-header .text-bm-text-subtle,
-.buymesho-brand-header .text-zinc-500,
-.buymesho-brand-header .text-zinc-600 {
+.buymesho-brand-header .text-bm-text-subtle:not(.buymesho-header-status-pill),
+.buymesho-brand-header .text-zinc-500:not(.buymesho-header-status-pill),
+.buymesho-brand-header .text-zinc-600:not(.buymesho-header-status-pill) {
   color: rgba(255, 238, 233, 0.72) !important;
 }
 
-.buymesho-brand-header .text-bm-brand {
+.buymesho-brand-header .text-bm-brand:not(.buymesho-header-status-pill) {
   color: #f1c6c9 !important;
 }
 
-.buymesho-brand-header .border-bm-border,
-.buymesho-brand-header .border-bm-border-subtle,
-.buymesho-brand-header .border-zinc-200 {
+.buymesho-brand-header .text-bm-danger:not(.buymesho-header-status-pill) {
+  color: #f1c6c9 !important;
+}
+
+.buymesho-brand-header .border-bm-border:not(.buymesho-header-status-pill),
+.buymesho-brand-header .border-bm-border-subtle:not(.buymesho-header-status-pill),
+.buymesho-brand-header .border-zinc-200:not(.buymesho-header-status-pill) {
   border-color: rgba(255, 245, 242, 0.24) !important;
 }
 
-.buymesho-brand-header .bg-bm-surface,
-.buymesho-brand-header .bg-bm-surface-muted,
-.buymesho-brand-header .bg-white {
+.buymesho-brand-header .bg-bm-surface:not(.buymesho-header-status-pill),
+.buymesho-brand-header .bg-bm-surface-muted:not(.buymesho-header-status-pill),
+.buymesho-brand-header .bg-white:not(.buymesho-header-status-pill) {
   background-color: rgba(255, 255, 255, 0.075) !important;
 }
 
-.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *) {
+.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]) {
   border-color: rgba(255, 246, 243, 0.32) !important;
   background-color: rgba(255, 255, 255, 0.09) !important;
   color: #fff !important;
@@ -350,13 +354,13 @@ main > div.pb-20 section {
     transform 160ms ease;
 }
 
-.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):hover {
+.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):hover {
   border-color: rgba(255, 249, 247, 0.52) !important;
   background-color: rgba(255, 255, 255, 0.16) !important;
   box-shadow: 0 9px 22px rgba(20, 3, 9, 0.2);
 }
 
-.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *) svg {
+.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]) svg {
   color: #fff !important;
 }
 
@@ -479,27 +483,15 @@ main > div.pb-20 section {
   box-shadow: none !important;
 }
 
-.buymesho-brand-header .buymesho-header-tabs button.bg-bm-brand {
+.buymesho-brand-header .buymesho-header-tabs button[aria-pressed="true"] {
   background-color: var(--bm-brand) !important;
   color: var(--bm-on-brand) !important;
   border-color: transparent !important;
   box-shadow: 0 4px 12px rgba(20, 3, 9, 0.18) !important;
 }
 
-.buymesho-brand-header .buymesho-header-tabs button:not(.bg-bm-brand):hover {
+.buymesho-brand-header .buymesho-header-tabs button[aria-pressed="false"]:hover {
   background-color: rgba(255, 255, 255, 0.12) !important;
   color: #fff !important;
 }
 
-/* Neutral payout status pills keep their light/dark surface and text pairing. */
-.buymesho-brand-header .buymesho-header-status-pill.text-zinc-700 {
-  color: #3f3f46 !important;
-  background-color: #f4f4f5 !important;
-  border-color: #e4e4e7 !important;
-}
-
-:root[data-theme="dark"] .buymesho-brand-header .buymesho-header-status-pill.text-zinc-700 {
-  color: #b8c0cc !important;
-  background-color: #1c2633 !important;
-  border-color: #303a48 !important;
-}
