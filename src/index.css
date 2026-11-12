@@ -423,3 +423,49 @@ main > div.pb-20 section {
     transition: none;
   }
 }
+
+
+/* Keep dropdown panels inside navigation headers as ordinary theme-aware menus. */
+.buymesho-brand-header [role="menu"] {
+  background-color: var(--bm-surface) !important;
+  color: var(--bm-text) !important;
+  border-color: var(--bm-border) !important;
+}
+
+.buymesho-brand-header [role="menu"] .bg-bm-surface,
+.buymesho-brand-header [role="menu"] .bg-bm-surface-muted,
+.buymesho-brand-header [role="menu"] .bg-white {
+  background-color: var(--bm-surface) !important;
+}
+
+.buymesho-brand-header [role="menu"] .text-bm-text,
+.buymesho-brand-header [role="menu"] .text-bm-text-muted,
+.buymesho-brand-header [role="menu"] .text-bm-text-subtle {
+  color: var(--bm-text) !important;
+}
+
+.buymesho-brand-header [role="menu"] .text-bm-text-subtle {
+  color: var(--bm-text-subtle) !important;
+}
+
+.buymesho-brand-header [role="menu"] .text-bm-brand {
+  color: var(--bm-brand) !important;
+}
+
+.buymesho-brand-header [role="menu"] .border-bm-border,
+.buymesho-brand-header [role="menu"] .border-bm-border-subtle {
+  border-color: var(--bm-border) !important;
+}
+
+.buymesho-brand-header .text-bm-danger {
+  color: #f1c6c9 !important;
+}
+
+.buymesho-brand-header .bg-bm-brand {
+  background-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.buymesho-brand-header button:focus-visible {
+  outline: 2px solid #c18f43 !important;
+  outline-offset: 2px;
+}
