@@ -394,7 +394,7 @@ export default function Header({
                 className="w-full"
               >
                 <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:max-w-4xl">
-                  <div className={`flex min-w-0 w-full items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm transition-all ${topRowHidden ? "px-3 py-1.5" : "px-3 py-2"}`}>
+                  <div className={`buymesho-explore-search-field flex min-w-0 w-full items-center gap-2 rounded-2xl border shadow-sm transition-all ${topRowHidden ? "px-3 py-1.5" : "px-3 py-2"}`}>
                     <input
                       type="text"
                       value={searchValue}
@@ -402,7 +402,7 @@ export default function Header({
                       placeholder="Search listings, products, or services..."
                       className="w-full min-w-0 bg-transparent pl-1 text-sm text-bm-text dark:text-bm-text-muted placeholder:text-bm-text-subtle dark:placeholder:text-bm-text-subtle outline-none"
                     />
-                    <button type="submit" aria-label="Search listings" className="inline-flex shrink-0 items-center justify-center rounded-xl bg-bm-brand px-3 py-1.5 text-sm font-extrabold text-bm-on-brand hover:bg-bm-brand-hover sm:px-4">
+                    <button type="submit" aria-label="Search listings" className="buymesho-explore-search-submit inline-flex shrink-0 items-center justify-center rounded-xl px-3 py-1.5 text-sm font-extrabold sm:px-4">
                       Search
                     </button>
                   </div>
