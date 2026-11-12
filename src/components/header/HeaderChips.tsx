@@ -93,7 +93,7 @@ export default function HeaderChips({ selectedChip, isAdmin = false, onChipChang
   }, [selectedChip, isAdmin]);
 
   return (
-    <div className="px-3 py-1.5 bg-bm-surface-muted border-t border-bm-border">
+    <div className="buymesho-brand-header__chips px-3 py-1.5 bg-bm-surface-muted border-t border-bm-border">
       <div className="mx-auto max-w-7xl">
         <div
           ref={scrollRef}
