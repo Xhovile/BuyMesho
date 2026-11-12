@@ -342,9 +342,9 @@ main > div.pb-20 section {
   background-color: rgba(255, 255, 255, 0.075) !important;
 }
 
-.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):not(.bg-bm-danger):not(.buymesho-explore-search-submit) {
-  border-color: rgba(255, 246, 243, 0.32) !important;
-  background-color: rgba(255, 255, 255, 0.09) !important;
+.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):not(.bg-bm-danger):not(.bg-bm-brand):not(.bg-bm-brand-hover):not(.buymesho-explore-search-submit) {
+  border-color: rgba(255, 246, 243, 0.48) !important;
+  background-color: rgba(255, 255, 255, 0.19) !important;
   color: #fff !important;
   box-shadow: 0 7px 18px rgba(20, 3, 9, 0.14);
   transition:
@@ -354,9 +354,9 @@ main > div.pb-20 section {
     transform 160ms ease;
 }
 
-.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):not(.bg-bm-danger):not(.buymesho-explore-search-submit):hover {
-  border-color: rgba(255, 249, 247, 0.52) !important;
-  background-color: rgba(255, 255, 255, 0.16) !important;
+.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):not(.bg-bm-danger):not(.bg-bm-brand):not(.bg-bm-brand-hover):not(.buymesho-explore-search-submit):hover {
+  border-color: rgba(255, 249, 247, 0.66) !important;
+  background-color: rgba(255, 255, 255, 0.29) !important;
   box-shadow: 0 9px 22px rgba(20, 3, 9, 0.2);
 }
 
@@ -540,16 +540,16 @@ main > div.pb-20 section {
   background-color: rgba(255, 255, 255, 0.24) !important;
 }
 
-:root:not([data-theme="dark"]) .buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):not(.buymesho-explore-search-submit) {
-  border-color: rgba(91, 55, 69, 0.3) !important;
-  background-color: rgba(255, 255, 255, 0.38) !important;
+:root:not([data-theme="dark"]) .buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):not(.bg-bm-danger):not(.bg-bm-brand):not(.bg-bm-brand-hover):not(.buymesho-explore-search-submit) {
+  border-color: rgba(91, 55, 69, 0.42) !important;
+  background-color: rgba(255, 255, 255, 0.56) !important;
   color: #493943 !important;
   box-shadow: 0 7px 18px rgba(67, 38, 49, 0.1);
 }
 
-:root:not([data-theme="dark"]) .buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):not(.buymesho-explore-search-submit):hover {
-  border-color: rgba(91, 55, 69, 0.42) !important;
-  background-color: rgba(255, 255, 255, 0.58) !important;
+:root:not([data-theme="dark"]) .buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):not(.bg-bm-danger):not(.bg-bm-brand):not(.bg-bm-brand-hover):not(.buymesho-explore-search-submit):hover {
+  border-color: rgba(91, 55, 69, 0.56) !important;
+  background-color: rgba(255, 255, 255, 0.72) !important;
   box-shadow: 0 9px 22px rgba(67, 38, 49, 0.14);
 }
 
