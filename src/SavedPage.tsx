@@ -61,7 +61,7 @@ export default function SavedPage() {
           <button
             type="button"
             onClick={() => navigateToPath(HOME_PATH)}
-            className="flex items-center gap-2.5 min-w-0"
+            className="buymesho-header-brand flex items-center gap-2.5 min-w-0"
           >
             <div className="w-10 h-10 bg-bm-brand rounded-2xl flex items-center justify-center text-bm-on-brand font-extrabold text-xl shadow-lg shadow-bm-brand/20">
               B
