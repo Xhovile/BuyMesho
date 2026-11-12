@@ -80,7 +80,7 @@ function PathCode({ children }: { children: React.ReactNode }) {
 export default function BuyOnlineMalawiPage() {
   return (
     <div className="guide-page min-h-screen bg-bm-surface-muted text-bm-text">
-      <header className="sticky top-0 z-50 border-b border-bm-border bg-bm-surface/95 backdrop-blur">
+      <header className="buymesho-brand-header sticky top-0 z-50 border-b border-bm-border bg-bm-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <a href={EXPLORE_PATH} aria-label="Open BuyMesho marketplace">
             <BrandMark subtitle="Buying guide" />
