@@ -647,3 +647,29 @@ main > div.pb-20 section {
     0 12px 30px -18px rgba(0, 0, 0, 0.52),
     inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
 }
+
+
+/* Dark-theme wordmark and category chips keep the brand red visible. */
+:root[data-theme="dark"] .buymesho-brand-header .buymesho-header-brand .buymesho-brand-name-buy {
+  color: #ff5b62 !important;
+}
+
+:root[data-theme="dark"] .buymesho-brand-header .buymesho-header-brand .buymesho-brand-name-mesho {
+  color: #d4d4d8 !important;
+}
+
+:root[data-theme="dark"] .buymesho-brand-header .buymesho-brand-header__chips button[aria-pressed="true"],
+:root[data-theme="dark"] .buymesho-brand-header .buymesho-brand-header__chips button[aria-pressed="true"]:hover {
+  border-bottom-color: #c18f43 !important;
+  color: #ff5b62 !important;
+  background: transparent !important;
+}
+
+/* Floating cart and scroll-to-top controls share a neutral outer keyline. */
+.floating-control-neutral-border {
+  border: 2px solid #d4d4d8 !important;
+}
+
+:root[data-theme="dark"] .floating-control-neutral-border {
+  border-color: #71717a !important;
+}
