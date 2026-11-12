@@ -351,7 +351,7 @@ export default function PayoutDetailDrawer({
           }
         }
       `}</style>
-      <header className="sticky top-0 z-30 border-b border-zinc-200 dark:border-bm-border bg-white/95 dark:bg-bm-surface/95 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
+      <header className="buymesho-brand-header sticky top-0 z-30 border-b border-zinc-200 dark:border-bm-border bg-white/95 dark:bg-bm-surface/95 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
