@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { postgresDb as db } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { ADMIN_ACTION_TYPES, ADMIN_TARGET_TYPES } from "../../src/modules/admin/shared/adminAuditTypes.js";
+import { buildMessageReportsFilter } from "./messageReportsQuery.js";
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.messageHubRoutesInstalled");
 const MODERATION_ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.messageHubModerationRoutesInstalled");
@@ -324,32 +325,52 @@ function registerAdminMessageReportRoutes(app: Express) {
     if (!user?.is_admin) return res.status(403).json({ error: "Admin access required" });
 
     const status = typeof req.query?.status === "string" && req.query.status.trim() ? req.query.status.trim() : "open";
-    const conversationId = req.query?.conversation_id ? Number(req.query.conversation_id) : null;
-    const statusFilter = ["open", "reviewed", "resolved", "all"].includes(status) ? status : "open";
+    const statusFilter = (["open", "reviewed", "resolved", "all"].includes(status) ? status : "open") as
+      | "open"
+      | "reviewed"
+      | "resolved"
+      | "all";
+    const rawConversationId = req.query?.conversation_id;
+    let conversationId: number | null = null;
 
-    const rows = db.prepare(`
-      SELECT
-        mr.id, mr.conversation_id, mr.message_id, mr.reporter_uid, mr.reported_uid,
-        mr.reason, mr.details, mr.status, mr.created_at, mr.updated_at,
-        mr.reviewed_by_uid, mr.reviewed_at, mr.resolution, mr.resolved_by_uid,
-        mr.resolved_by_email, mr.resolved_at,
-        c.buyer_uid, c.seller_uid,
-        l.name AS listing_name,
-        sb.business_name AS seller_business_name,
-        bb.business_name AS buyer_business_name,
-        msg.body AS message_body
-      FROM message_reports mr
-      LEFT JOIN conversations c ON c.id = mr.conversation_id
-      LEFT JOIN listings l ON l.id = c.listing_id
-      LEFT JOIN sellers sb ON sb.uid = c.seller_uid
-      LEFT JOIN sellers bb ON bb.uid = c.buyer_uid
-      LEFT JOIN messages msg ON msg.id = mr.message_id
-      WHERE (? = 'all' OR mr.status = ?)
-        AND (? IS NULL OR mr.conversation_id = ?)
-      ORDER BY mr.created_at DESC, mr.id DESC
-    `).all(statusFilter, statusFilter, conversationId, conversationId) as Record<string, unknown>[];
+    if (typeof rawConversationId === "string" && rawConversationId.trim()) {
+      conversationId = Number(rawConversationId);
+      if (!Number.isSafeInteger(conversationId) || conversationId <= 0) {
+        return res.status(400).json({ error: "Invalid conversation_id" });
+      }
+    } else if (rawConversationId !== undefined && rawConversationId !== "") {
+      return res.status(400).json({ error: "Invalid conversation_id" });
+    }
 
-    return res.json({ data: { items: rows } });
+    const { where, params } = buildMessageReportsFilter(statusFilter, conversationId);
+
+    try {
+      const rows = db.prepare(`
+        SELECT
+          mr.id, mr.conversation_id, mr.message_id, mr.reporter_uid, mr.reported_uid,
+          mr.reason, mr.details, mr.status, mr.created_at, mr.updated_at,
+          mr.reviewed_by_uid, mr.reviewed_at, mr.resolution, mr.resolved_by_uid,
+          mr.resolved_by_email, mr.resolved_at,
+          c.buyer_uid, c.seller_uid,
+          l.name AS listing_name,
+          sb.business_name AS seller_business_name,
+          bb.business_name AS buyer_business_name,
+          msg.body AS message_body
+        FROM message_reports mr
+        LEFT JOIN conversations c ON c.id = mr.conversation_id
+        LEFT JOIN listings l ON l.id = c.listing_id
+        LEFT JOIN sellers sb ON sb.uid = c.seller_uid
+        LEFT JOIN sellers bb ON bb.uid = c.buyer_uid
+        LEFT JOIN messages msg ON msg.id = mr.message_id
+        ${where}
+        ORDER BY mr.created_at DESC, mr.id DESC
+      `).all(...params) as Record<string, unknown>[];
+
+      return res.json({ data: { items: rows } });
+    } catch (error) {
+      console.error("Admin message reports fetch error:", error);
+      return res.status(500).json({ error: "Failed to load message reports" });
+    }
   });
 
   app.post("/api/admin/message-reports/:id/resolve", requireAuth, (req, res) => {
