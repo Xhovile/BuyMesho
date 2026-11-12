@@ -163,6 +163,7 @@ export default function HiddenCollectionsPage() {
             <button
               type="button"
               onClick={() => setActiveTab("listings")}
+              aria-pressed={activeTab === "listings"}
               className={`px-4 py-2 rounded-full text-sm font-extrabold transition-colors ${
                 activeTab === "listings" ? "bg-bm-brand text-bm-on-brand" : "text-bm-text-muted dark:text-bm-text-muted hover:text-bm-text"
               }`}
@@ -172,6 +173,7 @@ export default function HiddenCollectionsPage() {
             <button
               type="button"
               onClick={() => setActiveTab("sellers")}
+              aria-pressed={activeTab === "sellers"}
               className={`px-4 py-2 rounded-full text-sm font-extrabold transition-colors ${
                 activeTab === "sellers" ? "bg-bm-brand text-bm-on-brand" : "text-bm-text-muted dark:text-bm-text-muted hover:text-bm-text"
               }`}
