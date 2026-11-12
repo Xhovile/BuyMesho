@@ -463,7 +463,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text">
-      <header className="sticky top-0 z-40 border-b border-bm-border/80 bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
+      <header className="buymesho-brand-header sticky top-0 z-40 border-b border-bm-border/80 bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <BrandMark />
           <div className="flex items-center gap-3">
