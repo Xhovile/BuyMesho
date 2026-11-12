@@ -64,7 +64,7 @@ function Panel({ title, children, className = "" }: { title: string; children: R
 }
 
 function StatusPill({ label, tone }: { label: string; tone: string }) {
-  return <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${tone}`}>{label}</span>;
+  return <span className={`buymesho-header-status-pill inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${tone}`}>{label}</span>;
 }
 
 export default function PayoutDetailDrawer({
