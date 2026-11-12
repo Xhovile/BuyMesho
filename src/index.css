@@ -461,11 +461,9 @@ main > div.pb-20 section {
   border-color: var(--bm-border) !important;
 }
 
-.buymesho-brand-header .text-bm-danger {
-  color: #f1c6c9 !important;
-}
+/* Semantic danger labels retain their theme-defined contrast. */
 
-.buymesho-brand-header .bg-bm-brand {
+.buymesho-brand-header .bg-bm-brand:not([role="menu"] *) {
   background-color: rgba(255, 255, 255, 0.14) !important;
 }
 
