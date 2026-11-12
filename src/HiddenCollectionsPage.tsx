@@ -159,7 +159,7 @@ export default function HiddenCollectionsPage() {
             Back
           </button>
 
-          <div className="flex items-center gap-2 rounded-full border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-1 shadow-sm">
+          <div className="buymesho-header-tabs flex items-center gap-2 rounded-full border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-1 shadow-sm">
             <button
               type="button"
               onClick={() => setActiveTab("listings")}
