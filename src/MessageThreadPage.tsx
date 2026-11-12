@@ -355,7 +355,7 @@ export default function MessageThreadPage() {
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text">
-      <header className="z-20 shrink-0 border-b border-bm-border dark:border-bm-border bg-bm-surface-muted/95 backdrop-blur">
+      <header className="buymesho-brand-header z-20 shrink-0 border-b border-bm-border dark:border-bm-border bg-bm-surface-muted/95 backdrop-blur">
         <div className="flex items-center gap-3 px-4 py-4">
           <button type="button" onClick={() => navigateToMessages()} className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-bm-brand text-bm-on-brand" aria-label="Back">
             <ArrowLeft className="h-5 w-5" />
