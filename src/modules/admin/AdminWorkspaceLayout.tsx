@@ -1,9 +1,10 @@
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
-import type { ReactNode } from "react";
+import { useContext, type ReactNode } from "react";
 import { navigateToPath } from "../../lib/appNavigation";
 import AdminWorkspaceNav from "./AdminWorkspaceNav";
 import DiagnosticsDrawer from "./DiagnosticsDrawer";
 import EventTicketSearchPanel from "../../components/EventTicketSearchPanel";
+import { AdminWorkspaceContext } from "./AdminWorkspaceShell";
 
 type AdminWorkspaceLayoutProps = {
   title: string;
@@ -22,11 +23,45 @@ export default function AdminWorkspaceLayout({
   children,
   showNav = true,
 }: AdminWorkspaceLayoutProps) {
-  const pathname = window.location.pathname;
+  const shellContext = useContext(AdminWorkspaceContext);
+  const pathname = shellContext?.pathname ?? window.location.pathname;
   const isAuditLog = pathname.includes("audit-log") || pathname.includes("audit");
   const showEventTicketSearch =
     pathname === "/admin/events" ||
     pathname === "/admin/transaction-inspector";
+
+  if (shellContext) {
+    return (
+      <div className="min-w-0 space-y-6">
+        <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-3xl font-black tracking-tight text-bm-text dark:text-bm-text sm:text-4xl">{title}</h1>
+            {description ? (
+              <p className="mt-2 text-sm text-bm-text-muted dark:text-bm-text-muted sm:text-base">
+                {description}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {isAuditLog ? <DiagnosticsDrawer /> : null}
+            {onRefresh ? (
+              <button
+                type="button"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                aria-busy={isRefreshing}
+                className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover disabled:cursor-wait disabled:opacity-70"
+              >
+                {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                {isRefreshing ? "Refreshing…" : "Refresh"}
+              </button>
+            ) : null}
+          </div>
+        </section>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text">
