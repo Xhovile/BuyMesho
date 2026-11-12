@@ -20,7 +20,7 @@ test("all message reports omit the status condition when no conversation is sele
 test("a supplied conversation ID is added as a parameterized filter", () => {
   const filter = buildMessageReportsFilter("open", 123);
 
-  assert.equal(filter.where, "WHERE mr.status = ?\\n  AND mr.conversation_id = ?");
+  assert.equal(filter.where, "WHERE mr.status = ?\n  AND mr.conversation_id = ?");
   assert.deepEqual(filter.params, ["open", 123]);
 });
 
