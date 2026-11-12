@@ -29,7 +29,7 @@ export default function AboutPage() {
           <button
             type="button"
             onClick={() => navigateToPath(HOME_PATH)}
-            className="text-left"
+            className="buymesho-header-brand text-left"
           >
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 overflow-hidden rounded-xl bg-bm-surface ring-1 ring-bm-border shadow-sm">
