@@ -752,8 +752,19 @@ main > div.pb-20 section {
 }
 
 /* Keep the complete desktop dropdown drawer opaque in both themes. */
-:root .buymesho-brand-header [role="menu"].bg-bm-surface:not(.buymesho-header-status-pill) {
+:root .buymesho-brand-header [role="menu"].bg-bm-surface:not(.buymesho-header-status-pill),
+:root .buymesho-brand-header [role="menu"] .bg-bm-surface:not(.buymesho-header-status-pill),
+:root .buymesho-brand-header [role="menu"] .bg-white:not(.buymesho-header-status-pill) {
   background-color: var(--bm-surface) !important;
+  background-image: none !important;
+}
+
+:root .buymesho-brand-header [role="menu"] .bg-bm-surface:hover:not(.buymesho-header-status-pill) {
+  background-color: var(--bm-surface-muted) !important;
+}
+
+:root .buymesho-brand-header [role="menu"] .bg-bm-surface-muted:not(.buymesho-header-status-pill) {
+  background-color: var(--bm-surface-muted) !important;
   background-image: none !important;
 }
 
