@@ -289,3 +289,137 @@ main > div.pb-20 section {
   font-weight: 700;
   letter-spacing: -0.05em;
 }
+
+
+/* BuyMesho shared navigation and page-header identity: Deep Burgundy Fusion. */
+.buymesho-brand-header {
+  color: #fff;
+  background-color: #350a15 !important;
+  background-image:
+    radial-gradient(circle at 86% 12%, rgba(193, 143, 67, 0.2), transparent 25%),
+    radial-gradient(circle at 61% 112%, rgba(32, 55, 70, 0.38), transparent 38%),
+    linear-gradient(112deg, #350a15 0%, #4a1020 34%, #4a1e35 68%, #203746 100%) !important;
+  border-bottom: 1px solid rgba(255, 242, 238, 0.22) !important;
+}
+
+.buymesho-brand-header > div:first-child {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.buymesho-brand-header .text-bm-text,
+.buymesho-brand-header .text-bm-text-muted,
+.buymesho-brand-header .text-zinc-700,
+.buymesho-brand-header .text-zinc-800,
+.buymesho-brand-header .text-zinc-900 {
+  color: rgba(255, 249, 247, 0.97) !important;
+}
+
+.buymesho-brand-header .text-bm-text-subtle,
+.buymesho-brand-header .text-zinc-500,
+.buymesho-brand-header .text-zinc-600 {
+  color: rgba(255, 238, 233, 0.72) !important;
+}
+
+.buymesho-brand-header .text-bm-brand {
+  color: #f1c6c9 !important;
+}
+
+.buymesho-brand-header .border-bm-border,
+.buymesho-brand-header .border-bm-border-subtle,
+.buymesho-brand-header .border-zinc-200 {
+  border-color: rgba(255, 245, 242, 0.24) !important;
+}
+
+.buymesho-brand-header .bg-bm-surface,
+.buymesho-brand-header .bg-bm-surface-muted,
+.buymesho-brand-header .bg-white {
+  background-color: rgba(255, 255, 255, 0.075) !important;
+}
+
+.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *) {
+  border-color: rgba(255, 246, 243, 0.32) !important;
+  background-color: rgba(255, 255, 255, 0.09) !important;
+  color: #fff !important;
+  box-shadow: 0 7px 18px rgba(20, 3, 9, 0.14);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):hover {
+  border-color: rgba(255, 249, 247, 0.52) !important;
+  background-color: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 9px 22px rgba(20, 3, 9, 0.2);
+}
+
+.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *) svg {
+  color: #fff !important;
+}
+
+.buymesho-brand-header .buymesho-header-brand {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #fff !important;
+}
+
+.buymesho-brand-header .buymesho-header-brand .buymesho-brand-name-buy {
+  color: #f1c6c9 !important;
+}
+
+.buymesho-brand-header .buymesho-header-brand .buymesho-brand-name-mesho {
+  color: #fff !important;
+}
+
+.buymesho-brand-header .buymesho-header-brand .buymesho-brand-subtitle {
+  color: rgba(255, 238, 233, 0.72) !important;
+}
+
+.buymesho-brand-header form > div > div {
+  border-color: rgba(255, 246, 243, 0.3) !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 8px 22px rgba(20, 3, 9, 0.12) !important;
+}
+
+.buymesho-brand-header form input {
+  color: #fff !important;
+}
+
+.buymesho-brand-header form input::placeholder {
+  color: rgba(255, 238, 233, 0.67) !important;
+}
+
+.buymesho-brand-header .buymesho-brand-header__chips {
+  border-top: 1px solid rgba(255, 245, 242, 0.18) !important;
+  border-bottom: 0 !important;
+  background-color: rgba(10, 2, 8, 0.16) !important;
+}
+
+.buymesho-brand-header .buymesho-brand-header__chips button {
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: rgba(255, 241, 238, 0.78) !important;
+}
+
+.buymesho-brand-header .buymesho-brand-header__chips button[aria-pressed="true"] {
+  border-bottom-color: #c18f43 !important;
+  color: #fff !important;
+}
+
+.buymesho-brand-header .buymesho-brand-header__chips button:hover {
+  color: #fff !important;
+  background: transparent !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buymesho-brand-header button {
+    transition: none;
+  }
+}
