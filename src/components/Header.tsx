@@ -389,7 +389,9 @@ export default function Header({
               <form
                 onSubmit={(e: FormEvent<HTMLFormElement>) => {
                   e.preventDefault();
-                  onSearch(searchValue.trim());
+                  const query = searchValue.trim();
+                  if (!query) return;
+                  onSearch(query);
                 }}
                 className="w-full"
               >
@@ -402,7 +404,7 @@ export default function Header({
                       placeholder="Search listings, products, or services..."
                       className="w-full min-w-0 bg-transparent pl-1 text-sm text-bm-text dark:text-bm-text-muted placeholder:text-bm-text-subtle dark:placeholder:text-bm-text-subtle outline-none"
                     />
-                    <button type="submit" aria-label="Search listings" className="buymesho-explore-search-submit inline-flex shrink-0 items-center justify-center rounded-xl px-3 py-1.5 text-sm font-extrabold sm:px-4">
+                    <button type="submit" aria-label="Search listings" disabled={!searchValue.trim()} className="buymesho-explore-search-submit inline-flex shrink-0 items-center justify-center rounded-xl px-3 py-1.5 text-sm font-extrabold sm:px-4">
                       Search
                     </button>
                   </div>
