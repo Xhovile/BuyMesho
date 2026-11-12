@@ -623,29 +623,16 @@ main > div.pb-20 section {
   color: #8e1d30 !important;
 }
 
-/* The homepage live-events feature gets the same elevated, tactile finish as the Why BuyMesho cards. */
+/* The homepage live-events feature reuses the elevated red-accent card treatment from Why BuyMesho. */
 .buymesho-live-feature-card {
-  border-color: rgba(142, 29, 48, 0.2) !important;
-  background-color: #e9dfe3 !important;
+  border-color: var(--bm-border) !important;
+  background-color: var(--bm-surface) !important;
   background-image:
-    radial-gradient(circle at 100% 0%, rgba(193, 143, 67, 0.12), transparent 36%),
-    linear-gradient(135deg, #eee3e7 0%, #e7dbe2 54%, #dfe8eb 100%) !important;
+    linear-gradient(135deg, var(--bm-surface) 0%, var(--bm-surface) 52%, var(--bm-danger-bg) 100%) !important;
   box-shadow:
-    0 28px 64px -38px rgba(59, 24, 38, 0.42),
-    0 12px 28px -18px rgba(31, 41, 55, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.66) !important;
-}
-
-:root[data-theme="dark"] .buymesho-live-feature-card {
-  border-color: rgba(241, 198, 201, 0.18) !important;
-  background-color: #241922 !important;
-  background-image:
-    radial-gradient(circle at 100% 0%, rgba(193, 143, 67, 0.14), transparent 36%),
-    linear-gradient(135deg, #241720 0%, #302031 54%, #1c303b 100%) !important;
-  box-shadow:
-    0 30px 70px -34px rgba(0, 0, 0, 0.78),
-    0 12px 30px -18px rgba(0, 0, 0, 0.52),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+    0 30px 70px -24px rgba(0, 0, 0, 0.72),
+    0 10px 24px -14px rgba(127, 29, 29, 0.22),
+    inset 0 0 0 1px var(--bm-border-subtle) !important;
 }
 
 
