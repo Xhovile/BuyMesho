@@ -310,9 +310,9 @@ main > div.pb-20 section {
 
 .buymesho-brand-header .text-bm-text,
 .buymesho-brand-header .text-bm-text-muted,
-.buymesho-brand-header .text-zinc-700,
-.buymesho-brand-header .text-zinc-800,
-.buymesho-brand-header .text-zinc-900 {
+.buymesho-brand-header .text-zinc-700:not(.buymesho-header-status-pill),
+.buymesho-brand-header .text-zinc-800:not(.buymesho-header-status-pill),
+.buymesho-brand-header .text-zinc-900:not(.buymesho-header-status-pill) {
   color: rgba(255, 249, 247, 0.97) !important;
 }
 
@@ -468,4 +468,38 @@ main > div.pb-20 section {
 .buymesho-brand-header button:focus-visible {
   outline: 2px solid #c18f43 !important;
   outline-offset: 2px;
+}
+
+
+/* Stateful controls retain their original selected and unselected contrast. */
+.buymesho-brand-header .buymesho-header-tabs button {
+  border-color: transparent !important;
+  background-color: transparent !important;
+  color: rgba(255, 241, 238, 0.78) !important;
+  box-shadow: none !important;
+}
+
+.buymesho-brand-header .buymesho-header-tabs button.bg-bm-brand {
+  background-color: var(--bm-brand) !important;
+  color: var(--bm-on-brand) !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(20, 3, 9, 0.18) !important;
+}
+
+.buymesho-brand-header .buymesho-header-tabs button:not(.bg-bm-brand):hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+}
+
+/* Neutral payout status pills keep their light/dark surface and text pairing. */
+.buymesho-brand-header .buymesho-header-status-pill.text-zinc-700 {
+  color: #3f3f46 !important;
+  background-color: #f4f4f5 !important;
+  border-color: #e4e4e7 !important;
+}
+
+:root[data-theme="dark"] .buymesho-brand-header .buymesho-header-status-pill.text-zinc-700 {
+  color: #b8c0cc !important;
+  background-color: #1c2633 !important;
+  border-color: #303a48 !important;
 }
