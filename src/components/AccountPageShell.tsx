@@ -70,7 +70,7 @@ export default function AccountPageShell({
   return (
     <div className="min-h-screen bg-bm-bg text-bm-text dark:text-bm-text">
       {!hideNavigation && (
-        <header className="sticky top-0 z-40 border-b border-bm-border dark:border-bm-border bg-bm-surface/85 dark:bg-bm-surface/85 shadow-sm backdrop-blur-md">
+        <header className="buymesho-brand-header sticky top-0 z-40 border-b border-bm-border dark:border-bm-border bg-bm-surface/85 dark:bg-bm-surface/85 shadow-sm backdrop-blur-md">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
             <BrandMark />
             <div className="flex items-center gap-3">

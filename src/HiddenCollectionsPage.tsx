@@ -148,7 +148,7 @@ export default function HiddenCollectionsPage() {
 
   return (
     <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text">
-      <header className="sticky top-0 z-40 border-b border-bm-border bg-bm-surface/95 dark:bg-bm-surface/95 backdrop-blur-sm">
+      <header className="buymesho-brand-header sticky top-0 z-40 border-b border-bm-border bg-bm-surface/95 dark:bg-bm-surface/95 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <button
             type="button"
@@ -159,10 +159,11 @@ export default function HiddenCollectionsPage() {
             Back
           </button>
 
-          <div className="flex items-center gap-2 rounded-full border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-1 shadow-sm">
+          <div className="buymesho-header-tabs flex items-center gap-2 rounded-full border border-bm-border dark:border-bm-border bg-bm-surface-muted dark:bg-bm-surface-subtle p-1 shadow-sm">
             <button
               type="button"
               onClick={() => setActiveTab("listings")}
+              aria-pressed={activeTab === "listings"}
               className={`px-4 py-2 rounded-full text-sm font-extrabold transition-colors ${
                 activeTab === "listings" ? "bg-bm-brand text-bm-on-brand" : "text-bm-text-muted dark:text-bm-text-muted hover:text-bm-text"
               }`}
@@ -172,6 +173,7 @@ export default function HiddenCollectionsPage() {
             <button
               type="button"
               onClick={() => setActiveTab("sellers")}
+              aria-pressed={activeTab === "sellers"}
               className={`px-4 py-2 rounded-full text-sm font-extrabold transition-colors ${
                 activeTab === "sellers" ? "bg-bm-brand text-bm-on-brand" : "text-bm-text-muted dark:text-bm-text-muted hover:text-bm-text"
               }`}

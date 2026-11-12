@@ -24,12 +24,12 @@ function Section({ title, icon, children }: SectionProps) {
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text">
-      <header className="border-b border-bm-border dark:border-bm-border bg-bm-surface">
+      <header className="buymesho-brand-header border-b border-bm-border dark:border-bm-border bg-bm-surface">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <button
             type="button"
             onClick={() => navigateToPath(HOME_PATH)}
-            className="text-left"
+            className="buymesho-header-brand text-left"
           >
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 overflow-hidden rounded-xl bg-bm-surface ring-1 ring-bm-border shadow-sm">

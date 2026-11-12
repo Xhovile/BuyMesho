@@ -72,7 +72,7 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-bm-border/80 bg-bm-surface/90 dark:bg-bm-surface/90 px-4 py-3 backdrop-blur-sm">
+      <header className="buymesho-brand-header sticky top-0 z-50 border-b border-bm-border/80 bg-bm-surface/90 dark:bg-bm-surface/90 px-4 py-3 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl flex-col gap-3">
           <div className="flex items-center justify-between gap-4">
             <BrandMark />

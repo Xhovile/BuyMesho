@@ -56,12 +56,12 @@ export default function SavedPage() {
 
   return (
     <div className="min-h-screen bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text">
-      <header className="sticky top-0 z-40 border-b border-bm-border bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
+      <header className="buymesho-brand-header sticky top-0 z-40 border-b border-bm-border bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <button
             type="button"
             onClick={() => navigateToPath(HOME_PATH)}
-            className="flex items-center gap-2.5 min-w-0"
+            className="buymesho-header-brand flex items-center gap-2.5 min-w-0"
           >
             <div className="w-10 h-10 bg-bm-brand rounded-2xl flex items-center justify-center text-bm-on-brand font-extrabold text-xl shadow-lg shadow-bm-brand/20">
               B

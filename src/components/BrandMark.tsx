@@ -9,7 +9,7 @@ export default function BrandMark({ subtitle = "Home" }: BrandMarkProps) {
   return (
     <button
       type="button"
-      className="flex items-center gap-2.5 group min-w-0"
+      className="buymesho-header-brand flex items-center gap-2.5 group min-w-0"
       onClick={() => navigateToPath(HOME_PATH)}
     >
       <span className="inline-flex h-11 w-11 flex-shrink-0 overflow-hidden bg-transparent md:h-10 md:w-10">
@@ -21,10 +21,10 @@ export default function BrandMark({ subtitle = "Home" }: BrandMarkProps) {
       </span>
       <div className="min-w-0 text-left">
         <p className="text-xl font-extrabold tracking-tight md:text-lg">
-          <span className="text-bm-brand">Buy</span>
-          <span className="text-bm-text-muted">Mesho</span>
+          <span className="buymesho-brand-name-buy text-bm-brand">Buy</span>
+          <span className="buymesho-brand-name-mesho text-bm-text-muted">Mesho</span>
         </p>
-        <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-bm-text-subtle">
+        <p className="buymesho-brand-subtitle text-[9px] font-bold uppercase tracking-[0.18em] text-bm-text-subtle">
           {subtitle}
         </p>
       </div>

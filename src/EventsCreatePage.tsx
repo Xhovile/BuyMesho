@@ -719,9 +719,9 @@ export default function EventsCreatePage() {
 
   return (
     <div className="min-h-screen w-screen max-w-none overflow-x-clip bg-bm-surface-muted dark:bg-bm-surface-muted text-bm-text dark:text-bm-text">
-      <header className="sticky top-0 z-40 w-full border-b border-bm-border/80 bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
+      <header className="buymesho-brand-header sticky top-0 z-40 w-full border-b border-bm-border/80 bg-bm-surface/90 dark:bg-bm-surface/90 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-7xl min-w-0 items-center justify-between gap-4 px-4 py-3">
-          <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex min-w-0 items-center gap-2.5">
+          <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="buymesho-header-brand flex min-w-0 items-center gap-2.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-bm-brand text-xl font-extrabold text-bm-on-brand shadow-lg shadow-bm-brand/20">B</div>
             <div className="text-left">
               <p className="text-lg font-extrabold tracking-tight">

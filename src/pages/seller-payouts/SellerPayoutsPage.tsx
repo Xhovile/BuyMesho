@@ -118,7 +118,7 @@ function SellerPayoutsManageView() {
 
   return (
     <div className="min-h-screen bg-[#f4f5f7] text-bm-text dark:text-bm-text">
-      <header className="sticky top-0 z-40 border-b border-bm-border bg-bm-surface/95 dark:bg-bm-surface/95">
+      <header className="buymesho-brand-header sticky top-0 z-40 border-b border-bm-border bg-bm-surface/95 dark:bg-bm-surface/95">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <BrandMark />
           <div className="flex w-full items-center gap-3 sm:w-auto">

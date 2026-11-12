@@ -281,7 +281,7 @@ export default function Header({
 
   return (
     <>
-      <nav className="sticky top-0 z-50">
+      <nav className="buymesho-brand-header sticky top-0 z-50">
         <div className="bg-bm-surface-muted dark:bg-bm-surface-muted border-b border-bm-border dark:border-bm-border shadow-sm">
           <div className="mx-auto max-w-7xl overflow-visible">
             <div
