@@ -698,6 +698,11 @@ main > div.pb-20 section {
   box-shadow: 0 0 0 3px rgba(224, 1, 6, 0.18), 0 10px 24px rgba(67, 38, 49, 0.12) !important;
 }
 
+:root:not([data-theme="dark"]) .buymesho-brand-header .buymesho-explore-search-field:focus-within {
+  border-color: #e00106 !important;
+  box-shadow: 0 0 0 3px rgba(224, 1, 6, 0.18), 0 10px 24px rgba(67, 38, 49, 0.12) !important;
+}
+
 :root[data-theme="dark"] .buymesho-brand-header .buymesho-explore-search-field:focus-within {
   border-color: #ff5b62 !important;
   box-shadow: 0 0 0 3px rgba(255, 91, 98, 0.22), 0 10px 24px rgba(0, 0, 0, 0.22) !important;
@@ -725,6 +730,14 @@ main > div.pb-20 section {
   box-shadow: 0 2px 6px rgba(185, 0, 5, 0.24);
   transform: translateY(1px) scale(0.96);
 }
+
+.buymesho-brand-header .buymesho-explore-search-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  box-shadow: none;
+  transform: none;
+}
+
 
 .buymesho-brand-header .buymesho-explore-search-submit:focus-visible {
   outline: 2px solid #c18f43 !important;
