@@ -9,7 +9,7 @@ export default function EventDetailsHeader({ isLoggedIn }: { isLoggedIn: boolean
       <FloatingCartButton isLoggedIn={isLoggedIn} />
       <header className="buymesho-brand-header fixed inset-x-0 top-0 z-50 border-b border-bm-border bg-bm-surface/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
-          <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="flex min-w-0 items-center gap-3 text-left">
+          <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="buymesho-header-brand flex min-w-0 items-center gap-3 text-left">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-bm-brand text-bm-on-brand shadow-lg shadow-bm-brand/20">
               <Ticket className="h-5 w-5" />
             </div>
