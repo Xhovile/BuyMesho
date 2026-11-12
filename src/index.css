@@ -493,3 +493,157 @@ main > div.pb-20 section {
   color: #fff !important;
 }
 
+
+
+/* Light-theme Deep Burgundy Fusion: soften the header while keeping its identity. */
+:root:not([data-theme="dark"]) .buymesho-brand-header {
+  color: #40343b !important;
+  background-color: #d8bfc6 !important;
+  background-image:
+    radial-gradient(circle at 86% 12%, rgba(193, 143, 67, 0.18), transparent 25%),
+    radial-gradient(circle at 61% 112%, rgba(69, 112, 128, 0.2), transparent 38%),
+    linear-gradient(112deg, #d5b7c0 0%, #d9bdc8 34%, #d9c9d9 68%, #c4d5da 100%) !important;
+  border-bottom-color: rgba(88, 53, 66, 0.24) !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .text-bm-text:not(.buymesho-header-status-pill),
+:root:not([data-theme="dark"]) .buymesho-brand-header .text-bm-text-muted:not(.buymesho-header-status-pill),
+:root:not([data-theme="dark"]) .buymesho-brand-header .text-zinc-700:not(.buymesho-header-status-pill),
+:root:not([data-theme="dark"]) .buymesho-brand-header .text-zinc-800:not(.buymesho-header-status-pill),
+:root:not([data-theme="dark"]) .buymesho-brand-header .text-zinc-900:not(.buymesho-header-status-pill) {
+  color: #40343b !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .text-bm-text-subtle:not(.buymesho-header-status-pill),
+:root:not([data-theme="dark"]) .buymesho-brand-header .text-zinc-500:not(.buymesho-header-status-pill),
+:root:not([data-theme="dark"]) .buymesho-brand-header .text-zinc-600:not(.buymesho-header-status-pill) {
+  color: #786d75 !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .text-bm-brand:not(.buymesho-header-status-pill) {
+  color: #941d31 !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .text-bm-danger:not(.buymesho-header-status-pill) {
+  color: #a51f30 !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .border-bm-border:not(.buymesho-header-status-pill),
+:root:not([data-theme="dark"]) .buymesho-brand-header .border-bm-border-subtle:not(.buymesho-header-status-pill),
+:root:not([data-theme="dark"]) .buymesho-brand-header .border-zinc-200:not(.buymesho-header-status-pill) {
+  border-color: rgba(91, 55, 69, 0.24) !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .bg-bm-surface:not(.buymesho-header-status-pill),
+:root:not([data-theme="dark"]) .buymesho-brand-header .bg-bm-surface-muted:not(.buymesho-header-status-pill),
+:root:not([data-theme="dark"]) .buymesho-brand-header .bg-white:not(.buymesho-header-status-pill) {
+  background-color: rgba(255, 255, 255, 0.24) !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]) {
+  border-color: rgba(91, 55, 69, 0.3) !important;
+  background-color: rgba(255, 255, 255, 0.38) !important;
+  color: #493943 !important;
+  box-shadow: 0 7px 18px rgba(67, 38, 49, 0.1);
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):hover {
+  border-color: rgba(91, 55, 69, 0.42) !important;
+  background-color: rgba(255, 255, 255, 0.58) !important;
+  box-shadow: 0 9px 22px rgba(67, 38, 49, 0.14);
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]) svg {
+  color: #5a3b48 !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .buymesho-header-brand {
+  color: #40343b !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .buymesho-header-brand .buymesho-brand-name-buy {
+  color: #941d31 !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .buymesho-header-brand .buymesho-brand-name-mesho {
+  color: #625b64 !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .buymesho-header-brand .buymesho-brand-subtitle {
+  color: rgba(64, 52, 59, 0.68) !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header form > div > div {
+  border-color: rgba(91, 55, 69, 0.28) !important;
+  background-color: rgba(255, 255, 255, 0.36) !important;
+  box-shadow: 0 8px 22px rgba(67, 38, 49, 0.08) !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header form input {
+  color: #40343b !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header form input::placeholder {
+  color: rgba(64, 52, 59, 0.58) !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .buymesho-brand-header__chips {
+  border-top-color: rgba(91, 55, 69, 0.2) !important;
+  background-color: rgba(89, 48, 63, 0.07) !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .buymesho-brand-header__chips button {
+  color: rgba(64, 52, 59, 0.76) !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .buymesho-brand-header__chips button[aria-pressed="true"] {
+  border-bottom-color: #a87534 !important;
+  color: #8e1d30 !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .buymesho-brand-header__chips button:hover {
+  color: #8e1d30 !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .bg-bm-brand:not([role="menu"] *) {
+  background-color: #941d31 !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .buymesho-header-tabs button {
+  color: rgba(64, 52, 59, 0.74) !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .buymesho-header-tabs button[aria-pressed="true"] {
+  background-color: #941d31 !important;
+  color: #fff !important;
+}
+
+:root:not([data-theme="dark"]) .buymesho-brand-header .buymesho-header-tabs button[aria-pressed="false"]:hover {
+  background-color: rgba(255, 255, 255, 0.48) !important;
+  color: #8e1d30 !important;
+}
+
+/* The homepage live-events feature gets the same elevated, tactile finish as the Why BuyMesho cards. */
+.buymesho-live-feature-card {
+  border-color: rgba(142, 29, 48, 0.2) !important;
+  background-color: #e9dfe3 !important;
+  background-image:
+    radial-gradient(circle at 100% 0%, rgba(193, 143, 67, 0.12), transparent 36%),
+    linear-gradient(135deg, #eee3e7 0%, #e7dbe2 54%, #dfe8eb 100%) !important;
+  box-shadow:
+    0 28px 64px -38px rgba(59, 24, 38, 0.42),
+    0 12px 28px -18px rgba(31, 41, 55, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.66) !important;
+}
+
+:root[data-theme="dark"] .buymesho-live-feature-card {
+  border-color: rgba(241, 198, 201, 0.18) !important;
+  background-color: #241922 !important;
+  background-image:
+    radial-gradient(circle at 100% 0%, rgba(193, 143, 67, 0.14), transparent 36%),
+    linear-gradient(135deg, #241720 0%, #302031 54%, #1c303b 100%) !important;
+  box-shadow:
+    0 30px 70px -34px rgba(0, 0, 0, 0.78),
+    0 12px 30px -18px rgba(0, 0, 0, 0.52),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+}
