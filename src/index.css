@@ -750,3 +750,15 @@ main > div.pb-20 section {
     transition: none;
   }
 }
+
+/* Keep desktop header menu triggers opaque on both Home and Market headers. */
+:root .buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):not(.bg-bm-danger):not(.buymesho-explore-search-submit)[aria-haspopup="menu"] {
+  border-color: var(--bm-border) !important;
+  background-color: var(--bm-surface) !important;
+}
+
+:root .buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):not(.bg-bm-danger):not(.buymesho-explore-search-submit)[aria-haspopup="menu"]:hover {
+  border-color: var(--bm-border) !important;
+  background-color: var(--bm-surface-muted) !important;
+}
+
