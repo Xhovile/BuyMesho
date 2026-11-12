@@ -34,7 +34,7 @@ export default function EventsStrip({
   return (
     <section className="relative left-1/2 w-screen -translate-x-1/2 overflow-hidden border-y border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
-        <div className="relative overflow-hidden rounded-[1.75rem] border border-bm-brand/20 bg-gradient-to-br from-bm-brand/10 via-bm-surface to-bm-surface-raised px-5 py-6 text-bm-text sm:px-6 sm:py-7">
+        <div className="buymesho-live-feature-card relative overflow-hidden rounded-[1.75rem] border px-5 py-6 text-bm-text sm:px-6 sm:py-7">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-bm-brand">Live on BuyMesho</p>
