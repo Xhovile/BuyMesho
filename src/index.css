@@ -375,10 +375,6 @@ main > div.pb-20 section {
   color: #f1c6c9 !important;
 }
 
-:root[data-theme="dark"] .buymesho-brand-header .buymesho-header-brand .buymesho-brand-name-buy {
-  color: #E00106 !important;
-}
-
 .buymesho-brand-header .buymesho-header-brand .buymesho-brand-name-mesho {
   color: #fff !important;
 }
@@ -655,7 +651,7 @@ main > div.pb-20 section {
 
 /* Dark-theme wordmark and category chips keep the brand red visible. */
 :root[data-theme="dark"] .buymesho-brand-header .buymesho-header-brand .buymesho-brand-name-buy {
-  color: #ff5b62 !important;
+  color: #E00106 !important;
 }
 
 :root[data-theme="dark"] .buymesho-brand-header .buymesho-header-brand .buymesho-brand-name-mesho {
