@@ -342,7 +342,7 @@ main > div.pb-20 section {
   background-color: rgba(255, 255, 255, 0.075) !important;
 }
 
-.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]) {
+.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):not(.bg-bm-danger) {
   border-color: rgba(255, 246, 243, 0.32) !important;
   background-color: rgba(255, 255, 255, 0.09) !important;
   color: #fff !important;
@@ -354,7 +354,7 @@ main > div.pb-20 section {
     transform 160ms ease;
 }
 
-.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):hover {
+.buymesho-brand-header button:not(.buymesho-header-brand):not([role="menu"] *):not([aria-pressed]):not(.bg-bm-danger):hover {
   border-color: rgba(255, 249, 247, 0.52) !important;
   background-color: rgba(255, 255, 255, 0.16) !important;
   box-shadow: 0 9px 22px rgba(20, 3, 9, 0.2);
