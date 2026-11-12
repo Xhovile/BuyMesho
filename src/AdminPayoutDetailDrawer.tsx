@@ -130,7 +130,18 @@ export default function AdminPayoutDetailDrawer(props: Props) {
     document.body.style.overflow = "auto";
     document.body.style.backgroundColor = "#f8fafc";
 
+    const resetPageScroll = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+
+    // The queue is hidden above this workspace, so discard its previous scroll offset.
+    resetPageScroll();
+    const scrollResetFrame = window.requestAnimationFrame(resetPageScroll);
+
     return () => {
+      window.cancelAnimationFrame(scrollResetFrame);
       hiddenSiblings.forEach(({ element, display }) => {
         element.style.display = display;
       });
