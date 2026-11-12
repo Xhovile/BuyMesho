@@ -72,10 +72,10 @@ export default function WhyBuyMeshoSection({
               </p>
             </div>
 
+            {/* Scroll owns card transforms; CSS shadows provide hover feedback without competing desktop transform animations. */}
             <div className="grid gap-3 md:grid-cols-3 md:gap-0">
               <motion.article
                 style={reducedMotion ? { y: 0, scale: 1, rotate: cardAnimations[0].rotate } : { y: card1Y, scale: card1Scale, rotate: card1Rotate }}
-                whileHover={reducedMotion ? undefined : { y: -8, rotate: cardAnimations[0].hoverRotate }}
                 className="relative z-30 rounded-3xl border border-bm-border bg-gradient-to-br from-bm-surface via-bm-surface to-bm-danger-bg p-5 text-bm-text dark:text-bm-text shadow-[0_30px_70px_-24px_rgba(0,0,0,0.72),0_10px_24px_-14px_rgba(127,29,29,0.22)] ring-1 ring-bm-border-subtle transition-shadow duration-200 hover:shadow-[0_38px_80px_-24px_rgba(0,0,0,0.78),0_14px_30px_-14px_rgba(127,29,29,0.24)] sm:p-6 md:min-h-[210px] md:p-6 will-change-transform"
               >
                 <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-bm-text-subtle">01 — Access</p>
@@ -84,7 +84,6 @@ export default function WhyBuyMeshoSection({
 
               <motion.article
                 style={reducedMotion ? { y: 0, scale: 1, rotate: cardAnimations[1].rotate } : { y: card2Y, scale: card2Scale, rotate: card2Rotate }}
-                whileHover={reducedMotion ? undefined : { y: -8, rotate: cardAnimations[1].hoverRotate }}
                 className="relative z-20 -mt-3 rounded-3xl border border-bm-border bg-gradient-to-br from-bm-surface via-bm-surface to-bm-warning-bg p-5 text-bm-text dark:text-bm-text shadow-[0_34px_76px_-24px_rgba(0,0,0,0.74),0_12px_28px_-14px_rgba(180,83,9,0.2)] ring-1 ring-bm-border-subtle transition-shadow duration-200 hover:shadow-[0_42px_86px_-24px_rgba(0,0,0,0.8),0_16px_34px_-14px_rgba(180,83,9,0.22)] sm:p-6 md:-ml-5 md:-mt-0 md:min-h-[235px] md:p-6 will-change-transform"
               >
                 <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-bm-warning">02 — Purpose</p>
@@ -95,7 +94,6 @@ export default function WhyBuyMeshoSection({
 
               <motion.article
                 style={reducedMotion ? { y: 0, scale: 1, rotate: cardAnimations[2].rotate } : { y: card3Y, scale: card3Scale, rotate: card3Rotate }}
-                whileHover={reducedMotion ? undefined : { y: -8, rotate: cardAnimations[2].hoverRotate }}
                 className="relative z-10 -mt-3 rounded-3xl border border-bm-border bg-gradient-to-br from-bm-surface via-bm-surface to-bm-surface-muted p-5 text-bm-text dark:text-bm-text shadow-[0_30px_70px_-24px_rgba(0,0,0,0.72),0_10px_24px_-14px_rgba(14,116,144,0.18)] ring-1 ring-bm-border-subtle transition-shadow duration-200 hover:shadow-[0_38px_80px_-24px_rgba(0,0,0,0.78),0_14px_30px_-14px_rgba(14,116,144,0.2)] sm:p-6 md:-ml-5 md:-mt-0 md:min-h-[210px] md:p-6 will-change-transform"
               >
                 <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-bm-text-muted">03 — Structure</p>
