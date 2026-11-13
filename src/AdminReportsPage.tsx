@@ -565,6 +565,7 @@ export default function AdminReportsPage() {
           ? currentContentDescription
           : "Review reported conversations, keep evidence, and resolve abuse without deleting the record."
       }
+      isRefreshing={mainTab === "content" ? loading : messageLoading}
       onRefresh={() => {
         if (mainTab === "content") {
           void fetchContentReports();
