@@ -176,6 +176,13 @@ test("event guide URLs resolve to their dedicated routes", () => {
   assert.equal(getAppRouteFromLocation({ pathname: "/create-event-malawi", search: "" }), "event_creator_guide");
 });
 
+test("Admin Disputes resolves to its dedicated protected workspace route", () => {
+  assert.equal(
+    getAppRouteFromLocation({ pathname: "/admin/disputes", search: "" }),
+    "admin_disputes",
+  );
+});
+
 test("marketplace intent pages have distinct indexable metadata", () => {
   const buy = getRouteSEO("/buy-online-malawi", "buy_online_malawi");
   assert.equal(buy.canonicalPath, "/buy-online-malawi");
