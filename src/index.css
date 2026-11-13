@@ -755,3 +755,31 @@ main > div.pb-20 section {
   background-image: none !important;
 }
 
+/* Admin Workspace refresh keeps the true BuyMesho red inside the tinted header. */
+.buymesho-brand-header button.admin-workspace-refresh,
+:root:not([data-theme="dark"]) .buymesho-brand-header button.admin-workspace-refresh,
+:root[data-theme="dark"] .buymesho-brand-header button.admin-workspace-refresh {
+  background-color: #E00106 !important;
+  border-color: #E00106 !important;
+  color: #FFFFFF !important;
+}
+
+.buymesho-brand-header button.admin-workspace-refresh svg,
+:root:not([data-theme="dark"]) .buymesho-brand-header button.admin-workspace-refresh svg,
+:root[data-theme="dark"] .buymesho-brand-header button.admin-workspace-refresh svg {
+  color: #FFFFFF !important;
+}
+
+.buymesho-brand-header button.admin-workspace-refresh:hover:not(:disabled),
+:root:not([data-theme="dark"]) .buymesho-brand-header button.admin-workspace-refresh:hover:not(:disabled),
+:root[data-theme="dark"] .buymesho-brand-header button.admin-workspace-refresh:hover:not(:disabled) {
+  background-color: #C90008 !important;
+  border-color: #C90008 !important;
+}
+
+.buymesho-brand-header button.admin-workspace-refresh:active:not(:disabled),
+:root:not([data-theme="dark"]) .buymesho-brand-header button.admin-workspace-refresh:active:not(:disabled),
+:root[data-theme="dark"] .buymesho-brand-header button.admin-workspace-refresh:active:not(:disabled) {
+  background-color: #B90005 !important;
+  border-color: #B90005 !important;
+}
