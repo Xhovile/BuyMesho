@@ -87,7 +87,7 @@ export default function AdminWorkspaceShell({
           <div className="min-w-0">
             {pages.map(([key, page]) => {
               const active = key === pageKey;
-              const pagePath = key.split("?")[0];
+              const pagePath = key.split("?")[0] ?? key;
               return (
                 <AdminWorkspaceContext.Provider
                   key={key}
