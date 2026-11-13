@@ -1,5 +1,5 @@
-import { createContext, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { createContext, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import { navigateToPath } from "../../lib/appNavigation";
 import EventTicketSearchPanel from "../../components/EventTicketSearchPanel";
 import AdminWorkspaceNav from "./AdminWorkspaceNav";
@@ -9,6 +9,8 @@ export type AdminWorkspaceContextValue = {
   pageKey: string;
   isActive: boolean;
   pageHeaderTarget: HTMLDivElement | null;
+  isRefreshing: boolean;
+  registerRefresh: (handler: (() => void) | undefined, isRefreshing: boolean) => void;
 };
 
 export const AdminWorkspaceContext = createContext<AdminWorkspaceContextValue | null>(null);
@@ -45,6 +47,12 @@ export default function AdminWorkspaceShell({
   children,
 }: AdminWorkspaceShellProps) {
   const [visitedPages, setVisitedPages] = useState<Record<string, ReactNode>>({});
+  const [refreshHandler, setRefreshHandler] = useState<(() => void) | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const registerRefresh = useCallback((handler: (() => void) | undefined, refreshing: boolean) => {
+    setRefreshHandler(() => handler ?? null);
+    setIsRefreshing(refreshing);
+  }, []);
   const pageHeaderRef = useRef<HTMLDivElement | null>(null);
   const [pageHeaderTarget, setPageHeaderTarget] = useState<HTMLDivElement | null>(null);
 
@@ -80,6 +88,17 @@ export default function AdminWorkspaceShell({
               <ArrowLeft className="h-4 w-4" />
               Back
             </button>
+            <button
+              type="button"
+              onClick={() => refreshHandler?.()}
+              disabled={!refreshHandler || isRefreshing}
+              aria-busy={isRefreshing}
+              className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
+              title={refreshHandler ? "Refresh this workspace page" : "Refresh is unavailable on this page"}
+            >
+              {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              {isRefreshing ? "Refreshing…" : "Refresh"}
+            </button>
           </div>
         </header>
 
@@ -99,7 +118,7 @@ export default function AdminWorkspaceShell({
               return (
                 <AdminWorkspaceContext.Provider
                   key={key}
-                  value={{ pathname: pagePath, pageKey: key, isActive: active, pageHeaderTarget }}
+                  value={{ pathname: pagePath, pageKey: key, isActive: active, pageHeaderTarget, isRefreshing: active && isRefreshing, registerRefresh }}
                 >
                   <div hidden={!active} aria-hidden={!active} className="min-w-0">
                     <Suspense fallback={active ? <AdminPageLoader /> : null}>
