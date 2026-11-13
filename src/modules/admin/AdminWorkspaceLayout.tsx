@@ -1,5 +1,6 @@
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import { useContext, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { navigateToPath } from "../../lib/appNavigation";
 import AdminWorkspaceNav from "./AdminWorkspaceNav";
 import DiagnosticsDrawer from "./DiagnosticsDrawer";
