@@ -385,6 +385,7 @@ export default function TransactionInspectorPage() {
   const [payouts, setPayouts] = useState<PayoutRow[]>([]);
   const [sellerHistory, setSellerHistory] = useState<PayoutRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
@@ -428,7 +429,7 @@ export default function TransactionInspectorPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [refreshVersion]);
 
   const sortedPayments = useMemo(() => [...payments].sort((a, b) => Date.parse(b.updated_at || b.created_at || "") - Date.parse(a.updated_at || a.created_at || "")), [payments]);
   const sortedWebhooks = useMemo(() => [...webhookEvents].sort((a, b) => Date.parse(b.created_at || "") - Date.parse(a.created_at || "")), [webhookEvents]);
@@ -664,7 +665,7 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
     <AdminWorkspaceLayout
       title="Transaction Inspector"
       description="A separate admin page for the transaction flow, payout resolution, and seller payout history."
-      onRefresh={() => window.location.reload()}
+      isRefreshing={loading} onRefresh={() => setRefreshVersion((value) => value + 1)}
     >
       <main className="space-y-8">
         <section className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-6 shadow-sm">
