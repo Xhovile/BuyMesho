@@ -7,6 +7,17 @@ import { resolveTrackingTarget } from "./orderFlow";
 const hasWindow = () => typeof window !== "undefined";
 const getCurrentAppPath = () => `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
+type AppRoutePopStateEvent = PopStateEvent & { __buymeshoRouteNavigation?: true };
+
+export const isAppRouteNavigationEvent = (event: Event) =>
+  (event as AppRoutePopStateEvent).__buymeshoRouteNavigation === true;
+
+const dispatchAppRouteChange = () => {
+  const event = new PopStateEvent("popstate") as AppRoutePopStateEvent;
+  Object.defineProperty(event, "__buymeshoRouteNavigation", { value: true });
+  window.dispatchEvent(event);
+};
+
 export function navigateToPath(path: string, options?: { replace?: boolean; scroll?: boolean }) {
   if (!hasWindow()) return;
   const url = new URL(path, window.location.href);
@@ -23,7 +34,7 @@ export function navigateToPath(path: string, options?: { replace?: boolean; scro
   if (targetPath === currentPath && !shouldReplace) return;
 
   if (shouldReplace) window.history.replaceState(markAppHistoryState(), "", url.toString()); else window.history.pushState(markAppHistoryState(), "", url.toString());
-  window.dispatchEvent(new PopStateEvent("popstate"));
+  dispatchAppRouteChange();
   if (options?.scroll !== false) window.scrollTo({ top: 0, behavior: "smooth" });
 }
 export const navigateBackOrPath = (fallbackPath: string) => { if (!hasWindow()) return; if (isAppHistoryState()) { window.history.back(); return; } navigateToPath(fallbackPath); };
