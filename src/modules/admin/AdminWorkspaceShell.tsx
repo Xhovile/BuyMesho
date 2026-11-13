@@ -99,7 +99,7 @@ export default function AdminWorkspaceShell({
               onClick={() => refreshHandler?.()}
               disabled={!refreshHandler || isRefreshing}
               aria-busy={isRefreshing}
-              className="inline-flex items-center gap-2 justify-self-end rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand transition hover:bg-bm-brand-hover active:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
+              className="admin-workspace-refresh inline-flex items-center gap-2 justify-self-end rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-white transition hover:bg-bm-brand-hover active:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
               title={refreshHandler ? "Refresh this workspace page" : "Refresh is unavailable on this page"}
             >
               {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
