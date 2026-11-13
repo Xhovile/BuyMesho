@@ -41,6 +41,7 @@ export default function AdminMessagesPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [cursorStack, setCursorStack] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -67,7 +68,7 @@ export default function AdminMessagesPage() {
       }
     }, 180);
     return () => { cancelled = true; controller.abort(); window.clearTimeout(timer); };
-  }, [filter, query]);
+  }, [filter, query, refreshVersion]);
 
   useEffect(() => {
     const loadSummary = async () => {
@@ -79,7 +80,7 @@ export default function AdminMessagesPage() {
       }
     };
     void loadSummary();
-  }, [items.length]);
+  }, [items.length, refreshVersion]);
 
   const loadNextPage = async () => {
     if (!nextCursor || loading) return;
@@ -100,7 +101,7 @@ export default function AdminMessagesPage() {
   };
 
   return (
-    <AdminWorkspaceLayout title="Messages" description="Monitor marketplace conversations without becoming a participant in them.">
+    <AdminWorkspaceLayout title="Messages" description="Monitor marketplace conversations without becoming a participant in them." isRefreshing={loading} onRefresh={() => setRefreshVersion((value) => value + 1)}>
       <section className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm"><p className="text-xs font-bold uppercase text-bm-text-subtle dark:text-bm-text-subtle">Messages</p><p className="mt-1 text-2xl font-black text-bm-text dark:text-bm-text">{summary.unread}</p><p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle">unread for admin review</p></div>
