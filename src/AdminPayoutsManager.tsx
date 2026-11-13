@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,6 +16,7 @@ import { useIsAdmin } from "./hooks/useIsAdmin";
 import { getSellerPayoutStatusLabel, getVisibleAdminActions } from "./modules/payouts/uiModel";
 import ActionModal from "./components/ActionModal";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
+import { AdminWorkspaceContext } from "./modules/admin/AdminWorkspaceShell";
 import FormDropdown from "./components/FormDropdown";
 import PayoutQueueCard from "./PayoutQueueCard";
 import PayoutDetailDrawer from "./AdminPayoutDetailDrawer";
@@ -313,6 +314,7 @@ function normalizePayoutRow(row: PayoutRow): PayoutRow {
 }
 
 export default function AdminPayoutsManager() {
+  const workspaceContext = useContext(AdminWorkspaceContext);
   const { user } = useAuthUser();
   const { isAdmin } = useIsAdmin(user);
 
@@ -375,14 +377,14 @@ export default function AdminPayoutsManager() {
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-      if (isAppRouteNavigationEvent(event) || window.location.pathname !== "/admin/payouts") return;
+      if ((workspaceContext && !workspaceContext.isActive) || isAppRouteNavigationEvent(event)) return;
       setSelectedId(null);
       setDrawerHistoryActive(false);
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  }, [workspaceContext?.isActive]);
 
   const reloadSelected = async () => {
     await load(pageIndex);
