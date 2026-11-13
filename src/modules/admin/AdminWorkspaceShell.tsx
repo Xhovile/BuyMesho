@@ -1,8 +1,9 @@
 import { createContext, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
-import { navigateToPath } from "../../lib/appNavigation";
+import { ADMIN_AUDIT_PATH, navigateToPath } from "../../lib/appNavigation";
 import EventTicketSearchPanel from "../../components/EventTicketSearchPanel";
 import AdminWorkspaceNav from "./AdminWorkspaceNav";
+import DiagnosticsDrawer from "./DiagnosticsDrawer";
 
 export type AdminWorkspaceContextValue = {
   pathname: string;
@@ -80,20 +81,23 @@ export default function AdminWorkspaceShell({
     <div className="min-h-screen bg-bm-surface-muted text-bm-text dark:bg-bm-surface-muted dark:text-bm-text">
         <header className="buymesho-brand-header sticky top-0 z-40 border-b border-bm-border bg-bm-surface/90 backdrop-blur-sm dark:bg-bm-surface/90">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-            <button
-              type="button"
-              onClick={() => navigateToPath("/")}
-              className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold hover:bg-bm-surface-muted dark:bg-bm-surface dark:hover:bg-bm-surface-muted"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </button>
+            <div className="flex min-w-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigateToPath("/")}
+                className="inline-flex items-center gap-2 rounded-2xl border border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold hover:bg-bm-surface-muted dark:bg-bm-surface dark:hover:bg-bm-surface-muted"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </button>
+              {pathname === ADMIN_AUDIT_PATH ? <DiagnosticsDrawer /> : null}
+            </div>
             <button
               type="button"
               onClick={() => refreshHandler?.()}
               disabled={!refreshHandler || isRefreshing}
               aria-busy={isRefreshing}
-              className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand transition hover:bg-bm-brand-hover active:bg-bm-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
               title={refreshHandler ? "Refresh this workspace page" : "Refresh is unavailable on this page"}
             >
               {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
