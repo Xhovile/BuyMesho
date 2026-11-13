@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { CircleAlert, Loader2, ShieldCheck } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
+import { AdminWorkspaceContext } from "./modules/admin/AdminWorkspaceShell";
 import AdminPaymentDetailsDrawer from "./AdminPaymentDetailsDrawer";
 import AdminPaymentsToolbar from "./adminPayments/AdminPaymentsToolbar";
 import AdminPaymentsTable from "./adminPayments/AdminPaymentsTable";
@@ -39,6 +40,7 @@ type InvestigationResponse = {
 };
 
 export default function AdminPaymentsPage() {
+  const workspaceContext = useContext(AdminWorkspaceContext);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [webhookEvents, setWebhookEvents] = useState<WebhookEventRow[]>([]);
   const [summary, setSummary] = useState<SummaryResponse>({});
@@ -82,12 +84,12 @@ export default function AdminPaymentsPage() {
   useEffect(() => {
     if (!selectedReference) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (window.location.pathname !== "/admin/payments") return;
+      if (workspaceContext && !workspaceContext.isActive) return;
       if (event.key === "Escape") setSelectedReference(null);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedReference]);
+  }, [selectedReference, workspaceContext?.isActive]);
 
   const stats = useMemo(() => ({
     totalPayments: summary?.summary?.total_payments ?? payments.length,
