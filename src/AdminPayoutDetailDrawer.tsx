@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ComponentProps } from "react";
 import { apiFetch } from "./lib/api";
 import PayoutDetailDrawer from "./PayoutDetailDrawer";
+import { AdminWorkspaceContext } from "./modules/admin/AdminWorkspaceShell";
 
 type Props = ComponentProps<typeof PayoutDetailDrawer>;
 type Banner = { type: "success" | "error"; message: string };
@@ -46,6 +47,7 @@ function mergeDefined<T extends Record<string, unknown>>(base: T, override: Part
 }
 
 export default function AdminPayoutDetailDrawer(props: Props) {
+  const workspaceContext = useContext(AdminWorkspaceContext);
   const inputSelected = props.selected;
   const [detailSelected, setDetailSelected] = useState<Props["selected"] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -98,6 +100,7 @@ export default function AdminPayoutDetailDrawer(props: Props) {
   const actionBusyId = busy ? selected.id : props.actionBusyId;
 
   useLayoutEffect(() => {
+    if (workspaceContext && !workspaceContext.isActive) return;
     const root = drawerRef.current;
     if (!root) return;
 
@@ -152,10 +155,11 @@ export default function AdminPayoutDetailDrawer(props: Props) {
       document.body.style.overflow = previousBodyOverflow;
       document.body.style.backgroundColor = previousBodyBackground;
     };
-  }, []);
+  }, [workspaceContext?.isActive]);
 
   useEffect(() => {
     const handleSelectAll = (event: KeyboardEvent) => {
+      if (workspaceContext && !workspaceContext.isActive) return;
       if (!((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a")) return;
 
       const target = event.target;
@@ -181,7 +185,7 @@ export default function AdminPayoutDetailDrawer(props: Props) {
 
     document.addEventListener("keydown", handleSelectAll, true);
     return () => document.removeEventListener("keydown", handleSelectAll, true);
-  }, []);
+  }, [workspaceContext?.isActive]);
 
   const handleCopyDetails = async () => {
     const payload = {
