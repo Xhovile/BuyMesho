@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { useContext, useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import {
   ArrowRight,
   CalendarDays,
@@ -20,6 +20,7 @@ import {
 import { apiFetch } from "./lib/api";
 import { ADMIN_EVENTS_PATH, EVENTS_PATH, isAppRouteNavigationEvent, navigateToPath } from "./lib/appNavigation";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
+import { AdminWorkspaceContext } from "./modules/admin/AdminWorkspaceShell";
 
 type CreatorModerationRow = {
   uid: string;
@@ -264,6 +265,7 @@ function parseSearchSelection() {
 }
 
 export default function AdminEventModerationPage() {
+  const workspaceContext = useContext(AdminWorkspaceContext);
   const initialSelection = parseSearchSelection();
   const [overview, setOverview] = useState<AdminOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -324,7 +326,7 @@ export default function AdminEventModerationPage() {
 
   useEffect(() => {
     const sync = (event: PopStateEvent) => {
-      if (isAppRouteNavigationEvent(event) || window.location.pathname !== ADMIN_EVENTS_PATH) return;
+      if ((workspaceContext && !workspaceContext.isActive) || isAppRouteNavigationEvent(event)) return;
       const selection = parseSearchSelection();
       setSelectedCreatorUid(selection.creator);
       setSelectedEventId(selection.event);
@@ -332,7 +334,7 @@ export default function AdminEventModerationPage() {
 
     window.addEventListener("popstate", sync);
     return () => window.removeEventListener("popstate", sync);
-  }, []);
+  }, [workspaceContext?.isActive]);
 
   useEffect(() => {
     void fetchOverview();
