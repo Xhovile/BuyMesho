@@ -491,6 +491,7 @@ export default function AdminEventModerationPage() {
     <AdminWorkspaceLayout
       title="Event Moderation"
       description="Monitor event creators, posted events, message activity, and ticket activity without slowing down publishing."
+      isRefreshing={loading}
       onRefresh={() => void fetchOverview()}
     >
       <div className="space-y-6">
