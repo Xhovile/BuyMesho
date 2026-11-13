@@ -10,6 +10,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { apiFetch } from "./lib/api";
+import { isAppRouteNavigationEvent } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { useIsAdmin } from "./hooks/useIsAdmin";
 import { getSellerPayoutStatusLabel, getVisibleAdminActions } from "./modules/payouts/uiModel";
@@ -373,7 +374,8 @@ export default function AdminPayoutsManager() {
   };
 
   useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (isAppRouteNavigationEvent(event) || window.location.pathname !== "/admin/payouts") return;
       setSelectedId(null);
       setDrawerHistoryActive(false);
     };
