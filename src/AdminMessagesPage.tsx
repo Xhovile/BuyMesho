@@ -41,7 +41,7 @@ export default function AdminMessagesPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [cursorStack, setCursorStack] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshVersion, setRefreshVersion] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export default function AdminMessagesPage() {
       }
     }, 180);
     return () => { cancelled = true; controller.abort(); window.clearTimeout(timer); };
-  }, [filter, query, refreshVersion]);
+  }, [filter, query]);
 
   useEffect(() => {
     const loadSummary = async () => {
@@ -80,7 +80,34 @@ export default function AdminMessagesPage() {
       }
     };
     void loadSummary();
-  }, [items.length, refreshVersion]);
+  }, [items.length]);
+
+  const refreshInbox = async () => {
+    setRefreshing(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ filter: filter.toLowerCase(), limit: "50" });
+      if (query.trim()) params.set("search", query.trim());
+
+      const [payload, summaryPayload] = await Promise.all([
+        apiFetch(`/api/admin/messages?${params.toString()}`),
+        apiFetch("/api/admin/messages/summary"),
+      ]);
+
+      setItems(Array.isArray(payload?.items) ? payload.items : []);
+      setNextCursor(payload?.pagination?.nextCursor ?? null);
+      setCursorStack([]);
+      setSummary({
+        unread: Number(summaryPayload?.unread || 0),
+        reported: Number(summaryPayload?.reported || 0),
+        blocked: Number(summaryPayload?.blocked || 0),
+      });
+    } catch (err: any) {
+      setError(err?.message || "Failed to refresh admin messages.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const loadNextPage = async () => {
     if (!nextCursor || loading) return;
@@ -101,7 +128,7 @@ export default function AdminMessagesPage() {
   };
 
   return (
-    <AdminWorkspaceLayout title="Messages" description="Monitor marketplace conversations without becoming a participant in them." isRefreshing={loading} onRefresh={() => setRefreshVersion((value) => value + 1)}>
+    <AdminWorkspaceLayout title="Messages" description="Monitor marketplace conversations without becoming a participant in them." isRefreshing={loading || refreshing} onRefresh={() => void refreshInbox()}>
       <section className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface p-4 shadow-sm"><p className="text-xs font-bold uppercase text-bm-text-subtle dark:text-bm-text-subtle">Messages</p><p className="mt-1 text-2xl font-black text-bm-text dark:text-bm-text">{summary.unread}</p><p className="text-xs text-bm-text-subtle dark:text-bm-text-subtle">unread for admin review</p></div>
