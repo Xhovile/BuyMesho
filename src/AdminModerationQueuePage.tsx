@@ -40,6 +40,7 @@ export default function AdminModerationQueuePage() {
     <AdminWorkspaceLayout
       title="Moderation Queue"
       description="Review what needs attention first across content, chats, and seller onboarding."
+      isRefreshing={loading}
       onRefresh={() => void refresh()}
     >
       {error ? (
