@@ -821,7 +821,7 @@ export default function AdminPayoutsManager() {
   }
 
   return (
-    <AdminWorkspaceLayout title="Payout queue" description="Manage payout lifecycle, review exact failure reasons, and reconcile provider state.">
+    <AdminWorkspaceLayout title="Payout queue" description="Manage payout lifecycle, review exact failure reasons, and reconcile provider state." isRefreshing={refreshing} onRefresh={() => void load(pageIndex)}>
       <div className="space-y-6">
         <div className="rounded-[2rem] border border-bm-border dark:border-bm-border bg-bm-surface p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
