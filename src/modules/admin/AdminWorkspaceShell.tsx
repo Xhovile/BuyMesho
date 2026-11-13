@@ -1,4 +1,4 @@
-import { createContext, Suspense, useEffect, useState, type ReactNode } from "react";
+import { createContext, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { navigateToPath } from "../../lib/appNavigation";
 import EventTicketSearchPanel from "../../components/EventTicketSearchPanel";
@@ -8,6 +8,7 @@ export type AdminWorkspaceContextValue = {
   pathname: string;
   pageKey: string;
   isActive: boolean;
+  pageHeaderTarget: HTMLDivElement | null;
 };
 
 export const AdminWorkspaceContext = createContext<AdminWorkspaceContextValue | null>(null);
@@ -44,6 +45,12 @@ export default function AdminWorkspaceShell({
   children,
 }: AdminWorkspaceShellProps) {
   const [visitedPages, setVisitedPages] = useState<Record<string, ReactNode>>({});
+  const pageHeaderRef = useRef<HTMLDivElement | null>(null);
+  const [pageHeaderTarget, setPageHeaderTarget] = useState<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setPageHeaderTarget(pageHeaderRef.current);
+  }, []);
 
   useEffect(() => {
     setVisitedPages((current) => {
@@ -80,6 +87,7 @@ export default function AdminWorkspaceShell({
           <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-bm-text-subtle dark:text-bm-text-subtle">
             Admin Workspace
           </p>
+          <div ref={pageHeaderRef} />
 
           {showNav ? <AdminWorkspaceNav pathname={pathname} /> : null}
           {showEventTicketSearch ? <EventTicketSearchPanel mode="admin" /> : null}
@@ -91,7 +99,7 @@ export default function AdminWorkspaceShell({
               return (
                 <AdminWorkspaceContext.Provider
                   key={key}
-                  value={{ pathname: pagePath, pageKey: key, isActive: active }}
+                  value={{ pathname: pagePath, pageKey: key, isActive: active, pageHeaderTarget }}
                 >
                   <div hidden={!active} aria-hidden={!active} className="min-w-0">
                     <Suspense fallback={active ? <AdminPageLoader /> : null}>
