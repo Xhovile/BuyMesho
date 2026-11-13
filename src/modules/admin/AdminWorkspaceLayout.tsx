@@ -1,5 +1,5 @@
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
-import { useContext, type ReactNode } from "react";
+import { useContext, useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { navigateToPath } from "../../lib/appNavigation";
 import AdminWorkspaceNav from "./AdminWorkspaceNav";
@@ -31,6 +31,11 @@ export default function AdminWorkspaceLayout({
     pathname === "/admin/events" ||
     pathname === "/admin/transaction-inspector";
 
+  useEffect(() => {
+    if (!shellContext?.isActive) return;
+    shellContext.registerRefresh(onRefresh, isRefreshing);
+  }, [shellContext?.isActive, shellContext?.registerRefresh, onRefresh, isRefreshing]);
+
   if (shellContext) {
     const pageHeader = shellContext.isActive && shellContext.pageHeaderTarget
       ? createPortal(
@@ -45,18 +50,7 @@ export default function AdminWorkspaceLayout({
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {isAuditLog ? <DiagnosticsDrawer /> : null}
-              {onRefresh ? (
-                <button
-                  type="button"
-                  onClick={onRefresh}
-                  disabled={isRefreshing}
-                  aria-busy={isRefreshing}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-bm-brand px-4 py-2.5 text-sm font-bold text-bm-on-brand hover:bg-bm-brand-hover disabled:cursor-wait disabled:opacity-70"
-                >
-                  {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                  {isRefreshing ? "Refreshing…" : "Refresh"}
-                </button>
-              ) : null}
+
             </div>
           </section>,
           shellContext.pageHeaderTarget,
