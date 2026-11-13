@@ -150,6 +150,7 @@ export default function AdminPaymentsPage() {
     <AdminWorkspaceLayout
       title="Payments & Webhooks"
       description="Admin monitoring only. Buyer order status belongs elsewhere."
+      isRefreshing={refreshing}
       onRefresh={() => void load()}
     >
       <AdminPaymentsToolbar
