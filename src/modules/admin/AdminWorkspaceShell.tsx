@@ -80,7 +80,7 @@ export default function AdminWorkspaceShell({
   return (
     <div className="min-h-screen bg-bm-surface-muted text-bm-text dark:bg-bm-surface-muted dark:text-bm-text">
         <header className="buymesho-brand-header sticky top-0 z-40 border-b border-bm-border bg-bm-surface/90 backdrop-blur-sm dark:bg-bm-surface/90">
-          <div className={`mx-auto max-w-7xl px-4 py-3 ${pathname === ADMIN_AUDIT_PATH ? "grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4" : "flex items-center justify-between gap-3"}`}>
+          <div className={`mx-auto max-w-7xl px-4 py-3 ${pathname === ADMIN_AUDIT_PATH ? "grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-4" : "flex items-center justify-between gap-3"}`}>
             <button
               type="button"
               onClick={() => navigateToPath("/")}
