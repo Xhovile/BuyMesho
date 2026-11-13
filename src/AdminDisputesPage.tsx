@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import { apiFetch } from "./lib/api";
+import { isAppRouteNavigationEvent } from "./lib/appNavigation";
 import EvidenceMedia from "./components/shared/EvidenceMedia";
 
 type CaseRow = {
@@ -123,7 +124,8 @@ export default function AdminDisputesPage() {
   }, [loadDetail, selectedId]);
 
   useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (isAppRouteNavigationEvent(event) || window.location.pathname !== "/admin/disputes") return;
       historyEntryRef.current = false;
       const caseId = new URLSearchParams(window.location.search).get("case")?.trim() || null;
       setSelectedId(caseId);
