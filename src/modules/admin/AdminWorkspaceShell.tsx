@@ -6,6 +6,8 @@ import AdminWorkspaceNav from "./AdminWorkspaceNav";
 
 export type AdminWorkspaceContextValue = {
   pathname: string;
+  pageKey: string;
+  isActive: boolean;
 };
 
 export const AdminWorkspaceContext = createContext<AdminWorkspaceContextValue | null>(null);
@@ -60,8 +62,7 @@ export default function AdminWorkspaceShell({
     pathname === "/admin/transaction-inspector";
 
   return (
-    <AdminWorkspaceContext.Provider value={{ pathname }}>
-      <div className="min-h-screen bg-bm-surface-muted text-bm-text dark:bg-bm-surface-muted dark:text-bm-text">
+    <div className="min-h-screen bg-bm-surface-muted text-bm-text dark:bg-bm-surface-muted dark:text-bm-text">
         <header className="buymesho-brand-header sticky top-0 z-40 border-b border-bm-border bg-bm-surface/90 backdrop-blur-sm dark:bg-bm-surface/90">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
             <button
@@ -86,17 +87,22 @@ export default function AdminWorkspaceShell({
           <div className="min-w-0">
             {pages.map(([key, page]) => {
               const active = key === pageKey;
+              const pagePath = key.split("?")[0];
               return (
-                <div key={key} hidden={!active} aria-hidden={!active} className="min-w-0">
-                  <Suspense fallback={active ? <AdminPageLoader /> : null}>
-                    {page}
-                  </Suspense>
-                </div>
+                <AdminWorkspaceContext.Provider
+                  key={key}
+                  value={{ pathname: pagePath, pageKey: key, isActive: active }}
+                >
+                  <div hidden={!active} aria-hidden={!active} className="min-w-0">
+                    <Suspense fallback={active ? <AdminPageLoader /> : null}>
+                      {page}
+                    </Suspense>
+                  </div>
+                </AdminWorkspaceContext.Provider>
               );
             })}
           </div>
         </main>
       </div>
-    </AdminWorkspaceContext.Provider>
   );
 }
