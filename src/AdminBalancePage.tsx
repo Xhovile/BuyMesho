@@ -116,6 +116,7 @@ export default function AdminBalancePage() {
     <AdminWorkspaceLayout
       title="Balance"
       description="PayChangu wallet balance for payout readiness."
+      isRefreshing={loading}
       onRefresh={() => void loadBalance(true)}
     >
       <main className="space-y-6">
