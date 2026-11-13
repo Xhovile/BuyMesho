@@ -70,6 +70,7 @@ async function api(path: string, init?: RequestInit) {
 }
 
 export default function AdminDisputesPage() {
+  const workspaceContext = useContext(AdminWorkspaceContext);
   const initialCaseId = useMemo(
     () => new URLSearchParams(window.location.search).get("case")?.trim() || null,
     [],
