@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 import { apiFetch } from "./lib/api";
-import { ADMIN_EVENTS_PATH, EVENTS_PATH, navigateToPath } from "./lib/appNavigation";
+import { ADMIN_EVENTS_PATH, EVENTS_PATH, isAppRouteNavigationEvent, navigateToPath } from "./lib/appNavigation";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 
 type CreatorModerationRow = {
@@ -323,7 +323,8 @@ export default function AdminEventModerationPage() {
   };
 
   useEffect(() => {
-    const sync = () => {
+    const sync = (event: PopStateEvent) => {
+      if (isAppRouteNavigationEvent(event) || window.location.pathname !== ADMIN_EVENTS_PATH) return;
       const selection = parseSearchSelection();
       setSelectedCreatorUid(selection.creator);
       setSelectedEventId(selection.event);
