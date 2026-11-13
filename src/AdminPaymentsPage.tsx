@@ -82,6 +82,7 @@ export default function AdminPaymentsPage() {
   useEffect(() => {
     if (!selectedReference) return;
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (window.location.pathname !== "/admin/payments") return;
       if (event.key === "Escape") setSelectedReference(null);
     };
     window.addEventListener("keydown", handleKeyDown);
