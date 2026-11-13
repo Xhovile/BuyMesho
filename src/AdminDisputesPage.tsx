@@ -230,6 +230,7 @@ export default function AdminDisputesPage() {
     <AdminWorkspaceLayout
       title="Disputes"
       description="One workspace for returns, refunds, seller-reported refunds, buyer claims, review, and final decisions."
+      isRefreshing={loading}
       onRefresh={() => void load()}
     >
       <section className="overflow-hidden rounded-3xl border border-bm-border dark:border-bm-border bg-bm-surface shadow-sm">
