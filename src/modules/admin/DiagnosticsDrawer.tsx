@@ -17,7 +17,7 @@ function flattenStatus(check: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
 
-export default function DiagnosticsDrawer({ onRecorded }: { onRecorded?: () => void }) {
+export default function DiagnosticsDrawer({ onRecorded, showIcon = true }: { onRecorded?: () => void; showIcon?: boolean }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DiagnosticPayload | null>(null);
@@ -79,7 +79,7 @@ export default function DiagnosticsDrawer({ onRecorded }: { onRecorded?: () => v
         disabled={loading}
         className="inline-flex items-center gap-2 rounded-2xl border border-bm-border dark:border-bm-border bg-bm-surface px-4 py-2.5 text-sm font-bold text-bm-text dark:text-bm-text-muted transition hover:bg-bm-surface-muted dark:hover:bg-bm-surface-muted disabled:cursor-wait disabled:opacity-60"
       >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wrench className="h-4 w-4" />}
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : showIcon ? <Wrench className="h-4 w-4" /> : null}
         Diagnostics
       </button>
 
