@@ -1,7 +1,8 @@
 import { AlertTriangle, CheckCircle2, ChevronRight, Clock3, FileText, RefreshCw, X, XCircle } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
+import { AdminWorkspaceContext } from "./modules/admin/AdminWorkspaceShell";
 import { apiFetch } from "./lib/api";
 import { isAppRouteNavigationEvent } from "./lib/appNavigation";
 import EvidenceMedia from "./components/shared/EvidenceMedia";
@@ -125,7 +126,7 @@ export default function AdminDisputesPage() {
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-      if (isAppRouteNavigationEvent(event) || window.location.pathname !== "/admin/disputes") return;
+      if ((workspaceContext && !workspaceContext.isActive) || isAppRouteNavigationEvent(event)) return;
       historyEntryRef.current = false;
       const caseId = new URLSearchParams(window.location.search).get("case")?.trim() || null;
       setSelectedId(caseId);
@@ -133,7 +134,7 @@ export default function AdminDisputesPage() {
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  }, [workspaceContext?.isActive]);
 
   const openDetail = (caseId: string) => {
     setSelectedId(caseId);
