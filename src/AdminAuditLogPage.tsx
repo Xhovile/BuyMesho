@@ -207,6 +207,7 @@ export default function AdminAuditLogPage() {
     <AdminWorkspaceLayout
       title="Admin Audit Log"
       description="Track moderation, payout, and approval actions with timestamps."
+      isRefreshing={loading}
       onRefresh={() => void load()}
     >
       {error ? (
