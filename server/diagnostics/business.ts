@@ -306,7 +306,7 @@ undefined
     }
 }
 
-export function registerusinessDiagnosticsRoutes(app: Express) {
+export function registerBusinessDiagnosticsRoutes(app: Express) {
   app.get("/api/diagnostics/business", async (_req, res) => {
     const payload = await runBusinessDiagnostics();
     res.status(payload.overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json(payload);
