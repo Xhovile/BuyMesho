@@ -123,6 +123,7 @@ const started = Date.now();
     };
     return payload;
 }
+}
 
 export function registerApiDiagnosticsRoutes(app: Express) {
   app.get("/api/diagnostics/api", async (_req, res) => {
