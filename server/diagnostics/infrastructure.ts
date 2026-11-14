@@ -76,7 +76,7 @@ const started = Date.now();
     return payload;
 }
 
-export function registernfrastructureDiagnosticsRoutes(app: Express) {
+export function registerInfrastructureDiagnosticsRoutes(app: Express) {
   app.get("/api/diagnostics/infrastructure", async (_req, res) => {
     const payload = await runInfrastructureDiagnostics();
     res.status(payload.overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json(payload);
