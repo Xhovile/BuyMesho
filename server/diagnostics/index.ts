@@ -11,7 +11,7 @@ import type { DiagnosticPayload, NamedCheck } from "./types.js";
 type DiagnosticResponse = DiagnosticPayload;
 
 function localBaseUrl(): string {
-  const port = process.env.PORT ?? "10000";
+  const port = process.env.PORT ?? "3000";
   return `http://127.0.0.1:${port}`;
 }
 
