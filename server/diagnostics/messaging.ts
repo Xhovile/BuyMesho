@@ -70,7 +70,7 @@ undefined
     }
 }
 
-export function registeressagingDiagnosticsRoutes(app: Express) {
+export function registerMessagingDiagnosticsRoutes(app: Express) {
   app.get("/api/diagnostics/messaging", async (_req, res) => {
     const payload = await runMessagingDiagnostics();
     res.status(payload.overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json(payload);
