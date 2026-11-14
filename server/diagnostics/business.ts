@@ -242,75 +242,7 @@ async function runListingDiagnostics(): Promise<{
 
 export function registerBusinessDiagnosticsRoutes(app: Express) {
 export async function runBusinessDiagnostics(): Promise<DiagnosticPayload> {
-const started = Date.now();
-    try {
-    const [orders, listings, lifecycle, lifecycleDetails, listingDiagnostics] = await Promise.all([
-    query<{ count: string }>("SELECT COUNT(*)::text AS count FROM orders"),
-    query<{ count: string }>("SELECT COUNT(*)::text AS count FROM listings"),
-    query<{ count: string }>(`
-    SELECT COUNT(*)::text AS count
-    FROM orders
-    WHERE (status = 'paid' AND paid_at IS NULL)
-    OR (status = 'in_escrow' AND paid_at IS NULL)
-    OR (status = 'fulfilled' AND (paid_at IS NULL OR fulfilled_at IS NULL))
-    OR (fulfilled_at IS NOT NULL AND paid_at IS NULL)
-    `),
-    query<{
-    id: string;
-    status: string;
-    created_at: string | null;
-    updated_at: string | null;
-    paid_at: string | null;
-    fulfilled_at: string | null;
-    placed_at: string | null;
-    }>(`
-    SELECT id, status, created_at, updated_at, paid_at, fulfilled_at, placed_at
-    FROM orders
-    WHERE status = 'fulfilled'
-    AND fulfilled_at IS NULL
-    ORDER BY updated_at DESC NULLS LAST, created_at DESC
-    `),
-    runListingDiagnostics(),
-    ]);
-    const lifecycleCount = Number(lifecycle.rows[0]?.count ?? 0);
-    const status = lifecycleCount > 0 || listingDiagnostics.overall === "FAIL" ? "FAIL" : "PASS";
-    const payload: DiagnosticPayload = {
-    overall: status,
-    authoritative: true,
-    diagnostic_version: "4.2",
-    timestamp: new Date().toISOString(),
-    duration_ms: Date.now() - started,
-    checks: {
-    business_records: {
-    status: "PASS",
-    message: "Business record counts collected",
-    details: {
-    orders: Number(orders.rows[0]?.count ?? 0),
-    listings: Number(listings.rows[0]?.count ?? 0),
-    },
-    },
-    ...listingDiagnostics.checks,
-    order_lifecycle: {
-    status: lifecycleCount > 0 ? "FAIL" : "PASS",
-    message: lifecycleCount > 0 ? "Order lifecycle timestamp inconsistencies detected" : "Order lifecycle timestamps are consistent",
-    details: {
-    count: lifecycleCount,
-    offending_orders: lifecycleCount === 0 ? [] : lifecycleDetails.rows,
-    },
-    },
-    },
-    };
-
-    } catch (error) {
-      return {
-        overall: "FAIL",
-        authoritative: true,
-        diagnostic_version: "4.2",
-        timestamp: new Date().toISOString(),
-        duration_ms: Date.now() - started,
-        error: error instanceof Error ? error.message : String(error),
-      } satisfies DiagnosticPayload;
-    }
+return payload;
 }
 
 export function registerBusinessDiagnosticsRoutes(app: Express) {
