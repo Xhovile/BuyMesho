@@ -98,34 +98,35 @@ function getDiagnosticBaseUrl() {
 }
 
 export function registerApiDiagnosticsRoutes(app: Express) {
-  app.get("/api/diagnostics/api", async (_req, res) => {
-    const started = Date.now();
+export async function runApiDiagnostics(): Promise<DiagnosticPayload> {
+const started = Date.now();
     const baseUrl = getDiagnosticBaseUrl();
-
     const events = await checkEndpoint(baseUrl, "/api/events", 200, validateEvents);
-
     const protectedChecks = {
-      profile: await checkEndpoint(baseUrl, "/api/profile", 401, validateProtectedContract),
-      cart: await checkEndpoint(baseUrl, "/api/cart", 401, validateProtectedContract),
-      messages_inbox: await checkEndpoint(baseUrl, "/api/messages/inbox", 401, validateProtectedContract),
+    profile: await checkEndpoint(baseUrl, "/api/profile", 401, validateProtectedContract),
+    cart: await checkEndpoint(baseUrl, "/api/cart", 401, validateProtectedContract),
+    messages_inbox: await checkEndpoint(baseUrl, "/api/messages/inbox", 401, validateProtectedContract),
     };
-
     const checks = {
-      events,
-      ...protectedChecks,
+    events,
+    ...protectedChecks,
     };
     const statuses = Object.values(checks).map((check) => check.status);
     const overall = statuses.includes("FAIL") ? "FAIL" : statuses.includes("WARN") ? "WARN" : "PASS";
-
     const payload: DiagnosticPayload = {
-      overall,
-      authoritative: true,
-      diagnostic_version: "3.3",
-      timestamp: new Date().toISOString(),
-      duration_ms: Date.now() - started,
-      checks,
+    overall,
+    authoritative: true,
+    diagnostic_version: "3.3",
+    timestamp: new Date().toISOString(),
+    duration_ms: Date.now() - started,
+    checks,
     };
+    return payload;
+}
 
-    res.status(overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json(payload);
+export function registerpiDiagnosticsRoutes(app: Express) {
+  app.get("/api/diagnostics/api", async (_req, res) => {
+    const payload = await runApiDiagnostics();
+    res.status(payload.overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json(payload);
   });
 }
