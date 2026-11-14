@@ -1,37 +1,34 @@
 import type { Express } from "express";
-import { registerDatabaseDiagnosticsRoutes } from "./database.js";
-import { registerBusinessDiagnosticsRoutes } from "./business.js";
-import { registerPaymentDiagnosticsRoutes } from "./payments.js";
-import { registerInfrastructureDiagnosticsRoutes } from "./infrastructure.js";
-import { registerApiDiagnosticsRoutes } from "./api.js";
-import { registerMessagingDiagnosticsRoutes } from "./messaging.js";
+import { runDatabaseDiagnostics, registerDatabaseDiagnosticsRoutes } from "./database.js";
+import { runBusinessDiagnostics, registerBusinessDiagnosticsRoutes } from "./business.js";
+import { runPaymentDiagnostics, registerPaymentDiagnosticsRoutes } from "./payments.js";
+import { runInfrastructureDiagnostics, registerInfrastructureDiagnosticsRoutes } from "./infrastructure.js";
+import { runApiDiagnostics, registerApiDiagnosticsRoutes } from "./api.js";
+import { runMessagingDiagnostics, registerMessagingDiagnosticsRoutes } from "./messaging.js";
 import { registerRateLimitDiagnosticsRoutes } from "./rateLimit.js";
 import type { DiagnosticPayload, NamedCheck } from "./types.js";
 
-type DiagnosticResponse = DiagnosticPayload;
-
-function localBaseUrl(): string {
-  const port = process.env.PORT ?? "10000";
-  return `http://127.0.0.1:${port}`;
-}
-
-async function fetchDiagnostic(path: string): Promise<DiagnosticResponse> {
-  const response = await fetch(new URL(path, localBaseUrl()), {
-    headers: { Accept: "application/json" },
-    signal: AbortSignal.timeout(12000),
-  });
-  const contentType = response.headers.get("content-type") ?? "";
-  const body = contentType.includes("application/json") ? await response.json() : { overall: "FAIL", error: await response.text() };
-  if (!body || typeof body !== "object") {
-    return { overall: "FAIL", authoritative: true, diagnostic_version: "4.0", timestamp: new Date().toISOString(), duration_ms: 0, error: `${path} returned an invalid diagnostic payload` };
-  }
-  return body as DiagnosticResponse;
-}
+type DiagnosticRunner = () => Promise<DiagnosticPayload>;
 
 function combineOverall(values: string[]): "PASS" | "WARN" | "FAIL" {
   if (values.includes("FAIL")) return "FAIL";
   if (values.includes("WARN")) return "WARN";
   return "PASS";
+}
+
+async function runSafely(name: string, runner: DiagnosticRunner): Promise<[string, DiagnosticPayload]> {
+  try {
+    return [name, await runner()];
+  } catch (error) {
+    return [name, {
+      overall: "FAIL",
+      authoritative: true,
+      diagnostic_version: "1.0",
+      timestamp: new Date().toISOString(),
+      duration_ms: 0,
+      error: error instanceof Error ? error.message : String(error),
+    }];
+  }
 }
 
 export function registerDiagnosticsRoutes(app: Express, _deps?: { db?: any }) {
@@ -45,35 +42,45 @@ export function registerDiagnosticsRoutes(app: Express, _deps?: { db?: any }) {
 
   app.get("/api/diagnostics", async (_req, res) => {
     const started = Date.now();
-    const paths = {
-      database: "/api/diagnostics/database",
-      business: "/api/diagnostics/business",
-      payments: "/api/diagnostics/payments",
-      infrastructure: "/api/diagnostics/infrastructure",
-      api: "/api/diagnostics/api",
-      messaging: "/api/diagnostics/messaging",
-    } as const;
+    const runners: Array<[string, DiagnosticRunner]> = [
+      ["database", runDatabaseDiagnostics],
+      ["business", runBusinessDiagnostics],
+      ["payments", runPaymentDiagnostics],
+      ["infrastructure", runInfrastructureDiagnostics],
+      ["api", runApiDiagnostics],
+      ["messaging", runMessagingDiagnostics],
+    ];
 
-    try {
-      const results = await Promise.all(Object.entries(paths).map(async ([key, path]) => [key, await fetchDiagnostic(path)] as const));
-      const checks: Record<string, NamedCheck> = {};
-      const statuses: string[] = [];
-      for (const [key, result] of results) {
-        statuses.push(result.overall);
-        if (result.checks) {
-          for (const [checkKey, check] of Object.entries(result.checks)) checks[`${key}.${checkKey}`] = check;
-        } else {
-          checks[key] = { status: result.overall, message: result.error ?? `${key} diagnostic completed` };
+    const results = await Promise.all(runners.map(([name, runner]) => runSafely(name, runner)));
+    const checks: Record<string, NamedCheck> = {};
+    const statuses: string[] = [];
+
+    for (const [group, result] of results) {
+      statuses.push(result.overall);
+      if (result.checks) {
+        for (const [key, check] of Object.entries(result.checks)) {
+          checks[`${group}.${key}`] = check;
         }
+      } else {
+        checks[group] = {
+          status: result.overall,
+          message: result.error ?? `${group} diagnostic completed`,
+        };
       }
-      const overall = combineOverall(statuses);
-      const payload: DiagnosticPayload = { overall, authoritative: true, diagnostic_version: "4.1", timestamp: new Date().toISOString(), duration_ms: Date.now() - started, checks };
-      res.status(overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json(payload);
-    } catch (error) {
-      res.status(503).setHeader("Cache-Control", "no-store").json({
-        overall: "FAIL", authoritative: true, diagnostic_version: "4.1", timestamp: new Date().toISOString(), duration_ms: Date.now() - started,
-        error: error instanceof Error ? error.message : String(error),
-      } satisfies DiagnosticPayload);
     }
+
+    const overall = combineOverall(statuses);
+    const payload: DiagnosticPayload = {
+      overall,
+      authoritative: true,
+      diagnostic_version: "4.3",
+      timestamp: new Date().toISOString(),
+      duration_ms: Date.now() - started,
+      checks,
+    };
+
+    // Return the completed report even when one or more checks fail. The
+    // caller needs the individual FAIL/WARN checks instead of a transport error.
+    res.status(200).setHeader("Cache-Control", "no-store").json(payload);
   });
 }
