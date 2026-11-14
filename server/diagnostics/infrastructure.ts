@@ -8,78 +8,77 @@ function configured(name: string): boolean {
 }
 
 export function registerInfrastructureDiagnosticsRoutes(app: Express) {
-  app.get("/api/diagnostics/infrastructure", async (req, res) => {
-    const started = Date.now();
+export async function runInfrastructureDiagnostics(): Promise<DiagnosticPayload> {
+const started = Date.now();
     let firebase = false;
     let firebaseError: string | undefined;
-
     try {
-      const admin = getFirebaseAdmin();
-      firebase = admin.apps.length > 0;
+    const admin = getFirebaseAdmin();
+    firebase = admin.apps.length > 0;
     } catch (error) {
-      firebaseError = error instanceof Error ? error.message : String(error);
+    firebaseError = error instanceof Error ? error.message : String(error);
     }
-
     const groups = {
-      smtp: ["SMTP_HOST", "SMTP_USER", "SMTP_PASS"],
-      paychangu: ["PAYCHANGU_SECRET_KEY", "PAYCHANGU_WEBHOOK_SECRET"],
-      admin: ["ADMIN_EMAILS", "ADMIN_UIDS"],
+    smtp: ["SMTP_HOST", "SMTP_USER", "SMTP_PASS"],
+    paychangu: ["PAYCHANGU_SECRET_KEY", "PAYCHANGU_WEBHOOK_SECRET"],
+    admin: ["ADMIN_EMAILS", "ADMIN_UIDS"],
     } as const;
-
     const cloudinaryAccounts = getCloudinaryAccounts();
     const cloudinaryConfigured = cloudinaryAccounts.length > 0;
     const deepCloudinaryCheck = String(req.query.deep ?? "").trim().toLowerCase() === "cloudinary";
     const cloudinaryVerification = deepCloudinaryCheck
-      ? await verifyCloudinaryAccounts()
-      : null;
+    ? await verifyCloudinaryAccounts()
+    : null;
     const cloudinaryVerified = cloudinaryVerification
-      ? cloudinaryVerification.length > 0 &&
-        cloudinaryVerification.every((item) => item.status === "PASS")
-      : cloudinaryConfigured;
-
+    ? cloudinaryVerification.length > 0 &&
+    cloudinaryVerification.every((item) => item.status === "PASS")
+    : cloudinaryConfigured;
     const checks: NonNullable<DiagnosticPayload["checks"]> = {
-      cloudinary: {
-        status: cloudinaryVerified ? "PASS" : "FAIL",
-        message: deepCloudinaryCheck
-          ? (cloudinaryVerified ? "Cloudinary credentials authenticated successfully" : "One or more Cloudinary accounts failed authentication")
-          : (cloudinaryConfigured ? "Cloudinary media credentials configured" : "Cloudinary media credentials are not configured"),
-        details: deepCloudinaryCheck
-          ? { configured: cloudinaryConfigured, accounts: cloudinaryVerification }
-          : { configured: cloudinaryConfigured },
-      },
-      firebase: {
-        status: firebase ? "PASS" : "FAIL",
-        message: firebase ? "Firebase Admin initialized" : "Firebase Admin is unavailable",
-        details: firebaseError ? { error: firebaseError } : { apps: 1 },
-      },
-      database_url: {
-        status: configured("DATABASE_URL") ? "PASS" : "FAIL",
-        message: configured("DATABASE_URL") ? "DATABASE_URL is configured" : "DATABASE_URL is not configured",
-        details: { configured: configured("DATABASE_URL") },
-      },
+    cloudinary: {
+    status: cloudinaryVerified ? "PASS" : "FAIL",
+    message: deepCloudinaryCheck
+    ? (cloudinaryVerified ? "Cloudinary credentials authenticated successfully" : "One or more Cloudinary accounts failed authentication")
+    : (cloudinaryConfigured ? "Cloudinary media credentials configured" : "Cloudinary media credentials are not configured"),
+    details: deepCloudinaryCheck
+    ? { configured: cloudinaryConfigured, accounts: cloudinaryVerification }
+    : { configured: cloudinaryConfigured },
+    },
+    firebase: {
+    status: firebase ? "PASS" : "FAIL",
+    message: firebase ? "Firebase Admin initialized" : "Firebase Admin is unavailable",
+    details: firebaseError ? { error: firebaseError } : { apps: 1 },
+    },
+    database_url: {
+    status: configured("DATABASE_URL") ? "PASS" : "FAIL",
+    message: configured("DATABASE_URL") ? "DATABASE_URL is configured" : "DATABASE_URL is not configured",
+    details: { configured: configured("DATABASE_URL") },
+    },
     };
-
     for (const [label, names] of Object.entries(groups)) {
-      const present = names.filter(configured);
-      const status = present.length === names.length ? "PASS" : "WARN";
-      checks[label] = {
-        status,
-        message: status === "PASS" ? `${label} is configured` : `${label} is partially or not configured`,
-        details: { configured: present, missing: names.filter((name) => !present.includes(name)) },
-      };
+    const present = names.filter(configured);
+    const status = present.length === names.length ? "PASS" : "WARN";
+    checks[label] = {
+    status,
+    message: status === "PASS" ? `${label} is configured` : `${label} is partially or not configured`,
+    details: { configured: present, missing: names.filter((name) => !present.includes(name)) },
+    };
     }
-
     const statuses = Object.values(checks).map((check) => check.status);
     const overall = statuses.includes("FAIL") ? "FAIL" : statuses.includes("WARN") ? "WARN" : "PASS";
     const payload: DiagnosticPayload = {
-      overall,
-      authoritative: true,
-      diagnostic_version: "3.0",
-      timestamp: new Date().toISOString(),
-      duration_ms: Date.now() - started,
-      checks,
+    overall,
+    authoritative: true,
+    diagnostic_version: "3.0",
+    timestamp: new Date().toISOString(),
+    duration_ms: Date.now() - started,
+    checks,
     };
+    return payload;
+}
 
-    res.status(overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json(payload);
+export function registernfrastructureDiagnosticsRoutes(app: Express) {
+  app.get("/api/diagnostics/infrastructure", async (_req, res) => {
+    const payload = await runInfrastructureDiagnostics();
+    res.status(payload.overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json(payload);
   });
 }
