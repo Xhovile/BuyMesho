@@ -300,9 +300,16 @@ const started = Date.now();
     },
     },
     };
-    res.status(status === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json(payload);
+
     } catch (error) {
-undefined
+      return {
+        overall: "FAIL",
+        authoritative: true,
+        diagnostic_version: "4.2",
+        timestamp: new Date().toISOString(),
+        duration_ms: Date.now() - started,
+        error: error instanceof Error ? error.message : String(error),
+      } satisfies DiagnosticPayload;
     }
 }
 
