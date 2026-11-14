@@ -1,6 +1,13 @@
 import type { Express, Request, Response } from "express";
 import { serializeListingRow } from "../lib/listingHelpers.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import {
+  getCachedPublicSellerDirectory,
+  getCachedPublicSellerListings,
+  getCachedPublicSellerProfile,
+  getCachedPublicSellerRatingSummary,
+  invalidatePublicSellerRatingData,
+} from "../lib/publicSellerCache.js";
 
 export type SellerProfileRouteDeps = {
   db: any;
@@ -57,82 +64,89 @@ function getSellerDistribution(db: any, sellerUid: string) {
 export function registerSellerProfileRoutes(app: Express, deps: SellerProfileRouteDeps) {
   const { db } = deps;
 
-  app.get("/api/sellers", (req, res) => {
+  app.get("/api/sellers", async (req, res) => {
     if (req.query.public !== undefined && req.query.public !== "true" && req.query.public !== "1") {
       return res.status(400).json({ error: "Invalid public sellers query" });
     }
 
     try {
-      const rows = db
-        .prepare(
-          `
-            SELECT
-              s.uid,
-              s.business_name,
-              s.business_logo,
-              s.bio,
-              s.university,
-              s.is_verified,
-              s.join_date,
-              s.profile_views,
-              COALESCE((
-                SELECT COUNT(*)
-                FROM listings l
-                WHERE l.seller_uid = s.uid
-                  AND l.is_hidden = 0
-                  AND l.deleted_at IS NULL
-              ), 0) AS listing_count,
-              COALESCE((
-                SELECT AVG(sr.stars)
-                FROM seller_ratings sr
-                WHERE sr.seller_uid = s.uid
-              ), 0) AS average_rating,
-              COALESCE((
-                SELECT COUNT(*)
-                FROM seller_ratings sr
-                WHERE sr.seller_uid = s.uid
-              ), 0) AS rating_count
-            FROM sellers s
-            WHERE s.is_seller = 1
-            ORDER BY
-              s.is_verified DESC,
-              average_rating DESC,
-              listing_count DESC,
-              s.join_date DESC,
-              s.uid ASC
-          `
-        )
-        .all();
+      const payload = await getCachedPublicSellerDirectory(async () => {
+        const rows = db
+          .prepare(
+            `
+              SELECT
+                s.uid,
+                s.business_name,
+                s.business_logo,
+                s.bio,
+                s.university,
+                s.is_verified,
+                s.join_date,
+                s.profile_views,
+                COALESCE((
+                  SELECT COUNT(*)
+                  FROM listings l
+                  WHERE l.seller_uid = s.uid
+                    AND l.is_hidden = 0
+                    AND l.deleted_at IS NULL
+                ), 0) AS listing_count,
+                COALESCE((
+                  SELECT AVG(sr.stars)
+                  FROM seller_ratings sr
+                  WHERE sr.seller_uid = s.uid
+                ), 0) AS average_rating,
+                COALESCE((
+                  SELECT COUNT(*)
+                  FROM seller_ratings sr
+                  WHERE sr.seller_uid = s.uid
+                ), 0) AS rating_count
+              FROM sellers s
+              WHERE s.is_seller = 1
+              ORDER BY
+                s.is_verified DESC,
+                average_rating DESC,
+                listing_count DESC,
+                s.join_date DESC,
+                s.uid ASC
+            `
+          )
+          .all();
 
-      return res.json({
-        items: rows,
-        total: rows.length,
+        return {
+          items: rows,
+          total: rows.length,
+        };
       });
+
+      return res.json(payload);
     } catch (error) {
       console.error("Failed to load public sellers", error);
       return res.status(500).json({ error: "Failed to load sellers" });
     }
   });
 
-  app.get("/api/sellers/:uid", (req, res) => {
+  app.get("/api/sellers/:uid", async (req, res) => {
     const uid = String(req.params.uid || "").trim();
     if (!uid) {
       return res.status(400).json({ error: "Invalid seller uid" });
     }
 
     try {
-      const row = db
-        .prepare(
-          `
-            SELECT uid, business_name, business_logo, university, bio, is_verified, join_date, profile_views
-            FROM sellers
-            WHERE uid = ? AND is_seller = 1
-            LIMIT 1
-          `
-        )
-        .get(uid);
+      const profile = await getCachedPublicSellerProfile(uid, async () => {
+        const row = db
+          .prepare(
+            `
+              SELECT uid, business_name, business_logo, university, bio, is_verified, join_date, profile_views
+              FROM sellers
+              WHERE uid = ? AND is_seller = 1
+              LIMIT 1
+            `
+          )
+          .get(uid);
 
-      const profile = normalizeSellerProfile(row);
+        return normalizeSellerProfile(row);
+      });
+
       if (!profile) {
         return res.status(404).json({ error: "Seller profile not found" });
       }
@@ -144,71 +158,79 @@ export function registerSellerProfileRoutes(app: Express, deps: SellerProfileRou
     }
   });
 
-  app.get("/api/sellers/:uid/listings", (req, res) => {
+  app.get("/api/sellers/:uid/listings", async (req, res) => {
     const uid = String(req.params.uid || "").trim();
     if (!uid) {
       return res.status(400).json({ error: "Invalid seller uid" });
     }
 
     try {
-      const rows = db
-        .prepare(
-          `
-            SELECT l.*, s.business_name, s.business_logo, s.is_verified
-            FROM listings l
-            JOIN sellers s ON l.seller_uid = s.uid
-            WHERE l.seller_uid = ?
-              AND l.deleted_at IS NULL
-              AND l.is_hidden = 0
-            ORDER BY l.created_at DESC
-          `
-        )
-        .all(uid);
+      const listings = await getCachedPublicSellerListings(uid, async () => {
+        const rows = db
+          .prepare(
+            `
+              SELECT l.*, s.business_name, s.business_logo, s.is_verified
+              FROM listings l
+              JOIN sellers s ON l.seller_uid = s.uid
+              WHERE l.seller_uid = ?
+                AND l.deleted_at IS NULL
+                AND l.is_hidden = 0
+              ORDER BY l.created_at DESC
+            `
+          )
+          .all(uid);
 
-      return res.json(rows.map((row: any) => serializeListingRow(row)));
+        return rows.map((row: any) => serializeListingRow(row));
+      });
+
+      return res.json(listings);
     } catch (error) {
       console.error("Failed to load seller listings", error);
       return res.status(500).json({ error: "Failed to load seller listings" });
     }
   });
 
-  app.get("/api/sellers/:uid/rating-summary", (req, res) => {
+  app.get("/api/sellers/:uid/rating-summary", async (req, res) => {
     const uid = String(req.params.uid || "").trim();
     if (!uid) {
       return res.status(400).json({ error: "Invalid seller uid" });
     }
 
     try {
-      const distributionRows = db
-        .prepare(
-          `
-            SELECT stars, COUNT(*) AS count
-            FROM seller_ratings
-            WHERE seller_uid = ?
-            GROUP BY stars
-            ORDER BY stars ASC
-          `
-        )
-        .all(uid) as Array<{ stars: number; count: number }>;
+      const summary = await getCachedPublicSellerRatingSummary(uid, async () => {
+        const distributionRows = db
+          .prepare(
+            `
+              SELECT stars, COUNT(*) AS count
+              FROM seller_ratings
+              WHERE seller_uid = ?
+              GROUP BY stars
+              ORDER BY stars ASC
+            `
+          )
+          .all(uid) as Array<{ stars: number; count: number }>;
 
-      const ratingCount = distributionRows.reduce((sum, row) => sum + Number(row.count ?? 0), 0);
-      const totalStars = distributionRows.reduce((sum, row) => sum + Number(row.stars ?? 0) * Number(row.count ?? 0), 0);
-      const averageRating = ratingCount > 0 ? totalStars / ratingCount : 0;
+        const ratingCount = distributionRows.reduce((sum, row) => sum + Number(row.count ?? 0), 0);
+        const totalStars = distributionRows.reduce((sum, row) => sum + Number(row.stars ?? 0) * Number(row.count ?? 0), 0);
+        const averageRating = ratingCount > 0 ? totalStars / ratingCount : 0;
 
-      return res.json({
-        averageRating,
-        ratingCount,
-        myRating: null,
-        distribution: [1, 2, 3, 4, 5].map((stars) => {
-          const found = distributionRows.find((row) => Number(row.stars) === stars);
-          const count = Number(found?.count ?? 0);
-          return {
-            stars,
-            count,
-            percentage: ratingCount > 0 ? (count / ratingCount) * 100 : 0,
-          };
-        }),
+        return {
+          averageRating,
+          ratingCount,
+          myRating: null,
+          distribution: [1, 2, 3, 4, 5].map((stars) => {
+            const found = distributionRows.find((row) => Number(row.stars) === stars);
+            const count = Number(found?.count ?? 0);
+            return {
+              stars,
+              count,
+              percentage: ratingCount > 0 ? (count / ratingCount) * 100 : 0,
+            };
+          }),
+        };
       });
+
+      return res.json(summary);
     } catch (error) {
       console.error("Failed to load seller rating summary", error);
       return res.status(500).json({ error: "Failed to load seller rating summary" });
@@ -267,6 +289,7 @@ export function registerSellerProfileRoutes(app: Express, deps: SellerProfileRou
         `
       ).run(uid, raterUid, stars);
 
+      void invalidatePublicSellerRatingData(uid);
       return res.json({ success: true });
     } catch (error) {
       console.error("Failed to save seller rating", error);
@@ -290,6 +313,7 @@ export function registerSellerProfileRoutes(app: Express, deps: SellerProfileRou
         `
       ).run(uid, raterUid);
 
+      void invalidatePublicSellerRatingData(uid);
       return res.json({ success: true });
     } catch (error) {
       console.error("Failed to remove seller rating", error);
