@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { CheckCircle2, Download, Loader2, XCircle, Wrench } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 
@@ -83,16 +84,23 @@ export default function DiagnosticsDrawer({ onRecorded, showIcon = true }: { onR
         Diagnostics
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-[80] bg-bm-overlay" onClick={() => setOpen(false)}>
+      {open ? createPortal(
+        <div
+          className="fixed inset-0 z-[100] bg-bm-overlay"
+          role="presentation"
+          onClick={() => setOpen(false)}
+        >
           <aside
             className="absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto bg-bm-surface shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-diagnostics-title"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="sticky top-0 flex items-center justify-between border-b border-bm-border dark:border-bm-border bg-bm-surface px-5 py-4">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-bm-text-subtle dark:text-bm-text-subtle">System check</p>
-                <h2 className="mt-1 text-xl font-black text-bm-text dark:text-bm-text">Diagnostics</h2>
+                <h2 id="admin-diagnostics-title" className="mt-1 text-xl font-black text-bm-text dark:text-bm-text">Diagnostics</h2>
               </div>
               <button
                 type="button"
@@ -157,7 +165,8 @@ export default function DiagnosticsDrawer({ onRecorded, showIcon = true }: { onR
               ) : null}
             </div>
           </aside>
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </>
   );
