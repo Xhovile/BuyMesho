@@ -158,7 +158,6 @@ const started = Date.now();
     },
     },
     };
-    return payload;
 }
 
 export function registerPaymentDiagnosticsRoutes(app: Express) {
