@@ -73,7 +73,6 @@ const started = Date.now();
     duration_ms: Date.now() - started,
     checks,
     };
-    return payload;
 }
 
 export function registerInfrastructureDiagnosticsRoutes(app: Express) {
